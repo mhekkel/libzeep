@@ -38,8 +38,7 @@ class my_server : public xml::soap::dispatcher<my_server>
 
 my_server::my_server()
 {
-	register_soap_call<void(const string&, const vector<string>&, FindResponse&)>(
-		"Find", &my_server::Find, "db", "queryterms");
+	register_soap_call("Find", &my_server::Find, "db", "queryterms");
 }
 
 void my_server::Find(
