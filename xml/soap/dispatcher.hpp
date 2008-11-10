@@ -4,6 +4,8 @@
 #include <boost/static_assert.hpp>
 #include "xml/soap/handler.hpp"
 
+#include <typeinfo>
+
 namespace xml
 {
 namespace soap
@@ -23,8 +25,6 @@ class dispatcher : public boost::noncopyable
 	template<typename F>
 	void			register_soap_call(
 						const char*		action,
-						const char*		req_name,
-						const char*		res_name,
 						typename call<Derived,F>::call_func_type				call_,
 						const char*		arg1)
 					{
@@ -34,14 +34,12 @@ class dispatcher : public boost::noncopyable
 						const char* names[1] = { arg1 };
 						
 						actions.push_back(
-							new call<Derived,F>(action, req_name, res_name, static_cast<Derived*>(this), call_, names));
+							new call<Derived,F>(action, static_cast<Derived*>(this), call_, names));
 					}
 
 	template<typename F>
 	void			register_soap_call(
 						const char*		action,
-						const char*		req_name,
-						const char*		res_name,
 						typename call<Derived,F>::call_func_type				call_,
 						const char*		arg1,
 						const char*		arg2)
@@ -52,7 +50,7 @@ class dispatcher : public boost::noncopyable
 						const char* names[2] = { arg1, arg2 };
 						
 						actions.push_back(
-							new call<Derived,F>(action, req_name, res_name, static_cast<Derived*>(this), call_, names));
+							new call<Derived,F>(action, static_cast<Derived*>(this), call_, names));
 					}
 
   private:

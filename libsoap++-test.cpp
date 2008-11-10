@@ -64,9 +64,7 @@ void serializer<my_server::FindResponse>::operator()(
 my_server::my_server()
 {
 	register_soap_call<void(const string&, const vector<string>&, FindResponse&)>(
-		"Find", "FindRequest", "FindResponse", &my_server::Find, "db", "queryterms");
-//	register_soap_call<void(const string&, FindResponse&)>(
-//		"Find", "FindRequest", "FindResponse", &my_server::Find, "db");
+		"Find", &my_server::Find, "db", "queryterms");
 }
 
 int main(int argc, const char* argv[])
