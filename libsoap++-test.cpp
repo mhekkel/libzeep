@@ -36,6 +36,12 @@ class my_server : public xml::soap::dispatcher<my_server>
 							FindResponse&			out);
 };
 
+my_server::my_server()
+{
+	register_soap_call<void(const string&, const vector<string>&, FindResponse&)>(
+		"Find", &my_server::Find, "db", "queryterms");
+}
+
 void my_server::Find(
 	const string&			db,
 	const vector<string>&	queryterms,
@@ -59,12 +65,6 @@ void serializer<my_server::FindResponse>::operator()(
 	s1(res.count, msgbody);
 }
 
-}
-
-my_server::my_server()
-{
-	register_soap_call<void(const string&, const vector<string>&, FindResponse&)>(
-		"Find", &my_server::Find, "db", "queryterms");
 }
 
 int main(int argc, const char* argv[])
