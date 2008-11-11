@@ -36,6 +36,7 @@
 			<file>libboost_filesystem-gcc42-mt-1_36.a</file>
 			<file>libboost_thread-gcc42-mt-1_36.a</file>
 			<file>libboost_regex-gcc42-mt-1_36.a</file>
+			<file>libboost_serialization-gcc42-mt-1_36.a</file>
 			<file>libexpat.a</file>
 		</group>
 	</files>

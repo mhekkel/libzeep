@@ -1,10 +1,14 @@
 #ifndef XML_SERIALIZE_H
 #define XML_SERIALIZE_H
 
+#include <sstream>
+
 #include "xml/node.hpp"
 #include "xml/exception.hpp"
 
-#include <sstream>
+#include <boost/serialization/nvp.hpp>
+#include <boost/type_traits/is_arithmetic.hpp>
+#include <boost/type_traits/remove_pointer.hpp>
 
 namespace xml
 {
@@ -93,45 +97,154 @@ void deserializer<std::vector<std::string> >::operator()(
 	}
 }
 
-template<typename T1>
 class serializer
 {
   public:
-				
-				serializer(
-					const char*		name)
-					: name(name) {}
-				
-	void		operator()(
-					const T1&		value,
-					node_ptr		node);
+				serializer()
+					: root(new node())
+				{
+				}
 
-  private:
-	const char*	name;
+				serializer(
+					node_ptr	root)
+					: root(root)
+				{
+				}
+
+	virtual		~serializer()
+				{
+				}
+	
+	node_ptr	root;
+};
+
+template<typename T>
+struct serialize_pod
+{
+	static void	serialize(
+					serializer&			s,
+					const std::string&	name,
+					T&					v)
+				{
+					node_ptr n(new node(name));
+					
+					std::stringstream ss;
+					ss << v;
+					n->content(ss.str());
+					
+					s.root->add_child(n);
+				}
+};
+
+struct serialize_string
+{
+	static void	serialize(
+					serializer&			s,
+					const std::string&	name,
+					std::string&		v)
+				{
+					node_ptr n(new node(name));
+					n->content(v);
+					s.root->add_child(n);
+				}
+};
+
+struct serialize_bool
+{
+	static void	serialize(
+					serializer&			s,
+					const std::string&	name,
+					bool&				v)
+				{
+					node_ptr n(new node(name));
+					n->content(v ? "true" : "false");
+					s.root->add_child(n);
+				}
+};
+
+template<typename T>
+struct serialize_struct
+{
+	static void	serialize(
+					serializer&			s,
+					const std::string&	name,
+					T&					v)
+				{
+					node_ptr n(new node(name));
+					node_ptr saved_root(s.root);
+					saved_root->add_child(n);
+					s.root = n;
+					v.serialize(s, 0);
+					s.root = saved_root;
+				}
+};
+
+template<typename T>
+struct serialize_vector
+{
+	static void	serialize(
+					serializer&			s,
+					const std::string&	name,
+					std::vector<T>&		v);
+};
+
+template<typename T, bool>
+struct serialize_type
+{
+	typedef serialize_struct<T>	type;
+};
+
+template<typename T>
+struct serialize_type<T,true>
+{
+	typedef serialize_pod<T>	type;
 };
 
 template<>
-void serializer<int>::operator()(
-	const int&			value,
-	node_ptr			node)
+struct serialize_type<std::string,false>
 {
-	std::stringstream s;
-	s << value;
-	node_ptr n(new xml::node(name));
-	n->content(s.str());
-	node->add_child(n);
-}
+	typedef serialize_string	type;
+};
 
 template<>
-void serializer<unsigned int>::operator()(
-	const unsigned int&	value,
-	node_ptr			node)
+struct serialize_type<bool,boost::is_arithmetic<bool>::value>
 {
-	std::stringstream s;
-	s << value;
-	node_ptr n(new xml::node(name));
-	n->content(s.str());
-	node->add_child(n);
+	typedef serialize_bool		type;
+};
+
+template<typename T>
+struct serialize_type<std::vector<T>,false>
+{
+	typedef serialize_vector<T>	type;
+};
+
+template<typename T>
+struct serialize_type_factory : public serialize_type<T, boost::is_arithmetic<T>::value>
+{
+};
+
+template<typename T>
+serializer&	operator&(serializer& lhs, T& rhs)
+{
+	typedef typename T::second_type									second_type;
+	typedef typename boost::remove_pointer<second_type>::type		value_type;
+	typedef typename serialize_type_factory<value_type>::type		serialize_t;
+	
+	serialize_t::serialize(lhs, rhs.name(), rhs.value());
+
+	return lhs;
+}
+
+template<typename T>
+void serialize_vector<T>::serialize(
+	serializer&			s,
+	const std::string&	name,
+	std::vector<T>&		v)
+{
+	typedef typename serialize_type_factory<T>::type		serialize_t;
+	
+	for (typename std::vector<T>::iterator i = v.begin(); i != v.end(); ++i)
+		serialize_t::serialize(s, name, *i);
 }
 
 }
