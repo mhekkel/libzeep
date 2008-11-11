@@ -26,40 +26,41 @@
 
 using namespace std;
 
-class my_server : public xml::soap::dispatcher<my_server>
+struct hit
+{
+	string			db;
+	string			id;
+	string			title;
+	float			score;
+	
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar & BOOST_SERIALIZATION_NVP(db)
+		   & BOOST_SERIALIZATION_NVP(id)
+		   & BOOST_SERIALIZATION_NVP(title)
+		   & BOOST_SERIALIZATION_NVP(score);
+	}
+};
+
+struct FindResponse
+{
+	int				count;
+	vector<hit>		hits;
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar & BOOST_SERIALIZATION_NVP(count)
+		   & BOOST_SERIALIZATION_NVP(hits);
+	}
+};
+
+
+class my_server
 {
   public:
 						my_server();
-
-	struct hit
-	{
-		string			db;
-		string			id;
-		string			title;
-		float			score;
-		
-		template<class Archive>
-		void serialize(Archive& ar, const unsigned int version)
-		{
-			ar & BOOST_SERIALIZATION_NVP(db)
-			   & BOOST_SERIALIZATION_NVP(id)
-			   & BOOST_SERIALIZATION_NVP(title)
-			   & BOOST_SERIALIZATION_NVP(score);
-		}
-	};
-
-	struct FindResponse
-	{
-		int				count;
-		vector<hit>		hits;
-
-		template<class Archive>
-		void serialize(Archive& ar, const unsigned int version)
-		{
-			ar & BOOST_SERIALIZATION_NVP(count)
-			   & BOOST_SERIALIZATION_NVP(hits);
-		}
-	};
 
 	void				Find(
 							const string&			db,
@@ -70,11 +71,14 @@ class my_server : public xml::soap::dispatcher<my_server>
 							const int&				resultoffset,
 							const int&				maxresultcount,
 							FindResponse&			out);
+
+	xml::soap::dispatcher
+						m_dispatcher;
 };
 
 my_server::my_server()
 {
-	register_soap_call("Find", &my_server::Find,
+	m_dispatcher.register_soap_call("Find", this, &my_server::Find,
 		"db", "queryterms", "algorithm", "alltermsrequired",
 		"booleanfilter", "resultoffset", "maxresultcount");
 }
@@ -98,6 +102,13 @@ void my_server::Find(
 	h.title = "bla bla bla";
 	
 	out.hits.push_back(h);
+
+	h.db = "sprot";
+	h.id = "108_lyces";
+	h.score = 0.8f;
+	h.title = "aap <&> noot mies";
+	
+	out.hits.push_back(h);
 }
 
 int main(int argc, const char* argv[])
@@ -119,10 +130,9 @@ int main(int argc, const char* argv[])
 		if (req->name() != "Find" or req->ns() != "http://mrs.cmbi.ru.nl/mrsws/search")
 			throw xml::exception("Invalid request");
 
-		xml::node_ptr res(new xml::node("FindResponse"));
-
 		my_server s;
-		s.dispatch("Find", req, res);
+		
+		xml::node_ptr res = s.m_dispatcher.dispatch("Find", req);
 		
 		cout << "response: " << endl << *res << endl;
 	}

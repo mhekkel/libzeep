@@ -2,6 +2,7 @@
 #define XML_SERIALIZE_H
 
 #include <sstream>
+#include <vector>
 
 #include "xml/node.hpp"
 #include "xml/exception.hpp"
@@ -34,7 +35,7 @@ class deserializer
 };
 
 template<typename T1>
-node_ptr deserializer<T1>::get_node(
+inline node_ptr deserializer<T1>::get_node(
 	node_ptr			node)
 {
 	for (node::iterator n = node->begin(); n != node->end(); ++n)
@@ -47,7 +48,7 @@ node_ptr deserializer<T1>::get_node(
 }
 
 template<>
-void deserializer<int>::operator()(
+inline void deserializer<int>::operator()(
 	node_ptr			node,
 	int&				value)
 {
@@ -57,7 +58,7 @@ void deserializer<int>::operator()(
 }
 
 template<>
-void deserializer<unsigned int>::operator()(
+inline void deserializer<unsigned int>::operator()(
 	node_ptr			node,
 	unsigned int&		value)
 {
@@ -67,7 +68,7 @@ void deserializer<unsigned int>::operator()(
 }
 
 template<>
-void deserializer<bool>::operator()(
+inline void deserializer<bool>::operator()(
 	node_ptr			node,
 	bool&				value)
 {
@@ -76,7 +77,7 @@ void deserializer<bool>::operator()(
 }
 
 template<>
-void deserializer<std::string>::operator()(
+inline void deserializer<std::string>::operator()(
 	node_ptr			node,
 	std::string&		value)
 {
@@ -85,7 +86,7 @@ void deserializer<std::string>::operator()(
 }
 
 template<>
-void deserializer<std::vector<std::string> >::operator()(
+inline void deserializer<std::vector<std::string> >::operator()(
 	node_ptr			node,
 	std::vector<std::string>&
 						value)
@@ -97,24 +98,15 @@ void deserializer<std::vector<std::string> >::operator()(
 	}
 }
 
-class serializer
+struct serializer
 {
   public:
-				serializer()
-					: root(new node())
-				{
-				}
-
 				serializer(
 					node_ptr	root)
 					: root(root)
 				{
 				}
 
-	virtual		~serializer()
-				{
-				}
-	
 	node_ptr	root;
 };
 
