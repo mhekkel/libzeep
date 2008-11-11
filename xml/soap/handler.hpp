@@ -11,23 +11,22 @@ namespace soap
 
 struct handler_base
 {
-					handler_base(
-						const std::string&	action,
-						const std::string&	request,
-						const std::string&	response)
-						: action_name(action)
-						, request_name(request)
-						, response_name(response) {}
+						handler_base(
+							const std::string&	action,
+							const std::string&	request,
+							const std::string&	response)
+							: action_name(action)
+							, request_name(request)
+							, response_name(response) {}
 
-	virtual			~handler_base() {}
+	virtual				~handler_base() {}
 
-	std::string		get_request_name() const			{ return request_name; }
-	std::string		get_response_name() const			{ return response_name; }
-	std::string		get_action_name() const				{ return action_name; }
+	std::string			get_request_name() const			{ return request_name; }
+	std::string			get_response_name() const			{ return response_name; }
+	std::string			get_action_name() const				{ return action_name; }
 
-	virtual void	call(
-						xml::node_ptr	in,
-						xml::node_ptr	out) = 0;
+	virtual node_ptr	call(
+							node_ptr			in) = 0;
 
   protected:
 	std::string		action_name, request_name, response_name;
@@ -40,6 +39,7 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, R&)> : public handle
 {
 	enum { name_count = 1 };
 	
+	typedef R			res_type;
 	typedef void (Owner::*CallFunc)(const T1&, R&);
 
 						call_handler(
@@ -50,9 +50,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, R&)> : public handle
 							: handler_base(action, request, response)
 							, d1(names[0]) {}
 	
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr			in)
 						{
 							T1 a1;
 							d1(in, a1);
@@ -65,8 +64,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, R&)> : public handle
 							
 							(owner->*func)(a1, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -77,7 +77,7 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, R&)> : pu
 {
 	enum { name_count = 2 };
 	
-	typedef R												res_type;
+	typedef R			res_type;
 	typedef void (Owner::*CallFunc)(const T1&, const T2&, R&);
 
 						call_handler(
@@ -89,9 +89,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, R&)> : pu
 							, d1(names[0])
 							, d2(names[1]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -104,8 +103,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, R&)> : pu
 							
 							(owner->*func)(a1, a2, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -130,9 +130,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d2(names[1])
 							, d3(names[2]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -146,8 +145,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -174,9 +174,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d3(names[2])
 							, d4(names[3]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -191,8 +190,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -223,9 +223,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d4(names[3])
 							, d5(names[4]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -241,8 +240,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -276,9 +276,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d5(names[4])
 							, d6(names[5]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -295,8 +294,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -332,9 +332,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d6(names[5])
 							, d7(names[6]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -352,8 +351,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, a7, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -391,9 +391,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d7(names[6])
 							, d8(names[7]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -412,8 +411,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, a7, a8, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -453,9 +453,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							, d8(names[7])
 							, d9(names[8]) {}
 
-	virtual void		call(
-							xml::node_ptr	in,
-							xml::node_ptr	out)
+	virtual node_ptr	call(
+							node_ptr		in)
 						{
 							T1 a1;	d1(in, a1);
 							T2 a2;	d2(in, a2);
@@ -475,8 +474,9 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, a7, a8, a9, response);
 							
-							serializer r(out);
+							serializer r(node_ptr(new node(get_response_name())));
 							r & BOOST_SERIALIZATION_NVP(response);
+							return r.root;
 						}
 	
 	deserializer<T1>	d1;
@@ -506,7 +506,7 @@ struct call : public call_handler<call<C,F>, C, F>
 						owner_type*				owner,
 						call_func_type			call,
 						const char*				names[base_type::name_count])
-						: base_type(action, action, typeid(res_type).name(), names)
+						: base_type(action, action, action + "Response", names)
 						, owner_(owner)
 						, call_(call) {}
 	
