@@ -65,8 +65,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, R&)> : public handle
 							
 							(owner->*func)(a1, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -104,8 +104,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, R&)> : pu
 							
 							(owner->*func)(a1, a2, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -146,8 +146,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -191,8 +191,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -241,8 +241,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -295,8 +295,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -352,8 +352,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, a7, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -412,8 +412,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, a7, a8, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
@@ -475,8 +475,8 @@ struct call_handler<Derived,Owner,void(Owner::*)(const T1&, const T2&, const T3&
 							
 							(owner->*func)(a1, a2, a3, a4, a5, a6, a7, a8, a9, response);
 							
-							serializer<R> r("response");
-							r(response, out);
+							serializer r(out);
+							r & BOOST_SERIALIZATION_NVP(response);
 						}
 	
 	deserializer<T1>	d1;
