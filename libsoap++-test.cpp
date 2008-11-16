@@ -101,6 +101,7 @@ namespace rs
 	struct handler_param_types<void(Class::*)(T1, R&)>
 	{
 		typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+		typedef typename boost::remove_const<typename boost::remove_reference<R>::type>::type	r_t;
 		
 		typedef typename f::vector<t_1>	type;
 	};
@@ -110,6 +111,7 @@ namespace rs
 	{
 		typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
 		typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+		typedef typename boost::remove_const<typename boost::remove_reference<R>::type>::type	r_t;
 
 		typedef typename f::vector<t_1,t_2>	type;
 	};
@@ -120,8 +122,9 @@ namespace rs
 		typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
 		typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
 		typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+		typedef typename boost::remove_const<typename boost::remove_reference<R>::type>::type	r_t;
 
-		typedef typename f::vector<t_1,t_2,t_3>	type;
+		typedef typename f::vector<t_1,t_2,t_3,R&>												type;
 	};
 	
 	struct handler_base
@@ -143,7 +146,8 @@ namespace rs
 	template<class Class, typename Function>
 	struct handler : public handler_base
 	{
-		typedef typename handler_param_types<Function>::type	p_t;
+		typedef typename handler_param_types<Function>::type		p_t;
+		typedef typename handler_param_types<Function>::r_t			r_t;
 		
 				handler(
 					const char*			action,
@@ -161,7 +165,9 @@ namespace rs
 				{
 					p_t a;
 
-					boost::fusion::accumulate(a, &m_names[0],
+					boost::fusion::accumulate(
+						a,
+						&m_names[0],
 						parameter_deserializer<const char**>(in));
 					
 					f::invoke(m_method, f::push_front(a, m_object));
