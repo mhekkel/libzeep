@@ -1,3 +1,4 @@
+#include <iostream>
 #include <boost/algorithm/string.hpp>
 
 #include "xml/node.hpp"
@@ -11,28 +12,36 @@ namespace xml
 void node::add_attribute(
 	attribute_ptr		attr)
 {
-	if (not attributes_)
-		attributes_ = attr;
+	if (not m_attributes)
+		m_attributes = attr;
 	else
 	{
-		attribute_ptr after = attributes_;
-		while (after->next_)
-			after = after->next_;
-		after->next_ = attr;
+		attribute_ptr after = m_attributes;
+		while (after->m_next)
+			after = after->m_next;
+		after->m_next = attr;
 	}
+}
+
+void node::add_attribute(
+	const string&		name,
+	const string&		value)
+{
+	attribute_ptr attr(new attribute(name, value));
+	add_attribute(attr);
 }
 
 void node::add_child(
 	node_ptr			node)
 {
-	if (not children_)
-		children_ = node;
+	if (not m_children)
+		m_children = node;
 	else
 	{
-		node_ptr after = children_;
-		while (after->next_)
-			after = after->next_;
-		after->next_ = node;
+		node_ptr after = m_children;
+		while (after->m_next)
+			after = after->m_next;
+		after->m_next = node;
 	}
 }
 
@@ -40,7 +49,19 @@ void node::add_content(
 	const char*			text,
 	unsigned long		length)
 {
-	content_.append(text, length);
+	assert(text);
+	m_content.append(text, length);
+}
+
+node_ptr node::find_first_child(
+	const string&		name) const
+{
+	node_ptr child = m_children;
+
+	while (child and child->m_name != name)
+		child = child->m_next;
+
+	return child;
 }
 
 void node::write(
@@ -52,12 +73,12 @@ void node::write(
 	
 	stream << '<';
 	
-	if (prefix_.length())
-		stream << prefix_ << ':';
+	if (m_prefix.length())
+		stream << m_prefix << ':';
 	
-	stream << name_;
+	stream << m_name;
 
-	if (attributes_)
+	if (m_attributes)
 	{
 		for (const_attribute_iterator a = attribute_begin(); a != attribute_end(); ++a)
 		{
@@ -70,20 +91,20 @@ void node::write(
 		}
 	}
 
-	string cont = content_;
+	string cont = m_content;
 	ba::trim(cont);
 	
 	ba::replace_all(cont, "&", "&amp;");
 	ba::replace_all(cont, "<", "&lt;");
 	ba::replace_all(cont, ">", "&gt;");
 
-	if (cont.length() or children_)
+	if (cont.length() or m_children)
 		stream << '>';
 	
 	if (cont.length())
 		stream << cont;
 
-	if (children_)
+	if (m_children)
 	{
 		stream << endl;
 
@@ -94,14 +115,14 @@ void node::write(
 			stream << ' ';
 	}
 
-	if (cont.length() or children_)
+	if (cont.length() or m_children)
 	{
 		stream << "</";
 		
-		if (prefix_.length())
-			stream << prefix_ << ':';
+		if (m_prefix.length())
+			stream << m_prefix << ':';
 		
-		stream << name_ << ">" << endl;
+		stream << m_name << ">" << endl;
 	}	
 	else
 		stream << "/>" << endl;

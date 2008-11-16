@@ -15,6 +15,9 @@ class document : public boost::noncopyable
 					document(
 						const std::string&	data);
 
+					document(
+						node_ptr			data);
+
 	virtual			~document();
 
 	node_ptr		root() const;

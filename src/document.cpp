@@ -106,6 +106,7 @@ void document_imp::XML_StartElementHandler(
 	const XML_Char*		name,
 	const XML_Char**	atts)
 {
+	assert(name);
 	static_cast<document_imp*>(userData)->StartElementHandler(name, atts);
 }
 
@@ -113,6 +114,7 @@ void document_imp::XML_EndElementHandler(
 	void*				userData,
 	const XML_Char*		name)
 {
+	assert(name);
 	static_cast<document_imp*>(userData)->EndElementHandler(name);
 }
 
@@ -121,6 +123,7 @@ void document_imp::XML_CharacterDataHandler(
 	const XML_Char*		s,
 	int					len)
 {
+	assert(s);
 	static_cast<document_imp*>(userData)->CharacterDataHandler(s, len);
 }
 
@@ -129,6 +132,8 @@ void document_imp::XML_ProcessingInstructionHandler(
 	const XML_Char*		target,
 	const XML_Char*		data)
 {
+	assert(target);
+	assert(data);
 	static_cast<document_imp*>(userData)->ProcessingInstructionHandler(target, data);
 }
 
@@ -136,6 +141,7 @@ void document_imp::XML_CommentHandler(
 	void*				userData,
 	const XML_Char*		data)
 {
+	assert(data);
 	static_cast<document_imp*>(userData)->CommentHandler(data);
 }
 
@@ -156,14 +162,15 @@ void document_imp::XML_StartNamespaceDeclHandler(
     const XML_Char*		prefix,
     const XML_Char*		uri)
 {
-	static_cast<document_imp*>(userData)->StartNamespaceDeclHandler(prefix, uri);
+	assert(uri);
+	static_cast<document_imp*>(userData)->StartNamespaceDeclHandler(prefix ? prefix : "_", uri);
 }
 
 void document_imp::XML_EndNamespaceDeclHandler(
 	void*				userData,
 	const XML_Char*		prefix)
 {
-	static_cast<document_imp*>(userData)->EndNamespaceDeclHandler(prefix);
+	static_cast<document_imp*>(userData)->EndNamespaceDeclHandler(prefix ? prefix : "_");
 }
 
 // --------------------------------------------------------------------
@@ -179,6 +186,8 @@ void document_imp::StartElementHandler(
 	
 	if (n3.size() == 3)
 		n.reset(new node(n3[1], n3[0], n3[2]));
+	else if (n3.size() == 2)
+		n.reset(new node(n3[1], n3[0]));
 	else
 		n.reset(new node(name));
 	
@@ -259,6 +268,9 @@ void document_imp::StartNamespaceDeclHandler(
 	const XML_Char*		prefix,
 	const XML_Char*		uri)
 {
+	if (prefix == NULL)
+		prefix = "";
+	
 	namespaces.push_back(make_pair(prefix, uri));
 }
 	
@@ -331,6 +343,13 @@ document::document(
 	impl->parse(s);
 }
 
+document::document(
+	node_ptr		data)
+	: impl(new document_imp)
+{
+	impl->root = data;
+}
+					
 document::~document()
 {
 	delete impl;
