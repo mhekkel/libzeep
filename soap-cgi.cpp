@@ -140,7 +140,7 @@ void my_server::Count(
 {
 	if (db != "sprot" and db != "trembl")
 		throw soap::exception("Unknown databank: %s", db.c_str());
-	result = 0;
+	result = 10;
 }
 
 void my_server::Find(
