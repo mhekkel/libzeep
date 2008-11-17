@@ -13,7 +13,6 @@
 #include <boost/type_traits/is_arithmetic.hpp>
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_class.hpp>
-//#include <boost/type_traits/is_bool.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/type_traits/remove_const.hpp>
@@ -23,6 +22,9 @@
 //
 //	The goal is to make a completely transparent XML serializer/deserializer
 //	in order to translate SOAP messages into/out of native C++ types.
+//
+//	The interface for the code below is compatible with the 'serialize' member
+//	function required to use boost::serialization. 
 
 namespace soap { namespace xml {
 
@@ -37,21 +39,18 @@ namespace soap { namespace xml {
 struct serializer
 {
 	node_ptr		m_node;
+	bool			m_make_node;
 
 					serializer(
-						node_ptr			node)
-						: m_node(node) {}
+						node_ptr			node,
+						bool				make_node = true)
+						: m_node(node)
+						, m_make_node(make_node) {}
 
 	template<typename T>
 	serializer&		operator&(
 						const boost::serialization::nvp<T>&
 											rhs);
-
-	template<typename T>
-	static void		serialize(
-						node_ptr			parent,
-						const std::string&	name,
-						T&					data);
 };
 
 struct deserializer
@@ -61,11 +60,6 @@ struct deserializer
 					deserializer(
 						node_ptr			node)
 						: m_node(node) {}
-
-	template<typename T>
-	void			operator()(
-						const std::string&	name,
-						T&					value);
 
 	template<typename T>
 	deserializer&	operator&(
@@ -249,10 +243,7 @@ struct serialize_type
 			>::type
 		>::type					type;
 
-	enum {
-		is_vector = false,
-		is_special = true
-	};
+	enum { is_vector = false };
 };
 
 template<>
@@ -260,10 +251,7 @@ struct serialize_type<bool>
 {
 	typedef serialize_bool		type;
 
-	enum {
-		is_vector = false,
-		is_special = true
-	};
+	enum { is_vector = false };
 };
 
 template<>
@@ -271,10 +259,7 @@ struct serialize_type<std::string>
 {
 	typedef serialize_string	type;
 
-	enum {
-		is_vector = false,
-		is_special = false
-	};
+	enum { is_vector = false };
 };
 
 template<typename T>
@@ -282,10 +267,7 @@ struct serialize_type<std::vector<T> >
 {
 	typedef serialize_vector<T>	type;
 
-	enum {
-		is_vector = true,
-		is_special = true
-	};
+	enum { is_vector = true };
 };
 
 // and the wrappers for serializing
@@ -296,55 +278,9 @@ serializer& serializer::operator&(
 {
 	typedef typename serialize_type<T>::type	s_type;
 
-	s_type::serialize(m_node, rhs.name(), rhs.value(), true);
+	s_type::serialize(m_node, rhs.name(), rhs.value(), m_make_node);
 
 	return *this;
-}
-
-template<typename T>
-void serializer::serialize(
-	node_ptr			parent,
-	const std::string&	name,
-	T&					data)
-{
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type		s_type;
-	
-	typedef typename serialize_type<value_type>::type s_type;
-	s_type::serialize(parent, name, data, false);
-}
-
-//template<typename T>
-//void serializer::serialize(
-//	node_ptr			parent,
-//	const std::string&	name,
-//	std::vector<T>&		data)
-//{
-//	serialize_vector<T>::serialize(parent, name, data);
-//}
-
-template<typename T>
-void deserializer::operator()(
-	const std::string&	name,
-	T&					value)
-{
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type		s_type;
-
-	if (serialize_type<value_type>::is_vector)
-	{
-		for (node::iterator e = m_node->begin(); e != m_node->end(); ++e)
-		{
-			if (e->name() == name)
-				s_type::deserialize(*e, value);
-		}
-	}
-	else
-	{
-		node_ptr n = m_node->find_first_child(name);
-		if (n)
-			s_type::deserialize(*n, value);
-	}
 }
 
 template<typename T>
@@ -353,8 +289,6 @@ deserializer& deserializer::operator&(
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serialize_type<value_type>::type	s_type;
-
-//	s_type::deserialize(*m_node, rhs.name(), rhs.value());
 
 	if (serialize_type<value_type>::is_vector)
 	{
