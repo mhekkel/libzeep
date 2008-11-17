@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <cstdarg>
 
 #include <expat.h>
 
@@ -55,10 +56,17 @@ const char* kXML_Parser_Error_Messages[] = {
 };
 	
 exception::exception(
-	const char*		message)
-	: message(message)
+	const char*		message,
+	...)
 {
+	char msg_buffer[1024];
+	
+	va_list vl;
+	va_start(vl, message);
+	vsnprintf(msg_buffer, sizeof(msg_buffer), message, vl);
+	va_end(vl);
 
+	m_message = msg_buffer;
 }
 
 exception::exception(
@@ -84,11 +92,11 @@ exception::exception(
 		if (context != NULL)
 			s << string(context + offset, size) << endl;
 	
-		message = s.str();
+		m_message = s.str();
 	}
 	catch (...)
 	{
-		message = "oeps";
+		m_message = "oeps";
 	}
 }
 
