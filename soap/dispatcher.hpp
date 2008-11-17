@@ -2,6 +2,7 @@
 #define XML_SOAP_DISPATCHER_H
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/array.hpp>
 #include <boost/bind.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/noncopyable.hpp>
@@ -10,11 +11,11 @@
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/accumulate.hpp>
 
-#include "xml/node.hpp"
-#include "xml/exception.hpp"
-#include "xml/serialize.hpp"
+#include "soap/xml/node.hpp"
+#include "soap/exception.hpp"
+#include "soap/xml/serialize.hpp"
 
-namespace xml { namespace soap {
+namespace soap {
 
 namespace detail {
 
@@ -106,6 +107,138 @@ struct handler_traits<void(Class::*)(T1, T2, T3, R&)>
 				}
 };
 
+template<class Class, typename T1, typename T2, typename T3, typename T4, typename R>
+struct handler_traits<void(Class::*)(T1, T2, T3, T4, R&)>
+{
+	typedef void(Class::*Function)(T1, T2, T3, T4, R&);
+	typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+	typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+	typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+	typedef typename boost::remove_const<typename boost::remove_reference<T4>::type>::type	t_4;
+
+	typedef typename f::vector<t_1,t_2,t_3,t_4>												argument_type;
+	typedef R																				response_type;
+
+	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+				{
+					(object->*method)(f::at_c<0>(arguments), f::at_c<1>(arguments), f::at_c<2>(arguments),
+						f::at_c<3>(arguments), response);
+				}
+};
+
+template<class Class, typename T1, typename T2, typename T3, typename T4, typename T5, typename R>
+struct handler_traits<void(Class::*)(T1, T2, T3, T4, T5, R&)>
+{
+	typedef void(Class::*Function)(T1, T2, T3, T4, T5, R&);
+	typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+	typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+	typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+	typedef typename boost::remove_const<typename boost::remove_reference<T4>::type>::type	t_4;
+	typedef typename boost::remove_const<typename boost::remove_reference<T5>::type>::type	t_5;
+
+	typedef typename f::vector<t_1,t_2,t_3,t_4,t_5>											argument_type;
+	typedef R																				response_type;
+
+	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+				{
+					(object->*method)(f::at_c<0>(arguments), f::at_c<1>(arguments), f::at_c<2>(arguments),
+						f::at_c<3>(arguments), f::at_c<4>(arguments), response);
+				}
+};
+
+template<class Class, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename R>
+struct handler_traits<void(Class::*)(T1, T2, T3, T4, T5, T6, R&)>
+{
+	typedef void(Class::*Function)(T1, T2, T3, T4, T5, T6, R&);
+	typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+	typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+	typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+	typedef typename boost::remove_const<typename boost::remove_reference<T4>::type>::type	t_4;
+	typedef typename boost::remove_const<typename boost::remove_reference<T5>::type>::type	t_5;
+	typedef typename boost::remove_const<typename boost::remove_reference<T6>::type>::type	t_6;
+
+	typedef typename f::vector<t_1,t_2,t_3,t_4,t_5,t_6>										argument_type;
+	typedef R																				response_type;
+
+	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+				{
+					(object->*method)(f::at_c<0>(arguments), f::at_c<1>(arguments), f::at_c<2>(arguments),
+						f::at_c<3>(arguments), f::at_c<4>(arguments), f::at_c<5>(arguments), response);
+				}
+};
+
+template<class Class, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename R>
+struct handler_traits<void(Class::*)(T1, T2, T3, T4, T5, T6, T7, R&)>
+{
+	typedef void(Class::*Function)(T1, T2, T3, T4, T5, T6, T7, R&);
+	typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+	typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+	typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+	typedef typename boost::remove_const<typename boost::remove_reference<T4>::type>::type	t_4;
+	typedef typename boost::remove_const<typename boost::remove_reference<T5>::type>::type	t_5;
+	typedef typename boost::remove_const<typename boost::remove_reference<T6>::type>::type	t_6;
+	typedef typename boost::remove_const<typename boost::remove_reference<T7>::type>::type	t_7;
+
+	typedef typename f::vector<t_1,t_2,t_3,t_4,t_5,t_6,t_7>									argument_type;
+	typedef R																				response_type;
+
+	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+				{
+					(object->*method)(f::at_c<0>(arguments), f::at_c<1>(arguments), f::at_c<2>(arguments),
+						f::at_c<3>(arguments), f::at_c<4>(arguments), f::at_c<5>(arguments),
+						f::at_c<6>(arguments), response);
+				}
+};
+
+template<class Class, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename R>
+struct handler_traits<void(Class::*)(T1, T2, T3, T4, T5, T6, T7, T8, R&)>
+{
+	typedef void(Class::*Function)(T1, T2, T3, T4, T5, T6, T7, T8, R&);
+	typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+	typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+	typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+	typedef typename boost::remove_const<typename boost::remove_reference<T4>::type>::type	t_4;
+	typedef typename boost::remove_const<typename boost::remove_reference<T5>::type>::type	t_5;
+	typedef typename boost::remove_const<typename boost::remove_reference<T6>::type>::type	t_6;
+	typedef typename boost::remove_const<typename boost::remove_reference<T7>::type>::type	t_7;
+	typedef typename boost::remove_const<typename boost::remove_reference<T8>::type>::type	t_8;
+
+	typedef typename f::vector<t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8>								argument_type;
+	typedef R																				response_type;
+
+	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+				{
+					(object->*method)(f::at_c<0>(arguments), f::at_c<1>(arguments), f::at_c<2>(arguments),
+						f::at_c<3>(arguments), f::at_c<4>(arguments), f::at_c<5>(arguments),
+						f::at_c<6>(arguments), f::at_c<7>(arguments), response);
+				}
+};
+
+template<class Class, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename R>
+struct handler_traits<void(Class::*)(T1, T2, T3, T4, T5, T6, T7, T8, T9, R&)>
+{
+	typedef void(Class::*Function)(T1, T2, T3, T4, T5, T6, T7, T8, T9, R&);
+	typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type	t_1;
+	typedef typename boost::remove_const<typename boost::remove_reference<T2>::type>::type	t_2;
+	typedef typename boost::remove_const<typename boost::remove_reference<T3>::type>::type	t_3;
+	typedef typename boost::remove_const<typename boost::remove_reference<T4>::type>::type	t_4;
+	typedef typename boost::remove_const<typename boost::remove_reference<T5>::type>::type	t_5;
+	typedef typename boost::remove_const<typename boost::remove_reference<T6>::type>::type	t_6;
+	typedef typename boost::remove_const<typename boost::remove_reference<T7>::type>::type	t_7;
+	typedef typename boost::remove_const<typename boost::remove_reference<T8>::type>::type	t_8;
+	typedef typename boost::remove_const<typename boost::remove_reference<T9>::type>::type	t_9;
+
+	typedef typename f::vector<t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9>							argument_type;
+	typedef R																				response_type;
+
+	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+				{
+					(object->*method)(f::at_c<0>(arguments), f::at_c<1>(arguments), f::at_c<2>(arguments),
+						f::at_c<3>(arguments), f::at_c<4>(arguments), f::at_c<5>(arguments),
+						f::at_c<6>(arguments), f::at_c<7>(arguments), f::at_c<8>(arguments), response);
+				}
+};
+
 struct handler_base
 {
 			handler_base(const std::string&	action)
@@ -136,12 +269,14 @@ struct handler : public handler_base
 							: handler_base(action)
 							, m_object(object)
 							, m_method(method)
-							, m_names(names) {}
+						{
+							copy(names, names + name_count, m_names.begin());
+						}
 	
 	virtual node_ptr	call(node_ptr in)
 						{
 							argument_type args;
-							boost::fusion::accumulate(args, &m_names[0], parameter_deserializer<const char**>(in));
+							boost::fusion::accumulate(args, m_names.begin(), parameter_deserializer<const char**>(in));
 			
 							response_type response;
 							handler_traits<Function>::invoke(m_object, m_method, args, response);
@@ -153,7 +288,8 @@ struct handler : public handler_base
 
 	Class*				m_object;
 	Function			m_method;
-	names_type&			m_names;
+	boost::array<const char*,name_count>
+						m_names;
 };
 	
 }
@@ -177,21 +313,27 @@ class dispatcher
 							m_handlers.push_back(new detail::handler<Class,Function>(action, server, call, arg));
 						}
 
-	xml::node_ptr		dispatch(const char* action, xml::node_ptr in)
+	xml::node_ptr		dispatch(const std::string& action, xml::node_ptr in)
 						{
+//							if (in->ns() != m_ns)
+//								throw exception("Invalid request, no match for namespace");
+							
 							handler_list::iterator cb = std::find_if(
 								m_handlers.begin(), m_handlers.end(),
 								boost::bind(&detail::handler_base::get_action_name, _1) == action);
+
 							if (cb == m_handlers.end())
-								throw xml::exception("Action %s is not defined", action);
-							return cb->call(in);
+								throw exception("Action %s is not defined", action.c_str());
+
+							xml::node_ptr result = cb->call(in);
+							result->add_attribute("xmlns", m_ns);
+							return result;
 						}
 
 	std::string			m_ns;		
 	handler_list		m_handlers;
 };
 
-}
 }
 
 #endif

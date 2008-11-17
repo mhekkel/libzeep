@@ -1,13 +1,12 @@
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 
-#include "xml/node.hpp"
+#include "soap/xml/node.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
 
-namespace xml
-{
+namespace soap { namespace xml {
 
 void node::add_attribute(
 	attribute_ptr		attr)
@@ -134,4 +133,5 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 	return lhs;
 }
 
-}
+} // xml
+} // soap

@@ -5,8 +5,8 @@
 #include <vector>
 #include <map>
 
-#include "xml/node.hpp"
-#include "xml/exception.hpp"
+#include "soap/xml/node.hpp"
+#include "soap/exception.hpp"
 
 #include <boost/mpl/if.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -24,8 +24,7 @@
 //	The goal is to make a completely transparent XML serializer/deserializer
 //	in order to translate SOAP messages into/out of native C++ types.
 
-namespace xml
-{
+namespace soap { namespace xml {
 
 //	All serializers and deserializers work on an object that contains
 //	a pointer to the node just above the actual node holding their data. If any.
@@ -200,7 +199,7 @@ struct enum_map
 				}
 };
 
-#define XML_ADD_ENUM(e,v)	xml::enum_map<e>::instance().m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
+#define SOAP_XML_ADD_ENUM(e,v)	soap::xml::enum_map<e>::instance().m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
 
 template<typename T>
 struct serialize_enum
@@ -402,6 +401,7 @@ void serialize_vector<T>::deserialize(
 	v.push_back(e);
 }
 
+}
 }
 
 #endif

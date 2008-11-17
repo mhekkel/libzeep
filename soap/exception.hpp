@@ -8,8 +8,7 @@
 struct XML_ParserStruct;
 typedef struct XML_ParserStruct *XML_Parser;
 
-namespace xml
-{
+namespace soap {
 
 class exception : public std::exception
 {
