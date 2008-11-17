@@ -17,6 +17,9 @@
 		<group name="soap">
 			<file>soap-envelope.cpp</file>
 			<file>exception.cpp</file>
+			<group name="http">
+				<file>request_parser.cpp</file>
+			</group>
 			<group name="xml">
 				<file>document.cpp</file>
 				<file>node.cpp</file>

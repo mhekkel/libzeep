@@ -54,8 +54,8 @@ struct handler_traits<void(Class::*)(R&)>
 {
 	typedef void(Class::*Function)(R&);
 
-	typedef typename f::vector<>															argument_type;
-	typedef R																				response_type;
+	typedef typename f::vector<>	argument_type;
+	typedef R						response_type;
 
 	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
 				{
@@ -106,17 +106,21 @@ struct handler : public handler_base
 	
 	virtual node_ptr	call(node_ptr in)
 						{
+							// start by collecting all the parameters
 							argument_type args;
-							boost::fusion::accumulate(args, m_names.begin(), parameter_deserializer<std::string*>(in));
+							boost::fusion::accumulate(args, m_names.begin(),
+								parameter_deserializer<std::string*>(in));
 			
+							// now call the actual server code
 							response_type response;
 							handler_traits<Function>::invoke(m_object, m_method, args, response);
 							
+							// and serialize the result back into XML
 							node_ptr result(new node(get_response_name()));
-
 							serializer sr(result, false);
 							sr & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
 
+							// that's all, we're done
 							return result;
 						}
 
@@ -132,7 +136,6 @@ class dispatcher
 {
   public:
 	typedef boost::ptr_vector<detail::handler_base>	handler_list;
-
 
 						dispatcher(const std::string& ns)
 							: m_ns(ns) {}
