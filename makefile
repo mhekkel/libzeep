@@ -8,11 +8,14 @@ OBJECTS = \
 	obj/soap-cgi.o
 
 soap-cgi: $(OBJECTS)
-	c++ -o $@ $? -lexpat
+	c++ -o $@ $(OBJECTS) -lexpat
 
 obj/%.o: %.cpp
-	c++ -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
+	c++ -MD -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
 
 obj/%.o: src/%.cpp
-	c++ -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
+	c++ -MD -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
 
+include $(OBJECTS:%.o=%.d)
+
+$(OBJECTS:.o=.d):

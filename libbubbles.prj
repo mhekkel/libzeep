@@ -1,8 +1,5 @@
 <?xml version="1.0"?>
 <project>
-	<pkg-config>
-		<pkg tool="pkg-config">libxml-2.0</pkg>
-	</pkg-config>
 	<syspaths>
 		<path>/usr/local/include/boost-1_36/</path>
 		<path>/usr/include</path>
@@ -17,12 +14,12 @@
 		<path>/usr/lib/gcc/i486-linux-gnu/4.2</path>
 	</libpaths>
 	<files>
-		<group name="xml">
-			<file>document.cpp</file>
-			<file>node.cpp</file>
+		<group name="soap">
+			<file>soap-envelope.cpp</file>
 			<file>exception.cpp</file>
-			<group name="soap">
-				<file>soap-envelope.cpp</file>
+			<group name="xml">
+				<file>document.cpp</file>
+				<file>node.cpp</file>
 			</group>
 		</group>
 		<group name="Sources">
@@ -30,19 +27,12 @@
 		</group>
 		<group name="Libraries">
 			<file>libstdc++.a</file>
-			<file>libz.a</file>
-			<file>libgsoap++.a</file>
-			<file>libboost_system-gcc42-mt-1_36.a</file>
-			<file>libboost_filesystem-gcc42-mt-1_36.a</file>
-			<file>libboost_thread-gcc42-mt-1_36.a</file>
-			<file>libboost_regex-gcc42-mt-1_36.a</file>
-			<file>libboost_serialization-gcc42-mt-1_36.a</file>
 			<file>libexpat.a</file>
 		</group>
 	</files>
 	<resources resource_dir="../../../../.."/>
 	<targets>
-		<target kind="Executable" arch="i386" name="soap Debug" linkTarget="test-xmld">
+		<target kind="Executable" arch="i386" name="soap-cgi Debug" linkTarget="soap-cgi">
 			<defines>
 				<define>DEBUG</define>
 			</defines>
@@ -58,7 +48,7 @@
 				<warning>no-deprecated</warning>
 			</warnings>
 		</target>
-		<target kind="Executable" arch="i386" name="soap Release" linkTarget="test-xmld">
+		<target kind="Executable" arch="i386" name="soap-cgi Release" linkTarget="soap-cgi">
 			<defines>
 				<define>NDEBUG</define>
 			</defines>

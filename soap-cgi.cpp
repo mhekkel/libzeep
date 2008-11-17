@@ -193,7 +193,7 @@ int main(int argc, const char* argv[])
 		soap::envelope env(doc);
 		soap::xml::node_ptr request = env.request();
 		
-		response = s.Serve(request);
+		response = soap::make_envelope(s.Serve(request));
 	}
 	catch (exception& e)
 	{
