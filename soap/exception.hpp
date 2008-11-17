@@ -15,7 +15,8 @@ class exception : public std::exception
 {
   public:
 				exception(
-					const char*		message);
+					const char*		message,
+					...);
 
 				exception(
 					XML_Parser		parser);
@@ -23,10 +24,10 @@ class exception : public std::exception
 	virtual 	~exception() throw() {}
 
 	virtual const char*
-				what() const throw()			{ return message.c_str(); }
+				what() const throw()			{ return m_message.c_str(); }
 
   private:
-	std::string	message;
+	std::string	m_message;
 };
 
 }
