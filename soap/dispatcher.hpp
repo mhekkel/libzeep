@@ -40,8 +40,8 @@ struct parameter_deserializer
 	Iterator	operator()(T& t, Iterator i) const
 				{
 					xml::deserializer d(m_node);
-					d(*i++, t);
-					return i;
+					d & boost::serialization::make_nvp(i->c_str(), t);
+					return ++i;
 				}
 };
 
@@ -113,7 +113,10 @@ struct handler : public handler_base
 							handler_traits<Function>::invoke(m_object, m_method, args, response);
 							
 							node_ptr result(new node(get_response_name()));
-							serializer::serialize(result, m_names[name_count - 1], response);
+
+							serializer sr(result, false);
+							sr & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
+
 							return result;
 						}
 
