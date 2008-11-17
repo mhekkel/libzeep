@@ -7,14 +7,13 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "xml/document.hpp"
-#include "xml/exception.hpp"
+#include "soap/xml/document.hpp"
+#include "soap/exception.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
 
-namespace xml
-{
+namespace soap { namespace xml {
 
 // --------------------------------------------------------------------
 
@@ -226,7 +225,7 @@ void document_imp::EndElementHandler(
 	const XML_Char*		name)
 {
 	if (cur.empty())
-		throw xml::exception("Empty stack");
+		throw exception("Empty stack");
 	
 	cur.pop();
 }
@@ -236,7 +235,7 @@ void document_imp::CharacterDataHandler(
 	int					len)
 {
 	if (cur.empty())
-		throw xml::exception("Empty stack");
+		throw exception("Empty stack");
 	
 	cur.top()->add_content(s, len);
 }
@@ -287,7 +286,7 @@ void document_imp::parse(
 	XML_Parser p = XML_ParserCreateNS(NULL, '=');
 	
 	if (p == NULL)
-		throw xml::exception("failed to create expat parser object");
+		throw exception("failed to create expat parser object");
 	
 	try
 	{
@@ -306,16 +305,22 @@ void document_imp::parse(
 		
 		while (not data.eof())
 		{
-			char b[1024];
+//			char b[1024];
+//
+//			streamsize r = data.readsome(b, sizeof(b));
+//
+//			XML_Status err = XML_Parse(p, b, r, data.eof() or r == 0);
 
-			streamsize r = data.readsome(b, sizeof(b));
-
-			XML_Status err = XML_Parse(p, b, r, data.eof() or r == 0);
+			string line;
+			getline(data, line);
+			XML_Status err = XML_Parse(p, line.c_str(), line.length(), data.eof() or line.empty());
 
 			if (err != XML_STATUS_OK)
-				throw xml::exception(p);
+				throw exception(p);
 
-			if (r == 0)
+//			if (r == 0)
+//				break;
+			if (line.empty())
 				break;
 		}
 	}
@@ -370,4 +375,5 @@ ostream& operator<<(ostream& lhs, const document& rhs)
 	return lhs;
 }
 	
-}
+} // xml
+} // soap

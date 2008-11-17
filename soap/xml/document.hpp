@@ -1,10 +1,9 @@
 #ifndef XML_DOCUMENT_H
 #define XML_DOCUMENT_H
 
-#include "xml/node.hpp"
+#include "soap/xml/node.hpp"
 
-namespace xml
-{
+namespace soap { namespace xml {
 
 class document : public boost::noncopyable
 {
@@ -28,6 +27,7 @@ class document : public boost::noncopyable
 
 std::ostream& operator<<(std::ostream& lhs, const document& rhs);
 
+}
 }
 
 #endif

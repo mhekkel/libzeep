@@ -26,7 +26,7 @@
 			</group>
 		</group>
 		<group name="Sources">
-			<file>libsoap++-test.cpp</file>
+			<file>soap-cgi.cpp</file>
 		</group>
 		<group name="Libraries">
 			<file>libstdc++.a</file>

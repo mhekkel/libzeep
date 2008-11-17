@@ -4,12 +4,11 @@
 
 #include <expat.h>
 
-#include "xml/exception.hpp"
+#include "soap/exception.hpp"
 
 using namespace std;
 
-namespace xml
-{
+namespace soap {
 
 const char* kXML_Parser_Error_Messages[] = {
 	"NONE",

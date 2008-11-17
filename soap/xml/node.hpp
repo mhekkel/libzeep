@@ -6,8 +6,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-namespace xml
-{
+namespace soap { namespace xml {
 
 class attribute;
 typedef boost::shared_ptr<attribute>	attribute_ptr;
@@ -260,6 +259,7 @@ void node::do_to_all(
 		child->do_to_all(func);
 }
 
+}
 }
 
 #endif
