@@ -57,31 +57,31 @@ string get_status_text(status_type status)
 
 // ----------------------------------------------------------------------------
 
-//vector<asio::const_buffer> reply::ToBuffers()
-//{
-//	vector<asio::const_buffer>	result;
-//
-//	status_line = string("HTTP/1.0 ") + boost::lexical_cast<string>(status) + ' ' +
-//		GetStatusText(status) + " \r\n";
-//	result.push_back(asio::buffer(status_line));
-//	
-//	const char
-//		kNameValueSeparator[] = { ':', ' ' },
-//		kCRLF[] = { '\r', '\n' };
-//
-//	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
-//	{
-//		result.push_back(asio::buffer(h->name));
-//		result.push_back(asio::buffer(kNameValueSeparator));
-//		result.push_back(asio::buffer(h->value));
-//		result.push_back(asio::buffer(kCRLF));
-//	}
-//
-//	result.push_back(asio::buffer(kCRLF));
-//	result.push_back(asio::buffer(content));
-//
-//	return result;
-//}
+vector<boost::asio::const_buffer> reply::to_buffers()
+{
+	vector<boost::asio::const_buffer>	result;
+
+	status_line = string("HTTP/1.0 ") + boost::lexical_cast<string>(status) + ' ' +
+		detail::get_status_text(status) + " \r\n";
+	result.push_back(boost::asio::buffer(status_line));
+	
+	const char
+		kNameValueSeparator[] = { ':', ' ' },
+		kCRLF[] = { '\r', '\n' };
+
+	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
+	{
+		result.push_back(boost::asio::buffer(h->name));
+		result.push_back(boost::asio::buffer(kNameValueSeparator));
+		result.push_back(boost::asio::buffer(h->value));
+		result.push_back(boost::asio::buffer(kCRLF));
+	}
+
+	result.push_back(boost::asio::buffer(kCRLF));
+	result.push_back(boost::asio::buffer(content));
+
+	return result;
+}
 
 string reply::get_as_text()
 {
