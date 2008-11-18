@@ -18,6 +18,9 @@
 			<file>soap-envelope.cpp</file>
 			<file>exception.cpp</file>
 			<group name="http">
+				<file>connection.cpp</file>
+				<file>http-server.cpp</file>
+				<file>reply.cpp</file>
 				<file>request_parser.cpp</file>
 			</group>
 			<group name="xml">
@@ -31,6 +34,8 @@
 		<group name="Libraries">
 			<file>libstdc++.a</file>
 			<file>libexpat.a</file>
+			<file>libboost_thread-gcc43-mt-d.a</file>
+			<file>libboost_system-gcc43-mt-d.a</file>
 		</group>
 	</files>
 	<resources resource_dir="../../../../.."/>
