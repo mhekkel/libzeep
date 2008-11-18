@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "soap/http/header.hpp"
+#include <boost/asio/buffer.hpp>
 
 namespace soap { namespace http {
 
@@ -34,8 +35,8 @@ struct reply
 	std::vector<header>	headers;
 	std::string			content;
 
-//	vector<asio::const_buffer>
-//						to_buffers();
+	std::vector<boost::asio::const_buffer>
+						to_buffers();
 
 	std::string			get_as_text();
 	
