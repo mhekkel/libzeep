@@ -15,8 +15,9 @@
 	</libpaths>
 	<files>
 		<group name="soap">
-			<file>soap-envelope.cpp</file>
 			<file>exception.cpp</file>
+			<file>soap-envelope.cpp</file>
+			<file>soap-server.cpp</file>
 			<group name="http">
 				<file>connection.cpp</file>
 				<file>http-server.cpp</file>

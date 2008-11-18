@@ -4,6 +4,7 @@
 #include <vector>
 #include "soap/http/header.hpp"
 #include <boost/asio/buffer.hpp>
+#include "soap/xml/node.hpp"
 
 namespace soap { namespace http {
 
@@ -35,13 +36,14 @@ struct reply
 	std::vector<header>	headers;
 	std::string			content;
 
+	void				set_content(xml::node_ptr data);
+
 	std::vector<boost::asio::const_buffer>
 						to_buffers();
 
 	std::string			get_as_text();
 	
-	static reply		stock_reply(
-							status_type		inStatus);
+	static reply		stock_reply(status_type inStatus);
 };
 
 }

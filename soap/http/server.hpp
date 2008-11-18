@@ -20,6 +20,8 @@ class server : public request_handler
 
 	virtual void		stop();
 
+  protected:
+
 	virtual void		handle_request(const request& req, reply& rep);
 
   private:
