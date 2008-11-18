@@ -1,7 +1,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "soap/http/reply.hpp"
-
+#include "soap/xml/document.hpp"
 
 using namespace std;
 
@@ -83,6 +83,23 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 	return result;
 }
 
+void reply::set_content(xml::node_ptr data)
+{
+	xml::document doc(data);
+	
+	stringstream s;
+	s << doc;
+	
+	content = s.str();
+	status = ok;
+	
+	headers.resize(2);
+	headers[0].name = "Content-Length";
+	headers[0].value = boost::lexical_cast<string>(content.length());
+	headers[1].name = "Content-Type";
+	headers[1].value = "text/xml";
+}
+
 string reply::get_as_text()
 {
 	// for best performance, we pre calculate memory requirements and reserve that first
@@ -131,7 +148,6 @@ reply reply::stock_reply(status_type status)
 	
 	return result;
 }
-
 
 }
 }

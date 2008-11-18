@@ -1,26 +1,4 @@
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <iterator>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <signal.h>
-#include <getopt.h>
-#include <cerrno>
-#include <pwd.h>
-
-
-#include "soap/dispatcher.hpp"
-#include "soap/envelope.hpp"
-#include "soap/xml/document.hpp"
-
-#include "soap/http/server.hpp"
-
-#include <iostream>
+#include "soap/server.hpp"
 
 using namespace std;
 
@@ -80,10 +58,12 @@ enum Algorithm
 // Count:			a simple call taking two parameters and returning one 
 // Find:			complex search routine taking several parameters and returning a complex type
 
-class my_server
+class my_server : public soap::server
 {
   public:
-						my_server();
+						my_server(
+							const string&				address,
+							short						port);
 
 	void				ListDatabanks(
 							vector<string>&				databanks);
@@ -102,15 +82,10 @@ class my_server
 							int							resultoffset,
 							int							maxresultcount,
 							WSSearchNS::FindResponse&	out);
-
-	soap::xml::node_ptr	Serve(
-							soap::xml::node_ptr			request);
-
-	soap::dispatcher	m_dispatcher;
 };
 
-my_server::my_server()
-	: m_dispatcher("http://www.hekkelman.com/ws")
+my_server::my_server(const string& address, short port)
+	: soap::server("http://mrs.cmbi.ru.nl/mrsws/search", address, port)
 {
 	using namespace WSSearchNS;
 
@@ -118,13 +93,13 @@ my_server::my_server()
 		"databank"
 	};
 	
-	m_dispatcher.register_action("ListDatabanks", this, &my_server::ListDatabanks, kListDatabanksParameterNames);
+	register_action("ListDatabanks", this, &my_server::ListDatabanks, kListDatabanksParameterNames);
 
 	const char* kCountParameterNames[] = {
-		"db", "booleanquery", "count"
+		"db", "booleanquery", "response"
 	};
 	
-	m_dispatcher.register_action("Count", this, &my_server::Count, kCountParameterNames);
+	register_action("Count", this, &my_server::Count, kCountParameterNames);
 	
 	SOAP_XML_ADD_ENUM(WSSearchNS::Algorithm, Vector);
 	SOAP_XML_ADD_ENUM(WSSearchNS::Algorithm, Dice);
@@ -136,7 +111,7 @@ my_server::my_server()
 		"out"
 	};
 	
-	m_dispatcher.register_action("Find", this, &my_server::Find, kFindParameterNames);
+	register_action("Find", this, &my_server::Find, kFindParameterNames);
 }
 
 void my_server::ListDatabanks(
@@ -151,7 +126,7 @@ void my_server::Count(
 	const string&				booleanquery,
 	int&						result)
 {
-	if (db != "sprot" and db != "trembl")
+	if (db != "sprot" and db != "trembl" and db != "uniprot")
 		throw soap::exception("Unknown databank: %s", db.c_str());
 	result = 10;
 }
@@ -194,68 +169,13 @@ void my_server::Find(
 	out.hits.push_back(h);
 }
 
-soap::xml::node_ptr my_server::Serve(
-	soap::xml::node_ptr		request)
-{
-	// in this case the name of the request node in the envelope
-	// is the same as the SOAP action to execute
-	return m_dispatcher.dispatch(request->name(), request);
-}
-
-int TCPListen(
-	const string&			inAddress,
-	short					inPort)
-{
-	struct addrinfo hints = {}, *res, *ressave;
-	int listenfd;
-	
-	hints.ai_flags = AI_PASSIVE;
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	
-	char port[32];
-	snprintf(port, sizeof(port), "%d", inPort);
-	
-	int err = getaddrinfo(inAddress.c_str(), port, &hints, &res);
-	if (err < 0)
-		throw soap::exception("TCP Listen error for %s:%d (%s)", inAddress.c_str(), inPort, strerror(errno));
-	
-	ressave = res;
-	for (; res != NULL; res = res->ai_next)
-	{
-		listenfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (listenfd < 0)
-			continue;		// try next
-		
-		int on = 1;
-		err = setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-
-		if (bind(listenfd, res->ai_addr, res->ai_addrlen) == 0)
-			break;
-		
-		close(listenfd);
-	}
-	
-	if (res == NULL)
-		throw soap::exception("TCP Listen error for %s:%d (%s)", inAddress.c_str(), inPort, strerror(errno));
-	
-	err = listen(listenfd, 10 /*kListenQueueSize*/);
-	if (err < 0)
-		throw soap::exception("TCP Listen error for %s:%d\n%s", inAddress.c_str(), inPort, strerror(errno));
-	
-	freeaddrinfo(ressave);
-	
-	return listenfd;
-}
-
-
 int main(int argc, const char* argv[])
 {
     sigset_t new_mask, old_mask;
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	soap::http::server server("0.0.0.0", 10333);
+	my_server server("0.0.0.0", 10333);
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
@@ -270,29 +190,6 @@ int main(int argc, const char* argv[])
 	sigwait(&wait_mask, &sig);
 	
 	server.stop();
-
-//	soap::xml::node_ptr response;
-//	
-//	try
-//	{
-//		my_server s;
-//		
-//		soap::xml::document doc(cin);
-//
-//		soap::envelope env(doc);
-//		soap::xml::node_ptr request = env.request();
-//		
-//		response = soap::make_envelope(s.Serve(request));
-//	}
-//	catch (exception& e)
-//	{
-//		response = soap::make_fault(e);
-//	}
-//
-//	cout << "Content-Type: text/xml\r\n"
-//		 << "\r\n"
-//		 << *response
-//		 << "\r\n";
 
 	return 0;
 }
