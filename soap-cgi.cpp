@@ -128,6 +128,9 @@ void my_server::Count(
 {
 	if (db != "sprot" and db != "trembl" and db != "uniprot")
 		throw soap::exception("Unknown databank: %s", db.c_str());
+
+	log() << db;
+
 	result = 10;
 }
 
@@ -141,15 +144,8 @@ void my_server::Find(
 	int							maxresultcount,
 	WSSearchNS::FindResponse&	out)
 {
-	assert(db == "sprot");
-	assert(queryterms.size() == 2);
-	assert(queryterms[0] == "aap");
-	assert(queryterms[1] == "noot");
-	assert(algorithm == WSSearchNS::Dice);
-	assert(booleanfilter.empty());
-	assert(resultoffset == 0);
-	assert(maxresultcount == 15);
-	
+	log() << db;
+
 	// mock up some fake answer...
 	out.count = 2;
 

@@ -1,9 +1,11 @@
 #include <iostream>
 #include <sstream>
+#include <locale>
 
 #include "soap/http/server.hpp"
 #include "soap/http/connection.hpp"
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -16,6 +18,7 @@ namespace detail {
 // a thread specific logger
 
 boost::thread_specific_ptr<ostringstream>	s_log;
+boost::mutex						s_log_lock;
 
 }
 
@@ -78,9 +81,10 @@ void server::handle_request(const request& req, reply& rep)
 void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	const request& req, reply& rep)
 {
-	detail::s_log.reset(new ostringstream);
+	using namespace boost::posix_time;
 	
-	log() << socket.remote_endpoint().address() << ' ';
+	detail::s_log.reset(new ostringstream);
+	ptime start = second_clock::local_time();
 	
 	try
 	{
@@ -90,7 +94,13 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	{
 	}
 	
-	cout << detail::s_log->str() << endl;
+	// protect the output stream from garbled log messages
+	boost::mutex::scoped_lock lock(detail::s_log_lock);
+	cout << socket.remote_endpoint().address()
+		 << " [" << start << "] "
+		 << second_clock::local_time() - start << ' '
+		 << rep.status << ' '
+		 << detail::s_log->str() << endl;
 }
 
 }

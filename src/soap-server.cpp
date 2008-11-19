@@ -78,6 +78,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			xml::node_ptr request = env.request();
 			
 			action = request->name();
+			log() << action << ' ';
 			response = dispatch(action, env.request());
 		}
 		else if (req.method == "GET")
@@ -108,6 +109,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 					request->add_child(param);
 				}
 				
+				log() << action << ' ';
 				response = dispatch(action, request);
 			}
 			else if (root == "wsdl")
@@ -130,8 +132,6 @@ void server::handle_request(const http::request& req, http::reply& rep)
 	{
 		rep.set_content(make_fault(e));
 	}
-	
-	log() << rep.status << ' ' << action;
 }
 	
 }
