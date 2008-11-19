@@ -17,10 +17,10 @@ OBJECTS = \
 soap-cgi: $(OBJECTS)
 	c++ -o $@ $(OBJECTS) $(LDOPTS)
 
-obj/%.o: %.cpp
+obj/%.o obj/%.d: %.cpp
 	c++ -MD -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
 
-obj/%.o: src/%.cpp
+obj/%.o obj/%.d: src/%.cpp
 	c++ -MD -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
 
 include $(OBJECTS:%.o=%.d)

@@ -20,11 +20,18 @@ class server : public request_handler
 
 	virtual void		stop();
 
+	// to extend the log entry for a current request, use this ostream:
+	static std::ostream&
+						log();
+
   protected:
 
 	virtual void		handle_request(const request& req, reply& rep);
 
   private:
+
+	virtual void		handle_request(boost::asio::ip::tcp::socket& socket,
+							const request& req, reply& rep);
 
 	void				handle_accept(const boost::system::error_code& ec);
 
