@@ -1,12 +1,23 @@
 #include <iostream>
+#include <sstream>
 
 #include "soap/http/server.hpp"
 #include "soap/http/connection.hpp"
+
+#include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
 
 namespace soap { namespace http {
+
+namespace detail {
+
+// a thread specific logger
+
+boost::thread_specific_ptr<ostringstream>	s_log;
+
+}
 
 server::server(const std::string& address, short port, int nr_of_threads)
 	: m_acceptor(m_io_service)
@@ -51,10 +62,35 @@ void server::handle_accept(const boost::system::error_code& ec)
 	}
 }
 
+ostream& server::log()
+{
+	if (detail::s_log.get() == NULL)
+		detail::s_log.reset(new ostringstream);
+	return *detail::s_log;
+}
+
 void server::handle_request(const request& req, reply& rep)
 {
-	cout << "Received request for " << req.uri << endl;
+	log() << req.uri;
 	rep = reply::stock_reply(not_found);
+}
+
+void server::handle_request(boost::asio::ip::tcp::socket& socket,
+	const request& req, reply& rep)
+{
+	detail::s_log.reset(new ostringstream);
+	
+	log() << socket.remote_endpoint().address() << ' ';
+	
+	try
+	{
+		handle_request(req, rep);
+	}
+	catch (...)
+	{
+	}
+	
+	cout << detail::s_log->str() << endl;
 }
 
 }

@@ -138,7 +138,7 @@ reply reply::stock_reply(status_type status)
 	string text = detail::get_status_text(status);
 	result.content =
 		string("<html><head><title>") + text + "</title></head><body><h1>" +
- 		boost::lexical_cast<string>(404) + ' ' + text + "</h1></body></html>";
+ 		boost::lexical_cast<string>(status) + ' ' + text + "</h1></body></html>";
 
 	result.headers.resize(2);
 	result.headers[0].name = "Content-Length";

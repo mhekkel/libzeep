@@ -10,7 +10,8 @@ class request_handler
 {
   public:
 	
-	virtual void	handle_request(const request& req, reply& reply) = 0;
+	virtual void	handle_request(boost::asio::ip::tcp::socket& socket,
+						const request& req, reply& reply) = 0;
 };
 
 }

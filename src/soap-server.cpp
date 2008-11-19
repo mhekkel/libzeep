@@ -60,23 +60,25 @@ bool decode_uri(string uri, fs::path& path)
 
 void server::handle_request(const http::request& req, http::reply& rep)
 {
+	string action;
+	
 	try
 	{
 		fs::path path;
 		
 		if (not detail::decode_uri(req.uri, path))
-			rep = http::reply::stock_reply(http::bad_request);
-		else if (req.method == "POST")	// must be a SOAP call
+			throw http::bad_request;
+		
+		xml::node_ptr response;
+		
+		if (req.method == "POST")	// must be a SOAP call
 		{
 			xml::document doc(req.payload);
 			envelope env(doc);
 			xml::node_ptr request = env.request();
 			
-			string action = request->name();
-
-			xml::node_ptr response = dispatch(action, env.request());
-			
-			rep.set_content(make_envelope(response));
+			action = request->name();
+			response = dispatch(action, env.request());
 		}
 		else if (req.method == "GET")
 		{
@@ -85,24 +87,51 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			if (p != path.end() and *p == "/")
 				++p;
 			
-			if (*p == "rest")
+			if (p == path.end())
+				throw http::bad_request;
+			
+			string root = *p++;
+			
+			if (root == "rest")
 			{
-				++p;
-			}
-			else if (*p == "wsdl")
-			{
+				action = *p++;
 				
+				xml::node_ptr request(new xml::node(action));
+				while (p != path.end())
+				{
+					string name = *p++;
+					if (p == path.end())
+						break;
+					xml::node_ptr param(new xml::node(name));
+					string value = *p++;
+					param->content(value);
+					request->add_child(param);
+				}
+				
+				response = dispatch(action, request);
+			}
+			else if (root == "wsdl")
+			{
+				throw http::not_implemented;
 			}
 			else
-				rep = http::reply::stock_reply(http::not_found);
+				throw http::not_found;
 		}
 		else
-			rep = http::reply::stock_reply(http::bad_request);
+			throw http::bad_request;
+			
+		rep.set_content(make_envelope(response));
 	}
+	catch (http::status_type& s)
+	{
+		rep = http::reply::stock_reply(s);
+	}	
 	catch (exception& e)
 	{
 		rep.set_content(make_fault(e));
-	}	
+	}
+	
+	log() << rep.status << ' ' << action;
 }
 	
 }

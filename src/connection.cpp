@@ -30,7 +30,7 @@ void connection::handle_read(
 		
 		if (result)
 		{
-			m_request_handler.handle_request(m_request, m_reply);
+			m_request_handler.handle_request(m_socket, m_request, m_reply);
 			boost::asio::async_write(m_socket, m_reply.to_buffers(),
 				boost::bind(&connection::handle_write, shared_from_this(),
 					boost::asio::placeholders::error));
