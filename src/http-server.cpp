@@ -92,6 +92,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	}
 	catch (...)
 	{
+		rep = reply::stock_reply(internal_server_error);
 	}
 	
 	// protect the output stream from garbled log messages
