@@ -1,7 +1,11 @@
 This is the first release of libzeep.
 
 It is supposed to become a very easy way to create SOAP server software in
-C++. It uses several Boost libraries and currently requires at least version
+C++. You use it to export a C++ objects methods as SOAP actions. The library
+can generate a WSDL for the exported actions and it also has a REST style
+interface.
+
+libzeep uses several Boost libraries and currently requires at least version
 1.36 of Boost since it uses the new asio library for network I/O.
 
 To test out libzeep, you have to edit the makefile and make sure the names
@@ -11,6 +15,17 @@ simply type make and a 'zeep' executable is build.
 Have a look at the zeep.cpp file to see how to create a server. This example
 server is not entirely trivial since it has three exported methods that each
 take another set of parameters.
+
+When you run this sample server, it listens to port 10333 on your localhost.
+You can access the wsdl by pointing your browser at http://localhost:10333/wsdl
+and to access e.g. the Count method of this server from the REST interface
+you can browse to:
+
+http://localhost:10333/rest/Count/db/sprot/booleanquery/os:human
+
+As you can see, parameters and values are passed in the URL, order is not
+important and multiple id/value pairs can be specified for input parameters
+that allow more than one value.
 
 The steps to create a server are:
 
