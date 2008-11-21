@@ -119,7 +119,7 @@ string reply::get_as_text()
 	{
 		result += h->name;
 		result += "\r\n";
-		result += h->value.length();
+		result += h->value;
 		result += "\r\n";
 	}
 

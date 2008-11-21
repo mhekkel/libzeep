@@ -45,6 +45,29 @@ struct parameter_deserializer
 				}
 };
 
+template<typename Iterator>
+struct parameter_types
+{
+	typedef Iterator		result_type;
+	
+	type_map&	m_types;
+	node_ptr	m_node;
+	
+				parameter_types(
+					type_map&	types,
+					node_ptr	node)
+					: m_types(types)
+					, m_node(node) {}
+	
+	template<typename T>
+	Iterator	operator()(T& t, Iterator i) const
+				{
+					xml::wsdl_creator d(m_types, m_node);
+					d & boost::serialization::make_nvp(i->c_str(), t);
+					return ++i;
+				}
+};
+
 template<typename Function>
 struct handler_traits;
 
@@ -75,6 +98,9 @@ struct handler_base
 							, m_response(action + "Response") {}
 
 	virtual node_ptr	call(node_ptr in) = 0;
+
+	virtual void		collect(type_map& types, node_ptr wsdl,
+							node_ptr portType, node_ptr binding) = 0;
 	
 	const std::string&	get_action_name() const						{ return m_action; }
 
@@ -124,6 +150,98 @@ struct handler : public handler_base
 							return result;
 						}
 
+	virtual void		collect(type_map& types, node_ptr wsdl,
+							node_ptr portType, node_ptr binding)
+						{
+							// the request type
+							node_ptr requestType(new node("element", "xsd"));
+							requestType->add_attribute("name", get_action_name());
+							types[get_action_name()] = requestType;
+							
+							node_ptr complexType(new node("complexType", "xsd"));
+							requestType->add_child(complexType);
+							
+							node_ptr sequence(new node("sequence", "xsd"));
+							complexType->add_child(sequence);
+							
+							argument_type args;
+							boost::fusion::accumulate(args, m_names.begin(),
+								parameter_types<std::string*>(types, sequence));
+
+							// and the response type
+							node_ptr responseType(new node("element", "xsd"));
+							responseType->add_attribute("name", get_response_name());
+							types[get_response_name()] = responseType;
+
+							complexType.reset(new node("complexType", "xsd"));
+							responseType->add_child(complexType);
+							
+							sequence.reset(new node("sequence", "xsd"));
+							complexType->add_child(sequence);
+							
+							wsdl_creator wc(types, sequence, false);
+
+							response_type response;
+							wc & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
+							
+							// now the wsdl operations
+							
+							node_ptr message(new node("message", "wsdl"));
+							message->add_attribute("name", get_action_name() + "RequestMessage");
+							wsdl->add_child(message);
+							
+							node_ptr part(new node("part", "wsdl"));
+							part->add_attribute("name", "parameters");
+							part->add_attribute("element", kPrefix + ':' + get_action_name());
+							message->add_child(part);
+							
+							message.reset(new node("message", "wsdl"));
+							message->add_attribute("name", get_response_name() + "Message");
+							wsdl->add_child(message);
+							
+							part.reset(new node("part", "wsdl"));
+							part->add_attribute("name", "parameters");
+							part->add_attribute("element", kPrefix + ':' + get_response_name());
+							message->add_child(part);
+							
+							// port type
+							
+							node_ptr operation(new node("operation", "wsdl"));
+							operation->add_attribute("name", get_action_name());
+							
+							node_ptr input(new node("input", "wsdl"));
+							input->add_attribute("message", kPrefix + ':' + get_action_name() + "RequestMessage");
+							operation->add_child(input);
+
+							node_ptr output(new node("output", "wsdl"));
+							output->add_attribute("message", kPrefix + ':' + get_response_name() + "Message");
+							operation->add_child(output);
+							
+							portType->add_child(operation);
+							
+							// and the soap operations
+							
+							operation.reset(new node("operation", "wsdl"));
+							operation->add_attribute("name", get_action_name());
+							binding->add_child(operation);
+							
+//							node_ptr soapOperation(new node("operation", "soap"));
+//							operation->add_child(soapOperation);
+//							soapOperation->add_attribute("soapAction", "");
+							
+							input.reset(new node("input", "wsdl"));
+							operation->add_child(input);
+							
+							output.reset(new node("output", "wsdl"));
+							operation->add_child(output);
+							
+							node_ptr body(new node("body", "soap"));
+//							body->add_attribute("parts", "parameters");
+							body->add_attribute("use", "literal");
+							input->add_child(body);
+							output->add_child(body);
+						}
+
 	Class*				m_object;
 	Function			m_method;
 	boost::array<std::string,name_count>
@@ -137,8 +255,9 @@ class dispatcher
   public:
 	typedef boost::ptr_vector<detail::handler_base>	handler_list;
 
-						dispatcher(const std::string& ns)
-							: m_ns(ns) {}
+						dispatcher(const std::string& ns, const std::string& service)
+							: m_ns(ns)
+							, m_service(service) {}
 		
 	template<
 		class Class,
@@ -167,6 +286,65 @@ class dispatcher
 							return result;
 						}
 
+	xml::node_ptr		make_wsdl(const std::string& address)
+						{
+							xml::node_ptr wsdl(new xml::node("definitions", "wsdl"));
+							wsdl->add_attribute("targetNamespace", m_ns);
+							wsdl->add_attribute("xmlns:wsdl", "http://schemas.xmlsoap.org/wsdl/");
+							wsdl->add_attribute("xmlns:" + xml::kPrefix, m_ns);
+							wsdl->add_attribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
+							wsdl->add_attribute("xmlns:soap", "http://schemas.xmlsoap.org/wsdl/soap/");
+							wsdl->add_attribute("xmlns:mime", "http://schemas.xmlsoap.org/wsdl/mime/");
+							
+							xml::node_ptr types(new xml::node("types", "wsdl"));
+							wsdl->add_child(types);
+
+							xml::node_ptr schema(new xml::node("schema", "xsd"));
+							schema->add_attribute("targetNamespace", m_ns);
+							schema->add_attribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
+							schema->add_attribute("elementFormDefault", "qualified");
+							schema->add_attribute("attributeFormDefault", "unqualified");
+							types->add_child(schema);
+
+							xml::node_ptr binding(new xml::node("binding", "wsdl"));
+							binding->add_attribute("name", m_service);
+							binding->add_attribute("type", xml::kPrefix + ':' + m_service + "PortType");
+							
+							xml::node_ptr soapBinding(new xml::node("binding", "soap"));
+							soapBinding->add_attribute("style", "document");
+							soapBinding->add_attribute("transport", "http://schemas.xmlsoap.org/soap/http");
+							binding->add_child(soapBinding);
+							
+							xml::node_ptr portType(new xml::node("portType", "wsdl"));
+							portType->add_attribute("name", m_service + "PortType");
+							
+							xml::type_map typeMap;
+							
+							for (handler_list::iterator cb = m_handlers.begin(); cb != m_handlers.end(); ++cb)
+								cb->collect(typeMap, wsdl, portType, binding);
+							
+							for (xml::type_map::iterator t = typeMap.begin(); t != typeMap.end(); ++t)
+								schema->add_child(t->second);
+							
+							wsdl->add_child(portType);
+							wsdl->add_child(binding);
+							
+							xml::node_ptr service(new xml::node("service", "wsdl"));
+							service->add_attribute("name", m_service);
+							wsdl->add_child(service);
+							
+							xml::node_ptr port(new xml::node("port", "wsdl"));
+							port->add_attribute("name", m_service);
+							port->add_attribute("binding", xml::kPrefix + ':' + m_service);
+							service->add_child(port);
+							
+							xml::node_ptr soapAddress(new xml::node("address", "soap"));
+							soapAddress->add_attribute("location", address);
+							port->add_child(soapAddress);
+							
+							return wsdl;
+						}
+
 	void				set_response_name(const std::string& action, const std::string& name)
 						{
 							handler_list::iterator cb = std::find_if(
@@ -179,7 +357,8 @@ class dispatcher
 							cb->set_response_name(name);
 						}
 
-	std::string			m_ns;		
+	std::string			m_ns;
+	std::string			m_service;
 	handler_list		m_handlers;
 };
 

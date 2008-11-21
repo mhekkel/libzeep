@@ -28,6 +28,8 @@
 
 namespace soap { namespace xml {
 
+const std::string kPrefix = "ns";
+
 //	All serializers and deserializers work on an object that contains
 //	a pointer to the node just above the actual node holding their data. If any.
 //
@@ -59,22 +61,55 @@ struct deserializer
 	node_ptr		m_node;
 };
 
+typedef std::map<std::string,node_ptr> type_map;
+
 struct wsdl_creator
 {
-					wsdl_creator(node_ptr node) : m_node(node) {}
+					wsdl_creator(type_map& types, node_ptr node, bool make_node = true)
+						: m_node(node), m_types(types) {}
 	
 	template<typename T>
 	wsdl_creator&	operator&(const boost::serialization::nvp<T>& rhs);	
 
 	node_ptr		m_node;
+	type_map&		m_types;
 };
 
 // The actual (de)serializers:
 
 // arithmetic types are ints, doubles, etc... simply use lexical_cast to convert these
+template<typename T> struct arithmetic_wsdl_name { };
+
+template<> struct arithmetic_wsdl_name<int> {
+	static const char* type_name() { return "xsd:int"; } 
+};
+template<> struct arithmetic_wsdl_name<unsigned int> {
+	static const char* type_name() { return "xsd:unsignedInt"; } 
+};
+template<> struct arithmetic_wsdl_name<long> {
+	static const char* type_name() { return "xsd:int"; } 
+};
+template<> struct arithmetic_wsdl_name<unsigned long> {
+	static const char* type_name() { return "xsd:unsignedInt"; } 
+};
+template<> struct arithmetic_wsdl_name<long long> {
+	static const char* type_name() { return "xsd:long"; } 
+};
+template<> struct arithmetic_wsdl_name<unsigned long long> {
+	static const char* type_name() { return "xsd:unsignedLong"; } 
+};
+template<> struct arithmetic_wsdl_name<float> {
+	static const char* type_name() { return "xsd:float"; } 
+};
+template<> struct arithmetic_wsdl_name<double> {
+	static const char* type_name() { return "xsd:double"; } 
+};
+
 template<typename T>
 struct serialize_arithmetic
 {
+	typedef arithmetic_wsdl_name<T>	wsdl_name;
+	
 	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
 				{
 					node_ptr n(new node(name));
@@ -87,30 +122,21 @@ struct serialize_arithmetic
 					v = boost::lexical_cast<T>(n.content());
 				}
 
-	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
-					const std::string& name, T& v, bool)
+	static node_ptr
+				 to_wsdl(type_map& types, node_ptr parent,
+					const std::string& name, T& v)
 				{
-					node_ptr n(new node("element"));
+					node_ptr n(new node("xsd:element"));
 					n->add_attribute("name", name);
-					n->add_attribute("type", get_type());
+					n->add_attribute("type", wsdl_name::type_name());
 					n->add_attribute("minOccurs", "1");
 					n->add_attribute("maxOccurs", "1");
-					n->add_attribute("default", boost::lexical_cast<std::string>(v));
+//					n->add_attribute("default", boost::lexical_cast<std::string>(v));
 					parent->add_child(n);
+					
+					return n;
 				}
-
-	static std::string
-				get_type()		{ assert(false); }
 };
-
-template<> std::string serialize_arithmetic<int>::get_type() { return "xsd:int"; }
-template<> std::string serialize_arithmetic<unsigned int>::get_type() { return "xsd:unsignedInt"; }
-template<> std::string serialize_arithmetic<long>::get_type() { return "xsd:int"; }
-template<> std::string serialize_arithmetic<unsigned long>::get_type() { return "xsd:unsignedInt"; }
-template<> std::string serialize_arithmetic<long long>::get_type() { return "xsd:long"; }
-template<> std::string serialize_arithmetic<unsigned long long>::get_type() { return "xsd:unsignedLong"; }
-template<> std::string serialize_arithmetic<float>::get_type() { return "xsd:float"; }
-template<> std::string serialize_arithmetic<double>::get_type() { return "xsd:double"; }
 
 struct serialize_string
 {
@@ -126,22 +152,25 @@ struct serialize_string
 					v = n.content();
 				}
 
-	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
-					const std::string& name, T& v, bool)
+	static node_ptr
+				to_wsdl(type_map& types, node_ptr parent,
+					const std::string& name, std::string& v)
 				{
-					node_ptr n(new node("element"));
+					node_ptr n(new node("xsd:element"));
 					n->add_attribute("name", name);
-					n->add_attribute("type", "xsd::string");
+					n->add_attribute("type", "xsd:string");
 					n->add_attribute("minOccurs", "1");
 					n->add_attribute("maxOccurs", "1");
-					n->add_attribute("default", v);
+//					n->add_attribute("default", v);
 					parent->add_child(n);
+					
+					return n;
 				}
 };
 
 struct serialize_bool
 {
-	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
+	static void	serialize(node_ptr parent, const std::string& name, bool v, bool)
 				{
 					node_ptr n(new node(name));
 					n->content(v ? "true" : "false");
@@ -153,22 +182,27 @@ struct serialize_bool
 					v = n.content() == "true" or n.content() == "1";
 				}
 
-	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
-					const std::string& name, T& v, bool)
+	static node_ptr
+				to_wsdl(type_map& types, node_ptr parent,
+					const std::string& name, bool v)
 				{
-					node_ptr n(new node("element"));
+					node_ptr n(new node("xsd:element"));
 					n->add_attribute("name", name);
 					n->add_attribute("type", "xsd:boolean");
 					n->add_attribute("minOccurs", "1");
 					n->add_attribute("maxOccurs", "1");
-					n->add_attribute("default", v ? "true" : "false");
+//					n->add_attribute("default", v ? "true" : "false");
 					parent->add_child(n);
+					
+					return n;
 				}
 };
 
 template<typename T>
 struct serialize_struct
 {
+	static std::string	s_struct_name;
+	
 	static void	serialize(node_ptr parent, const std::string& name, T& v, bool make_node)
 				{
 					if (make_node)
@@ -191,49 +225,69 @@ struct serialize_struct
 					v.serialize(ds, 0);
 				}
 
-	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
-					const std::string& name, T& v, bool)
+	static node_ptr
+				 to_wsdl(type_map& types, node_ptr parent,
+					const std::string& name, T& v)
 				{
+					node_ptr result(new node("xsd:element"));
+					result->add_attribute("name", name);
+					result->add_attribute("type", kPrefix + ':' + s_struct_name);
+					result->add_attribute("minOccurs", "1");
+					result->add_attribute("maxOccurs", "1");
+					parent->add_child(result);
+
 					// we might be known already
-					if (types.find(name) != types.end())
-						return;
-										
-					node_ptr n(new node("complexType"));
-					n->add_attribute("name", name);
+					if (types.find(s_struct_name) != types.end())
+						return result;
+
+					node_ptr n(new node("xsd:complexType"));
+					n->add_attribute("name", s_struct_name);
 					types[name] = n;
 					
-					node_ptr seq(new node("sequence"));
+					node_ptr sequence(new node("xsd:sequence"));
 					n->add_child(sequence);
 					
-					wsdl_creator wsdl(types, seq.shared_from_this());
-					v.to_wsdl(wsdl, 0);
+					wsdl_creator wsdl(types, sequence);
+					v.serialize(wsdl, 0);
+					
+					return result;
 				}
 };
 
 template<typename T>
+std::string serialize_struct<T>::s_struct_name = typeid(T).name();
+
+#define SOAP_XML_SET_STRUCT_NAME(s)	soap::xml::serialize_struct<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
+
+template<typename T>
 struct serialize_vector
 {
-	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
+	static void	serialize(node_ptr parent, const std::string& name, std::vector<T>& v, bool);
 
-	static void	deserialize(
-					node&				n,
-					std::vector<T>&		v);
+	static void	deserialize(node& n, std::vector<T>& v);
+
+	static node_ptr
+				to_wsdl(type_map& types, node_ptr parent,
+					const std::string& name, std::vector<T>& v);
 };
 
 template<typename T>
 struct enum_map
 {
 	std::map<T,std::string>				m_name_mapping;
+	std::string							m_name;
 	
 	static enum_map&
-				instance()
+				instance(const char* name = NULL)
 				{
 					static enum_map s_instance;
+					if (name and s_instance.m_name.empty())
+						s_instance.m_name = name;
 					return s_instance;
 				}
 };
 
-#define SOAP_XML_ADD_ENUM(e,v)	soap::xml::enum_map<e>::instance().m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
+#define SOAP_XML_ADD_ENUM(e,v)	soap::xml::enum_map<e>::instance(BOOST_PP_STRINGIZE(e)).m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
 
 template<typename T>
 struct serialize_enum
@@ -259,6 +313,42 @@ struct serialize_enum
 							break;
 						}
 					}
+				}
+
+	static node_ptr
+				to_wsdl(type_map& types, node_ptr parent, const std::string& name, T& v)
+				{
+					std::string type_name = t_enum_map::instance().m_name;
+					
+					node_ptr result(new node("xsd:element"));
+					result->add_attribute("name", name);
+					result->add_attribute("type", kPrefix + ':' + type_name);
+					result->add_attribute("minOccurs", "1");
+					result->add_attribute("maxOccurs", "1");
+//					result->add_attribute("default", t_enum_map::instance().m_name_mapping[v]);
+					parent->add_child(result);
+					
+					// we might be known already
+					if (types.find(type_name) != types.end())
+						return result;
+										
+					node_ptr n(new node("xsd:simpleType"));
+					n->add_attribute("name", type_name);
+					types[name] = n;
+					
+					node_ptr restriction(new node("xsd:restriction"));
+					restriction->add_attribute("base", "xsd:string");
+					n->add_child(restriction);
+					
+					t_map& m = t_enum_map::instance().m_name_mapping;
+					for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
+					{
+						node_ptr en(new node("xsd:enumeration"));
+						en->add_attribute("value", e->second);
+						restriction->add_child(en);
+					}
+					
+					return result;
 				}
 };
 
@@ -342,11 +432,21 @@ deserializer& deserializer::operator&(
 	return *this;
 }
 
+template<typename T>
+wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
+{
+	typedef typename serialize_type<T>::type	s_type;
+
+	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value());
+
+	return *this;
+}
+
 // and some deferred implementations for the vector type
 
 template<typename T>
 void serialize_vector<T>::serialize(
-	node_ptr parent, const std::string& name, std::vector<T>& v, bool )
+	node_ptr parent, const std::string& name, std::vector<T>& v, bool)
 {
 	typedef typename serialize_type<T>::type		s_type;
 	
@@ -362,6 +462,26 @@ void serialize_vector<T>::deserialize(node& n, std::vector<T>& v)
 	T e;
 	s_type::deserialize(n, e);
 	v.push_back(e);
+}
+
+template<typename T>
+node_ptr serialize_vector<T>::to_wsdl(type_map& types,
+	node_ptr parent, const std::string& name, std::vector<T>& v)
+{
+	typedef typename serialize_type<T>::type		s_type;
+	
+	T e;
+	node_ptr result = s_type::to_wsdl(types, parent, name, e);
+
+	result->remove_attribute("minOccurs");
+	result->add_attribute("minOccurs", "0");
+	
+	result->remove_attribute("maxOccurs");
+	result->add_attribute("maxOccurs", "unbounded");
+	
+	result->remove_attribute("default");
+		
+	return result;
 }
 
 }

@@ -58,6 +58,18 @@ bool decode_uri(string uri, fs::path& path)
 	
 }
 
+server::server(const std::string& ns, const std::string& service,
+	const std::string& address, short port, int nr_of_threads)
+	: dispatcher(ns, service)
+	, http::server(address, port, nr_of_threads)
+{
+	if (port != 80)
+		m_location = "http://" + address + ':' +
+			boost::lexical_cast<string>(port) + '/' + service;
+	else
+		m_location = "http://" + address + '/' + service;
+}
+
 void server::handle_request(const http::request& req, http::reply& rep)
 {
 	string action;
@@ -79,7 +91,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			
 			action = request->name();
 			log() << action << ' ';
-			response = dispatch(action, env.request());
+			response = make_envelope(dispatch(action, env.request()));
 		}
 		else if (req.method == "GET")
 		{
@@ -110,19 +122,23 @@ void server::handle_request(const http::request& req, http::reply& rep)
 				}
 				
 				log() << action << ' ';
-				response = dispatch(action, request);
+				response = make_envelope(dispatch(action, request));
 			}
 			else if (root == "wsdl")
 			{
-				throw http::not_implemented;
+				log() << "wsdl";
+				response = make_wsdl(m_location);
 			}
 			else
+			{
+				log() << req.uri;
 				throw http::not_found;
+			}
 		}
 		else
 			throw http::bad_request;
 			
-		rep.set_content(make_envelope(response));
+		rep.set_content(response);
 	}
 	catch (http::status_type& s)
 	{

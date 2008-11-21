@@ -13,12 +13,14 @@ namespace WSSearchNS
 
 // the hit information
 
-struct hit
+struct Hit
 {
 	string			db;
 	string			id;
 	string			title;
 	float			score;
+
+					Hit() : score(0) {}
 	
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)
@@ -30,12 +32,14 @@ struct hit
 	}
 };
 
-// and the FindResponse type.
+// and the FindResult type.
 
-struct FindResponse
+struct FindResult
 {
 	int				count;
-	vector<hit>		hits;
+	vector<Hit>		hits;
+
+					FindResult() : count(0) {}
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)
@@ -74,7 +78,7 @@ class my_server : public soap::server
 	void				Count(
 							const string&				db,
 							const string&				booleanquery,
-							int&						result);
+							unsigned int&				result);
 
 	void				Find(
 							const string&				db,
@@ -84,14 +88,17 @@ class my_server : public soap::server
 							const string&				booleanfilter,
 							int							resultoffset,
 							int							maxresultcount,
-							WSSearchNS::FindResponse&	out);
+							WSSearchNS::FindResult&		out);
 
 };
 
 my_server::my_server(const string& address, short port)
-	: soap::server("http://mrs.cmbi.ru.nl/mrsws/search", address, port)
+	: soap::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port)
 {
 	using namespace WSSearchNS;
+
+	SOAP_XML_SET_STRUCT_NAME(Hit);
+	SOAP_XML_SET_STRUCT_NAME(FindResult);
 
 	const char* kListDatabanksParameterNames[] = {
 		"databank"
@@ -105,9 +112,9 @@ my_server::my_server(const string& address, short port)
 	
 	register_action("Count", this, &my_server::Count, kCountParameterNames);
 	
-	SOAP_XML_ADD_ENUM(WSSearchNS::Algorithm, Vector);
-	SOAP_XML_ADD_ENUM(WSSearchNS::Algorithm, Dice);
-	SOAP_XML_ADD_ENUM(WSSearchNS::Algorithm, Jaccard);
+	SOAP_XML_ADD_ENUM(Algorithm, Vector);
+	SOAP_XML_ADD_ENUM(Algorithm, Dice);
+	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
 
 	const char* kFindParameterNames[] = {
 		"db", "queryterms", "algorithm",
@@ -128,7 +135,7 @@ void my_server::ListDatabanks(
 void my_server::Count(
 	const string&				db,
 	const string&				booleanquery,
-	int&						result)
+	unsigned int&				result)
 {
 	if (db != "sprot" and db != "trembl" and db != "uniprot")
 		throw soap::exception("Unknown databank: %s", db.c_str());
@@ -146,14 +153,14 @@ void my_server::Find(
 	const string&				booleanfilter,
 	int							resultoffset,
 	int							maxresultcount,
-	WSSearchNS::FindResponse&	out)
+	WSSearchNS::FindResult&		out)
 {
 	log() << db;
 
 	// mock up some fake answer...
 	out.count = 2;
 
-	WSSearchNS::hit h;
+	WSSearchNS::Hit h;
 	h.db = "sprot";
 	h.id = "104k_thepa";
 	h.score = 1.0f;

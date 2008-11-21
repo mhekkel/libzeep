@@ -244,23 +244,23 @@ void document_imp::ProcessingInstructionHandler(
 	const XML_Char*		target,
 	const XML_Char*		data)
 {
-	cerr << "processing instruction, target: " << target << ", data: " << data << endl;
+//	cerr << "processing instruction, target: " << target << ", data: " << data << endl;
 }
 
 void document_imp::CommentHandler(
 	const XML_Char*		data)
 {
-	cerr << "comment " << data << endl;
+//	cerr << "comment " << data << endl;
 }
 
 void document_imp::StartCdataSectionHandler()
 {
-	cerr << "start cdata" << endl;
+//	cerr << "start cdata" << endl;
 }
 
 void document_imp::EndCdataSectionHandler()
 {
-	cerr << "end cdata" << endl;
+//	cerr << "end cdata" << endl;
 }
 
 void document_imp::StartNamespaceDeclHandler(
@@ -293,9 +293,9 @@ void document_imp::parse(
 		XML_SetUserData(p, this);
 		XML_SetElementHandler(p, XML_StartElementHandler, XML_EndElementHandler);
 		XML_SetCharacterDataHandler(p, XML_CharacterDataHandler);
-		XML_SetProcessingInstructionHandler(p, XML_ProcessingInstructionHandler);
-		XML_SetCommentHandler(p, XML_CommentHandler);
-		XML_SetCdataSectionHandler(p, XML_StartCdataSectionHandler, XML_EndCdataSectionHandler);
+//		XML_SetProcessingInstructionHandler(p, XML_ProcessingInstructionHandler);
+//		XML_SetCommentHandler(p, XML_CommentHandler);
+//		XML_SetCdataSectionHandler(p, XML_StartCdataSectionHandler, XML_EndCdataSectionHandler);
 //		XML_SetDefaultHandler(p, XML_DefaultHandler);
 //		XML_SetDoctypeDeclHandler(p, XML_StartDoctypeDeclHandler, XML_EndDoctypeDeclHandler);
 //		XML_SetUnparsedEntityDeclHandler(p, XML_UnparsedEntityDeclHandler);
