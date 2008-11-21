@@ -30,7 +30,7 @@
 			</group>
 		</group>
 		<group name="Sources">
-			<file>soap-cgi.cpp</file>
+			<file>zeep-test.cpp</file>
 		</group>
 		<group name="Libraries">
 			<file>libstdc++.a</file>
@@ -41,7 +41,7 @@
 	</files>
 	<resources resource_dir="../../../../.."/>
 	<targets>
-		<target kind="Executable" arch="i386" name="soap-cgi Debug" linkTarget="soap-cgi">
+		<target kind="Executable" arch="i386" name="zeep Debug" linkTarget="zeep-test">
 			<defines>
 				<define>DEBUG</define>
 			</defines>
@@ -57,7 +57,7 @@
 				<warning>no-deprecated</warning>
 			</warnings>
 		</target>
-		<target kind="Executable" arch="i386" name="soap-cgi Release" linkTarget="soap-cgi">
+		<target kind="Executable" arch="i386" name="zeep Release" linkTarget="zeep-test">
 			<defines>
 				<define>NDEBUG</define>
 			</defines>
