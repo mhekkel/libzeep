@@ -1,5 +1,8 @@
 #include "soap/server.hpp"
 
+#include <boost/lexical_cast.hpp>
+#include <unistd.h>
+
 using namespace std;
 
 // the data types used in our communication with the outside world
@@ -82,6 +85,7 @@ class my_server : public soap::server
 							int							resultoffset,
 							int							maxresultcount,
 							WSSearchNS::FindResponse&	out);
+
 };
 
 my_server::my_server(const string& address, short port)

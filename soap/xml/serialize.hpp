@@ -38,33 +38,35 @@ namespace soap { namespace xml {
 
 struct serializer
 {
-	node_ptr		m_node;
-	bool			m_make_node;
-
-					serializer(
-						node_ptr			node,
-						bool				make_node = true)
+					serializer(node_ptr node, bool make_node = true)
 						: m_node(node)
 						, m_make_node(make_node) {}
 
 	template<typename T>
-	serializer&		operator&(
-						const boost::serialization::nvp<T>&
-											rhs);
+	serializer&		operator&(const boost::serialization::nvp<T>& rhs);
+
+	node_ptr		m_node;
+	bool			m_make_node;
 };
 
 struct deserializer
 {
-	node_ptr		m_node;
-
-					deserializer(
-						node_ptr			node)
-						: m_node(node) {}
+					deserializer(node_ptr node) : m_node(node) {}
 
 	template<typename T>
-	deserializer&	operator&(
-						const boost::serialization::nvp<T>&
-											rhs);
+	deserializer&	operator&(const boost::serialization::nvp<T>& rhs);
+
+	node_ptr		m_node;
+};
+
+struct wsdl_creator
+{
+					wsdl_creator(node_ptr node) : m_node(node) {}
+	
+	template<typename T>
+	wsdl_creator&	operator&(const boost::serialization::nvp<T>& rhs);	
+
+	node_ptr		m_node;
 };
 
 // The actual (de)serializers:
@@ -73,75 +75,101 @@ struct deserializer
 template<typename T>
 struct serialize_arithmetic
 {
-	static void	serialize(
-					node_ptr			parent,
-					const std::string&	name,
-					T&					v,
-					bool				)
+	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
 				{
 					node_ptr n(new node(name));
 					n->content(boost::lexical_cast<std::string>(v));
 					parent->add_child(n);
 				}
 
-	static void	deserialize(
-					node&				n,
-					T&					v)
+	static void	deserialize(node& n, T& v)
 				{
 					v = boost::lexical_cast<T>(n.content());
 				}
+
+	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
+					const std::string& name, T& v, bool)
+				{
+					node_ptr n(new node("element"));
+					n->add_attribute("name", name);
+					n->add_attribute("type", get_type());
+					n->add_attribute("minOccurs", "1");
+					n->add_attribute("maxOccurs", "1");
+					n->add_attribute("default", boost::lexical_cast<std::string>(v));
+					parent->add_child(n);
+				}
+
+	static std::string
+				get_type()		{ assert(false); }
 };
+
+template<> std::string serialize_arithmetic<int>::get_type() { return "xsd:int"; }
+template<> std::string serialize_arithmetic<unsigned int>::get_type() { return "xsd:unsignedInt"; }
+template<> std::string serialize_arithmetic<long>::get_type() { return "xsd:int"; }
+template<> std::string serialize_arithmetic<unsigned long>::get_type() { return "xsd:unsignedInt"; }
+template<> std::string serialize_arithmetic<long long>::get_type() { return "xsd:long"; }
+template<> std::string serialize_arithmetic<unsigned long long>::get_type() { return "xsd:unsignedLong"; }
+template<> std::string serialize_arithmetic<float>::get_type() { return "xsd:float"; }
+template<> std::string serialize_arithmetic<double>::get_type() { return "xsd:double"; }
 
 struct serialize_string
 {
-	static void	serialize(
-					node_ptr			parent,
-					const std::string&	name,
-					std::string&		v,
-					bool				)
+	static void	serialize(node_ptr parent, const std::string& name, std::string& v, bool)
 				{
 					node_ptr n(new node(name));
 					n->content(v);
 					parent->add_child(n);
 				}
 
-	static void	deserialize(
-					node&				n,
-					std::string&		v)
+	static void	deserialize(node& n, std::string& v)
 				{
 					v = n.content();
+				}
+
+	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
+					const std::string& name, T& v, bool)
+				{
+					node_ptr n(new node("element"));
+					n->add_attribute("name", name);
+					n->add_attribute("type", "xsd::string");
+					n->add_attribute("minOccurs", "1");
+					n->add_attribute("maxOccurs", "1");
+					n->add_attribute("default", v);
+					parent->add_child(n);
 				}
 };
 
 struct serialize_bool
 {
-	static void	serialize(
-					node_ptr			parent,
-					const std::string&	name,
-					bool&				v,
-					bool				)
+	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
 				{
 					node_ptr n(new node(name));
 					n->content(v ? "true" : "false");
 					parent->add_child(n);
 				}
 
-	static void	deserialize(
-					node&				n,
-					bool&				v)
+	static void	deserialize(node& n, bool& v)
 				{
 					v = n.content() == "true" or n.content() == "1";
+				}
+
+	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
+					const std::string& name, T& v, bool)
+				{
+					node_ptr n(new node("element"));
+					n->add_attribute("name", name);
+					n->add_attribute("type", "xsd:boolean");
+					n->add_attribute("minOccurs", "1");
+					n->add_attribute("maxOccurs", "1");
+					n->add_attribute("default", v ? "true" : "false");
+					parent->add_child(n);
 				}
 };
 
 template<typename T>
 struct serialize_struct
 {
-	static void	serialize(
-					node_ptr			parent,
-					const std::string&	name,
-					T&					v,
-					bool				make_node)
+	static void	serialize(node_ptr parent, const std::string& name, T& v, bool make_node)
 				{
 					if (make_node)
 					{
@@ -157,23 +185,35 @@ struct serialize_struct
 					}
 				}
 
-	static void	deserialize(
-					node&				n,
-					T&					v)
+	static void	deserialize(node& n, T& v)
 				{
 					deserializer ds(n.shared_from_this());
 					v.serialize(ds, 0);
+				}
+
+	static void to_wsdl(std::map<std::string,node_ptr>& types, node_ptr parent,
+					const std::string& name, T& v, bool)
+				{
+					// we might be known already
+					if (types.find(name) != types.end())
+						return;
+										
+					node_ptr n(new node("complexType"));
+					n->add_attribute("name", name);
+					types[name] = n;
+					
+					node_ptr seq(new node("sequence"));
+					n->add_child(sequence);
+					
+					wsdl_creator wsdl(types, seq.shared_from_this());
+					v.to_wsdl(wsdl, 0);
 				}
 };
 
 template<typename T>
 struct serialize_vector
 {
-	static void	serialize(
-					node_ptr			parent,
-					const std::string&	name,
-					std::vector<T>&		v,
-					bool				);
+	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
 
 	static void	deserialize(
 					node&				n,
@@ -201,20 +241,14 @@ struct serialize_enum
 	typedef enum_map<T>					t_enum_map;
 	typedef std::map<T,std::string>		t_map;
 	
-	static void	serialize(
-					node_ptr			parent,
-					const std::string&	name,
-					T&					v,
-					bool				)
+	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
 				{
 					node_ptr n(new node(name));
 					n->content(t_enum_map::instance().m_name_mapping[v]);
 					parent->add_child(n);
 				}
 
-	static void	deserialize(
-					node&				n,
-					T&					v)
+	static void	deserialize(node& n, T& v)
 				{
 					t_map& m = t_enum_map::instance().m_name_mapping;
 					for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
@@ -312,10 +346,7 @@ deserializer& deserializer::operator&(
 
 template<typename T>
 void serialize_vector<T>::serialize(
-	node_ptr			parent,
-	const std::string&	name,
-	std::vector<T>&		v,
-	bool				)
+	node_ptr parent, const std::string& name, std::vector<T>& v, bool )
 {
 	typedef typename serialize_type<T>::type		s_type;
 	
@@ -324,9 +355,7 @@ void serialize_vector<T>::serialize(
 }
 
 template<typename T>
-void serialize_vector<T>::deserialize(
-	node&				n,
-	std::vector<T>&		v)
+void serialize_vector<T>::deserialize(node& n, std::vector<T>& v)
 {
 	typedef typename serialize_type<T>::type		s_type;
 	
