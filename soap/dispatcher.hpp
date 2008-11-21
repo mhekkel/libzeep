@@ -185,7 +185,6 @@ struct handler : public handler_base
 							wc & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
 							
 							// now the wsdl operations
-							
 							node_ptr message(new node("message", "wsdl"));
 							message->add_attribute("name", get_action_name() + "RequestMessage");
 							wsdl->add_child(message);
@@ -220,14 +219,9 @@ struct handler : public handler_base
 							portType->add_child(operation);
 							
 							// and the soap operations
-							
 							operation.reset(new node("operation", "wsdl"));
 							operation->add_attribute("name", get_action_name());
 							binding->add_child(operation);
-							
-//							node_ptr soapOperation(new node("operation", "soap"));
-//							operation->add_child(soapOperation);
-//							soapOperation->add_attribute("soapAction", "");
 							
 							input.reset(new node("input", "wsdl"));
 							operation->add_child(input);
@@ -236,7 +230,6 @@ struct handler : public handler_base
 							operation->add_child(output);
 							
 							node_ptr body(new node("body", "soap"));
-//							body->add_attribute("parts", "parameters");
 							body->add_attribute("use", "literal");
 							input->add_child(body);
 							output->add_child(body);
@@ -288,17 +281,18 @@ class dispatcher
 
 	xml::node_ptr		make_wsdl(const std::string& address)
 						{
+							// start by making the root node: wsdl:definitions
 							xml::node_ptr wsdl(new xml::node("definitions", "wsdl"));
 							wsdl->add_attribute("targetNamespace", m_ns);
 							wsdl->add_attribute("xmlns:wsdl", "http://schemas.xmlsoap.org/wsdl/");
 							wsdl->add_attribute("xmlns:" + xml::kPrefix, m_ns);
-							wsdl->add_attribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
 							wsdl->add_attribute("xmlns:soap", "http://schemas.xmlsoap.org/wsdl/soap/");
-							wsdl->add_attribute("xmlns:mime", "http://schemas.xmlsoap.org/wsdl/mime/");
 							
+							// add wsdl:types
 							xml::node_ptr types(new xml::node("types", "wsdl"));
 							wsdl->add_child(types);
 
+							// add xsd:schema
 							xml::node_ptr schema(new xml::node("schema", "xsd"));
 							schema->add_attribute("targetNamespace", m_ns);
 							schema->add_attribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
@@ -306,18 +300,22 @@ class dispatcher
 							schema->add_attribute("attributeFormDefault", "unqualified");
 							types->add_child(schema);
 
+							// add wsdl:binding
 							xml::node_ptr binding(new xml::node("binding", "wsdl"));
 							binding->add_attribute("name", m_service);
 							binding->add_attribute("type", xml::kPrefix + ':' + m_service + "PortType");
 							
+							// add soap:binding
 							xml::node_ptr soapBinding(new xml::node("binding", "soap"));
 							soapBinding->add_attribute("style", "document");
 							soapBinding->add_attribute("transport", "http://schemas.xmlsoap.org/soap/http");
 							binding->add_child(soapBinding);
 							
+							// add wsdl:portType
 							xml::node_ptr portType(new xml::node("portType", "wsdl"));
 							portType->add_attribute("name", m_service + "PortType");
 							
+							// and the types
 							xml::type_map typeMap;
 							
 							for (handler_list::iterator cb = m_handlers.begin(); cb != m_handlers.end(); ++cb)
@@ -329,6 +327,7 @@ class dispatcher
 							wsdl->add_child(portType);
 							wsdl->add_child(binding);
 							
+							// finish with the wsdl:service
 							xml::node_ptr service(new xml::node("service", "wsdl"));
 							service->add_attribute("name", m_service);
 							wsdl->add_child(service);

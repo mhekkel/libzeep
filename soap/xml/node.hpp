@@ -57,7 +57,7 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 												content)		{ m_content = content; }
 
 	node_ptr			find_child(
-							const std::string&	xpath);
+							const std::string&	path);
 
 	std::string			get_attribute(
 							const std::string&	name);
