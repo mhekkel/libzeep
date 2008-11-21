@@ -12,15 +12,15 @@ OBJECTS = \
 	obj/connection.o \
 	obj/http-server.o \
 	obj/soap-server.o \
-	obj/soap-cgi.o
+	obj/zeep.o
 
-soap-cgi: $(OBJECTS)
+zeep: $(OBJECTS)
 	c++ -o $@ $(OBJECTS) $(LDOPTS)
 
-obj/%.o obj/%.d: %.cpp
+obj/%.o: %.cpp
 	c++ -MD -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
 
-obj/%.o obj/%.d: src/%.cpp
+obj/%.o: src/%.cpp
 	c++ -MD -c -o $@ $< -I/usr/local/include/boost-1_36/ -iquote .
 
 include $(OBJECTS:%.o=%.d)

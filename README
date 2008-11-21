@@ -1,0 +1,66 @@
+This is the first release of libzeep.
+
+It is supposed to become a very easy way to create SOAP server software in
+C++. It uses several Boost libraries and currently requires at least version
+1.36 of Boost since it uses the new asio library for network I/O.
+
+To test out libzeep, you have to edit the makefile and make sure the names
+of the boost libraries are correct for your installation. After this you
+simply type make and a 'zeep' executable is build.
+
+Have a look at the zeep.cpp file to see how to create a server. This example
+server is not entirely trivial since it has three exported methods that each
+take another set of parameters.
+
+The steps to create a server are:
+
+Create a new server object that derives from soap::server. The constructor
+of this object should call the inherited constructor passing it the
+namespace and the service name for this new SOAP server as well as the
+internet address and port to listen to.
+
+Inside the constructor of your new server object you have to register the
+methods of the server you want to export. You do this by calling the
+inherited 'register_action' method. This method takes four parameters:
+
+- the name of the action as it is published
+- the this pointer for your server
+- a pointer to the method of your server object you want to export
+- an array of pointers to the exported names for each of the parameters
+	of the exported method/action. The size of this array should be exactly
+	as long as the arity of your method. You will get a compilation error
+	if you don't.
+
+If you export enum parameters, you add the names for all possible values of 
+your enumerated type by using the SOAP_XML_ADD_ENUM macro. The first parameter
+should be the name of the enum type, the second the value identifier.
+
+If you have structured types you want to export, you have to do two things.
+First of all the structure needs to be able to serialize itself. You do this
+by adding the method serialize to each struct. For a struct consisting of two 
+fields, db and id, you specify:
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar & BOOST_SERIALIZATION_NVP(db)
+		   & BOOST_SERIALIZATION_NVP(id);
+	}
+
+The next thing you need for each struct is to set its exported name using the
+SOAP_XML_SET_STRUCT_NAME macro.
+
+And that's it. The moment the constructor is done, your server is up and
+running, listening to the address and port you specified. Beware though that
+the server is multithreaded and so your exported methods should be reentrant.
+It is possible to specify the number of threads to use.
+
+If your server is behind a reverse proxy, you set the actual location in the
+WSDL from which it is accessible by calling the server's set_location method.
+
+That's it.
+
+This is a first release, please send all the problems and/or bugs you encounter
+to: m.hekkelman@cmbi.ru.nl
+
+-maarten hekkelman
