@@ -27,9 +27,9 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 
 						node(
 							const std::string&	name,
-							const std::string&	ns)
+							const std::string&	prefix)
 							: m_name(name)
-							, m_ns(ns) {}
+							, m_prefix(prefix) {}
 
 						node(
 							const std::string&	name,
@@ -175,6 +175,8 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 	void				add_attribute(
 							const std::string&	name,
 							const std::string&	value);
+
+	void				remove_attribute(const std::string& name);
 	
 	void				add_child(
 							node_ptr			node);

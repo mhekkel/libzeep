@@ -94,6 +94,8 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	{
 		rep = reply::stock_reply(internal_server_error);
 	}
+
+cout << rep.get_as_text() << endl;
 	
 	// protect the output stream from garbled log messages
 	boost::mutex::scoped_lock lock(detail::s_log_lock);
