@@ -1,3 +1,8 @@
+//  Copyright Maarten L. Hekkelman, Radboud University 2008.
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef SOAP_SERVER_HPP
 #define SOAP_SERVER_HPP
 
@@ -13,20 +18,20 @@ class server
 	, public http::server
 {
   public:
-						server(const std::string& ns, const std::string& service,
-							const std::string& address, short port,
-							int nr_of_threads = 4);
+					server(const std::string& ns, const std::string& service,
+						const std::string& address, short port,
+						int nr_of_threads = 4);
 
-						// if the default is not correct (reverse proxy e.g.)
-	void				set_location(const std::string& location)
-							{ m_location = location; }
+					// if the default is not correct (reverse proxy e.g.)
+	void			set_location(const std::string& location)
+						{ m_location = location; }
 
   protected:
 
-	virtual void		handle_request(const http::request& req, http::reply& rep);
+	virtual void	handle_request(const http::request& req, http::reply& rep);
 
   private:
-	std::string			m_location;
+	std::string		m_location;
 };
 	
 }

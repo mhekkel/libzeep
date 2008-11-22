@@ -1,5 +1,10 @@
-#ifndef XML_SERIALIZE_H
-#define XML_SERIALIZE_H
+//  Copyright Maarten L. Hekkelman, Radboud University 2008.
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef SOAP_XML_SERIALIZE_H
+#define SOAP_XML_SERIALIZE_H
 
 #include <sstream>
 #include <vector>
