@@ -1,4 +1,9 @@
-#ifndef XML_SOAP_DISPATCHER_H
+//  Copyright Maarten L. Hekkelman, Radboud University 2008.
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef SOAP_DISPATCHER_H
 
 #if not defined(BOOST_PP_IS_ITERATING)
 
@@ -80,7 +85,8 @@ struct handler_traits<void(Class::*)(R&)>
 	typedef typename f::vector<>	argument_type;
 	typedef R						response_type;
 
-	static void	invoke(Class* object, Function method, argument_type arguments, response_type& response)
+	static void	invoke(Class* object, Function method,
+					argument_type arguments, response_type& response)
 				{
 					(object->*method)(response);
 				}
@@ -363,7 +369,7 @@ class dispatcher
 
 }
 
-#define XML_SOAP_DISPATCHER_H
+#define SOAP_DISPATCHER_H
 
 #else // BOOST_PP_IS_ITERATING
 //
