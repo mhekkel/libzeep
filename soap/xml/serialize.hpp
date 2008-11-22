@@ -91,10 +91,10 @@ template<> struct arithmetic_wsdl_name<int> {
 template<> struct arithmetic_wsdl_name<unsigned int> {
 	static const char* type_name() { return "xsd:unsignedInt"; } 
 };
-template<> struct arithmetic_wsdl_name<long> {
+template<> struct arithmetic_wsdl_name<long int> {
 	static const char* type_name() { return "xsd:int"; } 
 };
-template<> struct arithmetic_wsdl_name<unsigned long> {
+template<> struct arithmetic_wsdl_name<long unsigned int> {
 	static const char* type_name() { return "xsd:unsignedInt"; } 
 };
 template<> struct arithmetic_wsdl_name<long long> {
@@ -113,7 +113,9 @@ template<> struct arithmetic_wsdl_name<double> {
 template<typename T>
 struct serialize_arithmetic
 {
-	typedef arithmetic_wsdl_name<T>	wsdl_name;
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T>::type >::type	value_type;
+	typedef arithmetic_wsdl_name<value_type>					wsdl_name;
 	
 	static void	serialize(node_ptr parent, const std::string& name, T& v, bool)
 				{
