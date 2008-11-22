@@ -17,7 +17,10 @@ server is not entirely trivial since it has three exported methods that each
 take another set of parameters.
 
 When you run this sample server, it listens to port 10333 on your localhost.
-You can access the wsdl by pointing your browser at http://localhost:10333/wsdl
+You can access the wsdl by pointing your browser at:
+
+http://localhost:10333/wsdl
+
 and to access e.g. the Count method of this server from the REST interface
 you can browse to:
 
@@ -35,8 +38,11 @@ namespace and the service name for this new SOAP server as well as the
 internet address and port to listen to.
 
 Inside the constructor of your new server object you have to register the
-methods of the server you want to export. You do this by calling the
-inherited 'register_action' method. This method takes four parameters:
+methods of the server you want to export. These methods can take any number
+of input arguments and only one output parameter which is the last parameter
+of the method. The result of these methods should be void. To register the
+methods you have to call the inherited 'register_action' method which takes
+four parameters:
 
 - the name of the action as it is published
 - the this pointer for your server
@@ -72,6 +78,9 @@ It is possible to specify the number of threads to use.
 
 If your server is behind a reverse proxy, you set the actual location in the
 WSDL from which it is accessible by calling the server's set_location method.
+
+Inside your server method you have access to the ostream object used to write
+out log entries by using the inherited log() member function.
 
 That's it.
 
