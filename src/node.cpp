@@ -157,18 +157,11 @@ void node::write(
 	if (m_attributes)
 	{
 		for (const_attribute_iterator a = attribute_begin(); a != attribute_end(); ++a)
-		{
-//			stream << endl;
-//
-//			for (int i = 0; i < level; ++i)
-//				stream << ' ';
-
 			stream << ' ' << a->name() << "=\"" << a->value() << '"';
-		}
 	}
 
 	string cont = m_content;
-	ba::trim(cont);
+//	ba::trim(cont);
 	
 	ba::replace_all(cont, "&", "&amp;");
 	ba::replace_all(cont, "<", "&lt;");
