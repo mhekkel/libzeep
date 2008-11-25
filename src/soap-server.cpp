@@ -142,7 +142,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 		}
 		else
 			throw http::bad_request;
-			
+		
 		rep.set_content(response);
 	}
 	catch (http::status_type& s)
