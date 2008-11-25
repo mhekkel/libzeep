@@ -4,6 +4,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 
 #include "soap/http/reply.hpp"
 #include "soap/xml/document.hpp"
@@ -90,10 +91,9 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 
 void reply::set_content(xml::node_ptr data)
 {
-	xml::document doc(data);
-	
 	stringstream s;
-	s << doc;
+	s << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl
+	  << *data;
 	
 	content = s.str();
 	status = ok;
