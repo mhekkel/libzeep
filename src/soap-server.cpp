@@ -55,12 +55,11 @@ bool decode_uri(string uri, fs::path& path)
 		
 		string::size_type s = url.find_first_of('/', 7);
 		if (s != string::npos)
-		{
-			while (s < url.length() and url[s] == '/')
-				++s;
 			url.erase(0, s);
-		}
 	}
+
+	while (url.length() > 0 and url[0] == '/')
+		url.erase(url.begin());
 
 	path = url;
 	
@@ -107,9 +106,6 @@ void server::handle_request(const http::request& req, http::reply& rep)
 		else if (req.method == "GET")
 		{
 			fs::path::iterator p = path.begin();
-			
-			while (p != path.end() and *p == "/")
-				++p;
 			
 			if (p == path.end())
 				throw http::bad_request;
