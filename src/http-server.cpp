@@ -30,6 +30,7 @@ boost::mutex						s_log_lock;
 server::server(const std::string& address, short port, int nr_of_threads)
 	: m_acceptor(m_io_service)
 	, m_new_connection(new connection(m_io_service, *this))
+	, m_nr_of_threads(nr_of_threads)
 {
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
 	boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<string>(port));
@@ -41,17 +42,22 @@ server::server(const std::string& address, short port, int nr_of_threads)
 	m_acceptor.listen();
 	m_acceptor.async_accept(m_new_connection->get_socket(),
 		boost::bind(&server::handle_accept, this, boost::asio::placeholders::error));
-
-	for (int i = 0; i < nr_of_threads; ++i)
-	{
-		m_threads.create_thread(
-			boost::bind(&boost::asio::io_service::run, &m_io_service));
-	}
 }
 
 server::~server()
 {
 	stop();
+}
+
+void server::run()
+{
+	for (int i = 0; i < m_nr_of_threads; ++i)
+	{
+		m_threads.create_thread(
+			boost::bind(&boost::asio::io_service::run, &m_io_service));
+	}
+	
+	m_threads.join_all();
 }
 
 void server::stop()
