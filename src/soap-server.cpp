@@ -51,12 +51,18 @@ bool decode_uri(string uri, fs::path& path)
 	
 	if (result and ba::starts_with(url, "http://"))
 	{
+		// turn path into a relative path
+		
 		string::size_type s = url.find_first_of('/', 7);
 		if (s != string::npos)
-			path = url.substr(s);
+		{
+			while (s < url.length() and url[s] == '/')
+				++s;
+			url.erase(0, s);
+		}
 	}
-	else	// assume a get without full url?
-		path = url;
+
+	path = url;
 	
 	return result;
 }
@@ -102,7 +108,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 		{
 			fs::path::iterator p = path.begin();
 			
-			if (p != path.end() and *p == "/")
+			while (p != path.end() and *p == "/")
 				++p;
 			
 			if (p == path.end())
@@ -145,13 +151,13 @@ void server::handle_request(const http::request& req, http::reply& rep)
 		
 		rep.set_content(response);
 	}
-	catch (http::status_type& s)
-	{
-		rep = http::reply::stock_reply(s);
-	}	
 	catch (std::exception& e)
 	{
 		rep.set_content(make_fault(e));
+	}
+	catch (http::status_type& s)
+	{
+		rep = http::reply::stock_reply(s);
 	}
 }
 	
