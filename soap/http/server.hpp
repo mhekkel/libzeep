@@ -23,6 +23,8 @@ class server : public request_handler
 
 	virtual				~server();
 
+	virtual void		run();
+
 	virtual void		stop();
 
 	// to extend the log entry for a current request, use this ostream:
@@ -44,6 +46,7 @@ class server : public request_handler
 	boost::asio::ip::tcp::acceptor	m_acceptor;
 	boost::thread_group				m_threads;
 	boost::shared_ptr<connection>	m_new_connection;
+	int								m_nr_of_threads;
 };
 
 }
