@@ -149,7 +149,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 	{
 		rep = http::reply::stock_reply(s);
 	}	
-	catch (exception& e)
+	catch (std::exception& e)
 	{
 		rep.set_content(make_fault(e));
 	}
