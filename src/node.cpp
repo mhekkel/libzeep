@@ -203,5 +203,29 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 	return lhs;
 }
 
+attribute_ptr make_attribute(const string& name, const string& value)
+{
+	return attribute_ptr(new attribute(name, value));
+}
+
+node_ptr make_node(const string& name,
+	attribute_ptr attr1, attribute_ptr attr2,
+	attribute_ptr attr3, attribute_ptr attr4,
+	attribute_ptr attr5, attribute_ptr attr6,
+	attribute_ptr attr7, attribute_ptr attr8)
+{
+	node_ptr result(new node(name));
+	if (attr1) result->add_attribute(attr1);
+	if (attr2) result->add_attribute(attr2);
+	if (attr3) result->add_attribute(attr3);
+	if (attr4) result->add_attribute(attr4);
+	if (attr5) result->add_attribute(attr5);
+	if (attr6) result->add_attribute(attr6);
+	if (attr7) result->add_attribute(attr7);
+	if (attr8) result->add_attribute(attr8);
+	return result;
+}
+
+
 } // xml
 } // soap

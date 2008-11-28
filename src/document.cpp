@@ -339,7 +339,8 @@ document::document(
 	const string&	data)
 	: impl(new document_imp)
 {
-	istringstream s(data);
+	stringstream s;
+	s.str(data);
 	impl->parse(s);
 }
 

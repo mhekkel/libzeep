@@ -97,6 +97,9 @@ struct handler_traits<void(Class::*)(R&)>
 #define  BOOST_PP_ITERATION_LIMITS (1, 9)
 #include BOOST_PP_ITERATE()
 
+// messages can be used by more than one action, so we need a way to avoid duplicates
+typedef std::map<std::string,node_ptr>	message_map;
+
 struct handler_base
 {
 						handler_base(const std::string&	action)
@@ -105,7 +108,7 @@ struct handler_base
 
 	virtual node_ptr	call(node_ptr in) = 0;
 
-	virtual void		collect(type_map& types, node_ptr wsdl,
+	virtual void		collect(type_map& types, message_map& messages,
 							node_ptr portType, node_ptr binding) = 0;
 	
 	const std::string&	get_action_name() const						{ return m_action; }
@@ -156,7 +159,7 @@ struct handler : public handler_base
 							return result;
 						}
 
-	virtual void		collect(type_map& types, node_ptr wsdl,
+	virtual void		collect(type_map& types, message_map& messages,
 							node_ptr portType, node_ptr binding)
 						{
 							// the request type
@@ -191,23 +194,25 @@ struct handler : public handler_base
 							wc & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
 							
 							// now the wsdl operations
-							node_ptr message(new node("message", "wsdl"));
-							message->add_attribute("name", get_action_name() + "RequestMessage");
-							wsdl->add_child(message);
-							
-							node_ptr part(new node("part", "wsdl"));
-							part->add_attribute("name", "parameters");
-							part->add_attribute("element", kPrefix + ':' + get_action_name());
-							message->add_child(part);
-							
-							message.reset(new node("message", "wsdl"));
-							message->add_attribute("name", get_response_name() + "Message");
-							wsdl->add_child(message);
-							
-							part.reset(new node("part", "wsdl"));
-							part->add_attribute("name", "parameters");
-							part->add_attribute("element", kPrefix + ':' + get_response_name());
-							message->add_child(part);
+							node_ptr message =
+								make_node("wsdl:message",
+									make_attribute("name", get_action_name() + "RequestMessage"));
+							message->add_child(
+								make_node("wsdl:part",
+										make_attribute("name", "parameters"),
+										make_attribute("element", kPrefix + ':' + get_action_name()))
+								);
+							messages[message->get_attribute("name")] = message;
+
+							message =
+								make_node("wsdl:message",
+									make_attribute("name", get_response_name() + "Message"));
+							message->add_child(
+								make_node("wsdl:part",
+										make_attribute("name", "parameters"),
+										make_attribute("element", kPrefix + ':' + get_response_name()))
+								);
+							messages[message->get_attribute("name")] = message;
 							
 							// port type
 							
@@ -323,9 +328,13 @@ class dispatcher
 							
 							// and the types
 							xml::type_map typeMap;
+							detail::message_map messageMap;
 							
 							for (handler_list::iterator cb = m_handlers.begin(); cb != m_handlers.end(); ++cb)
-								cb->collect(typeMap, wsdl, portType, binding);
+								cb->collect(typeMap, messageMap, portType, binding);
+							
+							for (detail::message_map::iterator m = messageMap.begin(); m != messageMap.end(); ++m)
+								wsdl->add_child(m->second);
 							
 							for (xml::type_map::iterator t = typeMap.begin(); t != typeMap.end(); ++t)
 								schema->add_child(t->second);
