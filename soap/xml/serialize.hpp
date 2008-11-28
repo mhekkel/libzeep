@@ -71,13 +71,14 @@ typedef std::map<std::string,node_ptr> type_map;
 struct wsdl_creator
 {
 					wsdl_creator(type_map& types, node_ptr node, bool make_node = true)
-						: m_node(node), m_types(types) {}
+						: m_node(node), m_types(types), m_make_node(make_node) {}
 	
 	template<typename T>
 	wsdl_creator&	operator&(const boost::serialization::nvp<T>& rhs);	
 
 	node_ptr		m_node;
 	type_map&		m_types;
+	bool			m_make_node;
 };
 
 // The actual (de)serializers:
@@ -131,7 +132,7 @@ struct serialize_arithmetic
 
 	static node_ptr
 				 to_wsdl(type_map& types, node_ptr parent,
-					const std::string& name, T& v)
+					const std::string& name, T& v, bool)
 				{
 					node_ptr n(new node("xsd:element"));
 					n->add_attribute("name", name);
@@ -161,7 +162,7 @@ struct serialize_string
 
 	static node_ptr
 				to_wsdl(type_map& types, node_ptr parent,
-					const std::string& name, std::string& v)
+					const std::string& name, std::string& v, bool)
 				{
 					node_ptr n(new node("xsd:element"));
 					n->add_attribute("name", name);
@@ -191,7 +192,7 @@ struct serialize_bool
 
 	static node_ptr
 				to_wsdl(type_map& types, node_ptr parent,
-					const std::string& name, bool v)
+					const std::string& name, bool v, bool)
 				{
 					node_ptr n(new node("xsd:element"));
 					n->add_attribute("name", name);
@@ -234,30 +235,39 @@ struct serialize_struct
 
 	static node_ptr
 				 to_wsdl(type_map& types, node_ptr parent,
-					const std::string& name, T& v)
+					const std::string& name, T& v, bool make_node)
 				{
-					node_ptr result(new node("xsd:element"));
-					result->add_attribute("name", name);
-					result->add_attribute("type", kPrefix + ':' + s_struct_name);
-					result->add_attribute("minOccurs", "1");
-					result->add_attribute("maxOccurs", "1");
-					parent->add_child(result);
-
-					// we might be known already
-					if (types.find(s_struct_name) != types.end())
+					if (make_node)
+					{
+						node_ptr result(new node("xsd:element"));
+						result->add_attribute("name", name);
+						result->add_attribute("type", kPrefix + ':' + s_struct_name);
+						result->add_attribute("minOccurs", "1");
+						result->add_attribute("maxOccurs", "1");
+						parent->add_child(result);
+	
+						// we might be known already
+						if (types.find(s_struct_name) != types.end())
+							return result;
+	
+						node_ptr n(new node("xsd:complexType"));
+						n->add_attribute("name", s_struct_name);
+						types[s_struct_name] = n;
+						
+						node_ptr sequence(new node("xsd:sequence"));
+						n->add_child(sequence);
+						
+						wsdl_creator wsdl(types, sequence);
+						v.serialize(wsdl, 0);
+						
 						return result;
-
-					node_ptr n(new node("xsd:complexType"));
-					n->add_attribute("name", s_struct_name);
-					types[s_struct_name] = n;
-					
-					node_ptr sequence(new node("xsd:sequence"));
-					n->add_child(sequence);
-					
-					wsdl_creator wsdl(types, sequence);
-					v.serialize(wsdl, 0);
-					
-					return result;
+					}
+					else
+					{
+						wsdl_creator wc(types, parent);
+						v.serialize(wc, 0);
+						return parent;
+					}
 				}
 };
 
@@ -275,7 +285,7 @@ struct serialize_vector
 
 	static node_ptr
 				to_wsdl(type_map& types, node_ptr parent,
-					const std::string& name, std::vector<T>& v);
+					const std::string& name, std::vector<T>& v, bool);
 };
 
 template<typename T>
@@ -323,7 +333,7 @@ struct serialize_enum
 				}
 
 	static node_ptr
-				to_wsdl(type_map& types, node_ptr parent, const std::string& name, T& v)
+				to_wsdl(type_map& types, node_ptr parent, const std::string& name, T& v, bool)
 				{
 					std::string type_name = t_enum_map::instance().m_name;
 					
@@ -444,7 +454,7 @@ wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
 {
 	typedef typename serialize_type<T>::type	s_type;
 
-	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value());
+	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value(), m_make_node);
 
 	return *this;
 }
@@ -473,12 +483,12 @@ void serialize_vector<T>::deserialize(node& n, std::vector<T>& v)
 
 template<typename T>
 node_ptr serialize_vector<T>::to_wsdl(type_map& types,
-	node_ptr parent, const std::string& name, std::vector<T>& v)
+	node_ptr parent, const std::string& name, std::vector<T>& v, bool)
 {
 	typedef typename serialize_type<T>::type		s_type;
 	
 	T e;
-	node_ptr result = s_type::to_wsdl(types, parent, name, e);
+	node_ptr result = s_type::to_wsdl(types, parent, name, e, true);
 
 	result->remove_attribute("minOccurs");
 	result->add_attribute("minOccurs", "0");
