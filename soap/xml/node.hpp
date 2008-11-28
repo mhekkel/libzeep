@@ -266,6 +266,14 @@ void node::do_to_all(
 		child->do_to_all(func);
 }
 
+// a set of convenience routines to create a nodes along with attributes in one call
+attribute_ptr make_attribute(const std::string& name, const std::string& value);
+node_ptr make_node(const std::string& name,
+	attribute_ptr attr1 = attribute_ptr(), attribute_ptr attr2 = attribute_ptr(),
+	attribute_ptr attr3 = attribute_ptr(), attribute_ptr attr4 = attribute_ptr(),
+	attribute_ptr attr5 = attribute_ptr(), attribute_ptr attr6 = attribute_ptr(),
+	attribute_ptr attr7 = attribute_ptr(), attribute_ptr attr8 = attribute_ptr());
+
 }
 }
 
