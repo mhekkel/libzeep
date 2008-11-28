@@ -249,7 +249,7 @@ struct serialize_struct
 
 					node_ptr n(new node("xsd:complexType"));
 					n->add_attribute("name", s_struct_name);
-					types[name] = n;
+					types[s_struct_name] = n;
 					
 					node_ptr sequence(new node("xsd:sequence"));
 					n->add_child(sequence);
@@ -341,7 +341,7 @@ struct serialize_enum
 										
 					node_ptr n(new node("xsd:simpleType"));
 					n->add_attribute("name", type_name);
-					types[name] = n;
+					types[type_name] = n;
 					
 					node_ptr restriction(new node("xsd:restriction"));
 					restriction->add_attribute("base", "xsd:string");

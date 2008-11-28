@@ -8,16 +8,16 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-BOOST_LIB_SUFFIX	= -gcc43-mt-d-1_36
+BOOST_LIB_SUFFIX	= -gcc43-mt-1_37
 BOOST_LIB_DIR		= /usr/local/lib/
-BOOST_INC_DIR		= /usr/local/include/boost-1_36
+BOOST_INC_DIR		= /usr/local/include/boost-1_37
 
 BOOST_LIBS			= boost_system boost_thread
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
 LIBS				= expat $(BOOST_LIBS)
 LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%)
 
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./
+CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2
 
 VPATH += src
 
