@@ -1,20 +1,22 @@
 This is the first release of libzeep.
 
 It is supposed to become a very easy way to create SOAP server software in
-C++. You use it to export a C++ objects methods as SOAP actions. The library
+C++. You use it to export a C++ object's methods as SOAP actions. The library
 can generate a WSDL for the exported actions and it also has a REST style
 interface.
 
 libzeep uses several Boost libraries and currently requires at least version
-1.36 of Boost since it uses the new asio library for network I/O.
+1.36 of Boost since it uses the new asio library for network I/O. When needed,
+it is possible to make a few changes to the code and use the standalone
+libasio along with Boost 1.35 instead.
 
 To test out libzeep, you have to edit the makefile and make sure the names
 of the boost libraries are correct for your installation. After this you
-simply type make and a 'zeep' executable is build.
+simply type 'make' and a 'zeep' executable is build.
 
-Have a look at the zeep.cpp file to see how to create a server. This example
-server is not entirely trivial since it has three exported methods that each
-take another set of parameters.
+Have a look at the zeep-test.cpp file to see how to create a server. This
+example server is not entirely trivial since it has three exported methods
+that each take another set of parameters.
 
 When you run this sample server, it listens to port 10333 on your localhost.
 You can access the wsdl by pointing your browser at:
@@ -40,17 +42,24 @@ internet address and port to listen to.
 Inside the constructor of your new server object you have to register the
 methods of the server you want to export. These methods can take any number
 of input arguments and only one output parameter which is the last parameter
-of the method. The result of these methods should be void. To register the
-methods you have to call the inherited 'register_action' method which takes
-four parameters:
+of the method. The result of these methods should be void.
+
+Please note that if the method's last (output) parameter is a struct, then
+the fields of this struct will be moved up in the Response message of the
+action in the WSDL. To the outside world this method will look like it has
+multiple output parameters. This was done to be compatible with another
+popular SOAP tool but the result may be a bit confusing at times.
+
+To register the methods you have to call the inherited 'register_action'
+method which takes four parameters:
 
 - the name of the action as it is published
-- the this pointer for your server
+- the pointer for your server object, usually it is 'this'.
 - a pointer to the method of your server object you want to export
 - an array of pointers to the exported names for each of the parameters
 	of the exported method/action. The size of this array should be exactly
 	as long as the arity of your method. You will get a compilation error
-	if you don't.
+	if it isn't.
 
 If you export enum parameters, you add the names for all possible values of 
 your enumerated type by using the SOAP_XML_ADD_ENUM macro. The first parameter
@@ -71,10 +80,12 @@ fields, db and id, you specify:
 The next thing you need for each struct is to set its exported name using the
 SOAP_XML_SET_STRUCT_NAME macro.
 
-And that's it. The moment the constructor is done, your server is up and
-running, listening to the address and port you specified. Beware though that
-the server is multithreaded and so your exported methods should be reentrant.
-It is possible to specify the number of threads to use.
+And that's it. The moment the constructor is done, your server is ready to
+run. You can start it by calling the 'run' method, normally you do this from
+a new thread. The servers will start listening to the address and port you
+specified. Beware though that the server is multithreaded and so your exported
+methods should be reentrant. The number of threads the server will use can be
+specified in the constructor of the soap::server base class.
 
 If your server is behind a reverse proxy, you set the actual location in the
 WSDL from which it is accessible by calling the server's set_location method.
