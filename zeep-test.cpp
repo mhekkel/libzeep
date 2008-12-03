@@ -72,9 +72,6 @@ class my_server : public soap::server
 							const string&				address,
 							short						port);
 
-	void				dummy(
-							vector<WSSearchNS::Hit>&	hits);
-
 	void				ListDatabanks(
 							vector<string>&				databanks);
 
@@ -101,42 +98,31 @@ my_server::my_server(const string& address, short port)
 	using namespace WSSearchNS;
 
 	SOAP_XML_SET_STRUCT_NAME(Hit);
-//	SOAP_XML_SET_STRUCT_NAME(FindResult);
+	SOAP_XML_SET_STRUCT_NAME(FindResult);
 
-	const char* kDummyParameterNames[] = {
-		"hits"
+	const char* kListDatabanksParameterNames[] = {
+		"databank"
 	};
-	register_action("dummy", this, &my_server::dummy, kDummyParameterNames);
-
-//	const char* kListDatabanksParameterNames[] = {
-//		"databank"
-//	};
-//	
-//	register_action("ListDatabanks", this, &my_server::ListDatabanks, kListDatabanksParameterNames);
-//
-//	const char* kCountParameterNames[] = {
-//		"db", "booleanquery", "response"
-//	};
-//	
-//	register_action("Count", this, &my_server::Count, kCountParameterNames);
-//	
-//	SOAP_XML_ADD_ENUM(Algorithm, Vector);
-//	SOAP_XML_ADD_ENUM(Algorithm, Dice);
-//	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
-//
-//	const char* kFindParameterNames[] = {
-//		"db", "queryterms", "algorithm",
-//		"alltermsrequired", "booleanfilter", "resultoffset", "maxresultcount",
-//		"out"
-//	};
-//	
-//	register_action("Find", this, &my_server::Find, kFindParameterNames);
-}
-
-void my_server::dummy(
-	vector<WSSearchNS::Hit>&				hits)
-{
 	
+	register_action("ListDatabanks", this, &my_server::ListDatabanks, kListDatabanksParameterNames);
+
+	const char* kCountParameterNames[] = {
+		"db", "booleanquery", "response"
+	};
+	
+	register_action("Count", this, &my_server::Count, kCountParameterNames);
+	
+	SOAP_XML_ADD_ENUM(Algorithm, Vector);
+	SOAP_XML_ADD_ENUM(Algorithm, Dice);
+	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
+
+	const char* kFindParameterNames[] = {
+		"db", "queryterms", "algorithm",
+		"alltermsrequired", "booleanfilter", "resultoffset", "maxresultcount",
+		"out"
+	};
+	
+	register_action("Find", this, &my_server::Find, kFindParameterNames);
 }
 
 void my_server::ListDatabanks(

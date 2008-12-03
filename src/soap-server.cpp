@@ -19,53 +19,34 @@ namespace soap {
 	
 namespace detail {
 
-bool decode_uri(string uri, fs::path& path)
+string decode(const string& s)
 {
-	bool result = true;
+	string result;
 	
-	string url;
-	
-	for (string::const_iterator c = uri.begin(); c != uri.end(); ++c)
+	for (string::const_iterator c = s.begin(); c != s.end(); ++c)
 	{
 		if (*c == '%')
 		{
-			result = false;
-
-			if (uri.end() - c > 3)
+			if (s.end() - c >= 3)
 			{
 				int value;
-				istringstream is(string(c + 1, c + 2));
+				string s2(c + 1, c + 3);
+				istringstream is(s2);
 				if (is >> std::hex >> value)
 				{
-					url += static_cast<char>(value);
+					result += static_cast<char>(value);
 					c += 2;
-					result = true;
 				}
 			}
 		}
 		else if (*c == '+')
-			url += ' ';
+			result += ' ';
 		else
-			url += *c;
+			result += *c;
 	}
-	
-	if (result and ba::starts_with(url, "http://"))
-	{
-		// turn path into a relative path
-		
-		string::size_type s = url.find_first_of('/', 7);
-		if (s != string::npos)
-			url.erase(0, s);
-	}
-
-	while (url.length() > 0 and url[0] == '/')
-		url.erase(url.begin());
-
-	path = url;
-	
 	return result;
 }
-	
+
 }
 
 server::server(const std::string& ns, const std::string& service,
@@ -86,11 +67,6 @@ void server::handle_request(const http::request& req, http::reply& rep)
 	
 	try
 	{
-		fs::path path;
-		
-		if (not detail::decode_uri(req.uri, path))
-			throw http::bad_request;
-		
 		xml::node_ptr response;
 		
 		if (req.method == "POST")	// must be a SOAP call
@@ -105,6 +81,22 @@ void server::handle_request(const http::request& req, http::reply& rep)
 		}
 		else if (req.method == "GET")
 		{
+			// start by sanitizing the request's URI
+			string uri = req.uri;
+	
+			// strip off the http part including hostname and such
+			if (ba::starts_with(uri, "http://"))
+			{
+				string::size_type s = uri.find_first_of('/', 7);
+				if (s != string::npos)
+					uri.erase(0, s);
+			}
+			
+			// now make the path relative to the root
+			while (uri.length() > 0 and uri[0] == '/')
+				uri.erase(uri.begin());
+	
+			fs::path path(uri);
 			fs::path::iterator p = path.begin();
 			
 			if (p == path.end())
@@ -119,11 +111,11 @@ void server::handle_request(const http::request& req, http::reply& rep)
 				xml::node_ptr request(new xml::node(action));
 				while (p != path.end())
 				{
-					string name = *p++;
+					string name = detail::decode(*p++);
 					if (p == path.end())
 						break;
 					xml::node_ptr param(new xml::node(name));
-					string value = *p++;
+					string value = detail::decode(*p++);
 					param->content(value);
 					request->add_child(param);
 				}
