@@ -12,6 +12,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
