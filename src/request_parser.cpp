@@ -289,7 +289,7 @@ boost::tribool request_parser::parse_chunk(request& req, char ch)
 		case 6:
 			req.payload += ch;
 			if (--m_chunk_size == 0)
-				m_state = 2;
+				m_state = 0;		// restart
 			break;
 		
 			// trailing \r\n		
