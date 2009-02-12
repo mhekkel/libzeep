@@ -39,14 +39,18 @@
 			<file>libboost_system-gcc43-mt-d.a</file>
 		</group>
 	</files>
-	<resources resource_dir="../../../../.."/>
+	<resources/>
 	<targets>
-		<target kind="Executable" arch="i386" name="zeep Debug" linkTarget="zeep-test">
+		<target kind="Executable">
+			<name>zeep Debug</name>
+			<linkTarget>zeep-test</linkTarget>
+			<compiler>/usr/bin/c++</compiler>
 			<defines>
 				<define>DEBUG</define>
 			</defines>
 			<cflags>
 				<cflag>-gdwarf-2</cflag>
+				<cflag>-O0</cflag>
 			</cflags>
 			<ldflags>
 				<ldflag>-static-libgcc</ldflag>
@@ -57,7 +61,10 @@
 				<warning>no-deprecated</warning>
 			</warnings>
 		</target>
-		<target kind="Executable" arch="i386" name="zeep Release" linkTarget="zeep-test">
+		<target kind="Executable">
+			<name>zeep Release</name>
+			<linkTarget>zeep-test</linkTarget>
+			<compiler>/usr/bin/c++</compiler>
 			<defines>
 				<define>NDEBUG</define>
 			</defines>

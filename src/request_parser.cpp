@@ -5,11 +5,11 @@
 
 #include <sstream>
 
-#include "soap/http/request_parser.hpp"
+#include "zeep/http/request_parser.hpp"
 
 using namespace std;
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 	
 namespace detail {
 
@@ -326,4 +326,4 @@ boost::tribool request_parser::parse_content(request& req, char ch)
 }
 
 } // http
-} // soap
+} // zeep

@@ -9,11 +9,11 @@
 
 #include <expat.h>
 
-#include "soap/exception.hpp"
+#include "zeep/exception.hpp"
 
 using namespace std;
 
-namespace soap {
+namespace zeep {
 
 const char* kXML_Parser_Error_Messages[] = {
 	"NONE",
