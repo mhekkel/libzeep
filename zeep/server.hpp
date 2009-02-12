@@ -6,12 +6,12 @@
 #ifndef SOAP_SERVER_HPP
 #define SOAP_SERVER_HPP
 
-#include "soap/http/server.hpp"
-#include "soap/http/request.hpp"
-#include "soap/http/reply.hpp"
-#include "soap/dispatcher.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/dispatcher.hpp"
 
-namespace soap {
+namespace zeep {
 
 class server
 	: public dispatcher

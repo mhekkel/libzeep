@@ -6,10 +6,10 @@
 #ifndef SOAP_HTTP_REQUEST_HANDLER_HPP
 #define SOAP_HTTP_REQUEST_HANDLER_HPP
 
-#include "soap/http/request.hpp"
-#include "soap/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/reply.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 class request_handler
 {

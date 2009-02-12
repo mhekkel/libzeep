@@ -19,11 +19,11 @@
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/accumulate.hpp>
 
-#include "soap/xml/node.hpp"
-#include "soap/exception.hpp"
-#include "soap/xml/serialize.hpp"
+#include "zeep/xml/node.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/xml/serialize.hpp"
 
-namespace soap {
+namespace zeep {
 
 namespace detail {
 
@@ -93,7 +93,7 @@ struct handler_traits<void(Class::*)(R&)>
 };
 
 // all the other specializations are specified at the bottom of this file
-#define  BOOST_PP_FILENAME_1 "soap/dispatcher.hpp"
+#define  BOOST_PP_FILENAME_1 "zeep/dispatcher.hpp"
 #define  BOOST_PP_ITERATION_LIMITS (1, 9)
 #include BOOST_PP_ITERATE()
 

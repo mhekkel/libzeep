@@ -10,8 +10,8 @@
 #include <vector>
 #include <map>
 
-#include "soap/xml/node.hpp"
-#include "soap/exception.hpp"
+#include "zeep/xml/node.hpp"
+#include "zeep/exception.hpp"
 
 #include <boost/mpl/if.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -31,7 +31,7 @@
 //	The interface for the code below is compatible with the 'serialize' member
 //	function required to use boost::serialization. 
 
-namespace soap { namespace xml {
+namespace zeep { namespace xml {
 
 const std::string kPrefix = "ns";
 
@@ -274,7 +274,7 @@ struct serialize_struct
 template<typename T>
 std::string serialize_struct<T>::s_struct_name = typeid(T).name();
 
-#define SOAP_XML_SET_STRUCT_NAME(s)	soap::xml::serialize_struct<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
+#define SOAP_XML_SET_STRUCT_NAME(s)	zeep::xml::serialize_struct<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
 
 template<typename T>
 struct serialize_vector
@@ -304,7 +304,7 @@ struct enum_map
 				}
 };
 
-#define SOAP_XML_ADD_ENUM(e,v)	soap::xml::enum_map<e>::instance(BOOST_PP_STRINGIZE(e)).m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
+#define SOAP_XML_ADD_ENUM(e,v)	zeep::xml::enum_map<e>::instance(BOOST_PP_STRINGIZE(e)).m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
 
 template<typename T>
 struct serialize_enum

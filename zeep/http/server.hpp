@@ -8,10 +8,10 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
-#include "soap/http/request_handler.hpp"
-#include "soap/http/reply.hpp"
+#include "zeep/http/request_handler.hpp"
+#include "zeep/http/reply.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 class connection;
 

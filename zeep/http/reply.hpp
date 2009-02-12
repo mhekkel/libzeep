@@ -7,11 +7,11 @@
 #define SOAP_HTTP_REPLY_HPP
 
 #include <vector>
-#include "soap/http/header.hpp"
+#include "zeep/http/header.hpp"
 #include <boost/asio/buffer.hpp>
-#include "soap/xml/node.hpp"
+#include "zeep/xml/node.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 enum status_type
 {

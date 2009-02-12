@@ -11,7 +11,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-namespace soap { namespace xml {
+namespace zeep { namespace xml {
 
 class attribute;
 typedef boost::shared_ptr<attribute>	attribute_ptr;

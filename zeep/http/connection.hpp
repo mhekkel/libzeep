@@ -10,10 +10,10 @@
 #include <boost/noncopyable.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
-#include "soap/http/request_parser.hpp"
-#include "soap/http/request_handler.hpp"
+#include "zeep/http/request_parser.hpp"
+#include "zeep/http/request_handler.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 class connection
 	: public boost::enable_shared_from_this<connection>

@@ -49,8 +49,8 @@
 				<define>DEBUG</define>
 			</defines>
 			<cflags>
-				<cflag>-gdwarf-2</cflag>
 				<cflag>-O0</cflag>
+				<cflag>-gdwarf-2</cflag>
 			</cflags>
 			<ldflags>
 				<ldflag>-static-libgcc</ldflag>
