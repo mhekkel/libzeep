@@ -6,9 +6,9 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
-#include "soap/http/connection.hpp"
+#include "zeep/http/connection.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 connection::connection(boost::asio::io_service& service,
 	request_handler& handler)

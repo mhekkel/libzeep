@@ -6,12 +6,12 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 
-#include "soap/http/reply.hpp"
-#include "soap/xml/document.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/xml/document.hpp"
 
 using namespace std;
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 namespace detail {
 

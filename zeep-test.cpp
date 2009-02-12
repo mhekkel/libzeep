@@ -1,4 +1,4 @@
-#include "soap/server.hpp"
+#include "zeep/server.hpp"
 
 #include <boost/lexical_cast.hpp>
 #include <unistd.h>
@@ -65,7 +65,7 @@ enum Algorithm
 // Count:			a simple call taking two parameters and returning one 
 // Find:			complex search routine taking several parameters and returning a complex type
 
-class my_server : public soap::server
+class my_server : public zeep::server
 {
   public:
 						my_server(
@@ -93,7 +93,7 @@ class my_server : public soap::server
 };
 
 my_server::my_server(const string& address, short port)
-	: soap::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port)
+	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port)
 {
 	using namespace WSSearchNS;
 
@@ -138,7 +138,7 @@ void my_server::Count(
 	unsigned int&				result)
 {
 	if (db != "sprot" and db != "trembl" and db != "uniprot")
-		throw soap::exception("Unknown databank: %s", db.c_str());
+		throw zeep::exception("Unknown databank: %s", db.c_str());
 
 	log() << db;
 
@@ -183,6 +183,9 @@ int main(int argc, const char* argv[])
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
 	my_server server("0.0.0.0", 10333);
+	
+	cout << "Listening on port 10333 of localhost" << endl;
+	
     boost::thread t(boost::bind(&my_server::run, &server));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);

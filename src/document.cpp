@@ -12,13 +12,13 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "soap/xml/document.hpp"
-#include "soap/exception.hpp"
+#include "zeep/xml/document.hpp"
+#include "zeep/exception.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
 
-namespace soap { namespace xml {
+namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
 
@@ -99,6 +99,13 @@ struct document_imp
 
 	void			parse(
 						istream&			data);
+
+
+	void			parse_name(
+						const char*			name,
+						string&				element,
+						string&				ns,
+						string&				prefix);
 };
 
 // --------------------------------------------------------------------
@@ -167,34 +174,62 @@ void document_imp::XML_StartNamespaceDeclHandler(
     const XML_Char*		uri)
 {
 	assert(uri);
-	static_cast<document_imp*>(userData)->StartNamespaceDeclHandler(prefix ? prefix : "_", uri);
+	static_cast<document_imp*>(userData)->StartNamespaceDeclHandler(prefix ? prefix : "", uri);
 }
 
 void document_imp::XML_EndNamespaceDeclHandler(
 	void*				userData,
 	const XML_Char*		prefix)
 {
-	static_cast<document_imp*>(userData)->EndNamespaceDeclHandler(prefix ? prefix : "_");
+	static_cast<document_imp*>(userData)->EndNamespaceDeclHandler(prefix ? prefix : "");
 }
 
 // --------------------------------------------------------------------
+
+void document_imp::parse_name(
+	const char*			name,
+	string&				element,
+	string&				ns,
+	string&				prefix)
+{
+	vector<string> n3;
+	ba::split(n3, name, ba::is_any_of("="));
+
+	if (n3.size() == 3)
+	{
+		element = n3[1];
+		ns = n3[0];
+		prefix = n3[2];
+	}
+	else if (n3.size() == 2)
+	{
+		element = n3[1];
+		ns = n3[0];
+		prefix.clear();
+		
+		if (ns.empty() == false and not cur.empty())
+			prefix = cur.top()->find_prefix(ns);
+	}
+	else
+	{
+		element = n3[0];
+		ns.clear();
+		prefix.clear();
+	}
+}
 
 void document_imp::StartElementHandler(
 	const XML_Char*		name,
 	const XML_Char**	atts)
 {
-	vector<string> n3;
-	ba::split(n3, name, ba::is_any_of("="));
+	string element, ns, prefix;
 	
+	parse_name(name, element, ns, prefix);
+
 	node_ptr n;
 	
-	if (n3.size() == 3)
-		n.reset(new node(n3[1], n3[0], n3[2]));
-	else if (n3.size() == 2)
-		n.reset(new node(n3[1], n3[0]));
-	else
-		n.reset(new node(name));
-	
+	n.reset(new node(element, ns, prefix));
+
 	if (cur.empty())
 	{
 		cur.push(n);
@@ -211,7 +246,11 @@ void document_imp::StartElementHandler(
 		if (not att[0] or not att[1])
 			break;
 		
-		attribute_ptr attr(new xml::attribute(att[0], att[1]));
+		parse_name(att[0], element, ns, prefix);
+		if (not prefix.empty())
+			element = prefix + ':' + element;
+		
+		attribute_ptr attr(new xml::attribute(element, att[1]));
 		cur.top()->add_attribute(attr);
 	}
 
@@ -219,7 +258,14 @@ void document_imp::StartElementHandler(
 
 	for (vector<pair<string,string> >::iterator ns = namespaces.begin(); ns != namespaces.end(); ++ns)
 	{
-		attribute_ptr attr(new xml::attribute(name_prefix + ns->first, ns->second));
+		string name;
+		if (ns->first.empty())
+			name = "xmlns";
+		else
+			name = name_prefix + ns->first;
+
+		attribute_ptr attr(new xml::attribute(name, ns->second));
+
 		cur.top()->add_attribute(attr);
 	}
 	
@@ -274,7 +320,7 @@ void document_imp::StartNamespaceDeclHandler(
 {
 	if (prefix == NULL)
 		prefix = "";
-	
+
 	namespaces.push_back(make_pair(prefix, uri));
 }
 	
@@ -372,4 +418,4 @@ ostream& operator<<(ostream& lhs, const document& rhs)
 }
 	
 } // xml
-} // soap
+} // zeep

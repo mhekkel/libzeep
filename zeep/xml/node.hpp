@@ -28,13 +28,15 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 
 						node(
 							const std::string&	name)
-							: m_name(name) {}
+							: m_name(name)
+							, m_parent(NULL) {}
 
 						node(
 							const std::string&	name,
 							const std::string&	prefix)
 							: m_name(name)
-							, m_prefix(prefix) {}
+							, m_prefix(prefix)
+							, m_parent(NULL) {}
 
 						node(
 							const std::string&	name,
@@ -42,7 +44,8 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 							const std::string&	prefix)
 							: m_name(name)
 							, m_ns(ns)
-							, m_prefix(prefix) {}
+							, m_prefix(prefix)
+							, m_parent(NULL) {}
 
 						node(
 							const node&			rhs);
@@ -203,6 +206,9 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 	node_ptr			find_first_child(
 							const std::string&	name) const;
 
+	std::string			find_prefix(
+							const std::string&	uri) const;
+
   private:
 
 	std::string			m_name;
@@ -212,6 +218,7 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 	attribute_ptr		m_attributes;
 	node_ptr			m_next;
 	node_ptr			m_children;
+	node*				m_parent;
 };
 
 class attribute

@@ -6,16 +6,16 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "soap/server.hpp"
-#include "soap/envelope.hpp"
-#include "soap/xml/document.hpp"
+#include "zeep/server.hpp"
+#include "zeep/envelope.hpp"
+#include "zeep/xml/document.hpp"
 
 using namespace std;
 
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 
-namespace soap {
+namespace zeep {
 	
 namespace detail {
 

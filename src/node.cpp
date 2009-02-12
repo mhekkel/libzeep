@@ -7,12 +7,12 @@
 #include <boost/algorithm/string.hpp>
 #include <vector>
 
-#include "soap/xml/node.hpp"
+#include "zeep/xml/node.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
 
-namespace soap { namespace xml {
+namespace zeep { namespace xml {
 
 void node::add_attribute(
 	attribute_ptr		attr)
@@ -63,6 +63,8 @@ void node::add_child(
 			after = after->m_next;
 		after->m_next = node;
 	}
+	
+	node->m_parent = this;
 }
 
 void node::add_content(
@@ -140,6 +142,34 @@ string node::get_attribute(
 	return result;
 }
 
+string node::find_prefix(
+	const string&		uri) const
+{
+	string result;
+	bool done = false;
+	
+	for (node::const_attribute_iterator attr = attribute_begin(); attr != attribute_end(); ++attr)
+	{
+		if (attr->value() == uri and ba::starts_with(attr->name(), "xmlns"))
+		{
+			result = attr->name();
+			
+			if (result == "xmlns")
+				result.clear();
+			else if (result.length() > 5 and result[5] == ':')
+				result.erase(0, 6);
+
+			done = true;
+			break;
+		}
+	}
+	
+	if (not done and m_parent != NULL)
+		result = m_parent->find_prefix(uri);
+	
+	return result;
+}
+
 void node::write(
 	ostream&			stream,
 	int					level) const
@@ -161,7 +191,7 @@ void node::write(
 	}
 
 	string cont = m_content;
-//	ba::trim(cont);
+	ba::trim(cont);
 	
 	ba::replace_all(cont, "&", "&amp;");
 	ba::replace_all(cont, "<", "&lt;");
@@ -228,4 +258,4 @@ node_ptr make_node(const string& name,
 
 
 } // xml
-} // soap
+} // zeep

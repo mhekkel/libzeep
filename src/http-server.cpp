@@ -7,8 +7,8 @@
 #include <sstream>
 #include <locale>
 
-#include "soap/http/server.hpp"
-#include "soap/http/connection.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/connection.hpp"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
@@ -17,7 +17,7 @@
 
 using namespace std;
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 namespace detail {
 
