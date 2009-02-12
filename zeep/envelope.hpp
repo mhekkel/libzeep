@@ -6,10 +6,10 @@
 #ifndef SOAP_ENVELOPE_H
 #define SOAP_ENVELOPE_H
 
-#include "soap/xml/document.hpp"
-#include "soap/exception.hpp"
+#include "zeep/xml/document.hpp"
+#include "zeep/exception.hpp"
 
-namespace soap
+namespace zeep
 {
 
 class envelope : public boost::noncopyable

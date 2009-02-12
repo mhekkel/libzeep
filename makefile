@@ -33,7 +33,7 @@ OBJECTS = \
 	obj/soap-server.o \
 	obj/zeep-test.o
 
-zeep: $(OBJECTS)
+zeep-test: $(OBJECTS)
 	c++ -o $@ $(OBJECTS) $(LDOPTS)
 
 obj/%.o: %.cpp

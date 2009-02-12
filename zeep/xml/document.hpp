@@ -6,9 +6,9 @@
 #ifndef SOAP_XML_DOCUMENT_H
 #define SOAP_XML_DOCUMENT_H
 
-#include "soap/xml/node.hpp"
+#include "zeep/xml/node.hpp"
 
-namespace soap { namespace xml {
+namespace zeep { namespace xml {
 
 class document : public boost::noncopyable
 {

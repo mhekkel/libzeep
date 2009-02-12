@@ -13,7 +13,7 @@
 struct XML_ParserStruct;
 typedef struct XML_ParserStruct *XML_Parser;
 
-namespace soap {
+namespace zeep {
 
 class exception : public std::exception
 {

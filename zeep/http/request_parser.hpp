@@ -8,9 +8,9 @@
 
 #include <boost/logic/tribool.hpp>
 
-#include "soap/http/request.hpp"
+#include "zeep/http/request.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 // An HTTP request parser with support for Transfer-Encoding: Chunked
 

@@ -8,9 +8,9 @@
 
 #include <vector>
 
-#include "soap/http/header.hpp"
+#include "zeep/http/header.hpp"
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 struct request
 {

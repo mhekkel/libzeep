@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace soap { namespace http {
+namespace zeep { namespace http {
 
 struct header
 {
