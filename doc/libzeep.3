@@ -1,0 +1,152 @@
+.TH libzeep 3 "12-jan-2009" "version 1.0" "subroutine"
+.SH NAME
+libzeep \- A C++ library to create SOAP servers
+.SH SYNOPSIS
+.B #include <zeep/server.hpp>
+.sp
+class my_server : public zeep::server
+.br
+{
+.br
+  public:
+.br
+    my_server(const char* addr, short port);
+.br
+    void sum(int a, int b, int& c) { c = a + b; }
+.br
+};
+.sp
+my_server::my_server(const char* addr, short port)
+.br
+  : zeep::server("http//www.acme.org/...", addr, port)
+.br
+{
+.br
+  const char kSumParameterNames[] = { "a", "b", "c" };
+.br
+  register_action("sum", this, &my_server::sum, kSumParameterNames);
+.br
+}
+.sp
+ ...
+.sp
+my_server server("0.0.0.0", 10333);
+.br
+boost::thread t(boost::bind(&my_server::run, &server));
+.br
+// and wait for a signal to stop using e.g. sigwait(3)
+.sp
+.SH DESCRIPTION
+Using libzeep you can create a SOAP server by deriving from
+.BR "zeep::server" .
+In the constructor of your server, you call the base class
+constructor with three arguments:
+.IR "ns" ,
+a namespace for your SOAP server,
+.IR "address" ,
+the address to listen to, usually "0.0.0.0" to listen to all
+available addresses. And
+.IR "port" ,
+the port number to bind to.
+.sp
+SOAP actions are simply members of the server object and are 
+registered using the
+.BI register_action
+member function of the
+.BI zeep::server
+base class. After initializing the server object, the
+.BI run
+member is called and the server then starts listening to the
+address and port specified.
+.sp
+The resulting web service application will process incoming request.
+There are three kinds of requests, the server can return an automatically
+generated
+.IR "WSDL" ,
+it can process standard
+.I SOAP
+message send in
+.I SOAP envelopes
+and it can handle
+.I REST
+style requests which are mapped to corresponding
+.I SOAP
+messages internally.
+.sp
+The signature of the registered actions are used to generate all the code
+needed to serialize and deserialize
+.I SOAP envelopes
+and to create a corresponding
+.I WSDL
+file. The signature can be as simple as the example above but can also be
+as complex as in this one:
+.sp
+.BI "  void myAction("
+.br
+.BI "         const std::vector<MyStructIn>& " input ","
+.br
+.BI "         MyStructOut& " output "); "
+.sp
+In order to make this work, you have to notify the library of the mapping
+of your structure type to a name using the macro
+.B SOAP_XML_SET_STRUCT_NAME
+like this:
+.sp
+.BI "         SOAP_XML_SET_STRUCT_NAME(MyStructIn);
+.br
+.BI "         SOAP_XML_SET_STRUCT_NAME(MyStructOut);
+.sp
+Next to this, you have to provide a way to serialize and deserialize your
+structure. For this, libzeep uses the same mechanism as the
+.I Boost::serialize
+library, which means you have to add a templated member function called
+.B serialize
+to your structure. The result will look like this:
+.sp
+struct MyStructIn {
+.br
+  string myField1;
+.br
+  int myField2;
+.sp
+  template<class Archive>
+.br
+  void serialize(Archive& ar, const unsigned int version)
+.br
+  {
+.br
+    ar & BOOST_SERIALIZATION_NVP(myField1)
+.br
+       & BOOST_SERIALIZATION_NVP(myField2);
+.br
+  }
+.br
+};
+.sp
+Similarly you can use enum's in an action signature or as structure 
+member variables. Again we need to tell the library the type name for 
+the enum and the possible enum values. We do this using the
+.B SOAP_XML_ADD_ENUM
+macro, like this:
+.sp
+   enum MyEnum { "one", "two" };
+.br
+   SOAP_XML_ADD_ENUM(myEnum, one);
+   SOAP_XML_ADD_ENUM(myEnum, two);
+.sp
+As shown above, you can also use std::vector containers in the signature
+of actions. Support for other STL containers is not implemented yet.
+.sp
+If the address used by clients of your server is different from the
+address of your local machine (which can happen if you're behind a
+reverse proxy e.g.) you can specify the location using the
+.B set_location
+member function of zeep::server. The specified address will then be used
+in the
+.I WSDL
+file.
+.sp
+.SH BUGS
+Undoubtedly libzeep will contain bugs. One of the more obvious one is
+the missing support for signatures using STL containers other than
+std::vector.
