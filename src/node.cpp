@@ -191,7 +191,6 @@ void node::write(
 	}
 
 	string cont = m_content;
-	ba::trim(cont);
 	
 	ba::replace_all(cont, "&", "&amp;");
 	ba::replace_all(cont, "<", "&lt;");

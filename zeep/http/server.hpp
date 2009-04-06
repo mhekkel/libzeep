@@ -9,8 +9,15 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/noncopyable.hpp>
+
+#include <boost/fusion/include/sequence.hpp>
+#include <boost/fusion/container/vector.hpp>
+#include <boost/fusion/include/accumulate.hpp>
+
 #include "zeep/http/request_handler.hpp"
 #include "zeep/http/reply.hpp"
+
+namespace f = boost::fusion;
 
 namespace zeep { namespace http {
 
@@ -19,21 +26,11 @@ class connection;
 class server : public request_handler, public boost::noncopyable
 {
   public:
-	// if nr_of_threads > 0 server object will bind to the
-	// specified address and port and will start listening.
-	// if nr_of_threads <= 0 server was created in run_worker
-						server(const std::string& address,
-							short port, int nr_of_threads = 4);
+						server(const std::string& address, short port);
 
 	virtual				~server();
 
-	virtual void		run();
-
-	// The next call will fork a worker instance to do
-	// the actual processing and then starts listening
-	// the address and port specified.
-	template<class Server>
-	static void			run_worker(const std::string& address, short port);
+	virtual void		run(const std::string& address, short port, int nr_of_threads);
 
 	virtual void		stop();
 
@@ -48,9 +45,9 @@ class server : public request_handler, public boost::noncopyable
   private:
 	friend class server_starter;
 
-	void				run_worker(int fd);
+	void				run_worker(int fd, int nr_of_threads);
 
-	static void			read_socket_from_parent(int fd_socket,
+	static bool			read_socket_from_parent(int fd_socket,
 							boost::asio::ip::tcp::socket& socket);
 
 	virtual void		handle_request(boost::asio::ip::tcp::socket& socket,
@@ -63,37 +60,71 @@ class server : public request_handler, public boost::noncopyable
 									m_acceptor;
 	boost::thread_group				m_threads;
 	boost::shared_ptr<connection>	m_new_connection;
-	int								m_nr_of_threads;
 };
 
 class server_starter
 {
   public:
-						server_starter(const std::string& address, short port);
-
-	void				run();
-	void				stop();
-
+	
 	template<class Server>
-	void				register_constructor()
+	static server_starter*
+						create(const std::string& address, short port, bool preforked, int nr_of_threads)
 						{
-							m_constructor.reset(new server_constructor<Server>());
+							server_starter* starter = new server_starter(address, port, preforked, nr_of_threads);
+							starter->m_constructor = new server_constructor<void(Server::*)()>();
+							return starter;
+						}
+	
+	template<class Server, typename T0>
+	static server_starter*
+						create(const std::string& address, short port, bool preforked, int nr_of_threads, T0 t0)
+						{
+							server_starter* starter = new server_starter(address, port, preforked, nr_of_threads);
+							starter->m_constructor = new server_constructor<void(Server::*)(T0)>(t0);
+							return starter;
 						}
 
+	virtual				~server_starter();
+
+	void				run();
+
+	// for pre-forked servers you have to call start_listening
+	// when done with initialising the application.
+	virtual void		start_listening();
+
+	void				stop();
+
   private:
+
+						server_starter(const std::string& address, short port, bool preforked, int nr_of_threads);
 
 	struct server_constructor_base
 	{
 		virtual server*	construct(const std::string& address, short port) = 0;
 	};
+	
+	template<class Signature>
+	struct server_constructor;
 
 	template<class Server>
-	struct server_constructor : public server_constructor_base
+	struct server_constructor<void(Server::*)()> : public server_constructor_base
 	{
 		virtual server*	construct(const std::string& address, short port)
-						{
-							return new Server(address, port);
-						}
+							{ return new Server(address, port); }
+	};
+
+	template<class Server, typename T0>
+	struct server_constructor<void(Server::*)(T0)> : public server_constructor_base
+	{
+		typedef typename boost::remove_const<typename boost::remove_reference<T0>::type>::type t_0;
+		typedef typename f::vector<t_0>	argument_type;
+
+		argument_type	arguments;
+
+						server_constructor(T0 t0) : arguments(t0) {}
+		
+		virtual server*	construct(const std::string& address, short port)
+							{ return new Server(address, port, f::at_c<0>(arguments)); }
 	};
 
 	static int			fork_worker(const std::string& address, short port);
@@ -109,35 +140,14 @@ class server_starter
 	boost::shared_ptr<boost::asio::ip::tcp::acceptor>
 									m_acceptor;
 	boost::asio::ip::tcp::socket	m_socket;
-	std::auto_ptr<server_constructor_base>
-									m_constructor;
+	server_constructor_base*		m_constructor;
 	int								m_fd;
+	int								m_pid;
+	int								m_nr_of_threads;
+	bool							m_preforked;
+	server*							m_server;
+	boost::mutex					m_startup_lock;
 };
-
-//// --------------------------------------------------------------------
-//// The implementation of the worker invocation
-//
-//template<class Server>
-//void server::run_worker(const std::string& address, short port)
-//{
-//	// if this call returns, we're in a forked worker child process
-//	int fd = fork_worker(address, port);
-//
-//	// Time to construct the Server object
-//	Server srvr(address, port);
-//	
-//	try
-//	{
-//		srvr.run_worker(fd);
-//	}
-//	catch (std::exception& e)
-//	{
-//		std::cerr << "Exception caught: " << e.what() << std::endl;
-//		exit(1);
-//	}
-//	
-//	exit(0);
-//}
 
 }
 }
