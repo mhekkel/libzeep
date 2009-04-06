@@ -16,6 +16,8 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <sys/wait.h>
+
 using namespace std;
 
 namespace zeep { namespace http {
@@ -29,27 +31,8 @@ boost::mutex						s_log_lock;
 
 }
 
-server::server(const std::string& address, short port, int nr_of_threads)
-	: m_nr_of_threads(nr_of_threads)
+server::server(const std::string& address, short port)
 {
-	if (nr_of_threads > 0)
-	{
-		m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_service));
-		m_new_connection.reset(new connection(m_io_service, *this));
-	
-		boost::asio::ip::tcp::resolver resolver(m_io_service);
-		boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<string>(port));
-		boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
-	
-		m_acceptor->open(endpoint.protocol());
-		m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-		m_acceptor->bind(endpoint);
-		m_acceptor->listen();
-		m_acceptor->async_accept(m_new_connection->get_socket(),
-			boost::bind(&server::handle_accept, this, boost::asio::placeholders::error));
-	}
-	else
-		m_nr_of_threads = -m_nr_of_threads;
 }
 
 server::~server()
@@ -57,18 +40,37 @@ server::~server()
 	stop();
 }
 
-void server::run()
+void server::run(const std::string& address, short port, int nr_of_threads)
 {
-	// keep the server at work until we call stop
-	boost::asio::io_service::work work(m_io_service);
+	assert(not m_acceptor);
+	
+	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_service));
+	m_new_connection.reset(new connection(m_io_service, *this));
 
-	for (int i = 0; i < m_nr_of_threads; ++i)
+	boost::asio::ip::tcp::resolver resolver(m_io_service);
+	boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<string>(port));
+	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+
+	m_acceptor->open(endpoint.protocol());
+	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+	m_acceptor->bind(endpoint);
+	m_acceptor->listen();
+	m_acceptor->async_accept(m_new_connection->get_socket(),
+		boost::bind(&server::handle_accept, this, boost::asio::placeholders::error));
+
+	if (nr_of_threads > 0)
 	{
-		m_threads.create_thread(
-			boost::bind(&boost::asio::io_service::run, &m_io_service));
+		// keep the server at work until we call stop
+		boost::asio::io_service::work work(m_io_service);
+	
+		for (int i = 0; i < nr_of_threads; ++i)
+		{
+			m_threads.create_thread(
+				boost::bind(&boost::asio::io_service::run, &m_io_service));
+		}
+	
+		m_threads.join_all();
 	}
-
-	m_threads.join_all();
 }
 
 void server::stop()
@@ -126,12 +128,12 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		 << detail::s_log->str() << endl;
 }
 
-void server::run_worker(int fd)
+void server::run_worker(int fd, int nr_of_threads)
 {
 	// keep the server at work until we call stop
 	boost::asio::io_service::work work(m_io_service);
 	
-	for (int i = 0; i < m_nr_of_threads; ++i)
+	for (int i = 0; i < nr_of_threads; ++i)
 	{
 		m_threads.create_thread(
 			boost::bind(&boost::asio::io_service::run, &m_io_service));
@@ -143,7 +145,8 @@ void server::run_worker(int fd)
 		{
 			boost::shared_ptr<connection> conn(new connection(m_io_service, *this));
 			
-			read_socket_from_parent(fd, conn->get_socket());
+			if (not read_socket_from_parent(fd, conn->get_socket()))
+				break;
 			
 			conn->start();
 		}
@@ -158,7 +161,7 @@ void server::run_worker(int fd)
 	m_threads.join_all();
 }
 
-void server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
+bool server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
 	typedef boost::asio::ip::tcp::socket::native_type native_type;
 
@@ -181,68 +184,111 @@ void server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket
 	msg.msg_iov = iov;
 	msg.msg_iovlen = 1;
 
+	bool result = false;
 	int n = recvmsg(fd_socket, &msg, 0);
-	if (n < 0)
-		throw exception("error reading filedescriptor: %s", strerror(errno));
-	
-	peer_endpoint.resize(n);
-
-	struct cmsghdr* cmptr CMSG_FIRSTHDR(&msg);
-	if (cmptr != NULL and cmptr->cmsg_len == CMSG_LEN(sizeof(int)))
+	if (n >= 0)
 	{
-		if (cmptr->cmsg_level != SOL_SOCKET)
-			throw exception("control level != SOL_SOCKET");
-		if (cmptr->cmsg_type != SCM_RIGHTS)
-			throw exception("control type != SCM_RIGHTS");
-
-		socket.assign(peer_endpoint.protocol(), *(reinterpret_cast<native_type*>(CMSG_DATA(cmptr))));
+		peer_endpoint.resize(n);
+	
+		struct cmsghdr* cmptr CMSG_FIRSTHDR(&msg);
+		if (cmptr != NULL and cmptr->cmsg_len == CMSG_LEN(sizeof(int)))
+		{
+			if (cmptr->cmsg_level != SOL_SOCKET)
+			 	cerr << "control level != SOL_SOCKET" << endl;
+			else if (cmptr->cmsg_type != SCM_RIGHTS)
+				cerr << "control type != SCM_RIGHTS";
+			else
+			{
+				int fd = *(reinterpret_cast<native_type*>(CMSG_DATA(cmptr)));
+				if (fd >= 0)
+				{
+					socket.assign(peer_endpoint.protocol(), fd);
+					result = true;
+				}
+			}
+		}
+		else
+			cerr << "No file descriptor was passed" << endl;
 	}
-	else
-		throw exception("No file descriptor was passed");
+	
+	return result;
 }
 
 // --------------------------------------------------------------------
 
-server_starter::server_starter(const std::string& address, short port)
+server_starter::server_starter(const string& address, short port, bool preforked,
+	int nr_of_threads)
 	: m_address(address)
 	, m_port(port)
 	, m_acceptor(new boost::asio::ip::tcp::acceptor(m_io_service))
 	, m_socket(m_io_service)
+	, m_constructor(NULL)
+	, m_pid(-1)
+	, m_nr_of_threads(nr_of_threads)
+	, m_preforked(preforked)
+	, m_server(NULL)
 {
-	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<string>(port));
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+	if (m_preforked)
+		m_startup_lock.lock();
+}
 
-	m_acceptor->open(endpoint.protocol());
-	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-	m_acceptor->bind(endpoint);
-	m_acceptor->listen();
-	m_acceptor->async_accept(m_socket,
-		boost::bind(&server_starter::handle_accept, this, boost::asio::placeholders::error));
+server_starter::~server_starter()
+{
+	m_io_service.stop();
+	delete m_constructor;
 }
 
 void server_starter::run()
 {
+	if (not m_preforked)
+	{
+		auto_ptr<server> srvr(m_constructor->construct(m_address, m_port));
+		
+		try
+		{
+			m_server = srvr.get();
+			
+			if (m_nr_of_threads < 1)
+				m_nr_of_threads = 1;
+			
+			srvr->run(m_address, m_port, m_nr_of_threads);
+		}
+		catch (std::exception& e)
+		{
+			std::cerr << "Exception caught: " << e.what() << std::endl;
+		}
+		
+		m_server = NULL;
+		return;
+	}
+	
 	// create a socket pair to pass the file descriptors through
 	int sockfd[2];
 	int err = socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd);
 	if (err < 0)
 		throw exception("Error creating socket pair: %s", strerror(errno));
 
-	int pid = fork();
-	if (pid < 0)
+	// fork
+	m_pid = fork();
+	if (m_pid < 0)
 		throw exception("Error forking worker application: %s", strerror(errno));
 
-	if (pid == 0)
+	if (m_pid == 0)	// child process
 	{
 		close(sockfd[0]);
 		
+		// remove the blocks on the signal handlers
+		sigset_t wait_mask;
+		sigemptyset(&wait_mask);
+		pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
+
 		// Time to construct the Server object
 		auto_ptr<server> srvr(m_constructor->construct(m_address, m_port));
 		
 		try
 		{
-			srvr->run_worker(sockfd[1]);
+			// run the server as a worker
+			srvr->run_worker(sockfd[1], m_nr_of_threads);
 		}
 		catch (std::exception& e)
 		{
@@ -253,7 +299,24 @@ void server_starter::run()
 		exit(0);
 	}
 
-	// parent process, start a thread to listen to the socket
+	// parent process, wait for the signal to start
+	m_startup_lock.lock();
+	m_startup_lock.unlock();
+
+	// bind the address here
+	boost::asio::ip::tcp::resolver resolver(m_io_service);
+	boost::asio::ip::tcp::resolver::query
+		query(m_address, boost::lexical_cast<string>(m_port));
+	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+
+	m_acceptor->open(endpoint.protocol());
+	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+	m_acceptor->bind(endpoint);
+	m_acceptor->listen();
+	m_acceptor->async_accept(m_socket,
+		boost::bind(&server_starter::handle_accept, this, boost::asio::placeholders::error));
+	
+	// start a thread to listen to the socket
 	m_fd = sockfd[0];
 	close(sockfd[1]);
 
@@ -264,12 +327,36 @@ void server_starter::run()
 		boost::bind(&boost::asio::io_service::run, &m_io_service));
 
 	thread.join();
-	close(m_fd);
+
+	if (m_fd >= 0)
+		close(m_fd);
+}
+
+void server_starter::start_listening()
+{
+	if (m_preforked)
+		m_startup_lock.unlock();
 }
 
 void server_starter::stop()
 {
-	m_io_service.stop();
+	if (m_preforked)
+	{
+		m_io_service.stop();
+		
+		// kill the worker
+		kill(m_pid, SIGTERM);
+		
+		// and wait until it died to avoid zombies
+		int status;
+		waitpid(m_pid, &status, 0);
+		
+		// close the socket to the worker
+		close(m_fd);
+		m_fd = -1;
+	}
+	else
+		m_server->stop();
 }
 
 void server_starter::handle_accept(const boost::system::error_code& ec)

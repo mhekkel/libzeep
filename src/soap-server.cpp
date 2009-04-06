@@ -50,9 +50,9 @@ string decode(const string& s)
 }
 
 server::server(const std::string& ns, const std::string& service,
-	const std::string& address, short port, int nr_of_threads)
+	const std::string& address, short port)
 	: dispatcher(ns, service)
-	, http::server(address, port, nr_of_threads)
+	, http::server(address, port)
 {
 	if (port != 80)
 		m_location = "http://" + address + ':' +

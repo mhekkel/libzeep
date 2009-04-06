@@ -19,8 +19,7 @@ class server
 {
   public:
 					server(const std::string& ns, const std::string& service,
-						const std::string& address, short port,
-						int nr_of_threads = 4);
+						const std::string& address, short port);
 
 					// if the default is not correct (reverse proxy e.g.)
 	void			set_location(const std::string& location)

@@ -6,8 +6,6 @@
 #include "zeep/server.hpp"
 
 #include <boost/lexical_cast.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/construct.hpp>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -101,7 +99,7 @@ class my_server : public zeep::server
 };
 
 my_server::my_server(const string& address, short port)
-	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port, -4)
+	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port)
 {
 	using namespace WSSearchNS;
 
@@ -138,9 +136,6 @@ void my_server::ListDatabanks(
 {
 	response.push_back("sprot");
 	response.push_back("trembl");
-	
-	int a = 1, b = 0;
-	a = a / b;
 }
 
 void my_server::Count(
@@ -187,24 +182,11 @@ void my_server::Find(
 	out.hits.push_back(h);
 }
 
-void handler(int sig)
-{
-	int err = errno;
-	
-	if (sig == SIGCHLD)
-	{
-		int status, pid;
-		pid = waitpid(-1, &status, WNOHANG|WUNTRACED);
-
-		if (pid != -1 and WIFSIGNALED(status))
-			cout << "child " << pid << " terminated by signal " << WTERMSIG(status) << endl;
-	}
-	
-	errno = err;
-}
+#define FORKED_MODE 1
 
 int main(int argc, const char* argv[])
 {
+#if defined(FORKED_MODE)
  	for (;;)
  	{
  		cout << "restarting server" << endl;
@@ -213,11 +195,15 @@ int main(int argc, const char* argv[])
 	    sigfillset(&new_mask);
 	    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 	
-		zeep::http::server_starter starter("0.0.0.0", 10333);
-		starter.register_constructor<my_server>();
-		boost::thread t(boost::bind(&zeep::http::server_starter::run, &starter));
+		auto_ptr<zeep::http::server_starter> starter(
+			zeep::http::server_starter::create<my_server>("0.0.0.0", 10333, true, 2));
+		boost::thread t(
+			boost::bind(&zeep::http::server_starter::run, starter.get()));
 	
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+	
+		// start listening
+		starter->start_listening();
 	 
 		// Wait for signal indicating time to shut down.
 		sigset_t wait_mask;
@@ -230,7 +216,7 @@ int main(int argc, const char* argv[])
 		int sig = 0;
 		sigwait(&wait_mask, &sig);
 	
-		starter.stop();
+		starter->stop();
 		t.join();
 		
 		if (sig == SIGCHLD)
@@ -245,6 +231,28 @@ int main(int argc, const char* argv[])
 		
 		break;
  	}
+#else
+    sigset_t new_mask, old_mask;
+    sigfillset(&new_mask);
+    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
+	my_server server("0.0.0.0", 10333);
+    boost::thread t(boost::bind(&my_server::run, &server));
+
+    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+
+	// Wait for signal indicating time to shut down.
+	sigset_t wait_mask;
+	sigemptyset(&wait_mask);
+	sigaddset(&wait_mask, SIGINT);
+	sigaddset(&wait_mask, SIGQUIT);
+	sigaddset(&wait_mask, SIGTERM);
+	pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+	int sig = 0;
+	sigwait(&wait_mask, &sig);
+	
+	server.stop();
+	t.join();
+#endif
 	return 0;
 }
