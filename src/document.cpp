@@ -356,13 +356,15 @@ void document_imp::parse(
 		
 		while (not data.eof())
 		{
-			string line;
-			getline(data, line);
-			line += '\n';
+			char buffer[256];
+			streamsize n = data.readsome(buffer, sizeof(buffer));
 
-			XML_Status err = XML_Parse(p, line.c_str(), line.length(), data.eof() or line.empty());
+			XML_Status err = XML_Parse(p, buffer, n, data.eof() or n == 0);
 			if (err != XML_STATUS_OK)
-				throw exception(p);
+				THROW_EXCEPTION((p));
+			
+			if (n == 0 or data.eof())	
+				break;
 		}
 	}
 	catch (std::exception& e)
