@@ -63,6 +63,13 @@ string get_status_text(status_type status)
 
 // ----------------------------------------------------------------------------
 
+namespace
+{
+const char
+		kNameValueSeparator[] = { ':', ' ' },
+		kCRLF[] = { '\r', '\n' };
+}
+
 vector<boost::asio::const_buffer> reply::to_buffers()
 {
 	vector<boost::asio::const_buffer>	result;
@@ -71,10 +78,6 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 		detail::get_status_text(status) + " \r\n";
 	result.push_back(boost::asio::buffer(status_line));
 	
-	const char
-		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' };
-
 	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
 	{
 		result.push_back(boost::asio::buffer(h->name));
@@ -123,7 +126,7 @@ string reply::get_as_text()
 	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
 	{
 		result += h->name;
-		result += "\r\n";
+		result += ": ";
 		result += h->value;
 		result += "\r\n";
 	}

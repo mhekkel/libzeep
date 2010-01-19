@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstdarg>
+#include <cstdio>
 
 #include <expat.h>
 

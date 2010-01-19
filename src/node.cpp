@@ -5,6 +5,9 @@
 
 #include <iostream>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/bind.hpp>
+#include <boost/range.hpp>
 #include <vector>
 
 #include "zeep/xml/node.hpp"
@@ -14,18 +17,56 @@ namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
 
+node::node()
+{
+	m_children = new node_list;
+	m_attributes = new attribute_list;
+	m_parent = NULL;
+}
+
+node::node(
+	const std::string&	name)
+	: m_name(name)
+	, m_children(new node_list)
+	, m_attributes(new attribute_list)
+	, m_parent(NULL)
+{
+}
+
+node::node(
+	const std::string&	name,
+	const std::string&	prefix)
+	: m_name(name)
+	, m_prefix(prefix)
+	, m_children(new node_list)
+	, m_attributes(new attribute_list)
+	, m_parent(NULL)
+{
+}
+
+node::node(
+	const std::string&	name,
+	const std::string&	ns,
+	const std::string&	prefix)
+	: m_name(name)
+	, m_ns(ns)
+	, m_prefix(prefix)
+	, m_children(new node_list)
+	, m_attributes(new attribute_list)
+	, m_parent(NULL)
+{
+}
+
+node::~node()
+{
+	delete m_children;
+	delete m_attributes;
+}
+
 void node::add_attribute(
 	attribute_ptr		attr)
 {
-	if (not m_attributes)
-		m_attributes = attr;
-	else
-	{
-		attribute_ptr after = m_attributes;
-		while (after->m_next)
-			after = after->m_next;
-		after->m_next = attr;
-	}
+	m_attributes->push_back(attr);
 }
 
 void node::add_attribute(
@@ -38,32 +79,13 @@ void node::add_attribute(
 
 void node::remove_attribute(const string& name)
 {
-	if (m_attributes)
-	{
-		attribute_ptr a = m_attributes;
-		while (a->m_next)
-		{
-			if (a->m_next->m_name == name)
-				a->m_next = a->m_next->m_next;
-			else
-				a = a->m_next;
-		}
-	}
+	m_attributes->remove_if(boost::bind(&attribute::name, _1) == name);
 }
 
 void node::add_child(
 	node_ptr			node)
 {
-	if (not m_children)
-		m_children = node;
-	else
-	{
-		node_ptr after = m_children;
-		while (after->m_next)
-			after = after->m_next;
-		after->m_next = node;
-	}
-	
+	m_children->push_back(node);
 	node->m_parent = this;
 }
 
@@ -78,18 +100,66 @@ void node::add_content(
 node_ptr node::find_first_child(
 	const string&		name) const
 {
-	node_ptr child = m_children;
+	node_ptr result;
 
-	while (child and child->m_name != name)
-		child = child->m_next;
+	node_list::const_iterator iter = find_if(
+		m_children->begin(), m_children->end(),
+		boost::bind(&node::name, _1) == name);
+	
+	if (iter != m_children->end())
+	{
+		node& n = const_cast<node&>(*iter);
+		result = n.shared_from_this();
+	}
 
-	return child;
+	return result;
 }
 
 // locate node based on path (NO XPATH YET!!!)
-node_ptr node::find_child(const string& path)
+node_ptr node::find_child(const string& path) const
 {
-	node_ptr result(shared_from_this());
+	node_ptr result(const_cast<node*>(this)->shared_from_this());
+	
+	vector<string> pv;
+	ba::split(pv, path, ba::is_any_of("/"));
+	
+	if (path.size() == 0)
+		return result; // ?
+
+	vector<string>::iterator p = pv.begin();
+	if (p->length() == 0)
+		++p;
+	
+	for (;;)
+	{
+		if (result->name() != *p)
+		{
+			result = node_ptr();
+			break;
+		}
+		
+		++p;
+		
+		if (p == pv.end())
+			break;
+		
+		for (node_list::iterator n = result->children().begin(); n != result->children().end(); ++n)
+		{
+			if (n->name() == *p)
+			{
+				result = n->shared_from_this();
+				break;
+			}
+		}
+	}
+	
+	return result;
+}
+
+// locate nodes based on path (NO XPATH YET!!!)
+node_list node::find_all(const string& path) const
+{
+	node_list result;
 	
 	vector<string> pv;
 	ba::split(pv, path, ba::is_any_of("/"));
@@ -102,35 +172,35 @@ node_ptr node::find_child(const string& path)
 		++p;
 	
 	if (p == pv.end())
-		return node_ptr();
+		return result;
 	
-	while (p != pv.end() and result)
+	if (*p == name())
 	{
-		bool found = false;
-		for (node::iterator n = result->begin(); n != result->end(); ++n)
+		++p;
+		if (p == pv.end())
+			result.push_back(const_cast<node*>(this)->shared_from_this());
+		else if (not m_children->empty())
 		{
-			if (n->name() == *p)
+			for (node_list::const_iterator n = children().begin(); n != children().end(); ++n)
 			{
-				++p;
-				result = n->shared_from_this();
-				found = true;
-				break;
+				if (n->name() == *p)
+				{
+					node_list l = n->find_all(ba::join(boost::make_iterator_range(p, pv.end()), "/"));
+					result.insert(result.end(), l.begin(), l.end());
+				}
 			}
 		}
-		
-		if (not found)
-			result = node_ptr();
 	}
 	
 	return result;
 }
 
 string node::get_attribute(
-	const string&	name)
+	const string&	name) const
 {
 	string result;
 
-	for (node::attribute_iterator attr = attribute_begin(); attr != attribute_end(); ++attr)
+	for (attribute_list::iterator attr = attributes().begin(); attr != attributes().end(); ++attr)
 	{
 		if (attr->name() == name)
 		{
@@ -148,7 +218,7 @@ string node::find_prefix(
 	string result;
 	bool done = false;
 	
-	for (node::const_attribute_iterator attr = attribute_begin(); attr != attribute_end(); ++attr)
+	for (attribute_list::const_iterator attr = m_attributes->begin(); attr != m_attributes->end(); ++attr)
 	{
 		if (attr->value() == uri and ba::starts_with(attr->name(), "xmlns"))
 		{
@@ -186,11 +256,12 @@ void node::write(
 
 	if (m_attributes)
 	{
-		for (const_attribute_iterator a = attribute_begin(); a != attribute_end(); ++a)
+		for (attribute_list::const_iterator a = attributes().begin(); a != attributes().end(); ++a)
 			stream << ' ' << a->name() << "=\"" << a->value() << '"';
 	}
 
 	string cont = m_content;
+	ba::trim(cont);
 	
 	ba::replace_all(cont, "&", "&amp;");
 	ba::replace_all(cont, "<", "&lt;");
@@ -202,11 +273,11 @@ void node::write(
 	if (cont.length())
 		stream << cont;
 
-	if (m_children)
+	if (not m_children->empty())
 	{
 		stream << endl;
 
-		for (const_iterator c = begin(); c != end(); ++c)
+		for (node_list::const_iterator c = children().begin(); c != children().end(); ++c)
 			c->write(stream, level + 1);
 
 		for (int i = 0; i < level; ++i)

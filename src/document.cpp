@@ -353,18 +353,29 @@ void document_imp::parse(
 //		XML_SetNotationDeclHandler(p, XML_NotationDeclHandler);
 		XML_SetNamespaceDeclHandler(p, XML_StartNamespaceDeclHandler, XML_EndNamespaceDeclHandler);
 		XML_SetReturnNSTriplet(p, true);
+
+		// for some reason, readsome does not work when using
+		// boost::iostreams::stream<boost::iostreams::array_source>
+		// and so we have to come up with a kludge.
 		
-		while (not data.eof())
+		data.seekg (0, ios::end);
+		unsigned long length = data.tellg();
+		data.seekg (0, ios::beg);
+
+		while (length > 0)
 		{
 			char buffer[256];
-			streamsize n = data.readsome(buffer, sizeof(buffer));
 
-			XML_Status err = XML_Parse(p, buffer, n, data.eof() or n == 0);
-			if (err != XML_STATUS_OK)
-				THROW_EXCEPTION((p));
+			unsigned long k = length;
+			if (k > sizeof(buffer))
+				k = sizeof(buffer);
+			length -= k;
 			
-			if (n == 0 or data.eof())	
-				break;
+			data.read(buffer, k);
+			
+			XML_Status err = XML_Parse(p, buffer, k, length == 0);
+			if (err != XML_STATUS_OK)
+				throw exception(p);
 		}
 	}
 	catch (std::exception& e)
