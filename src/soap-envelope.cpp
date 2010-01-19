@@ -20,14 +20,20 @@ envelope::envelope(xml::document& data)
 	if (env->name() != "Envelope" or env->ns() != "http://schemas.xmlsoap.org/soap/envelope/")
 		throw exception("Invalid SOAP envelope");
 	
-	m_body = env->children();
+	if (env->children().empty())
+		throw exception("Invalid SOAP envelope, missing body");
+	
+	m_body = env->children().front();
 	if (not m_body or m_body->ns() != "http://schemas.xmlsoap.org/soap/envelope/")
 		throw exception("Invalid SOAP envelope");
 }
 
 xml::node_ptr envelope::request()
 {
-	return m_body->children();
+	if (m_body->children().empty())
+		throw exception("Invalid SOAP envelope, missing request");
+	
+	return m_body->children().front();
 }
 
 xml::node_ptr make_envelope(xml::node_ptr data)

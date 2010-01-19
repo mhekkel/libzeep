@@ -433,7 +433,7 @@ deserializer& deserializer::operator&(
 
 	if (serialize_type<value_type>::is_vector)
 	{
-		for (node::iterator e = m_node->begin(); e != m_node->end(); ++e)
+		for (node_list::iterator e = m_node->children().begin(); e != m_node->children().end(); ++e)
 		{
 			if (e->name() == rhs.name())
 				s_type::deserialize(*e, rhs.value());
