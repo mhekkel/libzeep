@@ -118,38 +118,26 @@ node_ptr node::find_first_child(
 // locate node based on path (NO XPATH YET!!!)
 node_ptr node::find_child(const string& path) const
 {
-	node_ptr result(const_cast<node*>(this)->shared_from_this());
+	node_ptr result;
 	
 	vector<string> pv;
 	ba::split(pv, path, ba::is_any_of("/"));
 	
-	if (path.size() == 0)
+	if (path.size() == 0 or pv.front().length() == 0)
 		return result; // ?
-
-	vector<string>::iterator p = pv.begin();
-	if (p->length() == 0)
-		++p;
 	
-	for (;;)
+	for (node_list::const_iterator n = children().begin(); n != children().end(); ++n)
 	{
-		if (result->name() != *p)
+		if (n->name() == pv.front())
 		{
-			result = node_ptr();
-			break;
-		}
-		
-		++p;
-		
-		if (p == pv.end())
-			break;
-		
-		for (node_list::iterator n = result->children().begin(); n != result->children().end(); ++n)
-		{
-			if (n->name() == *p)
+			if (pv.size() == 1)
 			{
-				result = n->shared_from_this();
-				break;
+				node& nn = const_cast<node&>(*n);
+				result = nn.shared_from_this();
 			}
+			else
+				result = n->find_child(ba::join(boost::make_iterator_range(pv.begin() + 1, pv.end()), "/"));
+			break;
 		}
 	}
 	
@@ -164,31 +152,15 @@ node_list node::find_all(const string& path) const
 	vector<string> pv;
 	ba::split(pv, path, ba::is_any_of("/"));
 	
-	if (path.size() == 0)
+	if (path.size() == 0 or pv.front().length() == 0)
 		return result; // ?
-
-	vector<string>::iterator p = pv.begin();
-	if (p->length() == 0)
-		++p;
 	
-	if (p == pv.end())
-		return result;
-	
-	if (*p == name())
+	for (node_list::const_iterator n = children().begin(); n != children().end(); ++n)
 	{
-		++p;
-		if (p == pv.end())
-			result.push_back(const_cast<node*>(this)->shared_from_this());
-		else if (not m_children->empty())
+		if (n->name() == pv.front())
 		{
-			for (node_list::const_iterator n = children().begin(); n != children().end(); ++n)
-			{
-				if (n->name() == *p)
-				{
-					node_list l = n->find_all(ba::join(boost::make_iterator_range(p, pv.end()), "/"));
-					result.insert(result.end(), l.begin(), l.end());
-				}
-			}
+			node_list l = n->find_all(ba::join(boost::make_iterator_range(pv.begin() + 1, pv.end()), "/"));
+			result.insert(result.end(), l.begin(), l.end());
 		}
 	}
 	
@@ -261,7 +233,7 @@ void node::write(
 	}
 
 	string cont = m_content;
-	ba::trim(cont);
+//	ba::trim(cont);
 	
 	ba::replace_all(cont, "&", "&amp;");
 	ba::replace_all(cont, "<", "&lt;");
