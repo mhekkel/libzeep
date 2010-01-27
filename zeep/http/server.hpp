@@ -84,6 +84,15 @@ class server_starter
 							return starter;
 						}
 
+	template<class Server, typename T0, typename T1>
+	static server_starter*
+						create(const std::string& address, short port, bool preforked, int nr_of_threads, T0 t0, T1 t1)
+						{
+							server_starter* starter = new server_starter(address, port, preforked, nr_of_threads);
+							starter->m_constructor = new server_constructor<void(Server::*)(T0,T1)>(t0, t1);
+							return starter;
+						}
+
 	virtual				~server_starter();
 
 	void				run();
@@ -125,6 +134,21 @@ class server_starter
 		
 		virtual server*	construct(const std::string& address, short port)
 							{ return new Server(address, port, f::at_c<0>(arguments)); }
+	};
+
+	template<class Server, typename T0, typename T1>
+	struct server_constructor<void(Server::*)(T0, T1)> : public server_constructor_base
+	{
+		typedef typename boost::remove_const<typename boost::remove_reference<T0>::type>::type t_0;
+		typedef typename boost::remove_const<typename boost::remove_reference<T1>::type>::type t_1;
+		typedef typename f::vector<t_0,t_1>	argument_type;
+
+		argument_type	arguments;
+
+						server_constructor(T0 t0, T1 t1) : arguments(t0, t1) {}
+		
+		virtual server*	construct(const std::string& address, short port)
+							{ return new Server(address, port, f::at_c<0>(arguments), f::at_c<1>(arguments)); }
 	};
 
 	static int			fork_worker(const std::string& address, short port);

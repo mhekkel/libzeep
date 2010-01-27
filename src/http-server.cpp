@@ -165,10 +165,19 @@ bool server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket
 {
 	typedef boost::asio::ip::tcp::socket::native_type native_type;
 
+#if __APPLE__
+	// macos is special...
+	assert(CMSG_SPACE(sizeof(int)) == 16);
+#endif
+
 	struct msghdr	msg;
 	union {
 	  struct cmsghdr	cm;
+#if __APPLE__
+	  char				control[16];
+#else
 	  char				control[CMSG_SPACE(sizeof(int))];
+#endif
 	} control_un;
 
 	msg.msg_control = control_un.control;
@@ -242,10 +251,10 @@ void server_starter::run()
 {
 	if (not m_preforked)
 	{
-		auto_ptr<server> srvr(m_constructor->construct(m_address, m_port));
-		
 		try
 		{
+			auto_ptr<server> srvr(m_constructor->construct(m_address, m_port));
+
 			m_server = srvr.get();
 			
 			if (m_nr_of_threads < 1)
@@ -261,75 +270,82 @@ void server_starter::run()
 		m_server = NULL;
 		return;
 	}
-	
-	// create a socket pair to pass the file descriptors through
-	int sockfd[2];
-	int err = socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd);
-	if (err < 0)
-		throw exception("Error creating socket pair: %s", strerror(errno));
 
-	// fork
-	m_pid = fork();
-	if (m_pid < 0)
-		throw exception("Error forking worker application: %s", strerror(errno));
-
-	if (m_pid == 0)	// child process
+	try
 	{
-		close(sockfd[0]);
-		
-		// remove the blocks on the signal handlers
-		sigset_t wait_mask;
-		sigemptyset(&wait_mask);
-		pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
-
-		// Time to construct the Server object
-		auto_ptr<server> srvr(m_constructor->construct(m_address, m_port));
-		
-		try
-		{
-			// run the server as a worker
-			srvr->run_worker(sockfd[1], m_nr_of_threads);
-		}
-		catch (std::exception& e)
-		{
-			std::cerr << "Exception caught: " << e.what() << std::endl;
-			exit(1);
-		}
-		
-		exit(0);
-	}
-
-	// parent process, wait for the signal to start
-	m_startup_lock.lock();
-	m_startup_lock.unlock();
-
-	// bind the address here
-	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::resolver::query
-		query(m_address, boost::lexical_cast<string>(m_port));
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
-
-	m_acceptor->open(endpoint.protocol());
-	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-	m_acceptor->bind(endpoint);
-	m_acceptor->listen();
-	m_acceptor->async_accept(m_socket,
-		boost::bind(&server_starter::handle_accept, this, boost::asio::placeholders::error));
+		// create a socket pair to pass the file descriptors through
+		int sockfd[2];
+		int err = socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd);
+		if (err < 0)
+			throw exception("Error creating socket pair: %s", strerror(errno));
 	
-	// start a thread to listen to the socket
-	m_fd = sockfd[0];
-	close(sockfd[1]);
-
-	// keep the server at work until we call stop
-	boost::asio::io_service::work work(m_io_service);
-
-	boost::thread thread(
-		boost::bind(&boost::asio::io_service::run, &m_io_service));
-
-	thread.join();
-
-	if (m_fd >= 0)
-		close(m_fd);
+		// fork
+		m_pid = fork();
+		if (m_pid < 0)
+			throw exception("Error forking worker application: %s", strerror(errno));
+	
+		if (m_pid == 0)	// child process
+		{
+			close(sockfd[0]);
+			
+			// remove the blocks on the signal handlers
+			sigset_t wait_mask;
+			sigemptyset(&wait_mask);
+			pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
+	
+			// Time to construct the Server object
+			auto_ptr<server> srvr(m_constructor->construct(m_address, m_port));
+			
+			try
+			{
+				// run the server as a worker
+				srvr->run_worker(sockfd[1], m_nr_of_threads);
+			}
+			catch (std::exception& e)
+			{
+				std::cerr << "Exception caught: " << e.what() << std::endl;
+				exit(1);
+			}
+			
+			exit(0);
+		}
+	
+		// parent process, wait for the signal to start
+		m_startup_lock.lock();
+		m_startup_lock.unlock();
+	
+		// bind the address here
+		boost::asio::ip::tcp::resolver resolver(m_io_service);
+		boost::asio::ip::tcp::resolver::query
+			query(m_address, boost::lexical_cast<string>(m_port));
+		boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+	
+		m_acceptor->open(endpoint.protocol());
+		m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+		m_acceptor->bind(endpoint);
+		m_acceptor->listen();
+		m_acceptor->async_accept(m_socket,
+			boost::bind(&server_starter::handle_accept, this, boost::asio::placeholders::error));
+		
+		// start a thread to listen to the socket
+		m_fd = sockfd[0];
+		close(sockfd[1]);
+	
+		// keep the server at work until we call stop
+		boost::asio::io_service::work work(m_io_service);
+	
+		boost::thread thread(
+			boost::bind(&boost::asio::io_service::run, &m_io_service));
+	
+		thread.join();
+	
+		if (m_fd >= 0)
+			close(m_fd);
+	}
+	catch (std::exception& e)
+	{
+		std::cerr << "Exception caught in running server: " << e.what() << std::endl;
+	}
 }
 
 void server_starter::start_listening()
@@ -377,7 +393,12 @@ void server_starter::write_socket_to_worker(int fd_socket, boost::asio::ip::tcp:
 	struct msghdr msg;
 	union {
 		struct cmsghdr	cm;
-		char			control[CMSG_SPACE(sizeof(native_type))];
+#if __APPLE__
+	  char				control[16];
+#else
+	  char				control[CMSG_SPACE(sizeof(native_type))];
+#endif
+//		char			control[CMSG_SPACE(sizeof(native_type))];
 	} control_un;
 	
 	msg.msg_control = control_un.control;
