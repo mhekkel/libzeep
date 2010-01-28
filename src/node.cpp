@@ -159,8 +159,16 @@ node_list node::find_all(const string& path) const
 	{
 		if (n->name() == pv.front())
 		{
-			node_list l = n->find_all(ba::join(boost::make_iterator_range(pv.begin() + 1, pv.end()), "/"));
-			result.insert(result.end(), l.begin(), l.end());
+			if (pv.size() == 1)
+			{
+				node& nn = const_cast<node&>(*n);
+				result.push_back(nn.shared_from_this());
+			}
+			else
+			{
+				node_list l = n->find_all(ba::join(boost::make_iterator_range(pv.begin() + 1, pv.end()), "/"));
+				result.insert(result.end(), l.begin(), l.end());
+			}
 		}
 	}
 	
