@@ -108,6 +108,18 @@ void reply::set_content(xml::node_ptr data)
 	headers[1].value = "text/xml";
 }
 
+void reply::set_content(const string& data, const string& mimetype)
+{
+	content = data;
+	status = ok;
+	
+	headers.resize(2);
+	headers[0].name = "Content-Length";
+	headers[0].value = boost::lexical_cast<string>(content.length());
+	headers[1].name = "Content-Type";
+	headers[1].value = mimetype;
+}
+
 string reply::get_as_text()
 {
 	// for best performance, we pre calculate memory requirements and reserve that first
