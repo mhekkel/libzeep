@@ -5,6 +5,8 @@
 
 #include "zeep/server.hpp"
 
+#include <iostream>
+
 #include <boost/lexical_cast.hpp>
 #include <sys/wait.h>
 #include <unistd.h>

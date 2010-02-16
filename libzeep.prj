@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="2.0">
  <syspaths>
-  <path>/usr/local/include/boost-1_36/</path>
   <path>/usr/include</path>
  </syspaths>
  <userpaths>
@@ -11,7 +10,6 @@
  <libpaths>
   <path>/usr/lib</path>
   <path>/usr/local/lib</path>
-  <path>/usr/lib/gcc/i486-linux-gnu/4.2</path>
  </libpaths>
  <files>
   <group name="soap">
@@ -35,12 +33,12 @@
   <group name="Libraries">
    <link>stdc++</link>
    <link>expat</link>
-   <link>boost_thread</link>
-   <link>boost_system</link>
+   <link shared="true">boost_thread</link>
+   <link shared="true">boost_system</link>
   </group>
  </files>
  <targets>
-  <target kind="Executable">
+  <target kind="Executable" arch="i386">
    <name>zeep Debug</name>
    <linkTarget>zeep-test</linkTarget>
    <compiler>/usr/bin/c++</compiler>
@@ -60,7 +58,7 @@
     <warning>no-deprecated</warning>
    </warnings>
   </target>
-  <target kind="Executable">
+  <target kind="Executable" arch="i386">
    <name>zeep Release</name>
    <linkTarget>zeep-test</linkTarget>
    <compiler>/usr/bin/c++</compiler>
