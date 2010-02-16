@@ -31,14 +31,13 @@
    <file>zeep-test.cpp</file>
   </group>
   <group name="Libraries">
-   <link>stdc++</link>
    <link>expat</link>
-   <link shared="true">boost_thread</link>
-   <link shared="true">boost_system</link>
+   <link>boost_thread</link>
+   <link>boost_system</link>
   </group>
  </files>
  <targets>
-  <target kind="Executable" arch="i386">
+  <target kind="Executable">
    <name>zeep Debug</name>
    <linkTarget>zeep-test</linkTarget>
    <compiler>/usr/bin/c++</compiler>
@@ -58,7 +57,7 @@
     <warning>no-deprecated</warning>
    </warnings>
   </target>
-  <target kind="Executable" arch="i386">
+  <target kind="Executable">
    <name>zeep Release</name>
    <linkTarget>zeep-test</linkTarget>
    <compiler>/usr/bin/c++</compiler>
@@ -66,8 +65,8 @@
     <define>NDEBUG</define>
    </defines>
    <cflags>
-    <cflag>-gdwarf-2</cflag>
     <cflag>-O3</cflag>
+    <cflag>-gdwarf-2</cflag>
    </cflags>
    <ldflags>
     <ldflag>-static-libgcc</ldflag>
