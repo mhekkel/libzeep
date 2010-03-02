@@ -269,6 +269,11 @@ struct serialize_struct
 						return parent;
 					}
 				}
+	
+	static void	set_struct_name(const std::string& name)
+				{
+					s_struct_name = name;
+				}
 };
 
 template<typename T>
@@ -291,8 +296,10 @@ struct serialize_vector
 template<typename T>
 struct enum_map
 {
-	std::map<T,std::string>				m_name_mapping;
-	std::string							m_name;
+	typedef typename std::map<T,std::string>	name_mapping_type;
+	
+	name_mapping_type							m_name_mapping;
+	std::string									m_name;
 	
 	static enum_map&
 				instance(const char* name = NULL)
@@ -302,6 +309,29 @@ struct enum_map
 						s_instance.m_name = name;
 					return s_instance;
 				}
+
+	class add_enum_helper
+	{
+		friend class enum_map;
+					add_enum_helper(name_mapping_type& mapping)
+						: m_mapping(mapping) {}
+		
+		name_mapping_type&
+					m_mapping;
+
+	  public:
+		add_enum_helper&
+					operator()(const std::string& name, T value)
+					{
+						m_mapping[value] = name;
+						return *this;
+					}
+	};
+	
+	add_enum_helper	add_enum()
+					{
+						return add_enum_helper(m_name_mapping);
+					}
 };
 
 #define SOAP_XML_ADD_ENUM(e,v)	zeep::xml::enum_map<e>::instance(BOOST_PP_STRINGIZE(e)).m_name_mapping[v] = BOOST_PP_STRINGIZE(v);

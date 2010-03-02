@@ -9,7 +9,6 @@
  </userpaths>
  <libpaths>
   <path>/usr/lib</path>
-  <path>/usr/local/lib</path>
  </libpaths>
  <files>
   <group name="soap">

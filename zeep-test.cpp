@@ -105,7 +105,7 @@ my_server::my_server(const string& address, short port)
 {
 	using namespace WSSearchNS;
 
-	SOAP_XML_SET_STRUCT_NAME(Hit);
+	zeep::xml::serialize_struct<Hit>::set_struct_name("Hit");
 	SOAP_XML_SET_STRUCT_NAME(FindResult);
 
 	const char* kListDatabanksParameterNames[] = {
@@ -120,9 +120,14 @@ my_server::my_server(const string& address, short port)
 	
 	register_action("Count", this, &my_server::Count, kCountParameterNames);
 	
-	SOAP_XML_ADD_ENUM(Algorithm, Vector);
-	SOAP_XML_ADD_ENUM(Algorithm, Dice);
-	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
+	zeep::xml::enum_map<Algorithm>::instance("Algorithm").add_enum()
+		( "Vector", Vector )
+		( "Dice", Dice )
+		( "Jaccard", Jaccard )
+		;
+//	SOAP_XML_ADD_ENUM(Algorithm, Vector);
+//	SOAP_XML_ADD_ENUM(Algorithm, Dice);
+//	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
 
 	const char* kFindParameterNames[] = {
 		"db", "queryterms", "algorithm",
