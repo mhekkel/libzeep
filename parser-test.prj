@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="2.0">
+ <syspaths>
+  <path>/usr/include</path>
+ </syspaths>
+ <userpaths>
+  <path>.</path>
+  <path>src</path>
+ </userpaths>
+ <libpaths>
+  <path>/usr/lib</path>
+ </libpaths>
+ <files>
+  <group name="soap">
+   <file>exception.cpp</file>
+   <file>soap-envelope.cpp</file>
+   <file>soap-server.cpp</file>
+   <group name="http">
+    <file>connection.cpp</file>
+    <file>http-server.cpp</file>
+    <file>reply.cpp</file>
+    <file>request_parser.cpp</file>
+   </group>
+   <group name="xml">
+    <file>document.cpp</file>
+    <file>node.cpp</file>
+    <file>parser.cpp</file>
+   </group>
+  </group>
+  <group name="Sources">
+   <file>parser-test.cpp</file>
+  </group>
+  <group name="Libraries">
+   <link>expat</link>
+   <link>boost_thread</link>
+   <link>boost_system</link>
+  </group>
+ </files>
+ <targets>
+  <target kind="Executable">
+   <name>parser-test Debug</name>
+   <linkTarget>parser-test</linkTarget>
+   <compiler>/usr/bin/c++</compiler>
+   <defines>
+    <define>DEBUG</define>
+   </defines>
+   <cflags>
+    <cflag>-O0</cflag>
+    <cflag>-gdwarf-2</cflag>
+   </cflags>
+   <ldflags>
+    <ldflag>-static-libgcc</ldflag>
+    <ldflag>-pthread</ldflag>
+   </ldflags>
+   <warnings>
+    <warning>all</warning>
+    <warning>no-deprecated</warning>
+   </warnings>
+  </target>
+  <target kind="Executable">
+   <name>parser-test Release</name>
+   <linkTarget>parser-test</linkTarget>
+   <compiler>/usr/bin/c++</compiler>
+   <defines>
+    <define>NDEBUG</define>
+   </defines>
+   <cflags>
+    <cflag>-gdwarf-2</cflag>
+    <cflag>-O3</cflag>
+   </cflags>
+   <ldflags>
+    <ldflag>-static-libgcc</ldflag>
+    <ldflag>-pthread</ldflag>
+   </ldflags>
+   <warnings>
+    <warning>all</warning>
+    <warning>no-deprecated</warning>
+   </warnings>
+  </target>
+ </targets>
+</project>

@@ -32,6 +32,7 @@ OBJECTS = \
 	obj/exception.o \
 	obj/node.o \
 	obj/soap-envelope.o \
+	obj/parser.o \
 	obj/request_parser.o \
 	obj/reply.o \
 	obj/connection.o \
@@ -48,6 +49,9 @@ libzeep.so: $(OBJECTS)
 
 zeep-test: lib obj/zeep-test.o
 	c++ -o $@ $(OBJECTS) $(LDOPTS) libzeep.a
+
+parser-test: lib obj/parser-test.o
+	c++ -o $@ $(OBJECTS) $(LDOPTS)
 
 install: lib
 	install -d $(LIBDIR) $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http

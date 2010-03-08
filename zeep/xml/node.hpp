@@ -269,6 +269,9 @@ class attribute_list : public boost::noncopyable
 	const_iterator		begin() const							{ return const_iterator(const_cast<std::list<attribute_ptr>&>(m_attributes).begin()); }
 	const_iterator		end() const								{ return const_iterator(const_cast<std::list<attribute_ptr>&>(m_attributes).end()); }
 
+	size_t				size() const							{ return m_attributes.size(); }
+	bool				empty() const							{ return m_attributes.empty(); }
+
   private:
 	std::list<attribute_ptr>
 						m_attributes;
