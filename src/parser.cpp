@@ -160,62 +160,59 @@ Encoding istream_data_source::guess_encoding()
 {
 	// 1. easy first step, see if there is a BOM
 	
-	char c1, c2, c3;
+	char c1 = 0, c2 = 0, c3 = 0;
 	
 	m_data.read(&c1, 1);
 
-	if (not m_data.eof())
+	if (c1 == char(0xfe))
 	{
-		if (c1 == 0xfe)
+		m_data.read(&c2, 1);
+		
+		if (c2 == char(0xff))
 		{
-			m_data.read(&c2, 1);
-			
-			if (not m_data.eof() and c2 == 0xff)
-			{
-				m_encoding = enc_UTF16BE;
-				m_has_bom = true;
-			}
-			else
-			{
-				m_byte_buffer.push(c2);
-				m_byte_buffer.push(c1);
-			}
-		}
-		else if (c1 == 0xff)
-		{
-			m_data.read(&c2, 1);
-			
-			if (not m_data.eof() and c2 == 0xfe)
-			{
-				m_encoding = enc_UTF16LE;
-				m_has_bom = true;
-			}
-			else
-			{
-				m_byte_buffer.push(c2);
-				m_byte_buffer.push(c1);
-			}
-		}
-		else if (c1 == 0xef)
-		{
-			m_data.read(&c2, 1);
-			m_data.read(&c3, 1);
-			
-			if (not m_data.eof() and c2 == 0xbb and c3 == 0xbf)
-			{
-				m_encoding = enc_UTF8;
-				m_has_bom = true;
-			}
-			else
-			{
-				m_byte_buffer.push(c3);
-				m_byte_buffer.push(c2);
-				m_byte_buffer.push(c1);
-			}
+			m_encoding = enc_UTF16BE;
+			m_has_bom = true;
 		}
 		else
+		{
+			m_byte_buffer.push(c2);
 			m_byte_buffer.push(c1);
+		}
 	}
+	else if (c1 == char(0xff))
+	{
+		m_data.read(&c2, 1);
+		
+		if (c2 == char(0xfe))
+		{
+			m_encoding = enc_UTF16LE;
+			m_has_bom = true;
+		}
+		else
+		{
+			m_byte_buffer.push(c2);
+			m_byte_buffer.push(c1);
+		}
+	}
+	else if (c1 == char(0xef))
+	{
+		m_data.read(&c2, 1);
+		m_data.read(&c3, 1);
+		
+		if (c2 == char(0xbb) and c3 == char(0xbf))
+		{
+			m_encoding = enc_UTF8;
+			m_has_bom = true;
+		}
+		else
+		{
+			m_byte_buffer.push(c3);
+			m_byte_buffer.push(c2);
+			m_byte_buffer.push(c1);
+		}
+	}
+	else
+		m_byte_buffer.push(c1);
 
 	switch (m_encoding)
 	{
@@ -285,14 +282,20 @@ wchar_t istream_data_source::next_utf8_char()
 
 wchar_t istream_data_source::next_utf16le_char()
 {
-	throw exception("to be implemented");
-	return 0;
+	char c1 = next_byte(), c2 = next_byte();
+	
+	wchar_t result = (wchar_t(c2) << 16) | c1;
+
+	return result;
 }
 
 wchar_t istream_data_source::next_utf16be_char()
 {
-	throw exception("to be implemented");
-	return 0;
+	char c1 = next_byte(), c2 = next_byte();
+	
+	wchar_t result = (wchar_t(c1) << 16) | c2;
+
+	return result;
 }
 
 wchar_t istream_data_source::next_iso88591_char()
@@ -400,11 +403,12 @@ struct parser_imp
 	void			content();
 
 	void			doctypedecl();
-	wstring			external_id();
+	wstring			external_id(bool require_system);
 	
 	void			intsubset();
 	void			element_decl();
 	void			contentspec();
+	void			cp();
 	
 	void			attlist_decl();
 	void			notation_decl();
@@ -427,6 +431,7 @@ struct parser_imp
 		xml_Space,		// Really needed
 		xml_Comment,
 		xml_Name,
+		xml_NMToken,
 		xml_String,
 		xml_PI,			// <?
 		xml_PIEnd,		// ?>
@@ -473,6 +478,7 @@ struct parser_imp
 								case xml_Space:			result = "space character";				break;
 								case xml_Comment:		result = "comment";	 					break;
 								case xml_Name:			result = "identifier or name";			break;
+								case xml_NMToken:		result = "nmtoken";						break;
 								case xml_String:		result = "quoted string";				break;
 								case xml_PI:			result = "processing instruction";		break;
 								case xml_PIEnd:			result = "'?>'";		 				break;
@@ -558,7 +564,7 @@ wchar_t parser_imp::get_next_char()
 {
 	wchar_t result = 0;
 	
-	if (not m_data.empty())
+	while (result == 0 and not m_data.empty())
 	{
 		result = m_data.top()->next();
 
@@ -599,7 +605,8 @@ void parser_imp::match(int token, bool content)
 		string expected = describe_token(token);
 		string found = describe_token(m_lookahead);
 	
-		throw exception("Error parsing XML, expected %s but found %s", expected.c_str(), found.c_str());
+		throw exception("Error parsing XML, expected %s but found %s (%s)", expected.c_str(), found.c_str(),
+			wstring_to_string(m_token).c_str());
 	}
 	
 	if (content)
@@ -688,7 +695,7 @@ bool parser_imp::is_name_char(wchar_t uc)
 		is_name_start_char(uc) or
 		uc == '-' or
 		uc == '.' or
-		(uc >= 0 and uc <= 9) or
+		(uc >= '0' and uc <= '9') or
 		uc == 0x0B7 or
 		(uc >= 0x00300 and uc <= 0x0036F) or
 		(uc >= 0x0203F and uc <= 0x02040);
@@ -698,6 +705,7 @@ int parser_imp::get_next_token()
 {
 	int token = xml_Undef;
 	int state, start;
+	bool nmtoken = false;
 	
 	assert(state_Start == 0);
 	
@@ -977,6 +985,11 @@ int parser_imp::get_next_token()
 			case state_Name:
 				if (is_name_start_char(uc))
 					state += 1;
+				else if (is_name_char(uc))
+				{
+					nmtoken = true;
+					state += 1;
+				}
 				else
 					restart(start, state);
 				break;
@@ -985,7 +998,11 @@ int parser_imp::get_next_token()
 				if (not is_name_char(uc))
 				{
 					retract();
-					token = xml_Name;
+	
+					if (nmtoken)
+						token = xml_NMToken;
+					else
+						token = xml_Name;
 				}
 				break;
 			
@@ -1076,7 +1093,7 @@ int parser_imp::get_next_content()
 	
 	m_token.clear();
 	
-	int state = 0, start = 0;
+	int state = 0 /*, start = 0*/;
 	wchar_t charref = 0;
 	
 	while (token == xml_Undef)
@@ -1107,11 +1124,77 @@ int parser_imp::get_next_content()
 			case 5:
 				if (uc == '/')
 					token = xml_ETag;
+				else if (uc == '?')
+					state += 1;
+				else if (uc == '!')
+					state = 15;
 				else
 				{
 					retract();
 					token = xml_STag;
 				}
+				break;
+			
+			case 6:
+				if (is_name_start_char(uc))
+					state = 7;
+				else
+					throw exception("expected target in processing instruction");
+				break;
+			
+			case 7:
+				if (uc == '?')
+					state = 8;
+				else if (uc == 0)
+					throw exception("runaway processing instruction");
+				break;
+			
+			case 8:
+				if (uc == '>')
+					token = xml_PI;
+				else if (uc == 0)
+					throw exception("runaway processing instruction");
+				else if (uc != '?')
+					state = 7;
+				break;
+			
+			case 15:
+				if (uc == '-')		// comment
+					state = 16;
+				else if (uc == '[')
+					state = 40;		// CDATA
+				else
+					throw exception("invalid content");
+				break;
+
+			case 16:
+				if (uc == '-')
+					state = 17;
+				else
+					throw exception("invalid content");
+				break;
+			
+			case 17:
+				if (uc == '-')
+					state = 18;
+				else if (uc == 0)
+					throw exception("runaway comment");
+				break;
+			
+			case 18:
+				if (uc == '-')
+					state = 19;
+				else if (uc == 0)
+					throw exception("runaway processing instruction");
+				else
+					state = 17;
+				break;
+			
+			case 19:
+				if (uc == '>')
+					token = xml_Comment;
+				else
+					throw exception("invalid comment");
 				break;
 			
 			case 10:
@@ -1169,7 +1252,10 @@ int parser_imp::get_next_content()
 					state += 1;
 				}
 				else if (uc >= '0' and uc <= '9')
+				{
 					charref = uc - '0';
+					state += 1;
+				}
 				else
 					throw exception("invalid character reference");
 				break;
@@ -1190,42 +1276,47 @@ int parser_imp::get_next_content()
 					throw exception("invalid character reference");
 				break;
 
-//			case state_CDataStart:
-//				if (uc == '<')
-//					state += 1;
-//				else
-//					restart(start, state);
-//				break;
-//
-//			case state_CDataStart + 1:
-//				if (uc == '!')
-//					state += 1;
-//				else
-//					restart(start, state);
-//				break;
-//			
-//			case state_CDataStart + 2:
-//				if (uc == '[')
-//					state += 1;
-//				else
-//					restart(start, state);
-//				break;
-//			
-//			case state_CDataStart + 3:
-//				if (is_name_start_char(uc))
-//					state += 1;
-//				else
-//					restart(start, state);
-//				break;
-//			
-//			case state_CDataStart + 4:
-//				if (uc == '[' and m_token == L"<![CDATA[")
-//				{
-//					
-//				}	
-//				else
-//					restart(start, state);
-//				break;
+			case 40:
+				if (is_name_start_char(uc))
+					state += 1;
+				else
+					throw exception("invalid content");
+				break;
+			
+			case 41:
+				if (uc == '[' and m_token == L"<![CDATA[")
+					state += 1;	
+				else if (not is_name_char(uc))
+					throw exception("invalid content");
+				break;
+
+			case 42:
+				if (uc == ']')
+					state += 1;
+				else if (uc == 0)
+					throw exception("runaway cdata section");
+				break;
+			
+			case 43:
+				if (uc == ']')
+					state += 1;
+				else if (uc == 0)
+					throw exception("runaway cdata section");
+				else if (uc != ']')
+					state = 42;
+				break;
+
+			case 44:
+				if (uc == '>')
+				{
+					token = xml_CDSect;
+					m_token = m_token.substr(9, m_token.length() - 12);
+				}
+				else if (uc == 0)
+					throw exception("runaway cdata section");
+				else if (uc != ']')
+					state = 42;
+				break;
 
 		}
 	}
@@ -1347,7 +1438,10 @@ void parser_imp::misc()
 		}
 		
 		if (m_lookahead == xml_PI)
+		{
 			match(xml_PI);
+			continue;
+		}
 		
 		break;
 	}	
@@ -1370,7 +1464,7 @@ void parser_imp::doctypedecl()
 		
 		if (m_lookahead == xml_Name)
 		{
-			e = external_id();
+			e = external_id(true);
 			
 			if (not e.empty())
 			{
@@ -1420,6 +1514,8 @@ void parser_imp::intsubset()
 				replacement += ' ';
 				
 				m_data.push(data_ptr(new wstring_data_source(replacement)));
+				
+				match(xml_PEReference);
 				break;
 			}
 			
@@ -1446,6 +1542,13 @@ void parser_imp::intsubset()
 			case xml_PI:
 				match(xml_PI);
 				break;
+
+			case xml_Comment:
+				match(xml_Comment);
+				break;
+
+			default:
+				throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
 		}
 	}
 	
@@ -1458,8 +1561,7 @@ void parser_imp::element_decl()
 	match(xml_Name);
 	match(xml_Space);
 	contentspec();
-	if (m_lookahead == xml_Space)
-		match(m_lookahead);
+	s();
 	match('>');
 }
 
@@ -1500,7 +1602,78 @@ void parser_imp::contentspec()
 			else
 				match(')');
 		}
+		else					// children
+		{
+			s();
+			cp();
+			s();
+			if (m_lookahead == ',')
+			{
+				do
+				{
+					match(m_lookahead);
+					s();
+					cp();
+				}
+				while (m_lookahead == ',');
+			}
+			else if (m_lookahead == '|')
+			{
+				do
+				{
+					match(m_lookahead);
+					s();
+					cp();
+				}
+				while (m_lookahead == '|');
+			}
+			match(')');
+			
+			if (m_lookahead == '*' or m_lookahead == '+' or m_lookahead == '?')
+				match(m_lookahead);
+		}
 	}
+}
+
+void parser_imp::cp()
+{
+	if (m_lookahead == '(')
+	{
+		match('(');
+		
+		s();
+		cp();
+		s();
+		if (m_lookahead == ',')
+		{
+			do
+			{
+				match(m_lookahead);
+				s();
+				cp();
+			}
+			while (m_lookahead == ',');
+		}
+		else if (m_lookahead == '|')
+		{
+			do
+			{
+				match(m_lookahead);
+				s();
+				cp();
+			}
+			while (m_lookahead == '|');
+		}
+		match(')');
+	}
+	else
+	{
+		wstring name = m_token;
+		match(xml_Name);
+	}
+	
+	if (m_lookahead == '*' or m_lookahead == '+' or m_lookahead == '?')
+		match(m_lookahead);
 }
 
 void parser_imp::entity_decl()
@@ -1517,6 +1690,7 @@ void parser_imp::entity_decl()
 void parser_imp::parameter_entity_decl()
 {
 	match('%');
+	match(xml_Space);
 	
 	wstring name = m_token;
 	match(xml_Name);
@@ -1536,11 +1710,10 @@ void parser_imp::parameter_entity_decl()
 	{
 		
 		
-		value = external_id();
+		value = external_id(true);
 	}
 
-	if (m_lookahead == xml_Space)
-		match(xml_Space);
+	s();
 	
 	match('>');
 	
@@ -1565,22 +1738,21 @@ void parser_imp::general_entity_decl()
 	}
 	else // ... or an ExternalID
 	{
-		value = external_id();
+		value = external_id(true);
 
 		if (m_lookahead == xml_Space)
 		{
 			match(xml_Space);
-			if (m_lookahead == xml_String and m_token == L"NDATA")
+			if (m_lookahead == xml_Name and m_token == L"NDATA")
 			{
-				match(xml_String);
+				match(xml_Name);
 				match(xml_Space);
 				match(xml_Name);
 			}
 		}
 	}	
 	
-	if (m_lookahead == xml_Space)
-		match(xml_Space);
+	s();
 	
 	match('>');
 	
@@ -1606,34 +1778,35 @@ void parser_imp::attlist_decl()
 		match(xml_Name);
 		match(xml_Space);
 		
-		// several possibilities:
+		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
 		{
 			match(m_lookahead);
 			
-			if (m_lookahead == xml_Space)
-				match(m_lookahead);
+			s();
 			
-			match(xml_Name);
+			if (m_lookahead == xml_Name)
+				match(xml_Name);
+			else
+				match(xml_NMToken);
 
-			if (m_lookahead == xml_Space)
-				match(m_lookahead);
+			s();
 			
 			while (m_lookahead == '|')
 			{
 				match('|');
 
-				if (m_lookahead == xml_Space)
-					match(m_lookahead);
+				s();
 
-				match(xml_Name);
+				if (m_lookahead == xml_Name)
+					match(xml_Name);
+				else
+					match(xml_NMToken);
 
-				if (m_lookahead == xml_Space)
-					match(m_lookahead);
+				s();
 			}
 
-			if (m_lookahead == xml_Space)
-				match(m_lookahead);
+			s();
 			
 			match(')');
 		}
@@ -1642,8 +1815,62 @@ void parser_imp::attlist_decl()
 			wstring type = m_token;
 			match(xml_Name);
 			
-			
-			
+			if (type == L"CDATA")
+				;
+			else if (type == L"ID" or type == L"IDREF" or type == L"IDREFS" or type == L"ENTITY" or type == L"ENTITIES" or type == L"NMTOKEN" or type == L"NMTOKENS")
+				;
+			else if (type == L"NOTATION")
+			{
+				match(xml_Space);
+				match('(');
+				s();
+				match(xml_Name);
+
+				while (m_lookahead == '|')
+				{
+					match('|');
+	
+					s();
+	
+					match(xml_Name);
+	
+					s();
+				}
+	
+				s();
+				
+				match(')');
+			}
+			else
+				throw exception("invalid attribute type");
+		}
+		
+		// att def
+
+		s();
+		
+		if (m_lookahead == '#')
+		{
+			match(m_lookahead);
+			wstring def = m_token;
+			match(xml_Name);
+
+			if (def == L"REQUIRED")
+				;
+			else if (def == L"IMPLIED")
+				;
+			else if (def == L"FIXED")
+			{
+				s();
+				
+				match(xml_String);
+			}
+			else
+				throw exception("invalid attribute default");
+		}
+		else
+		{
+			match(xml_String);
 		}
 	}
 
@@ -1652,10 +1879,16 @@ void parser_imp::attlist_decl()
 
 void parser_imp::notation_decl()
 {
-	assert(false);
+	match(xml_Notation);
+	match(xml_Space);
+	match(xml_Name);
+	match(xml_Space);
+	external_id(false);
+	s();
+	match('>');
 }
 
-wstring parser_imp::external_id()
+wstring parser_imp::external_id(bool require_system)
 {
 	wstring result;
 	
@@ -1677,9 +1910,13 @@ wstring parser_imp::external_id()
 		
 		wstring pub = m_token;
 		match(xml_String);
-		match(xml_Space);
-		wstring sys = m_token;
-		match(xml_String);
+		
+		if (require_system)
+		{
+			match(xml_Space);
+			wstring sys = m_token;
+			match(xml_String);
+		}
 		
 		// retrieve_external_dtd(sys, pub);
 	}
@@ -1787,7 +2024,13 @@ void parser_imp::element()
 		
 		string attr_name = wstring_to_string(m_token);
 		match(xml_Name);
+		
+		s();
+		
 		match('=');
+
+		s();
+
 		string attr_value = wstring_to_string(m_token);
 		match(xml_String);
 		
@@ -1801,9 +2044,9 @@ void parser_imp::element()
 		match('/');
 		match('>');
 		
-		if (not attrs.empty())
-			throw exception("end tag should not have attributes");
-		
+		if (m_parser.start_element_handler)
+			m_parser.start_element_handler(wstring_to_string(name), attrs);
+
 		if (m_parser.end_element_handler)
 			m_parser.end_element_handler(wstring_to_string(name));
 	}
@@ -1861,6 +2104,8 @@ void parser_imp::content()
 					data += wstring_to_string(m_token);
 					data += ';';
 				}
+				
+				match(xml_Reference, true);
 
 				if (m_parser.character_data_handler)
 					m_parser.character_data_handler(data);
@@ -1891,6 +2136,10 @@ void parser_imp::content()
 				
 				match(xml_CDSect, true);
 				break;
+
+			default:
+				throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
+
 		}
 	}
 }

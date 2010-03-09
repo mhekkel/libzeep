@@ -7,13 +7,15 @@
 #define foreach BOOST_FOREACH
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "zeep/xml/parser.hpp"
 
 using namespace std;
 using namespace zeep;
 namespace po = boost::program_options;
-namespace bf = boost::filesystem;
+namespace fs = boost::filesystem;
+namespace ba = boost::algorithm;
 
 void start_element(const string& name, const xml::attribute_list& attrs)
 {
@@ -39,6 +41,28 @@ void character_data(const string& data)
 	cout << data;
 }
 
+void test(const fs::path& p)
+{
+	cout << endl << endl << "+++ PROCESSING " << p << " +++" << endl << endl;
+	
+	fs::ifstream file(p);
+
+	xml::parser parser(file);
+//		parser.start_element_handler = start_element;
+//		parser.end_element_handler = end_element;
+//		parser.character_data_handler = character_data;
+
+	try
+	{
+		parser.parse();
+	}
+	catch (...)
+	{
+		cerr << "Error while processing " << p << endl;
+		throw;
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	po::options_description desc("Allowed options");
@@ -62,24 +86,29 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	if (vm.count("input-file"))
+	try
 	{
-		bf::ifstream file(vm["input-file"].as<string>());
-
-		xml::parser parser(file);
-//		parser.start_element_handler = start_element;
-//		parser.end_element_handler = end_element;
-//		parser.character_data_handler = character_data;
-
-		try
+		if (vm.count("input-file"))
 		{
-			parser.parse();
+			fs::path p(vm["input-file"].as<string>());
+			
+			if (fs::is_directory(p))
+			{
+				fs::directory_iterator end_itr; // default construction yields past-the-end
+				for (fs::directory_iterator itr(p); itr != end_itr; ++itr)
+				{
+					if (ba::ends_with(itr->path().filename(), ".xml"))
+						test(itr->path());
+				}
+			}
+			else
+				test(p);
 		}
-		catch (exception& e)
-		{
-			cerr << "Exception: " << e.what() << endl;
-			return 1;
-		}
+	}
+	catch (exception& e)
+	{
+		cerr << e.what() << endl;
+		return 1;
 	}
 	
 	return 0;

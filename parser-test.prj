@@ -35,6 +35,7 @@
    <link>boost_thread</link>
    <link>boost_system</link>
    <link>boost_program_options</link>
+   <link>boost_filesystem</link>
   </group>
  </files>
  <targets>
