@@ -34,6 +34,7 @@
    <link>expat</link>
    <link>boost_thread</link>
    <link>boost_system</link>
+   <link>boost_program_options</link>
   </group>
  </files>
  <targets>

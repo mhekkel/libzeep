@@ -27,7 +27,7 @@ namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
 
-namespace detail
+namespace
 {
 
 string wstring_to_string(const wstring& s)
@@ -61,7 +61,7 @@ string wstring_to_string(const wstring& s)
 	
 	return result;
 }
-	
+
 }
 
 enum Encoding {
@@ -324,7 +324,7 @@ class wstring_data_source : public data_source
 
 	char			next_byte();
 					
-	const wstring&	m_data;
+	const wstring	m_data;
 	wstring::const_iterator
 					m_ptr;
 };
@@ -420,16 +420,18 @@ struct parser_imp
 	{
 		xml_Undef,
 		xml_Eof = 256,
+
+		// these are tokens for the markup
+		
 		xml_XMLDecl,
 		xml_Space,		// Really needed
 		xml_Comment,
 		xml_Name,
 		xml_String,
-		xml_DeclStart,	// <?xml
 		xml_PI,			// <?
 		xml_PIEnd,		// ?>
 		xml_STag,		// <
-		xml_ETag,		// >
+		xml_ETag,		// </
 		xml_DocType,	// <!DOCTYPE
 		xml_Element,	// <!ELEMENT
 		xml_AttList,	// <!ATTLIST
@@ -438,16 +440,67 @@ struct parser_imp
 		
 		
 		xml_PEReference,	// %name;
+		
+		// next are tokens for the content part
+		
 		xml_Reference,		// &name;
+		xml_CDSect,			// CData section
+		xml_Content,		// anything else up to the next element start
 	};
+
+	string			describe_token(int token)
+					{
+						string result;
+						
+						if (token > xml_Undef and token < xml_Eof)
+						{
+							stringstream s;
+							
+							if (isprint(token))
+								s << '\'' << char(token) << '\'';
+							else
+								s << "&#x" << hex << token << ';';
+							
+							result = s.str();
+						}
+						else
+						{
+							switch (XMLToken(token))
+							{
+								case xml_Undef:			result = "undefined"; 					break;
+								case xml_Eof:			result = "end of file"; 				break;
+								case xml_XMLDecl:		result = "'<?xml'";	 					break;
+								case xml_Space:			result = "space character";				break;
+								case xml_Comment:		result = "comment";	 					break;
+								case xml_Name:			result = "identifier or name";			break;
+								case xml_String:		result = "quoted string";				break;
+								case xml_PI:			result = "processing instruction";		break;
+								case xml_PIEnd:			result = "'?>'";		 				break;
+								case xml_STag:			result = "start of tag"; 				break;
+								case xml_ETag:			result = "start of end tag";			break;
+								case xml_DocType:		result = "<!DOCTYPE"; 					break;
+								case xml_Element:		result = "<!ELEMENT"; 					break;
+								case xml_AttList:		result = "<!ATTLIST"; 					break;
+								case xml_Entity:		result = "<!ENTITY"; 					break;
+								case xml_Notation:		result = "<!NOTATION"; 					break;
+								case xml_PEReference:	result = "parameter entity reference";	break;
+								case xml_Reference:		result = "entity reference"; 			break;
+								case xml_CDSect:		result = "CDATA section";	 			break;
+								case xml_Content:		result = "content";			 			break;
+							}
+						}
+						
+						return result;
+					}
 
 	enum State {
 		state_Start			= 0,
 		state_Comment		= 100,
 		state_PI			= 200,
 		state_EndTagStart	= 290,
-		state_TagStart		= 300,
-		state_Name			= 400,
+		state_DocTypeDecl	= 350,
+		state_TagStart		= 400,
+		state_Name			= 450,
 		state_String		= 500,
 		state_PERef			= 700,
 		state_Misc			= 1000
@@ -456,12 +509,13 @@ struct parser_imp
 	wchar_t			get_next_char();
 	
 	int				get_next_token();
+	int				get_next_content();
 
 	void			restart(int& start, int& state);
 
 	void			retract();
 	
-	void			match(int token);
+	void			match(int token, bool content = false);
 
 	bool			is_name_start_char(wchar_t uc);
 
@@ -527,16 +581,31 @@ void parser_imp::retract()
 	
 	wstring::iterator last_char = m_token.end() - 1;
 	
-	m_data.top()->put_back(*last_char);
+	if (m_data.empty())
+	{
+		data_ptr data(new wstring_data_source(m_token.substr(m_token.length() - 1)));
+		m_data.push(data);
+	}
+	else
+		m_data.top()->put_back(*last_char);
+
 	m_token.erase(last_char);
 }
 
-void parser_imp::match(int token)
+void parser_imp::match(int token, bool content)
 {
 	if (m_lookahead != token)
-		throw exception("Error parsing XML, expected %d but found %d", token, m_lookahead);
+	{
+		string expected = describe_token(token);
+		string found = describe_token(m_lookahead);
 	
-	m_lookahead = get_next_token();
+		throw exception("Error parsing XML, expected %s but found %s", expected.c_str(), found.c_str());
+	}
+	
+	if (content)
+		m_lookahead = get_next_content();
+	else
+		m_lookahead = get_next_token();
 }
 
 void parser_imp::restart(int& start, int& state)
@@ -557,6 +626,10 @@ void parser_imp::restart(int& start, int& state)
 			break;
 		
 		case state_PI:
+			start = state = state_DocTypeDecl;
+			break;
+		
+		case state_DocTypeDecl:
 			start = state = state_EndTagStart;
 			break;
 		
@@ -755,13 +828,12 @@ int parser_imp::get_next_token()
 			case state_PI + 3:
 				if (not is_name_char(uc))
 				{
+					retract();
+
 					m_pi_target = m_token.substr(2);
 					
 					if (m_pi_target == L"xml")
-					{
-						retract();
 						token = xml_XMLDecl;
-					}
 					else
 						state += 1;
 				}
@@ -783,6 +855,47 @@ int parser_imp::get_next_token()
 					throw exception("Unexpected end of file, run-away processing instruction?");
 				else
 					state -= 1;
+				break;
+
+			case state_DocTypeDecl:
+				if (uc == '<')
+					state += 1;
+				else
+					restart(start, state);
+				break;
+			
+			case state_DocTypeDecl + 1:
+				if (uc == '!')
+					state += 1;
+				else
+					restart(start, state);
+				break;
+			
+			case state_DocTypeDecl + 2:
+				if (is_name_start_char(uc))
+					state += 1;
+				else
+					restart(start, state);
+				break;
+			
+			case state_DocTypeDecl + 3:
+				if (not is_name_char(uc))
+				{
+					retract();
+					
+					if (m_token == L"<!DOCTYPE")
+						token = xml_DocType;
+					else if (m_token == L"<!ELEMENT")
+						token = xml_Element;
+					else if (m_token == L"<!ATTLIST")
+						token = xml_AttList;
+					else if (m_token == L"<!ENTITY")
+						token = xml_Entity;
+					else if (m_token == L"<!NOTATION")
+						token = xml_Notation;
+					else
+						restart(start, state);
+				}
 				break;
 
 			// scan for end tags 
@@ -836,8 +949,8 @@ int parser_imp::get_next_token()
 			case state_TagStart + 2:
 				if (uc == '-')						// comment
 					state += 1;
-				else if (is_name_start_char(uc))	// doctypedecl
-					state = state_TagStart + 30;
+				else
+					restart(start, state);
 				break;
 
 			// comment
@@ -860,27 +973,6 @@ int parser_imp::get_next_token()
 					throw exception("Invalid formatted comment");
 				break;
 			
-			// <!DOCTYPE and friends
-			case state_TagStart + 30:
-				if (not is_name_char(uc))
-				{
-					retract();
-					
-					if (m_token == L"<!DOCTYPE")
-						token = xml_DocType;
-					else if (m_token == L"<!ELEMENT")
-						token = xml_Element;
-					else if (m_token == L"<!ATTLIST")
-						token = xml_AttList;
-					else if (m_token == L"<!ENTITY")
-						token = xml_Entity;
-					else if (m_token == L"<!NOTATION")
-						token = xml_Notation;
-					else
-						throw exception("Unrecognized doctype declaration '%s'", m_token.c_str());
-				}
-				break;
-
 			// Names
 			case state_Name:
 				if (is_name_start_char(uc))
@@ -909,14 +1001,20 @@ int parser_imp::get_next_token()
 
 			case state_String + 10:
 				if (uc == '"')
+				{
 					token = xml_String;
+					m_token = m_token.substr(1, m_token.length() - 2);
+				}
 				else if (uc == 0)
 					throw exception("unexpected end of file, runaway string");
 				break;
 
 			case state_String + 20:
 				if (uc == '\'')
+				{
 					token = xml_String;
+					m_token = m_token.substr(1, m_token.length() - 2);
+				}
 				else if (uc == 0)
 					throw exception("unexpected end of file, runaway string");
 				break;
@@ -964,13 +1062,175 @@ int parser_imp::get_next_token()
 					token = '?';
 				}
 				break;
-			
-			
-			
 		}
 	}
 	
-//	wcout << L"get_next_token: " << token << L" (" << m_token << L")" << endl << endl;
+	cout << "get_next_token: " << describe_token(token) << " (" << wstring_to_string(m_token) << ")" << endl;
+	
+	return token;
+}
+
+int parser_imp::get_next_content()
+{
+	int token = xml_Undef;
+	
+	m_token.clear();
+	
+	int state = 0, start = 0;
+	wchar_t charref = 0;
+	
+	while (token == xml_Undef)
+	{
+		wchar_t uc = get_next_char();
+		
+		switch (state)
+		{
+			case 0:
+				if (uc == 0)
+					token = xml_Eof;
+				else if (uc == '<')
+					state = 5;
+				else if (uc == '&')
+					state = 10;
+				else
+					state += 1;	// anything else
+				break;
+			
+			case 1:
+				if (uc == 0 or uc == '<' or uc == '&')
+				{
+					retract();
+					token = xml_Content;
+				}
+				break;
+			
+			case 5:
+				if (uc == '/')
+					token = xml_ETag;
+				else
+				{
+					retract();
+					token = xml_STag;
+				}
+				break;
+			
+			case 10:
+				if (uc == '#')
+					state = 20;
+				else if (is_name_start_char(uc))
+					state = 11;
+				else
+					throw exception("stray ampersand found in content");
+				break;
+			
+			case 11:
+				if (not is_name_char(uc))
+				{
+					if (uc != ';')
+						throw exception("invalid entity found in content, missing semicolon?");
+					token = xml_Reference;
+					m_token = m_token.substr(1, m_token.length() - 2);
+				}
+				break;
+			
+			case 20:
+				if (uc == 'x')
+					state = 30;
+				else if (uc >= '0' and uc <= '9')
+				{
+					charref = uc - '0';
+					state += 1;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 21:
+				if (uc >= '0' and uc <= '9')
+					charref = charref * 10 + (uc - '0');
+				else if (uc == ';')
+				{
+					m_token = charref;
+					token = xml_Content;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 30:
+				if (uc >= 'a' and uc <= 'f')
+				{
+					charref = uc - 'a' + 10;
+					state += 1;
+				}
+				else if (uc >= 'A' and uc <= 'F')
+				{
+					charref = uc - 'A' + 10;
+					state += 1;
+				}
+				else if (uc >= '0' and uc <= '9')
+					charref = uc - '0';
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 31:
+				if (uc >= 'a' and uc <= 'f')
+					charref = (charref << 4) + (uc - 'a' + 10);
+				else if (uc >= 'A' and uc <= 'F')
+					charref = (charref << 4) + (uc - 'A' + 10);
+				else if (uc >= '0' and uc <= '9')
+					charref = (charref << 4) + (uc - '0');
+				else if (uc == ';')
+				{
+					m_token = charref;
+					token = xml_Content;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+
+//			case state_CDataStart:
+//				if (uc == '<')
+//					state += 1;
+//				else
+//					restart(start, state);
+//				break;
+//
+//			case state_CDataStart + 1:
+//				if (uc == '!')
+//					state += 1;
+//				else
+//					restart(start, state);
+//				break;
+//			
+//			case state_CDataStart + 2:
+//				if (uc == '[')
+//					state += 1;
+//				else
+//					restart(start, state);
+//				break;
+//			
+//			case state_CDataStart + 3:
+//				if (is_name_start_char(uc))
+//					state += 1;
+//				else
+//					restart(start, state);
+//				break;
+//			
+//			case state_CDataStart + 4:
+//				if (uc == '[' and m_token == L"<![CDATA[")
+//				{
+//					
+//				}	
+//				else
+//					restart(start, state);
+//				break;
+
+		}
+	}
+	
+	cout << "get_next_content: " << describe_token(token) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1186,8 +1446,6 @@ void parser_imp::intsubset()
 			case xml_PI:
 				match(xml_PI);
 				break;
-			
-			
 		}
 	}
 	
@@ -1200,6 +1458,9 @@ void parser_imp::element_decl()
 	match(xml_Name);
 	match(xml_Space);
 	contentspec();
+	if (m_lookahead == xml_Space)
+		match(m_lookahead);
+	match('>');
 }
 
 void parser_imp::contentspec()
@@ -1223,16 +1484,21 @@ void parser_imp::contentspec()
 			
 			s();
 			
-			while (m_lookahead == '|')
+			if (m_lookahead == '|')
 			{
-				match('|');
-				s();
-				match(xml_Name);
-				s();
+				while (m_lookahead == '|')
+				{
+					match('|');
+					s();
+					match(xml_Name);
+					s();
+				}
+				
+				match(')');
+				match('*');
 			}
-			
-			match(')');
-			match('*');
+			else
+				match(')');
 		}
 	}
 }
@@ -1324,7 +1590,64 @@ void parser_imp::general_entity_decl()
 
 void parser_imp::attlist_decl()
 {
-	assert(false);
+	match(xml_AttList);
+	match(xml_Space);
+	wstring name = m_token;
+	match(xml_Name);
+	
+	while (m_lookahead == xml_Space)
+	{
+		match(xml_Space);
+		
+		if (m_lookahead != xml_Name)
+			break;
+	
+		wstring n = m_token;
+		match(xml_Name);
+		match(xml_Space);
+		
+		// several possibilities:
+		if (m_lookahead == '(')	// enumeration
+		{
+			match(m_lookahead);
+			
+			if (m_lookahead == xml_Space)
+				match(m_lookahead);
+			
+			match(xml_Name);
+
+			if (m_lookahead == xml_Space)
+				match(m_lookahead);
+			
+			while (m_lookahead == '|')
+			{
+				match('|');
+
+				if (m_lookahead == xml_Space)
+					match(m_lookahead);
+
+				match(xml_Name);
+
+				if (m_lookahead == xml_Space)
+					match(m_lookahead);
+			}
+
+			if (m_lookahead == xml_Space)
+				match(m_lookahead);
+			
+			match(')');
+		}
+		else
+		{
+			wstring type = m_token;
+			match(xml_Name);
+			
+			
+			
+		}
+	}
+
+	match('>');
 }
 
 void parser_imp::notation_decl()
@@ -1462,10 +1785,10 @@ void parser_imp::element()
 		if (m_lookahead != xml_Name)
 			break;
 		
-		string attr_name = detail::wstring_to_string(m_token);
+		string attr_name = wstring_to_string(m_token);
 		match(xml_Name);
 		match('=');
-		string attr_value = detail::wstring_to_string(m_token);
+		string attr_value = wstring_to_string(m_token);
 		match(xml_String);
 		
 		attribute_ptr attr(new attribute(attr_name, attr_value));
@@ -1482,14 +1805,16 @@ void parser_imp::element()
 			throw exception("end tag should not have attributes");
 		
 		if (m_parser.end_element_handler)
-			m_parser.end_element_handler(detail::wstring_to_string(name));
+			m_parser.end_element_handler(wstring_to_string(name));
 	}
 	else
 	{
-		m_parser.start_element_handler(detail::wstring_to_string(name), attrs);
+		if (m_parser.start_element_handler)
+			m_parser.start_element_handler(wstring_to_string(name), attrs);
 		
-		content();	// first suck in the content before matching the next token
-		match('>');
+		match('>', true);
+
+		content();
 		
 		match(xml_ETag);
 		
@@ -1504,7 +1829,7 @@ void parser_imp::element()
 		match('>');
 		
 		if (m_parser.end_element_handler)
-			m_parser.end_element_handler(detail::wstring_to_string(name));
+			m_parser.end_element_handler(wstring_to_string(name));
 	}
 	
 	while (m_lookahead == xml_Space)
@@ -1515,28 +1840,59 @@ void parser_imp::content()
 {
 	wstring data;
 	
-	for (;;)
+	while (m_lookahead != xml_ETag and m_lookahead != xml_Eof)
 	{
-		wchar_t ch = get_next_char();
-		if (ch == '<')
+		switch (m_lookahead)
 		{
-			m_data.top()->put_back(ch);
-			break;
-		}
-		
-		if (ch == 0)
-			throw exception("invalid document, no end tag found");
-
-		if (ch == '&')
-		{
+			case xml_Content:
+				if (m_parser.character_data_handler)
+					m_parser.character_data_handler(wstring_to_string(m_token));
+				match(xml_Content, true);
+				break;
 			
+			case xml_Reference:
+			{
+				string data;
+				if (m_general_entities.find(m_token) != m_general_entities.end())
+					data = wstring_to_string(m_general_entities[m_token]);
+				else
+				{
+					data = '&';
+					data += wstring_to_string(m_token);
+					data += ';';
+				}
+
+				if (m_parser.character_data_handler)
+					m_parser.character_data_handler(data);
+				break;
+			}
+			
+			case xml_STag:
+				element();
+				break;
+			
+			case xml_PI:
+				match(xml_PI, true);
+				break;
+			
+			case xml_Comment:
+				match(xml_Comment, true);
+				break;
+			
+			case xml_CDSect:
+				if (m_parser.start_cdata_section_handler)
+					m_parser.start_cdata_section_handler();
+				
+				if (m_parser.character_data_handler)
+					m_parser.character_data_handler(wstring_to_string(m_token));
+				
+				if (m_parser.end_cdata_section_handler)
+					m_parser.end_cdata_section_handler();
+				
+				match(xml_CDSect, true);
+				break;
 		}
-		
-		data += ch;
 	}
-	
-	if (m_parser.character_data_handler)
-		m_parser.character_data_handler(detail::wstring_to_string(data));
 }
 
 // --------------------------------------------------------------------
