@@ -28,6 +28,7 @@
    </group>
   </group>
   <group name="Sources">
+   <file>expat-document.cpp</file>
    <file>parser-test.cpp</file>
   </group>
   <group name="Libraries">

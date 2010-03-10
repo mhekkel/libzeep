@@ -23,6 +23,8 @@
 using namespace std;
 namespace ba = boost::algorithm;
 
+extern int VERBOSE;
+
 namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
@@ -80,40 +82,10 @@ class data_source
   public:
 	virtual			~data_source() {}
 
-	wchar_t			next();
-
-	void			put_back(wchar_t ch);
-	
-  protected:
 	virtual wchar_t	get_next_char() = 0;
-
-	stack<wchar_t>	m_char_buffer;
 };
 
 typedef boost::shared_ptr<data_source>	data_ptr;
-
-wchar_t data_source::next()
-{
-	wchar_t result = 0;
-	
-	if (not m_char_buffer.empty())
-	{
-		result = m_char_buffer.top();
-		m_char_buffer.pop();
-	}
-	else
-		result = get_next_char();
-
-
-//	cout << "read char: " << result << " (" << char(result) << ")" << endl;
-	
-	return result;
-}
-
-void data_source::put_back(wchar_t ch)
-{
-	m_char_buffer.push(ch);
-}
 
 // --------------------------------------------------------------------
 
@@ -419,6 +391,7 @@ struct parser_imp
 	
 	void			parse_parameter_entity_declaration(wstring& s);
 	void			parse_general_entity_declaration(wstring& s);
+	void			normalize_attribute_value(wstring& s);
 
 	enum XMLToken
 	{
@@ -537,6 +510,7 @@ struct parser_imp
 	Encoding		m_encoding;
 
 	stack<data_ptr>	m_data;
+	stack<wchar_t>	m_buffer;
 	
 	map<wstring,wstring>
 					m_general_entities, m_parameter_entities;
@@ -551,11 +525,11 @@ parser_imp::parser_imp(
 	
 	m_data.push(source);
 	
-	m_general_entities[L"lt"] = L"<";
-	m_general_entities[L"gt"] = L">";
-	m_general_entities[L"amp"] = L"&";
-	m_general_entities[L"apos"] = L"'";
-	m_general_entities[L"quot"] = L"\"";
+	m_general_entities[L"lt"] = L"&#60;";
+	m_general_entities[L"gt"] = L"&#62;";
+	m_general_entities[L"amp"] = L"&#38;";
+	m_general_entities[L"apos"] = L"&#39;";
+	m_general_entities[L"quot"] = L"&#34;";
 	
 	m_encoding = source->guess_encoding();
 }
@@ -563,38 +537,47 @@ parser_imp::parser_imp(
 wchar_t parser_imp::get_next_char()
 {
 	wchar_t result = 0;
-	
-	while (result == 0 and not m_data.empty())
-	{
-		result = m_data.top()->next();
 
-		if (result == 0)
-			m_data.pop();
+	if (not m_buffer.empty())
+	{
+		result = m_buffer.top();
+		m_buffer.pop();
+	}
+	else
+	{
+		while (result == 0 and not m_data.empty())
+		{
+			result = m_data.top()->get_next_char();
+	
+			if (result == 0)
+				m_data.pop();
+		}
+	}
+	
+	if (result == '\r')
+	{
+		result = get_next_char();
+
+		m_token.erase(m_token.end() - 1);
+
+		if (result != '\n')
+			m_buffer.push(result);
+
+		result = '\n';
 	}
 	
 	m_token += result;
-
-//	wcout << L"get_next_char: " << result << " => " << m_token << endl;
 	
 	return result;
 }
 
 void parser_imp::retract()
 {
-//	cout << "retract, m_token = " ; wcout << m_token << endl;
-
 	assert(not m_token.empty());
 	
 	wstring::iterator last_char = m_token.end() - 1;
 	
-	if (m_data.empty())
-	{
-		data_ptr data(new wstring_data_source(m_token.substr(m_token.length() - 1)));
-		m_data.push(data);
-	}
-	else
-		m_data.top()->put_back(*last_char);
-
+	m_buffer.push(*last_char);
 	m_token.erase(last_char);
 }
 
@@ -663,9 +646,6 @@ void parser_imp::restart(int& start, int& state)
 		default:
 			throw exception("Invalid state in restart");
 	}
-	
-//	wcout << L"restart(" << saved_start << L", " << saved_state << L") => ("
-//		  << start << L", " << state << L")" << endl;
 }
 
 bool parser_imp::is_name_start_char(wchar_t uc)
@@ -724,38 +704,16 @@ int parser_imp::get_next_token()
 					token = xml_Eof;
 				else if (uc == ' ' or uc == '\t' or uc == '\n')
 					state += 1;
-				else if (uc == '\r')
-				{
-					m_token[m_token.length() - 1] = '\n';
-					state += 2;
-				}
 				else
 					restart(start, state);
 				break;
 			
 			case state_Start + 1:
-				if (uc == '\r')
-					state += 1;
-				else if (uc != ' ' and uc != '\t' and uc != '\n')
+				if (uc != ' ' and uc != '\t' and uc != '\n')
 				{
 					retract();
 					token = xml_Space;
 				}
-				break;
-			
-			case state_Start + 2:
-				if (uc == '\n')
-				{
-					m_token.erase(m_token.end() - 1);
-					state -= 1;
-				}
-				else if (uc != ' ' and uc != '\t' and uc != '\n')
-				{
-					retract();
-					token = xml_Space;
-				}
-				else	
-					state -= 1;
 				break;
 			
 			case state_Comment:
@@ -1082,7 +1040,8 @@ int parser_imp::get_next_token()
 		}
 	}
 	
-	cout << "get_next_token: " << describe_token(token) << " (" << wstring_to_string(m_token) << ")" << endl;
+	if (VERBOSE)
+		cout << "get_next_token: " << describe_token(token) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1321,7 +1280,8 @@ int parser_imp::get_next_content()
 		}
 	}
 	
-	cout << "get_next_content: " << describe_token(token) << " (" << wstring_to_string(m_token) << ")" << endl;
+	if (VERBOSE)
+		cout << "get_next_content: " << describe_token(token) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1928,80 +1888,411 @@ wstring parser_imp::external_id(bool require_system)
 
 void parser_imp::parse_parameter_entity_declaration(wstring& s)
 {
-//	wstring result;
-//	wstring::iterator i = s.begin();
-//	
-//	int state = 0;
-//	
-//	wchar_t uc;
-//	
-//	while (i != s.end())
-//	{
-//		wchar_t c = *i++;
-//		
-//		switch (state)
-//		{
-//			case 0:
-//				if (c == '&')
-//					state = 1;
-//				else
-//					result += c;
-//				break;
-//			
-//			case 1:
-//				if (c == '#')
-//					state = 2;
-//				else if (is_name_start_char(c))
-//					state = 10;
-//				break;
-//			
-//			case 2:
-//				if (c == 'x')
-//					state = 3;
-//				else if (
-//		}
-//		
-//	}
-//	
+	wstring result;
+	
+	int state = 0;
+	wchar_t charref = 0;
+	wstring name;
+	
+	for (wstring::const_iterator i = s.begin(); i != s.end(); ++i)
+	{
+		wchar_t c = *i;
+		
+		switch (state)
+		{
+			case 0:
+				if (c == '&')
+					state = 1;
+				else if (c == '%')
+					state = 20;
+				else
+					result += c;
+				break;
+			
+			case 1:
+				if (c == '#')
+					state = 2;
+				else
+				{
+					result += '&';
+					result += c;
+					state = 0;
+				}
+				break;
+
+			case 2:
+				if (c == 'x')
+					state = 4;
+				else if (c >= '0' and c <= '9')
+				{
+					charref = c - '0';
+					state = 3;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 3:
+				if (c >= '0' and c <= '9')
+					charref = charref * 10 + (c - '0');
+				else if (c == ';')
+				{
+					result += charref;
+					state = 0;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 4:
+				if (c >= 'a' and c <= 'f')
+				{
+					charref = c - 'a' + 10;
+					state = 5;
+				}
+				else if (c >= 'A' and c <= 'F')
+				{
+					charref = c - 'A' + 10;
+					state = 5;
+				}
+				else if (c >= '0' and c <= '9')
+				{
+					charref = c - '0';
+					state = 5;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 5:
+				if (c >= 'a' and c <= 'f')
+					charref = (charref << 4) + (c - 'a' + 10);
+				else if (c >= 'A' and c <= 'F')
+					charref = (charref << 4) + (c - 'A' + 10);
+				else if (c >= '0' and c <= '9')
+					charref = (charref << 4) + (c - '0');
+				else if (c == ';')
+				{
+					result += charref;
+					state = 0;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+
+			case 20:
+				if (c == ';')
+				{
+					map<wstring,wstring>::iterator e = m_parameter_entities.find(name);
+					if (e == m_parameter_entities.end())
+						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
+					result += e->second;
+					state = 0;
+				}
+				else if (is_name_char(c))
+					name += c;
+				else
+					throw exception("invalid parameter entity reference");
+				break;
+			
+			default:
+				assert(false);
+				throw exception("invalid state");
+		}
+	}
+	
+	if (state != 0)
+		throw exception("invalid reference");
+	
+	swap(s, result);
 }
 
+// parse out the general and parameter entity references in a value string
+// for a general entity reference which is about to be stored.
 void parser_imp::parse_general_entity_declaration(wstring& s)
 {
-//	wstring result;
-//	wstring::iterator i = s.begin();
+	wstring result;
+	
+	int state = 0;
+	wchar_t charref = 0;
+	wstring name;
+	
+	for (wstring::const_iterator i = s.begin(); i != s.end(); ++i)
+	{
+		wchar_t c = *i;
+		
+		switch (state)
+		{
+			case 0:
+				if (c == '&')
+					state = 1;
+				else if (c == '%')
+					state = 20;
+				else
+					result += c;
+				break;
+			
+			case 1:
+				if (c == '#')
+					state = 2;
+				else if (is_name_start_char(c))
+				{
+					name.assign(&c, 1);
+					state = 10;
+				}
+				break;
+
+			case 2:
+				if (c == 'x')
+					state = 4;
+				else if (c >= '0' and c <= '9')
+				{
+					charref = c - '0';
+					state = 3;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 3:
+				if (c >= '0' and c <= '9')
+					charref = charref * 10 + (c - '0');
+				else if (c == ';')
+				{
+					result += charref;
+					state = 0;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 4:
+				if (c >= 'a' and c <= 'f')
+				{
+					charref = c - 'a' + 10;
+					state = 5;
+				}
+				else if (c >= 'A' and c <= 'F')
+				{
+					charref = c - 'A' + 10;
+					state = 5;
+				}
+				else if (c >= '0' and c <= '9')
+				{
+					charref = c - '0';
+					state = 5;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 5:
+				if (c >= 'a' and c <= 'f')
+					charref = (charref << 4) + (c - 'a' + 10);
+				else if (c >= 'A' and c <= 'F')
+					charref = (charref << 4) + (c - 'A' + 10);
+				else if (c >= '0' and c <= '9')
+					charref = (charref << 4) + (c - '0');
+				else if (c == ';')
+				{
+					result += charref;
+					state = 0;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+
+			case 10:
+				if (c == ';')
+				{
+//					map<wstring,wstring>::iterator e = m_general_entities.find(name);
+//					if (e == m_general_entities.end())
+//						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
+//					result += e->second;
+
+					result += '&';
+					result += name;
+					result += ';';
+
+					state = 0;
+				}
+				else if (is_name_char(c))
+					name += c;
+				else
+					throw exception("invalid entity reference");
+				break;
+
+			case 20:
+				if (c == ';')
+				{
+					map<wstring,wstring>::iterator e = m_parameter_entities.find(name);
+					if (e == m_parameter_entities.end())
+						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
+					result += e->second;
+					state = 0;
+				}
+				else if (is_name_char(c))
+					name += c;
+				else
+					throw exception("invalid parameter entity reference");
+				break;
+			
+			default:
+				assert(false);
+				throw exception("invalid state");
+		}
+	}
+	
+	if (state != 0)
+		throw exception("invalid reference");
+	
+	swap(s, result);
+}
+
+void parser_imp::normalize_attribute_value(wstring& s)
+{
+	wstring result;
+	
+	int state = 0;
+	wchar_t charref = 0;
+	wstring name;
+	
+	for (wstring::const_iterator i = s.begin(); i != s.end(); ++i)
+	{
+		wchar_t c = *i;
+		
+		switch (state)
+		{
+			case 0:
+				if (c == '&')
+					state = 1;
+				else if (c == ' ' or c == '\n' or c == '\t')
+				{
+					if (not result.empty() and result[result.length() - 1] != ' ')
+						result += ' ';
+				}
+				else
+					result += c;
+				break;
+			
+			case 1:
+				if (c == '#')
+					state = 2;
+				else if (is_name_start_char(c))
+				{
+					name.assign(&c, 1);
+					state = 10;
+				}
+				break;
+
+			case 2:
+				if (c == 'x')
+					state = 4;
+				else if (c >= '0' and c <= '9')
+				{
+					charref = c - '0';
+					state = 3;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 3:
+				if (c >= '0' and c <= '9')
+					charref = charref * 10 + (c - '0');
+				else if (c == ';')
+				{
+					result += charref;
+					state = 0;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 4:
+				if (c >= 'a' and c <= 'f')
+				{
+					charref = c - 'a' + 10;
+					state = 5;
+				}
+				else if (c >= 'A' and c <= 'F')
+				{
+					charref = c - 'A' + 10;
+					state = 5;
+				}
+				else if (c >= '0' and c <= '9')
+				{
+					charref = c - '0';
+					state = 5;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 5:
+				if (c >= 'a' and c <= 'f')
+					charref = (charref << 4) + (c - 'a' + 10);
+				else if (c >= 'A' and c <= 'F')
+					charref = (charref << 4) + (c - 'A' + 10);
+				else if (c >= '0' and c <= '9')
+					charref = (charref << 4) + (c - '0');
+				else if (c == ';')
+				{
+					result += charref;
+					state = 0;
+				}
+				else
+					throw exception("invalid character reference");
+				break;
+			
+			case 10:
+				if (c == ';')
+				{
+					map<wstring,wstring>::iterator e = m_general_entities.find(name);
+					if (e == m_general_entities.end())
+						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
+					
+					wstring replacement = e->second;
+					normalize_attribute_value(replacement);
+					
+					result += replacement;
+
+					state = 0;
+				}
+				else if (is_name_char(c))
+					name += c;
+				else
+					throw exception("invalid entity reference");
+				break;
+
+			default:
+				assert(false);
+				throw exception("invalid state");
+		}
+	}
+	
+	if (state != 0)
+		throw exception("invalid reference");
+	
+	ba::trim(result);
+	swap(s, result);
 //	
-//	int state = 0;
-//	
-//	wchar_t uc;
-//	
-//	while (i != s.end())
+//	bool space = false;
+//	s.clear();
+//	for (wstring::iterator i = result.begin(); i != result.end(); ++i)
 //	{
-//		wchar_t c = *i++;
-//		
-//		switch (state)
+//		if (*i == ' ')
 //		{
-//			case 0:
-//				if (c == '&')
-//					state = 1;
-//				else
-//					result += c;
-//				break;
-//			
-//			case 1:
-//				if (c == '#')
-//					state = 2;
-//				else if (is_name_start_char(c))
-//					state = 10;
-//				break;
-//			
-//			case 2:
-//				if (c == 'x')
-//					state = 3;
-//				else if (
+//			if (not space)
+//				s += ' ';
+//			space = true;
 //		}
-//		
+//		else
+//		{
+//			s += *i;
+//			space = false;
+//		}
 //	}
-//	
 }
 
 void parser_imp::element()
@@ -2031,10 +2322,12 @@ void parser_imp::element()
 
 		s();
 
-		string attr_value = wstring_to_string(m_token);
+		wstring attr_value = m_token;
 		match(xml_String);
 		
-		attribute_ptr attr(new attribute(attr_name, attr_value));
+		normalize_attribute_value(attr_value);
+		
+		attribute_ptr attr(new attribute(attr_name, wstring_to_string(attr_value)));
 		
 		attrs.push_back(attr);
 	}
@@ -2095,20 +2388,13 @@ void parser_imp::content()
 			
 			case xml_Reference:
 			{
-				string data;
-				if (m_general_entities.find(m_token) != m_general_entities.end())
-					data = wstring_to_string(m_general_entities[m_token]);
-				else
-				{
-					data = '&';
-					data += wstring_to_string(m_token);
-					data += ';';
-				}
+				map<wstring,wstring>::iterator e = m_general_entities.find(m_token);
+				if (e == m_general_entities.end())
+					throw exception("undefined entity reference %s", wstring_to_string(m_token).c_str());
 				
-				match(xml_Reference, true);
+				m_data.push(data_ptr(new wstring_data_source(e->second)));
 
-				if (m_parser.character_data_handler)
-					m_parser.character_data_handler(data);
+				match(xml_Reference, true);
 				break;
 			}
 			

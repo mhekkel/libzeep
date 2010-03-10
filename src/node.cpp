@@ -94,7 +94,23 @@ void node::add_content(
 	unsigned long		length)
 {
 	assert(text);
-	m_content.append(text, length);
+	string data(text, length);
+	add_content(data);
+}
+
+void node::add_content(
+	const string&		text)
+{
+	string data(text);
+	
+	ba::trim(data);
+
+	if (not data.empty())
+	{
+		if (not m_content.empty())
+			m_content += ' ';
+		m_content.append(data);
+	}
 }
 
 node_ptr node::find_first_child(
@@ -180,7 +196,7 @@ string node::get_attribute(
 {
 	string result;
 
-	for (attribute_list::iterator attr = attributes().begin(); attr != attributes().end(); ++attr)
+	for (attribute_list::const_iterator attr = attributes().begin(); attr != attributes().end(); ++attr)
 	{
 		if (attr->name() == name)
 		{
@@ -283,9 +299,70 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 	return lhs;
 }
 
+void attribute_list::sort()
+{
+	m_attributes.sort(
+		boost::bind(&attribute::name,
+			boost::bind(&attribute_ptr::get, _1)) <
+		boost::bind(&attribute::name,
+			boost::bind(&attribute_ptr::get, _2)));
+}
+
 attribute_ptr make_attribute(const string& name, const string& value)
 {
 	return attribute_ptr(new attribute(name, value));
+}
+
+bool operator==(const node& lhs, const node& rhs)
+{
+	bool result = lhs.name() == rhs.name();
+
+	if (result and lhs.children().empty())
+		result = lhs.content() == rhs.content();
+
+	if (result)
+		result = lhs.attributes() == rhs.attributes();
+
+	if (result)
+		result = lhs.children() == rhs.children();
+
+	return result;
+}
+
+bool operator==(const node_list& lhs, const node_list& rhs)
+{
+	bool result = true;
+	
+	node_list::const_iterator lci = lhs.begin();
+	node_list::const_iterator rci = rhs.begin();
+		
+	for (; result and lci != lhs.end() and rci != rhs.end(); ++lci, ++rci)
+		result = *lci == *rci;
+
+	if (result)
+		result = lci == lhs.end();
+
+	if (result)
+		result = rci == rhs.end();
+
+	return result;
+}
+
+bool operator==(const attribute_list& lhs, const attribute_list& rhs)
+{
+	bool result = true;
+	
+	attribute_list::iterator lai, rai;
+	for (lai = lhs.begin(), rai = rhs.begin(); result and lai != lhs.end() and rai != rhs.end(); ++lai, ++rai)
+		result = *lai == *rai;
+
+	if (result)
+		result = (lai == lhs.end());
+	
+	if (result)
+		result = (rai == rhs.end());
+	
+	return result;
 }
 
 node_ptr make_node(const string& name,

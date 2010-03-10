@@ -92,6 +92,8 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 							const char*			text,
 							unsigned long		length);
 
+	void				add_content(const std::string& data);
+
 	// writing out
 
 	void				write(
@@ -135,6 +137,9 @@ class node_list : public boost::noncopyable
 																	m_nodes = other.m_nodes;
 																	return *this;
 																}
+
+	template<typename Compare>
+	void				sort(Compare comp)						{ std::sort(m_nodes.begin(), m_nodes.end(), comp); }
 
 	template<typename NODE>
 	class iterator_base : public boost::iterator_facade<iterator_base<NODE>, NODE, boost::bidirectional_traversal_tag>
@@ -212,24 +217,35 @@ class attribute
 
 	std::string			value() const							{ return m_value; }
 	void				value(const std::string& value)			{ m_value = value; }
+
+	bool				operator==(const attribute& a)			{ return m_name == a.m_name and m_value == a.m_value; }
 	
   private:
 	std::string			m_name;
 	std::string			m_value;
 };
 
-class attribute_list : public boost::noncopyable
+class attribute_list
 {
   public:
 						attribute_list() {}
+
+						attribute_list(const attribute_list& other) : m_attributes(other.m_attributes) {}
+
+	attribute_list&		operator=(const attribute_list& other)		{ m_attributes = other.m_attributes; return *this; };
 
 	void				push_back(
 							attribute_ptr	attr)					{ m_attributes.push_back(attr); }
 
 	template<typename _Predicate>
 	void				remove_if(
-							_Predicate		pred)					{ m_attributes.remove_if(pred); }
+							_Predicate		pred)					{ m_attributes.erase(std::remove_if(m_attributes.begin(), m_attributes.end(), pred), m_attributes.end()); }
 
+	template<typename Compare>
+	void				sort(Compare comp)							{ m_attributes.sort(comp); }
+
+	void				sort();
+	
 	template<typename ATTR>
 	class iterator_base : public boost::iterator_facade<iterator_base<ATTR>, ATTR, boost::bidirectional_traversal_tag>
 	{
@@ -278,6 +294,12 @@ class attribute_list : public boost::noncopyable
 };
 
 std::ostream& operator<<(std::ostream& lhs, const node& rhs);
+
+bool operator==(const node& lhs, const node& rhs);
+bool operator==(const node_list& lhs, const node_list& rhs);
+
+//bool operator==(const attribute& lhs, const attribute& rhs);
+bool operator==(const attribute_list& lhs, const attribute_list& rhs);
 
 // inlines
 // a set of convenience routines to create a nodes along with attributes in one call

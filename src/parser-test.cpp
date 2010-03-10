@@ -9,7 +9,8 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "zeep/xml/parser.hpp"
+#include "zeep/xml/document.hpp"
+#include "zeep/xml/ex_doc.hpp"
 
 using namespace std;
 using namespace zeep;
@@ -17,54 +18,55 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace ba = boost::algorithm;
 
-void start_element(const string& name, const xml::attribute_list& attrs)
-{
-	cout << '<' << name;
-	
-	foreach (const xml::attribute& attr, attrs)
-	{
-		cout << ' ' << attr.name() << "=\"" << attr.value() << '\"';
-	}
-	
-	cout << '>';
-}
-
-void end_element(const string& name)
-{
-	cout << '<' << '/' << name;
-	
-	cout << '>' << endl;
-}
-
-void character_data(const string& data)
-{
-	cout << data;
-}
+int VERBOSE;
 
 void test(const fs::path& p)
 {
-	cout << endl << endl << "+++ PROCESSING " << p << " +++" << endl << endl;
+	if (VERBOSE)
+		cout << "+++ PROCESSING " << p << " +++" << endl;
 	
-	fs::ifstream file(p);
-
-	xml::parser parser(file);
-//		parser.start_element_handler = start_element;
-//		parser.end_element_handler = end_element;
-//		parser.character_data_handler = character_data;
-
 	try
 	{
-		parser.parse();
+		fs::ifstream file1(p);
+		xml::document doc1(file1);
+		
+		fs::ifstream file2(p);
+		xml::ex_doc doc2(file2);
+		
+		if (not (*doc1.root() == *doc2.root()))
+		{
+			cout << doc1 << endl << endl << doc2 << endl;
+			
+			throw exception();
+		}
 	}
 	catch (...)
 	{
 		cerr << "Error while processing " << p << endl;
-		throw;
+//		throw;
 	}
+}
+
+void test_2()
+{
+	xml::node a("a"), b("a");
+	
+	a.add_attribute("een", "1");
+	a.add_attribute("twee", "2");
+
+	b.add_attribute("een", "1");
+	b.add_attribute("twee", "2");
+
+	bool result = (a == b);
+	if (not result)
+		cerr << "oeps" << endl;
 }
 
 int main(int argc, char* argv[])
 {
+	test_2();
+	
+	
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	    ("help", "produce help message")
@@ -85,6 +87,8 @@ int main(int argc, char* argv[])
 		cout << desc << endl;
 		return 1;
 	}
+	
+	VERBOSE = vm.count("verbose");
 	
 	try
 	{
