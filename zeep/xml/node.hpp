@@ -57,9 +57,9 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 	std::string			name() const							{ return m_name; }
 	void				name(const std::string&	name)			{ m_name = name; }
 	
-	std::string			content() const							{ return m_content; }
-	void				content(const std::string&
-												content)		{ m_content = content; }
+	std::string			content() const;
+//	void				content(const std::string&
+//												content);
 
 	// utility functions
 	node_ptr			find_first_child(
@@ -100,25 +100,23 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 							std::ostream&		stream,
 							int					level) const;
 
-	node_list&			children()								{ return *m_children; }
-	const node_list&	children() const						{ return *m_children; }
+	node_list&			children();
+	const node_list&	children() const;
 	
-	attribute_list&		attributes()							{ return *m_attributes; }
+	attribute_list&		attributes();
 	const attribute_list&
-						attributes() const						{ return *m_attributes; }
+						attributes() const;
 
 	std::string			find_prefix(
 							const std::string&	uri) const;
 
   private:
-
 	std::string			m_name;
 	std::string			m_ns;
 	std::string			m_prefix;
-	std::string			m_content;
-	node_list*			m_children;
-	attribute_list*		m_attributes;
 	node*				m_parent;
+	struct node_content_imp*
+						m_content;
 };
 
 class node_list : public boost::noncopyable
@@ -189,6 +187,8 @@ class node_list : public boost::noncopyable
 
 	void				push_back(
 							node_ptr		node)				{ m_nodes.push_back(node); }
+
+	size_t				size() const							{ return m_nodes.size(); }
 
 	bool				empty() const							{ return m_nodes.empty(); }
 

@@ -7,6 +7,7 @@
 #define SOAP_XML_PARSER_H
 
 #include <boost/function.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "zeep/xml/node.hpp"
 
@@ -43,6 +44,9 @@ class parser : public boost::noncopyable
 				const std::string& uri)>					start_namespace_decl_handler;
 
 	boost::function<void(const std::string& prefix)>		end_namespace_decl_handler;
+
+	boost::function<bool(const std::string& uri, boost::filesystem::path& path)>
+															find_external_dtd;
 
 	void			parse();
 

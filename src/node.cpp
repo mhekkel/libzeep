@@ -8,6 +8,8 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/bind.hpp>
 #include <boost/range.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 #include <vector>
 
 #include "zeep/xml/node.hpp"
@@ -17,19 +19,105 @@ namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
 
-node::node()
+struct node_content_imp
 {
-	m_children = new node_list;
-	m_attributes = new attribute_list;
-	m_parent = NULL;
+	void			add_content(const string& text);
+	void			add_child(node_ptr child);
+
+	void			write(ostream& os, int level);
+	
+	bool			empty() const			{ return m_order.empty(); }
+
+	const node_list&
+					children() const		{ return m_children; }
+
+	string			content() const;
+
+	attribute_list	m_attributes;
+	list<string>	m_content;
+	node_list		m_children;
+	vector<bool>	m_order;
+};
+
+void node_content_imp::add_content(const string& text)
+{
+	m_content.push_back(text);
+	m_order.push_back(true);
+}
+
+void node_content_imp::add_child(node_ptr child)
+{
+	m_children.push_back(child);
+	m_order.push_back(false);
+}
+
+void node_content_imp::write(ostream& os, int level)
+{
+	assert(m_order.size() == m_children.size() + m_content.size());
+
+	node_list::iterator child = m_children.begin();
+	list<string>::iterator content = m_content.begin();
+	
+	for (vector<bool>::iterator selector = m_order.begin(); selector != m_order.end(); ++selector)
+	{
+		if (*selector)	// next is text
+		{
+			string text = *content;
+			
+			ba::replace_all(text, "&", "&amp;");
+			ba::replace_all(text, "<", "&lt;");
+			ba::replace_all(text, ">", "&gt;");
+			ba::replace_all(text, "\"", "&quot;");
+			ba::replace_all(text, "\n", "&#10;");
+			ba::replace_all(text, "\r", "&#13;");
+			ba::replace_all(text, "\t", "&#9;");
+			
+			os << text;
+			
+			++content;
+		}
+		else
+		{
+			child->write(os, level + 1);
+			++child;
+		}
+	}
+}
+
+string node_content_imp::content() const
+{
+	string result;
+	
+	assert(m_order.size() == m_children.size() + m_content.size());
+
+	node_list::const_iterator child = m_children.begin();
+	list<string>::const_iterator content = m_content.begin();
+	
+	for (vector<bool>::const_iterator selector = m_order.begin(); selector != m_order.end(); ++selector)
+	{
+		if (*selector)	// next is text
+			result += *content++;
+		else
+		{
+			result += ' ';
+			++child;
+		}
+	}
+	
+	return result;
+}
+
+node::node()
+	: m_parent(NULL)
+	, m_content(new node_content_imp)
+{
 }
 
 node::node(
 	const std::string&	name)
 	: m_name(name)
-	, m_children(new node_list)
-	, m_attributes(new attribute_list)
 	, m_parent(NULL)
+	, m_content(new node_content_imp)
 {
 }
 
@@ -38,9 +126,8 @@ node::node(
 	const std::string&	prefix)
 	: m_name(name)
 	, m_prefix(prefix)
-	, m_children(new node_list)
-	, m_attributes(new attribute_list)
 	, m_parent(NULL)
+	, m_content(new node_content_imp)
 {
 }
 
@@ -51,22 +138,45 @@ node::node(
 	: m_name(name)
 	, m_ns(ns)
 	, m_prefix(prefix)
-	, m_children(new node_list)
-	, m_attributes(new attribute_list)
 	, m_parent(NULL)
+	, m_content(new node_content_imp)
 {
 }
 
 node::~node()
 {
-	delete m_children;
-	delete m_attributes;
+	delete m_content;
+}
+
+node_list& node::children()
+{
+	return m_content->m_children;
+}
+
+const node_list& node::children() const
+{
+	return m_content->m_children;
+}
+
+attribute_list& node::attributes()
+{
+	return m_content->m_attributes;
+}
+
+const attribute_list& node::attributes() const
+{
+	return m_content->m_attributes;
+}
+
+string node::content() const
+{
+	return m_content->content();
 }
 
 void node::add_attribute(
 	attribute_ptr		attr)
 {
-	m_attributes->push_back(attr);
+	m_content->m_attributes.push_back(attr);
 }
 
 void node::add_attribute(
@@ -79,13 +189,13 @@ void node::add_attribute(
 
 void node::remove_attribute(const string& name)
 {
-	m_attributes->remove_if(boost::bind(&attribute::name, _1) == name);
+	m_content->m_attributes.remove_if(boost::bind(&attribute::name, _1) == name);
 }
 
 void node::add_child(
 	node_ptr			node)
 {
-	m_children->push_back(node);
+	m_content->add_child(node);
 	node->m_parent = this;
 }
 
@@ -101,16 +211,7 @@ void node::add_content(
 void node::add_content(
 	const string&		text)
 {
-	string data(text);
-	
-	ba::trim(data);
-
-	if (not data.empty())
-	{
-		if (not m_content.empty())
-			m_content += ' ';
-		m_content.append(data);
-	}
+	m_content->add_content(text);
 }
 
 node_ptr node::find_first_child(
@@ -118,11 +219,13 @@ node_ptr node::find_first_child(
 {
 	node_ptr result;
 
+	const node_list& children = m_content->children();
+
 	node_list::const_iterator iter = find_if(
-		m_children->begin(), m_children->end(),
+		children.begin(), children.end(),
 		boost::bind(&node::name, _1) == name);
 	
-	if (iter != m_children->end())
+	if (iter != children.end())
 	{
 		node& n = const_cast<node&>(*iter);
 		result = n.shared_from_this();
@@ -214,7 +317,7 @@ string node::find_prefix(
 	string result;
 	bool done = false;
 	
-	for (attribute_list::const_iterator attr = m_attributes->begin(); attr != m_attributes->end(); ++attr)
+	for (attribute_list::const_iterator attr = m_content->m_attributes.begin(); attr != m_content->m_attributes.end(); ++attr)
 	{
 		if (attr->value() == uri and ba::starts_with(attr->name(), "xmlns"))
 		{
@@ -240,8 +343,8 @@ void node::write(
 	ostream&			stream,
 	int					level) const
 {
-	for (int i = 0; i < level; ++i)
-		stream << ' ';
+//	for (int i = 0; i < level; ++i)
+//		stream << ' ';
 	
 	stream << '<';
 	
@@ -250,47 +353,33 @@ void node::write(
 	
 	stream << m_name;
 
-	if (m_attributes)
+	if (not m_content->m_attributes.empty())
 	{
 		for (attribute_list::const_iterator a = attributes().begin(); a != attributes().end(); ++a)
-			stream << ' ' << a->name() << "=\"" << a->value() << '"';
+		{
+			string value = a->value();
+			
+			ba::replace_all(value, "&", "&amp;");
+			ba::replace_all(value, "<", "&lt;");
+			ba::replace_all(value, ">", "&gt;");
+			ba::replace_all(value, "\"", "&quot;");
+//			ba::replace_all(value, "'", "&apos;");
+			ba::replace_all(value, "\t", "&#9;");
+			ba::replace_all(value, "\n", "&#10;");
+			ba::replace_all(value, "\r", "&#13;");
+
+			stream << ' ' << a->name() << "=\"" << value << '"';
+		}
 	}
 
-	string cont = m_content;
-//	ba::trim(cont);
-	
-	ba::replace_all(cont, "&", "&amp;");
-	ba::replace_all(cont, "<", "&lt;");
-	ba::replace_all(cont, ">", "&gt;");
-
-	if (cont.length() or m_children)
+//	if (m_content->empty())
+//		stream << "/>";
+//	else
+//	{
 		stream << '>';
-	
-	if (cont.length())
-		stream << cont;
-
-	if (not m_children->empty())
-	{
-		stream << endl;
-
-		for (node_list::const_iterator c = children().begin(); c != children().end(); ++c)
-			c->write(stream, level + 1);
-
-		for (int i = 0; i < level; ++i)
-			stream << ' ';
-	}
-
-	if (cont.length() or m_children)
-	{
-		stream << "</";
-		
-		if (m_prefix.length())
-			stream << m_prefix << ':';
-		
-		stream << m_name << ">" << endl;
-	}	
-	else
-		stream << "/>" << endl;
+		m_content->write(stream, level);
+		stream << "</" << m_name << '>';
+//	}
 }
 
 ostream& operator<<(ostream& lhs, const node& rhs)

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="2.0">
+ <pkg-config>
+  <pkg tool="pkg-config">libxml-2.0</pkg>
+ </pkg-config>
  <syspaths>
   <path>/usr/include</path>
  </syspaths>
@@ -29,6 +32,7 @@
   </group>
   <group name="Sources">
    <file>expat-document.cpp</file>
+   <file>libxml2-document.cpp</file>
    <file>parser-test.cpp</file>
   </group>
   <group name="Libraries">

@@ -116,7 +116,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 						break;
 					xml::node_ptr param(new xml::node(name));
 					string value = detail::decode(*p++);
-					param->content(value);
+					param->add_content(value);
 					request->add_child(param);
 				}
 				

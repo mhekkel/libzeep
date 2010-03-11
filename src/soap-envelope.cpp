@@ -52,11 +52,11 @@ xml::node_ptr make_fault(const string& what)
 	xml::node_ptr fault(new xml::node("env:Fault"));
 	
 	xml::node_ptr faultCode(new xml::node("faultcode"));
-	faultCode->content("env:Server");
+	faultCode->add_content("env:Server");
 	fault->add_child(faultCode);
 	
 	xml::node_ptr faultString(new xml::node("faultstring"));
-	faultString->content(what);
+	faultString->add_content(what);
 	fault->add_child(faultString);
 
 	return make_envelope(fault);

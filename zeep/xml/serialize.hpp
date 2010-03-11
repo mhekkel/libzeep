@@ -151,7 +151,7 @@ struct serialize_string
 	static void	serialize(node_ptr parent, const std::string& name, std::string& v, bool)
 				{
 					node_ptr n(new node(name));
-					n->content(v);
+					n->add_content(v);
 					parent->add_child(n);
 				}
 
@@ -181,7 +181,7 @@ struct serialize_bool
 	static void	serialize(node_ptr parent, const std::string& name, bool v, bool)
 				{
 					node_ptr n(new node(name));
-					n->content(v ? "true" : "false");
+					n->add_content(v ? "true" : "false");
 					parent->add_child(n);
 				}
 

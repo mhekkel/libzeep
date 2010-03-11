@@ -14,6 +14,8 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/ptr_container/ptr_set.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
@@ -22,6 +24,7 @@
 
 using namespace std;
 namespace ba = boost::algorithm;
+namespace fs = boost::filesystem;
 
 extern int VERBOSE;
 
@@ -39,30 +42,66 @@ string wstring_to_string(const wstring& s)
 	
 	for (wstring::const_iterator ch = s.begin(); ch != s.end(); ++ch)
 	{
-		if (*ch < 0x080)
-			result += (static_cast<const char> (*ch));
-		else if (*ch < 0x0800)
+		unsigned long cv = static_cast<unsigned long>(*ch);
+		
+		if (cv < 0x080)
+			result += (static_cast<const char> (cv));
+		else if (cv < 0x0800)
 		{
-			result += (static_cast<const char> (0x0c0 | (*ch >> 6)));
-			result += (static_cast<const char> (0x080 | (*ch & 0x3f)));
+			result += (static_cast<const char> (0x0c0 | (cv >> 6)));
+			result += (static_cast<const char> (0x080 | (cv & 0x3f)));
 		}
-		else if (*ch < 0x00010000)
+		else if (cv < 0x00010000)
 		{
-			result += (static_cast<const char> (0x0e0 | (*ch >> 12)));
-			result += (static_cast<const char> (0x080 | ((*ch >> 6) & 0x3f)));
-			result += (static_cast<const char> (0x080 | (*ch & 0x3f)));
+			result += (static_cast<const char> (0x0e0 | (cv >> 12)));
+			result += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
+			result += (static_cast<const char> (0x080 | (cv & 0x3f)));
 		}
 		else
 		{
-			result += (static_cast<const char> (0x0f0 | (*ch >> 18)));
-			result += (static_cast<const char> (0x080 | ((*ch >> 12) & 0x3f)));
-			result += (static_cast<const char> (0x080 | ((*ch >> 6) & 0x3f)));
-			result += (static_cast<const char> (0x080 | (*ch & 0x3f)));
+			result += (static_cast<const char> (0x0f0 | (cv >> 18)));
+			result += (static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)));
+			result += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
+			result += (static_cast<const char> (0x080 | (cv & 0x3f)));
 		}
 	}
 	
 	return result;
 }
+
+bool is_name_start_char(wchar_t uc)
+{
+	return
+		uc == L':' or
+		(uc >= L'A' and uc <= L'Z') or
+		uc == L'_' or
+		(uc >= L'a' and uc <= L'z') or
+		(uc >= 0x0C0 and uc <= 0x0D6) or
+		(uc >= 0x0D8 and uc <= 0x0F6) or
+		(uc >= 0x0F8 and uc <= 0x02FF) or
+		(uc >= 0x0370 and uc <= 0x037D) or
+		(uc >= 0x037F and uc <= 0x01FFF) or
+		(uc >= 0x0200C and uc <= 0x0200D) or
+		(uc >= 0x02070 and uc <= 0x0218F) or
+		(uc >= 0x02C00 and uc <= 0x02FEF) or
+		(uc >= 0x03001 and uc <= 0x0D7FF) or
+		(uc >= 0x0F900 and uc <= 0x0FDCF) or
+		(uc >= 0x0FDF0 and uc <= 0x0FFFD) or
+		(uc >= 0x010000 and uc <= 0x0EFFFF);	
+}
+
+bool is_name_char(wchar_t uc)
+{
+	return
+		is_name_start_char(uc) or
+		uc == '-' or
+		uc == '.' or
+		(uc >= '0' and uc <= '9') or
+		uc == 0x0B7 or
+		(uc >= 0x00300 and uc <= 0x0036F) or
+		(uc >= 0x0203F and uc <= 0x02040);
+}
+
 
 }
 
@@ -95,6 +134,7 @@ class istream_data_source : public data_source
 					istream_data_source(
 						istream&		data)
 						: m_data(data)
+						, m_char_buffer(0)
 						, m_encoding(enc_UTF8)
 						, m_has_bom(false)
 					{
@@ -120,6 +160,7 @@ class istream_data_source : public data_source
 
 	istream&		m_data;
 	stack<char>		m_byte_buffer;
+	wchar_t			m_char_buffer;	// used in detecting \r\n algorithm
 	Encoding		m_encoding;
 
 	boost::function<wchar_t(void)>
@@ -214,8 +255,8 @@ char istream_data_source::next_byte()
 
 wchar_t istream_data_source::next_utf8_char()
 {
-	wchar_t result = 0;
-	char ch[5];
+	unsigned long result = 0;
+	unsigned char ch[5];
 	
 	ch[0] = next_byte();
 	
@@ -226,7 +267,7 @@ wchar_t istream_data_source::next_utf8_char()
 		ch[1] = next_byte();
 		if ((ch[1] & 0x0c0) != 0x080)
 			throw exception("Invalid utf-8");
-		result = static_cast<wchar_t>(((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F));
+		result = static_cast<unsigned long>(((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F));
 	}
 	else if ((ch[0] & 0x0F0) == 0x0E0)
 	{
@@ -234,7 +275,7 @@ wchar_t istream_data_source::next_utf8_char()
 		ch[2] = next_byte();
 		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 			throw exception("Invalid utf-8");
-		result = static_cast<wchar_t>(((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+		result = static_cast<unsigned long>(((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
 	}
 	else if ((ch[0] & 0x0F8) == 0x0F0)
 	{
@@ -243,31 +284,31 @@ wchar_t istream_data_source::next_utf8_char()
 		ch[3] = next_byte();
 		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
 			throw exception("Invalid utf-8");
-		result = static_cast<wchar_t>(((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
+		result = static_cast<unsigned long>(((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
 	}
 	
 	if (m_data.eof())
 		result = 0;
 	
-	return result;
+	return static_cast<wchar_t>(result);
 }
 
 wchar_t istream_data_source::next_utf16le_char()
 {
-	char c1 = next_byte(), c2 = next_byte();
+	unsigned char c1 = next_byte(), c2 = next_byte();
 	
-	wchar_t result = (wchar_t(c2) << 16) | c1;
+	unsigned long result = (static_cast<unsigned long>(c2) << 8) | c1;
 
-	return result;
+	return static_cast<wchar_t>(result);
 }
 
 wchar_t istream_data_source::next_utf16be_char()
 {
-	char c1 = next_byte(), c2 = next_byte();
+	unsigned char c1 = next_byte(), c2 = next_byte();
 	
-	wchar_t result = (wchar_t(c1) << 16) | c2;
+	unsigned long result = (static_cast<unsigned long>(c1) << 8) | c2;
 
-	return result;
+	return static_cast<wchar_t>(result);
 }
 
 wchar_t istream_data_source::next_iso88591_char()
@@ -278,8 +319,53 @@ wchar_t istream_data_source::next_iso88591_char()
 
 wchar_t istream_data_source::get_next_char()
 {
-	return m_next();
+	wchar_t ch = m_char_buffer;
+
+	if (ch == 0)
+		ch = m_next();
+	else
+		m_char_buffer = 0;
+	
+	if (ch == '\r')
+	{
+		ch = m_next();
+		if (ch != '\n')
+			m_char_buffer = ch;
+		ch = '\n';
+	}
+	
+	return ch;
 }
+
+// --------------------------------------------------------------------
+
+class fstream_data_source : public data_source
+{
+  public:
+ 					fstream_data_source(fs::path dtd_uri)
+ 					{
+ 						if (fs::exists(dtd_uri))
+ 						{
+ 							m_file.reset(new fs::ifstream(dtd_uri));
+ 							m_source.reset(new istream_data_source(*m_file));
+ 							static_cast<istream_data_source*>(m_source.get())->guess_encoding();
+ 						}
+ 					}
+ 	
+	virtual wchar_t	get_next_char()
+					{
+						wchar_t result = 0;
+						
+						if (m_source.get() != NULL)
+							result = m_source->get_next_char();
+						
+						return result;
+					}
+
+	auto_ptr<istream>		m_file;
+	auto_ptr<data_source>	m_source;
+};
+
 
 // --------------------------------------------------------------------
 
@@ -297,63 +383,287 @@ class wstring_data_source : public data_source
 
 	virtual wchar_t	get_next_char();
 
-	char			next_byte();
-					
 	const wstring	m_data;
 	wstring::const_iterator
 					m_ptr;
 };
 
-char wstring_data_source::next_byte()
-{
-	char result = 0;
-	if (m_ptr != m_data.end())
-	{
-		result = *m_ptr;
-		++m_ptr;
-	}
-	return result;
-}
-
 wchar_t	wstring_data_source::get_next_char()
 {
 	wchar_t result = 0;
+
 	if (m_ptr != m_data.end())
+		result = *m_ptr++;
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+class doctype_element;
+class doctype_attlist;
+
+enum AttributeType
+{
+	attTypeString,
+	attTypeTokenizedID,
+	attTypeTokenizedIDREF,
+	attTypeTokenizedIDREFS,
+	attTypeTokenizedENTITY,
+	attTypeTokenizedENTITIES,
+	attTypeTokenizedNMTOKEN,
+	attTypeTokenizedNMTOKENS,
+	attTypeEnumerated
+};
+
+enum AttributeDefault
+{
+	attDefNone,
+	attDefRequired,
+	attDefImplied,
+	attDefFixed,
+	attDefDefault
+};
+
+class doctype_attribute : public boost::noncopyable
+{
+  public:
+						doctype_attribute(const wstring& name, AttributeType type)
+							: m_name(name), m_type(type), m_default(attDefNone) {}
+
+						doctype_attribute(const wstring& name, const vector<wstring>& enums)
+							: m_name(name), m_type(attTypeEnumerated), m_default(attDefNone), m_enum(enums) {}
+
+	wstring				name() const							{ return m_name; }
+
+	AttributeType		get_type() const						{ return m_type; }
+
+	bool				is_required() const;
+	bool				validate_value(wstring& value);
+	
+	void				set_default(AttributeDefault def, const wstring& value)
+						{
+							m_default = def;
+							m_default_value = value;
+							
+							if (not value.empty() and not validate_value(m_default_value))
+								throw exception("default value for attribute is not valid");
+						}
+
+	pair<AttributeDefault,wstring>
+						get_default() const						{ return make_pair(m_default, m_default_value); }
+	
+  private:
+
+	bool				is_name(wstring& s);
+	bool				is_names(wstring& s);
+	bool				is_nmtoken(wstring& s);
+	bool				is_nmtokens(wstring& s);
+
+	wstring				m_name;
+	AttributeType		m_type;
+	AttributeDefault	m_default;
+	wstring				m_default_value;
+	vector<wstring>		m_enum;
+};
+
+bool doctype_attribute::is_name(wstring& s)
+{
+	bool result = true;
+	
+	ba::trim(s);
+	
+	if (not s.empty())
 	{
-		char ch[4];
+		wstring::iterator c = s.begin();
 		
-		ch[0] = next_byte();
+		if (c != s.end())
+			result = is_name_start_char(*c);
 		
-		if ((ch[0] & 0x080) == 0)
-			result = ch[0];
-		else if ((ch[0] & 0x0E0) == 0x0C0)
-		{
-			ch[1] = next_byte();
-			if ((ch[1] & 0x0c0) != 0x080)
-				throw exception("Invalid utf-8");
-			result = static_cast<wchar_t>(((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F));
-		}
-		else if ((ch[0] & 0x0F0) == 0x0E0)
-		{
-			ch[1] = next_byte();
-			ch[2] = next_byte();
-			if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
-				throw exception("Invalid utf-8");
-			result = static_cast<wchar_t>(((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
-		}
-		else if ((ch[0] & 0x0F8) == 0x0F0)
-		{
-			ch[1] = next_byte();
-			ch[2] = next_byte();
-			ch[3] = next_byte();
-			if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
-				throw exception("Invalid utf-8");
-			result = static_cast<wchar_t>(((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
-		}
+		while (result and ++c != s.end())
+			result = is_name_char(*c);
 	}
 	
 	return result;
-}				
+}
+
+bool doctype_attribute::is_names(wstring& s)
+{
+	bool result = true;
+
+	ba::trim(s);
+	
+	if (not s.empty())
+	{
+		wstring::iterator c = s.begin();
+		wstring t;
+		
+		while (result and c != s.end())
+		{
+			result = is_name_start_char(*c);
+			t += *c;
+			++c;
+			
+			while (result and c != s.end() and is_name_char(*c))
+			{
+				t += *c;
+				++c;
+			}
+			
+			if (c == s.end())
+				break;
+			
+			result = *c == ' ' or *c == '\n' or *c == '\t';
+			++c;
+			
+			while (*c == ' ' or *c == '\n' or *c == '\t')
+				++c;
+			
+			if (c != s.end())
+				t += ' ';
+		}
+
+		swap(s, t);
+	}
+	
+	return result;
+}
+
+bool doctype_attribute::is_nmtoken(wstring& s)
+{
+	bool result = true;
+
+	ba::trim(s);
+	
+	wstring::iterator c = s.begin();
+	while (result and ++c != s.end())
+		result = is_name_char(*c);
+	
+	return result;
+}
+
+bool doctype_attribute::is_nmtokens(wstring& s)
+{
+	bool result = true;
+
+	ba::trim(s);
+	
+	wstring::iterator c = s.begin();
+	wstring t;
+	
+	while (result and c != s.end())
+	{
+		result = false;
+		
+		do
+		{
+			if (not is_name_char(*c))
+				break;
+			result = true;
+			t += *c;
+			++c;
+		}
+		while (c != s.end());
+		
+		if (not result or c == s.end())
+			break;
+		
+		result = *c == ' ' or *c == '\n' or *c == '\t';
+		++c;
+		
+		while (*c == ' ' or *c == '\n' or *c == '\t')
+			++c;
+		
+		if (c != s.end())
+			t += ' ';
+	}
+	
+	swap(s, t);
+	
+	return result;
+}
+
+bool doctype_attribute::validate_value(wstring& value)
+{
+	bool result = true;
+
+//	attTypeString,
+	if (m_type == attTypeString)
+		result = true;
+//	attTypeTokenizedID,
+//	attTypeTokenizedIDREF,
+//	attTypeTokenizedIDREFS,
+//	attTypeTokenizedENTITY,
+	else if (m_type == attTypeTokenizedENTITY)
+		result = is_name(value);
+//	attTypeTokenizedENTITIES,
+	else if (m_type == attTypeTokenizedENTITIES)
+		result = is_names(value);
+//	attTypeTokenizedNMTOKEN,
+	else if (m_type == attTypeTokenizedNMTOKEN)
+		result = is_nmtoken(value);
+//	attTypeTokenizedNMTOKENS,
+	else if (m_type == attTypeTokenizedNMTOKENS)
+		result = is_nmtokens(value);
+
+//	attTypeEnumerated
+	else if (m_type == attTypeEnumerated)
+		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
+	
+	return result;
+}
+
+class doctype_element : boost::noncopyable
+{
+  public:
+						doctype_element(const wstring& name)
+							: m_name(name) {}
+
+						~doctype_element();
+
+	void				add_attribute(doctype_attribute* attr);
+	
+	doctype_attribute*	get_attribute(const wstring& name);
+
+	wstring				name() const								{ return m_name; }
+	
+	bool				operator<(const doctype_element& rhs)		{ return m_name < rhs.m_name; }
+	
+	const vector<doctype_attribute*>&
+						attributes() const							{ return m_attlist; }
+
+  private:
+	wstring				m_name;
+	vector<doctype_attribute*>
+						m_attlist;
+};
+
+doctype_element::~doctype_element()
+{
+	for (vector<doctype_attribute*>::iterator attr = m_attlist.begin(); attr != m_attlist.end(); ++attr)
+		delete *attr;
+}
+
+void doctype_element::add_attribute(doctype_attribute* attr)
+{
+	if (find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&doctype_attribute::name, _1) == attr->name()) == m_attlist.end())
+		m_attlist.push_back(attr);
+	else
+		delete attr;
+}
+
+doctype_attribute* doctype_element::get_attribute(const wstring& name)
+{
+	vector<doctype_attribute*>::iterator dta =
+		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&doctype_attribute::name, _1) == name);
+	
+	doctype_attribute* result = NULL;
+	
+	if (dta != m_attlist.end())
+		result = *dta;
+	
+	return result;
+}
 
 // --------------------------------------------------------------------
 
@@ -379,7 +689,7 @@ struct parser_imp
 	
 	void			intsubset();
 	void			element_decl();
-	void			contentspec();
+	void			contentspec(doctype_element& element);
 	void			cp();
 	
 	void			attlist_decl();
@@ -496,10 +806,6 @@ struct parser_imp
 	
 	void			match(int token, bool content = false);
 
-	bool			is_name_start_char(wchar_t uc);
-
-	bool			is_name_char(wchar_t uc);
-
 	wstring			m_standalone;
 	parser&			m_parser;
 	wstring			m_token;
@@ -514,6 +820,9 @@ struct parser_imp
 	
 	map<wstring,wstring>
 					m_general_entities, m_parameter_entities;
+	
+	map<wstring,doctype_element*>
+					m_doctype;
 };
 
 parser_imp::parser_imp(
@@ -552,18 +861,6 @@ wchar_t parser_imp::get_next_char()
 			if (result == 0)
 				m_data.pop();
 		}
-	}
-	
-	if (result == '\r')
-	{
-		result = get_next_char();
-
-		m_token.erase(m_token.end() - 1);
-
-		if (result != '\n')
-			m_buffer.push(result);
-
-		result = '\n';
 	}
 	
 	m_token += result;
@@ -646,39 +943,6 @@ void parser_imp::restart(int& start, int& state)
 		default:
 			throw exception("Invalid state in restart");
 	}
-}
-
-bool parser_imp::is_name_start_char(wchar_t uc)
-{
-	return
-		uc == L':' or
-		(uc >= L'A' and uc <= L'Z') or
-		uc == L'_' or
-		(uc >= L'a' and uc <= L'z') or
-		(uc >= 0x0C0 and uc <= 0x0D6) or
-		(uc >= 0x0D8 and uc <= 0x0F6) or
-		(uc >= 0x0F8 and uc <= 0x02FF) or
-		(uc >= 0x0370 and uc <= 0x037D) or
-		(uc >= 0x037F and uc <= 0x01FFF) or
-		(uc >= 0x0200C and uc <= 0x0200D) or
-		(uc >= 0x02070 and uc <= 0x0218F) or
-		(uc >= 0x02C00 and uc <= 0x02FEF) or
-		(uc >= 0x03001 and uc <= 0x0D7FF) or
-		(uc >= 0x0F900 and uc <= 0x0FDCF) or
-		(uc >= 0x0FDF0 and uc <= 0x0FFFD) or
-		(uc >= 0x010000 and uc <= 0x0EFFFF);	
-}
-
-bool parser_imp::is_name_char(wchar_t uc)
-{
-	return
-		is_name_start_char(uc) or
-		uc == '-' or
-		uc == '.' or
-		(uc >= '0' and uc <= '9') or
-		uc == 0x0B7 or
-		(uc >= 0x00300 and uc <= 0x0036F) or
-		(uc >= 0x0203F and uc <= 0x02040);
 }
 
 int parser_imp::get_next_token()
@@ -1068,15 +1332,33 @@ int parser_imp::get_next_content()
 					state = 5;
 				else if (uc == '&')
 					state = 10;
+				else if (uc == ' ' or uc == '\n' or uc == '\t')
+					state = 2;	// white space handling	
 				else
 					state += 1;	// anything else
 				break;
 			
 			case 1:
-				if (uc == 0 or uc == '<' or uc == '&')
+				if (uc == ' ' or uc == '\n' or uc == '\t')
+					state = 2;	// white space handling	
+				else if (uc == 0 or uc == '<' or uc == '&')
 				{
 					retract();
 					token = xml_Content;
+				}
+				break;
+			
+			case 2:
+				if (uc == ' ' or uc == '\n' or uc == '\t')
+				{
+					// multiple whitespaces, replace with a single space character
+//					m_token.erase(m_token.end() - 1);
+//					m_token[m_token.length() - 1] = ' ';
+				}
+				else
+				{
+					retract();
+					state = 1;
 				}
 				break;
 			
@@ -1296,9 +1578,20 @@ void parser_imp::parse()
 	
 	element();
 
+	if (m_lookahead == xml_Content)
+	{
+		ba::trim(m_token);
+		if (not m_token.empty())
+			throw exception("content following last element");
+		match(xml_Content);
+	}
+
 	// misc
-	while (m_lookahead != xml_Eof)
+	while (m_lookahead == xml_Space or m_lookahead == xml_Comment or m_lookahead == xml_PI)
 		misc();
+	
+	if (m_lookahead != xml_Eof)
+		match(xml_Eof);
 }
 
 void parser_imp::prolog()
@@ -1518,14 +1811,21 @@ void parser_imp::element_decl()
 {
 	match(xml_Element);
 	match(xml_Space);
+
+	wstring name = m_token;
+	auto_ptr<doctype_element> element(new doctype_element(name));
+
 	match(xml_Name);
 	match(xml_Space);
-	contentspec();
+	contentspec(*element);
 	s();
 	match('>');
+	
+	if (m_doctype.find(name) == m_doctype.end())
+		m_doctype[name] = element.release();
 }
 
-void parser_imp::contentspec()
+void parser_imp::contentspec(doctype_element& element)
 {
 	if (m_lookahead == xml_Name)
 	{
@@ -1724,8 +2024,17 @@ void parser_imp::attlist_decl()
 {
 	match(xml_AttList);
 	match(xml_Space);
-	wstring name = m_token;
+	wstring element = m_token;
 	match(xml_Name);
+	
+	if (m_doctype.find(element) == m_doctype.end())
+	{
+		if (VERBOSE)
+			cerr << "ATTLIST declaration for an undefined ELEMENT " << wstring_to_string(element) << endl;
+		m_doctype[element] = new doctype_element(element);
+	}
+	
+	doctype_element* e = m_doctype[element];
 	
 	while (m_lookahead == xml_Space)
 	{
@@ -1734,17 +2043,22 @@ void parser_imp::attlist_decl()
 		if (m_lookahead != xml_Name)
 			break;
 	
-		wstring n = m_token;
+		wstring name = m_token;
 		match(xml_Name);
 		match(xml_Space);
+		
+		auto_ptr<doctype_attribute> attribute;
 		
 		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
 		{
+			vector<wstring> enums;
+			
 			match(m_lookahead);
 			
 			s();
 			
+			enums.push_back(m_token);
 			if (m_lookahead == xml_Name)
 				match(xml_Name);
 			else
@@ -1758,6 +2072,7 @@ void parser_imp::attlist_decl()
 
 				s();
 
+				enums.push_back(m_token);
 				if (m_lookahead == xml_Name)
 					match(xml_Name);
 				else
@@ -1769,21 +2084,39 @@ void parser_imp::attlist_decl()
 			s();
 			
 			match(')');
+			
+			attribute.reset(new doctype_attribute(name, enums));
 		}
 		else
 		{
 			wstring type = m_token;
 			match(xml_Name);
 			
+			vector<wstring> notations;
+			
 			if (type == L"CDATA")
-				;
-			else if (type == L"ID" or type == L"IDREF" or type == L"IDREFS" or type == L"ENTITY" or type == L"ENTITIES" or type == L"NMTOKEN" or type == L"NMTOKENS")
-				;
+				attribute.reset(new doctype_attribute(name, attTypeString));
+			else if (type == L"ID")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedID));
+			else if (type == L"IDREF")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedIDREF));
+			else if (type == L"IDREFS")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedIDREFS));
+			else if (type == L"ENTITY")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedENTITY));
+			else if (type == L"ENTITIES")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedENTITIES));
+			else if (type == L"NMTOKEN")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedNMTOKEN));
+			else if (type == L"NMTOKENS")
+				attribute.reset(new doctype_attribute(name, attTypeTokenizedNMTOKENS));
 			else if (type == L"NOTATION")
 			{
 				match(xml_Space);
 				match('(');
 				s();
+				
+				notations.push_back(m_token);
 				match(xml_Name);
 
 				while (m_lookahead == '|')
@@ -1792,6 +2125,7 @@ void parser_imp::attlist_decl()
 	
 					s();
 	
+					notations.push_back(m_token);
 					match(xml_Name);
 	
 					s();
@@ -1800,6 +2134,8 @@ void parser_imp::attlist_decl()
 				s();
 				
 				match(')');
+				
+				attribute.reset(new doctype_attribute(name, notations));
 			}
 			else
 				throw exception("invalid attribute type");
@@ -1816,13 +2152,14 @@ void parser_imp::attlist_decl()
 			match(xml_Name);
 
 			if (def == L"REQUIRED")
-				;
+				attribute->set_default(attDefRequired, L"");
 			else if (def == L"IMPLIED")
-				;
+				attribute->set_default(attDefImplied, L"");
 			else if (def == L"FIXED")
 			{
 				s();
 				
+				attribute->set_default(attDefFixed, m_token);
 				match(xml_String);
 			}
 			else
@@ -1830,8 +2167,11 @@ void parser_imp::attlist_decl()
 		}
 		else
 		{
+			attribute->set_default(attDefNone, m_token);
 			match(xml_String);
 		}
+		
+		e->add_attribute(attribute.release());
 	}
 
 	match('>');
@@ -1857,11 +2197,13 @@ wstring parser_imp::external_id(bool require_system)
 		match(xml_Name);
 		match(xml_Space);
 		
-		wstring sys = m_token;
-		
+		string sys = wstring_to_string(m_token);
 		match(xml_String);
 		
-		// result = retrieve_external_dtd(sys);
+		fs::path path = fs::system_complete(sys);
+
+		if (fs::exists(path))
+			m_data.push(data_ptr(new fstream_data_source(path)));
 	}
 	else if (m_token == L"PUBLIC")
 	{
@@ -2276,23 +2618,6 @@ void parser_imp::normalize_attribute_value(wstring& s)
 	
 	ba::trim(result);
 	swap(s, result);
-//	
-//	bool space = false;
-//	s.clear();
-//	for (wstring::iterator i = result.begin(); i != result.end(); ++i)
-//	{
-//		if (*i == ' ')
-//		{
-//			if (not space)
-//				s += ' ';
-//			space = true;
-//		}
-//		else
-//		{
-//			s += *i;
-//			space = false;
-//		}
-//	}
 }
 
 void parser_imp::element()
@@ -2300,6 +2625,8 @@ void parser_imp::element()
 	match(xml_STag);
 	wstring name = m_token;
 	match(xml_Name);
+	
+	doctype_element* dte = m_doctype[name];
 	
 	attribute_list attrs;
 	
@@ -2313,29 +2640,60 @@ void parser_imp::element()
 		if (m_lookahead != xml_Name)
 			break;
 		
-		string attr_name = wstring_to_string(m_token);
+		wstring attr_name = m_token;
 		match(xml_Name);
 		
-		s();
-		
-		match('=');
-
-		s();
+		eq();
 
 		wstring attr_value = m_token;
 		match(xml_String);
 		
 		normalize_attribute_value(attr_value);
 		
-		attribute_ptr attr(new attribute(attr_name, wstring_to_string(attr_value)));
+		attribute_ptr attr(new attribute(wstring_to_string(attr_name), wstring_to_string(attr_value)));
+		
+		if (dte != NULL)
+		{
+			doctype_attribute* dta = dte->get_attribute(attr_name);
+			if (dta != NULL and not dta->validate_value(attr_value))
+				throw exception("invalid value for attribute");
+		}
 		
 		attrs.push_back(attr);
+	}
+	
+	// add missing attributes
+	if (dte != NULL)
+	{
+		const vector<doctype_attribute*>& dtattrs = dte->attributes();
+		
+		for (vector<doctype_attribute*>::const_iterator a = dtattrs.begin(); a != dtattrs.end(); ++a)
+		{
+			const doctype_attribute* dta = *a;
+			
+			string name = wstring_to_string(dta->name());
+			
+			attribute_list::iterator attr = find_if(attrs.begin(), attrs.end(),
+				boost::bind(&attribute::name, _1) == name);
+			
+			pair<AttributeDefault,wstring> def = dta->get_default();
+			
+			if (def.first == attDefRequired)
+			{
+				if (attr == attrs.end() and VERBOSE)
+					cerr << "missing required attribute" << endl;
+			}
+			else if (not def.second.empty() and attr == attrs.end())
+			{
+				attrs.push_back(attribute_ptr(new attribute(name, wstring_to_string(def.second))));
+			}
+		}
 	}
 
 	if (m_lookahead == '/')
 	{
 		match('/');
-		match('>');
+		match('>', true);
 		
 		if (m_parser.start_element_handler)
 			m_parser.start_element_handler(wstring_to_string(name), attrs);
@@ -2362,7 +2720,7 @@ void parser_imp::element()
 		while (m_lookahead == xml_Space)
 			match(m_lookahead);
 		
-		match('>');
+		match('>', true);
 		
 		if (m_parser.end_element_handler)
 			m_parser.end_element_handler(wstring_to_string(name));

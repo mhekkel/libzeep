@@ -14,6 +14,7 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem/operations.hpp>
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
@@ -22,6 +23,7 @@
 
 using namespace std;
 namespace ba = boost::algorithm;
+namespace fs = boost::filesystem;
 
 namespace zeep { namespace xml {
 
@@ -30,6 +32,7 @@ namespace zeep { namespace xml {
 struct document_imp
 {
 	node_ptr		m_root;
+	fs::path		m_dtd_dir;
 
 	stack<node_ptr>	cur;		// construction
 	vector<pair<string,string> >
@@ -56,6 +59,8 @@ struct document_imp
 	void			parse(istream& data);
 
 	void			parse_name(const string& name, string& element, string& ns, string& prefix);
+	
+	bool			find_external_dtd(const string& uri, fs::path& path);
 };
 
 // --------------------------------------------------------------------
@@ -184,6 +189,17 @@ void document_imp::StartNamespaceDeclHandler(const string& prefix, const string&
 	
 void document_imp::EndNamespaceDeclHandler(const string& prefix)
 {
+}
+
+bool document_imp::find_external_dtd(const string& uri, fs::path& path)
+{
+	bool result = false;
+	if (not m_dtd_dir.empty() and fs::exists(m_dtd_dir))
+	{
+		path = m_dtd_dir / uri;
+		result = fs::exists(path);
+	}
+	return result;
 }
 
 // --------------------------------------------------------------------
