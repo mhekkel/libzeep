@@ -108,7 +108,6 @@ bool is_name_char(wchar_t uc)
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
-
 }
 
 enum Encoding {
@@ -141,6 +140,7 @@ class data_source
 						return result;
 					}
 
+	void			next_data_source(data_source* next)				{ m_next = next; }
 	data_source*	next_data_source()								{ return m_next; }
 
   protected:
@@ -159,7 +159,7 @@ class istream_data_source : public data_source
 						, m_encoding(enc_UTF8)
 						, m_has_bom(false)
 					{
-						m_encoding = guess_encoding();
+						guess_encoding();
 					}
 
 					istream_data_source(auto_ptr<istream> data, data_source* next)
@@ -170,14 +170,16 @@ class istream_data_source : public data_source
 						, m_encoding(enc_UTF8)
 						, m_has_bom(false)
 					{
-						m_encoding = guess_encoding();
+						guess_encoding();
 					}
 
 	bool			has_bom()				{ return m_has_bom; }
 
   private:
 
-	Encoding		guess_encoding();
+	void			guess_encoding();
+	
+	void			parse_text_decl();
 	
 	virtual wchar_t	get_next_char();
 
@@ -204,7 +206,7 @@ class istream_data_source : public data_source
 	bool			m_valid_utf8;
 };
 
-Encoding istream_data_source::guess_encoding()
+void istream_data_source::guess_encoding()
 {
 	// 1. easy first step, see if there is a BOM
 	
@@ -269,8 +271,6 @@ Encoding istream_data_source::guess_encoding()
 		case enc_UTF16BE:	m_next = boost::bind(&istream_data_source::next_utf16be_char, this); break;
 		case enc_ISO88591:	m_next = boost::bind(&istream_data_source::next_iso88591_char, this); break;
 	}
-	
-	return m_encoding;
 }
 
 char istream_data_source::next_byte()
@@ -726,7 +726,8 @@ struct parser_imp
 	void			parse();
 	void			prolog();
 	void			xml_decl();
-	void			s();
+	void			text_decl();
+	void			s(bool at_least_one = false);
 	void			eq();
 	void			misc();
 	void			comment();
@@ -735,10 +736,16 @@ struct parser_imp
 	void			content();
 
 	void			doctypedecl();
-	void			external_id();
+	data_source*	external_id();
 	wstring			read_external_id();
 	
 	void			intsubset();
+	void			extsubset();
+	void			extsubsetdecl();
+	
+	void			markupdecl();
+//	void			declsep();
+	
 	void			element_decl();
 	void			contentspec(doctype_element& element);
 	void			cp();
@@ -778,6 +785,7 @@ struct parser_imp
 		xml_Entity,		// <!ENTITY
 		xml_Notation,	// <!NOTATION
 		
+		xml_IncludeIgnore,	// <![
 		
 		xml_PEReference,	// %name;
 		
@@ -828,6 +836,8 @@ struct parser_imp
 								case xml_Reference:		result = "entity reference"; 			break;
 								case xml_CDSect:		result = "CDATA section";	 			break;
 								case xml_Content:		result = "content";			 			break;
+								
+								case xml_IncludeIgnore:	result = "<![ (as in <![INCLUDE[ )";	break;
 							}
 						}
 						
@@ -865,6 +875,7 @@ struct parser_imp
 	int				m_lookahead;
 	float			m_version;
 	bool			m_in_doctype;
+	bool			m_external_subset;
 	Encoding		m_encoding;
 
 	data_source*	m_data;
@@ -882,6 +893,7 @@ parser_imp::parser_imp(
 	parser&			parser)
 	: m_parser(parser)
 	, m_in_doctype(false)
+	, m_external_subset(false)
 {
 	m_data = new istream_data_source(data, NULL);
 	
@@ -961,6 +973,8 @@ void parser_imp::match(int token, bool content)
 	{
 		m_lookahead = get_next_token();
 		
+		// PEReferences can occur anywhere in a DTD and their
+		// content must match the production extsubset;
 		if (m_lookahead == xml_PEReference and m_in_doctype)
 		{
 			map<wstring,wstring>::iterator r = m_parameter_entities.find(m_token);
@@ -975,17 +989,6 @@ void parser_imp::match(int token, bool content)
 			m_data = new wstring_data_source(replacement, m_data);
 			
 			match(xml_PEReference);
-			
-			if (token == xml_Space)
-				s();
-			
-			if (m_lookahead == xml_XMLDecl)
-			{
-				xml_decl();
-
-				if (token == xml_Space)
-					s();
-			}
 		}
 	}
 }
@@ -1197,6 +1200,8 @@ int parser_imp::get_next_token()
 			case state_DocTypeDecl + 2:
 				if (is_name_start_char(uc))
 					state += 1;
+				else if (uc == '[' and m_in_doctype)
+					token = xml_IncludeIgnore;
 				else
 					restart(start, state);
 				break;
@@ -1258,7 +1263,7 @@ int parser_imp::get_next_token()
 				if (uc == '?')
 					state = state_TagStart + 20;
 				else if (uc == '!')
-					token += 1;
+					state += 1;
 				else if (is_name_start_char(uc))
 				{
 					retract();
@@ -1496,7 +1501,7 @@ int parser_imp::get_next_content()
 				if (uc == '-')		// comment
 					state = 16;
 				else if (uc == '[')
-					state = 40;		// CDATA
+					state = 40;		// CDATA or INCLUDE/IGNORE
 				else
 					throw exception("invalid content");
 				break;
@@ -1691,8 +1696,7 @@ void parser_imp::parse()
 void parser_imp::prolog()
 {
 	TRACE
-	if (m_lookahead == xml_XMLDecl)	// <?
-		xml_decl();
+	xml_decl();
 	
 	misc();
 
@@ -1706,65 +1710,114 @@ void parser_imp::prolog()
 void parser_imp::xml_decl()
 {
 	TRACE
-	match(xml_XMLDecl);
-	match(xml_Space);
-	if (m_token != L"version")
-		throw exception("expected a version attribute in XML declaration");
-	match(xml_Name);
-	eq();
-	m_version = boost::lexical_cast<float>(m_token);
-	if (m_version >= 2.0 or m_version < 1.0)
-		throw exception("This library only supports XML version 1.x");
-	match(xml_String);
 
-	while (m_lookahead == xml_Space)
+	if (m_lookahead == xml_XMLDecl)
 	{
-		match(xml_Space);
-		
-		if (m_lookahead != xml_Name)
-			break;
-		
-		if (m_token == L"encoding")
-		{
-			match(xml_Name);
-			eq();
-			ba::to_upper(m_token);
-			if (m_token == L"UTF-8")
-				m_encoding = enc_UTF8;
-			else if (m_token == L"UTF-16")
-			{
-				if (m_encoding != enc_UTF16LE and m_encoding != enc_UTF16BE)
-					throw exception("Inconsistent encoding attribute in XML declaration");
-			}
-			else if (m_token == L"ISO-8859-1")
-				m_encoding = enc_ISO88591;
-			match(xml_String);
-			continue;
-		}
-		
-		if (m_token == L"standalone")
-		{
-			match(xml_Name);
-			eq();
-			if (m_token != L"yes" and m_token != L"no")
-				throw exception("Invalid XML declaration, standalone value should be either yes or no");
-			if (m_token == L"no")
-				throw exception("Unsupported XML declaration, only standalone documents are supported");
-			m_standalone = m_token;
-			match(xml_String);
-			continue;
-		}
-		
-		throw exception("unexpected attribute in xml declaration");
-	}
+		match(xml_XMLDecl);
+		s(true);
+		if (m_token != L"version")
+			throw exception("expected a version attribute in XML declaration");
+		match(xml_Name);
+		eq();
+		m_version = boost::lexical_cast<float>(m_token);
+		if (m_version >= 2.0 or m_version < 1.0)
+			throw exception("This library only supports XML version 1.x");
+		match(xml_String);
 	
-	match(xml_PIEnd);
+		while (m_lookahead == xml_Space)
+		{
+			s(true);
+			
+			if (m_lookahead != xml_Name)
+				break;
+			
+			if (m_token == L"encoding")
+			{
+				match(xml_Name);
+				eq();
+				ba::to_upper(m_token);
+				if (m_token == L"UTF-8")
+					m_encoding = enc_UTF8;
+				else if (m_token == L"UTF-16")
+				{
+					if (m_encoding != enc_UTF16LE and m_encoding != enc_UTF16BE)
+						throw exception("Inconsistent encoding attribute in XML declaration");
+				}
+				else if (m_token == L"ISO-8859-1")
+					m_encoding = enc_ISO88591;
+				match(xml_String);
+				continue;
+			}
+			
+			if (m_token == L"standalone")
+			{
+				match(xml_Name);
+				eq();
+				if (m_token != L"yes" and m_token != L"no")
+					throw exception("Invalid XML declaration, standalone value should be either yes or no");
+				if (m_token == L"no")
+					throw exception("Unsupported XML declaration, only standalone documents are supported");
+				m_standalone = m_token;
+				match(xml_String);
+				continue;
+			}
+			
+			throw exception("unexpected attribute in xml declaration");
+		}
+		
+		match(xml_PIEnd);
+	}
 }
 
-void parser_imp::s()
+void parser_imp::text_decl()
 {
 	TRACE
-	if (m_lookahead == xml_Space)
+
+	if (m_lookahead == xml_XMLDecl)
+	{
+		match(xml_XMLDecl);
+	
+		while (m_lookahead == xml_Space)
+		{
+			s(true);
+			
+			if (m_lookahead != xml_Name)
+				break;
+			
+			if (m_token == L"version")
+			{
+				match(xml_Name);
+				eq();
+				m_version = boost::lexical_cast<float>(m_token);
+				if (m_version >= 2.0 or m_version < 1.0)
+					throw exception("This library only supports XML version 1.x");
+				match(xml_String);
+				continue;
+			}
+			
+			if (m_token == L"encoding")
+			{
+				match(xml_Name);
+				eq();
+				match(xml_String);
+				continue;
+			}
+			
+			throw exception("unexpected attribute in xml declaration");
+		}
+		
+		match(xml_PIEnd);
+	}
+}
+
+void parser_imp::s(bool at_least_one)
+{
+	TRACE
+	
+	if (at_least_one)
+		match(xml_Space);
+	
+	while (m_lookahead == xml_Space)
 		match(xml_Space);
 }
 
@@ -1807,23 +1860,22 @@ void parser_imp::doctypedecl()
 
 	match(xml_DocType);
 	
-	match(xml_Space);
+	s(true);
 	
 	wstring name = m_token;
 	match(xml_Name);
 
 	if (m_lookahead == xml_Space)
 	{
-		match(xml_Space);
+		s(true);
 		
 		if (m_lookahead == xml_Name)
 		{
-			external_id();
+			wstring dtd = read_external_id();
+			m_data = new wstring_data_source(dtd, m_data);
+
 			match(xml_String);
-			
-			if (m_lookahead == xml_XMLDecl)
-				xml_decl();
-			
+
 			intsubset();
 		}
 		
@@ -1847,80 +1899,108 @@ void parser_imp::doctypedecl()
 void parser_imp::intsubset()
 {
 	TRACE
-	while (m_lookahead != xml_Eof and
-		m_lookahead != ']' and m_lookahead != '[' and
-		m_lookahead != '>')
+	for (;;)
 	{
 		switch (m_lookahead)
 		{
-			case xml_PEReference:
-			{
-				map<wstring,wstring>::iterator r = m_parameter_entities.find(m_token);
-				if (r == m_parameter_entities.end())
-					throw exception("undefined parameter entity %s", m_token.c_str());
-				
-				wstring replacement;
-				replacement += ' ';
-				replacement += r->second;
-				replacement += ' ';
-				
-				m_data = new wstring_data_source(replacement, m_data);
-				
-				match(xml_PEReference);
-				
-				s();
-				
-				if (m_lookahead == xml_XMLDecl)
-					xml_decl();
-				break;
-			}
+			case xml_Element:
+			case xml_AttList:
+			case xml_Entity:
+			case xml_Notation:
+			case xml_PI:
+			case xml_Comment:
+				markupdecl();
+				continue;
 			
 			case xml_Space:
-				match(xml_Space);
-				break;
-			
-			case xml_Element:
-				element_decl();
-				break;
-			
-			case xml_AttList:
-				attlist_decl();
-				break;
-			
-			case xml_Entity:
-				entity_decl();
-				break;
-
-			case xml_Notation:
-				notation_decl();
-				break;
-			
-			case xml_PI:
-				match(xml_PI);
-				break;
-
-			case xml_Comment:
-				match(xml_Comment);
-				break;
-
-			default:
-				throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
+				s();
+				continue;
 		}
+		
+		break;
 	}
-	
 }
 
+void parser_imp::markupdecl()
+{
+	switch (m_lookahead)
+	{
+		case xml_Element:
+			element_decl();
+			break;
+		
+		case xml_AttList:
+			attlist_decl();
+			break;
+		
+		case xml_Entity:
+			entity_decl();
+			break;
+
+		case xml_Notation:
+			notation_decl();
+			break;
+		
+		case xml_PI:
+			match(xml_PI);
+			break;
+
+		case xml_Comment:
+			match(xml_Comment);
+			break;
+
+		default:
+			throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
+	}
+}
+
+void parser_imp::extsubset()
+{
+	m_external_subset = true;
+	intsubset();
+	m_external_subset = false;
+}
+
+//void parser_imp::extsubsetdecl()
+//{
+//	for (;;)
+//	{
+//		switch (m_lookahead)
+//		{
+//			case xml_Include:
+//			case xml_Ignore:
+//				assert(false);
+//				continue;
+//			
+//			case xml_Element:
+//			case xml_AttList:
+//			case xml_Entity:
+//			case xml_Notation:
+//			case xml_PI:
+//			case xml_Comment:
+//				markupdecl();
+//				continue;
+//			
+//			case xml_PEReference:
+//			case xml_Space:
+//				declsep();
+//				continue;
+//		}
+//		break;
+//	}
+//}
+//
 void parser_imp::element_decl()
 {
 	TRACE
 	match(xml_Element);
-	match(xml_Space);
+	s(true);
 
 	wstring name = m_token;
 	auto_ptr<doctype_element> element(new doctype_element(name));
 
 	match(xml_Name);
-	match(xml_Space);
+	s(true);
 	contentspec(*element);
 	s();
 	match('>');
@@ -2046,7 +2126,7 @@ void parser_imp::entity_decl()
 {
 	TRACE
 	match(xml_Entity);
-	match(xml_Space);
+	s(true);
 
 	if (m_lookahead == '%')	// PEDecl
 		parameter_entity_decl();
@@ -2058,12 +2138,12 @@ void parser_imp::parameter_entity_decl()
 {
 	TRACE
 	match('%');
-	match(xml_Space);
+	s(true);
 	
 	wstring name = m_token;
 	match(xml_Name);
 	
-	match(xml_Space);
+	s(true);
 
 	wstring value;
 	
@@ -2075,7 +2155,10 @@ void parser_imp::parameter_entity_decl()
 		parse_parameter_entity_declaration(value);
 	}
 	else	// ... or an external id 
+	{
 		value = read_external_id();
+		match(xml_String);
+	}
 
 	s();
 	
@@ -2090,7 +2173,7 @@ void parser_imp::general_entity_decl()
 	TRACE
 	wstring name = m_token;
 	match(xml_Name);
-	match(xml_Space);
+	s(true);
 	
 	wstring value;
 
@@ -2104,14 +2187,15 @@ void parser_imp::general_entity_decl()
 	else // ... or an ExternalID
 	{
 		value = read_external_id();
+		match(xml_String);
 
 		if (m_lookahead == xml_Space)
 		{
-			match(xml_Space);
+			s(true);
 			if (m_lookahead == xml_Name and m_token == L"NDATA")
 			{
 				match(xml_Name);
-				match(xml_Space);
+				s(true);
 				match(xml_Name);
 			}
 		}
@@ -2139,7 +2223,7 @@ void parser_imp::attlist_decl()
 {
 	TRACE
 	match(xml_AttList);
-	match(xml_Space);
+	s(true);
 	wstring element = m_token;
 	match(xml_Name);
 	
@@ -2154,14 +2238,14 @@ void parser_imp::attlist_decl()
 	
 	while (m_lookahead == xml_Space)
 	{
-		match(xml_Space);
+		s(true);
 		
 		if (m_lookahead != xml_Name)
 			break;
 	
 		wstring name = m_token;
 		match(xml_Name);
-		match(xml_Space);
+		s(true);
 		
 		auto_ptr<doctype_attribute> attribute;
 		
@@ -2228,7 +2312,7 @@ void parser_imp::attlist_decl()
 				attribute.reset(new doctype_attribute(name, attTypeTokenizedNMTOKENS));
 			else if (type == L"NOTATION")
 			{
-				match(xml_Space);
+				s(true);
 				match('(');
 				s();
 				
@@ -2297,16 +2381,16 @@ void parser_imp::notation_decl()
 {
 	TRACE
 	match(xml_Notation);
-	match(xml_Space);
+	s(true);
 	match(xml_Name);
-	match(xml_Space);
+	s(true);
 
 	string pubid, system;
 	
 	if (m_token == L"SYSTEM")
 	{
 		match(xml_Name);
-		match(xml_Space);
+		s(true);
 		
 		system = wstring_to_string(m_token);
 		match(xml_String);
@@ -2314,7 +2398,7 @@ void parser_imp::notation_decl()
 	else if (m_token == L"PUBLIC")
 	{
 		match(xml_Name);
-		match(xml_Space);
+		s(true);
 		
 		pubid = wstring_to_string(m_token);
 		match(xml_String);
@@ -2334,28 +2418,29 @@ void parser_imp::notation_decl()
 	match('>');
 }
 
-void parser_imp::external_id()
+data_source* parser_imp::external_id()
 {
 	TRACE
 
+	data_source* result = NULL;
 	string pubid, system;
 	
 	if (m_token == L"SYSTEM")
 	{
 		match(xml_Name);
-		match(xml_Space);
+		s(true);
 		
 		system = wstring_to_string(m_token);
 	}
 	else if (m_token == L"PUBLIC")
 	{
 		match(xml_Name);
-		match(xml_Space);
+		s(true);
 		
 		pubid = wstring_to_string(m_token);
 		match(xml_String);
 		
-		match(xml_Space);
+		s(true);
 		system = wstring_to_string(m_token);
 	}
 	else
@@ -2379,11 +2464,10 @@ void parser_imp::external_id()
 		}
 		
 		if (is.get() != NULL)
-			m_data = new istream_data_source(is, m_data);
+			result = new istream_data_source(is, NULL);
 	}
 
-//	// and now we finally match the xml_String SYSTEM
-//	match(xml_String);
+	return result;
 }
 
 void parser_imp::parse_parameter_entity_declaration(wstring& s)
@@ -2790,22 +2874,41 @@ wstring parser_imp::read_external_id()
 	TRACE
 	wstring result;
 
-	data_source* source = m_data;
+	data_source* source = external_id();
+	data_source* saved_source = m_data;
+	int saved_lookahead = m_lookahead;
+	stack<wchar_t> saved_buffer;
+	swap(saved_buffer, m_buffer);
 	
-	external_id();
-	
-	if (source != m_data)
+	try
 	{
-		while (wchar_t ch = m_data->get_next_char())
-			result += ch;
+		if (source != NULL)
+		{
+			// juggle the data source, replace the current
+			// with the just opened one.
+			
+			m_data = source;
+			m_lookahead = get_next_token();
+
+			text_decl();
+			
+			result = m_token;
 		
-		data_source* next = m_data->next_data_source();
-		delete m_data;
-		m_data = next;
+			while (wchar_t ch = get_next_char())
+				result += ch;
+		}
 	}
-	assert(m_data == source);
+	catch (...)
+	{
+		delete source;
+		m_data = saved_source;
+		throw;
+	}
 	
-	match(xml_String);
+	// restore the state
+	m_data = saved_source;
+	m_lookahead = saved_lookahead;
+	swap(saved_buffer, m_buffer);
 	
 	return result;
 }
@@ -2826,7 +2929,7 @@ void parser_imp::element()
 		if (m_lookahead != xml_Space)
 			break;
 		
-		match(xml_Space);
+		s(true);
 		
 		if (m_lookahead != xml_Name)
 			break;
@@ -2948,9 +3051,6 @@ void parser_imp::content()
 				match(xml_Reference, true);
 				
 				s();
-				
-				if (m_lookahead == xml_XMLDecl)
-					xml_decl();
 				break;
 			}
 			
