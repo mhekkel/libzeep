@@ -28,6 +28,12 @@ namespace fs = boost::filesystem;
 
 extern int VERBOSE;
 
+#if DEBUG
+#define TRACE	do { if (VERBOSE > 1) cout << "== " << __func__ << " at " << __FILE__ << ':' << __LINE__ << endl; } while (false);
+#else
+#define TRACE
+#endif
+
 namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
@@ -587,26 +593,16 @@ bool doctype_attribute::validate_value(wstring& value)
 {
 	bool result = true;
 
-//	attTypeString,
 	if (m_type == attTypeString)
 		result = true;
-//	attTypeTokenizedID,
-//	attTypeTokenizedIDREF,
-//	attTypeTokenizedIDREFS,
-//	attTypeTokenizedENTITY,
-	else if (m_type == attTypeTokenizedENTITY)
+	else if (m_type == attTypeTokenizedENTITY or m_type == attTypeTokenizedID or m_type == attTypeTokenizedIDREF)
 		result = is_name(value);
-//	attTypeTokenizedENTITIES,
-	else if (m_type == attTypeTokenizedENTITIES)
+	else if (m_type == attTypeTokenizedENTITIES or m_type == attTypeTokenizedIDREFS)
 		result = is_names(value);
-//	attTypeTokenizedNMTOKEN,
 	else if (m_type == attTypeTokenizedNMTOKEN)
 		result = is_nmtoken(value);
-//	attTypeTokenizedNMTOKENS,
 	else if (m_type == attTypeTokenizedNMTOKENS)
 		result = is_nmtokens(value);
-
-//	attTypeEnumerated
 	else if (m_type == attTypeEnumerated)
 		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
 	
@@ -1570,6 +1566,7 @@ int parser_imp::get_next_content()
 
 void parser_imp::parse()
 {
+	TRACE
 	m_lookahead = get_next_token();
 	
 	// first parse the xmldecl
@@ -1591,11 +1588,12 @@ void parser_imp::parse()
 		misc();
 	
 	if (m_lookahead != xml_Eof)
-		match(xml_Eof);
+		throw exception("garbage at end of file");
 }
 
 void parser_imp::prolog()
 {
+	TRACE
 	if (m_lookahead == xml_XMLDecl)	// <?
 		xml_decl();
 	
@@ -1610,6 +1608,7 @@ void parser_imp::prolog()
 
 void parser_imp::xml_decl()
 {
+	TRACE
 	match(xml_XMLDecl);
 	match(xml_Space);
 	if (m_token != L"version")
@@ -1667,12 +1666,14 @@ void parser_imp::xml_decl()
 
 void parser_imp::s()
 {
+	TRACE
 	if (m_lookahead == xml_Space)
 		match(xml_Space);
 }
 
 void parser_imp::eq()
 {
+	TRACE
 	s();
 
 	match('=');
@@ -1682,6 +1683,7 @@ void parser_imp::eq()
 
 void parser_imp::misc()
 {
+	TRACE
 	for (;;)
 	{
 		if (m_lookahead == xml_Space or m_lookahead == xml_Comment)
@@ -1702,6 +1704,7 @@ void parser_imp::misc()
 
 void parser_imp::doctypedecl()
 {
+	TRACE
 	match(xml_DocType);
 	
 	match(xml_Space);
@@ -1751,6 +1754,7 @@ void parser_imp::doctypedecl()
 
 void parser_imp::intsubset()
 {
+	TRACE
 	while (m_lookahead != xml_Eof and m_lookahead != ']' and m_lookahead != '[')
 	{
 		switch (m_lookahead)
@@ -1809,6 +1813,7 @@ void parser_imp::intsubset()
 
 void parser_imp::element_decl()
 {
+	TRACE
 	match(xml_Element);
 	match(xml_Space);
 
@@ -1827,6 +1832,7 @@ void parser_imp::element_decl()
 
 void parser_imp::contentspec(doctype_element& element)
 {
+	TRACE
 	if (m_lookahead == xml_Name)
 	{
 		if (m_token != L"EMPTY" and m_token != L"ANY")
@@ -1897,6 +1903,7 @@ void parser_imp::contentspec(doctype_element& element)
 
 void parser_imp::cp()
 {
+	TRACE
 	if (m_lookahead == '(')
 	{
 		match('(');
@@ -1938,6 +1945,7 @@ void parser_imp::cp()
 
 void parser_imp::entity_decl()
 {
+	TRACE
 	match(xml_Entity);
 	match(xml_Space);
 
@@ -1949,6 +1957,7 @@ void parser_imp::entity_decl()
 
 void parser_imp::parameter_entity_decl()
 {
+	TRACE
 	match('%');
 	match(xml_Space);
 	
@@ -1983,6 +1992,7 @@ void parser_imp::parameter_entity_decl()
 
 void parser_imp::general_entity_decl()
 {
+	TRACE
 	wstring name = m_token;
 	match(xml_Name);
 	match(xml_Space);
@@ -2022,6 +2032,7 @@ void parser_imp::general_entity_decl()
 
 void parser_imp::attlist_decl()
 {
+	TRACE
 	match(xml_AttList);
 	match(xml_Space);
 	wstring element = m_token;
@@ -2179,6 +2190,7 @@ void parser_imp::attlist_decl()
 
 void parser_imp::notation_decl()
 {
+	TRACE
 	match(xml_Notation);
 	match(xml_Space);
 	match(xml_Name);
@@ -2190,6 +2202,7 @@ void parser_imp::notation_decl()
 
 wstring parser_imp::external_id(bool require_system)
 {
+	TRACE
 	wstring result;
 	
 	if (m_token == L"SYSTEM")
@@ -2230,6 +2243,7 @@ wstring parser_imp::external_id(bool require_system)
 
 void parser_imp::parse_parameter_entity_declaration(wstring& s)
 {
+	TRACE
 	wstring result;
 	
 	int state = 0;
@@ -2353,6 +2367,7 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 // for a general entity reference which is about to be stored.
 void parser_imp::parse_general_entity_declaration(wstring& s)
 {
+	TRACE
 	wstring result;
 	
 	int state = 0;
@@ -2493,6 +2508,7 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 
 void parser_imp::normalize_attribute_value(wstring& s)
 {
+	TRACE
 	wstring result;
 	
 	int state = 0;
@@ -2622,6 +2638,7 @@ void parser_imp::normalize_attribute_value(wstring& s)
 
 void parser_imp::element()
 {
+	TRACE
 	match(xml_STag);
 	wstring name = m_token;
 	match(xml_Name);
@@ -2732,6 +2749,7 @@ void parser_imp::element()
 
 void parser_imp::content()
 {
+	TRACE
 	wstring data;
 	
 	while (m_lookahead != xml_ETag and m_lookahead != xml_Eof)

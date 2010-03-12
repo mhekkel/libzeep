@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="2.0">
+ <syspaths>
+  <path>/usr/include</path>
+ </syspaths>
+ <userpaths>
+  <path>..</path>
+  <path>../src</path>
+  <path>src</path>
+ </userpaths>
+ <libpaths></libpaths>
+ <files>
+  <group name="soap">
+   <file>exception.cpp</file>
+   <file>soap-envelope.cpp</file>
+   <file>soap-server.cpp</file>
+   <group name="http">
+    <file>connection.cpp</file>
+    <file>http-server.cpp</file>
+    <file>reply.cpp</file>
+    <file>request_parser.cpp</file>
+   </group>
+   <group name="xml">
+    <file>document.cpp</file>
+    <file>node.cpp</file>
+    <file>parser.cpp</file>
+   </group>
+  </group>
+  <group name="Sources">
+   <file>expat-document.cpp</file>
+   <file>parser-test.cpp</file>
+  </group>
+  <group name="Libraries">
+   <link>expat</link>
+   <link shared="true">boost_thread</link>
+   <link shared="true">boost_system</link>
+   <link shared="true">boost_program_options</link>
+   <link shared="true">boost_filesystem</link>
+  </group>
+ </files>
+ <targets>
+  <target kind="Executable">
+   <name>libzeep unit test Debug</name>
+   <linkTarget>libzeep-unit-test</linkTarget>
+   <compiler>/usr/bin/g++</compiler>
+   <defines>
+    <define>DEBUG</define>
+   </defines>
+   <cflags>
+    <cflag>-O0</cflag>
+    <cflag>-gdwarf-2</cflag>
+   </cflags>
+   <warnings>
+    <warning>all</warning>
+   </warnings>
+  </target>
+  <target kind="Executable">
+   <name>libzeep unit test Release</name>
+   <linkTarget>libzeep-unit-test</linkTarget>
+   <compiler>/usr/bin/g++</compiler>
+   <defines>
+    <define>NDEBUG</define>
+   </defines>
+   <cflags>
+    <cflag>-O3</cflag>
+   </cflags>
+   <warnings>
+    <warning>all</warning>
+   </warnings>
+  </target>
+ </targets>
+</project>
