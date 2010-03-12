@@ -162,6 +162,17 @@ class istream_data_source : public data_source
 						m_encoding = guess_encoding();
 					}
 
+					istream_data_source(auto_ptr<istream> data, data_source* next)
+						: data_source(next)
+						, m_data(*data)
+						, m_data_ptr(data)
+						, m_char_buffer(0)
+						, m_encoding(enc_UTF8)
+						, m_has_bom(false)
+					{
+						m_encoding = guess_encoding();
+					}
+
 	bool			has_bom()				{ return m_has_bom; }
 
   private:
@@ -181,6 +192,8 @@ class istream_data_source : public data_source
 	char			next_byte();
 
 	istream&		m_data;
+	auto_ptr<istream>
+					m_data_ptr;
 	stack<char>		m_byte_buffer;
 	wchar_t			m_char_buffer;	// used in detecting \r\n algorithm
 	Encoding		m_encoding;
@@ -722,7 +735,8 @@ struct parser_imp
 	void			content();
 
 	void			doctypedecl();
-	wstring			external_id(bool require_system);
+	void			external_id();
+	wstring			read_external_id();
 	
 	void			intsubset();
 	void			element_decl();
@@ -739,6 +753,7 @@ struct parser_imp
 	void			parse_parameter_entity_declaration(wstring& s);
 	void			parse_general_entity_declaration(wstring& s);
 	wstring			normalize_attribute_value(data_source* data);
+
 
 	enum XMLToken
 	{
@@ -849,7 +864,7 @@ struct parser_imp
 	wstring			m_pi_target;
 	int				m_lookahead;
 	float			m_version;
-	
+	bool			m_in_doctype;
 	Encoding		m_encoding;
 
 	data_source*	m_data;
@@ -866,6 +881,7 @@ parser_imp::parser_imp(
 	istream&		data,
 	parser&			parser)
 	: m_parser(parser)
+	, m_in_doctype(false)
 {
 	m_data = new istream_data_source(data, NULL);
 	
@@ -942,7 +958,36 @@ void parser_imp::match(int token, bool content)
 	if (content)
 		m_lookahead = get_next_content();
 	else
+	{
 		m_lookahead = get_next_token();
+		
+		if (m_lookahead == xml_PEReference and m_in_doctype)
+		{
+			map<wstring,wstring>::iterator r = m_parameter_entities.find(m_token);
+			if (r == m_parameter_entities.end())
+				throw exception("undefined parameter entity %s", m_token.c_str());
+			
+			wstring replacement;
+			replacement += ' ';
+			replacement += r->second;
+			replacement += ' ';
+			
+			m_data = new wstring_data_source(replacement, m_data);
+			
+			match(xml_PEReference);
+			
+			if (token == xml_Space)
+				s();
+			
+			if (m_lookahead == xml_XMLDecl)
+			{
+				xml_decl();
+
+				if (token == xml_Space)
+					s();
+			}
+		}
+	}
 }
 
 void parser_imp::restart(int& start, int& state)
@@ -1757,6 +1802,9 @@ void parser_imp::misc()
 void parser_imp::doctypedecl()
 {
 	TRACE
+	
+	m_in_doctype = true;
+
 	match(xml_DocType);
 	
 	match(xml_Space);
@@ -1768,25 +1816,15 @@ void parser_imp::doctypedecl()
 	{
 		match(xml_Space);
 		
-		wstring e;
-		
 		if (m_lookahead == xml_Name)
 		{
-			e = external_id(true);
+			external_id();
+			match(xml_String);
 			
-			if (not e.empty())
-			{
-				// push e
-				wstring replacement;
-				replacement += ' ';
-				replacement += e;
-				replacement += ' ';
-				
-				m_data = new wstring_data_source(replacement, m_data);
-				
-				// parse e as if it was internal
-				intsubset();
-			}
+			if (m_lookahead == xml_XMLDecl)
+				xml_decl();
+			
+			intsubset();
 		}
 		
 		s();
@@ -1802,12 +1840,16 @@ void parser_imp::doctypedecl()
 	}
 	
 	match('>');
+
+	m_in_doctype = false;
 }
 
 void parser_imp::intsubset()
 {
 	TRACE
-	while (m_lookahead != xml_Eof and m_lookahead != ']' and m_lookahead != '[')
+	while (m_lookahead != xml_Eof and
+		m_lookahead != ']' and m_lookahead != '[' and
+		m_lookahead != '>')
 	{
 		switch (m_lookahead)
 		{
@@ -1825,6 +1867,11 @@ void parser_imp::intsubset()
 				m_data = new wstring_data_source(replacement, m_data);
 				
 				match(xml_PEReference);
+				
+				s();
+				
+				if (m_lookahead == xml_XMLDecl)
+					xml_decl();
 				break;
 			}
 			
@@ -2027,12 +2074,8 @@ void parser_imp::parameter_entity_decl()
 		match(xml_String);
 		parse_parameter_entity_declaration(value);
 	}
-	else
-	{
-		
-		
-		value = external_id(true);
-	}
+	else	// ... or an external id 
+		value = read_external_id();
 
 	s();
 	
@@ -2060,7 +2103,7 @@ void parser_imp::general_entity_decl()
 	}
 	else // ... or an ExternalID
 	{
-		value = external_id(true);
+		value = read_external_id();
 
 		if (m_lookahead == xml_Space)
 		{
@@ -2257,56 +2300,90 @@ void parser_imp::notation_decl()
 	match(xml_Space);
 	match(xml_Name);
 	match(xml_Space);
-	external_id(false);
-	s();
-	match('>');
-}
 
-wstring parser_imp::external_id(bool require_system)
-{
-	TRACE
-	wstring result;
+	string pubid, system;
 	
 	if (m_token == L"SYSTEM")
 	{
 		match(xml_Name);
 		match(xml_Space);
 		
-		string sys = wstring_to_string(m_token);
+		system = wstring_to_string(m_token);
 		match(xml_String);
-		
-		fs::path path = fs::system_complete(sys);
-
-		if (fs::exists(path))
-			m_data = new fstream_data_source(path, m_data);
 	}
 	else if (m_token == L"PUBLIC")
 	{
 		match(xml_Name);
 		match(xml_Space);
 		
-		wstring pub = m_token;
+		pubid = wstring_to_string(m_token);
 		match(xml_String);
 		
-		wstring sys;
+		s();
 		
-		if (require_system)
+		if (m_lookahead == xml_String)
 		{
-			match(xml_Space);
-			wstring sys = m_token;
+			system = wstring_to_string(m_token);
 			match(xml_String);
 		}
-		
-		fs::path path = fs::system_complete(wstring_to_string(sys));
+	}
+	else
+		throw exception("Expected either SYSTEM or PUBLIC");
 
-		if (fs::exists(path))
-			m_data = new fstream_data_source(path, m_data);
-		// retrieve_external_dtd(sys, pub);
+	s();
+	match('>');
+}
+
+void parser_imp::external_id()
+{
+	TRACE
+
+	string pubid, system;
+	
+	if (m_token == L"SYSTEM")
+	{
+		match(xml_Name);
+		match(xml_Space);
+		
+		system = wstring_to_string(m_token);
+	}
+	else if (m_token == L"PUBLIC")
+	{
+		match(xml_Name);
+		match(xml_Space);
+		
+		pubid = wstring_to_string(m_token);
+		match(xml_String);
+		
+		match(xml_Space);
+		system = wstring_to_string(m_token);
 	}
 	else
 		throw exception("Expected external id starting with either SYSTEM or PUBLIC");
+
+	if (not system.empty())
+	{
+		auto_ptr<istream> is;
+		
+		// first allow the client to retrieve the dtd
+		if (m_parser.find_external_dtd)
+			is.reset(m_parser.find_external_dtd(pubid, system));
+		
+		// if that fails, we try it ourselves
+		if (is.get() == NULL)
+		{
+			fs::path path = fs::system_complete(system);
 	
-	return result;
+			if (fs::exists(path))
+				is.reset(new fs::ifstream(path));
+		}
+		
+		if (is.get() != NULL)
+			m_data = new istream_data_source(is, m_data);
+	}
+
+//	// and now we finally match the xml_String SYSTEM
+//	match(xml_String);
 }
 
 void parser_imp::parse_parameter_entity_declaration(wstring& s)
@@ -2328,7 +2405,10 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 				if (c == '&')
 					state = 1;
 				else if (c == '%')
+				{
+					name.clear();
 					state = 20;
+				}
 				else
 					result += c;
 				break;
@@ -2705,6 +2785,31 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 	return result;
 }
 
+wstring parser_imp::read_external_id()
+{
+	TRACE
+	wstring result;
+
+	data_source* source = m_data;
+	
+	external_id();
+	
+	if (source != m_data)
+	{
+		while (wchar_t ch = m_data->get_next_char())
+			result += ch;
+		
+		data_source* next = m_data->next_data_source();
+		delete m_data;
+		m_data = next;
+	}
+	assert(m_data == source);
+	
+	match(xml_String);
+	
+	return result;
+}
+
 void parser_imp::element()
 {
 	TRACE
@@ -2841,6 +2946,11 @@ void parser_imp::content()
 				m_data = new entity_data_source(m_token, e->second, m_data);
 
 				match(xml_Reference, true);
+				
+				s();
+				
+				if (m_lookahead == xml_XMLDecl)
+					xml_decl();
 				break;
 			}
 			

@@ -89,14 +89,17 @@ void run_test(xml::node& test, fs::path& base_dir)
 	}
 }
 
-void run_test_case(xml::node& testcase, fs::path& base_dir)
+void run_test_case(xml::node& testcase, const string& id, fs::path& base_dir)
 {
 	foreach (xml::node& testcasenode, testcase.children())
 	{
 		if (testcasenode.name() == "TEST")
-			run_test(testcasenode, base_dir);
+		{
+			if (id.empty() or id == testcasenode.get_attribute("ID"))
+				run_test(testcasenode, base_dir);
+		}
 		else if (testcasenode.name() == "TESTCASE")
-			run_test_case(testcasenode, base_dir);
+			run_test_case(testcasenode, id, base_dir);
 		else
 			throw zeep::exception("invalid testcases file: unknown node %s",
 				testcasenode.name().c_str());
@@ -157,7 +160,7 @@ void run_test_case(xml::node& testcase, fs::path& base_dir)
 //	}
 //}
 
-void test_testcases(const fs::path& testFile)
+void test_testcases(const fs::path& testFile, const string& id)
 {
 	fs::ifstream file(testFile);
 	
@@ -172,12 +175,12 @@ void test_testcases(const fs::path& testFile)
 	
 	xml::node_ptr root = doc.root();
 	if (root->name() == "TESTCASES")
-		run_test_case(*root, base_dir);
+		run_test_case(*root, id, base_dir);
 	else if (root->name() == "TESTSUITE")
 	{
 		foreach (xml::node& test, root->children())
 		{
-			run_test_case(test, base_dir);
+			run_test_case(test, id, base_dir);
 		}
 	}
 	else
@@ -191,6 +194,7 @@ int main(int argc, char* argv[])
 	    ("help", "produce help message")
 	    ("verbose", "verbose output")
 //	    ("input-file", "input file")
+		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
 	;
 	
@@ -212,10 +216,14 @@ int main(int argc, char* argv[])
 	
 	try
 	{
+		string id;
+		if (vm.count("id"))
+			id = vm["id"].as<string>();
+		
 		if (vm.count("test"))
 		{
 			fs::path xmlTestFile(vm["test"].as<string>());
-			test_testcases(xmlTestFile);
+			test_testcases(xmlTestFile, id);
 		}
 //		else if (vm.count("input-file"))
 //		{

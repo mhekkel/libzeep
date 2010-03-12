@@ -45,7 +45,7 @@ class parser : public boost::noncopyable
 
 	boost::function<void(const std::string& prefix)>		end_namespace_decl_handler;
 
-	boost::function<bool(const std::string& uri, boost::filesystem::path& path)>
+	boost::function<std::istream*(const std::string& pubid, const std::string& uri)>
 															find_external_dtd;
 
 	void			parse();
