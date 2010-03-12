@@ -29,7 +29,7 @@ namespace fs = boost::filesystem;
 extern int VERBOSE;
 
 #if DEBUG
-#define TRACE	do { if (VERBOSE > 1) cout << "== " << __func__ << " at " << __FILE__ << ':' << __LINE__ << endl; } while (false);
+#define TRACE	do { if (VERBOSE) cout << "== " << __func__ << " at " << __FILE__ << ':' << __LINE__ << endl; } while (false);
 #else
 #define TRACE
 #endif
@@ -125,33 +125,49 @@ enum Encoding {
 class data_source
 {
   public:
+					data_source(data_source* next)
+						: m_next(next) {}
+
 	virtual			~data_source() {}
 
 	virtual wchar_t	get_next_char() = 0;
-};
 
-typedef boost::shared_ptr<data_source>	data_ptr;
+	// to avoid recursively nested entity values, we have a check:
+	virtual bool	is_entity_on_stack(const wstring& name)
+					{
+						bool result = false;
+						if (m_next != NULL)
+							result = m_next->is_entity_on_stack(name);
+						return result;
+					}
+
+	data_source*	next_data_source()								{ return m_next; }
+
+  protected:
+	data_source*	m_next;	// generate a linked list of data_sources
+};
 
 // --------------------------------------------------------------------
 
 class istream_data_source : public data_source
 {
   public:
-					istream_data_source(
-						istream&		data)
-						: m_data(data)
+					istream_data_source(istream& data, data_source* next)
+						: data_source(next)
+						, m_data(data)
 						, m_char_buffer(0)
 						, m_encoding(enc_UTF8)
 						, m_has_bom(false)
 					{
+						m_encoding = guess_encoding();
 					}
 
-	Encoding		guess_encoding();
-	
 	bool			has_bom()				{ return m_has_bom; }
 
   private:
 
+	Encoding		guess_encoding();
+	
 	virtual wchar_t	get_next_char();
 
 	wchar_t			next_utf8_char();
@@ -348,13 +364,13 @@ wchar_t istream_data_source::get_next_char()
 class fstream_data_source : public data_source
 {
   public:
- 					fstream_data_source(fs::path dtd_uri)
+ 					fstream_data_source(fs::path dtd_uri, data_source* next)
+ 						: data_source(next)
  					{
  						if (fs::exists(dtd_uri))
  						{
  							m_file.reset(new fs::ifstream(dtd_uri));
- 							m_source.reset(new istream_data_source(*m_file));
- 							static_cast<istream_data_source*>(m_source.get())->guess_encoding();
+ 							m_source.reset(new istream_data_source(*m_file, NULL));
  						}
  					}
  	
@@ -372,15 +388,14 @@ class fstream_data_source : public data_source
 	auto_ptr<data_source>	m_source;
 };
 
-
 // --------------------------------------------------------------------
 
 class wstring_data_source : public data_source
 {
   public:
-					wstring_data_source(
-						const wstring&	data)
-						: m_data(data)
+					wstring_data_source(const wstring& data, data_source* next)
+						: data_source(next)
+						, m_data(data)
 						, m_ptr(m_data.begin())
 					{
 					}
@@ -403,6 +418,26 @@ wchar_t	wstring_data_source::get_next_char()
 
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+class entity_data_source : public wstring_data_source
+{
+  public:
+					entity_data_source(const wstring& entity_name, const wstring& text, data_source* next)
+						: wstring_data_source(text, next)
+						, m_entity_name(entity_name) {}
+
+	virtual bool	is_entity_on_stack(const wstring& name)
+					{
+						bool result = m_entity_name == name;
+						if (result == false and m_next != NULL)
+							result = m_next->is_entity_on_stack(name);
+						return result;
+					}
+  protected:
+	wstring			m_entity_name;
+};
 
 // --------------------------------------------------------------------
 
@@ -519,14 +554,11 @@ bool doctype_attribute::is_names(wstring& s)
 			if (c == s.end())
 				break;
 			
-			result = *c == ' ' or *c == '\n' or *c == '\t';
+			result = isspace(*c);
 			++c;
 			
-			while (*c == ' ' or *c == '\n' or *c == '\t')
+			while (isspace(*c))
 				++c;
-			
-			if (c != s.end())
-				t += ' ';
 		}
 
 		swap(s, t);
@@ -550,8 +582,11 @@ bool doctype_attribute::is_nmtoken(wstring& s)
 
 bool doctype_attribute::is_nmtokens(wstring& s)
 {
+	TRACE
+	
 	bool result = true;
 
+	// remove leading and trailing spaces
 	ba::trim(s);
 	
 	wstring::iterator c = s.begin();
@@ -574,17 +609,21 @@ bool doctype_attribute::is_nmtokens(wstring& s)
 		if (not result or c == s.end())
 			break;
 		
-		result = *c == ' ' or *c == '\n' or *c == '\t';
-		++c;
-		
-		while (*c == ' ' or *c == '\n' or *c == '\t')
+		result = false;
+		do
+		{
+			if (not isspace(*c))
+				break;
+			result = true;
 			++c;
+		}
+		while (isspace(*c));
 		
-		if (c != s.end())
-			t += ' ';
+		t += ' ';
 	}
 	
-	swap(s, t);
+	if (result)
+		swap(s, t);
 	
 	return result;
 }
@@ -669,6 +708,8 @@ struct parser_imp
 						istream&	data,
 						parser&		parser);
 	
+					~parser_imp();
+	
 	void			parse();
 	void			prolog();
 	void			xml_decl();
@@ -697,7 +738,7 @@ struct parser_imp
 	
 	void			parse_parameter_entity_declaration(wstring& s);
 	void			parse_general_entity_declaration(wstring& s);
-	void			normalize_attribute_value(wstring& s);
+	wstring			normalize_attribute_value(data_source* data);
 
 	enum XMLToken
 	{
@@ -811,7 +852,7 @@ struct parser_imp
 	
 	Encoding		m_encoding;
 
-	stack<data_ptr>	m_data;
+	data_source*	m_data;
 	stack<wchar_t>	m_buffer;
 	
 	map<wstring,wstring>
@@ -826,17 +867,26 @@ parser_imp::parser_imp(
 	parser&			parser)
 	: m_parser(parser)
 {
-	boost::shared_ptr<istream_data_source> source(new istream_data_source(data));
-	
-	m_data.push(source);
+	m_data = new istream_data_source(data, NULL);
 	
 	m_general_entities[L"lt"] = L"&#60;";
 	m_general_entities[L"gt"] = L"&#62;";
 	m_general_entities[L"amp"] = L"&#38;";
 	m_general_entities[L"apos"] = L"&#39;";
 	m_general_entities[L"quot"] = L"&#34;";
-	
-	m_encoding = source->guess_encoding();
+}
+
+parser_imp::~parser_imp()
+{
+	while (m_data != NULL)
+	{
+		data_source* next = m_data->next_data_source();
+		delete m_data;
+		m_data = next;
+	}
+
+	for (map<wstring,doctype_element*>::iterator de = m_doctype.begin(); de != m_doctype.end(); ++de)
+		delete de->second;
 }
 
 wchar_t parser_imp::get_next_char()
@@ -850,12 +900,16 @@ wchar_t parser_imp::get_next_char()
 	}
 	else
 	{
-		while (result == 0 and not m_data.empty())
+		while (result == 0 and m_data != NULL)
 		{
-			result = m_data.top()->get_next_char();
+			result = m_data->get_next_char();
 	
 			if (result == 0)
-				m_data.pop();
+			{
+				data_source* next = m_data->next_data_source();
+				delete m_data;
+				m_data = next;
+			}
 		}
 	}
 	
@@ -893,8 +947,6 @@ void parser_imp::match(int token, bool content)
 
 void parser_imp::restart(int& start, int& state)
 {
-//	int saved_start = start, saved_state = state;
-	
 	while (not m_token.empty())
 		retract();
 	
@@ -1730,7 +1782,7 @@ void parser_imp::doctypedecl()
 				replacement += e;
 				replacement += ' ';
 				
-				m_data.push(data_ptr(new wstring_data_source(replacement)));
+				m_data = new wstring_data_source(replacement, m_data);
 				
 				// parse e as if it was internal
 				intsubset();
@@ -1770,7 +1822,7 @@ void parser_imp::intsubset()
 				replacement += r->second;
 				replacement += ' ';
 				
-				m_data.push(data_ptr(new wstring_data_source(replacement)));
+				m_data = new wstring_data_source(replacement, m_data);
 				
 				match(xml_PEReference);
 				break;
@@ -2027,7 +2079,17 @@ void parser_imp::general_entity_decl()
 	match('>');
 	
 	if (m_general_entities.find(name) == m_general_entities.end())
+	{
 		m_general_entities[name] = value;
+
+		ba::replace_all(value, "\n", "\\n");
+		ba::replace_all(value, "\t", "\\t");
+		ba::replace_all(value, "\r", "\\r");
+		ba::replace_all(value, " ", "<space>");
+		
+		if (VERBOSE)
+			cout << "set entity value for " << wstring_to_string(name) << " to " << wstring_to_string(value) << endl; 
+	}
 }
 
 void parser_imp::attlist_decl()
@@ -2216,7 +2278,7 @@ wstring parser_imp::external_id(bool require_system)
 		fs::path path = fs::system_complete(sys);
 
 		if (fs::exists(path))
-			m_data.push(data_ptr(new fstream_data_source(path)));
+			m_data = new fstream_data_source(path, m_data);
 	}
 	else if (m_token == L"PUBLIC")
 	{
@@ -2506,7 +2568,7 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 	swap(s, result);
 }
 
-void parser_imp::normalize_attribute_value(wstring& s)
+wstring parser_imp::normalize_attribute_value(data_source* data)
 {
 	TRACE
 	wstring result;
@@ -2515,9 +2577,12 @@ void parser_imp::normalize_attribute_value(wstring& s)
 	wchar_t charref = 0;
 	wstring name;
 	
-	for (wstring::const_iterator i = s.begin(); i != s.end(); ++i)
+	for (;;)
 	{
-		wchar_t c = *i;
+		wchar_t c = data->get_next_char();
+		
+		if (c == 0)
+			break;
 		
 		switch (state)
 		{
@@ -2525,10 +2590,7 @@ void parser_imp::normalize_attribute_value(wstring& s)
 				if (c == '&')
 					state = 1;
 				else if (c == ' ' or c == '\n' or c == '\t')
-				{
-					if (not result.empty() and result[result.length() - 1] != ' ')
-						result += ' ';
-				}
+					result += ' ';
 				else
 					result += c;
 				break;
@@ -2606,13 +2668,15 @@ void parser_imp::normalize_attribute_value(wstring& s)
 			case 10:
 				if (c == ';')
 				{
+					if (data->is_entity_on_stack(name))
+						throw exception("infinite recursion in nested entity references");
+					
 					map<wstring,wstring>::iterator e = m_general_entities.find(name);
 					if (e == m_general_entities.end())
 						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
 					
-					wstring replacement = e->second;
-					normalize_attribute_value(replacement);
-					
+					entity_data_source next_data(name, e->second, data);
+					wstring replacement = normalize_attribute_value(&next_data);
 					result += replacement;
 
 					state = 0;
@@ -2632,8 +2696,7 @@ void parser_imp::normalize_attribute_value(wstring& s)
 	if (state != 0)
 		throw exception("invalid reference");
 	
-	ba::trim(result);
-	swap(s, result);
+	return result;
 }
 
 void parser_imp::element()
@@ -2662,13 +2725,10 @@ void parser_imp::element()
 		
 		eq();
 
-		wstring attr_value = m_token;
+		wstring_data_source attr_data(m_token, NULL);
 		match(xml_String);
 		
-		normalize_attribute_value(attr_value);
-		
-		attribute_ptr attr(new attribute(wstring_to_string(attr_name), wstring_to_string(attr_value)));
-		
+		wstring attr_value = normalize_attribute_value(&attr_data);
 		if (dte != NULL)
 		{
 			doctype_attribute* dta = dte->get_attribute(attr_name);
@@ -2676,6 +2736,7 @@ void parser_imp::element()
 				throw exception("invalid value for attribute");
 		}
 		
+		attribute_ptr attr(new attribute(wstring_to_string(attr_name), wstring_to_string(attr_value)));
 		attrs.push_back(attr);
 	}
 	
@@ -2768,7 +2829,10 @@ void parser_imp::content()
 				if (e == m_general_entities.end())
 					throw exception("undefined entity reference %s", wstring_to_string(m_token).c_str());
 				
-				m_data.push(data_ptr(new wstring_data_source(e->second)));
+				if (m_data->is_entity_on_stack(m_token))
+					throw exception("infinite recursion of entity references");
+				
+				m_data = new entity_data_source(m_token, e->second, m_data);
 
 				match(xml_Reference, true);
 				break;
