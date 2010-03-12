@@ -2288,6 +2288,8 @@ wstring parser_imp::external_id(bool require_system)
 		wstring pub = m_token;
 		match(xml_String);
 		
+		wstring sys;
+		
 		if (require_system)
 		{
 			match(xml_Space);
@@ -2295,6 +2297,10 @@ wstring parser_imp::external_id(bool require_system)
 			match(xml_String);
 		}
 		
+		fs::path path = fs::system_complete(wstring_to_string(sys));
+
+		if (fs::exists(path))
+			m_data = new fstream_data_source(path, m_data);
 		// retrieve_external_dtd(sys, pub);
 	}
 	else
