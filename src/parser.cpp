@@ -277,10 +277,13 @@ void istream_data_source::guess_encoding()
 
 char istream_data_source::next_byte()
 {
-	char result;
+	char result = 0;
 	
 	if (m_byte_buffer.empty())
-		m_data.read(&result, 1);
+	{
+		if (not m_data.eof())
+			m_data.read(&result, 1);
+	}
 	else
 	{
 		result = m_byte_buffer.top();
@@ -542,6 +545,7 @@ bool doctype_attribute::is_names(wstring& s)
 			
 			result = isspace(*c);
 			++c;
+			t += ' '; 
 			
 			while (isspace(*c))
 				++c;
@@ -616,6 +620,7 @@ bool doctype_attribute::is_nmtokens(wstring& s)
 
 bool doctype_attribute::validate_value(wstring& value)
 {
+	TRACE
 	bool result = true;
 
 	if (m_type == attTypeString)
@@ -629,7 +634,10 @@ bool doctype_attribute::validate_value(wstring& value)
 	else if (m_type == attTypeTokenizedNMTOKENS)
 		result = is_nmtokens(value);
 	else if (m_type == attTypeEnumerated)
+	{
+		ba::trim(value);
 		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
+	}
 	
 	return result;
 }
@@ -752,7 +760,6 @@ struct parser_imp
 		xml_NMToken,
 		xml_String,
 		xml_PI,			// <?
-		xml_PIEnd,		// ?>
 		xml_STag,		// <
 		xml_ETag,		// </
 		xml_DocType,	// <!DOCTYPE
@@ -800,7 +807,6 @@ struct parser_imp
 								case xml_NMToken:		result = "nmtoken";						break;
 								case xml_String:		result = "quoted string";				break;
 								case xml_PI:			result = "processing instruction";		break;
-								case xml_PIEnd:			result = "'?>'";		 				break;
 								case xml_STag:			result = "start of tag"; 				break;
 								case xml_ETag:			result = "start of end tag";			break;
 								case xml_DocType:		result = "<!DOCTYPE"; 					break;
@@ -1297,9 +1303,7 @@ int parser_imp::get_next_token()
 				break;
 			
 			case state_TagStart + 1:
-				if (uc == '?')
-					state = state_TagStart + 20;
-				else if (uc == '!')
+				if (uc == '!')
 					state += 1;
 				else if (is_name_start_char(uc))
 				{
@@ -1421,21 +1425,12 @@ int parser_imp::get_next_token()
 			
 			// misc
 			case state_Misc:
-				if (uc == '?')
-					state += 1;
-				else
-					token = uc;
+				token = uc;
 				break;
 			
-			case state_Misc + 1:
-				if (uc == '>')
-					token = xml_PIEnd;
-				else
-				{
-					retract();
-					token = '?';
-				}
-				break;
+			default:
+				assert(false);
+				throw exception("state should never be reached");
 		}
 	}
 	
@@ -1792,8 +1787,6 @@ void parser_imp::xml_decl()
 				eq();
 				if (m_token != L"yes" and m_token != L"no")
 					throw exception("Invalid XML declaration, standalone value should be either yes or no");
-				if (m_token == L"no")
-					throw exception("Unsupported XML declaration, only standalone documents are supported");
 				m_standalone = m_token;
 				match(xml_String);
 				continue;
@@ -1802,7 +1795,8 @@ void parser_imp::xml_decl()
 			throw exception("unexpected attribute in xml declaration");
 		}
 		
-		match(xml_PIEnd);
+		match('?');
+		match('>');
 	}
 }
 
@@ -1843,7 +1837,8 @@ void parser_imp::text_decl()
 			throw exception("unexpected attribute in xml declaration");
 		}
 		
-		match(xml_PIEnd);
+		match('?');
+		match('>');
 	}
 }
 
@@ -1902,7 +1897,7 @@ void parser_imp::doctypedecl()
 	wstring name = m_token;
 	match(xml_Name);
 
-	wstring dtd;
+	auto_ptr<data_source> dtd;
 
 	if (m_lookahead == xml_Space)
 	{
@@ -1910,7 +1905,7 @@ void parser_imp::doctypedecl()
 		
 		if (m_lookahead == xml_Name)
 		{
-			dtd = read_external_id();
+			dtd.reset(external_id());
 			match(xml_String);
 		}
 		
@@ -1928,14 +1923,16 @@ void parser_imp::doctypedecl()
 
 	// internal subset takes precedence over external subset, so
 	// if the external subset is defined, include it here.
-	if (not dtd.empty())
+	if (dtd.get() != nullptr)
 	{
 		// save the parser state
 		push_state();
 		
-		m_data_source = new wstring_data_source(dtd, NULL);
+		m_data_source = dtd.release();
 		
-		m_lookahead = get_next_token();
+		match(m_lookahead);
+		
+		text_decl();
 		
 		extsubset();
 		
@@ -2206,6 +2203,8 @@ void parser_imp::contentspec(doctype_element& element)
 	{
 		match('(');
 		
+		s();
+
 		if (m_lookahead == '#')	// Mixed
 		{
 			match(m_lookahead);
@@ -2215,25 +2214,16 @@ void parser_imp::contentspec(doctype_element& element)
 			
 			s();
 			
-			if (m_lookahead == '|')
+			while (m_lookahead == '|')
 			{
-				while (m_lookahead == '|')
-				{
-					match('|');
-					s();
-					match(xml_Name);
-					s();
-				}
-				
-				match(')');
-				match('*');
+				match('|');
+				s();
+				match(xml_Name);
+				s();
 			}
-			else
-				match(')');
 		}
 		else					// children
 		{
-			s();
 			cp();
 			s();
 			if (m_lookahead == ',')
@@ -2243,6 +2233,7 @@ void parser_imp::contentspec(doctype_element& element)
 					match(m_lookahead);
 					s();
 					cp();
+					s();
 				}
 				while (m_lookahead == ',');
 			}
@@ -2253,14 +2244,17 @@ void parser_imp::contentspec(doctype_element& element)
 					match(m_lookahead);
 					s();
 					cp();
+					s();
 				}
 				while (m_lookahead == '|');
 			}
-			match(')');
-			
-			if (m_lookahead == '*' or m_lookahead == '+' or m_lookahead == '?')
-				match(m_lookahead);
 		}
+
+		s();
+		match(')');
+		
+		if (m_lookahead == '*' or m_lookahead == '+' or m_lookahead == '?')
+			match(m_lookahead);
 	}
 }
 
@@ -2281,6 +2275,7 @@ void parser_imp::cp()
 				match(m_lookahead);
 				s();
 				cp();
+				s();
 			}
 			while (m_lookahead == ',');
 		}
@@ -2291,9 +2286,12 @@ void parser_imp::cp()
 				match(m_lookahead);
 				s();
 				cp();
+				s();
 			}
 			while (m_lookahead == '|');
 		}
+
+		s();
 		match(')');
 	}
 	else
@@ -2502,6 +2500,8 @@ void parser_imp::attlist_decl()
 				
 				notations.push_back(m_token);
 				match(xml_Name);
+				
+				s();
 
 				while (m_lookahead == '|')
 				{
@@ -2758,7 +2758,9 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 					EntityMap::iterator e = m_parameter_entities.find(name);
 					if (e == m_parameter_entities.end())
 						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
+//					result += ' ';
 					result += e->second;
+//					result += ' ';
 					state = 0;
 				}
 				else if (is_name_char(c))
@@ -2800,7 +2802,10 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 				if (c == '&')
 					state = 1;
 				else if (c == '%')
+				{
+					name.clear();
 					state = 20;
+				}
 				else
 					result += c;
 				break;
@@ -2878,11 +2883,6 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 			case 10:
 				if (c == ';')
 				{
-//					EntityMap::iterator e = m_general_entities.find(name);
-//					if (e == m_general_entities.end())
-//						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
-//					result += e->second;
-
 					result += '&';
 					result += name;
 					result += ';';
@@ -2901,7 +2901,9 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 					EntityMap::iterator e = m_parameter_entities.find(name);
 					if (e == m_parameter_entities.end())
 						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
+//					result += ' ';
 					result += e->second;
+//					result += ' ';
 					state = 0;
 				}
 				else if (is_name_char(c))

@@ -4,6 +4,7 @@
     Copyright 1998 by Sun Microsystems, Inc.
     All Rights Reserved.
 -->
+<TESTCASES>
 <TEST URI="invalid/dtd01.xml" ID="inv-dtd01" SECTIONS="3.2.2" TYPE="invalid">
     Tests the No Duplicate Types VC</TEST>
 
@@ -357,3 +358,4 @@
 <TEST URI="invalid/empty.xml" ID="empty" TYPE="invalid" SECTIONS="2.4 2.7 [18] 3">
     CDATA section containing only white space does not match the nonterminal S, and cannot 
     appear in these positions. </TEST>
+</TESTCASES>

@@ -4,6 +4,7 @@
     Copyright 1998 by Sun Microsystems, Inc.
     All Rights Reserved.
 -->
+<TESTCASES>
 <TEST URI="valid/pe01.xml" ID="pe01" ENTITIES="parameter" SECTIONS="2.8" TYPE="valid">
     Parameter entities references are NOT RECOGNIZED in default attribute
     values.</TEST>
@@ -145,3 +146,4 @@
 	OUTPUT="valid/out/pe02.xml">
     Tests construction of internal entity replacement text, using
     a complex example in the XML specification.  </TEST>
+</TESTCASES>

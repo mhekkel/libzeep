@@ -105,7 +105,7 @@ void run_test_case(xml::node& testcase, const string& id, fs::path& base_dir)
 			if (id.empty() or id == testcasenode.get_attribute("ID"))
 				run_test(testcasenode, base_dir);
 		}
-		else if (testcasenode.name() == "TESTCASE")
+		else if (testcasenode.name() == "TESTCASE" or testcasenode.name() == "TESTCASES")
 			run_test_case(testcasenode, id, base_dir);
 		else
 			throw zeep::exception("invalid testcases file: unknown node %s",

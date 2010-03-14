@@ -5,6 +5,7 @@
     All Rights Reserved.
 -->
 
+<TESTCASES>
 <TEST URI="not-wf/uri01.xml" ID="uri01" TYPE="error" SECTIONS="4.2.2 [75]">
     SYSTEM ids may not have URI fragments</TEST>
-
+</TESTCASES>
