@@ -743,6 +743,13 @@ struct parser_imp
 	
 	void			parse_parameter_entity_declaration(wstring& s);
 	void			parse_general_entity_declaration(wstring& s);
+
+	wstring			normalize_attribute_value(const wstring& s)
+					{
+						wstring_data_source data(s, nullptr);
+						return normalize_attribute_value(&data);
+					}
+					
 	wstring			normalize_attribute_value(data_source* data);
 
 
@@ -753,12 +760,12 @@ struct parser_imp
 
 		// these are tokens for the markup
 		
-		xml_XMLDecl,
+		xml_XMLDecl,	// <?xml
 		xml_Space,		// Really needed
-		xml_Comment,
-		xml_Name,
-		xml_NMToken,
-		xml_String,
+		xml_Comment,	// <!--(
+		xml_Name,		// name-start-char (name-char)*
+		xml_NMToken,	// (name-char)+
+		xml_String,		// (\"[^"]*\") | (\'[^\']*\')		// single or double quoted string
 		xml_PI,			// <?
 		xml_STag,		// <
 		xml_ETag,		// </
@@ -775,7 +782,7 @@ struct parser_imp
 		// next are tokens for the content part
 		
 		xml_Reference,		// &name;
-		xml_CDSect,			// CData section
+		xml_CDSect,			// CData section <![CDATA[ ... ]]>
 		xml_Content,		// anything else up to the next element start
 	};
 
@@ -2543,7 +2550,7 @@ void parser_imp::attlist_decl()
 			{
 				s();
 				
-				attribute->set_default(attDefFixed, m_token);
+				attribute->set_default(attDefFixed, normalize_attribute_value(m_token));
 				match(xml_String);
 			}
 			else
@@ -2551,7 +2558,7 @@ void parser_imp::attlist_decl()
 		}
 		else
 		{
-			attribute->set_default(attDefNone, m_token);
+			attribute->set_default(attDefNone, normalize_attribute_value(m_token));
 			match(xml_String);
 		}
 		
@@ -3121,10 +3128,9 @@ void parser_imp::element()
 		
 		eq();
 
-		wstring_data_source attr_data(m_token, nullptr);
+		wstring attr_value = normalize_attribute_value(m_token);
 		match(xml_String);
 		
-		wstring attr_value = normalize_attribute_value(&attr_data);
 		if (dte != nullptr)
 		{
 			doctype_attribute* dta = dte->get_attribute(attr_name);
@@ -3159,7 +3165,8 @@ void parser_imp::element()
 			}
 			else if (not def.second.empty() and attr == attrs.end())
 			{
-				attrs.push_back(attribute_ptr(new attribute(name, wstring_to_string(def.second))));
+				wstring attr_value = normalize_attribute_value(def.second);
+				attrs.push_back(attribute_ptr(new attribute(name, wstring_to_string(attr_value))));
 			}
 		}
 	}

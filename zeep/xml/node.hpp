@@ -42,16 +42,13 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 							const std::string&	ns,
 							const std::string&	prefix);
 
-//						node(
-//							const node&			rhs);
-	
 	virtual				~node();
 
 	std::string			ns() const								{ return m_ns; }
-	void				ns(const std::string	ns)				{ m_ns = ns; }
+	void				ns(const std::string&	ns)				{ m_ns = ns; }
 	
 	std::string			prefix() const							{ return m_prefix; }
-	void				prefix(const std::string
+	void				prefix(const std::string&
 												prefix)			{ m_prefix = prefix; }
 	
 	std::string			name() const							{ return m_name; }
