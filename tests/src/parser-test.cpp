@@ -22,7 +22,7 @@ namespace ba = boost::algorithm;
 
 int VERBOSE;
 
-void run_valid_test(istream& is, const string& outfile)
+void run_valid_test(istream& is, fs::path& outfile)
 {
 	xml::document indoc(is);
 	
@@ -31,7 +31,9 @@ void run_valid_test(istream& is, const string& outfile)
 	string s1 = s.str();
 	ba::trim(s1);
 
-	if (not outfile.empty() and fs::exists(outfile))
+	if (fs::is_directory(outfile))
+		;
+	else if (fs::exists(outfile))
 	{
 		fs::ifstream out(outfile);
 		string s2, line;
@@ -48,12 +50,15 @@ void run_valid_test(istream& is, const string& outfile)
 				s1.c_str(), s2.c_str());
 		}
 	}
+	else
+		cout << "skipped output compare for " << outfile << endl;
 }
 
 
 void run_test(xml::node& test, fs::path& base_dir)
 {
 	fs::path input(base_dir / test.get_attribute("URI"));
+	fs::path output(base_dir / test.get_attribute("OUTPUT"));
 
 	if (not fs::exists(input))
 		throw zeep::exception("test file %s does not exist", input.string().c_str());
@@ -67,7 +72,7 @@ void run_test(xml::node& test, fs::path& base_dir)
 		fs::current_path(input.branch_path());
 		
 		if (test.get_attribute("TYPE") == "valid")
-			run_valid_test(is, test.get_attribute("OUTPUT"));
+			run_valid_test(is, output);
 		else if (test.get_attribute("TYPE") == "not-wf")
 		{
 			try
@@ -83,6 +88,8 @@ void run_test(xml::node& test, fs::path& base_dir)
 		cout << "test " << test.get_attribute("ID") << " failed:" << endl
 			 << "\t" << fs::system_complete(input) << endl
 			 << test.content() << endl
+			 << endl
+			 << test.get_attribute("SECTIONS") << endl
 			 << endl
 			 << "exception: " << e.what() << endl
 			 << endl;

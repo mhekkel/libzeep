@@ -26,6 +26,8 @@ using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 
+#define nullptr NULL
+
 extern int VERBOSE;
 
 #if DEBUG
@@ -135,7 +137,7 @@ class data_source
 	virtual bool	is_entity_on_stack(const wstring& name)
 					{
 						bool result = false;
-						if (m_next != NULL)
+						if (m_next != nullptr)
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
@@ -374,35 +376,6 @@ wchar_t istream_data_source::get_next_char()
 
 // --------------------------------------------------------------------
 
-class fstream_data_source : public data_source
-{
-  public:
- 					fstream_data_source(fs::path dtd_uri, data_source* next)
- 						: data_source(next)
- 					{
- 						if (fs::exists(dtd_uri))
- 						{
- 							m_file.reset(new fs::ifstream(dtd_uri));
- 							m_source.reset(new istream_data_source(*m_file, NULL));
- 						}
- 					}
- 	
-	virtual wchar_t	get_next_char()
-					{
-						wchar_t result = 0;
-						
-						if (m_source.get() != NULL)
-							result = m_source->get_next_char();
-						
-						return result;
-					}
-
-	auto_ptr<istream>		m_file;
-	auto_ptr<data_source>	m_source;
-};
-
-// --------------------------------------------------------------------
-
 class wstring_data_source : public data_source
 {
   public:
@@ -444,7 +417,7 @@ class entity_data_source : public wstring_data_source
 	virtual bool	is_entity_on_stack(const wstring& name)
 					{
 						bool result = m_entity_name == name;
-						if (result == false and m_next != NULL)
+						if (result == false and m_next != nullptr)
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
@@ -705,7 +678,7 @@ doctype_attribute* doctype_element::get_attribute(const wstring& name)
 	vector<doctype_attribute*>::iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&doctype_attribute::name, _1) == name);
 	
-	doctype_attribute* result = NULL;
+	doctype_attribute* result = nullptr;
 	
 	if (dta != m_attlist.end())
 		result = *dta;
@@ -742,6 +715,9 @@ struct parser_imp
 	void			intsubset();
 	void			extsubset();
 	void			extsubsetdecl();
+
+	void			conditionalsect();
+	void			ignoresectcontents();
 	
 	void			markupdecl();
 //	void			declsep();
@@ -867,25 +843,46 @@ struct parser_imp
 	void			retract();
 	
 	void			match(int token, bool content = false);
+	
+	void			push_state();
 
+	void			pop_state();
+
+	struct parser_state
+	{
+						parser_state()
+							: m_lookahead(0), m_data_source(nullptr), m_version(1.0f), m_encoding(enc_UTF8), m_next(nullptr) {}
+		
+		int				m_lookahead;
+		data_source*	m_data_source;
+		stack<wchar_t>	m_buffer;
+		wstring			m_token;
+		float			m_version;
+		Encoding		m_encoding;
+		
+		parser_state*	m_next;
+	};
+
+	parser_state*	m_saved_state;
+
+	int				m_lookahead;
+	data_source*	m_data_source;
+	stack<wchar_t>	m_buffer;
+	wstring			m_token;
+	float			m_version;
+	Encoding		m_encoding;
 	wstring			m_standalone;
 	parser&			m_parser;
-	wstring			m_token;
-	wstring			m_pi_target;
-	int				m_lookahead;
-	float			m_version;
 	bool			m_in_doctype;
 	bool			m_external_subset;
-	Encoding		m_encoding;
 
-	data_source*	m_data;
-	stack<wchar_t>	m_buffer;
+	typedef map<wstring,wstring>			EntityMap;
+
+	EntityMap		m_general_entities, m_parameter_entities;
 	
-	map<wstring,wstring>
-					m_general_entities, m_parameter_entities;
+	typedef map<wstring,doctype_element*>	DocTypeMap;
 	
-	map<wstring,doctype_element*>
-					m_doctype;
+	DocTypeMap		m_doctype;
 };
 
 parser_imp::parser_imp(
@@ -895,7 +892,7 @@ parser_imp::parser_imp(
 	, m_in_doctype(false)
 	, m_external_subset(false)
 {
-	m_data = new istream_data_source(data, NULL);
+	m_data_source = new istream_data_source(data, nullptr);
 	
 	m_general_entities[L"lt"] = L"&#60;";
 	m_general_entities[L"gt"] = L"&#62;";
@@ -906,15 +903,54 @@ parser_imp::parser_imp(
 
 parser_imp::~parser_imp()
 {
-	while (m_data != NULL)
+	while (m_data_source != nullptr)
 	{
-		data_source* next = m_data->next_data_source();
-		delete m_data;
-		m_data = next;
+		data_source* next = m_data_source->next_data_source();
+		delete m_data_source;
+		m_data_source = next;
 	}
 
-	for (map<wstring,doctype_element*>::iterator de = m_doctype.begin(); de != m_doctype.end(); ++de)
+	for (DocTypeMap::iterator de = m_doctype.begin(); de != m_doctype.end(); ++de)
 		delete de->second;
+}
+
+void parser_imp::push_state()
+{
+	TRACE
+	
+	parser_state* state = new parser_state();
+	
+	swap(state->m_lookahead,	m_lookahead);
+	swap(state->m_token, 		m_token);					
+	swap(state->m_data_source,	m_data_source);
+	swap(state->m_buffer,		m_buffer);
+	swap(state->m_version,		m_version);
+	swap(state->m_encoding,		m_encoding);
+
+	state->m_next = m_saved_state;
+	m_saved_state = state;
+}
+
+void parser_imp::pop_state()
+{
+	TRACE
+	
+	assert(m_saved_state);
+
+	if (m_saved_state != nullptr)
+	{
+		parser_state* state = m_saved_state;
+		m_saved_state = state->m_next;
+
+		swap(state->m_lookahead,	m_lookahead);
+		swap(state->m_token, 		m_token);					
+		swap(state->m_data_source,	m_data_source);
+		swap(state->m_buffer,		m_buffer);
+		swap(state->m_version,		m_version);
+		swap(state->m_encoding,		m_encoding);
+
+		delete state;
+	}
 }
 
 wchar_t parser_imp::get_next_char()
@@ -928,15 +964,15 @@ wchar_t parser_imp::get_next_char()
 	}
 	else
 	{
-		while (result == 0 and m_data != NULL)
+		while (result == 0 and m_data_source != nullptr)
 		{
-			result = m_data->get_next_char();
+			result = m_data_source->get_next_char();
 	
 			if (result == 0)
 			{
-				data_source* next = m_data->next_data_source();
-				delete m_data;
-				m_data = next;
+				data_source* next = m_data_source->next_data_source();
+				delete m_data_source;
+				m_data_source = next;
 			}
 		}
 	}
@@ -977,7 +1013,7 @@ void parser_imp::match(int token, bool content)
 		// content must match the production extsubset;
 		if (m_lookahead == xml_PEReference and m_in_doctype)
 		{
-			map<wstring,wstring>::iterator r = m_parameter_entities.find(m_token);
+			EntityMap::iterator r = m_parameter_entities.find(m_token);
 			if (r == m_parameter_entities.end())
 				throw exception("undefined parameter entity %s", m_token.c_str());
 			
@@ -986,7 +1022,7 @@ void parser_imp::match(int token, bool content)
 			replacement += r->second;
 			replacement += ' ';
 			
-			m_data = new wstring_data_source(replacement, m_data);
+			m_data_source = new wstring_data_source(replacement, m_data_source);
 			
 			match(xml_PEReference);
 		}
@@ -1156,9 +1192,10 @@ int parser_imp::get_next_token()
 				{
 					retract();
 
-					m_pi_target = m_token.substr(2);
+//					m_pi_target = m_token.substr(2);
+					wstring pi_target = m_token.substr(2);
 					
-					if (m_pi_target == L"xml")
+					if (pi_target == L"xml")
 						token = xml_XMLDecl;
 					else
 						state += 1;
@@ -1865,18 +1902,16 @@ void parser_imp::doctypedecl()
 	wstring name = m_token;
 	match(xml_Name);
 
+	wstring dtd;
+
 	if (m_lookahead == xml_Space)
 	{
 		s(true);
 		
 		if (m_lookahead == xml_Name)
 		{
-			wstring dtd = read_external_id();
-			m_data = new wstring_data_source(dtd, m_data);
-
+			dtd = read_external_id();
 			match(xml_String);
-
-			intsubset();
 		}
 		
 		s();
@@ -1890,7 +1925,26 @@ void parser_imp::doctypedecl()
 
 		s();
 	}
-	
+
+	// internal subset takes precedence over external subset, so
+	// if the external subset is defined, include it here.
+	if (not dtd.empty())
+	{
+		// save the parser state
+		push_state();
+		
+		m_data_source = new wstring_data_source(dtd, NULL);
+		
+		m_lookahead = get_next_token();
+		
+		extsubset();
+		
+		if (m_lookahead != xml_Eof)
+			throw exception("Error parsing external dtd");
+		
+		pop_state();
+	}
+
 	match('>');
 
 	m_in_doctype = false;
@@ -1919,6 +1973,143 @@ void parser_imp::intsubset()
 		
 		break;
 	}
+}
+
+void parser_imp::extsubset()
+{
+	TRACE
+	m_external_subset = true;
+
+	for (;;)
+	{
+		switch (m_lookahead)
+		{
+			case xml_Element:
+			case xml_AttList:
+			case xml_Entity:
+			case xml_Notation:
+			case xml_PI:
+			case xml_Comment:
+				markupdecl();
+				continue;
+			
+			case xml_IncludeIgnore:
+				conditionalsect();
+				continue;
+			
+			case xml_Space:
+				s();
+				continue;
+		}
+		
+		break;
+	}
+
+	m_external_subset = false;
+}
+
+void parser_imp::conditionalsect()
+{
+	match(xml_IncludeIgnore);
+	
+	s();
+	
+	bool include;
+	
+	if (m_token == L"INCLUDE")
+		include = true;
+	else if (m_token == L"IGNORE")
+		include = false;
+	else if (m_lookahead == xml_Name)
+		throw exception("Unexpected literal %s", wstring_to_string(m_token).c_str());
+	
+	match(xml_Name);
+	s();
+		
+	if (include)
+	{
+		match('[');
+		extsubset();
+		match(']');
+		match (']');
+		match ('>');
+	}
+	else
+	{
+		ignoresectcontents();
+		m_lookahead = get_next_token();
+	}
+}
+
+void parser_imp::ignoresectcontents()
+{
+	// yet another tricky routine, skip 
+	assert(m_lookahead == '[');
+	
+	int state = 0;
+	bool done = false;
+	
+	while (not done)
+	{
+		wchar_t ch = get_next_char();
+		if (ch == 0)
+			throw exception("runaway IGNORE section");
+		
+		switch (state)
+		{
+			case 0:
+				if (ch == ']')
+					state = 1;
+				else if (ch == '<')
+					state = 10;
+				break;
+			
+			case 1:
+				if (ch == ']')
+					state = 2;
+				else
+				{
+					retract();
+					state = 0;
+				}
+				break;
+			
+			case 2:
+				if (ch == '>')
+					done = true;
+				else if (ch != ']')
+				{
+					retract();
+					state = 0;
+				}
+				break;
+			
+			case 10:
+				if (ch == '!')
+					state = 11;
+				else
+				{
+					retract();
+					state = 0;
+				}
+				break;
+			
+			case 11:
+				if (ch == '[')
+				{
+					ignoresectcontents();
+					state = 0;
+				}
+				else
+				{
+					retract();
+					state = 0;	
+				}
+				break;
+		}
+	}
+	
+	
 }
 
 void parser_imp::markupdecl()
@@ -1952,13 +2143,6 @@ void parser_imp::markupdecl()
 		default:
 			throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
 	}
-}
-
-void parser_imp::extsubset()
-{
-	m_external_subset = true;
-	intsubset();
-	m_external_subset = false;
 }
 
 //void parser_imp::extsubsetdecl()
@@ -2422,7 +2606,7 @@ data_source* parser_imp::external_id()
 {
 	TRACE
 
-	data_source* result = NULL;
+	data_source* result = nullptr;
 	string pubid, system;
 	
 	if (m_token == L"SYSTEM")
@@ -2455,7 +2639,7 @@ data_source* parser_imp::external_id()
 			is.reset(m_parser.find_external_dtd(pubid, system));
 		
 		// if that fails, we try it ourselves
-		if (is.get() == NULL)
+		if (is.get() == nullptr)
 		{
 			fs::path path = fs::system_complete(system);
 	
@@ -2463,8 +2647,8 @@ data_source* parser_imp::external_id()
 				is.reset(new fs::ifstream(path));
 		}
 		
-		if (is.get() != NULL)
-			result = new istream_data_source(is, NULL);
+		if (is.get() != nullptr)
+			result = new istream_data_source(is, nullptr);
 	}
 
 	return result;
@@ -2571,7 +2755,7 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 			case 20:
 				if (c == ';')
 				{
-					map<wstring,wstring>::iterator e = m_parameter_entities.find(name);
+					EntityMap::iterator e = m_parameter_entities.find(name);
 					if (e == m_parameter_entities.end())
 						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
 					result += e->second;
@@ -2694,7 +2878,7 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 			case 10:
 				if (c == ';')
 				{
-//					map<wstring,wstring>::iterator e = m_general_entities.find(name);
+//					EntityMap::iterator e = m_general_entities.find(name);
 //					if (e == m_general_entities.end())
 //						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
 //					result += e->second;
@@ -2714,7 +2898,7 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 			case 20:
 				if (c == ';')
 				{
-					map<wstring,wstring>::iterator e = m_parameter_entities.find(name);
+					EntityMap::iterator e = m_parameter_entities.find(name);
 					if (e == m_parameter_entities.end())
 						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
 					result += e->second;
@@ -2759,7 +2943,7 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 			case 0:
 				if (c == '&')
 					state = 1;
-				else if (c == ' ' or c == '\n' or c == '\t')
+				else if (c == ' ' or c == '\n' or c == '\t' or c == '\r')
 					result += ' ';
 				else
 					result += c;
@@ -2841,7 +3025,7 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 					if (data->is_entity_on_stack(name))
 						throw exception("infinite recursion in nested entity references");
 					
-					map<wstring,wstring>::iterator e = m_general_entities.find(name);
+					EntityMap::iterator e = m_general_entities.find(name);
 					if (e == m_general_entities.end())
 						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
 					
@@ -2875,19 +3059,17 @@ wstring parser_imp::read_external_id()
 	wstring result;
 
 	data_source* source = external_id();
-	data_source* saved_source = m_data;
-	int saved_lookahead = m_lookahead;
-	stack<wchar_t> saved_buffer;
-	swap(saved_buffer, m_buffer);
+	
+	push_state();
 	
 	try
 	{
-		if (source != NULL)
+		if (source != nullptr)
 		{
 			// juggle the data source, replace the current
 			// with the just opened one.
 			
-			m_data = source;
+			m_data_source = source;
 			m_lookahead = get_next_token();
 
 			text_decl();
@@ -2901,14 +3083,12 @@ wstring parser_imp::read_external_id()
 	catch (...)
 	{
 		delete source;
-		m_data = saved_source;
+		pop_state();
 		throw;
 	}
 	
 	// restore the state
-	m_data = saved_source;
-	m_lookahead = saved_lookahead;
-	swap(saved_buffer, m_buffer);
+	pop_state();
 	
 	return result;
 }
@@ -2939,14 +3119,14 @@ void parser_imp::element()
 		
 		eq();
 
-		wstring_data_source attr_data(m_token, NULL);
+		wstring_data_source attr_data(m_token, nullptr);
 		match(xml_String);
 		
 		wstring attr_value = normalize_attribute_value(&attr_data);
-		if (dte != NULL)
+		if (dte != nullptr)
 		{
 			doctype_attribute* dta = dte->get_attribute(attr_name);
-			if (dta != NULL and not dta->validate_value(attr_value))
+			if (dta != nullptr and not dta->validate_value(attr_value))
 				throw exception("invalid value for attribute");
 		}
 		
@@ -2955,7 +3135,7 @@ void parser_imp::element()
 	}
 	
 	// add missing attributes
-	if (dte != NULL)
+	if (dte != nullptr)
 	{
 		const vector<doctype_attribute*>& dtattrs = dte->attributes();
 		
@@ -3039,14 +3219,14 @@ void parser_imp::content()
 			
 			case xml_Reference:
 			{
-				map<wstring,wstring>::iterator e = m_general_entities.find(m_token);
+				EntityMap::iterator e = m_general_entities.find(m_token);
 				if (e == m_general_entities.end())
 					throw exception("undefined entity reference %s", wstring_to_string(m_token).c_str());
 				
-				if (m_data->is_entity_on_stack(m_token))
+				if (m_data_source->is_entity_on_stack(m_token))
 					throw exception("infinite recursion of entity references");
 				
-				m_data = new entity_data_source(m_token, e->second, m_data);
+				m_data_source = new entity_data_source(m_token, e->second, m_data_source);
 
 				match(xml_Reference, true);
 				
@@ -3090,13 +3270,13 @@ void parser_imp::content()
 
 parser::parser(istream& data)
 	: m_impl(new parser_imp(data, *this))
-	, m_istream(NULL)
+	, m_istream(nullptr)
 {
 }
 
 parser::parser(const string& data)
-	: m_impl(NULL)
-	, m_istream(NULL)
+	: m_impl(nullptr)
+	, m_istream(nullptr)
 {
 	m_istream = new istringstream(data);
 	m_impl = new parser_imp(*m_istream, *this);
