@@ -837,7 +837,6 @@ struct parser_imp
 		state_Start			= 0,
 		state_Comment		= 100,
 		state_PI			= 200,
-		state_EndTagStart	= 290,
 		state_DocTypeDecl	= 350,
 		state_TagStart		= 400,
 		state_Name			= 450,
@@ -1062,10 +1061,6 @@ void parser_imp::restart(int& start, int& state)
 			break;
 		
 		case state_DocTypeDecl:
-			start = state = state_EndTagStart;
-			break;
-		
-		case state_EndTagStart:
 			start = state = state_TagStart;
 			break;
 		
@@ -1205,7 +1200,6 @@ int parser_imp::get_next_token()
 				{
 					retract();
 
-//					m_pi_target = m_token.substr(2);
 					wstring pi_target = m_token.substr(2);
 					
 					if (pi_target == L"xml")
@@ -1276,32 +1270,7 @@ int parser_imp::get_next_token()
 				}
 				break;
 
-			// scan for end tags 
-			case state_EndTagStart:
-				if (uc == '<')
-					state += 1;
-				else
-					restart(start, state);
-				break;
-			
-			case state_EndTagStart + 1:
-				if (uc == '/')
-					state += 1;
-				else
-					restart(start, state);
-				break;
-			
-			case state_EndTagStart + 2:
-				if (is_name_start_char(uc))
-				{
-					retract();
-					token = xml_ETag;
-				}
-				else
-					throw exception("Unexpected character following </");
-				break;
-			
-			// scan for tags 
+			// scan for start or end tags 
 			case state_TagStart:
 				if (uc == '<')
 					state += 1;
@@ -1310,43 +1279,23 @@ int parser_imp::get_next_token()
 				break;
 			
 			case state_TagStart + 1:
-				if (uc == '!')
+				if (uc == '/')
 					state += 1;
-				else if (is_name_start_char(uc))
+				else
 				{
 					retract();
 					token = xml_STag;
 				}
-				else
-					throw exception("Unexpected character following <");
 				break;
 			
-			// comment, doctype, entity, etc
 			case state_TagStart + 2:
-				if (uc == '-')						// comment
-					state += 1;
+				if (is_name_start_char(uc))
+				{
+					retract();
+					token = xml_ETag;
+				}
 				else
-					restart(start, state);
-				break;
-
-			// comment
-			case state_TagStart + 3:
-				if (uc == '-')
-					state += 1;
-				break;
-			
-			case state_TagStart + 4:
-				if (uc == '-')
-					state += 1;
-				else
-					state -= 1;
-				break;
-			
-			case state_TagStart + 5:
-				if (uc == '>')
-					token = xml_Comment;
-				else
-					throw exception("Invalid formatted comment");
+					throw exception("Unexpected character following </");
 				break;
 			
 			// Names
