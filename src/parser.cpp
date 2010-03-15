@@ -3018,6 +3018,8 @@ void parser_imp::element()
 		uri = ns.ns_for_prefix(qname.front());
 		name = qname.back();
 	}
+	else
+		uri = ns.default_ns();
 
 	if (m_lookahead == '/')
 	{
