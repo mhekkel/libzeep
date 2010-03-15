@@ -16,6 +16,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
@@ -127,7 +128,7 @@ class data_source
 {
   public:
 					data_source(data_source* next)
-						: m_next(next) {}
+						: m_next(next), m_base_dir(fs::current_path()) {}
 
 	virtual			~data_source() {}
 
@@ -142,11 +143,15 @@ class data_source
 						return result;
 					}
 
+	void			base_dir(const fs::path& dir)					{ m_base_dir = dir; }
+	const fs::path&	base_dir() const								{ return m_base_dir; }
+
 	void			next_data_source(data_source* next)				{ m_next = next; }
 	data_source*	next_data_source()								{ return m_next; }
 
   protected:
 	data_source*	m_next;	// generate a linked list of data_sources
+	fs::path		m_base_dir;
 };
 
 // --------------------------------------------------------------------
@@ -176,6 +181,9 @@ class istream_data_source : public data_source
 					}
 
 	bool			has_bom()				{ return m_has_bom; }
+
+	virtual fs::path
+					base_dir()				{ return fs::current_path(); }
 
   private:
 
@@ -413,9 +421,13 @@ wchar_t	wstring_data_source::get_next_char()
 class entity_data_source : public wstring_data_source
 {
   public:
-					entity_data_source(const wstring& entity_name, const wstring& text, data_source* next)
+					entity_data_source(const wstring& entity_name, const fs::path& entity_path,
+							const wstring& text, data_source* next)
 						: wstring_data_source(text, next)
-						, m_entity_name(entity_name) {}
+						, m_entity_name(entity_name)
+					{
+						base_dir(entity_path.branch_path());
+					}
 
 	virtual bool	is_entity_on_stack(const wstring& name)
 					{
@@ -424,6 +436,7 @@ class entity_data_source : public wstring_data_source
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
+
   protected:
 	wstring			m_entity_name;
 };
@@ -718,7 +731,9 @@ struct parser_imp
 
 	void			doctypedecl();
 	data_source*	external_id();
-	wstring			read_external_id();
+
+	boost::tuple<fs::path,wstring>
+					read_external_id();
 	
 	void			intsubset();
 	void			extsubset();
@@ -888,9 +903,19 @@ struct parser_imp
 	bool			m_in_doctype;
 	bool			m_external_subset;
 
+	struct parsed_entity
+	{
+		fs::path	m_entity_path;
+		wstring		m_entity_text;
+	};
+
+	typedef map<wstring,parsed_entity>		ParameterEntityMap;
+
+	ParameterEntityMap	 m_parameter_entities;
+	
 	typedef map<wstring,wstring>			EntityMap;
 
-	EntityMap		m_general_entities, m_parameter_entities;
+	EntityMap		m_general_entities;
 	
 	typedef map<wstring,doctype_element*>	DocTypeMap;
 	
@@ -1025,16 +1050,17 @@ void parser_imp::match(int token, bool content)
 		// content must match the production extsubset;
 		if (m_lookahead == xml_PEReference and m_in_doctype)
 		{
-			EntityMap::iterator r = m_parameter_entities.find(m_token);
+			ParameterEntityMap::iterator r = m_parameter_entities.find(m_token);
 			if (r == m_parameter_entities.end())
 				throw exception("undefined parameter entity %s", m_token.c_str());
 			
 			wstring replacement;
 			replacement += ' ';
-			replacement += r->second;
+			replacement += r->second.m_entity_text;
 			replacement += ' ';
 			
 			m_data_source = new wstring_data_source(replacement, m_data_source);
+			m_data_source->base_dir(r->second.m_entity_path);
 			
 			match(xml_PEReference);
 		}
@@ -1997,7 +2023,6 @@ void parser_imp::conditionalsect()
 void parser_imp::ignoresectcontents()
 {
 	// yet another tricky routine, skip 
-	assert(m_lookahead == '[');
 	
 	int state = 0;
 	bool done = false;
@@ -2283,6 +2308,7 @@ void parser_imp::parameter_entity_decl()
 	
 	s(true);
 
+	fs::path path;
 	wstring value;
 	
 	// PEDef is either a EntityValue...
@@ -2294,7 +2320,7 @@ void parser_imp::parameter_entity_decl()
 	}
 	else	// ... or an external id 
 	{
-		value = read_external_id();
+		boost::tie(path, value) = read_external_id();
 		match(xml_String);
 	}
 
@@ -2303,7 +2329,11 @@ void parser_imp::parameter_entity_decl()
 	match('>');
 	
 	if (m_parameter_entities.find(name) == m_parameter_entities.end())
-		m_parameter_entities[name] = value;
+	{
+		parsed_entity pe = { path, value };
+		
+		m_parameter_entities[name] = pe;
+	}
 }
 
 void parser_imp::general_entity_decl()
@@ -2313,6 +2343,7 @@ void parser_imp::general_entity_decl()
 	match(xml_Name);
 	s(true);
 	
+	fs::path path; // not used
 	wstring value;
 
 	if (m_lookahead == xml_String)
@@ -2324,7 +2355,7 @@ void parser_imp::general_entity_decl()
 	}
 	else // ... or an ExternalID
 	{
-		value = read_external_id();
+		boost::tie(path, value) = read_external_id();
 		match(xml_String);
 
 		if (m_lookahead == xml_Space)
@@ -2589,6 +2620,7 @@ data_source* parser_imp::external_id()
 	if (not system.empty())
 	{
 		auto_ptr<istream> is;
+		fs::path path;
 		
 		// first allow the client to retrieve the dtd
 		if (m_parser.find_external_dtd)
@@ -2597,17 +2629,67 @@ data_source* parser_imp::external_id()
 		// if that fails, we try it ourselves
 		if (is.get() == nullptr)
 		{
-			fs::path path = fs::system_complete(system);
+			path = fs::system_complete(m_data_source->base_dir() / system);
 	
 			if (fs::exists(path))
 				is.reset(new fs::ifstream(path));
+			else if (VERBOSE)
+				cerr << "could not resolve external file " << path << endl;
 		}
 		
 		if (is.get() != nullptr)
+		{
 			result = new istream_data_source(is, nullptr);
+			
+			if (fs::exists(path) and fs::exists(path.branch_path()))
+				result->base_dir(path.branch_path());
+		}
 	}
 
 	return result;
+}
+
+boost::tuple<fs::path,wstring> parser_imp::read_external_id()
+{
+	TRACE
+	wstring result;
+
+	data_source* source = external_id();
+	fs::path path = m_data_source->base_dir();
+	
+	push_state();
+	
+	try
+	{
+		if (source != nullptr)
+		{
+			// juggle the data source, replace the current
+			// with the just opened one.
+
+			path = source->base_dir();
+			
+			m_data_source = source;
+			m_lookahead = get_next_token();
+
+			text_decl();
+			
+			result = m_token;
+		
+			while (wchar_t ch = get_next_char())
+				result += ch;
+		}
+	}
+	catch (...)
+	{
+		delete source;
+		pop_state();
+		throw;
+	}
+	
+	// restore the state
+	pop_state();
+	
+	return boost::make_tuple(path, result);
 }
 
 void parser_imp::parse_parameter_entity_declaration(wstring& s)
@@ -2711,12 +2793,10 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 			case 20:
 				if (c == ';')
 				{
-					EntityMap::iterator e = m_parameter_entities.find(name);
+					ParameterEntityMap::iterator e = m_parameter_entities.find(name);
 					if (e == m_parameter_entities.end())
 						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
-//					result += ' ';
-					result += e->second;
-//					result += ' ';
+					result += e->second.m_entity_text;
 					state = 0;
 				}
 				else if (is_name_char(c))
@@ -2854,12 +2934,10 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 			case 20:
 				if (c == ';')
 				{
-					EntityMap::iterator e = m_parameter_entities.find(name);
+					ParameterEntityMap::iterator e = m_parameter_entities.find(name);
 					if (e == m_parameter_entities.end())
 						throw exception("undefined parameter entity reference %s", wstring_to_string(name).c_str());
-//					result += ' ';
-					result += e->second;
-//					result += ' ';
+					result += e->second.m_entity_text;
 					state = 0;
 				}
 				else if (is_name_char(c))
@@ -2987,7 +3065,7 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 					if (e == m_general_entities.end())
 						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
 					
-					entity_data_source next_data(name, e->second, data);
+					entity_data_source next_data(name, m_data_source->base_dir(), e->second, data);
 					wstring replacement = normalize_attribute_value(&next_data);
 					result += replacement;
 
@@ -3007,46 +3085,6 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 	
 	if (state != 0)
 		throw exception("invalid reference");
-	
-	return result;
-}
-
-wstring parser_imp::read_external_id()
-{
-	TRACE
-	wstring result;
-
-	data_source* source = external_id();
-	
-	push_state();
-	
-	try
-	{
-		if (source != nullptr)
-		{
-			// juggle the data source, replace the current
-			// with the just opened one.
-			
-			m_data_source = source;
-			m_lookahead = get_next_token();
-
-			text_decl();
-			
-			result = m_token;
-		
-			while (wchar_t ch = get_next_char())
-				result += ch;
-		}
-	}
-	catch (...)
-	{
-		delete source;
-		pop_state();
-		throw;
-	}
-	
-	// restore the state
-	pop_state();
 	
 	return result;
 }
@@ -3184,7 +3222,7 @@ void parser_imp::content()
 				if (m_data_source->is_entity_on_stack(m_token))
 					throw exception("infinite recursion of entity references");
 				
-				m_data_source = new entity_data_source(m_token, e->second, m_data_source);
+				m_data_source = new entity_data_source(m_token, m_data_source->base_dir(), e->second, m_data_source);
 
 				match(xml_Reference, true);
 				

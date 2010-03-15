@@ -55,13 +55,16 @@ void run_valid_test(istream& is, fs::path& outfile)
 }
 
 
-void run_test(xml::node& test, fs::path& base_dir)
+void run_test(xml::node& test, fs::path base_dir)
 {
 	fs::path input(base_dir / test.get_attribute("URI"));
 	fs::path output(base_dir / test.get_attribute("OUTPUT"));
 
 	if (not fs::exists(input))
-		throw zeep::exception("test file %s does not exist", input.string().c_str());
+	{
+		cerr << "test file " << input << " does not exist" << endl;
+		return;
+	}
 
 	fs::ifstream is(input);
 	if (not is.is_open())
@@ -96,8 +99,13 @@ void run_test(xml::node& test, fs::path& base_dir)
 	}
 }
 
-void run_test_case(xml::node& testcase, const string& id, fs::path& base_dir)
+void run_test_case(xml::node& testcase, const string& id, fs::path base_dir)
 {
+	cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
+
+	if (not testcase.get_attribute("xml:base").empty())
+		base_dir /= testcase.get_attribute("xml:base");
+	
 	foreach (xml::node& testcasenode, testcase.children())
 	{
 		if (testcasenode.name() == "TEST")
@@ -113,85 +121,30 @@ void run_test_case(xml::node& testcase, const string& id, fs::path& base_dir)
 	}
 }
 
-//void run_test_set(const fs::path& p)
-//{
-//	if (VERBOSE)
-//		cout << "+++ PROCESSING " << p << " +++" << endl;
-//	
-//	fs::path path = fs::system_complete(p);
-//	
-//	try
-//	{
-//		fs::ifstream file1(path);
-//		xml::document doc1(file1);
-//		
-//		try
-//		{
-//			fs::ifstream file2(path);
-//			xml::expat_doc doc2(file2);
-//		
-//			if (doc1.root() and doc2.root() and not (*doc1.root() == *doc2.root()))
-//			{
-//				cout << "zeep and expat disagree on document " << p << endl
-//					 << *doc1.root() << endl << *doc2.root() << endl;
-//			}
-//		}
-//		catch (exception& e)
-//		{
-//			cout << "Expat failed to parse document " << p << endl
-//				 << "  Exception: " << e.what() << endl;
-//		}
-//	
-////		try
-////		{
-////			fs::ifstream file3(p);
-////			xml::libxml2_doc doc3(file3);
-////			
-////			if (doc1.root() and doc3.root() and not (*doc1.root() == *doc3.root()))
-////			{
-////				cout << "zeep and libxml2 disagree on document " << p << endl
-////					 << doc1 << endl << endl << doc3 << endl;
-////			}
-////		}
-////		catch (exception& e)
-////		{
-////			cout << "libxml2 failed to parse document " << p << endl
-////				 << "  Exception: " << e.what() << endl;
-////		}
-//	}
-//	catch (exception& e)
-//	{
-//		cout << "Error while processing " << p << endl
-//			 << "exception: " << e.what() << endl;
-////		throw;
-//	}
-//}
-
 void test_testcases(const fs::path& testFile, const string& id)
 {
 	fs::ifstream file(testFile);
 	
 	int saved_verbose = VERBOSE;
-	VERBOSE = 0;
-	
-	xml::document doc(file);
-	
-	VERBOSE = saved_verbose;
+//	VERBOSE = 0;
 	
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
+	fs::current_path(base_dir);
+
+	xml::document doc(file);
+
+	VERBOSE = saved_verbose;
 	
 	xml::node_ptr root = doc.root();
-	if (root->name() == "TESTCASES")
-		run_test_case(*root, id, base_dir);
-	else if (root->name() == "TESTSUITE")
-	{
-		foreach (xml::node& test, root->children())
-		{
-			run_test_case(test, id, base_dir);
-		}
-	}
-	else
+	if (root->name() != "TESTSUITE")
 		throw zeep::exception("Invalid test case file");
+
+	cout << "Running testsuite: " << root->get_attribute("PROFILE") << endl;
+
+	foreach (xml::node& test, root->children())
+	{
+		run_test_case(test, id, base_dir);
+	}
 }
 
 int main(int argc, char* argv[])
