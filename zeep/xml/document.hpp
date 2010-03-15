@@ -26,6 +26,14 @@ class document : public boost::noncopyable
 
 	node_ptr		root() const;
 
+	bool			operator==(const document& doc) const
+					{
+						bool result = false;
+						if (root() and doc.root())
+							result = *root() == *doc.root();
+						return result;
+					}
+
   private:
 	struct document_imp*	impl;
 };

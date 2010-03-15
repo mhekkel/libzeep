@@ -341,6 +341,8 @@ void expat_doc_imp::parse(
 	
 	try
 	{
+		XML_SetParamEntityParsing(p, XML_PARAM_ENTITY_PARSING_ALWAYS);
+		
 		XML_SetUserData(p, this);
 		XML_SetElementHandler(p, XML_StartElementHandler, XML_EndElementHandler);
 		XML_SetCharacterDataHandler(p, XML_CharacterDataHandler);

@@ -437,19 +437,34 @@ bool operator==(const node_list& lhs, const node_list& rhs)
 	return result;
 }
 
+struct compare_attribute
+{
+	bool operator()(const attribute_ptr& a, const attribute_ptr& b) const
+	{
+		return a->name() < b->name() or
+			(a->name() == b->name() and a->value() < b->value());
+	}
+};
+
 bool operator==(const attribute_list& lhs, const attribute_list& rhs)
 {
 	bool result = true;
 	
+	attribute_list l(lhs);
+	l.sort(compare_attribute());
+	
+	attribute_list r(rhs);
+	r.sort(compare_attribute());
+	
 	attribute_list::iterator lai, rai;
-	for (lai = lhs.begin(), rai = rhs.begin(); result and lai != lhs.end() and rai != rhs.end(); ++lai, ++rai)
+	for (lai = l.begin(), rai = r.begin(); result and lai != l.end() and rai != r.end(); ++lai, ++rai)
 		result = *lai == *rai;
 
 	if (result)
-		result = (lai == lhs.end());
+		result = (lai == l.end());
 	
 	if (result)
-		result = (rai == rhs.end());
+		result = (rai == r.end());
 	
 	return result;
 }

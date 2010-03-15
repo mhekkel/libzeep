@@ -38,7 +38,7 @@ struct document_imp
 	vector<pair<string,string> >
 					namespaces;
 
-	void			StartElementHandler(const string& name, const attribute_list& atts);
+	void			StartElementHandler(const string& name, const list<pair<string,string> >& atts);
 
 	void			EndElementHandler(const string& name);
 
@@ -97,7 +97,7 @@ void document_imp::parse_name(
 	}
 }
 
-void document_imp::StartElementHandler(const string& name, const attribute_list& atts)
+void document_imp::StartElementHandler(const string& name, const list<pair<string,string> >& atts)
 {
 	string element, ns, prefix;
 	
@@ -118,13 +118,13 @@ void document_imp::StartElementHandler(const string& name, const attribute_list&
 		cur.push(n);
 	}
 	
-	for (attribute_list::const_iterator ai = atts.begin(); ai != atts.end(); ++ai)
+	for (list<pair<string,string> >::const_iterator ai = atts.begin(); ai != atts.end(); ++ai)
 	{
-		parse_name(ai->name(), element, ns, prefix);
+		parse_name(ai->first, element, ns, prefix);
 		if (not prefix.empty())
 			element = prefix + ':' + element;
 		
-		attribute_ptr attr(new xml::attribute(element, ai->value()));
+		attribute_ptr attr(new xml::attribute(element, ai->second));
 		cur.top()->add_attribute(attr);
 	}
 

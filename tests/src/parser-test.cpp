@@ -11,8 +11,8 @@
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
-//#include "zeep/xml/expat_doc.hpp"
-//#include "zeep/xml/libxml2_doc.hpp"
+#include "zeep/xml/expat_doc.hpp"
+#include "zeep/xml/libxml2_doc.hpp"
 
 using namespace std;
 using namespace zeep;
@@ -20,14 +20,20 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace ba = boost::algorithm;
 
+#define DOC		xml::document
+//#define DOC		xml::expat_doc
+//#define DOC		xml::libxml2_doc
+
 int VERBOSE;
+int failed_tests, dubious_tests, error_tests, total_tests;
 
 void run_valid_test(istream& is, fs::path& outfile)
 {
-	xml::document indoc(is);
+	DOC indoc(is);
 	
 	stringstream s;
-	s << *indoc.root();
+	if (indoc.root() != NULL)
+		s << *indoc.root();
 	string s1 = s.str();
 	ba::trim(s1);
 
@@ -46,8 +52,21 @@ void run_valid_test(istream& is, fs::path& outfile)
 		
 		if (s1 != s2)
 		{
-			throw zeep::exception("output differs:\n%s\n%s\n",
-				s1.c_str(), s2.c_str());
+			if (VERBOSE)
+			{
+				cout << "output differs: " << endl\
+					 << s1 << endl
+					 << s2 << endl
+					 << endl;
+			}
+			
+			xml::document a(s1);
+			xml::document b(s2);
+			
+			if (a == b)
+				++dubious_tests;
+			else
+				++failed_tests;
 		}
 	}
 	else
@@ -57,14 +76,18 @@ void run_valid_test(istream& is, fs::path& outfile)
 
 void run_test(xml::node& test, fs::path base_dir)
 {
+	++total_tests;
+	
 	fs::path input(base_dir / test.get_attribute("URI"));
 	fs::path output(base_dir / test.get_attribute("OUTPUT"));
 
 	if (not fs::exists(input))
 	{
-		cerr << "test file " << input << " does not exist" << endl;
+		cout << "test file " << input << " does not exist" << endl;
 		return;
 	}
+	
+	fs::current_path(input.branch_path());
 
 	fs::ifstream is(input);
 	if (not is.is_open())
@@ -76,11 +99,11 @@ void run_test(xml::node& test, fs::path base_dir)
 		
 		if (test.get_attribute("TYPE") == "valid")
 			run_valid_test(is, output);
-		else if (test.get_attribute("TYPE") == "not-wf")
+		else // if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "error" )
 		{
 			try
 			{
-				xml::document doc(is);
+				DOC doc(is);
 				throw zeep::exception("invalid document, should have failed");
 			}
 			catch (...) {}
@@ -88,23 +111,32 @@ void run_test(xml::node& test, fs::path base_dir)
 	}
 	catch (std::exception& e)
 	{
-		cout << "test " << test.get_attribute("ID") << " failed:" << endl
-			 << "\t" << fs::system_complete(input) << endl
-			 << test.content() << endl
-			 << endl
-			 << test.get_attribute("SECTIONS") << endl
-			 << endl
-			 << "exception: " << e.what() << endl
-			 << endl;
+		++error_tests;
+		
+		if (VERBOSE)
+		{
+			cout << "test " << test.get_attribute("ID") << " failed:" << endl
+				 << "\t" << fs::system_complete(input) << endl
+				 << test.content() << endl
+				 << endl
+				 << test.get_attribute("SECTIONS") << endl
+				 << endl
+				 << "exception: " << e.what() << endl
+				 << endl;
+		}
 	}
 }
 
 void run_test_case(xml::node& testcase, const string& id, fs::path base_dir)
 {
-	cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
+	if (VERBOSE)
+		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
 
 	if (not testcase.get_attribute("xml:base").empty())
+	{
 		base_dir /= testcase.get_attribute("xml:base");
+		fs::current_path(base_dir);
+	}
 	
 	foreach (xml::node& testcasenode, testcase.children())
 	{
@@ -184,6 +216,13 @@ int main(int argc, char* argv[])
 		{
 			fs::path xmlTestFile(vm["test"].as<string>());
 			test_testcases(xmlTestFile, id);
+			
+			cout << endl
+				 << "summary: " << endl
+				 << "  ran " << total_tests << " tests" << endl
+				 << "  " << error_tests << " threw an exception" << endl
+				 << "  " << failed_tests << " failed" << endl
+				 << "  " << dubious_tests << " had a dubious output" << endl;
 		}
 //		else if (vm.count("input-file"))
 //		{
