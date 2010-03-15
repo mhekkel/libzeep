@@ -112,10 +112,6 @@ string document_imp::prefix_for_ns(const string& ns)
 
 void document_imp::StartElementHandler(const string& name, const string& uri, const list<pair<string,string> >& atts)
 {
-cout << "name: " << name << endl
-	 << "uri: " << uri << endl
-	 << endl;
-
 	node_ptr n;
 	
 	string prefix;

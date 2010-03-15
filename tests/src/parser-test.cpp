@@ -52,13 +52,13 @@ void run_valid_test(istream& is, fs::path& outfile)
 		
 		if (s1 != s2)
 		{
-			if (VERBOSE)
-			{
-				cout << "output differs: " << endl\
-					 << s1 << endl
-					 << s2 << endl
-					 << endl;
-			}
+//			if (VERBOSE)
+//			{
+//				cout << "output differs: " << endl
+//					 << s1 << endl
+//					 << s2 << endl
+//					 << endl;
+//			}
 			
 			xml::document a(s1);
 			xml::document b(s2);
@@ -66,7 +66,16 @@ void run_valid_test(istream& is, fs::path& outfile)
 			if (a == b)
 				++dubious_tests;
 			else
+			{
+				if (VERBOSE)
+				{
+					cout << "output differs: " << endl
+						 << s1 << endl
+						 << s2 << endl
+						 << endl;
+				}
 				++failed_tests;
+			}
 		}
 	}
 	else

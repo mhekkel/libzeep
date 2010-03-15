@@ -361,15 +361,15 @@ void node::write(
 	ostream&			stream,
 	int					level) const
 {
-//	for (int i = 0; i < level; ++i)
-//		stream << ' ';
+	for (int i = 0; i < 2 * level; ++i)
+		stream << ' ';
+
+	string qname;
+	if (not m_prefix.get().empty())
+		qname = m_prefix.get() + ':';
+	qname += m_name;
 	
-	stream << '<';
-	
-	if (m_prefix.length())
-		stream << m_prefix << ':';
-	
-	stream << m_name;
+	stream << '<' << qname;
 
 	if (not m_content->m_attributes.empty())
 	{
@@ -390,14 +390,25 @@ void node::write(
 		}
 	}
 
-//	if (m_content->empty())
-//		stream << "/>";
-//	else
-//	{
+	if (m_content->empty())
+		stream << "/>" << endl;
+	else
+	{
 		stream << '>';
+		
+		if (not m_content->children().empty())
+			stream << endl;
+		
 		m_content->write(stream, level);
-		stream << "</" << m_name << '>';
-//	}
+
+		if (not m_content->children().empty())
+		{
+			for (int i = 0; i < 2 * level; ++i)
+				stream << ' ';
+		}
+
+		stream << "</" << qname << '>' << endl;
+	}
 }
 
 ostream& operator<<(ostream& lhs, const node& rhs)
