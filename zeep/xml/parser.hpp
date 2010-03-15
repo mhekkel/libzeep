@@ -26,9 +26,9 @@ class basic_parser_base : public boost::noncopyable
 
 	typedef std::list<std::pair<std::wstring,std::wstring> >		att_list;
 
-	virtual void		start_element(const std::wstring& name, const att_list& atts) = 0;
+	virtual void		start_element(const std::wstring& name, const std::wstring& uri, const att_list& atts) = 0;
 
-	virtual void		end_element(const std::wstring& name) = 0;
+	virtual void		end_element(const std::wstring& name, const std::wstring& uri) = 0;
 
 	virtual void		character_data(const std::wstring& data) = 0;
 	
@@ -100,10 +100,11 @@ class basic_parser : public basic_parser_base
 		
 							~basic_parser();
 
-	boost::function<void(const string_type& name,
+	boost::function<void(const string_type& name, const string_type& uri,
 				const att_list_type& atts)>					start_element_handler;
 
-	boost::function<void(const string_type& name)>			end_element_handler;
+	boost::function<void(const string_type& name, const string_type& uri)>
+															end_element_handler;
 
 	boost::function<void(const string_type& data)>			character_data_handler;
 	
@@ -128,7 +129,7 @@ class basic_parser : public basic_parser_base
 
   private:
 
-	virtual void			start_element(const std::wstring& name, const att_list& atts)
+	virtual void			start_element(const std::wstring& name, const std::wstring& uri, const att_list& atts)
 							{
 								if (start_element_handler)
 								{
@@ -143,14 +144,14 @@ class basic_parser : public basic_parser_base
 										attributes.push_back(attribute);
 									}
 									
-									start_element_handler(m_traits.convert(name), attributes);
+									start_element_handler(m_traits.convert(name), m_traits.convert(uri), attributes);
 								}
 							}
 
-	virtual void			end_element(const std::wstring& name)
+	virtual void			end_element(const std::wstring& name, const std::wstring& uri)
 							{
 								if (end_element_handler)
-									end_element_handler(m_traits.convert(name));
+									end_element_handler(m_traits.convert(name), m_traits.convert(uri));
 							}
 
 

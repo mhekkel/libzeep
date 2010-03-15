@@ -31,6 +31,7 @@ struct node_content_imp
 	const node_list&
 					children() const		{ return m_children; }
 
+	void			content(const string& s);
 	string			content() const;
 
 	attribute_list	m_attributes;
@@ -82,6 +83,17 @@ void node_content_imp::write(ostream& os, int level)
 			++child;
 		}
 	}
+}
+
+void node_content_imp::content(const string& s)
+{
+	m_content.clear();
+	
+	m_order.clear();
+	m_order.insert(m_order.begin(), m_children.size(), false);
+	m_order.push_back(true);
+	
+	m_content.push_back(s);
 }
 
 string node_content_imp::content() const
@@ -212,6 +224,12 @@ void node::add_content(
 	const string&		text)
 {
 	m_content->add_content(text);
+}
+
+void node::content(
+	const string&		text)
+{
+	m_content->content(text);
 }
 
 node_ptr node::find_first_child(

@@ -55,8 +55,8 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 	void				name(const std::string&	name)			{ m_name = name; }
 	
 	std::string			content() const;
-//	void				content(const std::string&
-//												content);
+	void				content(const std::string&
+												content);
 
 	// utility functions
 	node_ptr			find_first_child(

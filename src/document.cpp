@@ -38,9 +38,9 @@ struct document_imp
 	vector<pair<string,string> >
 					namespaces;
 
-	void			StartElementHandler(const string& name, const list<pair<string,string> >& atts);
+	void			StartElementHandler(const string& name, const string& uri, const list<pair<string,string> >& atts);
 
-	void			EndElementHandler(const string& name);
+	void			EndElementHandler(const string& name, const string& uri);
 
 	void			CharacterDataHandler(const string& data);
 
@@ -59,6 +59,8 @@ struct document_imp
 	void			parse(istream& data);
 
 	void			parse_name(const string& name, string& element, string& ns, string& prefix);
+	
+	string			prefix_for_ns(const string& ns);
 	
 	bool			find_external_dtd(const string& uri, fs::path& path);
 };
@@ -97,15 +99,26 @@ void document_imp::parse_name(
 	}
 }
 
-void document_imp::StartElementHandler(const string& name, const list<pair<string,string> >& atts)
+string document_imp::prefix_for_ns(const string& ns)
 {
-	string element, ns, prefix;
+	vector<pair<string,string> >::iterator i = find_if(namespaces.begin(), namespaces.end(),
+		boost::bind(&pair<string,string>::second, _1) == ns);
 	
-	parse_name(name, element, ns, prefix);
+	string result;
+	if (i != namespaces.end())
+		result = i->first;
+	return result;
+}
 
+void document_imp::StartElementHandler(const string& name, const string& uri, const list<pair<string,string> >& atts)
+{
 	node_ptr n;
 	
-	n.reset(new node(element, ns, prefix));
+	string prefix;
+	if (not uri.empty())
+		prefix = prefix_for_ns(uri);
+	
+	n.reset(new node(name, uri, prefix));
 
 	if (cur.empty())
 	{
@@ -120,6 +133,8 @@ void document_imp::StartElementHandler(const string& name, const list<pair<strin
 	
 	for (list<pair<string,string> >::const_iterator ai = atts.begin(); ai != atts.end(); ++ai)
 	{
+		string element, ns, prefix;
+		
 		parse_name(ai->first, element, ns, prefix);
 		if (not prefix.empty())
 			element = prefix + ':' + element;
@@ -146,7 +161,7 @@ void document_imp::StartElementHandler(const string& name, const list<pair<strin
 	namespaces.clear();
 }
 
-void document_imp::EndElementHandler(const string& name)
+void document_imp::EndElementHandler(const string& name, const string& uri)
 {
 	if (cur.empty())
 		throw exception("Empty stack");
@@ -209,8 +224,8 @@ void document_imp::parse(
 {
 	parser p(data);
 
-	p.start_element_handler = boost::bind(&document_imp::StartElementHandler, this, _1, _2);
-	p.end_element_handler = boost::bind(&document_imp::EndElementHandler, this, _1);
+	p.start_element_handler = boost::bind(&document_imp::StartElementHandler, this, _1, _2, _3);
+	p.end_element_handler = boost::bind(&document_imp::EndElementHandler, this, _1, _2);
 	p.character_data_handler = boost::bind(&document_imp::CharacterDataHandler, this, _1);
 	p.start_namespace_decl_handler = boost::bind(&document_imp::StartNamespaceDeclHandler, this, _1, _2);
 

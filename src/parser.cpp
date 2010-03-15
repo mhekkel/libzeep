@@ -834,7 +834,49 @@ struct parser_imp
 	};
 
 	parser_state*	m_saved_state;
+	
+	struct ns_state
+	{
+					ns_state(parser_imp* imp)
+						: m_parser_imp(imp)
+						, m_next(imp->m_ns)
+					{
+						m_parser_imp->m_ns = this;
+					}
 
+					~ns_state()
+					{
+						m_parser_imp->m_ns = m_next;
+					}
+
+		parser_imp*	m_parser_imp;
+		wstring		m_default_ns;
+		ns_state*	m_next;
+		
+		map<wstring,wstring>
+					m_known;
+
+		wstring		default_ns()
+					{
+						wstring result = m_default_ns;
+						if (result.empty() and m_next != nullptr)
+							result = m_next->default_ns();
+						return result;
+					}
+
+		wstring		ns_for_prefix(const wstring& prefix)
+					{
+						wstring result;
+						
+						if (m_known.find(prefix) != m_known.end())
+							result = m_known[prefix];
+						else if (m_next != nullptr)
+							result = m_next->ns_for_prefix(prefix);
+						
+						return result;
+					}
+	};
+	
 	int				m_lookahead;
 	data_source*	m_data_source;
 	stack<wchar_t>	m_buffer;
@@ -844,6 +886,7 @@ struct parser_imp
 	Encoding		m_encoding;
 	wstring			m_standalone;
 	parser&			m_parser;
+	ns_state*		m_ns;
 	bool			m_in_doctype;
 	bool			m_external_subset;
 
@@ -870,6 +913,7 @@ parser_imp::parser_imp(
 	istream&		data,
 	parser&			parser)
 	: m_parser(parser)
+	, m_ns(nullptr)
 	, m_in_doctype(false)
 	, m_external_subset(false)
 {
@@ -1606,7 +1650,8 @@ void parser_imp::xml_decl()
 				else if (m_token == L"UTF-16")
 				{
 					if (m_encoding != enc_UTF16LE and m_encoding != enc_UTF16BE)
-						throw exception("Inconsistent encoding attribute in XML declaration");
+//						throw exception("Inconsistent encoding attribute in XML declaration");
+						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
 				}
 				else if (m_token == L"ISO-8859-1")
 					m_encoding = enc_ISO88591;
@@ -2888,6 +2933,8 @@ void parser_imp::element()
 	
 	list<pair<wstring,wstring> > attrs;
 	
+	ns_state ns(this);
+	
 	for (;;)
 	{
 		if (m_lookahead != xml_Space)
@@ -2906,14 +2953,31 @@ void parser_imp::element()
 		wstring attr_value = normalize_attribute_value(m_token);
 		match(xml_String);
 		
-		if (dte != nullptr)
+		if (attr_name == L"xmlns" or ba::starts_with(attr_name, L"xmlns:"))	// namespace support
 		{
-			doctype_attribute* dta = dte->get_attribute(attr_name);
-			if (dta != nullptr and not dta->validate_value(attr_value))
-				throw exception("invalid value for attribute");
+			if (attr_name.length() == 5)
+			{
+				ns.m_default_ns = attr_value;
+				m_parser.start_namespace_decl(L"", attr_value);
+			}
+			else
+			{
+				wstring prefix = attr_name.substr(6);
+				ns.m_known[prefix] = attr_value;
+				m_parser.start_namespace_decl(prefix, attr_value);
+			}
 		}
-		
-		attrs.push_back(make_pair(attr_name, attr_value));
+		else
+		{
+			if (dte != nullptr)
+			{
+				doctype_attribute* dta = dte->get_attribute(attr_name);
+				if (dta != nullptr and not dta->validate_value(attr_value))
+					throw exception("invalid value for attribute");
+			}
+			
+			attrs.push_back(make_pair(attr_name, attr_value));
+		}
 	}
 	
 	// add missing attributes
@@ -2944,19 +3008,29 @@ void parser_imp::element()
 			}
 		}
 	}
+	
+	// now find out the namespace we're supposed to pass
+	wstring uri;
+	list<wstring> qname;
+	ba::split(qname, name, ba::is_any_of(L":"));
+	if (qname.size() == 2)
+	{
+		uri = ns.ns_for_prefix(qname.front());
+		name = qname.back();
+	}
 
 	if (m_lookahead == '/')
 	{
 		match('/');
 		match('>', true);
 		
-		m_parser.start_element(name, attrs);
+		m_parser.start_element(name, uri, attrs);
 
-		m_parser.end_element(name);
+		m_parser.end_element(name, uri);
 	}
 	else
 	{
-		m_parser.start_element(name, attrs);
+		m_parser.start_element(name, uri, attrs);
 		
 		match('>', true);
 
@@ -2964,8 +3038,9 @@ void parser_imp::element()
 		
 		match(xml_ETag);
 		
-		if (name != m_token)
-			throw exception("end tag does not match start tag");
+#pragma warning("re-add check")
+//		if (name != m_token)
+//			throw exception("end tag does not match start tag");
 		
 		match(xml_Name);
 
@@ -2974,7 +3049,7 @@ void parser_imp::element()
 		
 		match('>', true);
 		
-		m_parser.end_element(name);
+		m_parser.end_element(name, uri);
 	}
 	
 	while (m_lookahead == xml_Space)
