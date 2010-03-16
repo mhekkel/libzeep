@@ -126,6 +126,10 @@ class data_source : public boost::enable_shared_from_this<data_source>, boost::n
 	void			base_dir(const fs::path& dir)					{ m_base_dir = dir; }
 	const fs::path&	base_dir() const								{ return m_base_dir; }
 
+	virtual bool	auto_discard() const							{ return false; }
+
+	data_ptr		next_data_source() const						{ return m_next; }
+
   protected:
 	data_ptr		m_next;			// generates a linked list of data_sources
 	fs::path		m_base_dir;
@@ -420,6 +424,20 @@ class entity_data_source : public wstring_data_source
 
   protected:
 	wstring			m_entity_name;
+};
+
+// --------------------------------------------------------------------
+
+class parameter_entity_data_source : public wstring_data_source
+{
+  public:
+					parameter_entity_data_source(const wstring& data, const fs::path& base, data_ptr next = data_ptr())
+						: wstring_data_source(wstring(L" ") + data + L" ", next)
+					{
+						base_dir(base);
+					}
+
+	virtual bool	auto_discard() const							{ return true; }
 };
 
 // --------------------------------------------------------------------
@@ -820,8 +838,8 @@ struct parser_imp
 								case xml_NMToken:		result = "nmtoken";						break;
 								case xml_String:		result = "quoted string";				break;
 								case xml_PI:			result = "processing instruction";		break;
-								case xml_STag:			result = "start of tag"; 				break;
-								case xml_ETag:			result = "start of end tag";			break;
+								case xml_STag:			result = "tag";			 				break;
+								case xml_ETag:			result = "end tag";						break;
 								case xml_DocType:		result = "<!DOCTYPE"; 					break;
 								case xml_Element:		result = "<!ELEMENT"; 					break;
 								case xml_AttList:		result = "<!ATTLIST"; 					break;
@@ -951,6 +969,7 @@ struct parser_imp
 	bool			m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
 	bool			m_external_subset;
 	bool			m_in_element;
+	bool			m_allow_parameter_entity_references;
 
 	struct parsed_entity
 	{
@@ -981,6 +1000,7 @@ struct parser_imp
 	typedef map<wstring,doctype_element*>	DocTypeMap;
 	
 	DocTypeMap		m_doctype;
+	set<wstring>	m_notations;
 };
 
 parser_imp::parser_imp(
@@ -995,6 +1015,7 @@ parser_imp::parser_imp(
 	, m_in_doctype(false)
 	, m_external_subset(false)
 	, m_in_element(false)
+	, m_allow_parameter_entity_references(false)
 {
 	// these entities are always recognized:
 	m_general_entities[L"lt"] = general_entity(L"&#60;");
@@ -1054,8 +1075,18 @@ wchar_t parser_imp::get_next_char()
 		result = m_buffer.top();
 		m_buffer.pop();
 	}
-	else if (m_data_source != nil)
+
+	while (result == 0 and m_data_source != nil)
+	{
 		result = m_data_source->get_next_char();
+		if (result == 0)
+		{
+			if (m_data_source->auto_discard())
+				m_data_source = m_data_source->next_data_source();
+			else
+				break;
+		}
+	}
 	
 	if (result == 0x0ffff or result == 0x0fffe)
 		throw exception("character ffff is not allowed in xml");
@@ -1106,19 +1137,14 @@ void parser_imp::match(int token, bool content)
 		
 		// PEReferences can occur anywhere in a DTD and their
 		// content must match the production extsubset;
-		if (m_lookahead == xml_PEReference and m_in_doctype)
+		if (m_lookahead == xml_PEReference and m_allow_parameter_entity_references)
 		{
 			ParameterEntityMap::iterator r = m_parameter_entities.find(m_token);
 			if (r == m_parameter_entities.end())
 				throw exception("undefined parameter entity %s", m_token.c_str());
 			
-			wstring replacement;
-			replacement += ' ';
-			replacement += r->second.m_entity_text;
-			replacement += ' ';
-			
-			m_data_source.reset(new wstring_data_source(replacement, m_data_source));
-			m_data_source->base_dir(r->second.m_entity_path);
+			m_data_source.reset(new parameter_entity_data_source(
+				r->second.m_entity_text, r->second.m_entity_path, m_data_source));
 			
 			match(xml_PEReference);
 		}
@@ -1445,6 +1471,8 @@ int parser_imp::get_next_content()
 					throw exception("runaway processing instruction");
 				else if (not is_char(uc))
 					throw exception("Illegal character in content text");
+				else if (uc == '?')
+					state += 2;
 				else
 					state += 1;
 				break;
@@ -1644,10 +1672,11 @@ int parser_imp::get_next_content()
 			case state_Illegal:
 				if (uc == ']')
 					state += 1;
-				else if (is_char(uc))
-					state = state_Content;
 				else
-					throw exception("Illegal character in content text");
+				{
+					retract();
+					state = state_Content;
+				}
 				break;
 					
 			case state_Illegal + 1:
@@ -1655,10 +1684,9 @@ int parser_imp::get_next_content()
 					throw exception("the sequence ']]>' is illegal in content text");
 				else if (uc != ']')
 				{
-					if (is_char(uc))
-						state = state_Content;
-					else
-						throw exception("Illegal character in content text");
+					retract();
+					retract();
+					state = state_Content;
 				}
 				break;
 
@@ -1823,6 +1851,7 @@ void parser_imp::misc()
 void parser_imp::doctypedecl()
 {
 	m_in_doctype = true;
+	m_allow_parameter_entity_references = true;
 
 	match(xml_DocType);
 	
@@ -1877,6 +1906,7 @@ void parser_imp::doctypedecl()
 	match('>');
 
 	m_in_doctype = false;
+	m_allow_parameter_entity_references = false;
 }
 
 void parser_imp::intsubset()
@@ -2030,12 +2060,12 @@ void parser_imp::ignoresectcontents()
 				break;
 		}
 	}
-	
-	
 }
 
 void parser_imp::markup_decl()
 {
+	m_allow_parameter_entity_references = not m_external_subset;
+	
 	switch (m_lookahead)
 	{
 		case xml_Element:
@@ -2067,6 +2097,8 @@ void parser_imp::markup_decl()
 		default:
 			throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
 	}
+	
+	m_allow_parameter_entity_references = true;
 }
 
 void parser_imp::element_decl()
@@ -2280,6 +2312,9 @@ void parser_imp::general_entity_decl()
 			s(true);
 			if (m_lookahead == xml_Name and m_token == L"NDATA")
 			{
+				if (m_notations.count(m_token) == 0)
+					throw exception("Undefined NOTATION %s", wstring_to_string(m_token).c_str());
+				
 				match(xml_Name);
 				s(true);
 				match(xml_Name);
@@ -2461,6 +2496,11 @@ void parser_imp::notation_decl()
 {
 	match(xml_Notation);
 	s(true);
+	
+	if (m_notations.count(m_token) > 0)
+		throw exception("notation names should be unique");
+	m_notations.insert(m_token);
+	
 	match(xml_Name);
 	s(true);
 
@@ -2914,8 +2954,8 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					charref = charref * 10 + (c - '0');
 				else if (c == ';')
 				{
-					if (charref == '<')
-						throw exception("Attribute values may not contain '<' character");
+//					if (charref == '<')
+//						throw exception("Attribute values may not contain '<' character");
 					result += charref;
 					state = 0;
 				}
@@ -2952,8 +2992,8 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					charref = (charref << 4) + (c - '0');
 				else if (c == ';')
 				{
-					if (charref == '<')
-						throw exception("Attribute values may not contain '<' character");
+//					if (charref == '<')
+//						throw exception("Attribute values may not contain '<' character");
 					result += charref;
 					state = 0;
 				}
@@ -3170,7 +3210,8 @@ void parser_imp::content()
 					
 					m_lookahead = get_next_content();
 					
-					content();
+					if (m_lookahead != xml_Eof)
+						content();
 
 					if (m_lookahead != xml_Eof)
 						throw exception("entity reference should be a valid content production");
