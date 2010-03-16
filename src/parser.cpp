@@ -17,6 +17,8 @@
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH 
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
@@ -37,6 +39,16 @@ namespace zeep { namespace xml {
 
 namespace
 {
+	
+template<typename T>
+struct value_saver
+{
+	T&	m_ref;
+	T	m_value;
+
+		value_saver(T& value, const T& new_value) : m_ref(value), m_value(value) { m_ref = new_value; }
+		~value_saver() { m_ref = m_value; }
+};
 
 // first some very basic code to check the class of scanned characters
 
@@ -82,6 +94,36 @@ bool is_char(wchar_t uc)
 		(uc >= 0x020 and uc <= 0x0D7FF) or
 		(uc >= 0x0E000 and uc <= 0x0FFFD) or
 		(uc >= 0x010000 and uc <= 0x010FFFF);
+}
+
+bool is_valid_system_literal_char(wchar_t uc)
+{
+	return
+		not (uc >= 0x0 and uc <= 0x1f) and
+		uc != ' ' and
+		uc != '<' and
+		uc != '>' and
+		uc != '"' and
+		uc != '#';
+}
+
+bool is_valid_system_literal(const wstring& s)
+{
+	return find_if(s.begin(), s.end(), boost::bind(&is_valid_system_literal_char, _1) == false) == s.end();
+}
+
+bool is_valid_public_id_char(wchar_t uc)
+{
+	return
+		(uc >= 'a' and uc <= 'z') or
+		(uc >= 'A' and uc <= 'Z') or
+		(uc >= '0' and uc <= '9') or
+		boost::is_any_of(L" \r\n-'()+,./:=?;!*#@$_%")(uc);
+}
+
+bool is_valid_public_id(const wstring& s)
+{
+	return find_if(s.begin(), s.end(), boost::bind(&is_valid_public_id_char, _1) == false) == s.end();
 }
 
 }
@@ -1000,7 +1042,7 @@ struct parser_imp
 	typedef map<wstring,doctype_element*>	DocTypeMap;
 	
 	DocTypeMap		m_doctype;
-	set<wstring>	m_notations;
+	set<wstring>	m_notations, m_ndata;
 };
 
 parser_imp::parser_imp(
@@ -1250,6 +1292,8 @@ int parser_imp::get_next_token()
 			case state_Comment + 1:
 				if (uc == '-')
 					state += 1;
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				else if (uc == 0)
 					throw exception("Unexpected end of file, run-away comment?");
 				break;
@@ -1259,6 +1303,8 @@ int parser_imp::get_next_token()
 					state += 1;
 				else if (uc == 0)
 					throw exception("Unexpected end of file, run-away comment?");
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				else
 					state -= 1;
 				break;
@@ -1752,7 +1798,7 @@ void parser_imp::xml_decl()
 				match(xml_Name);
 				eq();
 				ba::to_upper(m_token);
-				if (m_token == L"UTF-8")
+				if (m_token == L"UTF-8" or m_token == L"US-ASCII")	// ascii is a subset of utf-8
 					m_encoding = enc_UTF8;
 				else if (m_token == L"UTF-16")
 				{
@@ -1850,8 +1896,8 @@ void parser_imp::misc()
 
 void parser_imp::doctypedecl()
 {
-	m_in_doctype = true;
-	m_allow_parameter_entity_references = true;
+	value_saver<bool> in_doctype(m_in_doctype, true);
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
 
 	match(xml_DocType);
 	
@@ -1904,13 +1950,20 @@ void parser_imp::doctypedecl()
 	}
 
 	match('>');
-
-	m_in_doctype = false;
-	m_allow_parameter_entity_references = false;
+	
+	// test if all ndata references can be resolved
+	
+	foreach (const wstring& ndata, m_ndata)
+	{
+		if (m_notations.count(ndata) == 0)
+			throw exception("Undefined NOTATION %s", wstring_to_string(m_token).c_str());
+	}
 }
 
 void parser_imp::intsubset()
 {
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
+
 	for (;;)
 	{
 		switch (m_lookahead)
@@ -1935,6 +1988,9 @@ void parser_imp::intsubset()
 
 void parser_imp::extsubset()
 {
+	value_saver<bool> save(m_external_subset, true);
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
+
 	for (;;)
 	{
 		switch (m_lookahead)
@@ -2064,7 +2120,7 @@ void parser_imp::ignoresectcontents()
 
 void parser_imp::markup_decl()
 {
-	m_allow_parameter_entity_references = not m_external_subset;
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, m_external_subset);
 	
 	switch (m_lookahead)
 	{
@@ -2085,20 +2141,20 @@ void parser_imp::markup_decl()
 			break;
 		
 		case xml_PI:
+			m_allow_parameter_entity_references = allow_parameter_entity_references.m_value;
 			match(xml_PI);
 			break;
 
 		case xml_Comment:
 			if (m_parser.comment_handler)
 				m_parser.comment_handler(wstring_to_string(m_token));
+			m_allow_parameter_entity_references = allow_parameter_entity_references.m_value;
 			match(xml_Comment);
 			break;
 
 		default:
 			throw exception("unexpected token %s", describe_token(m_lookahead).c_str());
 	}
-	
-	m_allow_parameter_entity_references = true;
 }
 
 void parser_imp::element_decl()
@@ -2113,6 +2169,8 @@ void parser_imp::element_decl()
 	s(true);
 	contentspec(*element);
 	s();
+	
+	m_allow_parameter_entity_references = true;
 	match('>');
 	
 	if (m_doctype.find(name) == m_doctype.end())
@@ -2237,6 +2295,8 @@ void parser_imp::cp()
 
 void parser_imp::entity_decl()
 {
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
+
 	match(xml_Entity);
 	s(true);
 
@@ -2274,6 +2334,7 @@ void parser_imp::parameter_entity_decl()
 
 	s();
 	
+	m_allow_parameter_entity_references = true;
 	match('>');
 	
 	if (m_parameter_entities.find(name) == m_parameter_entities.end())
@@ -2312,11 +2373,11 @@ void parser_imp::general_entity_decl()
 			s(true);
 			if (m_lookahead == xml_Name and m_token == L"NDATA")
 			{
-				if (m_notations.count(m_token) == 0)
-					throw exception("Undefined NOTATION %s", wstring_to_string(m_token).c_str());
-				
 				match(xml_Name);
 				s(true);
+
+				m_ndata.insert(m_token);
+				
 				match(xml_Name);
 			}
 		}
@@ -2324,6 +2385,7 @@ void parser_imp::general_entity_decl()
 	
 	s();
 	
+	m_allow_parameter_entity_references = true;
 	match('>');
 	
 	if (m_general_entities.find(name) == m_general_entities.end())
@@ -2489,6 +2551,7 @@ void parser_imp::attlist_decl()
 		e->add_attribute(attribute.release());
 	}
 
+	m_allow_parameter_entity_references = true;
 	match('>');
 }
 
@@ -2513,6 +2576,9 @@ void parser_imp::notation_decl()
 		
 		system = m_token;
 		match(xml_String);
+
+		if (not is_valid_system_literal(system))
+			throw exception("invalid system literal");
 	}
 	else if (m_token == L"PUBLIC")
 	{
@@ -2523,7 +2589,7 @@ void parser_imp::notation_decl()
 		match(xml_String);
 		
 		// validate the public ID
-		if (pubid.find_first_not_of(L" \r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVSXYZ0123456789-'()+,./:=?;!*#@$_%") != string::npos)
+		if (not is_valid_public_id(pubid))
 			throw exception("Invalid public ID");
 		
 		s();
@@ -2538,6 +2604,8 @@ void parser_imp::notation_decl()
 		throw exception("Expected either SYSTEM or PUBLIC");
 
 	s();
+
+	m_allow_parameter_entity_references = true;
 	match('>');
 }
 
@@ -2552,6 +2620,9 @@ data_ptr parser_imp::external_id()
 		s(true);
 		
 		system = m_token;
+
+		if (not is_valid_system_literal(system))
+			throw exception("invalid system literal");
 	}
 	else if (m_token == L"PUBLIC")
 	{
@@ -2562,7 +2633,7 @@ data_ptr parser_imp::external_id()
 		match(xml_String);
 
 		// validate the public ID
-		if (pubid.find_first_not_of(L" \r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVSXYZ0123456789-'()+,./:=?;!*#@$_%") != string::npos)
+		if (not is_valid_public_id(pubid))
 			throw exception("Invalid public ID");
 		
 		s(true);
@@ -3040,8 +3111,7 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 
 void parser_imp::element()
 {
-	bool saved_in_element = m_in_element;
-	m_in_element = true;
+	value_saver<bool> in_element(m_in_element, true);
 	
 	match(xml_STag);
 	wstring name = m_token;
@@ -3174,8 +3244,7 @@ void parser_imp::element()
 		m_parser.end_element(name, uri);
 	}
 	
-	m_in_element = saved_in_element;
-	match('>', m_in_element);
+	match('>', in_element.m_value);
 	
 	s();
 }

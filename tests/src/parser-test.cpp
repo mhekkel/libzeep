@@ -136,7 +136,8 @@ bool run_test(xml::node& test, fs::path base_dir)
 	}
 	catch (std::exception& e)
 	{
-		++error_tests;
+		if (test.get_attribute("TYPE") == "valid")
+			++error_tests;
 		result = false;
 		
 		if (VERBOSE)
@@ -146,6 +147,7 @@ bool run_test(xml::node& test, fs::path base_dir)
 				 << test.text() << endl
 				 << endl
 				 << test.get_attribute("SECTIONS") << endl
+				 << test.get_attribute("TYPE") << endl
 				 << endl
 				 << "exception: " << e.what() << endl
 				 << endl;
@@ -155,7 +157,8 @@ bool run_test(xml::node& test, fs::path base_dir)
 	return result;
 }
 
-void run_test_case(xml::node& testcase, const string& id, fs::path base_dir, vector<string>& failed_ids)
+void run_test_case(xml::node& testcase, const string& id,
+	const string& type, fs::path base_dir, vector<string>& failed_ids)
 {
 //	if (VERBOSE)
 //		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
@@ -170,21 +173,23 @@ void run_test_case(xml::node& testcase, const string& id, fs::path base_dir, vec
 	{
 		if (testcasenode.name() == "TEST")
 		{
-			if (id.empty() or id == testcasenode.get_attribute("ID"))
+			if ((id.empty() or id == testcasenode.get_attribute("ID")) and
+				(type.empty() or type == testcasenode.get_attribute("TYPE")))
 			{
 				if (not run_test(testcasenode, base_dir))
 					failed_ids.push_back(testcasenode.get_attribute("ID"));
 			}
 		}
 		else if (testcasenode.name() == "TESTCASE" or testcasenode.name() == "TESTCASES")
-			run_test_case(testcasenode, id, base_dir, failed_ids);
+			run_test_case(testcasenode, id, type, base_dir, failed_ids);
 		else
 			throw zeep::exception("invalid testcases file: unknown node %s",
 				testcasenode.name().c_str());
 	}
 }
 
-void test_testcases(const fs::path& testFile, const string& id, vector<string>& failed_ids)
+void test_testcases(const fs::path& testFile, const string& id,
+	const string& type, vector<string>& failed_ids)
 {
 	fs::ifstream file(testFile);
 	
@@ -206,7 +211,7 @@ void test_testcases(const fs::path& testFile, const string& id, vector<string>& 
 
 	foreach (xml::node& test, root->children())
 	{
-		run_test_case(test, id, base_dir, failed_ids);
+		run_test_case(test, id, type, base_dir, failed_ids);
 	}
 }
 
@@ -219,6 +224,7 @@ int main(int argc, char* argv[])
 //	    ("input-file", "input file")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
+	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
 	;
 	
 	po::positional_options_description p;
@@ -239,53 +245,39 @@ int main(int argc, char* argv[])
 	
 	try
 	{
+		fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
+		if (vm.count("test"))
+			xmlconfFile = vm["test"].as<string>();
+		
 		string id;
 		if (vm.count("id"))
 			id = vm["id"].as<string>();
 		
-		if (vm.count("test"))
+		string type;
+		if (vm.count("type"))
+			type = vm["type"].as<string>();
+		
+		vector<string> failed_ids;
+		
+		test_testcases(xmlconfFile, id, type, failed_ids);
+		
+		cout << endl
+			 << "summary: " << endl
+			 << "  ran " << total_tests << " tests" << endl
+			 << "  " << error_tests << " threw an exception" << endl
+			 << "  " << failed_tests << " failed" << endl
+			 << "  " << should_have_failed << " should have failed but didn't" << endl
+			 << "  " << dubious_tests << " had a dubious output" << endl;
+			
+		if (id.empty())
 		{
-			vector<string> failed_ids;
-			
-			fs::path xmlTestFile(vm["test"].as<string>());
-			test_testcases(xmlTestFile, id, failed_ids);
-			
 			cout << endl
-				 << "summary: " << endl
-				 << "  ran " << total_tests << " tests" << endl
-				 << "  " << error_tests << " threw an exception" << endl
-				 << "  " << failed_tests << " failed" << endl
-				 << "  " << should_have_failed << " should have failed but didn't" << endl
-				 << "  " << dubious_tests << " had a dubious output" << endl;
-				
-			if (id.empty())
-			{
-				cout << endl
-					 << "ID's for the failed tests: " << endl;
-				
-				copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
-				
-				cout << endl;
-			}
+				 << "ID's for the failed tests: " << endl;
+			
+			copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
+			
+			cout << endl;
 		}
-//		else if (vm.count("input-file"))
-//		{
-//			fs::path p(vm["input-file"].as<string>());
-//			
-//			if (fs::is_directory(p))
-//			{
-//				fs::current_path(p);
-//
-//				fs::directory_iterator end_itr; // default construction yields past-the-end
-//				for (fs::directory_iterator itr("."); itr != end_itr; ++itr)
-//				{
-//					if (ba::ends_with(itr->path().filename(), ".xml"))
-//						test(fs::system_complete(itr->path()));
-//				}
-//			}
-//			else
-//				test(p);
-//		}
 	}
 	catch (std::exception& e)
 	{
