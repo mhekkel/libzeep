@@ -34,6 +34,8 @@ struct node_content_imp
 	void			content(const string& s);
 	string			content() const;
 
+	string			text() const;
+
 	attribute_list	m_attributes;
 	list<string>	m_content;
 	node_list		m_children;
@@ -119,6 +121,32 @@ string node_content_imp::content() const
 	return result;
 }
 
+string node_content_imp::text() const
+{
+	string result;
+	
+	assert(m_order.size() == m_children.size() + m_content.size());
+
+	node_list::const_iterator child = m_children.begin();
+	list<string>::const_iterator content = m_content.begin();
+	
+	for (vector<bool>::const_iterator selector = m_order.begin(); selector != m_order.end(); ++selector)
+	{
+		if (*selector)	// next is text
+			result += *content++;
+		else
+		{
+			result += ' ';
+			result += child->text();
+			result += ' ';
+			++child;
+		}
+	}
+	
+	return result;
+	
+}
+
 node::node()
 	: m_parent(NULL)
 	, m_content(new node_content_imp)
@@ -183,6 +211,11 @@ const attribute_list& node::attributes() const
 string node::content() const
 {
 	return m_content->content();
+}
+
+string node::text() const
+{
+	return m_content->text();
 }
 
 void node::add_attribute(
@@ -365,8 +398,8 @@ void node::write(
 		stream << ' ';
 
 	string qname;
-	if (not m_prefix.get().empty())
-		qname = m_prefix.get() + ':';
+	if (not m_prefix.empty())
+		qname = m_prefix + ':';
 	qname += m_name;
 	
 	stream << '<' << qname;

@@ -12,7 +12,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/flyweight.hpp>
+//#include <boost/flyweight.hpp>
 
 namespace zeep { namespace xml {
 
@@ -28,7 +28,8 @@ class document;
 
 class node : public boost::noncopyable, public boost::enable_shared_from_this<node>
 {
-	typedef boost::flyweights::flyweight<std::string>	shared_string;
+//	typedef boost::flyweights::flyweight<std::string>	shared_string;
+	typedef std::string									shared_string;
 	
   public:
 						node();
@@ -60,6 +61,9 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 	std::string			content() const;
 	void				content(const std::string&
 												content);
+
+	// return all content concatenated, including that of children.
+	std::string			text() const;
 
 	// utility functions
 	node_ptr			find_first_child(
@@ -202,7 +206,8 @@ class node_list : public boost::noncopyable
 
 class attribute
 {
-	typedef boost::flyweights::flyweight<std::string>	shared_string;
+//	typedef boost::flyweights::flyweight<std::string>	shared_string;
+	typedef std::string									shared_string;
 
 	friend class node;
   public:

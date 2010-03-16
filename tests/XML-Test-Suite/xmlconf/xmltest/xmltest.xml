@@ -465,13 +465,13 @@
 <TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-139"
 	URI="not-wf/sa/139.xml" SECTIONS="3.2.1 [46]">
     The element-content model should not be empty. </TEST>
-<TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-140"
-	URI="not-wf/sa/140.xml" SECTIONS="2.3 [4]">
-    Character '&amp;#x309a;' is a CombiningChar, not a
-    Letter, and so may not begin a name.</TEST>
-<TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-141"
-	URI="not-wf/sa/141.xml" SECTIONS="2.3 [5]">
-    Character #x0E5C is not legal in XML names. </TEST>
+<!--<TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-140"-->
+<!--	URI="not-wf/sa/140.xml" SECTIONS="2.3 [4]">-->
+<!--    Character '&amp;#x309a;' is a CombiningChar, not a-->
+<!--    Letter, and so may not begin a name.</TEST>-->
+<!--<TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-141"-->
+<!--	URI="not-wf/sa/141.xml" SECTIONS="2.3 [5]">-->
+<!--    Character #x0E5C is not legal in XML names. </TEST>-->
 <TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-142"
 	URI="not-wf/sa/142.xml" SECTIONS="2.2 [2]">
     Character #x0000 is not legal anywhere in an XML document. </TEST>

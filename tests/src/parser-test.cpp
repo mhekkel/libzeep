@@ -3,6 +3,7 @@
 #include <string>
 #include <list>
 
+
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/filesystem/fstream.hpp>
@@ -25,10 +26,12 @@ namespace ba = boost::algorithm;
 //#define DOC		xml::libxml2_doc
 
 int VERBOSE;
-int failed_tests, dubious_tests, error_tests, total_tests;
+int failed_tests, dubious_tests, error_tests, should_have_failed, total_tests;
 
-void run_valid_test(istream& is, fs::path& outfile)
+bool run_valid_test(istream& is, fs::path& outfile)
 {
+	bool result = true;
+	
 	DOC indoc(is);
 	
 	stringstream s;
@@ -67,6 +70,8 @@ void run_valid_test(istream& is, fs::path& outfile)
 				++dubious_tests;
 			else
 			{
+				result = false;
+				
 				if (VERBOSE)
 				{
 					cout << "output differs: " << endl
@@ -80,11 +85,14 @@ void run_valid_test(istream& is, fs::path& outfile)
 	}
 	else
 		cout << "skipped output compare for " << outfile << endl;
+	
+	return result;
 }
 
-
-void run_test(xml::node& test, fs::path base_dir)
+bool run_test(xml::node& test, fs::path base_dir)
 {
+	bool result = true;
+	
 	++total_tests;
 	
 	fs::path input(base_dir / test.get_attribute("URI"));
@@ -93,7 +101,7 @@ void run_test(xml::node& test, fs::path base_dir)
 	if (not fs::exists(input))
 	{
 		cout << "test file " << input << " does not exist" << endl;
-		return;
+		return false;
 	}
 	
 	fs::current_path(input.branch_path());
@@ -107,26 +115,35 @@ void run_test(xml::node& test, fs::path base_dir)
 		fs::current_path(input.branch_path());
 		
 		if (test.get_attribute("TYPE") == "valid")
-			run_valid_test(is, output);
+			result = run_valid_test(is, output);
 		else // if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "error" )
 		{
+			bool failed = false;
 			try
 			{
 				DOC doc(is);
-				throw zeep::exception("invalid document, should have failed");
+				++should_have_failed;
+				result = false;
 			}
-			catch (...) {}
+			catch (std::exception& e)
+			{
+				failed = true;
+			}
+
+			if (VERBOSE and not failed)
+				throw zeep::exception("invalid document, should have failed");
 		}
 	}
 	catch (std::exception& e)
 	{
 		++error_tests;
+		result = false;
 		
 		if (VERBOSE)
 		{
 			cout << "test " << test.get_attribute("ID") << " failed:" << endl
 				 << "\t" << fs::system_complete(input) << endl
-				 << test.content() << endl
+				 << test.text() << endl
 				 << endl
 				 << test.get_attribute("SECTIONS") << endl
 				 << endl
@@ -134,12 +151,14 @@ void run_test(xml::node& test, fs::path base_dir)
 				 << endl;
 		}
 	}
+	
+	return result;
 }
 
-void run_test_case(xml::node& testcase, const string& id, fs::path base_dir)
+void run_test_case(xml::node& testcase, const string& id, fs::path base_dir, vector<string>& failed_ids)
 {
-	if (VERBOSE)
-		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
+//	if (VERBOSE)
+//		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
 
 	if (not testcase.get_attribute("xml:base").empty())
 	{
@@ -152,17 +171,20 @@ void run_test_case(xml::node& testcase, const string& id, fs::path base_dir)
 		if (testcasenode.name() == "TEST")
 		{
 			if (id.empty() or id == testcasenode.get_attribute("ID"))
-				run_test(testcasenode, base_dir);
+			{
+				if (not run_test(testcasenode, base_dir))
+					failed_ids.push_back(testcasenode.get_attribute("ID"));
+			}
 		}
 		else if (testcasenode.name() == "TESTCASE" or testcasenode.name() == "TESTCASES")
-			run_test_case(testcasenode, id, base_dir);
+			run_test_case(testcasenode, id, base_dir, failed_ids);
 		else
 			throw zeep::exception("invalid testcases file: unknown node %s",
 				testcasenode.name().c_str());
 	}
 }
 
-void test_testcases(const fs::path& testFile, const string& id)
+void test_testcases(const fs::path& testFile, const string& id, vector<string>& failed_ids)
 {
 	fs::ifstream file(testFile);
 	
@@ -184,7 +206,7 @@ void test_testcases(const fs::path& testFile, const string& id)
 
 	foreach (xml::node& test, root->children())
 	{
-		run_test_case(test, id, base_dir);
+		run_test_case(test, id, base_dir, failed_ids);
 	}
 }
 
@@ -223,15 +245,28 @@ int main(int argc, char* argv[])
 		
 		if (vm.count("test"))
 		{
+			vector<string> failed_ids;
+			
 			fs::path xmlTestFile(vm["test"].as<string>());
-			test_testcases(xmlTestFile, id);
+			test_testcases(xmlTestFile, id, failed_ids);
 			
 			cout << endl
 				 << "summary: " << endl
 				 << "  ran " << total_tests << " tests" << endl
 				 << "  " << error_tests << " threw an exception" << endl
 				 << "  " << failed_tests << " failed" << endl
+				 << "  " << should_have_failed << " should have failed but didn't" << endl
 				 << "  " << dubious_tests << " had a dubious output" << endl;
+				
+			if (id.empty())
+			{
+				cout << endl
+					 << "ID's for the failed tests: " << endl;
+				
+				copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
+				
+				cout << endl;
+			}
 		}
 //		else if (vm.count("input-file"))
 //		{

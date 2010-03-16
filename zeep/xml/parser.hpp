@@ -16,7 +16,7 @@ namespace zeep { namespace xml {
 class basic_parser_base : public boost::noncopyable
 {
   public:
-	virtual				~basic_parser_base() {}
+	virtual				~basic_parser_base();
 	
 	std::string			wstring_to_string(const std::wstring& s);
 

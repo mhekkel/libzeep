@@ -238,16 +238,34 @@ document::document(
 	istream&		data)
 	: impl(new document_imp)
 {
-	impl->parse(data);
+	try
+	{
+		impl->parse(data);
+	}
+	catch (...)
+	{
+		delete impl;
+		impl = NULL;
+		throw;
+	}
 }
 
 document::document(
 	const string&	data)
 	: impl(new document_imp)
 {
-	stringstream s;
-	s.str(data);
-	impl->parse(s);
+	try
+	{
+		stringstream s;
+		s.str(data);
+		impl->parse(s);
+	}
+	catch (...)
+	{
+		delete impl;
+		impl = NULL;
+		throw;
+	}
 }
 
 document::document(

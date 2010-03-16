@@ -27,7 +27,9 @@ using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 
-#define nullptr NULL
+#ifndef nil
+#define nil NULL
+#endif
 
 namespace zeep { namespace xml {
 
@@ -35,6 +37,8 @@ namespace zeep { namespace xml {
 
 namespace
 {
+
+// first some very basic code to check the class of scanned characters
 
 bool is_name_start_char(wchar_t uc)
 {
@@ -69,6 +73,17 @@ bool is_name_char(wchar_t uc)
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
+bool is_char(wchar_t uc)
+{
+	return
+		uc == 0x09 or
+		uc == 0x0A or
+		uc == 0x0D or
+		(uc >= 0x020 and uc <= 0x0D7FF) or
+		(uc >= 0x0E000 and uc <= 0x0FFFD) or
+		(uc >= 0x010000 and uc <= 0x010FFFF);
+}
+
 }
 
 enum Encoding {
@@ -82,21 +97,28 @@ enum Encoding {
 // we can encounter entities that need to be expanded into replacement text
 // and so we declare data_source objects that can be stacked.
 
-class data_source
+class data_source;
+typedef boost::shared_ptr<data_source>	data_ptr;
+
+// A data source can have a base dir, that is the directory the data came from.
+// This information is needed when a relative uri is found in an external ID.
+
+class data_source : public boost::enable_shared_from_this<data_source>, boost::noncopyable
 {
   public:
-					data_source(data_source* next)
+					data_source(data_ptr next)
 						: m_next(next), m_base_dir(fs::current_path()) {}
 
 	virtual			~data_source() {}
 
+	// data_source is a virtual base class. Derivatives need to declare the next function.
 	virtual wchar_t	get_next_char() = 0;
 
 	// to avoid recursively nested entity values, we have a check:
 	virtual bool	is_entity_on_stack(const wstring& name)
 					{
 						bool result = false;
-						if (m_next != nullptr)
+						if (m_next != nil)
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
@@ -104,20 +126,18 @@ class data_source
 	void			base_dir(const fs::path& dir)					{ m_base_dir = dir; }
 	const fs::path&	base_dir() const								{ return m_base_dir; }
 
-	void			next_data_source(data_source* next)				{ m_next = next; }
-	data_source*	next_data_source()								{ return m_next; }
-
   protected:
-	data_source*	m_next;	// generate a linked list of data_sources
+	data_ptr		m_next;			// generates a linked list of data_sources
 	fs::path		m_base_dir;
 };
 
 // --------------------------------------------------------------------
+// An istream implementation of data_source.
 
 class istream_data_source : public data_source
 {
   public:
-					istream_data_source(istream& data, data_source* next)
+					istream_data_source(istream& data, data_ptr next = data_ptr())
 						: data_source(next)
 						, m_data(data)
 						, m_char_buffer(0)
@@ -127,7 +147,7 @@ class istream_data_source : public data_source
 						guess_encoding();
 					}
 
-					istream_data_source(auto_ptr<istream> data, data_source* next)
+					istream_data_source(auto_ptr<istream> data, data_ptr next = data_ptr())
 						: data_source(next)
 						, m_data(*data)
 						, m_data_ptr(data)
@@ -139,9 +159,6 @@ class istream_data_source : public data_source
 					}
 
 	bool			has_bom()				{ return m_has_bom; }
-
-	virtual fs::path
-					base_dir()				{ return fs::current_path(); }
 
   private:
 
@@ -176,7 +193,8 @@ class istream_data_source : public data_source
 
 void istream_data_source::guess_encoding()
 {
-	// 1. easy first step, see if there is a BOM
+	// see if there is a BOM
+	// if there isn't, we assume the data is UTF-8
 	
 	char c1 = 0, c2 = 0, c3 = 0;
 	
@@ -292,6 +310,9 @@ wchar_t istream_data_source::next_utf8_char()
 			throw exception("Invalid utf-8");
 		result = static_cast<unsigned long>(((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
 	}
+
+	if (result > 0x10ffff)
+		throw exception("invalid utf-8 character (out of range)");
 	
 	if (m_data.eof())
 		result = 0;
@@ -348,20 +369,19 @@ wchar_t istream_data_source::get_next_char()
 class wstring_data_source : public data_source
 {
   public:
-					wstring_data_source(const wstring& data, data_source* next)
-						: data_source(next)
-						, m_data(data)
-						, m_ptr(m_data.begin())
-					{
-					}
+						wstring_data_source(const wstring& data, data_ptr next = data_ptr())
+							: data_source(next)
+							, m_data(data)
+							, m_ptr(m_data.begin())
+						{
+						}
 
   private:
 
-	virtual wchar_t	get_next_char();
+	virtual wchar_t		get_next_char();
 
-	const wstring	m_data;
-	wstring::const_iterator
-					m_ptr;
+	wstring				m_data;
+	wstring::iterator	m_ptr;
 };
 
 wchar_t	wstring_data_source::get_next_char()
@@ -369,7 +389,10 @@ wchar_t	wstring_data_source::get_next_char()
 	wchar_t result = 0;
 
 	if (m_ptr != m_data.end())
-		result = *m_ptr++;
+	{
+		result = *m_ptr;
+		++m_ptr;
+	}
 
 	return result;
 }
@@ -380,7 +403,7 @@ class entity_data_source : public wstring_data_source
 {
   public:
 					entity_data_source(const wstring& entity_name, const fs::path& entity_path,
-							const wstring& text, data_source* next)
+							const wstring& text, data_ptr next = data_ptr())
 						: wstring_data_source(text, next)
 						, m_entity_name(entity_name)
 					{
@@ -390,7 +413,7 @@ class entity_data_source : public wstring_data_source
 	virtual bool	is_entity_on_stack(const wstring& name)
 					{
 						bool result = m_entity_name == name;
-						if (result == false and m_next != nullptr)
+						if (result == false and m_next != nil)
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
@@ -400,6 +423,8 @@ class entity_data_source : public wstring_data_source
 };
 
 // --------------------------------------------------------------------
+// doctype support. We don't do full validation yet, but here is the support
+// for filling in default values and cleaning up attributes.
 
 class doctype_element;
 class doctype_attlist;
@@ -437,9 +462,6 @@ class doctype_attribute : public boost::noncopyable
 
 	wstring				name() const							{ return m_name; }
 
-	AttributeType		get_type() const						{ return m_type; }
-
-	bool				is_required() const;
 	bool				validate_value(wstring& value);
 	
 	void				set_default(AttributeDefault def, const wstring& value)
@@ -451,11 +473,12 @@ class doctype_attribute : public boost::noncopyable
 								throw exception("default value for attribute is not valid");
 						}
 
-	pair<AttributeDefault,wstring>
-						get_default() const						{ return make_pair(m_default, m_default_value); }
+	boost::tuple<AttributeDefault,wstring>
+						get_default() const						{ return boost::make_tuple(m_default, m_default_value); }
 	
   private:
 
+	// routines used to check _and_ reformat attribute value strings
 	bool				is_name(wstring& s);
 	bool				is_names(wstring& s);
 	bool				is_nmtoken(wstring& s);
@@ -654,7 +677,7 @@ doctype_attribute* doctype_element::get_attribute(const wstring& name)
 	vector<doctype_attribute*>::iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&doctype_attribute::name, _1) == name);
 	
-	doctype_attribute* result = nullptr;
+	doctype_attribute* result = nil;
 	
 	if (dta != m_attlist.end())
 		result = *dta;
@@ -673,58 +696,68 @@ struct parser_imp
 					~parser_imp();
 
 	string			wstring_to_string(const wstring& s);
-	
+
+	// Here comes the parser part
 	void			parse();
+
+	// the productions. Some are inlined below for obvious reasons.	
+	// names of the productions try to follow those in the TR http://www.w3.org/TR/xml
 	void			prolog();
 	void			xml_decl();
 	void			text_decl();
-	void			s(bool at_least_one = false);
-	void			eq();
-	void			misc();
-	void			comment();
 
+	void			s(bool at_least_one = false)
+					{
+						if (at_least_one)
+							match(xml_Space);
+						
+						while (m_lookahead == xml_Space)
+							match(xml_Space);
+					}
+
+	void			eq()
+					{
+						s();
+						match('=');
+						s();
+					}
+					
+	void			misc();
 	void			element();
 	void			content();
-
 	void			doctypedecl();
-	data_source*	external_id();
-
+	data_ptr		external_id();
 	boost::tuple<fs::path,wstring>
 					read_external_id();
-	
 	void			intsubset();
 	void			extsubset();
-	void			extsubsetdecl();
-
 	void			conditionalsect();
 	void			ignoresectcontents();
-	
-	void			markupdecl();
-//	void			declsep();
-	
+	void			markup_decl();
 	void			element_decl();
 	void			contentspec(doctype_element& element);
 	void			cp();
-	
 	void			attlist_decl();
 	void			notation_decl();
 	void			entity_decl();
 	void			parameter_entity_decl();
 	void			general_entity_decl();
 	void			entity_value();
-	
+
+	// at several locations we need to parse out entity references from strings:	
 	void			parse_parameter_entity_declaration(wstring& s);
 	void			parse_general_entity_declaration(wstring& s);
 
+	// same goes for attribute values
 	wstring			normalize_attribute_value(const wstring& s)
 					{
-						wstring_data_source data(s, nullptr);
-						return normalize_attribute_value(&data);
+						data_ptr data(new wstring_data_source(s));
+						return normalize_attribute_value(data);
 					}
 					
-	wstring			normalize_attribute_value(data_source* data);
+	wstring			normalize_attribute_value(data_ptr data);
 
-
+	// The scanner is next. We recognize the following tokens:
 	enum XMLToken
 	{
 		xml_Undef,
@@ -758,6 +791,7 @@ struct parser_imp
 		xml_Content,		// anything else up to the next element start
 	};
 
+	// for debugging and error reporting we have the following describing routine
 	string			describe_token(int token)
 					{
 						string result;
@@ -807,34 +841,61 @@ struct parser_imp
 
 	wchar_t			get_next_char();
 	
+	// Recognizing tokens differs if we are expecting markup or content in elements:
 	int				get_next_token();
 	int				get_next_content();
 
+	// retract is used when we've read a character too much from the input stream
 	void			retract();
 	
+	// match, check if the look-a-head token is really what we expect here.
+	// throws if it isn't. Depending on the content flag we call either get_next_token or get_next_content
+	// to find the next look-a-head token.
 	void			match(int token, bool content = false);
-	
-	void			push_state();
 
-	void			pop_state();
-
+	// Sometimes we need to reuse our parser/scanner to parse an external entity e.g.
+	// We use stack based state objects to store the current state.	
 	struct parser_state
 	{
-						parser_state()
-							: m_lookahead(0), m_data_source(nullptr), m_version(1.0f), m_encoding(enc_UTF8), m_next(nullptr) {}
+						parser_state(parser_imp* imp, data_ptr source)
+							: m_impl(imp)
+							, m_lookahead(0)
+							, m_data_source(source)
+							, m_version(1.0f)
+							, m_encoding(enc_UTF8)
+							, m_external_subset(true)
+						{
+							swap(m_impl->m_lookahead,		m_lookahead);
+							swap(m_impl->m_token, 			m_token);					
+							swap(m_impl->m_data_source,		m_data_source);
+							swap(m_impl->m_buffer,			m_buffer);
+							swap(m_impl->m_version,			m_version);
+							swap(m_impl->m_encoding,		m_encoding);
+							swap(m_impl->m_external_subset,	m_external_subset);
+						}
+						
+						~parser_state()
+						{
+							swap(m_impl->m_lookahead,		m_lookahead);
+							swap(m_impl->m_token, 			m_token);					
+							swap(m_impl->m_data_source,		m_data_source);
+							swap(m_impl->m_buffer,			m_buffer);
+							swap(m_impl->m_version,			m_version);
+							swap(m_impl->m_encoding,		m_encoding);
+							swap(m_impl->m_external_subset,	m_external_subset);
+						}
 		
+		parser_imp*		m_impl;
 		int				m_lookahead;
-		data_source*	m_data_source;
+		data_ptr		m_data_source;
 		stack<wchar_t>	m_buffer;
 		wstring			m_token;
 		float			m_version;
 		Encoding		m_encoding;
-		
-		parser_state*	m_next;
+		bool			m_external_subset;
 	};
 
-	parser_state*	m_saved_state;
-	
+	// And during parsing we keep track of the namespaces we encounter.
 	struct ns_state
 	{
 					ns_state(parser_imp* imp)
@@ -859,7 +920,7 @@ struct parser_imp
 		wstring		default_ns()
 					{
 						wstring result = m_default_ns;
-						if (result.empty() and m_next != nullptr)
+						if (result.empty() and m_next != nil)
 							result = m_next->default_ns();
 						return result;
 					}
@@ -870,7 +931,7 @@ struct parser_imp
 						
 						if (m_known.find(prefix) != m_known.end())
 							result = m_known[prefix];
-						else if (m_next != nullptr)
+						else if (m_next != nil)
 							result = m_next->ns_for_prefix(prefix);
 						
 						return result;
@@ -878,7 +939,7 @@ struct parser_imp
 	};
 	
 	int				m_lookahead;
-	data_source*	m_data_source;
+	data_ptr		m_data_source;
 	stack<wchar_t>	m_buffer;
 	wstring			m_token;
 	wstring			m_pi_target;
@@ -887,8 +948,9 @@ struct parser_imp
 	wstring			m_standalone;
 	parser&			m_parser;
 	ns_state*		m_ns;
-	bool			m_in_doctype;
+	bool			m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
 	bool			m_external_subset;
+	bool			m_in_element;
 
 	struct parsed_entity
 	{
@@ -900,7 +962,19 @@ struct parser_imp
 
 	ParameterEntityMap	 m_parameter_entities;
 	
-	typedef map<wstring,wstring>			EntityMap;
+	struct general_entity
+	{
+					general_entity()
+						: m_external(true) {}
+		
+					general_entity(const wstring& text, bool external = false)
+						: m_entity_text(text), m_external(external) {}
+		
+		wstring		m_entity_text;
+		bool		m_external;
+	};
+	
+	typedef map<wstring,general_entity>		EntityMap;
 
 	EntityMap		m_general_entities;
 	
@@ -912,33 +986,31 @@ struct parser_imp
 parser_imp::parser_imp(
 	istream&		data,
 	parser&			parser)
-	: m_parser(parser)
-	, m_ns(nullptr)
+	: m_lookahead(xml_Eof)
+	, m_data_source(new istream_data_source(data, data_ptr()))
+	, m_version(1.0f)
+	, m_encoding(enc_UTF8)
+	, m_parser(parser)
+	, m_ns(nil)
 	, m_in_doctype(false)
 	, m_external_subset(false)
+	, m_in_element(false)
 {
-	m_data_source = new istream_data_source(data, nullptr);
-	
-	m_general_entities[L"lt"] = L"&#60;";
-	m_general_entities[L"gt"] = L"&#62;";
-	m_general_entities[L"amp"] = L"&#38;";
-	m_general_entities[L"apos"] = L"&#39;";
-	m_general_entities[L"quot"] = L"&#34;";
+	// these entities are always recognized:
+	m_general_entities[L"lt"] = general_entity(L"&#60;");
+	m_general_entities[L"gt"] = general_entity(L"&#62;");
+	m_general_entities[L"amp"] = general_entity(L"&#38;");
+	m_general_entities[L"apos"] = general_entity(L"&#39;");
+	m_general_entities[L"quot"] = general_entity(L"&#34;");
 }
 
 parser_imp::~parser_imp()
 {
-	while (m_data_source != nullptr)
-	{
-		data_source* next = m_data_source->next_data_source();
-		delete m_data_source;
-		m_data_source = next;
-	}
-
 	for (DocTypeMap::iterator de = m_doctype.begin(); de != m_doctype.end(); ++de)
 		delete de->second;
 }
 
+// wstring_to_string is a very simplistic UCS4 to UTF-8 converter
 string parser_imp::wstring_to_string(const wstring& s)
 {
 	string result;
@@ -973,41 +1045,6 @@ string parser_imp::wstring_to_string(const wstring& s)
 	return result;
 }
 
-void parser_imp::push_state()
-{
-	parser_state* state = new parser_state();
-	
-	swap(state->m_lookahead,	m_lookahead);
-	swap(state->m_token, 		m_token);					
-	swap(state->m_data_source,	m_data_source);
-	swap(state->m_buffer,		m_buffer);
-	swap(state->m_version,		m_version);
-	swap(state->m_encoding,		m_encoding);
-
-	state->m_next = m_saved_state;
-	m_saved_state = state;
-}
-
-void parser_imp::pop_state()
-{
-	assert(m_saved_state);
-
-	if (m_saved_state != nullptr)
-	{
-		parser_state* state = m_saved_state;
-		m_saved_state = state->m_next;
-
-		swap(state->m_lookahead,	m_lookahead);
-		swap(state->m_token, 		m_token);					
-		swap(state->m_data_source,	m_data_source);
-		swap(state->m_buffer,		m_buffer);
-		swap(state->m_version,		m_version);
-		swap(state->m_encoding,		m_encoding);
-
-		delete state;
-	}
-}
-
 wchar_t parser_imp::get_next_char()
 {
 	wchar_t result = 0;
@@ -1017,20 +1054,23 @@ wchar_t parser_imp::get_next_char()
 		result = m_buffer.top();
 		m_buffer.pop();
 	}
-	else
-	{
-		while (result == 0 and m_data_source != nullptr)
-		{
-			result = m_data_source->get_next_char();
+	else if (m_data_source != nil)
+		result = m_data_source->get_next_char();
 	
-			if (result == 0)
-			{
-				data_source* next = m_data_source->next_data_source();
-				delete m_data_source;
-				m_data_source = next;
-			}
-		}
+	if (result == 0x0ffff or result == 0x0fffe)
+		throw exception("character ffff is not allowed in xml");
+
+	// surrogate support
+	if (result >= 0x0D800 and result <= 0x0DBFF)
+	{
+		wchar_t uc2 = get_next_char();
+		if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
+			result = (result - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
+		else
+			throw exception("leading surrogate character without trailing surrogate character");
 	}
+	else if (result >= 0x0DC00 and result <= 0x0DFFF)
+		throw exception("trailing surrogate character without a leading surrogate");
 	
 	m_token += result;
 	
@@ -1077,7 +1117,7 @@ void parser_imp::match(int token, bool content)
 			replacement += r->second.m_entity_text;
 			replacement += ' ';
 			
-			m_data_source = new wstring_data_source(replacement, m_data_source);
+			m_data_source.reset(new wstring_data_source(replacement, m_data_source));
 			m_data_source->base_dir(r->second.m_entity_path);
 			
 			match(xml_PEReference);
@@ -1087,16 +1127,10 @@ void parser_imp::match(int token, bool content)
 
 /*
 	get_next_token is a hand optimised scanner for tokens in the input stream.
-	
-	Original code was a classic scanner as taught in the Dragon Book, but the
-	state 'table' was optimised by hand.
 */
 
 int parser_imp::get_next_token()
 {
-	int token = xml_Undef;
-	wchar_t quote_char;
-	
 	enum State {
 		state_Start				= 0,
 		state_WhiteSpace		= 10,
@@ -1109,6 +1143,9 @@ int parser_imp::get_next_token()
 		state_DocTypeDecl		= 80,
 		state_PI				= 90,
 	};
+
+	int token = xml_Undef;
+	wchar_t quote_char;
 	int state = state_Start;
 
 	m_token.clear();
@@ -1168,7 +1205,7 @@ int parser_imp::get_next_token()
 			case state_CommentOrDoctype:
 				if (uc == '-')
 					state = state_Comment;
-				else if (uc == '[' and m_in_doctype)
+				else if (uc == '[' and m_external_subset)
 					token = xml_IncludeIgnore;
 				else if (is_name_start_char(uc))
 					state = state_DocTypeDecl;
@@ -1222,6 +1259,8 @@ int parser_imp::get_next_token()
 					// we treat the xml processing instruction separately.
 					if (m_pi_target == L"xml")
 						token = xml_XMLDecl;
+					else if (ba::to_lower_copy(m_pi_target) == L"xml")
+						throw exception("<?XML is neither an XML declaration nor a legal processing instruction target");
 					else
 						state += 1;
 				}
@@ -1320,10 +1359,6 @@ int parser_imp::get_next_token()
 
 int parser_imp::get_next_content()
 {
-	int token = xml_Undef;
-	
-	m_token.clear();
-	
 	enum State
 	{
 		state_Start			= 10,
@@ -1335,12 +1370,16 @@ int parser_imp::get_next_content()
 		state_CommentOrCDATA
 							= 70,
 		state_Comment		= 80,
-		state_CDATA			= 90
+		state_CDATA			= 90,
+		state_Illegal		= 100
 	};
 
+	int token = xml_Undef;
 	int state = state_Start;
 	wchar_t charref = 0;
 	
+	m_token.clear();
+
 	while (token == xml_Undef)
 	{
 		wchar_t uc = get_next_char();
@@ -1354,17 +1393,23 @@ int parser_imp::get_next_content()
 					state = state_Tag;			// beginning of a tag
 				else if (uc == '&')
 					state = state_Reference;	// a &reference;
-				else
+				else if (uc == ']')
+					state = state_Illegal;		// avoid ]]> in text
+				else if (is_char(uc))
 					state = state_Content;		// anything else
 				break;
 			
 			// content. Only stop collecting character when uc is special
 			case state_Content:
-				if (uc == 0 or uc == '<' or uc == '&')
+				if (uc == ']')
+					state = state_Illegal;
+				else if (uc == 0 or uc == '<' or uc == '&')
 				{
 					retract();
 					token = xml_Content;
 				}
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				break;
 			
 			// beginning of a tag?
@@ -1385,25 +1430,43 @@ int parser_imp::get_next_content()
 			// processing instructions
 			case state_PI:
 				if (is_name_start_char(uc))
+				{
+					m_pi_target = uc;
 					state += 1;
+				}
 				else
 					throw exception("expected target in processing instruction");
 				break;
 			
 			case state_PI + 1:
+				if (is_name_char(uc))
+					m_pi_target += uc;
+				else if (uc == 0)
+					throw exception("runaway processing instruction");
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
+				else
+					state += 1;
+				break;
+			
+			case state_PI + 2:
 				if (uc == '?')
 					state += 1;
 				else if (uc == 0)
 					throw exception("runaway processing instruction");
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				break;
 			
-			case state_PI + 2:
+			case state_PI + 3:
 				if (uc == '>')
 					token = xml_PI;
 				else if (uc == 0)
 					throw exception("runaway processing instruction");
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				else if (uc != '?')
-					state = state_PI + 1;
+					state = state_PI + 2;
 				break;
 
 			// comment or CDATA			
@@ -1428,6 +1491,8 @@ int parser_imp::get_next_content()
 					state += 1;
 				else if (uc == 0)
 					throw exception("runaway comment");
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				break;
 			
 			case state_Comment + 2:
@@ -1435,6 +1500,8 @@ int parser_imp::get_next_content()
 					state += 1;
 				else if (uc == 0)
 					throw exception("runaway processing instruction");
+				else if (not is_char(uc))
+					throw exception("Illegal character in content text");
 				else
 					state -= 1;
 				break;
@@ -1526,6 +1593,8 @@ int parser_imp::get_next_content()
 					charref = charref * 10 + (uc - '0');
 				else if (uc == ';')
 				{
+					if (not is_char(charref))
+						throw exception("Illegal character in content text");
 					m_token = charref;
 					token = xml_Content;
 				}
@@ -1562,17 +1631,40 @@ int parser_imp::get_next_content()
 					charref = (charref << 4) + (uc - '0');
 				else if (uc == ';')
 				{
+					if (not is_char(charref))
+						throw exception("Illegal character in content text");
 					m_token = charref;
 					token = xml_Content;
 				}
 				else
 					throw exception("invalid character reference");
 				break;
+			
+			// ]]> is illegal
+			case state_Illegal:
+				if (uc == ']')
+					state += 1;
+				else if (is_char(uc))
+					state = state_Content;
+				else
+					throw exception("Illegal character in content text");
+				break;
+					
+			case state_Illegal + 1:
+				if (uc == '>')
+					throw exception("the sequence ']]>' is illegal in content text");
+				else if (uc != ']')
+				{
+					if (is_char(uc))
+						state = state_Content;
+					else
+						throw exception("Illegal character in content text");
+				}
+				break;
 
 			default:
 				assert(false);
 				throw exception("state reached that should not be reachable");
-
 		}
 	}
 	
@@ -1583,23 +1675,9 @@ void parser_imp::parse()
 {
 	m_lookahead = get_next_token();
 	
-	// first parse the xmldecl
-	
 	prolog();
-	
 	element();
-
-	if (m_lookahead == xml_Content)
-	{
-		ba::trim(m_token);
-		if (not m_token.empty())
-			throw exception("content following last element");
-		match(xml_Content);
-	}
-
-	// misc
-	while (m_lookahead == xml_Space or m_lookahead == xml_Comment or m_lookahead == xml_PI)
-		misc();
+	misc();
 	
 	if (m_lookahead != xml_Eof)
 		throw exception("garbage at end of file");
@@ -1623,6 +1701,7 @@ void parser_imp::xml_decl()
 	if (m_lookahead == xml_XMLDecl)
 	{
 		match(xml_XMLDecl);
+	
 		s(true);
 		if (m_token != L"version")
 			throw exception("expected a version attribute in XML declaration");
@@ -1632,14 +1711,14 @@ void parser_imp::xml_decl()
 		if (m_version >= 2.0 or m_version < 1.0)
 			throw exception("This library only supports XML version 1.x");
 		match(xml_String);
-	
+
 		while (m_lookahead == xml_Space)
 		{
 			s(true);
 			
 			if (m_lookahead != xml_Name)
 				break;
-			
+
 			if (m_token == L"encoding")
 			{
 				match(xml_Name);
@@ -1650,11 +1729,14 @@ void parser_imp::xml_decl()
 				else if (m_token == L"UTF-16")
 				{
 					if (m_encoding != enc_UTF16LE and m_encoding != enc_UTF16BE)
-//						throw exception("Inconsistent encoding attribute in XML declaration");
-						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
+						throw exception("Inconsistent encoding attribute in XML declaration");
+//						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
+					m_encoding = enc_UTF16BE;
 				}
-				else if (m_token == L"ISO-8859-1")
-					m_encoding = enc_ISO88591;
+//				else if (m_token == L"ISO-8859-1")
+//					m_encoding = enc_ISO88591;
+				else
+					throw exception("Unsupported encoding value %s", wstring_to_string(m_token).c_str());
 				match(xml_String);
 				continue;
 			}
@@ -1718,24 +1800,6 @@ void parser_imp::text_decl()
 	}
 }
 
-void parser_imp::s(bool at_least_one)
-{
-	if (at_least_one)
-		match(xml_Space);
-	
-	while (m_lookahead == xml_Space)
-		match(xml_Space);
-}
-
-void parser_imp::eq()
-{
-	s();
-
-	match('=');
-
-	s();
-}
-
 void parser_imp::misc()
 {
 	for (;;)
@@ -1767,7 +1831,7 @@ void parser_imp::doctypedecl()
 	wstring name = m_token;
 	match(xml_Name);
 
-	auto_ptr<data_source> dtd;
+	data_ptr dtd;
 
 	if (m_lookahead == xml_Space)
 	{
@@ -1775,7 +1839,7 @@ void parser_imp::doctypedecl()
 		
 		if (m_lookahead == xml_Name)
 		{
-			dtd.reset(external_id());
+			dtd = external_id();
 			match(xml_String);
 		}
 		
@@ -1793,23 +1857,21 @@ void parser_imp::doctypedecl()
 
 	// internal subset takes precedence over external subset, so
 	// if the external subset is defined, include it here.
-	if (dtd.get() != nullptr)
+	if (dtd)
 	{
 		// save the parser state
-		push_state();
+		parser_state save(this, dtd);
 		
-		m_data_source = dtd.release();
+		m_data_source = dtd;
 		
 		match(m_lookahead);
 		
 		text_decl();
 		
 		extsubset();
-		
+
 		if (m_lookahead != xml_Eof)
 			throw exception("Error parsing external dtd");
-		
-		pop_state();
 	}
 
 	match('>');
@@ -1829,7 +1891,7 @@ void parser_imp::intsubset()
 			case xml_Notation:
 			case xml_PI:
 			case xml_Comment:
-				markupdecl();
+				markup_decl();
 				continue;
 			
 			case xml_Space:
@@ -1843,8 +1905,6 @@ void parser_imp::intsubset()
 
 void parser_imp::extsubset()
 {
-	m_external_subset = true;
-
 	for (;;)
 	{
 		switch (m_lookahead)
@@ -1855,7 +1915,7 @@ void parser_imp::extsubset()
 			case xml_Notation:
 			case xml_PI:
 			case xml_Comment:
-				markupdecl();
+				markup_decl();
 				continue;
 			
 			case xml_IncludeIgnore:
@@ -1869,8 +1929,6 @@ void parser_imp::extsubset()
 		
 		break;
 	}
-
-	m_external_subset = false;
 }
 
 void parser_imp::conditionalsect()
@@ -1976,7 +2034,7 @@ void parser_imp::ignoresectcontents()
 	
 }
 
-void parser_imp::markupdecl()
+void parser_imp::markup_decl()
 {
 	switch (m_lookahead)
 	{
@@ -2042,9 +2100,13 @@ void parser_imp::contentspec(doctype_element& element)
 		match('(');
 		
 		s();
+		
+		bool mixed = false;
 
 		if (m_lookahead == '#')	// Mixed
 		{
+			mixed = true;
+			
 			match(m_lookahead);
 			if (m_token != L"PCDATA")
 				throw exception("Invalid element content specification, expected #PCDATA");
@@ -2091,7 +2153,7 @@ void parser_imp::contentspec(doctype_element& element)
 		s();
 		match(')');
 		
-		if (m_lookahead == '*' or m_lookahead == '+' or m_lookahead == '?')
+		if (m_lookahead == '*' or (not mixed and (m_lookahead == '+' or m_lookahead == '?')))
 			match(m_lookahead);
 	}
 }
@@ -2198,6 +2260,7 @@ void parser_imp::general_entity_decl()
 	
 	fs::path path; // not used
 	wstring value;
+	bool external = false;
 
 	if (m_lookahead == xml_String)
 	{
@@ -2210,6 +2273,7 @@ void parser_imp::general_entity_decl()
 	{
 		boost::tie(path, value) = read_external_id();
 		match(xml_String);
+		external = true;
 
 		if (m_lookahead == xml_Space)
 		{
@@ -2228,7 +2292,7 @@ void parser_imp::general_entity_decl()
 	match('>');
 	
 	if (m_general_entities.find(name) == m_general_entities.end())
-		m_general_entities[name] = value;
+		m_general_entities[name] = general_entity(value, external);
 }
 
 void parser_imp::attlist_decl()
@@ -2356,32 +2420,35 @@ void parser_imp::attlist_decl()
 		
 		// att def
 
-		s();
-		
-		if (m_lookahead == '#')
+		if (m_lookahead != '>')
 		{
-			match(m_lookahead);
-			wstring def = m_token;
-			match(xml_Name);
-
-			if (def == L"REQUIRED")
-				attribute->set_default(attDefRequired, L"");
-			else if (def == L"IMPLIED")
-				attribute->set_default(attDefImplied, L"");
-			else if (def == L"FIXED")
+			s(true);
+			
+			if (m_lookahead == '#')
 			{
-				s();
-				
-				attribute->set_default(attDefFixed, normalize_attribute_value(m_token));
-				match(xml_String);
+				match(m_lookahead);
+				wstring def = m_token;
+				match(xml_Name);
+	
+				if (def == L"REQUIRED")
+					attribute->set_default(attDefRequired, L"");
+				else if (def == L"IMPLIED")
+					attribute->set_default(attDefImplied, L"");
+				else if (def == L"FIXED")
+				{
+					s();
+					
+					attribute->set_default(attDefFixed, normalize_attribute_value(m_token));
+					match(xml_String);
+				}
+				else
+					throw exception("invalid attribute default");
 			}
 			else
-				throw exception("invalid attribute default");
-		}
-		else
-		{
-			attribute->set_default(attDefNone, normalize_attribute_value(m_token));
-			match(xml_String);
+			{
+				attribute->set_default(attDefNone, normalize_attribute_value(m_token));
+				match(xml_String);
+			}
 		}
 		
 		e->add_attribute(attribute.release());
@@ -2415,6 +2482,10 @@ void parser_imp::notation_decl()
 		pubid = m_token;
 		match(xml_String);
 		
+		// validate the public ID
+		if (pubid.find_first_not_of(L" \r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVSXYZ0123456789-'()+,./:=?;!*#@$_%") != string::npos)
+			throw exception("Invalid public ID");
+		
 		s();
 		
 		if (m_lookahead == xml_String)
@@ -2430,9 +2501,9 @@ void parser_imp::notation_decl()
 	match('>');
 }
 
-data_source* parser_imp::external_id()
+data_ptr parser_imp::external_id()
 {
-	data_source* result = nullptr;
+	data_ptr result;
 	wstring pubid, system;
 	
 	if (m_token == L"SYSTEM")
@@ -2449,6 +2520,10 @@ data_source* parser_imp::external_id()
 		
 		pubid = m_token;
 		match(xml_String);
+
+		// validate the public ID
+		if (pubid.find_first_not_of(L" \r\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVSXYZ0123456789-'()+,./:=?;!*#@$_%") != string::npos)
+			throw exception("Invalid public ID");
 		
 		s(true);
 		system = m_token;
@@ -2465,19 +2540,17 @@ data_source* parser_imp::external_id()
 		is.reset(m_parser.find_external_dtd(pubid, system));
 		
 		// if that fails, we try it ourselves
-		if (is.get() == nullptr)
+		if (is.get() == nil)
 		{
 			path = fs::system_complete(m_data_source->base_dir() / wstring_to_string(system));
 	
 			if (fs::exists(path))
 				is.reset(new fs::ifstream(path));
-//			else if (VERBOSE)
-//				cerr << "could not resolve external file " << path << endl;
 		}
 		
-		if (is.get() != nullptr)
+		if (is.get() != nil)
 		{
-			result = new istream_data_source(is, nullptr);
+			result.reset(new istream_data_source(is));
 			
 			if (fs::exists(path) and fs::exists(path.branch_path()))
 				result->base_dir(path.branch_path());
@@ -2490,41 +2563,23 @@ data_source* parser_imp::external_id()
 boost::tuple<fs::path,wstring> parser_imp::read_external_id()
 {
 	wstring result;
+	fs::path path;
 
-	data_source* source = external_id();
-	fs::path path = m_data_source->base_dir();
+	parser_state save(this, external_id());
 	
-	push_state();
-	
-	try
+	if (m_data_source)
 	{
-		if (source != nullptr)
-		{
-			// juggle the data source, replace the current
-			// with the just opened one.
-
-			path = source->base_dir();
-			
-			m_data_source = source;
-			m_lookahead = get_next_token();
-
-			text_decl();
-			
-			result = m_token;
+		path = m_data_source->base_dir();
 		
-			while (wchar_t ch = get_next_char())
-				result += ch;
-		}
-	}
-	catch (...)
-	{
-		delete source;
-		pop_state();
-		throw;
-	}
+		m_lookahead = get_next_token();
+
+		text_decl();
+		
+		result = m_token;
 	
-	// restore the state
-	pop_state();
+		while (wchar_t ch = get_next_char())
+			result += ch;
+	}
 	
 	return boost::make_tuple(path, result);
 }
@@ -2548,8 +2603,13 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 					state = 1;
 				else if (c == '%')
 				{
-					name.clear();
-					state = 20;
+					if (m_external_subset)
+					{
+						name.clear();
+						state = 20;
+					}
+					else
+						throw exception("parameter entities may not occur in declarations that are not in an external subset");
 				}
 				else
 					result += c;
@@ -2674,8 +2734,13 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 					state = 1;
 				else if (c == '%')
 				{
-					name.clear();
-					state = 20;
+					if (m_external_subset)
+					{
+						name.clear();
+						state = 20;
+					}
+					else
+						throw exception("parameter entities may not occur in declarations that are not in an external subset");
 				}
 				else
 					result += c;
@@ -2793,7 +2858,7 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 	swap(s, result);
 }
 
-wstring parser_imp::normalize_attribute_value(data_source* data)
+wstring parser_imp::normalize_attribute_value(data_ptr data)
 {
 	wstring result;
 	
@@ -2807,6 +2872,9 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 		
 		if (c == 0)
 			break;
+		
+		if (c == '<')
+			throw exception("Attribute values may not contain '<' character");
 		
 		switch (state)
 		{
@@ -2846,6 +2914,8 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 					charref = charref * 10 + (c - '0');
 				else if (c == ';')
 				{
+					if (charref == '<')
+						throw exception("Attribute values may not contain '<' character");
 					result += charref;
 					state = 0;
 				}
@@ -2882,6 +2952,8 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 					charref = (charref << 4) + (c - '0');
 				else if (c == ';')
 				{
+					if (charref == '<')
+						throw exception("Attribute values may not contain '<' character");
 					result += charref;
 					state = 0;
 				}
@@ -2899,8 +2971,11 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 					if (e == m_general_entities.end())
 						throw exception("undefined entity reference %s", wstring_to_string(name).c_str());
 					
-					entity_data_source next_data(name, m_data_source->base_dir(), e->second, data);
-					wstring replacement = normalize_attribute_value(&next_data);
+					if (e->second.m_external)
+						throw exception("attribute value may not contain external entity reference");
+					
+					data_ptr next_data(new entity_data_source(name, m_data_source->base_dir(), e->second.m_entity_text, data));
+					wstring replacement = normalize_attribute_value(next_data);
 					result += replacement;
 
 					state = 0;
@@ -2925,6 +3000,9 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 
 void parser_imp::element()
 {
+	bool saved_in_element = m_in_element;
+	m_in_element = true;
+	
 	match(xml_STag);
 	wstring name = m_token;
 	match(xml_Name);
@@ -2934,6 +3012,7 @@ void parser_imp::element()
 	list<pair<wstring,wstring> > attrs;
 	
 	ns_state ns(this);
+	set<wstring> seen;
 	
 	for (;;)
 	{
@@ -2947,6 +3026,10 @@ void parser_imp::element()
 		
 		wstring attr_name = m_token;
 		match(xml_Name);
+		
+		if (seen.count(attr_name) > 0)
+			throw exception("multiple values for attribute %s", wstring_to_string(attr_name).c_str());
+		seen.insert(attr_name);
 		
 		eq();
 
@@ -2969,10 +3052,10 @@ void parser_imp::element()
 		}
 		else
 		{
-			if (dte != nullptr)
+			if (dte != nil)
 			{
 				doctype_attribute* dta = dte->get_attribute(attr_name);
-				if (dta != nullptr and not dta->validate_value(attr_value))
+				if (dta != nil and not dta->validate_value(attr_value))
 					throw exception("invalid value for attribute");
 			}
 			
@@ -2981,7 +3064,7 @@ void parser_imp::element()
 	}
 	
 	// add missing attributes
-	if (dte != nullptr)
+	if (dte != nil)
 	{
 		const vector<doctype_attribute*>& dtattrs = dte->attributes();
 		
@@ -2994,23 +3077,26 @@ void parser_imp::element()
 			list<pair<wstring,wstring> >::iterator attr = find_if(attrs.begin(), attrs.end(),
 				boost::bind(&pair<wstring,wstring>::first, _1) == name);
 			
-			pair<AttributeDefault,wstring> def = dta->get_default();
+			AttributeDefault defType;
+			wstring defValue;
 			
-			if (def.first == attDefRequired)
+			boost::tie(defType, defValue) = dta->get_default();
+			
+			if (defType == attDefRequired)
 			{
 //				if (attr == attrs.end() and VERBOSE)
 //					cerr << "missing required attribute" << endl;
 			}
-			else if (not def.second.empty() and attr == attrs.end())
+			else if (not defValue.empty() and attr == attrs.end())
 			{
-				wstring attr_value = normalize_attribute_value(def.second);
+				wstring attr_value = normalize_attribute_value(defValue);
 				attrs.push_back(make_pair(name, attr_value));
 			}
 		}
 	}
 	
 	// now find out the namespace we're supposed to pass
-	wstring uri;
+	wstring uri, raw(name);
 	list<wstring> qname;
 	ba::split(qname, name, ba::is_any_of(L":"));
 	if (qname.size() == 2)
@@ -3024,10 +3110,7 @@ void parser_imp::element()
 	if (m_lookahead == '/')
 	{
 		match('/');
-		match('>', true);
-		
 		m_parser.start_element(name, uri, attrs);
-
 		m_parser.end_element(name, uri);
 	}
 	else
@@ -3036,33 +3119,32 @@ void parser_imp::element()
 		
 		match('>', true);
 
-		content();
+		if (m_lookahead != xml_ETag)
+			content();
 		
 		match(xml_ETag);
 		
-#pragma warning("re-add check")
-//		if (name != m_token)
-//			throw exception("end tag does not match start tag");
+		if (m_token != raw)
+			throw exception("end tag does not match start tag");
 		
 		match(xml_Name);
 
-		while (m_lookahead == xml_Space)
-			match(m_lookahead);
-		
-		match('>', true);
+		s();
 		
 		m_parser.end_element(name, uri);
 	}
 	
-	while (m_lookahead == xml_Space)
-		match(m_lookahead);
+	m_in_element = saved_in_element;
+	match('>', m_in_element);
+	
+	s();
 }
 
 void parser_imp::content()
 {
 	wstring data;
 	
-	while (m_lookahead != xml_ETag and m_lookahead != xml_Eof)
+	do
 	{
 		switch (m_lookahead)
 		{
@@ -3080,11 +3162,21 @@ void parser_imp::content()
 				if (m_data_source->is_entity_on_stack(m_token))
 					throw exception("infinite recursion of entity references");
 				
-				m_data_source = new entity_data_source(m_token, m_data_source->base_dir(), e->second, m_data_source);
-
-				match(xml_Reference, true);
+				// scope
+				{
+					data_ptr source(new entity_data_source(m_token, m_data_source->base_dir(), e->second.m_entity_text, m_data_source));
 				
-				s();
+					parser_state state(this, source);
+					
+					m_lookahead = get_next_content();
+					
+					content();
+
+					if (m_lookahead != xml_Eof)
+						throw exception("entity reference should be a valid content production");
+				}
+				
+				match(xml_Reference, true);
 				break;
 			}
 			
@@ -3093,7 +3185,12 @@ void parser_imp::content()
 				break;
 			
 			case xml_PI:
-				m_parser.processing_instruction(m_pi_target, m_token);
+				if (m_pi_target == L"xml")	// <?xml declaration, not allowed here
+					throw exception("<?xml declaration not allowed in content");
+				else if (ba::to_lower_copy(m_pi_target) == L"xml")
+					throw exception("<?XML is neither an XML declaration nor a legal processing instruction target");
+				else
+					m_parser.processing_instruction(m_pi_target, m_token);
 				match(xml_PI, true);
 				break;
 			
@@ -3115,9 +3212,16 @@ void parser_imp::content()
 
 		}
 	}
+	while (m_lookahead != xml_ETag and m_lookahead != xml_Eof);
 }
 
 // --------------------------------------------------------------------
+
+basic_parser_base::~basic_parser_base()
+{
+	delete m_impl;
+	delete m_istream;
+}
 
 string basic_parser_base::wstring_to_string(const wstring& s)
 {
@@ -3126,14 +3230,14 @@ string basic_parser_base::wstring_to_string(const wstring& s)
 
 template<>
 basic_parser<char>::basic_parser(istream& data)
-	: basic_parser_base(new parser_imp(data, *this), nullptr)
+	: basic_parser_base(new parser_imp(data, *this), nil)
 	, m_traits(*this)
 {
 }
 
 template<>
 basic_parser<char>::basic_parser(const string& data)
-	: basic_parser_base(nullptr, nullptr)
+	: basic_parser_base(nil, nil)
 	, m_traits(*this)
 {
 	m_istream = new istringstream(data);
@@ -3143,8 +3247,6 @@ basic_parser<char>::basic_parser(const string& data)
 template<>
 basic_parser<char>::~basic_parser()
 {
-	delete m_impl;
-	delete m_istream;
 }
 
 template<>
