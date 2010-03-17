@@ -520,19 +520,13 @@ class entity_data_source : public wstring_data_source
 class parameter_entity_data_source : public wstring_data_source
 {
   public:
-					parameter_entity_data_source(const wstring& data, const fs::path& base, int production, data_ptr next = data_ptr())
+					parameter_entity_data_source(const wstring& data, const fs::path& base, data_ptr next = data_ptr())
 						: wstring_data_source(wstring(L" ") + data + L" ", next)
-						, m_production(production)
 					{
 						base_dir(base);
 					}
 
 	virtual bool	auto_discard() const							{ return true; }
-	
-	int				production() const								{ return m_production; }
-
-  private:
-	int				m_production;
 };
 
 // --------------------------------------------------------------------
@@ -552,6 +546,7 @@ enum AttributeType
 	attTypeTokenizedENTITIES,
 	attTypeTokenizedNMTOKEN,
 	attTypeTokenizedNMTOKENS,
+	attTypeNotation,
 	attTypeEnumerated
 };
 
@@ -570,8 +565,8 @@ class doctype_attribute : public boost::noncopyable
 						doctype_attribute(const wstring& name, AttributeType type)
 							: m_name(name), m_type(type), m_default(attDefNone) {}
 
-						doctype_attribute(const wstring& name, const vector<wstring>& enums)
-							: m_name(name), m_type(attTypeEnumerated), m_default(attDefNone), m_enum(enums) {}
+						doctype_attribute(const wstring& name, AttributeType type, const vector<wstring>& enums)
+							: m_name(name), m_type(type), m_default(attDefNone), m_enum(enums) {}
 
 	wstring				name() const							{ return m_name; }
 
@@ -585,6 +580,11 @@ class doctype_attribute : public boost::noncopyable
 
 	boost::tuple<AttributeDefault,wstring>
 						get_default() const						{ return boost::make_tuple(m_default, m_default_value); }
+	
+	AttributeType		get_type() const						{ return m_type; }
+	AttributeDefault	get_default_type() const				{ return m_default; }
+	const vector<wstring>&
+						get_enums() const						{ return m_enum; }
 	
   private:
 
@@ -734,11 +734,14 @@ bool doctype_attribute::validate_value(wstring& value)
 		result = is_nmtoken(value);
 	else if (m_type == attTypeTokenizedNMTOKENS)
 		result = is_nmtokens(value);
-	else if (m_type == attTypeEnumerated)
+	else if (m_type == attTypeEnumerated or m_type == attTypeNotation)
 	{
 		ba::trim(value);
 		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
 	}
+	
+	if (result and m_default == attDefFixed and value != m_default_value)
+		result = false;
 	
 	return result;
 }
@@ -928,16 +931,15 @@ struct parser_imp
 							, m_encoding(enc_UTF8)
 							, m_external_subset(true)
 						{
-							swap(m_impl->m_lookahead,		m_lookahead);
-							swap(m_impl->m_token, 			m_token);					
-							swap(m_impl->m_data_source,		m_data_source);
-							swap(m_impl->m_buffer,			m_buffer);
-							swap(m_impl->m_version,			m_version);
-							swap(m_impl->m_encoding,		m_encoding);
-							swap(m_impl->m_external_subset,	m_external_subset);
+							swap_state();
 						}
 						
 						~parser_state()
+						{
+							swap_state();
+						}
+		
+		void			swap_state()
 						{
 							swap(m_impl->m_lookahead,		m_lookahead);
 							swap(m_impl->m_token, 			m_token);					
@@ -1013,8 +1015,6 @@ struct parser_imp
 	wstring			m_standalone;
 	parser&			m_parser;
 	ns_state*		m_ns;
-	int				m_production;			// each production is numbered to check for well-formedness
-	int				m_next_production;
 	bool			m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
 	bool			m_external_subset;
 	bool			m_in_element;
@@ -1086,8 +1086,6 @@ parser_imp::parser_imp(
 	, m_encoding(enc_UTF8)
 	, m_parser(parser)
 	, m_ns(nil)
-	, m_production(0)
-	, m_next_production(0)
 	, m_in_doctype(false)
 	, m_external_subset(false)
 	, m_in_element(false)
@@ -1131,17 +1129,7 @@ wchar_t parser_imp::get_next_char()
 		if (result == 0)
 		{
 			if (m_data_source->auto_discard())
-			{
-				// m_data_source must be a parameter_entity_data_source
-				// check to see if we nesting is done properly.
-				
-				parameter_entity_data_source* pe_source = dynamic_cast<parameter_entity_data_source*>(m_data_source.get());
-				assert(pe_source);
-				if (pe_source->production() != m_production)
-					not_valid(L"Proper nesting violation");
-				
 				m_data_source = m_data_source->next_data_source();
-			}
 			else
 				break;
 		}
@@ -1210,7 +1198,7 @@ void parser_imp::match(int token, bool content)
 			}
 			
 			m_data_source.reset(new parameter_entity_data_source(
-				r->second.m_entity_text, r->second.m_entity_path, m_production, m_data_source));
+				r->second.m_entity_text, r->second.m_entity_path, m_data_source));
 			
 			match(xml_PEReference);
 		}
@@ -1242,8 +1230,6 @@ void parser_imp::not_valid(const wstring& msg)
 
 int parser_imp::get_next_token()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	enum State {
 		state_Start				= 0,
 		state_WhiteSpace		= 10,
@@ -1476,8 +1462,6 @@ int parser_imp::get_next_token()
 
 int parser_imp::get_next_content()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	enum State
 	{
 		state_Start			= 10,
@@ -2067,6 +2051,8 @@ void parser_imp::doctypedecl()
 		
 		m_data_source = dtd;
 		
+		value_saver<bool> save_flag(m_allow_parameter_entity_references, true);
+		
 		match(m_lookahead);
 		
 		text_decl();
@@ -2084,7 +2070,24 @@ void parser_imp::doctypedecl()
 	foreach (const wstring& ndata, m_ndata)
 	{
 		if (m_notations.count(ndata) == 0)
-			not_well_formed(boost::wformat(L"Undefined NOTATION %1%") % m_token);
+			not_valid(boost::wformat(L"Undefined NOTATION %1%") % ndata);
+	}
+	
+	// and the notations in the doctype attlists
+	typedef pair<wstring,doctype_element*> doctype_element_item;
+	foreach (const doctype_element_item& element, m_doctype)
+	{
+		foreach (const doctype_attribute* attr, element.second->attributes())
+		{
+			if (attr->get_type() != attTypeNotation)
+				continue;
+			
+			foreach (const wstring& n, attr->get_enums())
+			{
+				if (m_notations.count(n) == 0)
+					not_valid(boost::wformat(L"Undefined NOTATION %1%") % n);
+			}
+		}
 	}
 }
 
@@ -2249,7 +2252,6 @@ void parser_imp::ignoresectcontents()
 void parser_imp::markup_decl()
 {
 	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, m_external_subset);
-	value_saver<int> production(m_production, ++m_next_production);
 	
 	switch (m_lookahead)
 	{
@@ -2288,8 +2290,6 @@ void parser_imp::markup_decl()
 
 void parser_imp::element_decl()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	match(xml_Element);
 	s(true);
 
@@ -2310,8 +2310,6 @@ void parser_imp::element_decl()
 
 void parser_imp::contentspec(doctype_element& element)
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	if (m_lookahead == xml_Name)
 	{
 		if (m_token != L"EMPTY" and m_token != L"ANY")
@@ -2383,8 +2381,6 @@ void parser_imp::contentspec(doctype_element& element)
 
 void parser_imp::cp()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	if (m_lookahead == '(')
 	{
 		match('(');
@@ -2430,7 +2426,6 @@ void parser_imp::cp()
 
 void parser_imp::entity_decl()
 {
-	value_saver<int> production(m_production, ++m_next_production);
 	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
 
 	match(xml_Entity);
@@ -2444,8 +2439,6 @@ void parser_imp::entity_decl()
 
 void parser_imp::parameter_entity_decl()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	match('%');
 	s(true);
 	
@@ -2485,8 +2478,6 @@ void parser_imp::parameter_entity_decl()
 
 void parser_imp::general_entity_decl()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	wstring name = m_token;
 	match(xml_Name);
 	s(true);
@@ -2534,8 +2525,6 @@ void parser_imp::general_entity_decl()
 
 void parser_imp::attlist_decl()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	match(xml_AttList);
 	s(true);
 	wstring element = m_token;
@@ -2599,7 +2588,7 @@ void parser_imp::attlist_decl()
 			
 			match(')');
 			
-			attribute.reset(new doctype_attribute(name, enums));
+			attribute.reset(new doctype_attribute(name, attTypeEnumerated, enums));
 		}
 		else
 		{
@@ -2651,7 +2640,7 @@ void parser_imp::attlist_decl()
 				
 				match(')');
 				
-				attribute.reset(new doctype_attribute(name, notations));
+				attribute.reset(new doctype_attribute(name, attTypeNotation, notations));
 			}
 			else
 				not_well_formed(L"invalid attribute type");
@@ -2662,6 +2651,8 @@ void parser_imp::attlist_decl()
 		if (m_lookahead != '>')
 		{
 			s(true);
+			
+			wstring value;
 			
 			if (m_lookahead == '#')
 			{
@@ -2677,12 +2668,11 @@ void parser_imp::attlist_decl()
 				{
 					s();
 
-					wstring value = normalize_attribute_value(m_token);
-
+					wstring value = m_token;
 					if (not value.empty() and not attribute->validate_value(value))
 					{
 						not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
-							% value % def);
+							% value % name);
 					}
 					
 					attribute->set_default(attDefFixed, value);
@@ -2693,7 +2683,13 @@ void parser_imp::attlist_decl()
 			}
 			else
 			{
-				attribute->set_default(attDefNone, normalize_attribute_value(m_token));
+				wstring value = m_token;
+				if (not value.empty() and not attribute->validate_value(value))
+				{
+					not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
+						% value % name);
+				}
+				attribute->set_default(attDefNone, value);
 				match(xml_String);
 			}
 		}
@@ -2707,8 +2703,6 @@ void parser_imp::attlist_decl()
 
 void parser_imp::notation_decl()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	match(xml_Notation);
 	s(true);
 	
@@ -2763,8 +2757,6 @@ void parser_imp::notation_decl()
 
 data_ptr parser_imp::external_id()
 {
-	value_saver<int> production(m_production, ++m_next_production);
-
 	data_ptr result;
 	wstring pubid, system;
 	
@@ -3316,7 +3308,8 @@ void parser_imp::element()
 			{
 				doctype_attribute* dta = dte->get_attribute(attr_name);
 				if (dta != nil and not dta->validate_value(attr_value))
-					not_well_formed(L"invalid value for attribute");
+					not_valid(boost::wformat(L"invalid value ('%1%') for attribute %2%")
+						% attr_name % attr_value);
 			}
 			
 			attrs.push_back(make_pair(attr_name, attr_value));
@@ -3332,10 +3325,10 @@ void parser_imp::element()
 		{
 			const doctype_attribute* dta = *a;
 			
-			wstring name = dta->name();
+			wstring attr_name = dta->name();
 			
 			list<pair<wstring,wstring> >::iterator attr = find_if(attrs.begin(), attrs.end(),
-				boost::bind(&pair<wstring,wstring>::first, _1) == name);
+				boost::bind(&pair<wstring,wstring>::first, _1) == attr_name);
 			
 			AttributeDefault defType;
 			wstring defValue;
@@ -3344,13 +3337,14 @@ void parser_imp::element()
 			
 			if (defType == attDefRequired)
 			{
-//				if (attr == attrs.end() and VERBOSE)
-//					cerr << "missing required attribute" << endl;
+				if (attr == attrs.end())
+					not_valid(boost::wformat(L"missing #REQUIRED attribute %1% for element %2%")
+						% attr_name % name);
 			}
 			else if (not defValue.empty() and attr == attrs.end())
 			{
 				wstring attr_value = normalize_attribute_value(defValue);
-				attrs.push_back(make_pair(name, attr_value));
+				attrs.push_back(make_pair(attr_name, attr_value));
 			}
 		}
 	}

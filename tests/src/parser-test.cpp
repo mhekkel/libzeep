@@ -71,16 +71,13 @@ bool run_valid_test(istream& is, fs::path& outfile)
 				++dubious_tests;
 			else
 			{
-				result = false;
-				
-//				if (VERBOSE)
-//				{
-//					cout << "output differs: " << endl
-//						 << s1 << endl
-//						 << s2 << endl
-//						 << endl;
-//				}
-				++failed_tests;
+				stringstream s;
+				s	 << "output differs: " << endl
+					 << s1 << endl
+					 << s2 << endl
+					 << endl;
+
+				throw zeep::exception(s.str());
 			}
 		}
 	}
