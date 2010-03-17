@@ -13,6 +13,20 @@
 
 namespace zeep { namespace xml {
 
+class invalid_exception : public zeep::exception
+{
+  public:
+	invalid_exception(const std::string& msg) : exception(msg) {}
+	~invalid_exception() throw () {}
+};
+
+class not_wf_exception : public zeep::exception
+{
+  public:
+	not_wf_exception(const std::string& msg) : exception(msg) {}
+	~not_wf_exception() throw () {}
+};
+
 class basic_parser_base : public boost::noncopyable
 {
   public:
@@ -43,6 +57,8 @@ class basic_parser_base : public boost::noncopyable
 	virtual void		start_namespace_decl(const std::wstring& prefix, const std::wstring& uri) = 0;
 
 	virtual void		end_namespace_decl(const std::wstring& prefix) = 0;
+	
+	virtual void		report_invalidation(const std::wstring& msg) = 0;
 
 	virtual std::istream*
 						find_external_dtd(const std::wstring& pubid, const std::wstring& uri) = 0;
@@ -125,6 +141,8 @@ class basic_parser : public basic_parser_base
 	boost::function<std::istream*(const string_type& pubid, const string_type& uri)>
 															find_external_dtd_handler;
 
+	boost::function<void(const string_type& msg)>			report_invalidation_handler;
+
 	void					parse();
 
   private:
@@ -205,6 +223,12 @@ class basic_parser : public basic_parser_base
 								if (find_external_dtd_handler)
 									result = find_external_dtd_handler(m_traits.convert(pubid), m_traits.convert(uri));
 								return result;
+							}
+
+	virtual void			report_invalidation(const std::wstring& msg)
+							{
+								if (report_invalidation_handler)
+									report_invalidation_handler(m_traits.convert(msg));
 							}
 	
 	text_traits				m_traits;

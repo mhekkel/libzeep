@@ -12,6 +12,7 @@
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
+#include "zeep/xml/parser.hpp"
 #include "zeep/xml/expat_doc.hpp"
 #include "zeep/xml/libxml2_doc.hpp"
 
@@ -72,13 +73,13 @@ bool run_valid_test(istream& is, fs::path& outfile)
 			{
 				result = false;
 				
-				if (VERBOSE)
-				{
-					cout << "output differs: " << endl
-						 << s1 << endl
-						 << s2 << endl
-						 << endl;
-				}
+//				if (VERBOSE)
+//				{
+//					cout << "output differs: " << endl
+//						 << s1 << endl
+//						 << s2 << endl
+//						 << endl;
+//				}
 				++failed_tests;
 			}
 		}
@@ -116,6 +117,38 @@ bool run_test(xml::node& test, fs::path base_dir)
 		
 		if (test.get_attribute("TYPE") == "valid")
 			result = run_valid_test(is, output);
+		else if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "invalid")
+		{
+			bool failed = false;
+			try
+			{
+				DOC doc(is);
+				++should_have_failed;
+				result = false;
+				
+			}
+			catch (zeep::xml::not_wf_exception& e)
+			{
+				if (test.get_attribute("TYPE") == "not-wf")
+					failed = true;
+				else
+					throw zeep::exception(string("Wrong exception (should have been invalid):\n\t") + e.what());
+			}
+			catch (zeep::xml::invalid_exception& e)
+			{
+				if (test.get_attribute("TYPE") == "invalid")
+					failed = true;
+				else
+					throw zeep::exception(string("Wrong exception (should have been not-wf):\n\t") + e.what());
+			}
+			catch (std::exception& e)
+			{
+				throw zeep::exception(string("Wrong exception:\n\t") + e.what());
+			}
+
+			if (VERBOSE and not failed)
+				throw zeep::exception("invalid document, should have failed");
+		}
 		else // if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "error" )
 		{
 			bool failed = false;
@@ -127,6 +160,9 @@ bool run_test(xml::node& test, fs::path base_dir)
 			}
 			catch (std::exception& e)
 			{
+				if (VERBOSE)
+					cout << e.what() << endl;
+				
 				failed = true;
 			}
 
@@ -142,7 +178,8 @@ bool run_test(xml::node& test, fs::path base_dir)
 		
 		if (VERBOSE)
 		{
-			cout << "test " << test.get_attribute("ID") << " failed:" << endl
+			cout << "=======================================================" << endl
+				 << "test " << test.get_attribute("ID") << " failed:" << endl
 				 << "\t" << fs::system_complete(input) << endl
 				 << test.text() << endl
 				 << endl
