@@ -40,7 +40,10 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	if (indoc.root() != NULL)
 		s << *indoc.root();
 	string s1 = s.str();
-	ba::trim(s1);
+//	ba::trim(s1);
+	
+	if (VERBOSE)
+		cout << s1;
 
 	if (fs::is_directory(outfile))
 		;

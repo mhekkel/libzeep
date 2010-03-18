@@ -29,6 +29,44 @@ namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
 
+class pretty_ostream : public ostream
+{
+  public:
+
+					pretty_ostream(bool wrap = true, int indent = 2)
+						: m_wrap(wrap)
+						, m_indent(indent)
+						, m_level(0)
+						, m_base(NULL) {}
+
+	pretty_ostream&	operator<<(const node& n);
+
+	void			set_base(ostream* base)			{ m_base = base; }
+
+  private:
+	bool			m_wrap;
+	int				m_indent;
+	int				m_level;
+	ostream*		m_base;
+};
+
+pretty_ostream&	pretty_ostream::operator<<(const node& n)
+{
+	assert(m_base);
+	
+	n.write(*m_base, 0);
+	
+	return *this;
+}
+
+ostream& operator<<(ostream& lhs, pretty_ostream& rhs)
+{
+	rhs.set_base(&lhs);
+	return rhs;
+}
+
+// --------------------------------------------------------------------
+
 struct document_imp
 {
 	node_ptr		m_root;
@@ -290,7 +328,8 @@ ostream& operator<<(ostream& lhs, const document& rhs)
 	lhs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
 	
 	if (rhs.root())
-		rhs.root()->write(lhs, 0);
+		lhs << pretty_ostream(true, 2) << *rhs.root();
+//		rhs.root()->write(lhs, 0);
 
 	return lhs;
 }
