@@ -542,6 +542,11 @@ namespace doctype
 class element;
 class attlist;
 class entity;
+class attribute;
+
+typedef boost::ptr_vector<entity>		entity_list;
+typedef boost::ptr_vector<element>		element_list;
+typedef boost::ptr_vector<attribute>	attribute_list;
 
 enum AttributeType
 {
@@ -577,7 +582,7 @@ class attribute : public boost::noncopyable
 
 	wstring				name() const							{ return m_name; }
 
-	bool				validate_value(wstring& value);
+	bool				validate_value(wstring& value, const entity_list& entities);
 	
 	void				set_default(AttributeDefault def, const wstring& value)
 						{
@@ -601,12 +606,88 @@ class attribute : public boost::noncopyable
 	bool				is_nmtoken(wstring& s);
 	bool				is_nmtokens(wstring& s);
 
+	bool				is_unparsed_entity(const wstring& s, const entity_list& l);
+
 	wstring				m_name;
 	AttributeType		m_type;
 	AttributeDefault	m_default;
 	wstring				m_default_value;
 	vector<wstring>		m_enum;
 };
+
+// --------------------------------------------------------------------
+
+class element : boost::noncopyable
+{
+  public:
+						element(const wstring& name)
+							: m_name(name) {}
+
+						~element();
+
+	void				add_attribute(auto_ptr<attribute> attr);
+	
+	attribute*			get_attribute(const wstring& name);
+
+	wstring				name() const								{ return m_name; }
+	
+	const attribute_list&
+						attributes() const							{ return m_attlist; }
+
+  private:
+	wstring				m_name;
+	attribute_list		m_attlist;
+};
+
+// --------------------------------------------------------------------
+
+class entity : boost::noncopyable
+{
+  public:
+	const wstring&	name() const							{ return m_name; }		
+	const wstring&	replacement() const						{ return m_replacement; }		
+	const fs::path&	path() const							{ return m_path; }		
+	bool			parameter() const						{ return m_parameter; }		
+
+	bool			parsed() const							{ return m_parsed; }
+	void			parsed(bool parsed)						{ m_parsed = parsed; }
+
+	const wstring&	ndata() const							{ return m_ndata; }
+	void			ndata(const wstring& ndata)				{ m_ndata = ndata; }
+
+	bool			external() const						{ return m_external; }
+
+  protected:
+					entity(const wstring& name, const wstring& replacement, bool external, bool parsed)
+						: m_name(name), m_replacement(replacement), m_parameter(false), m_parsed(parsed), m_external(external) {}
+
+					entity(const wstring& name, const wstring& replacement, const fs::path& path)
+						: m_name(name), m_replacement(replacement), m_path(path), m_parameter(true), m_parsed(true), m_external(true) {}
+
+	wstring			m_name;
+	wstring			m_replacement;
+	wstring			m_ndata;
+	fs::path		m_path;
+	bool			m_parameter;
+	bool			m_parsed;
+	bool			m_external;
+};
+
+class general_entity : public entity
+{
+  public:
+					general_entity(const wstring& name, const wstring& replacement, bool external = false, bool parsed = true)
+						: entity(name, replacement, external, parsed) {}
+};
+
+class parameter_entity : public entity
+{
+  public:
+					parameter_entity(const wstring& name, const wstring& replacement, const fs::path& path)
+						: entity(name, replacement, path) {}
+};
+
+// --------------------------------------------------------------------
 
 bool attribute::is_name(wstring& s)
 {
@@ -727,15 +808,38 @@ bool attribute::is_nmtokens(wstring& s)
 	return result;
 }
 
-bool attribute::validate_value(wstring& value)
+bool attribute::validate_value(wstring& value, const entity_list& entities)
 {
 	bool result = true;
 
 	if (m_type == attTypeString)
 		result = true;
-	else if (m_type == attTypeTokenizedENTITY or m_type == attTypeTokenizedID or m_type == attTypeTokenizedIDREF)
+	else if (m_type == attTypeTokenizedENTITY)
+	{
 		result = is_name(value);
-	else if (m_type == attTypeTokenizedENTITIES or m_type == attTypeTokenizedIDREFS)
+		if (result)
+			result = is_unparsed_entity(value, entities);
+	}
+	else if (m_type == attTypeTokenizedID or m_type == attTypeTokenizedIDREF)
+		result = is_name(value);
+	else if (m_type == attTypeTokenizedENTITIES)
+	{
+		result = is_names(value);
+		if (result)
+		{
+			vector<wstring> values;
+			ba::split(values, value, ba::is_any_of(" "));
+			foreach (const wstring& v, values)
+			{
+				if (not is_unparsed_entity(v, entities))
+				{
+					result = false;
+					break;
+				}
+			}
+		}
+	}
+	else if (m_type == attTypeTokenizedIDREFS)
 		result = is_names(value);
 	else if (m_type == attTypeTokenizedNMTOKEN)
 		result = is_nmtoken(value);
@@ -753,44 +857,32 @@ bool attribute::validate_value(wstring& value)
 	return result;
 }
 
-class element : boost::noncopyable
+bool attribute::is_unparsed_entity(const wstring& s, const entity_list& l)
 {
-  public:
-						element(const wstring& name)
-							: m_name(name) {}
-
-						~element();
-
-	void				add_attribute(attribute* attr);
+	bool result = false;
 	
-	attribute*	get_attribute(const wstring& name);
-
-	wstring				name() const								{ return m_name; }
+	entity_list::const_iterator i = find_if(l.begin(), l.end(), boost::bind(&entity::name, _1) == s);
+	if (i != l.end())
+		result = i->parsed() == false;
 	
-	const boost::ptr_vector<attribute>&
-						attributes() const							{ return m_attlist; }
+	return result;
+}
 
-  private:
-	wstring				m_name;
-	boost::ptr_vector<attribute>
-						m_attlist;
-};
+// --------------------------------------------------------------------
 
 element::~element()
 {
 }
 
-void element::add_attribute(attribute* attr)
+void element::add_attribute(auto_ptr<attribute> attr)
 {
 	if (find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == attr->name()) == m_attlist.end())
-		m_attlist.push_back(attr);
-	else
-		delete attr;
+		m_attlist.push_back(attr.release());
 }
 
 attribute* element::get_attribute(const wstring& name)
 {
-	boost::ptr_vector<attribute>::iterator dta =
+	attribute_list::iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == name);
 	
 	attribute* result = nil;
@@ -801,51 +893,26 @@ attribute* element::get_attribute(const wstring& name)
 	return result;
 }
 
+}
+
 // --------------------------------------------------------------------
 
-class entity : boost::noncopyable
+class valid_nesting_validator
 {
   public:
-	const wstring&	name() const							{ return m_name; }		
-	const wstring&	replacement() const						{ return m_replacement; }		
-	const fs::path&	path() const							{ return m_path; }		
-	bool			parameter() const						{ return m_parameter; }		
-	bool			parsed() const							{ return m_parsed; }
-	bool			external() const						{ return m_external; }
-
-  protected:
-					entity(const wstring& name, const wstring& replacement, bool external)
-						: m_name(name), m_replacement(replacement), m_parameter(false), m_parsed(true), m_external(external) {}
-
-//					entity(const wstring& name, bool parameter, bool parsed, const wstring& replacement)
-//						: m_name(name), m_replacement(replacement), m_parameter(parameter), m_parsed(parsed) {}
-//
-					entity(const wstring& name, const wstring& replacement, const fs::path& path)
-						: m_name(name), m_replacement(replacement), m_path(path), m_parameter(true), m_parsed(true), m_external(true) {}
-
-	wstring			m_name;
-	wstring			m_replacement;
-	fs::path		m_path;
-	bool			m_parameter;
-	bool			m_parsed;
-	bool			m_external;
+					valid_nesting_validator(data_ptr& source)
+						: m_ptr(source), m_pointee(source) {}
+	
+	void			check()
+					{
+						if (m_ptr != m_pointee)
+							throw invalid_exception("proper nesting validation error");
+					}
+	
+  private:
+	data_ptr&		m_ptr;
+	data_ptr		m_pointee;
 };
-
-class general_entity : public entity
-{
-  public:
-					general_entity(const wstring& name, const wstring& replacement, bool external = false)
-						: entity(name, replacement, false) {}
-};
-
-class parameter_entity : public entity
-{
-  public:
-					parameter_entity(const wstring& name, const wstring& replacement, const fs::path& path)
-						: entity(name, replacement, path) {}
-};
-
-}
 
 // --------------------------------------------------------------------
 
@@ -1064,32 +1131,30 @@ struct parser_imp
 					}
 	};
 	
-	bool			m_validating;
-	bool			m_has_dtd;
-	int				m_lookahead;
-	data_ptr		m_data_source;
-	stack<wchar_t>	m_buffer;
-	wstring			m_token;
-	float			m_version;
-	Encoding		m_encoding;
-	wstring			m_standalone;
-	parser&			m_parser;
-	ns_state*		m_ns;
-	bool			m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
-	bool			m_external_subset;
-	bool			m_in_element;
-	bool			m_in_content;
-	bool			m_allow_parameter_entity_references;
+	bool					m_validating;
+	bool					m_has_dtd;
+	int						m_lookahead;
+	data_ptr				m_data_source;
+	stack<wchar_t>			m_buffer;
+	wstring					m_token;
+	float					m_version;
+	Encoding				m_encoding;
+	wstring					m_standalone;
+	parser&					m_parser;
+	ns_state*				m_ns;
+	bool					m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
+	bool					m_external_subset;
+	bool					m_in_element;
+	bool					m_in_content;
+	bool					m_allow_parameter_entity_references;
 
-	typedef boost::ptr_vector<doctype::entity>		EntityMap;
+	doctype::entity_list	m_parameter_entities;
+	doctype::entity_list	m_general_entities;
+	doctype::element_list	m_doctype;
 
-	EntityMap		m_parameter_entities;
-	EntityMap		m_general_entities;
-	
-	typedef boost::ptr_vector<doctype::element>		DocTypeMap;
-	
-	DocTypeMap		m_doctype;
-	set<wstring>	m_notations, m_ndata;
+	set<wstring>			m_notations;
+	set<wstring>			m_ids;					// attributes of type ID should be unique
+	set<wstring>			m_unresolved_ids;		// keep track of IDREFS that were not found yet
 };
 
 // --------------------------------------------------------------------
@@ -1146,7 +1211,7 @@ parser_imp::~parser_imp()
 
 const doctype::entity& parser_imp::get_general_entity(const wstring& name) const
 {
-	EntityMap::const_iterator e = find_if(m_general_entities.begin(), m_general_entities.end(),
+	doctype::entity_list::const_iterator e = find_if(m_general_entities.begin(), m_general_entities.end(),
 		boost::bind(&doctype::entity::name, _1) == name);
 	
 	if (e == m_general_entities.end())
@@ -1157,7 +1222,7 @@ const doctype::entity& parser_imp::get_general_entity(const wstring& name) const
 
 const doctype::entity& parser_imp::get_parameter_entity(const wstring& name) const
 {
-	EntityMap::const_iterator e = find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
+	doctype::entity_list::const_iterator e = find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
 		boost::bind(&doctype::entity::name, _1) == name);
 	
 	if (e == m_parameter_entities.end())
@@ -1175,7 +1240,7 @@ const doctype::entity& parser_imp::get_parameter_entity(const wstring& name) con
 
 const doctype::element& parser_imp::get_element(const wstring& name) const
 {
-	DocTypeMap::const_iterator e = find_if(m_doctype.begin(), m_doctype.end(),
+	doctype::element_list::const_iterator e = find_if(m_doctype.begin(), m_doctype.end(),
 		boost::bind(&doctype::element::name, _1) == name);
 	
 	if (e == m_doctype.end())
@@ -1263,39 +1328,8 @@ void parser_imp::match(int token)
 		
 		if (m_lookahead == xml_PEReference and m_allow_parameter_entity_references)
 			pereference();
-		
-//		// PEReferences can occur anywhere in a DTD and their
-//		// content must match the production extsubset;
-//		if (m_lookahead == xml_PEReference and m_allow_parameter_entity_references)
-//		{
-//			ParameterEntityMap::iterator r = m_parameter_entities.find(m_token);
-//			if (r == m_parameter_entities.end())
-//			{
-//				boost::wformat msg(L"Undefined parameter entity '%1%'");
-//				
-//				if (m_standalone == L"yes")
-//					not_well_formed(msg % m_token);
-//				else
-//					not_valid(msg % m_token);
-//			}
-//			
-//			m_data_source.reset(new parameter_entity_data_source(
-//				r->second.m_entity_text, r->second.m_entity_path, m_production, m_data_source));
-//			
-//			match(xml_PEReference);
-//		}
 	}
 }
-
-//void parser_imp::match_and_expand(int token)
-//{
-//	match(token);
-//		
-//	// PEReferences can occur anywhere in a DTD and their
-//	// content must match the production extsubset;
-//	if (m_lookahead == xml_PEReference)
-//		pereference();
-//}
 
 void parser_imp::not_well_formed(const wstring& msg) const
 {
@@ -1852,6 +1886,12 @@ void parser_imp::parse()
 	
 	if (m_lookahead != xml_Eof)
 		not_well_formed(L"garbage at end of file");
+
+	if (not m_unresolved_ids.empty())
+	{
+		not_valid(boost::wformat(L"document contains references to the following undefined ID's: %1%")
+			% ba::join(m_unresolved_ids, L", "));
+	}
 }
 
 void parser_imp::prolog()
@@ -2054,10 +2094,10 @@ void parser_imp::doctypedecl()
 	
 	// test if all ndata references can be resolved
 	
-	foreach (const wstring& ndata, m_ndata)
+	foreach (const doctype::entity& e, m_general_entities)
 	{
-		if (m_notations.count(ndata) == 0)
-			not_valid(boost::wformat(L"Undefined NOTATION %1%") % ndata);
+		if (e.parsed() == false and m_notations.count(e.ndata()) == 0)
+			not_valid(boost::wformat(L"Undefined NOTATION %1%") % e.ndata());
 	}
 	
 	// and the notations in the doctype attlists
@@ -2303,10 +2343,6 @@ void parser_imp::markup_decl()
 		case xml_Space:
 			s();
 			break;
-//
-//		default:
-//			
-//			not_well_formed(boost::wformat(L"unexpected token %1%") % describe_token(m_lookahead));
 	}
 }
 
@@ -2320,8 +2356,11 @@ void parser_imp::element_decl()
 
 	match(xml_Name);
 	s(true);
+	
+//	valid_nesting_validator check(m_data_source);
 	contentspec(*element);
 	s();
+//	check.check();
 	
 	m_allow_parameter_entity_references = true;
 	match('>');
@@ -2504,8 +2543,9 @@ void parser_imp::general_entity_decl()
 	s(true);
 	
 	fs::path path; // not used
-	wstring value;
+	wstring value, ndata;
 	bool external = false;
+	bool parsed = true;
 
 	if (m_lookahead == xml_String)
 	{
@@ -2527,9 +2567,10 @@ void parser_imp::general_entity_decl()
 			{
 				match(xml_Name);
 				s(true);
-
-				m_ndata.insert(m_token);
 				
+				parsed = false;
+				ndata = m_token;
+
 				match(xml_Name);
 			}
 		}
@@ -2543,7 +2584,10 @@ void parser_imp::general_entity_decl()
 	if (find_if(m_general_entities.begin(), m_general_entities.end(),
 		boost::bind(&doctype::entity::name, _1) == name) == m_general_entities.end())
 	{
-		m_general_entities.push_back(new doctype::general_entity(name, value, external));
+		m_general_entities.push_back(new doctype::general_entity(name, value, external, parsed));
+		
+		if (not parsed)
+			m_general_entities.back().ndata(ndata);
 	}
 }
 
@@ -2554,7 +2598,7 @@ void parser_imp::attlist_decl()
 	wstring element = m_token;
 	match(xml_Name);
 	
-	DocTypeMap::iterator dte = find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == element);
+	doctype::element_list::iterator dte = find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == element);
 	
 	if (dte == m_doctype.end())
 	{
@@ -2691,11 +2735,14 @@ void parser_imp::attlist_decl()
 					attribute->set_default(doctype::attDefImplied, L"");
 				else if (def == L"FIXED")
 				{
+					if (attribute->get_type() == doctype::attTypeTokenizedID)
+						not_valid(L"the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
+					
 					s();
 
 					wstring value = m_token;
 					normalize_attribute_value(value);
-					if (not value.empty() and not attribute->validate_value(value))
+					if (not value.empty() and not attribute->validate_value(value, m_general_entities))
 					{
 						not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
 							% value % name);
@@ -2709,9 +2756,12 @@ void parser_imp::attlist_decl()
 			}
 			else
 			{
+				if (attribute->get_type() == doctype::attTypeTokenizedID)
+					not_valid(L"the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
+
 				wstring value = m_token;
 				normalize_attribute_value(value);
-				if (not value.empty() and not attribute->validate_value(value))
+				if (not value.empty() and not attribute->validate_value(value, m_general_entities))
 				{
 					not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
 						% value % name);
@@ -2721,7 +2771,14 @@ void parser_imp::attlist_decl()
 			}
 		}
 		
-		dte->add_attribute(attribute.release());
+		if (attribute->get_type() == doctype::attTypeTokenizedID)
+		{
+			const doctype::attribute_list& atts = dte->attributes();
+			if (find_if(atts.begin(), atts.end(), boost::bind(&doctype::attribute::get_type, _1) == doctype::attTypeTokenizedID) != atts.end())
+				not_valid(L"only one attribute per element can have the ID type");
+		}
+		
+		dte->add_attribute(attribute);
 	}
 
 	m_allow_parameter_entity_references = true;
@@ -3281,7 +3338,7 @@ void parser_imp::element()
 	wstring name = m_token;
 	match(xml_Name);
 	
-	DocTypeMap::iterator dte =
+	doctype::element_list::iterator dte =
 		find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name);
 	
 	list<pair<wstring,wstring> > attrs;
@@ -3330,9 +3387,38 @@ void parser_imp::element()
 			if (dte != m_doctype.end())
 			{
 				doctype::attribute* dta = dte->get_attribute(attr_name);
-				if (dta != nil and not dta->validate_value(attr_value))
-					not_valid(boost::wformat(L"invalid value ('%1%') for attribute %2%")
-						% attr_name % attr_value);
+				if (dta != nil)
+				{
+					if (not dta->validate_value(attr_value, m_general_entities))
+					{
+						not_valid(boost::wformat(L"invalid value ('%2%') for attribute %1%")
+							% attr_name % attr_value);
+					}
+					
+					if (dta->get_type() == doctype::attTypeTokenizedID)
+					{
+						if (m_ids.count(attr_value) > 0)
+						{
+							not_valid(boost::wformat(L"attribute value ('%1%') for attribute %2% is not unique")
+								% attr_value % attr_name);
+						}
+						
+						m_ids.insert(attr_value);
+						
+						if (m_unresolved_ids.count(attr_value) > 0)
+							m_unresolved_ids.erase(attr_value);
+					}
+					else if (dta->get_type() == doctype::attTypeTokenizedIDREF or dta->get_type() == doctype::attTypeTokenizedIDREFS)
+					{
+						list<wstring> ids;
+						ba::split(ids, attr_value, ba::is_any_of(L" "));
+						foreach (const wstring& id, ids)
+						{
+							if (m_ids.count(id) == 0)
+								m_unresolved_ids.insert(id);
+						}
+					}
+				}
 			}
 			
 			attrs.push_back(make_pair(attr_name, attr_value));
