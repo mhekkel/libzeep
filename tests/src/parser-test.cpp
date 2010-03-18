@@ -27,6 +27,7 @@ namespace ba = boost::algorithm;
 //#define DOC		xml::libxml2_doc
 
 int VERBOSE;
+int TRACE;
 int failed_tests, dubious_tests, error_tests, should_have_failed, total_tests;
 
 bool run_valid_test(istream& is, fs::path& outfile)
@@ -228,7 +229,10 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::ifstream file(testFile);
 	
 	int saved_verbose = VERBOSE;
-//	VERBOSE = 0;
+	VERBOSE = 0;
+	
+	int saved_trace = TRACE;
+	TRACE = 0;
 	
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
 	fs::current_path(base_dir);
@@ -236,6 +240,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	xml::document doc(file);
 
 	VERBOSE = saved_verbose;
+	TRACE = saved_trace;
 	
 	xml::node_ptr root = doc.root();
 	if (root->name() != "TESTSUITE")
@@ -258,6 +263,7 @@ int main(int argc, char* argv[])
 //	    ("input-file", "input file")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
+	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
 	;
 	
@@ -276,6 +282,7 @@ int main(int argc, char* argv[])
 	}
 	
 	VERBOSE = vm.count("verbose");
+	TRACE = vm.count("trace");
 	
 	try
 	{

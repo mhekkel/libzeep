@@ -9,12 +9,13 @@
 #include <stack>
 #include <deque>
 #include <map>
+#include <set>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/ptr_container/ptr_set.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
@@ -29,6 +30,8 @@
 using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
+
+extern int TRACE;
 
 #ifndef nil
 #define nil NULL
@@ -533,8 +536,12 @@ class parameter_entity_data_source : public wstring_data_source
 // doctype support. We don't do full validation yet, but here is the support
 // for filling in default values and cleaning up attributes.
 
-class doctype_element;
-class doctype_attlist;
+namespace doctype
+{
+
+class element;
+class attlist;
+class entity;
 
 enum AttributeType
 {
@@ -559,13 +566,13 @@ enum AttributeDefault
 	attDefDefault
 };
 
-class doctype_attribute : public boost::noncopyable
+class attribute : public boost::noncopyable
 {
   public:
-						doctype_attribute(const wstring& name, AttributeType type)
+						attribute(const wstring& name, AttributeType type)
 							: m_name(name), m_type(type), m_default(attDefNone) {}
 
-						doctype_attribute(const wstring& name, AttributeType type, const vector<wstring>& enums)
+						attribute(const wstring& name, AttributeType type, const vector<wstring>& enums)
 							: m_name(name), m_type(type), m_default(attDefNone), m_enum(enums) {}
 
 	wstring				name() const							{ return m_name; }
@@ -601,7 +608,7 @@ class doctype_attribute : public boost::noncopyable
 	vector<wstring>		m_enum;
 };
 
-bool doctype_attribute::is_name(wstring& s)
+bool attribute::is_name(wstring& s)
 {
 	bool result = true;
 	
@@ -621,7 +628,7 @@ bool doctype_attribute::is_name(wstring& s)
 	return result;
 }
 
-bool doctype_attribute::is_names(wstring& s)
+bool attribute::is_names(wstring& s)
 {
 	bool result = true;
 
@@ -661,7 +668,7 @@ bool doctype_attribute::is_names(wstring& s)
 	return result;
 }
 
-bool doctype_attribute::is_nmtoken(wstring& s)
+bool attribute::is_nmtoken(wstring& s)
 {
 	bool result = true;
 
@@ -674,7 +681,7 @@ bool doctype_attribute::is_nmtoken(wstring& s)
 	return result;
 }
 
-bool doctype_attribute::is_nmtokens(wstring& s)
+bool attribute::is_nmtokens(wstring& s)
 {
 	bool result = true;
 
@@ -720,7 +727,7 @@ bool doctype_attribute::is_nmtokens(wstring& s)
 	return result;
 }
 
-bool doctype_attribute::validate_value(wstring& value)
+bool attribute::validate_value(wstring& value)
 {
 	bool result = true;
 
@@ -746,56 +753,98 @@ bool doctype_attribute::validate_value(wstring& value)
 	return result;
 }
 
-class doctype_element : boost::noncopyable
+class element : boost::noncopyable
 {
   public:
-						doctype_element(const wstring& name)
+						element(const wstring& name)
 							: m_name(name) {}
 
-						~doctype_element();
+						~element();
 
-	void				add_attribute(doctype_attribute* attr);
+	void				add_attribute(attribute* attr);
 	
-	doctype_attribute*	get_attribute(const wstring& name);
+	attribute*	get_attribute(const wstring& name);
 
 	wstring				name() const								{ return m_name; }
 	
-	bool				operator<(const doctype_element& rhs)		{ return m_name < rhs.m_name; }
-	
-	const vector<doctype_attribute*>&
+	const boost::ptr_vector<attribute>&
 						attributes() const							{ return m_attlist; }
 
   private:
 	wstring				m_name;
-	vector<doctype_attribute*>
+	boost::ptr_vector<attribute>
 						m_attlist;
 };
 
-doctype_element::~doctype_element()
+element::~element()
 {
-	for (vector<doctype_attribute*>::iterator attr = m_attlist.begin(); attr != m_attlist.end(); ++attr)
-		delete *attr;
 }
 
-void doctype_element::add_attribute(doctype_attribute* attr)
+void element::add_attribute(attribute* attr)
 {
-	if (find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&doctype_attribute::name, _1) == attr->name()) == m_attlist.end())
+	if (find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == attr->name()) == m_attlist.end())
 		m_attlist.push_back(attr);
 	else
 		delete attr;
 }
 
-doctype_attribute* doctype_element::get_attribute(const wstring& name)
+attribute* element::get_attribute(const wstring& name)
 {
-	vector<doctype_attribute*>::iterator dta =
-		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&doctype_attribute::name, _1) == name);
+	boost::ptr_vector<attribute>::iterator dta =
+		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == name);
 	
-	doctype_attribute* result = nil;
+	attribute* result = nil;
 	
 	if (dta != m_attlist.end())
-		result = *dta;
+		result = &(*dta);
 	
 	return result;
+}
+
+// --------------------------------------------------------------------
+
+class entity : boost::noncopyable
+{
+  public:
+	const wstring&	name() const							{ return m_name; }		
+	const wstring&	replacement() const						{ return m_replacement; }		
+	const fs::path&	path() const							{ return m_path; }		
+	bool			parameter() const						{ return m_parameter; }		
+	bool			parsed() const							{ return m_parsed; }
+	bool			external() const						{ return m_external; }
+
+  protected:
+					entity(const wstring& name, const wstring& replacement, bool external)
+						: m_name(name), m_replacement(replacement), m_parameter(false), m_parsed(true), m_external(external) {}
+
+//					entity(const wstring& name, bool parameter, bool parsed, const wstring& replacement)
+//						: m_name(name), m_replacement(replacement), m_parameter(parameter), m_parsed(parsed) {}
+//
+					entity(const wstring& name, const wstring& replacement, const fs::path& path)
+						: m_name(name), m_replacement(replacement), m_path(path), m_parameter(true), m_parsed(true), m_external(true) {}
+
+	wstring			m_name;
+	wstring			m_replacement;
+	fs::path		m_path;
+	bool			m_parameter;
+	bool			m_parsed;
+	bool			m_external;
+};
+
+class general_entity : public entity
+{
+  public:
+					general_entity(const wstring& name, const wstring& replacement, bool external = false)
+						: entity(name, replacement, false) {}
+};
+
+class parameter_entity : public entity
+{
+  public:
+					parameter_entity(const wstring& name, const wstring& replacement, const fs::path& path)
+						: entity(name, replacement, path) {}
+};
+
 }
 
 // --------------------------------------------------------------------
@@ -808,7 +857,7 @@ struct parser_imp
 	
 					~parser_imp();
 
-	string			wstring_to_string(const wstring& s)
+	string			wstring_to_string(const wstring& s) const
 					{
 						return zeep::xml::wstring_to_string(s);
 					}
@@ -827,6 +876,12 @@ struct parser_imp
 	void			misc();
 	void			element();
 	void			content();
+
+	void			comment();
+	void			pi();
+	
+	void			pereference();
+	
 	void			doctypedecl();
 	data_ptr		external_id();
 	boost::tuple<fs::path,wstring>
@@ -837,7 +892,7 @@ struct parser_imp
 	void			ignoresectcontents();
 	void			markup_decl();
 	void			element_decl();
-	void			contentspec(doctype_element& element);
+	void			contentspec(doctype::element& element);
 	void			cp();
 	void			attlist_decl();
 	void			notation_decl();
@@ -869,7 +924,7 @@ struct parser_imp
 		
 		xml_XMLDecl,	// <?xml
 		xml_Space,		// Really needed
-		xml_Comment,	// <!--(
+		xml_Comment,	// <!--
 		xml_Name,		// name-start-char (name-char)*
 		xml_NMToken,	// (name-char)+
 		xml_String,		// (\"[^"]*\") | (\'[^\']*\')		// single or double quoted string
@@ -908,16 +963,22 @@ struct parser_imp
 	// match, check if the look-a-head token is really what we expect here.
 	// throws if it isn't. Depending on the content flag we call either get_next_token or get_next_content
 	// to find the next look-a-head token.
-	void			match(int token, bool content = false);
+	void			match(int token);
+//	void			match_and_expand(int token);
 
 	// utility routine
 	float			parse_version();
 
 	// error handling routines
-	void			not_well_formed(const wstring& msg);
-	void			not_well_formed(const boost::wformat& msg)			{ not_well_formed(msg.str()); }
-	void			not_valid(const wstring& msg);
-	void			not_valid(const boost::wformat& msg)				{ not_valid(msg.str()); }
+	void			not_well_formed(const wstring& msg) const;
+	void			not_well_formed(const boost::wformat& msg) const		{ not_well_formed(msg.str()); }
+	void			not_valid(const wstring& msg) const;
+	void			not_valid(const boost::wformat& msg) const				{ not_valid(msg.str()); }
+
+	// doctype support
+	const doctype::entity&	get_general_entity(const wstring& name) const;
+	const doctype::entity&	get_parameter_entity(const wstring& name) const;
+	const doctype::element&	get_element(const wstring& name) const;
 
 	// Sometimes we need to reuse our parser/scanner to parse an external entity e.g.
 	// We use stack based state objects to store the current state.	
@@ -1009,7 +1070,6 @@ struct parser_imp
 	data_ptr		m_data_source;
 	stack<wchar_t>	m_buffer;
 	wstring			m_token;
-	wstring			m_pi_target;
 	float			m_version;
 	Encoding		m_encoding;
 	wstring			m_standalone;
@@ -1018,35 +1078,15 @@ struct parser_imp
 	bool			m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
 	bool			m_external_subset;
 	bool			m_in_element;
+	bool			m_in_content;
 	bool			m_allow_parameter_entity_references;
 
-	struct parsed_entity
-	{
-		fs::path	m_entity_path;
-		wstring		m_entity_text;
-	};
+	typedef boost::ptr_vector<doctype::entity>		EntityMap;
 
-	typedef map<wstring,parsed_entity>		ParameterEntityMap;
-
-	ParameterEntityMap	 m_parameter_entities;
-	
-	struct general_entity
-	{
-					general_entity()
-						: m_external(true) {}
-		
-					general_entity(const wstring& text, bool external = false)
-						: m_entity_text(text), m_external(external) {}
-		
-		wstring		m_entity_text;
-		bool		m_external;
-	};
-	
-	typedef map<wstring,general_entity>		EntityMap;
-
+	EntityMap		m_parameter_entities;
 	EntityMap		m_general_entities;
 	
-	typedef map<wstring,doctype_element*>	DocTypeMap;
+	typedef boost::ptr_vector<doctype::element>		DocTypeMap;
 	
 	DocTypeMap		m_doctype;
 	set<wstring>	m_notations, m_ndata;
@@ -1089,20 +1129,59 @@ parser_imp::parser_imp(
 	, m_in_doctype(false)
 	, m_external_subset(false)
 	, m_in_element(false)
+	, m_in_content(false)
 	, m_allow_parameter_entity_references(false)
 {
 	// these entities are always recognized:
-	m_general_entities[L"lt"] = general_entity(L"&#60;");
-	m_general_entities[L"gt"] = general_entity(L"&#62;");
-	m_general_entities[L"amp"] = general_entity(L"&#38;");
-	m_general_entities[L"apos"] = general_entity(L"&#39;");
-	m_general_entities[L"quot"] = general_entity(L"&#34;");
+	m_general_entities.push_back(new doctype::general_entity(L"lt", L"&#60;"));
+	m_general_entities.push_back(new doctype::general_entity(L"gt", L"&#62;"));
+	m_general_entities.push_back(new doctype::general_entity(L"amp", L"&#38;"));
+	m_general_entities.push_back(new doctype::general_entity(L"apos", L"&#39;"));
+	m_general_entities.push_back(new doctype::general_entity(L"quot", L"&#34;"));
 }
 
 parser_imp::~parser_imp()
 {
-	for (DocTypeMap::iterator de = m_doctype.begin(); de != m_doctype.end(); ++de)
-		delete de->second;
+}
+
+const doctype::entity& parser_imp::get_general_entity(const wstring& name) const
+{
+	EntityMap::const_iterator e = find_if(m_general_entities.begin(), m_general_entities.end(),
+		boost::bind(&doctype::entity::name, _1) == name);
+	
+	if (e == m_general_entities.end())
+		not_well_formed(boost::wformat(L"undefined entity reference %1%") % name);
+	
+	return *e;
+}
+
+const doctype::entity& parser_imp::get_parameter_entity(const wstring& name) const
+{
+	EntityMap::const_iterator e = find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
+		boost::bind(&doctype::entity::name, _1) == name);
+	
+	if (e == m_parameter_entities.end())
+	{
+		boost::wformat msg(L"Undefined parameter entity '%1%'");
+		
+		if (m_standalone == L"yes")
+			not_well_formed(msg % m_token);
+		else
+			not_valid(msg % m_token);
+	}
+	
+	return *e;
+}
+
+const doctype::element& parser_imp::get_element(const wstring& name) const
+{
+	DocTypeMap::const_iterator e = find_if(m_doctype.begin(), m_doctype.end(),
+		boost::bind(&doctype::element::name, _1) == name);
+	
+	if (e == m_doctype.end())
+		throw exception("missing doctype element %s", wstring_to_string(name).c_str());
+	
+	return *e;
 }
 
 wchar_t parser_imp::get_next_char()
@@ -1165,7 +1244,7 @@ void parser_imp::retract()
 	m_token.erase(last_char);
 }
 
-void parser_imp::match(int token, bool content)
+void parser_imp::match(int token)
 {
 	if (m_lookahead != token)
 	{
@@ -1176,43 +1255,56 @@ void parser_imp::match(int token, bool content)
 			% expected % found % m_token);
 	}
 	
-	if (content)
+	if (m_in_content)
 		m_lookahead = get_next_content();
 	else
 	{
 		m_lookahead = get_next_token();
 		
-		// PEReferences can occur anywhere in a DTD and their
-		// content must match the production extsubset;
 		if (m_lookahead == xml_PEReference and m_allow_parameter_entity_references)
-		{
-			ParameterEntityMap::iterator r = m_parameter_entities.find(m_token);
-			if (r == m_parameter_entities.end())
-			{
-				boost::wformat msg(L"Undefined parameter entity '%1%'");
-				
-				if (m_standalone == L"yes")
-					not_well_formed(msg % m_token);
-				else
-					not_valid(msg % m_token);
-			}
-			
-			m_data_source.reset(new parameter_entity_data_source(
-				r->second.m_entity_text, r->second.m_entity_path, m_data_source));
-			
-			match(xml_PEReference);
-		}
+			pereference();
+		
+//		// PEReferences can occur anywhere in a DTD and their
+//		// content must match the production extsubset;
+//		if (m_lookahead == xml_PEReference and m_allow_parameter_entity_references)
+//		{
+//			ParameterEntityMap::iterator r = m_parameter_entities.find(m_token);
+//			if (r == m_parameter_entities.end())
+//			{
+//				boost::wformat msg(L"Undefined parameter entity '%1%'");
+//				
+//				if (m_standalone == L"yes")
+//					not_well_formed(msg % m_token);
+//				else
+//					not_valid(msg % m_token);
+//			}
+//			
+//			m_data_source.reset(new parameter_entity_data_source(
+//				r->second.m_entity_text, r->second.m_entity_path, m_production, m_data_source));
+//			
+//			match(xml_PEReference);
+//		}
 	}
 }
 
-void parser_imp::not_well_formed(const wstring& msg)
+//void parser_imp::match_and_expand(int token)
+//{
+//	match(token);
+//		
+//	// PEReferences can occur anywhere in a DTD and their
+//	// content must match the production extsubset;
+//	if (m_lookahead == xml_PEReference)
+//		pereference();
+//}
+
+void parser_imp::not_well_formed(const wstring& msg) const
 {
 	stringstream s;
 	s << "Document not well-formed: " << wstring_to_string(msg);
 	throw not_wf_exception(s.str());
 }
 
-void parser_imp::not_valid(const wstring& msg)
+void parser_imp::not_valid(const wstring& msg) const
 {
 	if (m_validating)
 	{
@@ -1315,76 +1407,27 @@ int parser_imp::get_next_token()
 			// Comment, strictly check for <!-- -->
 			case state_Comment:
 				if (uc == '-')
-					state += 1;
+					token = xml_Comment;
 				else
 					not_well_formed(L"Invalid formatted comment");
 				break;
 			
-			case state_Comment + 1:
-				if (uc == '-')
-					state += 1;
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				else if (uc == 0)
-					not_well_formed(L"Unexpected end of file, run-away comment?");
-				break;
-			
-			case state_Comment + 2:
-				if (uc == '-')
-					state += 1;
-				else if (uc == 0)
-					not_well_formed(L"Unexpected end of file, run-away comment?");
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				else
-					state -= 1;
-				break;
-			
-			case state_Comment + 3:
-				if (uc == '>')
-					token = xml_Comment;
-				else if (uc == 0)
-					not_well_formed(L"Unexpected end of file, run-away comment?");
-				else
-					not_well_formed(L"Invalid comment");
-				break;
-
 			// scan for processing instructions
 			case state_PI:
-				if (uc == 0)
-					not_well_formed(L"Unexpected end of file, run-away processing instruction?");
-				else if (not is_name_char(uc))
+				if (not is_name_char(uc))
 				{
 					retract();
 
-					m_pi_target = m_token.substr(2);
-					
 					// we treat the xml processing instruction separately.
-					if (m_pi_target == L"xml")
+					if (m_token.substr(2) == L"xml")
 						token = xml_XMLDecl;
-					else if (ba::to_lower_copy(m_pi_target) == L"xml")
+					else if (ba::to_lower_copy(m_token.substr(2)) == L"xml")
 						not_well_formed(L"<?XML is neither an XML declaration nor a legal processing instruction target");
 					else
-						state += 1;
+						token = xml_PI;
 				}
 				break;
 			
-			case state_PI + 1:
-				if (uc == '?')
-					state += 1;
-				else if (uc == 0)
-					not_well_formed(L"Unexpected end of file, run-away processing instruction?");
-				break;
-			
-			case state_PI + 2:
-				if (uc == '>')
-					token = xml_PI;
-				else if (uc == 0)
-					not_well_formed(L"Unexpected end of file, run-away processing instruction?");
-				else
-					state -= 1;
-				break;
-
 			// One of the DOCTYPE tags. We scanned <!(char), continue until non-char
 			case state_DocTypeDecl:
 				if (not is_name_char(uc))
@@ -1456,6 +1499,9 @@ int parser_imp::get_next_token()
 				not_well_formed(L"state should never be reached");
 		}
 	}
+
+if (TRACE)
+	cout << ">> token=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1532,48 +1578,13 @@ int parser_imp::get_next_content()
 			
 			// processing instructions
 			case state_PI:
-				if (is_name_start_char(uc))
+				if (not is_name_char(uc))
 				{
-					m_pi_target = uc;
-					state += 1;
-				}
-				else
-					not_well_formed(L"expected target in processing instruction");
-				break;
-			
-			case state_PI + 1:
-				if (is_name_char(uc))
-					m_pi_target += uc;
-				else if (uc == 0)
-					not_well_formed(L"runaway processing instruction");
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				else if (uc == '?')
-					state += 2;
-				else
-					state += 1;
-				break;
-			
-			case state_PI + 2:
-				if (uc == '?')
-					state += 1;
-				else if (uc == 0)
-					not_well_formed(L"runaway processing instruction");
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				break;
-			
-			case state_PI + 3:
-				if (uc == '>')
+					retract();
 					token = xml_PI;
-				else if (uc == 0)
-					not_well_formed(L"runaway processing instruction");
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				else if (uc != '?')
-					state = state_PI + 2;
+				}
 				break;
-
+			
 			// comment or CDATA			
 			case state_CommentOrCDATA:
 				if (uc == '-')				// comment
@@ -1586,36 +1597,9 @@ int parser_imp::get_next_content()
 
 			case state_Comment:
 				if (uc == '-')
-					state += 1;
-				else
-					not_well_formed(L"invalid content");
-				break;
-			
-			case state_Comment + 1:
-				if (uc == '-')
-					state += 1;
-				else if (uc == 0)
-					not_well_formed(L"runaway comment");
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				break;
-			
-			case state_Comment + 2:
-				if (uc == '-')
-					state += 1;
-				else if (uc == 0)
-					not_well_formed(L"runaway processing instruction");
-				else if (not is_char(uc))
-					not_well_formed(L"Illegal character in content text");
-				else
-					state -= 1;
-				break;
-			
-			case state_Comment + 3:
-				if (uc == '>')
 					token = xml_Comment;
 				else
-					not_well_formed(L"invalid comment");
+					not_well_formed(L"invalid content");
 				break;
 
 			// CDATA (we parsed <![ up to this location
@@ -1772,6 +1756,9 @@ int parser_imp::get_next_content()
 				not_well_formed(L"state reached that should not be reachable");
 		}
 	}
+
+if (TRACE)
+	cout << ">> content=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1988,16 +1975,19 @@ void parser_imp::misc()
 {
 	for (;;)
 	{
-		if (m_lookahead == xml_Space or m_lookahead == xml_Comment)
+		switch (m_lookahead)
 		{
-			match(m_lookahead);
-			continue;
-		}
-		
-		if (m_lookahead == xml_PI)
-		{
-			match(xml_PI);
-			continue;
+			case xml_Space:
+				s();
+				continue;
+			
+			case xml_Comment:
+				comment();
+				continue;
+			
+			case xml_PI:
+				pi();
+				continue;
 		}
 		
 		break;
@@ -2050,10 +2040,7 @@ void parser_imp::doctypedecl()
 		parser_state save(this, dtd);
 		
 		m_data_source = dtd;
-		
-		value_saver<bool> save_flag(m_allow_parameter_entity_references, true);
-		
-		match(m_lookahead);
+		m_lookahead = get_next_token();
 		
 		text_decl();
 		
@@ -2074,15 +2061,14 @@ void parser_imp::doctypedecl()
 	}
 	
 	// and the notations in the doctype attlists
-	typedef pair<wstring,doctype_element*> doctype_element_item;
-	foreach (const doctype_element_item& element, m_doctype)
+	foreach (const doctype::element& element, m_doctype)
 	{
-		foreach (const doctype_attribute* attr, element.second->attributes())
+		foreach (const doctype::attribute& attr, element.attributes())
 		{
-			if (attr->get_type() != attTypeNotation)
+			if (attr.get_type() != doctype::attTypeNotation)
 				continue;
 			
-			foreach (const wstring& n, attr->get_enums())
+			foreach (const wstring& n, attr.get_enums())
 			{
 				if (m_notations.count(n) == 0)
 					not_valid(boost::wformat(L"Undefined NOTATION %1%") % n);
@@ -2091,21 +2077,40 @@ void parser_imp::doctypedecl()
 	}
 }
 
+void parser_imp::pereference()
+{
+	const doctype::entity& e = get_parameter_entity(m_token);
+	
+	m_data_source.reset(new parameter_entity_data_source(e.replacement(), e.path(), m_data_source));
+	
+	match(xml_PEReference);
+}
+
 void parser_imp::intsubset()
 {
-	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, false);
 
 	for (;;)
 	{
 		switch (m_lookahead)
 		{
+			case xml_PEReference:
+				pereference();
+				continue;
+			
 			case xml_Element:
 			case xml_AttList:
 			case xml_Entity:
 			case xml_Notation:
-			case xml_PI:
-			case xml_Comment:
 				markup_decl();
+				continue;
+
+			case xml_PI:
+				pi();
+				continue;
+			
+			case xml_Comment:
+				comment();
 				continue;
 			
 			case xml_Space:
@@ -2120,23 +2125,33 @@ void parser_imp::intsubset()
 void parser_imp::extsubset()
 {
 	value_saver<bool> save(m_external_subset, true);
-	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, true);
+	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, false);
 
 	for (;;)
 	{
 		switch (m_lookahead)
 		{
+			case xml_PEReference:
+				pereference();
+				continue;
+			
 			case xml_Element:
 			case xml_AttList:
 			case xml_Entity:
 			case xml_Notation:
-			case xml_PI:
-			case xml_Comment:
 				markup_decl();
 				continue;
 			
 			case xml_IncludeIgnore:
 				conditionalsect();
+				continue;
+			
+			case xml_PI:
+				pi();
+				continue;
+			
+			case xml_Comment:
+				comment();
 				continue;
 			
 			case xml_Space:
@@ -2155,6 +2170,12 @@ void parser_imp::conditionalsect()
 	s();
 	
 	bool include;
+	
+	if (m_lookahead == xml_PEReference)
+	{
+		pereference();
+		s();
+	}
 	
 	if (m_token == L"INCLUDE")
 		include = true;
@@ -2272,19 +2293,20 @@ void parser_imp::markup_decl()
 			break;
 		
 		case xml_PI:
-			m_allow_parameter_entity_references = allow_parameter_entity_references.m_value;
-			match(xml_PI);
+			pi();
 			break;
 
 		case xml_Comment:
-			if (m_parser.comment_handler)
-				m_parser.comment_handler(wstring_to_string(m_token));
-			m_allow_parameter_entity_references = allow_parameter_entity_references.m_value;
-			match(xml_Comment);
+			comment();
 			break;
 
-		default:
-			not_well_formed(boost::wformat(L"unexpected token %1%") % describe_token(m_lookahead));
+		case xml_Space:
+			s();
+			break;
+//
+//		default:
+//			
+//			not_well_formed(boost::wformat(L"unexpected token %1%") % describe_token(m_lookahead));
 	}
 }
 
@@ -2294,7 +2316,7 @@ void parser_imp::element_decl()
 	s(true);
 
 	wstring name = m_token;
-	auto_ptr<doctype_element> element(new doctype_element(name));
+	auto_ptr<doctype::element> element(new doctype::element(name));
 
 	match(xml_Name);
 	s(true);
@@ -2304,11 +2326,11 @@ void parser_imp::element_decl()
 	m_allow_parameter_entity_references = true;
 	match('>');
 	
-	if (m_doctype.find(name) == m_doctype.end())
-		m_doctype[name] = element.release();
+	if (find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name) == m_doctype.end())
+		m_doctype.push_back(element.release());
 }
 
-void parser_imp::contentspec(doctype_element& element)
+void parser_imp::contentspec(doctype::element& element)
 {
 	if (m_lookahead == xml_Name)
 	{
@@ -2468,11 +2490,10 @@ void parser_imp::parameter_entity_decl()
 	m_allow_parameter_entity_references = true;
 	match('>');
 	
-	if (m_parameter_entities.find(name) == m_parameter_entities.end())
+	if (find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
+		boost::bind(&doctype::entity::name, _1) == name) == m_parameter_entities.end())
 	{
-		parsed_entity pe = { path, value };
-		
-		m_parameter_entities[name] = pe;
+		m_parameter_entities.push_back(new doctype::parameter_entity(name, value, path));
 	}
 }
 
@@ -2519,8 +2540,11 @@ void parser_imp::general_entity_decl()
 	m_allow_parameter_entity_references = true;
 	match('>');
 	
-	if (m_general_entities.find(name) == m_general_entities.end())
-		m_general_entities[name] = general_entity(value, external);
+	if (find_if(m_general_entities.begin(), m_general_entities.end(),
+		boost::bind(&doctype::entity::name, _1) == name) == m_general_entities.end())
+	{
+		m_general_entities.push_back(new doctype::general_entity(name, value, external));
+	}
 }
 
 void parser_imp::attlist_decl()
@@ -2530,14 +2554,15 @@ void parser_imp::attlist_decl()
 	wstring element = m_token;
 	match(xml_Name);
 	
-	if (m_doctype.find(element) == m_doctype.end())
+	DocTypeMap::iterator dte = find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == element);
+	
+	if (dte == m_doctype.end())
 	{
 //		if (VERBOSE)
 //			cerr << "ATTLIST declaration for an undefined ELEMENT " << wstring_to_string(element) << endl;
-		m_doctype[element] = new doctype_element(element);
+		m_doctype.push_back(new doctype::element(element));
+		dte = m_doctype.end() - 1;
 	}
-	
-	doctype_element* e = m_doctype[element];
 	
 	while (m_lookahead == xml_Space)
 	{
@@ -2550,7 +2575,7 @@ void parser_imp::attlist_decl()
 		match(xml_Name);
 		s(true);
 		
-		auto_ptr<doctype_attribute> attribute;
+		auto_ptr<doctype::attribute> attribute;
 		
 		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
@@ -2588,7 +2613,7 @@ void parser_imp::attlist_decl()
 			
 			match(')');
 			
-			attribute.reset(new doctype_attribute(name, attTypeEnumerated, enums));
+			attribute.reset(new doctype::attribute(name, doctype::attTypeEnumerated, enums));
 		}
 		else
 		{
@@ -2598,21 +2623,21 @@ void parser_imp::attlist_decl()
 			vector<wstring> notations;
 			
 			if (type == L"CDATA")
-				attribute.reset(new doctype_attribute(name, attTypeString));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeString));
 			else if (type == L"ID")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedID));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedID));
 			else if (type == L"IDREF")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedIDREF));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedIDREF));
 			else if (type == L"IDREFS")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedIDREFS));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedIDREFS));
 			else if (type == L"ENTITY")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedENTITY));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedENTITY));
 			else if (type == L"ENTITIES")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedENTITIES));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedENTITIES));
 			else if (type == L"NMTOKEN")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedNMTOKEN));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedNMTOKEN));
 			else if (type == L"NMTOKENS")
-				attribute.reset(new doctype_attribute(name, attTypeTokenizedNMTOKENS));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeTokenizedNMTOKENS));
 			else if (type == L"NOTATION")
 			{
 				s(true);
@@ -2640,7 +2665,7 @@ void parser_imp::attlist_decl()
 				
 				match(')');
 				
-				attribute.reset(new doctype_attribute(name, attTypeNotation, notations));
+				attribute.reset(new doctype::attribute(name, doctype::attTypeNotation, notations));
 			}
 			else
 				not_well_formed(L"invalid attribute type");
@@ -2661,21 +2686,22 @@ void parser_imp::attlist_decl()
 				match(xml_Name);
 	
 				if (def == L"REQUIRED")
-					attribute->set_default(attDefRequired, L"");
+					attribute->set_default(doctype::attDefRequired, L"");
 				else if (def == L"IMPLIED")
-					attribute->set_default(attDefImplied, L"");
+					attribute->set_default(doctype::attDefImplied, L"");
 				else if (def == L"FIXED")
 				{
 					s();
 
 					wstring value = m_token;
+					normalize_attribute_value(value);
 					if (not value.empty() and not attribute->validate_value(value))
 					{
 						not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
 							% value % name);
 					}
 					
-					attribute->set_default(attDefFixed, value);
+					attribute->set_default(doctype::attDefFixed, value);
 					match(xml_String);
 				}
 				else
@@ -2684,17 +2710,18 @@ void parser_imp::attlist_decl()
 			else
 			{
 				wstring value = m_token;
+				normalize_attribute_value(value);
 				if (not value.empty() and not attribute->validate_value(value))
 				{
 					not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
 						% value % name);
 				}
-				attribute->set_default(attDefNone, value);
+				attribute->set_default(doctype::attDefNone, value);
 				match(xml_String);
 			}
 		}
 		
-		e->add_attribute(attribute.release());
+		dte->add_attribute(attribute.release());
 	}
 
 	m_allow_parameter_entity_references = true;
@@ -2946,10 +2973,8 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 			case 20:
 				if (c == ';')
 				{
-					ParameterEntityMap::iterator e = m_parameter_entities.find(name);
-					if (e == m_parameter_entities.end())
-						not_well_formed(boost::wformat(L"undefined parameter entity reference %1%") % name);
-					result += e->second.m_entity_text;
+					const doctype::entity& e = get_parameter_entity(name);
+					result += e.replacement();
 					state = 0;
 				}
 				else if (is_name_char(c))
@@ -3091,10 +3116,8 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 			case 20:
 				if (c == ';')
 				{
-					ParameterEntityMap::iterator e = m_parameter_entities.find(name);
-					if (e == m_parameter_entities.end())
-						not_well_formed(boost::wformat(L"undefined parameter entity reference %1%") % name);
-					result += e->second.m_entity_text;
+					const doctype::entity& e = get_parameter_entity(name);
+					result += e.replacement();
 					state = 0;
 				}
 				else if (is_name_char(c))
@@ -3220,14 +3243,12 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					if (data->is_entity_on_stack(name))
 						not_well_formed(L"infinite recursion in nested entity references");
 					
-					EntityMap::iterator e = m_general_entities.find(name);
-					if (e == m_general_entities.end())
-						not_well_formed(boost::wformat(L"undefined entity reference %1%") % name);
+					const doctype::entity& e = get_general_entity(name);
 					
-					if (e->second.m_external)
+					if (e.external())
 						not_well_formed(L"attribute value may not contain external entity reference");
 					
-					data_ptr next_data(new entity_data_source(name, m_data_source->base_dir(), e->second.m_entity_text, data));
+					data_ptr next_data(new entity_data_source(name, m_data_source->base_dir(), e.replacement(), data));
 					wstring replacement = normalize_attribute_value(next_data);
 					result += replacement;
 
@@ -3254,12 +3275,14 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 void parser_imp::element()
 {
 	value_saver<bool> in_element(m_in_element, true);
+	value_saver<bool> in_content(m_in_content, false);
 	
 	match(xml_STag);
 	wstring name = m_token;
 	match(xml_Name);
 	
-	doctype_element* dte = m_doctype[name];
+	DocTypeMap::iterator dte =
+		find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name);
 	
 	list<pair<wstring,wstring> > attrs;
 	
@@ -3304,9 +3327,9 @@ void parser_imp::element()
 		}
 		else
 		{
-			if (dte != nil)
+			if (dte != m_doctype.end())
 			{
-				doctype_attribute* dta = dte->get_attribute(attr_name);
+				doctype::attribute* dta = dte->get_attribute(attr_name);
 				if (dta != nil and not dta->validate_value(attr_value))
 					not_valid(boost::wformat(L"invalid value ('%1%') for attribute %2%")
 						% attr_name % attr_value);
@@ -3317,25 +3340,21 @@ void parser_imp::element()
 	}
 	
 	// add missing attributes
-	if (dte != nil)
+	if (dte != m_doctype.end())
 	{
-		const vector<doctype_attribute*>& dtattrs = dte->attributes();
-		
-		for (vector<doctype_attribute*>::const_iterator a = dtattrs.begin(); a != dtattrs.end(); ++a)
+		foreach (const doctype::attribute& dta, dte->attributes())
 		{
-			const doctype_attribute* dta = *a;
-			
-			wstring attr_name = dta->name();
+			wstring attr_name = dta.name();
 			
 			list<pair<wstring,wstring> >::iterator attr = find_if(attrs.begin(), attrs.end(),
 				boost::bind(&pair<wstring,wstring>::first, _1) == attr_name);
 			
-			AttributeDefault defType;
+			doctype::AttributeDefault defType;
 			wstring defValue;
 			
-			boost::tie(defType, defValue) = dta->get_default();
+			boost::tie(defType, defValue) = dta.get_default();
 			
-			if (defType == attDefRequired)
+			if (defType == doctype::attDefRequired)
 			{
 				if (attr == attrs.end())
 					not_valid(boost::wformat(L"missing #REQUIRED attribute %1% for element %2%")
@@ -3371,10 +3390,14 @@ void parser_imp::element()
 	{
 		m_parser.start_element(name, uri, attrs);
 		
-		match('>', true);
+		// open scope, we're entering a content production
+		{
+			value_saver<bool> save(m_in_content, true);
+			match('>');
 
-		if (m_lookahead != xml_ETag)
-			content();
+			if (m_lookahead != xml_ETag)
+				content();
+		}
 		
 		match(xml_ETag);
 		
@@ -3388,7 +3411,8 @@ void parser_imp::element()
 		m_parser.end_element(name, uri);
 	}
 	
-	match('>', in_element.m_value);
+	m_in_content = in_content.m_value;
+	match('>');
 	
 	s();
 }
@@ -3403,21 +3427,19 @@ void parser_imp::content()
 		{
 			case xml_Content:
 				m_parser.character_data(m_token);
-				match(xml_Content, true);
+				match(xml_Content);
 				break;
 			
 			case xml_Reference:
 			{
-				EntityMap::iterator e = m_general_entities.find(m_token);
-				if (e == m_general_entities.end())
-					not_well_formed(boost::wformat(L"undefined entity reference %1%") % m_token);
+				const doctype::entity& e = get_general_entity(m_token);
 				
 				if (m_data_source->is_entity_on_stack(m_token))
 					not_well_formed(L"infinite recursion of entity references");
 				
 				// scope
 				{
-					data_ptr source(new entity_data_source(m_token, m_data_source->base_dir(), e->second.m_entity_text, m_data_source));
+					data_ptr source(new entity_data_source(m_token, m_data_source->base_dir(), e.replacement(), m_data_source));
 				
 					parser_state state(this, source);
 					
@@ -3430,7 +3452,7 @@ void parser_imp::content()
 						not_well_formed(L"entity reference should be a valid content production");
 				}
 				
-				match(xml_Reference, true);
+				match(xml_Reference);
 				break;
 			}
 			
@@ -3439,18 +3461,15 @@ void parser_imp::content()
 				break;
 			
 			case xml_PI:
-				if (m_pi_target == L"xml")	// <?xml declaration, not allowed here
-					not_well_formed(L"<?xml declaration not allowed in content");
-				else if (ba::to_lower_copy(m_pi_target) == L"xml")
-					not_well_formed(L"<?XML is neither an XML declaration nor a legal processing instruction target");
-				else
-					m_parser.processing_instruction(m_pi_target, m_token);
-				match(xml_PI, true);
+				pi();
 				break;
 			
 			case xml_Comment:
-				m_parser.comment(m_token);
-				match(xml_Comment, true);
+				comment();
+				break;
+			
+			case xml_Space:
+				s();
 				break;
 			
 			case xml_CDSect:
@@ -3458,15 +3477,132 @@ void parser_imp::content()
 				m_parser.character_data(m_token);
 				m_parser.end_cdata_section();
 				
-				match(xml_CDSect, true);
+				match(xml_CDSect);
 				break;
 
 			default:
-				not_well_formed(boost::wformat(L"unexpected token %1%") % m_lookahead);
+				match(xml_Content);
+//			default:
+//				not_well_formed(boost::wformat(L"unexpected token %1%") % m_lookahead);
 
 		}
 	}
 	while (m_lookahead != xml_ETag and m_lookahead != xml_Eof);
+}
+
+void parser_imp::comment()
+{
+	// m_lookahead == xml_Comment
+	// read characters until we reach -->
+	// check all characters in between for validity
+	
+	enum {
+		state_Start,
+		state_FirstHyphenSeen,
+		state_SecondHyphenSeen,
+		state_CommentClosed
+	} state = state_Start;
+
+	m_token.clear();
+
+	while (state != state_CommentClosed)
+	{
+		wchar_t ch = get_next_char();
+		
+		if (ch == 0)
+			not_well_formed(L"runaway comment");
+		if (not is_char(ch))
+			not_well_formed(boost::wformat(L"illegal character in content: 0x'%x'") % int(ch));
+		
+		switch (state)
+		{
+			case state_Start:
+				if (ch == '-')
+					state = state_FirstHyphenSeen;
+				break;
+			
+			case state_FirstHyphenSeen:
+				if (ch == '-')
+					state = state_SecondHyphenSeen;
+				else
+					state = state_Start;
+				break;
+			
+			case state_SecondHyphenSeen:
+				if (ch == '>')
+					state = state_CommentClosed;
+				else
+					not_well_formed(L"double hyphen found in comment");
+				break;
+			
+			case state_CommentClosed:
+				assert(false);
+		}
+	}
+	
+	assert(m_token.length() >= 3);
+	m_token.erase(m_token.end() - 3, m_token.end());
+	m_parser.comment(m_token);
+	
+	match(xml_Comment);
+}
+
+void parser_imp::pi()
+{
+	// m_lookahead == xml_PI
+	// read characters until we reach -->
+	// check all characters in between for validity
+	
+	wstring pi_target = m_token.substr(2);
+	
+	if (pi_target.empty())
+		not_well_formed(L"processing instruction target missing");
+
+	// we treat the xml processing instruction separately.
+	if (m_token.substr(2) == L"xml")
+		not_well_formed(L"xml declaration are only valid as the start of the file");
+	else if (ba::to_lower_copy(pi_target) == L"xml")
+		not_well_formed(L"<?XML is neither an XML declaration nor a legal processing instruction target");
+	
+	enum {
+		state_Start,
+		state_QuestionMarkSeen,
+		state_PIClosed
+	} state = state_Start;
+
+	m_token.clear();
+
+	while (state != state_PIClosed)
+	{
+		wchar_t ch = get_next_char();
+		
+		if (ch == 0)
+			not_well_formed(L"runaway processing instruction");
+		if (not is_char(ch))
+			not_well_formed(boost::wformat(L"illegal character in processing instruction: 0x'%x'") % int(ch));
+		
+		switch (state)
+		{
+			case state_Start:
+				if (ch == '?')
+					state = state_QuestionMarkSeen;
+				break;
+			
+			case state_QuestionMarkSeen:
+				if (ch == '>')
+					state = state_PIClosed;
+				else if (ch != '?')
+					state = state_Start;
+				break;
+			
+			case state_PIClosed:
+				assert(false);
+		}
+	}
+	
+	m_parser.processing_instruction(pi_target, m_token);
+	
+	match(xml_PI);
 }
 
 // --------------------------------------------------------------------
