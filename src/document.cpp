@@ -53,8 +53,8 @@ class pretty_ostream : public ostream
 pretty_ostream&	pretty_ostream::operator<<(const node& n)
 {
 	assert(m_base);
-	
-	n.write(*m_base, 0);
+	assert(false);
+//	n.write(*m_base, 0);
 	
 	return *this;
 }

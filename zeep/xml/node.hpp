@@ -104,6 +104,14 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 							std::ostream&		stream,
 							int					level) const;
 
+	void				write(
+							std::ostream&		stream,
+							int					level,
+							int					indent,
+							bool				empty,
+							bool				wrap,
+							bool				trim) const;
+
 	node_list&			children();
 	const node_list&	children() const;
 	

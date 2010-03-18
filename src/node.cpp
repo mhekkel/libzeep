@@ -24,7 +24,7 @@ struct node_content_imp
 	void			add_content(const string& text);
 	void			add_child(node_ptr child);
 
-	void			write(ostream& os, int level);
+	void			write(ostream& os, int level, int indent, bool empty, bool wrap, bool trim);
 	
 	bool			empty() const			{ return m_order.empty(); }
 
@@ -54,35 +54,42 @@ void node_content_imp::add_child(node_ptr child)
 	m_order.push_back(false);
 }
 
-void node_content_imp::write(ostream& os, int level)
+void node_content_imp::write(ostream& os, int level, int indent, bool empty, bool wrap, bool trim)
 {
 	assert(m_order.size() == m_children.size() + m_content.size());
 
 	node_list::iterator child = m_children.begin();
 	list<string>::iterator content = m_content.begin();
 	
+	bool last_is_space = false;
+	
 	for (vector<bool>::iterator selector = m_order.begin(); selector != m_order.end(); ++selector)
 	{
 		if (*selector)	// next is text
 		{
-			string text = *content;
-			
-			ba::replace_all(text, "&", "&amp;");
-			ba::replace_all(text, "<", "&lt;");
-			ba::replace_all(text, ">", "&gt;");
-			ba::replace_all(text, "\"", "&quot;");
-			ba::replace_all(text, "\n", "&#10;");
-			ba::replace_all(text, "\r", "&#13;");
-			ba::replace_all(text, "\t", "&#9;");
-			
-			os << text;
+			foreach (char c, *content)
+			{
+				switch (c)
+				{
+					case '&':	os << "&amp;";		last_is_space = false; break;
+					case '<':	os << "&lt;";		last_is_space = false; break;
+					case '>':	os << "&gt;";		last_is_space = false; break;
+					case '\"':	os << "&quot;";		last_is_space = false; break;
+					case '\n':	os << "&#10;";		last_is_space = false; break;
+					case '\r':	os << "&#13;";		last_is_space = false; break;
+					case '\t':	os << "&#9;";		last_is_space = false; break;
+					case ' ':	if (not trim or not last_is_space) os << ' '; last_is_space = true; break;
+					default:	os << c;			last_is_space = false; break;
+				}
+			}
 			
 			++content;
 		}
 		else
 		{
-			child->write(os, level + 1);
+			child->write(os, level + 1, indent, empty, wrap, trim);
 			++child;
+			last_is_space = false;
 		}
 	}
 }
@@ -392,9 +399,13 @@ string node::find_prefix(
 
 void node::write(
 	ostream&			stream,
-	int					level) const
+	int					level,
+	int					indent,
+	bool				empty,
+	bool				wrap,
+	bool				trim) const
 {
-	for (int i = 0; i < 2 * level; ++i)
+	for (int i = 0; i < indent * level; ++i)
 		stream << ' ';
 
 	string qname;
@@ -423,25 +434,38 @@ void node::write(
 		}
 	}
 
-	if (m_content->empty())
-		stream << "/>" << endl;
+	if (empty and m_content->empty())
+	{
+		stream << "/>";
+		if (wrap)
+			stream << endl;
+	}
 	else
 	{
 		stream << '>';
 		
-		if (not m_content->children().empty())
+		if (wrap and not m_content->children().empty())
 			stream << endl;
 		
-		m_content->write(stream, level);
+		m_content->write(stream, level, indent, empty, wrap, trim);
 
 		if (not m_content->children().empty())
 		{
-			for (int i = 0; i < 2 * level; ++i)
+			for (int i = 0; i < indent * level; ++i)
 				stream << ' ';
 		}
 
-		stream << "</" << qname << '>' << endl;
+		stream << "</" << qname << '>';
+		if (wrap)
+			stream << endl;
 	}
+}
+
+void node::write(
+	ostream&			stream,
+	int					level) const
+{
+	write(stream, level, 0, false, false, false);
 }
 
 ostream& operator<<(ostream& lhs, const node& rhs)

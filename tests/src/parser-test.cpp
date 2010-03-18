@@ -15,6 +15,7 @@
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/expat_doc.hpp"
 #include "zeep/xml/libxml2_doc.hpp"
+#include "zeep/xml/iomanip.hpp"
 
 using namespace std;
 using namespace zeep;
@@ -42,9 +43,6 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	string s1 = s.str();
 //	ba::trim(s1);
 	
-	if (VERBOSE)
-		cout << s1;
-
 	if (fs::is_directory(outfile))
 		;
 	else if (fs::exists(outfile))
@@ -72,7 +70,15 @@ bool run_valid_test(istream& is, fs::path& outfile)
 			xml::document b(s2);
 			
 			if (a == b)
+			{
 				++dubious_tests;
+				
+				if (VERBOSE)
+				{
+					cout << s1 << endl
+						 << s2 << endl;
+				}
+			}
 			else
 			{
 				stringstream s;
