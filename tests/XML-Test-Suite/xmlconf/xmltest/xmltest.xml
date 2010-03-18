@@ -271,7 +271,7 @@
 	URI="not-wf/sa/082.xml" SECTIONS="3.1">
     This tests the <EM>No External Entity References</EM> WFC,
     since the entity is referred to within an attribute.  </TEST>
-<TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-083"
+<TEST TYPE="invalid" ENTITIES="none" ID="not-wf-sa-083"
 	URI="not-wf/sa/083.xml" SECTIONS="4.2.2 [76]">
     Undefined NOTATION n. </TEST>
 <TEST TYPE="not-wf" ENTITIES="none" ID="not-wf-sa-084"

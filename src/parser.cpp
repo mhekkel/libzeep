@@ -657,12 +657,18 @@ class entity : boost::noncopyable
 
 	bool			external() const						{ return m_external; }
 
+	bool			externally_defined() const				{ return m_externally_defined; }
+	void			externally_defined(bool externally_defined)
+															{ m_externally_defined = externally_defined; }
+
   protected:
 					entity(const wstring& name, const wstring& replacement, bool external, bool parsed)
-						: m_name(name), m_replacement(replacement), m_parameter(false), m_parsed(parsed), m_external(external) {}
+						: m_name(name), m_replacement(replacement), m_parameter(false), m_parsed(parsed), m_external(external)
+						, m_externally_defined(false) {}
 
 					entity(const wstring& name, const wstring& replacement, const fs::path& path)
-						: m_name(name), m_replacement(replacement), m_path(path), m_parameter(true), m_parsed(true), m_external(true) {}
+						: m_name(name), m_replacement(replacement), m_path(path), m_parameter(true), m_parsed(true), m_external(true)
+						, m_externally_defined(false) {}
 
 	wstring			m_name;
 	wstring			m_replacement;
@@ -671,6 +677,7 @@ class entity : boost::noncopyable
 	bool			m_parameter;
 	bool			m_parsed;
 	bool			m_external;
+	bool			m_externally_defined;
 };
 
 class general_entity : public entity
@@ -955,6 +962,7 @@ struct parser_imp
 					read_external_id();
 	void			intsubset();
 	void			extsubset();
+	void			declsep();
 	void			conditionalsect();
 	void			ignoresectcontents();
 	void			markup_decl();
@@ -1031,7 +1039,6 @@ struct parser_imp
 	// throws if it isn't. Depending on the content flag we call either get_next_token or get_next_content
 	// to find the next look-a-head token.
 	void			match(int token);
-//	void			match_and_expand(int token);
 
 	// utility routine
 	float			parse_version();
@@ -1058,6 +1065,7 @@ struct parser_imp
 							, m_version(1.0f)
 							, m_encoding(enc_UTF8)
 							, m_external_subset(true)
+							, m_external_dtd(false)
 						{
 							swap_state();
 						}
@@ -1076,6 +1084,7 @@ struct parser_imp
 							swap(m_impl->m_version,			m_version);
 							swap(m_impl->m_encoding,		m_encoding);
 							swap(m_impl->m_external_subset,	m_external_subset);
+							swap(m_impl->m_in_external_dtd,	m_external_dtd);
 						}
 		
 		parser_imp*		m_impl;
@@ -1086,6 +1095,7 @@ struct parser_imp
 		float			m_version;
 		Encoding		m_encoding;
 		bool			m_external_subset;
+		bool			m_external_dtd;
 	};
 
 	// And during parsing we keep track of the namespaces we encounter.
@@ -1146,6 +1156,7 @@ struct parser_imp
 	bool					m_external_subset;
 	bool					m_in_element;
 	bool					m_in_content;
+	bool					m_in_external_dtd;
 	bool					m_allow_parameter_entity_references;
 
 	doctype::entity_list	m_parameter_entities;
@@ -1189,12 +1200,14 @@ parser_imp::parser_imp(
 	, m_data_source(new istream_data_source(data, data_ptr()))
 	, m_version(1.0f)
 	, m_encoding(enc_UTF8)
+	, m_standalone(L"no")
 	, m_parser(parser)
 	, m_ns(nil)
 	, m_in_doctype(false)
 	, m_external_subset(false)
 	, m_in_element(false)
 	, m_in_content(false)
+	, m_in_external_dtd(false)
 	, m_allow_parameter_entity_references(false)
 {
 	// these entities are always recognized:
@@ -1567,6 +1580,9 @@ int parser_imp::get_next_content()
 	{
 		wchar_t uc = get_next_char();
 		
+		if (uc != 0 and not is_char(uc))
+			not_well_formed(boost::wformat(L"illegal character in content: 0x'%x'") % int(uc));
+		
 		switch (state)
 		{
 			case state_Start:
@@ -1923,13 +1939,10 @@ void parser_imp::xml_decl()
 			not_well_formed(L"This library only supports XML version 1.x");
 		match(xml_String);
 
-		while (m_lookahead == xml_Space)
+		if (m_lookahead == xml_Space)
 		{
 			s(true);
 			
-			if (m_lookahead != xml_Name)
-				break;
-
 			if (m_token == L"encoding")
 			{
 				match(xml_Name);
@@ -1949,7 +1962,8 @@ void parser_imp::xml_decl()
 				else
 					not_well_formed(boost::wformat(L"Unsupported encoding value %1%") % m_token);
 				match(xml_String);
-				continue;
+
+				s();
 			}
 			
 			if (m_token == L"standalone")
@@ -1960,10 +1974,8 @@ void parser_imp::xml_decl()
 					not_well_formed(L"Invalid XML declaration, standalone value should be either yes or no");
 				m_standalone = m_token;
 				match(xml_String);
-				continue;
+				s();
 			}
-			
-			not_well_formed(L"unexpected attribute in xml declaration");
 		}
 		
 		match('?');
@@ -1977,34 +1989,25 @@ void parser_imp::text_decl()
 	{
 		match(xml_XMLDecl);
 	
-		while (m_lookahead == xml_Space)
+		s(true);
+			
+		if (m_token == L"version")
 		{
+			match(xml_Name);
+			eq();
+			m_version = parse_version();
+			if (m_version >= 2.0 or m_version < 1.0)
+				throw exception("This library only supports XML version 1.x");
+			match(xml_String);
 			s(true);
-			
-			if (m_lookahead != xml_Name)
-				break;
-			
-			if (m_token == L"version")
-			{
-				match(xml_Name);
-				eq();
-				m_version = parse_version();
-				if (m_version >= 2.0 or m_version < 1.0)
-					throw exception("This library only supports XML version 1.x");
-				match(xml_String);
-				continue;
-			}
-			
-			if (m_token == L"encoding")
-			{
-				match(xml_Name);
-				eq();
-				match(xml_String);
-				continue;
-			}
-			
-			not_well_formed(L"unexpected attribute in xml declaration");
 		}
+		
+		if (m_token != L"encoding")
+			not_well_formed(L"encoding attribute is mandatory in text declaration");
+		match(xml_Name);
+		eq();
+		match(xml_String);
+		s();
 		
 		match('?');
 		match('>');
@@ -2081,6 +2084,7 @@ void parser_imp::doctypedecl()
 		
 		m_data_source = dtd;
 		m_lookahead = get_next_token();
+		m_in_external_dtd = true;
 		
 		text_decl();
 		
@@ -2088,6 +2092,8 @@ void parser_imp::doctypedecl()
 
 		if (m_lookahead != xml_Eof)
 			not_well_formed(L"Error parsing external dtd");
+
+		m_in_external_dtd = false;
 	}
 
 	match('>');
@@ -2134,10 +2140,6 @@ void parser_imp::intsubset()
 	{
 		switch (m_lookahead)
 		{
-			case xml_PEReference:
-				pereference();
-				continue;
-			
 			case xml_Element:
 			case xml_AttList:
 			case xml_Entity:
@@ -2154,11 +2156,40 @@ void parser_imp::intsubset()
 				continue;
 			
 			case xml_Space:
-				s();
+			case xml_PEReference:
+				declsep();
 				continue;
 		}
 		
 		break;
+	}
+}
+
+void parser_imp::declsep()
+{
+	switch (m_lookahead)
+	{
+		case xml_PEReference:
+		{
+			const doctype::entity& e = get_parameter_entity(m_token);
+			
+			{
+				data_ptr source(new parameter_entity_data_source(e.replacement(), e.path()));
+				parser_state state(this, source);
+				
+				m_lookahead = get_next_token();
+				extsubset();
+				if (m_lookahead != xml_Eof)
+					not_well_formed(L"parameter entity replacement should match external subset production");
+			}
+			
+			match(xml_PEReference);
+			break;
+		}
+			
+		case xml_Space:
+			s();
+			break;
 	}
 }
 
@@ -2171,10 +2202,6 @@ void parser_imp::extsubset()
 	{
 		switch (m_lookahead)
 		{
-			case xml_PEReference:
-				pereference();
-				continue;
-			
 			case xml_Element:
 			case xml_AttList:
 			case xml_Entity:
@@ -2195,7 +2222,8 @@ void parser_imp::extsubset()
 				continue;
 			
 			case xml_Space:
-				s();
+			case xml_PEReference:
+				declsep();
 				continue;
 		}
 		
@@ -2205,6 +2233,7 @@ void parser_imp::extsubset()
 
 void parser_imp::conditionalsect()
 {
+	valid_nesting_validator check(m_data_source);
 	match(xml_IncludeIgnore);
 	
 	s();
@@ -2225,6 +2254,9 @@ void parser_imp::conditionalsect()
 		not_well_formed(boost::wformat(L"Unexpected literal %1%") % m_token);
 	
 	match(xml_Name);
+	
+	check.check();
+	
 	s();
 		
 	if (include)
@@ -2233,11 +2265,13 @@ void parser_imp::conditionalsect()
 		extsubset();
 		match(']');
 		match (']');
+		check.check();
 		match ('>');
 	}
 	else
 	{
 		ignoresectcontents();
+		check.check();
 		m_lookahead = get_next_token();
 	}
 }
@@ -2348,6 +2382,8 @@ void parser_imp::markup_decl()
 
 void parser_imp::element_decl()
 {
+	valid_nesting_validator check(m_data_source);
+	
 	match(xml_Element);
 	s(true);
 
@@ -2357,12 +2393,12 @@ void parser_imp::element_decl()
 	match(xml_Name);
 	s(true);
 	
-//	valid_nesting_validator check(m_data_source);
 	contentspec(*element);
 	s();
-//	check.check();
 	
 	m_allow_parameter_entity_references = true;
+
+	check.check();
 	match('>');
 	
 	if (find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name) == m_doctype.end())
@@ -2379,11 +2415,13 @@ void parser_imp::contentspec(doctype::element& element)
 	}
 	else
 	{
+		valid_nesting_validator check(m_data_source);
 		match('(');
 		
 		s();
 		
 		bool mixed = false;
+		bool more = false;
 
 		if (m_lookahead == '#')	// Mixed
 		{
@@ -2396,10 +2434,19 @@ void parser_imp::contentspec(doctype::element& element)
 			
 			s();
 			
+			set<wstring> seen;
+			
 			while (m_lookahead == '|')
 			{
+				more = true;
+				
 				match('|');
 				s();
+				
+				if (seen.count(m_token) > 0)
+					not_valid(L"no duplicates allowed in mixed content for element declaration");
+				seen.insert(m_token);
+								
 				match(xml_Name);
 				s();
 			}
@@ -2410,6 +2457,7 @@ void parser_imp::contentspec(doctype::element& element)
 			s();
 			if (m_lookahead == ',')
 			{
+				more = true;
 				do
 				{
 					match(m_lookahead);
@@ -2421,6 +2469,7 @@ void parser_imp::contentspec(doctype::element& element)
 			}
 			else if (m_lookahead == '|')
 			{
+				more = true;
 				do
 				{
 					match(m_lookahead);
@@ -2433,10 +2482,19 @@ void parser_imp::contentspec(doctype::element& element)
 		}
 
 		s();
+
+		check.check();
 		match(')');
 		
-		if (m_lookahead == '*' or (not mixed and (m_lookahead == '+' or m_lookahead == '?')))
-			match(m_lookahead);
+		if (m_lookahead == '*')
+			match('*');
+		else if (more)
+		{
+			if (mixed)
+				match('*');
+			else if (m_lookahead == '+' or m_lookahead == '?')
+				match(m_lookahead);
+		}
 	}
 }
 
@@ -2510,6 +2568,8 @@ void parser_imp::parameter_entity_decl()
 
 	fs::path path;
 	wstring value;
+
+	m_allow_parameter_entity_references = false;
 	
 	// PEDef is either a EntityValue...
 	if (m_lookahead == xml_String)
@@ -2588,6 +2648,9 @@ void parser_imp::general_entity_decl()
 		
 		if (not parsed)
 			m_general_entities.back().ndata(ndata);
+		
+		if (m_in_external_dtd)
+			m_general_entities.back().externally_defined(true);
 	}
 }
 
@@ -2607,6 +2670,8 @@ void parser_imp::attlist_decl()
 		m_doctype.push_back(new doctype::element(element));
 		dte = m_doctype.end() - 1;
 	}
+	
+	// attdef
 	
 	while (m_lookahead == xml_Space)
 	{
@@ -2717,47 +2782,26 @@ void parser_imp::attlist_decl()
 		
 		// att def
 
-		if (m_lookahead != '>')
+		s(true);
+		
+		wstring value;
+		
+		if (m_lookahead == '#')
 		{
-			s(true);
-			
-			wstring value;
-			
-			if (m_lookahead == '#')
-			{
-				match(m_lookahead);
-				wstring def = m_token;
-				match(xml_Name);
-	
-				if (def == L"REQUIRED")
-					attribute->set_default(doctype::attDefRequired, L"");
-				else if (def == L"IMPLIED")
-					attribute->set_default(doctype::attDefImplied, L"");
-				else if (def == L"FIXED")
-				{
-					if (attribute->get_type() == doctype::attTypeTokenizedID)
-						not_valid(L"the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
-					
-					s();
+			match(m_lookahead);
+			wstring def = m_token;
+			match(xml_Name);
 
-					wstring value = m_token;
-					normalize_attribute_value(value);
-					if (not value.empty() and not attribute->validate_value(value, m_general_entities))
-					{
-						not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
-							% value % name);
-					}
-					
-					attribute->set_default(doctype::attDefFixed, value);
-					match(xml_String);
-				}
-				else
-					not_well_formed(L"invalid attribute default");
-			}
-			else
+			if (def == L"REQUIRED")
+				attribute->set_default(doctype::attDefRequired, L"");
+			else if (def == L"IMPLIED")
+				attribute->set_default(doctype::attDefImplied, L"");
+			else if (def == L"FIXED")
 			{
 				if (attribute->get_type() == doctype::attTypeTokenizedID)
 					not_valid(L"the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
+				
+				s(true);
 
 				wstring value = m_token;
 				normalize_attribute_value(value);
@@ -2766,9 +2810,27 @@ void parser_imp::attlist_decl()
 					not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
 						% value % name);
 				}
-				attribute->set_default(doctype::attDefNone, value);
+				
+				attribute->set_default(doctype::attDefFixed, value);
 				match(xml_String);
 			}
+			else
+				not_well_formed(L"invalid attribute default");
+		}
+		else
+		{
+			if (attribute->get_type() == doctype::attTypeTokenizedID)
+				not_valid(L"the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
+
+			wstring value = m_token;
+			normalize_attribute_value(value);
+			if (not value.empty() and not attribute->validate_value(value, m_general_entities))
+			{
+				not_valid(boost::wformat(L"default value '%1%' for attribute '%2%' is not valid")
+					% value % name);
+			}
+			attribute->set_default(doctype::attDefNone, value);
+			match(xml_String);
 		}
 		
 		if (attribute->get_type() == doctype::attTypeTokenizedID)
@@ -2984,6 +3046,9 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 					charref = charref * 10 + (c - '0');
 				else if (c == ';')
 				{
+					if (not is_char(charref))
+						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
+
 					result += charref;
 					state = 0;
 				}
@@ -3020,6 +3085,9 @@ void parser_imp::parse_parameter_entity_declaration(wstring& s)
 					charref = (charref << 4) + (c - '0');
 				else if (c == ';')
 				{
+					if (not is_char(charref))
+						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
+					
 					result += charref;
 					state = 0;
 				}
@@ -3112,6 +3180,9 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 					charref = charref * 10 + (c - '0');
 				else if (c == ';')
 				{
+					if (not is_char(charref))
+						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
+
 					result += charref;
 					state = 0;
 				}
@@ -3148,6 +3219,9 @@ void parser_imp::parse_general_entity_declaration(wstring& s)
 					charref = (charref << 4) + (c - '0');
 				else if (c == ';')
 				{
+					if (not is_char(charref))
+						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
+
 					result += charref;
 					state = 0;
 				}
@@ -3251,6 +3325,9 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					charref = charref * 10 + (c - '0');
 				else if (c == ';')
 				{
+					if (not is_char(charref))
+						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
+
 					result += charref;
 					state = 0;
 				}
@@ -3287,6 +3364,9 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					charref = (charref << 4) + (c - '0');
 				else if (c == ';')
 				{
+					if (not is_char(charref))
+						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
+
 					result += charref;
 					state = 0;
 				}
@@ -3304,6 +3384,9 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					
 					if (e.external())
 						not_well_formed(L"attribute value may not contain external entity reference");
+					
+					if (e.externally_defined() and m_standalone == L"yes")
+						not_well_formed(L"document marked as standalone but an external entity is referenced");
 					
 					data_ptr next_data(new entity_data_source(name, m_data_source->base_dir(), e.replacement(), data));
 					wstring replacement = normalize_attribute_value(next_data);
@@ -3523,6 +3606,12 @@ void parser_imp::content()
 				if (m_data_source->is_entity_on_stack(m_token))
 					not_well_formed(L"infinite recursion of entity references");
 				
+				if (e.externally_defined() and m_standalone == L"yes")
+					not_well_formed(L"document marked as standalone but an external entity is referenced");
+				
+				if (not e.parsed())
+					not_well_formed(L"content has a general entity reference to an unparsed entity");
+				
 				// scope
 				{
 					data_ptr source(new entity_data_source(m_token, m_data_source->base_dir(), e.replacement(), m_data_source));
@@ -3530,6 +3619,7 @@ void parser_imp::content()
 					parser_state state(this, source);
 					
 					m_lookahead = get_next_content();
+					m_in_external_dtd = e.externally_defined();
 					
 					if (m_lookahead != xml_Eof)
 						content();
@@ -3567,10 +3657,7 @@ void parser_imp::content()
 				break;
 
 			default:
-				match(xml_Content);
-//			default:
-//				not_well_formed(boost::wformat(L"unexpected token %1%") % m_lookahead);
-
+				match(xml_Content);	// will fail and report error
 		}
 	}
 	while (m_lookahead != xml_ETag and m_lookahead != xml_Eof);
@@ -3652,6 +3739,7 @@ void parser_imp::pi()
 	
 	enum {
 		state_Start,
+		state_Data,
 		state_QuestionMarkSeen,
 		state_PIClosed
 	} state = state_Start;
@@ -3672,13 +3760,22 @@ void parser_imp::pi()
 			case state_Start:
 				if (ch == '?')
 					state = state_QuestionMarkSeen;
+				else if (ch == ' ' or ch == '\n' or ch == '\t')
+					state = state_Data;
+				else
+					not_well_formed(L"a space is required before pi data");
+				break;
+			
+			case state_Data:
+				if (ch == '?')
+					state = state_QuestionMarkSeen;
 				break;
 			
 			case state_QuestionMarkSeen:
 				if (ch == '>')
 					state = state_PIClosed;
 				else if (ch != '?')
-					state = state_Start;
+					state = state_Data;
 				break;
 			
 			case state_PIClosed:

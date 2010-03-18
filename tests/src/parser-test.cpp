@@ -28,7 +28,7 @@ namespace ba = boost::algorithm;
 
 int VERBOSE;
 int TRACE;
-int failed_tests, dubious_tests, error_tests, should_have_failed, total_tests;
+int failed_tests, dubious_tests, error_tests, should_have_failed, total_tests, skipped_tests;
 
 bool run_valid_test(istream& is, fs::path& outfile)
 {
@@ -103,6 +103,14 @@ bool run_test(xml::node& test, fs::path base_dir)
 		return false;
 	}
 	
+	if (test.get_attribute("SECTIONS") == "B.")
+	{
+		if (VERBOSE)
+			cout << "skipping unicode character validation tests" << endl;
+		++skipped_tests;
+		return true;
+	}
+	
 	fs::current_path(input.branch_path());
 
 	fs::ifstream is(input);
@@ -127,17 +135,21 @@ bool run_test(xml::node& test, fs::path base_dir)
 			}
 			catch (zeep::xml::not_wf_exception& e)
 			{
-				if (test.get_attribute("TYPE") == "not-wf")
-					failed = true;
-				else
+				if (test.get_attribute("TYPE") != "not-wf")
 					throw zeep::exception(string("Wrong exception (should have been invalid):\n\t") + e.what());
+
+				failed = true;
+				if (VERBOSE)
+					cout << e.what() << endl;
 			}
 			catch (zeep::xml::invalid_exception& e)
 			{
-				if (test.get_attribute("TYPE") == "invalid")
-					failed = true;
-				else
+				if (test.get_attribute("TYPE") != "invalid")
 					throw zeep::exception(string("Wrong exception (should have been not-wf):\n\t") + e.what());
+
+				failed = true;
+				if (VERBOSE)
+					cout << e.what() << endl;
 			}
 			catch (std::exception& e)
 			{
@@ -211,8 +223,11 @@ void run_test_case(xml::node& testcase, const string& id,
 			if ((id.empty() or id == testcasenode.get_attribute("ID")) and
 				(type.empty() or type == testcasenode.get_attribute("TYPE")))
 			{
-				if (not run_test(testcasenode, base_dir))
+				if (fs::exists(base_dir / testcasenode.get_attribute("URI")) and
+					not run_test(testcasenode, base_dir))
+				{
 					failed_ids.push_back(testcasenode.get_attribute("ID"));
+				}
 			}
 		}
 		else if (testcasenode.name() == "TESTCASE" or testcasenode.name() == "TESTCASES")
@@ -304,7 +319,7 @@ int main(int argc, char* argv[])
 		
 		cout << endl
 			 << "summary: " << endl
-			 << "  ran " << total_tests << " tests" << endl
+			 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
 			 << "  " << error_tests << " threw an exception" << endl
 			 << "  " << failed_tests << " failed" << endl
 			 << "  " << should_have_failed << " should have failed but didn't" << endl
