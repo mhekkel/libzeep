@@ -189,7 +189,7 @@ void my_server::Find(
 	out.hits.push_back(h);
 }
 
-#define FORKED_MODE 1
+#define FORKED_MODE 0
 
 int main(int argc, const char* argv[])
 {

@@ -95,8 +95,10 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 void reply::set_content(xml::node_ptr data)
 {
 	stringstream s;
-	s << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl
-	  << *data;
+
+	xml::document doc;
+	doc.root(data);
+	s << doc;
 	
 	content = s.str();
 	status = ok;

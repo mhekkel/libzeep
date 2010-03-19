@@ -71,7 +71,8 @@ void server::handle_request(const http::request& req, http::reply& rep)
 		
 		if (req.method == "POST")	// must be a SOAP call
 		{
-			xml::document doc(req.payload);
+			xml::document doc;
+			doc.read(req.payload);
 			envelope env(doc);
 			xml::node_ptr request = env.request();
 			

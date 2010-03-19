@@ -19,7 +19,7 @@ MANDIR				= $(DESTDIR)man/man3
 
 BOOST_LIBS			= boost_system boost_thread
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
-LIBS				= expat $(BOOST_LIBS)
+LIBS				= $(BOOST_LIBS)
 LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -gdwarf-2
 
 CC					?= c++
@@ -28,6 +28,7 @@ CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC
 VPATH += src
 
 OBJECTS = \
+	obj/doctype.o \
 	obj/document.o \
 	obj/exception.o \
 	obj/node.o \
@@ -37,9 +38,10 @@ OBJECTS = \
 	obj/reply.o \
 	obj/connection.o \
 	obj/http-server.o \
-	obj/soap-server.o
+	obj/soap-server.o \
+	obj/unicode_support.o \
 
-lib: libzeep.a libzeep.so
+lib: libzeep.so
 
 libzeep.a: $(OBJECTS)
 	ld -r -o $@ $?
@@ -48,7 +50,7 @@ libzeep.so: $(OBJECTS)
 	c++ -shared -o $@ $(LDOPTS) $?
 
 zeep-test: lib obj/zeep-test.o
-	c++ -o $@ obj/zeep-test.o libzeep.a $(LDOPTS) -lboost_filesystem
+	c++ -o $@ -L. -lzeep $(LDOPTS) -lboost_filesystem obj/zeep-test.o
 
 parser-test: lib obj/parser-test.o
 	c++ -o $@ $(OBJECTS) $(LDOPTS)

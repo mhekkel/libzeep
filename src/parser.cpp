@@ -32,7 +32,7 @@ using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 
-extern int TRACE;
+//extern int TRACE;
 
 #ifndef nil
 #define nil NULL
@@ -55,16 +55,7 @@ struct value_saver
 		~value_saver() { m_ref = m_value; }
 };
 
-
-
 }
-
-enum Encoding {
-	enc_UTF8,
-	enc_UTF16BE,
-	enc_UTF16LE,
-	enc_ISO88591
-};
 
 // parsing XML is somewhat like macro processing,
 // we can encounter entities that need to be expanded into replacement text
@@ -171,7 +162,7 @@ class istream_data_source : public data_source
 					m_data_ptr;
 	stack<char>		m_byte_buffer;
 	wchar_t			m_char_buffer;	// used in detecting \r\n algorithm
-	Encoding		m_encoding;
+	encoding_type	m_encoding;
 
 	boost::function<wchar_t(void)>
 					m_next;
@@ -243,7 +234,7 @@ void istream_data_source::guess_encoding()
 		case enc_UTF8:		m_next = boost::bind(&istream_data_source::next_utf8_char, this); break;
 		case enc_UTF16LE:	m_next = boost::bind(&istream_data_source::next_utf16le_char, this); break;
 		case enc_UTF16BE:	m_next = boost::bind(&istream_data_source::next_utf16be_char, this); break;
-		case enc_ISO88591:	m_next = boost::bind(&istream_data_source::next_iso88591_char, this); break;
+//		case enc_ISO88591:	m_next = boost::bind(&istream_data_source::next_iso88591_char, this); break;
 	}
 }
 
@@ -615,7 +606,7 @@ struct parser_imp
 		stack<wchar_t>	m_buffer;
 		wstring			m_token;
 		float			m_version;
-		Encoding		m_encoding;
+		encoding_type	m_encoding;
 		bool			m_external_subset;
 		bool			m_external_dtd;
 	};
@@ -670,7 +661,7 @@ struct parser_imp
 	stack<wchar_t>			m_buffer;
 	wstring					m_token;
 	float					m_version;
-	Encoding				m_encoding;
+	encoding_type			m_encoding;
 	wstring					m_standalone;
 	parser&					m_parser;
 	ns_state*				m_ns;
@@ -1069,8 +1060,8 @@ int parser_imp::get_next_token()
 		}
 	}
 
-if (TRACE)
-	cout << ">> token=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
+//if (TRACE)
+//	cout << ">> token=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1329,8 +1320,8 @@ int parser_imp::get_next_content()
 		}
 	}
 
-if (TRACE)
-	cout << ">> content=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
+//if (TRACE)
+//	cout << ">> content=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }

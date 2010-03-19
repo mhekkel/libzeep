@@ -73,7 +73,10 @@ bool is_valid_system_literal_char(wchar_t uc)
 
 bool is_valid_system_literal(const wstring& s)
 {
-	return find_if(s.begin(), s.end(), boost::bind(&is_valid_system_literal_char, _1) == false) == s.end();
+	bool result = true;
+	for (wstring::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
+		result = is_valid_system_literal_char(*ch);
+	return result;
 }
 
 bool is_valid_public_id_char(wchar_t uc)
@@ -87,7 +90,10 @@ bool is_valid_public_id_char(wchar_t uc)
 
 bool is_valid_public_id(const wstring& s)
 {
-	return find_if(s.begin(), s.end(), boost::bind(&is_valid_public_id_char, _1) == false) == s.end();
+	bool result = true;
+	for (wstring::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
+		result = is_valid_public_id_char(*ch);
+	return result;
 }
 
 // wstring_to_string is a very simplistic UCS4 to UTF-8 converter

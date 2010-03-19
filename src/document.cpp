@@ -29,52 +29,9 @@ namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
 
-class pretty_ostream : public ostream
-{
-  public:
-
-					pretty_ostream(bool wrap = true, int indent = 2)
-						: m_wrap(wrap)
-						, m_indent(indent)
-						, m_level(0)
-						, m_base(NULL) {}
-
-	pretty_ostream&	operator<<(const node& n);
-
-	void			set_base(ostream* base)			{ m_base = base; }
-
-  private:
-	bool			m_wrap;
-	int				m_indent;
-	int				m_level;
-	ostream*		m_base;
-};
-
-pretty_ostream&	pretty_ostream::operator<<(const node& n)
-{
-	assert(m_base);
-	assert(false);
-//	n.write(*m_base, 0);
-	
-	return *this;
-}
-
-ostream& operator<<(ostream& lhs, pretty_ostream& rhs)
-{
-	rhs.set_base(&lhs);
-	return rhs;
-}
-
-// --------------------------------------------------------------------
-
 struct document_imp
 {
-	node_ptr		m_root;
-	fs::path		m_dtd_dir;
-
-	stack<node_ptr>	cur;		// construction
-	vector<pair<string,string> >
-					namespaces;
+					document_imp();
 
 	void			StartElementHandler(const string& name, const string& uri, const list<pair<string,string> >& atts);
 
@@ -101,9 +58,34 @@ struct document_imp
 	string			prefix_for_ns(const string& ns);
 	
 	bool			find_external_dtd(const string& uri, fs::path& path);
+
+	void			write(ostream& os);
+
+	node_ptr		m_root;
+	fs::path		m_dtd_dir;
+	
+	// some content information
+	encoding_type	m_encoding;
+	int				m_indent;
+	bool			m_empty;
+	bool			m_wrap;
+	bool			m_trim;
+
+	stack<node_ptr>	m_cur;		// construction
+	vector<pair<string,string> >
+					m_namespaces;
 };
 
 // --------------------------------------------------------------------
+
+document_imp::document_imp()
+	: m_encoding(enc_UTF8)
+	, m_indent(2)
+	, m_empty(true)
+	, m_wrap(true)
+	, m_trim(true)
+{
+}
 
 void document_imp::parse_name(
 	const string&		name,
@@ -126,8 +108,8 @@ void document_imp::parse_name(
 		ns = n3[0];
 		prefix.clear();
 		
-		if (ns.empty() == false and not cur.empty())
-			prefix = cur.top()->find_prefix(ns);
+		if (ns.empty() == false and not m_cur.empty())
+			prefix = m_cur.top()->find_prefix(ns);
 	}
 	else
 	{
@@ -139,11 +121,11 @@ void document_imp::parse_name(
 
 string document_imp::prefix_for_ns(const string& ns)
 {
-	vector<pair<string,string> >::iterator i = find_if(namespaces.begin(), namespaces.end(),
+	vector<pair<string,string> >::iterator i = find_if(m_namespaces.begin(), m_namespaces.end(),
 		boost::bind(&pair<string,string>::second, _1) == ns);
 	
 	string result;
-	if (i != namespaces.end())
+	if (i != m_namespaces.end())
 		result = i->first;
 	return result;
 }
@@ -158,15 +140,15 @@ void document_imp::StartElementHandler(const string& name, const string& uri, co
 	
 	n.reset(new node(name, uri, prefix));
 
-	if (cur.empty())
+	if (m_cur.empty())
 	{
-		cur.push(n);
-		m_root = cur.top();
+		m_cur.push(n);
+		m_root = m_cur.top();
 	}
 	else
 	{
-		cur.top()->add_child(n);
-		cur.push(n);
+		m_cur.top()->add_child(n);
+		m_cur.push(n);
 	}
 	
 	for (list<pair<string,string> >::const_iterator ai = atts.begin(); ai != atts.end(); ++ai)
@@ -178,12 +160,12 @@ void document_imp::StartElementHandler(const string& name, const string& uri, co
 			element = prefix + ':' + element;
 		
 		attribute_ptr attr(new xml::attribute(element, ai->second));
-		cur.top()->add_attribute(attr);
+		m_cur.top()->add_attribute(attr);
 	}
 
 	const string name_prefix("xmlns:");
 
-	for (vector<pair<string,string> >::iterator ns = namespaces.begin(); ns != namespaces.end(); ++ns)
+	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
 	{
 		string name;
 		if (ns->first.empty())
@@ -193,26 +175,26 @@ void document_imp::StartElementHandler(const string& name, const string& uri, co
 
 		attribute_ptr attr(new xml::attribute(name, ns->second));
 
-		cur.top()->add_attribute(attr);
+		m_cur.top()->add_attribute(attr);
 	}
 	
-	namespaces.clear();
+	m_namespaces.clear();
 }
 
 void document_imp::EndElementHandler(const string& name, const string& uri)
 {
-	if (cur.empty())
+	if (m_cur.empty())
 		throw exception("Empty stack");
 	
-	cur.pop();
+	m_cur.pop();
 }
 
 void document_imp::CharacterDataHandler(const string& data)
 {
-	if (cur.empty())
+	if (m_cur.empty())
 		throw exception("Empty stack");
 	
-	cur.top()->add_content(data);
+	m_cur.top()->add_content(data);
 }
 
 void document_imp::ProcessingInstructionHandler(const string& target, const string& data)
@@ -237,7 +219,7 @@ void document_imp::EndCdataSectionHandler()
 
 void document_imp::StartNamespaceDeclHandler(const string& prefix, const string& uri)
 {
-	namespaces.push_back(make_pair(prefix, uri));
+	m_namespaces.push_back(make_pair(prefix, uri));
 }
 	
 void document_imp::EndNamespaceDeclHandler(const string& prefix)
@@ -270,67 +252,121 @@ void document_imp::parse(
 	p.parse();
 }
 
+void document_imp::write(ostream& os)
+{
+	switch (m_encoding)
+	{
+		case enc_UTF8:
+			os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+			break;
+		default:
+			assert(false);
+	}
+	
+	if (m_wrap)
+		os << endl;
+	
+	m_root->write(os, 0, m_indent, m_empty, m_wrap, m_trim);
+}
+
 // --------------------------------------------------------------------
 
-document::document(
-	istream&		data)
-	: impl(new document_imp)
+document::document()
+	: m_impl(new document_imp)
 {
-	try
-	{
-		impl->parse(data);
-	}
-	catch (...)
-	{
-		delete impl;
-		impl = NULL;
-		throw;
-	}
 }
 
-document::document(
-	const string&	data)
-	: impl(new document_imp)
-{
-	try
-	{
-		stringstream s;
-		s.str(data);
-		impl->parse(s);
-	}
-	catch (...)
-	{
-		delete impl;
-		impl = NULL;
-		throw;
-	}
-}
-
-document::document(
-	node_ptr		data)
-	: impl(new document_imp)
-{
-	impl->m_root = data;
-}
-					
 document::~document()
 {
-	delete impl;
+	delete m_impl;
+}
+
+void document::read(const string& s)
+{
+	istringstream is(s);
+	read(is);
+}
+
+void document::read(istream& is)
+{
+	m_impl->parse(is);
+}
+
+void document::read(istream& is, const boost::filesystem::path& base_dir)
+{
+	m_impl->m_dtd_dir = base_dir;
+	m_impl->parse(is);
+}
+
+void document::write(ostream& os) const
+{
+	m_impl->write(os);
 }
 
 node_ptr document::root() const
 {
-	return impl->m_root;
+	return m_impl->m_root;
+}
+
+void document::root(node_ptr root)
+{
+	m_impl->m_root = root;
+}
+
+void document::base_dir(const fs::path& path)
+{
+	m_impl->m_dtd_dir = path;
+}
+
+encoding_type document::encoding() const
+{
+	return m_impl->m_encoding;
+}
+
+void document::encoding(encoding_type enc)
+{
+	m_impl->m_encoding = enc;
+}
+
+int document::indent() const
+{
+	return m_impl->m_indent;
+}
+
+void document::indent(int indent)
+{
+	m_impl->m_indent = indent;
+}
+
+bool document::wrap() const
+{
+	return m_impl->m_wrap;
+}
+
+void document::wrap(bool wrap)
+{
+	m_impl->m_wrap = wrap;
+}
+
+bool document::trim() const
+{
+	return m_impl->m_trim;
+}
+
+void document::trim(bool trim)
+{
+	m_impl->m_trim = trim;
+}
+
+istream& operator>>(istream& lhs, document& rhs)
+{
+	rhs.read(lhs);
+	return lhs;
 }
 
 ostream& operator<<(ostream& lhs, const document& rhs)
 {
-	lhs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-	
-	if (rhs.root())
-		lhs << pretty_ostream(true, 2) << *rhs.root();
-//		rhs.root()->write(lhs, 0);
-
+	rhs.write(lhs);
 	return lhs;
 }
 	

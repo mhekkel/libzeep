@@ -35,7 +35,8 @@ bool run_valid_test(istream& is, fs::path& outfile)
 {
 	bool result = true;
 	
-	DOC indoc(is);
+	DOC indoc;
+	is >> indoc;
 	
 	stringstream s;
 	if (indoc.root() != NULL)
@@ -66,8 +67,8 @@ bool run_valid_test(istream& is, fs::path& outfile)
 //					 << endl;
 //			}
 			
-			xml::document a(s1);
-			xml::document b(s2);
+			xml::document a; a.read(s1);
+			xml::document b; b.read(s2);
 			
 			if (a == b)
 			{
@@ -137,7 +138,8 @@ bool run_test(xml::node& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				DOC doc(is);
+				DOC doc;
+				is >> doc;
 				++should_have_failed;
 				result = false;
 				
@@ -173,7 +175,8 @@ bool run_test(xml::node& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				DOC doc(is);
+				DOC doc;
+				is >> doc;
 				++should_have_failed;
 				result = false;
 			}
@@ -261,7 +264,8 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
 	fs::current_path(base_dir);
 
-	xml::document doc(file);
+	xml::document doc;
+	file >> doc;
 
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
