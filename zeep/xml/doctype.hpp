@@ -133,13 +133,13 @@ class entity : boost::noncopyable
 	void				parsed(bool parsed)						{ m_parsed = parsed; }
 
 	const std::wstring&	ndata() const							{ return m_ndata; }
-	void				ndata(const std::wstring& ndata)				{ m_ndata = ndata; }
+	void				ndata(const std::wstring& ndata)		{ m_ndata = ndata; }
 
 	bool				external() const						{ return m_external; }
 
 	bool				externally_defined() const				{ return m_externally_defined; }
 	void				externally_defined(bool externally_defined)
-															{ m_externally_defined = externally_defined; }
+																{ m_externally_defined = externally_defined; }
 
   protected:
 						entity(const std::wstring& name, const std::wstring& replacement,

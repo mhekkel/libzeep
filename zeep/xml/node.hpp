@@ -110,7 +110,8 @@ class node : public boost::noncopyable, public boost::enable_shared_from_this<no
 							int					indent,
 							bool				empty,
 							bool				wrap,
-							bool				trim) const;
+							bool				trim,
+							bool				escape_whitespace) const;
 
 	node_list&			children();
 	const node_list&	children() const;

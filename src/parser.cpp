@@ -1859,7 +1859,8 @@ void parser_imp::ignoresectcontents()
 
 void parser_imp::markup_decl()
 {
-	value_saver<bool> allow_parameter_entity_references(m_allow_parameter_entity_references, m_external_subset);
+	value_saver<bool> allow_parameter_entity_references(
+		m_allow_parameter_entity_references, m_external_subset);
 	
 	switch (m_lookahead)
 	{
@@ -2786,9 +2787,19 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 {
 	wstring result;
 	
-	int state = 0;
 	wchar_t charref = 0;
 	wstring name;
+	
+	enum State {
+		state_Start,
+		state_ReferenceStart,
+		state_CharReferenceStart,
+		state_HexCharReference,
+		state_HexCharReference2,
+		state_DecCharReference,
+		state_EntityReference,
+		
+	} state = state_Start;
 	
 	for (;;)
 	{
@@ -2802,38 +2813,40 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 		
 		switch (state)
 		{
-			case 0:
+			case state_Start:
 				if (c == '&')
-					state = 1;
+					state = state_ReferenceStart;
 				else if (c == ' ' or c == '\n' or c == '\t' or c == '\r')
 					result += ' ';
 				else
 					result += c;
 				break;
 			
-			case 1:
+			case state_ReferenceStart:
 				if (c == '#')
-					state = 2;
+					state = state_CharReferenceStart;
 				else if (is_name_start_char(c))
 				{
 					name.assign(&c, 1);
-					state = 10;
+					state = state_EntityReference;
 				}
+				else
+					not_well_formed(L"invalid reference found in attribute value");
 				break;
 
-			case 2:
+			case state_CharReferenceStart:
 				if (c == 'x')
-					state = 4;
+					state = state_HexCharReference;
 				else if (c >= '0' and c <= '9')
 				{
 					charref = c - '0';
-					state = 3;
+					state = state_DecCharReference;
 				}
 				else
 					not_well_formed(L"invalid character reference");
 				break;
 			
-			case 3:
+			case state_DecCharReference:
 				if (c >= '0' and c <= '9')
 					charref = charref * 10 + (c - '0');
 				else if (c == ';')
@@ -2842,33 +2855,33 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
 
 					result += charref;
-					state = 0;
+					state = state_Start;
 				}
 				else
 					not_well_formed(L"invalid character reference");
 				break;
 			
-			case 4:
+			case state_HexCharReference:
 				if (c >= 'a' and c <= 'f')
 				{
 					charref = c - 'a' + 10;
-					state = 5;
+					state = state_HexCharReference2;
 				}
 				else if (c >= 'A' and c <= 'F')
 				{
 					charref = c - 'A' + 10;
-					state = 5;
+					state = state_HexCharReference2;
 				}
 				else if (c >= '0' and c <= '9')
 				{
 					charref = c - '0';
-					state = 5;
+					state = state_HexCharReference2;
 				}
 				else
 					not_well_formed(L"invalid character reference");
 				break;
 			
-			case 5:
+			case state_HexCharReference2:
 				if (c >= 'a' and c <= 'f')
 					charref = (charref << 4) + (c - 'a' + 10);
 				else if (c >= 'A' and c <= 'F')
@@ -2881,13 +2894,13 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 						not_well_formed(boost::wformat(L"Illegal character referenced: 0x%x") % int(charref));
 
 					result += charref;
-					state = 0;
+					state = state_Start;
 				}
 				else
 					not_well_formed(L"invalid character reference");
 				break;
 			
-			case 10:
+			case state_EntityReference:
 				if (c == ';')
 				{
 					if (data->is_entity_on_stack(name))
@@ -2905,7 +2918,7 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					wstring replacement = normalize_attribute_value(next_data);
 					result += replacement;
 
-					state = 0;
+					state = state_Start;
 				}
 				else if (is_name_char(c))
 					name += c;
@@ -2919,7 +2932,7 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 		}
 	}
 	
-	if (state != 0)
+	if (state != state_Start)
 		not_well_formed(L"invalid reference");
 	
 	return result;

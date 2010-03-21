@@ -7,6 +7,7 @@
 
 #if not defined(BOOST_PP_IS_ITERATING)
 
+#include <boost/version.hpp>
 #include <boost/preprocessor/repetition/enum.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
 
@@ -41,6 +42,15 @@ struct parameter_deserializer
 					node_ptr	node)
 					: m_node(node) {}
 	
+	// due to a change in fusion::accumulate we have to define both functors:
+	template<typename T>
+	Iterator	operator()(Iterator i, T& t) const
+				{
+					xml::deserializer d(m_node);
+					d & boost::serialization::make_nvp(i->c_str(), t);
+					return ++i;
+				}
+
 	template<typename T>
 	Iterator	operator()(T& t, Iterator i) const
 				{
@@ -64,6 +74,14 @@ struct parameter_types
 					: m_types(types)
 					, m_node(node) {}
 	
+	template<typename T>
+	Iterator	operator()(Iterator i, T& t) const
+				{
+					xml::wsdl_creator d(m_types, m_node);
+					d & boost::serialization::make_nvp(i->c_str(), t);
+					return ++i;
+				}
+
 	template<typename T>
 	Iterator	operator()(T& t, Iterator i) const
 				{

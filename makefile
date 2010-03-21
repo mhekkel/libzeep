@@ -8,9 +8,9 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
-#BOOST_LIB_DIR		= /usr/local/lib/
-#BOOST_INC_DIR		= /usr/local/include/boost-1_37
+#BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
+BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 DESTDIR				?= /usr/local/
 LIBDIR				= $(DESTDIR)lib

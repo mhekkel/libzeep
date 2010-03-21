@@ -70,6 +70,7 @@ struct document_imp
 	bool			m_empty;
 	bool			m_wrap;
 	bool			m_trim;
+	bool			m_escape_whitespace;
 
 	stack<node_ptr>	m_cur;		// construction
 	vector<pair<string,string> >
@@ -84,6 +85,7 @@ document_imp::document_imp()
 	, m_empty(true)
 	, m_wrap(true)
 	, m_trim(true)
+	, m_escape_whitespace(false)
 {
 }
 
@@ -266,7 +268,7 @@ void document_imp::write(ostream& os)
 	if (m_wrap)
 		os << endl;
 	
-	m_root->write(os, 0, m_indent, m_empty, m_wrap, m_trim);
+	m_root->write(os, 0, m_indent, m_empty, m_wrap, m_trim, m_escape_whitespace);
 }
 
 // --------------------------------------------------------------------

@@ -21,7 +21,6 @@ class document : boost::noncopyable
 	virtual			~document();
 
 	// I/O
-	
 	void			read(const std::string& s);
 	void			read(std::istream& is);
 	void			read(std::istream& is, const boost::filesystem::path& base_dir);

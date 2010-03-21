@@ -24,7 +24,8 @@ struct node_content_imp
 	void			add_content(const string& text);
 	void			add_child(node_ptr child);
 
-	void			write(ostream& os, int level, int indent, bool empty, bool wrap, bool trim);
+	void			write(ostream& os, int level, int indent, bool empty, bool wrap,
+						bool trim, bool escape_whitespace);
 	
 	bool			empty() const			{ return m_order.empty(); }
 
@@ -54,7 +55,8 @@ void node_content_imp::add_child(node_ptr child)
 	m_order.push_back(false);
 }
 
-void node_content_imp::write(ostream& os, int level, int indent, bool empty, bool wrap, bool trim)
+void node_content_imp::write(ostream& os, int level, int indent, bool empty, bool wrap,
+	bool trim, bool escape_whitespace)
 {
 	assert(m_order.size() == m_children.size() + m_content.size());
 
@@ -75,9 +77,9 @@ void node_content_imp::write(ostream& os, int level, int indent, bool empty, boo
 					case '<':	os << "&lt;";		last_is_space = false; break;
 					case '>':	os << "&gt;";		last_is_space = false; break;
 					case '\"':	os << "&quot;";		last_is_space = false; break;
-					case '\n':	os << "&#10;";		last_is_space = false; break;
-					case '\r':	os << "&#13;";		last_is_space = false; break;
-					case '\t':	os << "&#9;";		last_is_space = false; break;
+					case '\n':	if (escape_whitespace) os << "&#10;"; else os << c; last_is_space = true; break;
+					case '\r':	if (escape_whitespace) os << "&#13;"; else os << c; last_is_space = false; break;
+					case '\t':	if (escape_whitespace) os << "&#9;"; else os << c; last_is_space = false; break;
 					case ' ':	if (not trim or not last_is_space) os << ' '; last_is_space = true; break;
 					default:	os << c;			last_is_space = false; break;
 				}
@@ -87,7 +89,7 @@ void node_content_imp::write(ostream& os, int level, int indent, bool empty, boo
 		}
 		else
 		{
-			child->write(os, level + 1, indent, empty, wrap, trim);
+			child->write(os, level + 1, indent, empty, wrap, trim, escape_whitespace);
 			++child;
 			last_is_space = false;
 		}
@@ -403,7 +405,8 @@ void node::write(
 	int					indent,
 	bool				empty,
 	bool				wrap,
-	bool				trim) const
+	bool				trim,
+	bool				escape_whitespace) const
 {
 	for (int i = 0; i < indent * level; ++i)
 		stream << ' ';
@@ -426,9 +429,12 @@ void node::write(
 			ba::replace_all(value, ">", "&gt;");
 			ba::replace_all(value, "\"", "&quot;");
 //			ba::replace_all(value, "'", "&apos;");
-			ba::replace_all(value, "\t", "&#9;");
-			ba::replace_all(value, "\n", "&#10;");
-			ba::replace_all(value, "\r", "&#13;");
+			if (escape_whitespace)
+			{
+				ba::replace_all(value, "\t", "&#9;");
+				ba::replace_all(value, "\n", "&#10;");
+				ba::replace_all(value, "\r", "&#13;");
+			}
 
 			stream << ' ' << a->name() << "=\"" << value << '"';
 		}
@@ -447,7 +453,7 @@ void node::write(
 		if (wrap and not m_content->children().empty())
 			stream << endl;
 		
-		m_content->write(stream, level, indent, empty, wrap, trim);
+		m_content->write(stream, level, indent, empty, wrap, trim, escape_whitespace);
 
 		if (not m_content->children().empty())
 		{
@@ -465,7 +471,7 @@ void node::write(
 	ostream&			stream,
 	int					level) const
 {
-	write(stream, level, 0, false, false, false);
+	write(stream, level, 0, false, false, false, true);
 }
 
 ostream& operator<<(ostream& lhs, const node& rhs)
