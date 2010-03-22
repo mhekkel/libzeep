@@ -6,6 +6,8 @@
 #ifndef ZEEP_XML_DOCTYPE_HPP
 #define ZEEP_XML_DOCTYPE_HPP
 
+#include <set>
+
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -61,7 +63,7 @@ class attribute : public boost::noncopyable
 
 	std::wstring		name() const							{ return m_name; }
 
-	bool				validate_value(std::wstring& value, const entity_list& entities);
+	bool				validate_value(std::wstring& value, const entity_list& entities) const;
 	
 	void				set_default(AttributeDefault def, const std::wstring& value)
 						{
@@ -80,18 +82,138 @@ class attribute : public boost::noncopyable
   private:
 
 	// routines used to check _and_ reformat attribute value strings
-	bool				is_name(std::wstring& s);
-	bool				is_names(std::wstring& s);
-	bool				is_nmtoken(std::wstring& s);
-	bool				is_nmtokens(std::wstring& s);
+	bool				is_name(std::wstring& s) const;
+	bool				is_names(std::wstring& s) const;
+	bool				is_nmtoken(std::wstring& s) const;
+	bool				is_nmtokens(std::wstring& s) const;
 
-	bool				is_unparsed_entity(const std::wstring& s, const entity_list& l);
+	bool				is_unparsed_entity(const std::wstring& s, const entity_list& l) const;
 
 	std::wstring		m_name;
 	AttributeType		m_type;
 	AttributeDefault	m_default;
 	std::wstring		m_default_value;
 	std::vector<std::wstring>m_enum;
+};
+
+// --------------------------------------------------------------------
+// validation of elements is done by the validator classes
+
+class allowed_base;
+class validator_imp;
+typedef boost::shared_ptr<validator_imp>	validator_imp_ptr;
+
+class validator
+{
+  public:
+						validator();
+
+	template<typename A>
+						validator(const A& allowed);
+	
+						validator(const validator& other);
+	validator&			operator=(const validator& other);
+
+	void				reset();
+	bool				allow(const std::wstring& name);
+	bool				done();
+
+	bool				operator()(const std::wstring& name)		{ return allow(name); }
+
+  private:
+	validator_imp_ptr	m_impl;
+};
+
+validator create_single_element_validator(const std::wstring& name);
+
+struct allowed_base
+{
+						allowed_base() {}
+	virtual				~allowed_base() {}
+
+	virtual validator	create_validator() const = 0;
+};
+
+typedef boost::shared_ptr<allowed_base>		allowed_ptr;
+
+struct allowed_any : public allowed_base
+{
+	virtual validator	create_validator() const;
+};
+
+struct allowed_empty : public allowed_base
+{
+	virtual validator	create_validator() const;
+};
+
+struct allowed_element : public allowed_base
+{
+						allowed_element(const std::wstring& name)
+							: m_name(name) {}
+
+	virtual validator	create_validator() const;
+
+	std::wstring		m_name;	
+};
+
+struct allowed_zero_or_one : public allowed_base
+{
+						allowed_zero_or_one(allowed_ptr allowed)
+							: m_allowed(allowed) {}
+
+	virtual validator	create_validator() const;
+
+	allowed_ptr			m_allowed;
+};
+
+struct allowed_one_or_more : public allowed_base
+{
+						allowed_one_or_more(allowed_ptr allowed)
+							: m_allowed(allowed) {}
+
+	virtual validator	create_validator() const;
+
+	allowed_ptr			m_allowed;
+};
+
+struct allowed_zero_or_more : public allowed_base
+{
+						allowed_zero_or_more(allowed_ptr allowed)
+							: m_allowed(allowed) {}
+
+	virtual validator	create_validator() const;
+
+	allowed_ptr			m_allowed;
+};
+
+struct allowed_seq : public allowed_base
+{
+						allowed_seq(const std::list<allowed_ptr>& allowed)
+							: m_allowed(allowed) {}
+
+	virtual validator	create_validator() const;
+
+	std::list<allowed_ptr>
+						m_allowed;
+};
+
+struct allowed_choice : public allowed_base
+{
+						allowed_choice(const std::list<allowed_ptr>& allowed)
+							: m_allowed(allowed) {}
+
+	virtual validator	create_validator() const;
+
+	std::list<allowed_ptr>
+						m_allowed;
+};
+
+struct allowed_mixed : public allowed_choice
+{
+						allowed_mixed(const std::list<allowed_ptr>& allowed)
+							: allowed_choice(allowed) {}
+
+	virtual validator	create_validator() const;
 };
 
 // --------------------------------------------------------------------
@@ -106,16 +228,22 @@ class element : boost::noncopyable
 
 	void				add_attribute(std::auto_ptr<attribute> attr);
 	
-	attribute*			get_attribute(const std::wstring& name);
+	const attribute*	get_attribute(const std::wstring& name) const;
 
 	std::wstring		name() const								{ return m_name; }
 	
 	const attribute_list&
 						attributes() const							{ return m_attlist; }
 
+	void				set_allowed(allowed_ptr allowed)			{ m_allowed = allowed; }
+
+	validator			get_validator() const;
+
   private:
+
 	std::wstring		m_name;
 	attribute_list		m_attlist;
+	allowed_ptr			m_allowed;
 };
 
 // --------------------------------------------------------------------

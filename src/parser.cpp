@@ -450,7 +450,7 @@ struct parser_imp
 					}
 
 	// Here comes the parser part
-	void			parse();
+	void			parse(bool validate);
 
 	// the productions. Some are inlined below for obvious reasons.	
 	// names of the productions try to follow those in the TR http://www.w3.org/TR/xml
@@ -461,8 +461,8 @@ struct parser_imp
 	void			s(bool at_least_one = false);
 	void			eq();
 	void			misc();
-	void			element();
-	void			content();
+	void			element(doctype::validator& valid);
+	void			content(doctype::validator& valid);
 
 	void			comment();
 	void			pi();
@@ -481,7 +481,8 @@ struct parser_imp
 	void			markup_decl();
 	void			element_decl();
 	void			contentspec(doctype::element& element);
-	void			cp();
+	doctype::allowed_ptr
+					cp();
 	void			attlist_decl();
 	void			notation_decl();
 	void			entity_decl();
@@ -565,7 +566,7 @@ struct parser_imp
 	// doctype support
 	const doctype::entity&	get_general_entity(const wstring& name) const;
 	const doctype::entity&	get_parameter_entity(const wstring& name) const;
-	const doctype::element&	get_element(const wstring& name) const;
+	const doctype::element*	get_element(const wstring& name) const;
 
 	// Sometimes we need to reuse our parser/scanner to parse an external entity e.g.
 	// We use stack based state objects to store the current state.	
@@ -672,6 +673,7 @@ struct parser_imp
 	bool					m_in_external_dtd;
 	bool					m_allow_parameter_entity_references;
 
+	wstring					m_root_element;
 	doctype::entity_list	m_parameter_entities;
 	doctype::entity_list	m_general_entities;
 	doctype::element_list	m_doctype;
@@ -764,15 +766,17 @@ const doctype::entity& parser_imp::get_parameter_entity(const wstring& name) con
 	return *e;
 }
 
-const doctype::element& parser_imp::get_element(const wstring& name) const
+const doctype::element* parser_imp::get_element(const wstring& name) const
 {
+	const doctype::element* result = nil;
+	
 	doctype::element_list::const_iterator e = find_if(m_doctype.begin(), m_doctype.end(),
 		boost::bind(&doctype::element::name, _1) == name);
+
+	if (e != m_doctype.end())
+		result = &(*e);
 	
-	if (e == m_doctype.end())
-		throw exception("missing doctype element %s", wstring_to_string(name).c_str());
-	
-	return *e;
+	return result;
 }
 
 wchar_t parser_imp::get_next_char()
@@ -1405,12 +1409,27 @@ float parser_imp::parse_version()
 	return result;
 }
 
-void parser_imp::parse()
+void parser_imp::parse(bool validate)
 {
+	m_validating = validate;
+	
 	m_lookahead = get_next_token();
 	
 	prolog();
-	element();
+	
+	doctype::validator valid;
+	
+	const doctype::element* e = get_element(m_root_element);
+	
+	if (m_has_dtd and e == nil and m_validating)
+		not_well_formed(boost::wformat(L"Element %1% is not defined in DTD") % m_root_element);
+	
+	doctype::allowed_element allowed(m_root_element);
+	
+	if (e != nil)
+		valid = allowed.create_validator();
+	
+	element(valid);
 	misc();
 	
 	if (m_lookahead != xml_Eof)
@@ -1563,6 +1582,8 @@ void parser_imp::doctypedecl()
 	
 	wstring name = m_token;
 	match(xml_Name);
+	
+	m_root_element = name;
 
 	data_ptr dtd;
 
@@ -1923,7 +1944,11 @@ void parser_imp::contentspec(doctype::element& element)
 {
 	if (m_lookahead == xml_Name)
 	{
-		if (m_token != L"EMPTY" and m_token != L"ANY")
+		if (m_token == L"EMPTY")
+			element.set_allowed(doctype::allowed_ptr(new doctype::allowed_empty));
+		else if (m_token == L"ANY")
+			element.set_allowed(doctype::allowed_ptr(new doctype::allowed_any));
+		else
 			not_well_formed(L"Invalid element content specification");
 		match(xml_Name);
 	}
@@ -1931,6 +1956,8 @@ void parser_imp::contentspec(doctype::element& element)
 	{
 		valid_nesting_validator check(m_data_source);
 		match('(');
+		
+		doctype::allowed_ptr allowed;
 		
 		s();
 		
@@ -1964,10 +1991,17 @@ void parser_imp::contentspec(doctype::element& element)
 				match(xml_Name);
 				s();
 			}
+
+			list<doctype::allowed_ptr> children;
+			foreach (const wstring& c, seen)
+				children.push_back(doctype::allowed_ptr(new doctype::allowed_element(c)));
+			allowed.reset(new doctype::allowed_mixed(children));
 		}
 		else					// children
 		{
-			cp();
+			list<doctype::allowed_ptr> children;
+			
+			children.push_back(cp());
 			s();
 			if (m_lookahead == ',')
 			{
@@ -1976,10 +2010,12 @@ void parser_imp::contentspec(doctype::element& element)
 				{
 					match(m_lookahead);
 					s();
-					cp();
+					children.push_back(cp());
 					s();
 				}
 				while (m_lookahead == ',');
+				
+				allowed.reset(new doctype::allowed_seq(children));
 			}
 			else if (m_lookahead == '|')
 			{
@@ -1988,10 +2024,12 @@ void parser_imp::contentspec(doctype::element& element)
 				{
 					match(m_lookahead);
 					s();
-					cp();
+					children.push_back(cp());
 					s();
 				}
 				while (m_lookahead == '|');
+
+				allowed.reset(new doctype::allowed_choice(children));
 			}
 		}
 
@@ -2001,21 +2039,41 @@ void parser_imp::contentspec(doctype::element& element)
 		match(')');
 		
 		if (m_lookahead == '*')
+		{
+			allowed.reset(new doctype::allowed_zero_or_more(allowed));
 			match('*');
+		}
 		else if (more)
 		{
 			if (mixed)
+			{
+				allowed.reset(new doctype::allowed_zero_or_more(allowed));
 				match('*');
-			else if (m_lookahead == '+' or m_lookahead == '?')
-				match(m_lookahead);
+			}
+			else if (m_lookahead == '+')
+			{
+				allowed.reset(new doctype::allowed_one_or_more(allowed));
+				match('+');
+			}
+			else if (m_lookahead == '?')
+			{
+				allowed.reset(new doctype::allowed_zero_or_one(allowed));
+				match('?');
+			}
 		}
+		
+		element.set_allowed(allowed);
 	}
 }
 
-void parser_imp::cp()
+doctype::allowed_ptr parser_imp::cp()
 {
+	doctype::allowed_ptr result;
+	
 	if (m_lookahead == '(')
 	{
+		list<doctype::allowed_ptr> children;
+
 		match('(');
 		
 		s();
@@ -2051,10 +2109,18 @@ void parser_imp::cp()
 	{
 		wstring name = m_token;
 		match(xml_Name);
+		
+		result.reset(new doctype::allowed_element(name));
 	}
 	
-	if (m_lookahead == '*' or m_lookahead == '+' or m_lookahead == '?')
-		match(m_lookahead);
+	switch (m_lookahead)
+	{
+		case '*':	result.reset(new doctype::allowed_zero_or_more(result));	match('*'); break;
+		case '+':	result.reset(new doctype::allowed_one_or_more(result));		match('+'); break;
+		case '?':	result.reset(new doctype::allowed_zero_or_one(result));		match('?'); break;
+	}
+	
+	return result;
 }
 
 void parser_imp::entity_decl()
@@ -2938,18 +3004,27 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 	return result;
 }
 
-void parser_imp::element()
+void parser_imp::element(doctype::validator& valid)
 {
 	value_saver<bool> in_element(m_in_element, true);
 	value_saver<bool> in_content(m_in_content, false);
-	
+
 	match(xml_STag);
 	wstring name = m_token;
 	match(xml_Name);
 	
-	doctype::element_list::iterator dte =
-		find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name);
-	
+	if (not valid(name))
+		not_valid(boost::wformat(L"element %1% not expected at this position") % name);
+
+	const doctype::element* dte = get_element(name);
+
+	if (m_has_dtd and dte == nil and m_validating)
+		not_well_formed(boost::wformat(L"Element %1% is not defined in DTD") % name);
+
+	doctype::validator sub_valid;
+	if (dte != nil)
+		sub_valid = dte->get_validator();
+
 	list<pair<wstring,wstring> > attrs;
 	
 	ns_state ns(this);
@@ -2993,9 +3068,9 @@ void parser_imp::element()
 		}
 		else
 		{
-			if (dte != m_doctype.end())
+			if (dte != nil)
 			{
-				doctype::attribute* dta = dte->get_attribute(attr_name);
+				const doctype::attribute* dta = dte->get_attribute(attr_name);
 				if (dta != nil)
 				{
 					if (not dta->validate_value(attr_value, m_general_entities))
@@ -3035,7 +3110,7 @@ void parser_imp::element()
 	}
 	
 	// add missing attributes
-	if (dte != m_doctype.end())
+	if (dte != nil)
 	{
 		foreach (const doctype::attribute& dta, dte->attributes())
 		{
@@ -3091,7 +3166,7 @@ void parser_imp::element()
 			match('>');
 
 			if (m_lookahead != xml_ETag)
-				content();
+				content(sub_valid);
 		}
 		
 		match(xml_ETag);
@@ -3112,7 +3187,7 @@ void parser_imp::element()
 	s();
 }
 
-void parser_imp::content()
+void parser_imp::content(doctype::validator& valid)
 {
 	wstring data;
 	
@@ -3148,7 +3223,7 @@ void parser_imp::content()
 					m_in_external_dtd = e.externally_defined();
 					
 					if (m_lookahead != xml_Eof)
-						content();
+						content(valid);
 
 					if (m_lookahead != xml_Eof)
 						not_well_formed(L"entity reference should be a valid content production");
@@ -3159,7 +3234,7 @@ void parser_imp::content()
 			}
 			
 			case xml_STag:
-				element();
+				element(valid);
 				break;
 			
 			case xml_PI:
@@ -3349,9 +3424,9 @@ basic_parser<char>::~basic_parser()
 }
 
 template<>
-void basic_parser<char>::parse()
+void basic_parser<char>::parse(bool validate)
 {
-	m_impl->parse();
+	m_impl->parse(validate);
 }
 
 }

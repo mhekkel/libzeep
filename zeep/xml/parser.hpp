@@ -143,7 +143,7 @@ class basic_parser : public basic_parser_base
 
 	boost::function<void(const string_type& msg)>			report_invalidation_handler;
 
-	void					parse();
+	void					parse(bool validate);
 
   private:
 

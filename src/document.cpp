@@ -71,6 +71,8 @@ struct document_imp
 	bool			m_wrap;
 	bool			m_trim;
 	bool			m_escape_whitespace;
+	
+	bool			m_validating;
 
 	stack<node_ptr>	m_cur;		// construction
 	vector<pair<string,string> >
@@ -86,6 +88,7 @@ document_imp::document_imp()
 	, m_wrap(true)
 	, m_trim(true)
 	, m_escape_whitespace(false)
+	, m_validating(true)
 {
 }
 
@@ -251,7 +254,7 @@ void document_imp::parse(
 	p.character_data_handler = boost::bind(&document_imp::CharacterDataHandler, this, _1);
 	p.start_namespace_decl_handler = boost::bind(&document_imp::StartNamespaceDeclHandler, this, _1, _2);
 
-	p.parse();
+	p.parse(m_validating);
 }
 
 void document_imp::write(ostream& os)
@@ -358,6 +361,11 @@ bool document::trim() const
 void document::trim(bool trim)
 {
 	m_impl->m_trim = trim;
+}
+
+void document::set_validating(bool validate)
+{
+	m_impl->m_validating = validate;
 }
 
 istream& operator>>(istream& lhs, document& rhs)

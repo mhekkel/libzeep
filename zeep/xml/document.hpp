@@ -63,6 +63,9 @@ class document : boost::noncopyable
 	bool			trim() const;
 	void			trim(bool trim);
 
+	// option for parsing
+	void			set_validating(bool validate);
+
   private:
 	struct document_imp*
 					m_impl;

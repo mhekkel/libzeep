@@ -67,8 +67,8 @@ bool run_valid_test(istream& is, fs::path& outfile)
 //					 << endl;
 //			}
 			
-			xml::document a; a.read(s1);
-			xml::document b; b.read(s2);
+			xml::document a; a.set_validating(false); a.read(s1);
+			xml::document b; b.set_validating(false); b.read(s2);
 			
 			if (a == b)
 			{
