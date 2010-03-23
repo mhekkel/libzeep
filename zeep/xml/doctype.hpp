@@ -103,13 +103,18 @@ class allowed_base;
 class validator_imp;
 typedef boost::shared_ptr<validator_imp>	validator_imp_ptr;
 
+struct state_base;
+typedef boost::shared_ptr<state_base>	state_ptr;
+
 class validator
 {
   public:
 						validator();
+						
+						validator(state_ptr state);
 
-	template<typename A>
-						validator(const A& allowed);
+//	template<typename A>
+//						validator(const A& allowed);
 	
 						validator(const validator& other);
 	validator&			operator=(const validator& other);
@@ -120,30 +125,36 @@ class validator
 
 	bool				operator()(const std::wstring& name)		{ return allow(name); }
 
+	state_ptr			get_state()									{ return m_state; }
+
   private:
-	validator_imp_ptr	m_impl;
+	state_ptr			m_start, m_state;
 };
 
 validator create_single_element_validator(const std::wstring& name);
 
 struct allowed_base
 {
+	enum { may_be_empty = false };
+
 						allowed_base() {}
 	virtual				~allowed_base() {}
 
-	virtual validator	create_validator() const = 0;
+	virtual state_ptr	create_state() const = 0;
 };
 
 typedef boost::shared_ptr<allowed_base>		allowed_ptr;
 
 struct allowed_any : public allowed_base
 {
-	virtual validator	create_validator() const;
+	enum { may_be_empty = true };
+	virtual state_ptr	create_state() const;
 };
 
 struct allowed_empty : public allowed_base
 {
-	virtual validator	create_validator() const;
+	enum { may_be_empty = true };
+	virtual state_ptr	create_state() const;
 };
 
 struct allowed_element : public allowed_base
@@ -151,17 +162,22 @@ struct allowed_element : public allowed_base
 						allowed_element(const std::wstring& name)
 							: m_name(name) {}
 
-	virtual validator	create_validator() const;
+	virtual state_ptr	create_state() const;
 
 	std::wstring		m_name;	
 };
 
 struct allowed_zero_or_one : public allowed_base
 {
-						allowed_zero_or_one(allowed_ptr allowed)
-							: m_allowed(allowed) {}
+	enum { may_be_empty = true };
 
-	virtual validator	create_validator() const;
+						allowed_zero_or_one(allowed_ptr allowed)
+							: m_allowed(allowed)
+						{
+							assert(allowed);
+						}
+
+	virtual state_ptr	create_state() const;
 
 	allowed_ptr			m_allowed;
 };
@@ -169,19 +185,27 @@ struct allowed_zero_or_one : public allowed_base
 struct allowed_one_or_more : public allowed_base
 {
 						allowed_one_or_more(allowed_ptr allowed)
-							: m_allowed(allowed) {}
+							: m_allowed(allowed)
+						{
+							assert(allowed);
+						}
 
-	virtual validator	create_validator() const;
+	virtual state_ptr	create_state() const;
 
 	allowed_ptr			m_allowed;
 };
 
 struct allowed_zero_or_more : public allowed_base
 {
-						allowed_zero_or_more(allowed_ptr allowed)
-							: m_allowed(allowed) {}
+	enum { may_be_empty = true };
 
-	virtual validator	create_validator() const;
+						allowed_zero_or_more(allowed_ptr allowed)
+							: m_allowed(allowed)
+						{
+							assert(allowed);
+						}
+
+	virtual state_ptr	create_state() const;
 
 	allowed_ptr			m_allowed;
 };
@@ -191,7 +215,7 @@ struct allowed_seq : public allowed_base
 						allowed_seq(const std::list<allowed_ptr>& allowed)
 							: m_allowed(allowed) {}
 
-	virtual validator	create_validator() const;
+	virtual state_ptr	create_state() const;
 
 	std::list<allowed_ptr>
 						m_allowed;
@@ -202,7 +226,7 @@ struct allowed_choice : public allowed_base
 						allowed_choice(const std::list<allowed_ptr>& allowed)
 							: m_allowed(allowed) {}
 
-	virtual validator	create_validator() const;
+	virtual state_ptr	create_state() const;
 
 	std::list<allowed_ptr>
 						m_allowed;
@@ -210,10 +234,12 @@ struct allowed_choice : public allowed_base
 
 struct allowed_mixed : public allowed_choice
 {
+	enum { may_be_empty = true };
+
 						allowed_mixed(const std::list<allowed_ptr>& allowed)
 							: allowed_choice(allowed) {}
 
-	virtual validator	create_validator() const;
+	virtual state_ptr	create_state() const;
 };
 
 // --------------------------------------------------------------------

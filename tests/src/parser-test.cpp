@@ -265,6 +265,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::current_path(base_dir);
 
 	xml::document doc;
+	doc.set_validating(false);
 	file >> doc;
 
 	VERBOSE = saved_verbose;

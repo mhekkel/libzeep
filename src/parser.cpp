@@ -32,7 +32,7 @@ using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 
-//extern int TRACE;
+extern int TRACE;
 
 #ifndef nil
 #define nil NULL
@@ -1064,8 +1064,8 @@ int parser_imp::get_next_token()
 		}
 	}
 
-//if (TRACE)
-//	cout << ">> token=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
+if (TRACE)
+	cout << ">> token=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1324,8 +1324,8 @@ int parser_imp::get_next_content()
 		}
 	}
 
-//if (TRACE)
-//	cout << ">> content=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
+if (TRACE)
+	cout << ">> content=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1427,7 +1427,7 @@ void parser_imp::parse(bool validate)
 	doctype::allowed_element allowed(m_root_element);
 	
 	if (e != nil)
-		valid = allowed.create_validator();
+		valid = doctype::validator(allowed.create_state());
 	
 	element(valid);
 	misc();
@@ -2014,7 +2014,7 @@ void parser_imp::contentspec(doctype::element& element)
 					s();
 				}
 				while (m_lookahead == ',');
-				
+
 				allowed.reset(new doctype::allowed_seq(children));
 			}
 			else if (m_lookahead == '|')
@@ -2031,6 +2031,8 @@ void parser_imp::contentspec(doctype::element& element)
 
 				allowed.reset(new doctype::allowed_choice(children));
 			}
+			else
+				allowed = children.front();
 		}
 
 		s();
@@ -2077,7 +2079,7 @@ doctype::allowed_ptr parser_imp::cp()
 		match('(');
 		
 		s();
-		cp();
+		children.push_back(cp());
 		s();
 		if (m_lookahead == ',')
 		{
@@ -2085,10 +2087,12 @@ doctype::allowed_ptr parser_imp::cp()
 			{
 				match(m_lookahead);
 				s();
-				cp();
+				children.push_back(cp());
 				s();
 			}
 			while (m_lookahead == ',');
+
+			result.reset(new doctype::allowed_seq(children));
 		}
 		else if (m_lookahead == '|')
 		{
@@ -2096,11 +2100,15 @@ doctype::allowed_ptr parser_imp::cp()
 			{
 				match(m_lookahead);
 				s();
-				cp();
+				children.push_back(cp());
 				s();
 			}
 			while (m_lookahead == '|');
+
+			result.reset(new doctype::allowed_choice(children));
 		}
+		else
+			result = children.front();
 
 		s();
 		match(')');

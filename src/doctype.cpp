@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <tr1/tuple>
+#include <typeinfo>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -19,26 +20,39 @@ using namespace std;
 using namespace tr1;
 namespace ba = boost::algorithm;
 
+#define nil NULL
+
+extern int VERBOSE;
+
 namespace zeep { namespace xml { namespace doctype {
 
 // --------------------------------------------------------------------
 // validator code
 
-struct state_base;
-typedef boost::shared_ptr<state_base>	state_ptr;
-
 state_ptr kSentinel;
 
-struct state_base
+struct state_base : boost::enable_shared_from_this<state_base>
 {
-					state_base() : m_done(false) {}
+						state_base(bool done)
+							: m_done(done), m_done_at_start(done), m_count(0) {}
 
-	virtual tuple<bool,state_ptr>
-					allow(const wstring& name) = 0;
+	virtual bool		allow(const wstring& name) = 0;
 
-	virtual bool	done()						{ return m_done; }
+	virtual bool		done()									{ return m_done; }
+
+	virtual void		reset()
+						{
+							if (m_sub)
+								m_sub->reset();
+							m_done = m_done_at_start;
+							m_count = 0;
+						}
+
+	virtual void		print() = 0;
 	
-	bool			m_done;
+	bool				m_done, m_done_at_start;
+	int					m_count;
+	state_ptr			m_sub;
 };
 
 template<typename T>
@@ -46,280 +60,397 @@ struct state : public state_base
 {
 	typedef	T			allowed_type;
 		
-						state(const allowed_type& allowed)
-							: m_allowed(allowed) {}
+						state(const allowed_type& allowed = allowed_type())
+							: state_base(allowed_type::may_be_empty)
+							, m_allowed(allowed)
+						{
+						}
 
-	virtual tuple<bool,state_ptr>
-						allow(const wstring& name);
-	
+	virtual bool		allow(const wstring& name);
+
+	virtual void		reset()									{ state_base::reset(); }
+
+	virtual void		print();
+
 	const allowed_type&	m_allowed;
 };
 
+// allow any (everything is allowed here)
 template<>
-tuple<bool,state_ptr> state<allowed_any>::allow(const wstring& name)
+bool state<allowed_any>::allow(const wstring& name)
 {
-	return make_tuple(true, this);
+	return true;
 }
 
 template<>
-tuple<bool,state_ptr> state<allowed_empty>::allow(const wstring& name)
+void state<allowed_any>::print()
 {
-	return make_tuple(false, this);
+	cout << "ANY";
+}
+
+// allow empty (nothing is allowed here)
+template<>
+bool state<allowed_empty>::allow(const wstring& name)
+{
+	return false;
 }
 
 template<>
-tuple<bool,state_ptr> state<allowed_element>::allow(const wstring& name)
+void state<allowed_empty>::print()
 {
-	return make_tuple(m_allowed.m_name == name, kSentinel);
+	cout << "EMPTY";
+}
+
+// allow element, expect just one specific element
+template<>
+bool state<allowed_element>::allow(const wstring& name)
+{
+	m_done = true;
+	return m_allowed.m_name == name;
 }
 
 template<>
-struct state<allowed_zero_or_one> : public state_base
+void state<allowed_element>::print()
 {
-				state(const allowed_zero_or_one& allowed)
-					: state_base()
-					, m_next(allowed.m_allowed->create_validator())
-					, m_seen(false)
-				{
-					m_done = true;
-				}
+	cout << wstring_to_string(m_allowed.m_name);
+}
 
-	virtual tuple<bool,state_ptr>
-				allow(const wstring& name)
-				{
-					bool result = false;
-					
-					if (not m_seen and m_next.allow(name))
-					{
-						result = true;
-						m_seen = true;
-					}
-					
-					return make_tuple(result, kSentinel);
-				}
-
-	validator	m_next;
-	bool		m_seen;
-};
+// allow zero or more ('*')
 
 template<>
-struct state<allowed_one_or_more> : public state_base
+state<allowed_zero_or_more>::state(const allowed_zero_or_more& allowed)
+	: state_base(true)
+	, m_allowed(allowed)
 {
-				state(const allowed_one_or_more& allowed)
-					: state_base()
-					, m_next(allowed.m_allowed->create_validator())
-				{
-				}
-
-	virtual tuple<bool,state_ptr>
-				allow(const wstring& name)
-				{
-					bool result = m_next.allow(name);
-					
-					if (result)
-						m_done = true;
-					
-					return make_tuple(result, this);
-				}
-
-	validator	m_next;
-};
+	m_sub = allowed.m_allowed->create_state();
+}
 
 template<>
-struct state<allowed_zero_or_more> : public state_base
+bool state<allowed_zero_or_more>::allow(const wstring& name)
 {
-				state(const allowed_zero_or_more& allowed)
-					: state_base()
-					, m_next(allowed.m_allowed->create_validator())
-				{
-					m_done = true;
-				}
+	bool result = m_sub->allow(name);
+	
+	if (result == false and m_sub->done())
+	{
+		++m_count;
+		
+		m_sub->reset();
 
-	virtual tuple<bool,state_ptr>
-				allow(const wstring& name)
-				{
-					bool result = m_next.allow(name);
-					return make_tuple(result, this);
-				}
+		result = m_sub->allow(name);
+	}
 
-	validator	m_next;
-};
+	return result;
+}
 
 template<>
-struct state<allowed_mixed> : public state_base
+void state<allowed_zero_or_more>::print()
 {
-				state(const allowed_mixed& allowed)
-					: state_base()
-				{
-					m_done = true;
-				}
+	m_sub->print();
+	cout << '*';
+}
 
-	virtual tuple<bool,state_ptr>
-				allow(const wstring& name)
-				{
-					return make_tuple(true, this);
-				}
-};
+// allow one or more ('+')
+
+template<>
+state<allowed_one_or_more>::state(const allowed_one_or_more& allowed)
+	: state_base(false)
+	, m_allowed(allowed)
+{
+	m_sub = allowed.m_allowed->create_state();
+}
+
+template<>
+bool state<allowed_one_or_more>::allow(const wstring& name)
+{
+	if (m_done)
+	{
+		m_sub->reset();
+		m_done = false;
+	}
+	
+	bool result = m_sub->allow(name);
+	m_done = m_sub->done();
+	
+	if (result == false)
+	{
+		m_done = m_sub->done();
+		if (m_done)
+		{
+			m_sub->reset();
+			result = m_sub->allow(name);
+		}
+	}
+	
+	if (result)
+		++m_count;
+
+	return result;
+}
+
+template<>
+void state<allowed_one_or_more>::print()
+{
+	m_sub->print();
+	cout << '+';
+}
+
+// allow zero or one ('?')
+
+template<>
+state<allowed_zero_or_one>::state(const allowed_zero_or_one& allowed)
+	: state_base(true)
+	, m_allowed(allowed)
+{
+	m_sub = allowed.m_allowed->create_state();
+}
+
+template<>
+bool state<allowed_zero_or_one>::allow(const wstring& name)
+{
+	bool result = false;
+	if (m_count == 0)
+	{
+		result = m_sub->allow(name);
+		if (m_sub->done())
+			++m_count;
+	}
+	m_done = true;
+	return result;
+}
+
+template<>
+void state<allowed_zero_or_one>::print()
+{
+	m_sub->print();
+	cout << '?';
+}
+
+// allow mixed
+
+template<>
+bool state<allowed_mixed>::allow(const wstring& name)
+{
+	return true;
+}
+
+template<>
+void state<allowed_mixed>::print()
+{
+	cout << "#MIXED";
+}
+
+// allow a sequence
 
 template<>
 struct state<allowed_seq> : public state_base
 {
-				state(const allowed_seq& allowed)
-					: state_base()
-					, m_seq(allowed)
-					, m_next(m_seq.begin())
-				{
-				}
-
-	virtual tuple<bool,state_ptr>
-				allow(const wstring& name)
-				{
-					bool result = false;
-					state_ptr next = kSentinel;
-					
-					if (not m_done and m_next != m_seq.end())
+					state(const allowed_seq& allowed)
+						: state_base(allowed.m_allowed.empty())
 					{
-						tie(result, next) = m_
+						foreach (allowed_ptr a, allowed.m_allowed)
+							m_states.push_back(a->create_state());
 						
-						
+						m_next = m_states.begin();
 					}
-					
-					return make_tuple(true, this);
-				}
 
-	allowed_seq			m_seq;
-	allowed_seq::iter	m_next;
+	virtual bool	allow(const wstring& name)
+					{
+						bool result = false;
+						while (result == false and m_next != m_states.end())
+						{
+							result = (*m_next)->allow(name);
+							if ((*m_next)->done())
+								++m_next;
+						}
+						
+						if (m_next == m_states.end())
+							m_done = true;
+						
+						return result;
+					}
+
+	virtual void	reset()
+					{
+						state_base::reset();
+						for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
+						m_next = m_states.begin();
+					}
+
+	virtual void	print()
+					{
+						cout << '(';
+						for (list<state_ptr>::iterator s = m_states.begin(); s != m_states.end(); ++s)
+						{
+							(*s)->print();
+							if (next(s) != m_states.end())
+								cout << ", ";
+						}
+						cout << ')';
+					}
+
+	
+	list<state_ptr>				m_states;
+	list<state_ptr>::iterator	m_next;
 };
+
+// allow one of a list
 
 template<>
 struct state<allowed_choice> : public state_base
 {
-				state(const allowed_choice& allowed)
-					: state_base()
-				{
-					m_done = true;
-				}
+					state(const allowed_choice& allowed)
+						: state_base(false)
+					{
+						foreach (allowed_ptr a, allowed.m_allowed)
+							m_states.push_back(a->create_state());
+						m_cur = m_states.end();
+					}
 
-	virtual tuple<bool,state_ptr>
-				allow(const wstring& name)
-				{
-					return make_tuple(true, this);
-				}
-};
-
-class validator_imp
-{
-  public:
-					validator_imp()
-						: m_state(NULL) {}
-
-	template<typename A>
-					validator_imp(const A& allowed, bool done = false);
-
-	bool			allow(const wstring& name)
+	virtual bool	allow(const wstring& name)
 					{
 						bool result = false;
-						if (m_state != NULL)
-							tie(result, m_state) = m_state->allow(name);
+
+						if (m_cur != m_states.end())
+							result = (*m_cur)->allow(name);
+						else
+						{
+							for (m_cur = m_states.begin(); result == false and m_cur != m_states.end(); ++m_cur)
+								result = (*m_cur)->allow(name);
+						}
+						
+						if (m_cur == m_states.end() or (*m_cur)->done())
+							m_done = true;
+						
 						return result;
 					}
 
-	state_ptr		m_state;
-};
+	virtual void	print()
+					{
+						cout << '(';
+						for (list<state_ptr>::iterator s = m_states.begin(); s != m_states.end(); ++s)
+						{
+							(*s)->print();
+							if (next(s) != m_states.end())
+								cout << "|";
+						}
+						cout << ')';
+					}
 
-template<typename A>
-validator_imp::validator_imp(const A& allowed, bool done)
-{
-	m_state = new state<A>(allowed);
-	m_state->m_done = done;
-}
+	virtual void	reset()
+					{
+						state_base::reset();
+						for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
+						m_cur = m_states.end();
+					}
+	
+	list<state_ptr>				m_states;
+	list<state_ptr>::iterator	m_cur;
+};
 
 // --------------------------------------------------------------------
 
 validator::validator()
-	: m_impl(new validator_imp())
+	: m_start(new state<allowed_any>())
 {
-	allowed_any any;
-	m_impl->m_state = new state<allowed_any>(any);
+	m_state = m_start;
 }
 
-template<typename A>
-validator::validator(const A& allowed)
-	: m_impl(new validator_imp(allowed))
+validator::validator(state_ptr state)
+	: m_start(state)
+	, m_state(state)
 {
 }
 
 validator::validator(const validator& other)
-	: m_impl(other.m_impl)
+	: m_start(other.m_start)
+	, m_state(other.m_state)
 {
 }
 
 validator& validator::operator=(const validator& other)
 {
-	m_impl = other.m_impl;
+	m_start = other.m_start;
+	m_state = other.m_state;
 	return *this;
 }
 
 void validator::reset()
 {
-	assert(false);
+	m_state = m_start;
 }
 
 bool validator::allow(const wstring& name)
 {
-	return m_impl->allow(name);
+//	bool result = m_state->allow(name);
+//	if (not result and VERBOSE)
+//	{
+//		cout << "state machine failed for " << wstring_to_string(name) << endl;
+//		m_state->print();
+//		cout << endl;
+//	}
+//	return result;
+
+	bool result = m_state->allow(name);
+	
+	if (VERBOSE)
+	{
+		cout << "state machine " << (result ? "succeeded" : "failed") <<  " for " << wstring_to_string(name) << endl;
+		m_state->print();
+		cout << endl << endl;
+	}
+	return result;
 }
 
 bool validator::done()
 {
-	return m_impl->m_state == NULL;
+	return m_state->done();
 }
 
 // --------------------------------------------------------------------
 
-validator allowed_any::create_validator() const
+state_ptr allowed_any::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_any>(*this));
 }
 
-validator allowed_empty::create_validator() const
+state_ptr allowed_empty::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_empty>(*this));
 }
 
-validator allowed_element::create_validator() const
+state_ptr allowed_element::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_element>(*this));
 }
 
-validator allowed_zero_or_one::create_validator() const
+state_ptr allowed_zero_or_one::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_zero_or_one>(*this));
 }
 
-validator allowed_one_or_more::create_validator() const
+state_ptr allowed_one_or_more::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_one_or_more>(*this));
 }
 
-validator allowed_zero_or_more::create_validator() const
+state_ptr allowed_zero_or_more::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_zero_or_more>(*this));
 }
 
-validator allowed_seq::create_validator() const
+state_ptr allowed_seq::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_seq>(*this));
 }
 
-validator allowed_choice::create_validator() const
+state_ptr allowed_choice::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_choice>(*this));
 }
 
-validator allowed_mixed::create_validator() const
+state_ptr allowed_mixed::create_state() const
 {
-	return validator(*this);
+	return state_ptr(new state<allowed_mixed>(*this));
 }
 
 // --------------------------------------------------------------------
@@ -520,7 +651,7 @@ const attribute* element::get_attribute(const wstring& name) const
 	attribute_list::const_iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == name);
 	
-	const attribute* result = NULL;
+	const attribute* result = nil;
 	
 	if (dta != m_attlist.end())
 		result = &(*dta);
@@ -532,7 +663,7 @@ validator element::get_validator() const
 {
 	validator valid;
 	if (m_allowed)
-		valid = m_allowed->create_validator();
+		valid = validator(m_allowed->create_state());
 	return valid;
 }
 
