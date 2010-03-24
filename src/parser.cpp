@@ -1422,7 +1422,7 @@ void parser_imp::parse(bool validate)
 	const doctype::element* e = get_element(m_root_element);
 	
 	if (m_has_dtd and e == nil and m_validating)
-		not_well_formed(boost::wformat(L"Element %1% is not defined in DTD") % m_root_element);
+		not_valid(boost::wformat(L"Element '%1%' is not defined in DTD") % m_root_element);
 	
 	doctype::allowed_element allowed(m_root_element);
 	
@@ -1936,8 +1936,10 @@ void parser_imp::element_decl()
 	check.check();
 	match('>');
 	
-	if (find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name) == m_doctype.end())
-		m_doctype.push_back(element.release());
+	if (find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name) != m_doctype.end())
+		not_valid(boost::wformat(L"duplicate element declaration for element '%1%'") % name);
+
+	m_doctype.push_back(element.release());
 }
 
 void parser_imp::contentspec(doctype::element& element)
@@ -1995,7 +1997,7 @@ void parser_imp::contentspec(doctype::element& element)
 			list<doctype::allowed_ptr> children;
 			foreach (const wstring& c, seen)
 				children.push_back(doctype::allowed_ptr(new doctype::allowed_element(c)));
-			allowed.reset(new doctype::allowed_mixed(children));
+			allowed.reset(new doctype::allowed_seq(children, true));
 		}
 		else					// children
 		{
@@ -2015,7 +2017,7 @@ void parser_imp::contentspec(doctype::element& element)
 				}
 				while (m_lookahead == ',');
 
-				allowed.reset(new doctype::allowed_seq(children));
+				allowed.reset(new doctype::allowed_seq(children, false));
 			}
 			else if (m_lookahead == '|')
 			{
@@ -2092,7 +2094,7 @@ doctype::allowed_ptr parser_imp::cp()
 			}
 			while (m_lookahead == ',');
 
-			result.reset(new doctype::allowed_seq(children));
+			result.reset(new doctype::allowed_seq(children, false));
 		}
 		else if (m_lookahead == '|')
 		{
@@ -3027,7 +3029,7 @@ void parser_imp::element(doctype::validator& valid)
 	const doctype::element* dte = get_element(name);
 
 	if (m_has_dtd and dte == nil and m_validating)
-		not_well_formed(boost::wformat(L"Element %1% is not defined in DTD") % name);
+		not_valid(boost::wformat(L"Element '%1%' is not defined in DTD") % name);
 
 	doctype::validator sub_valid;
 	if (dte != nil)
@@ -3191,6 +3193,9 @@ void parser_imp::element(doctype::validator& valid)
 	
 	m_in_content = in_content.m_value;
 	match('>');
+	
+	if (m_validating and dte != nil and not valid.done())
+		not_valid(boost::wformat(L"missing child elements for element '%1%'") % dte->name());
 	
 	s();
 }

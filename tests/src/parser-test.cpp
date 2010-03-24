@@ -29,7 +29,7 @@ namespace ba = boost::algorithm;
 
 int VERBOSE;
 int TRACE;
-int failed_tests, dubious_tests, error_tests, should_have_failed, total_tests, skipped_tests;
+int dubious_tests, error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
 
 bool run_valid_test(istream& is, fs::path& outfile)
 {
@@ -139,6 +139,7 @@ bool run_test(xml::node& test, fs::path base_dir)
 			try
 			{
 				DOC doc;
+				doc.set_validating(test.get_attribute("TYPE") == "invalid");
 				is >> doc;
 				++should_have_failed;
 				result = false;
@@ -147,7 +148,10 @@ bool run_test(xml::node& test, fs::path base_dir)
 			catch (zeep::xml::not_wf_exception& e)
 			{
 				if (test.get_attribute("TYPE") != "not-wf")
+				{
+					++wrong_exception;
 					throw zeep::exception(string("Wrong exception (should have been invalid):\n\t") + e.what());
+				}
 
 				failed = true;
 				if (VERBOSE)
@@ -156,7 +160,10 @@ bool run_test(xml::node& test, fs::path base_dir)
 			catch (zeep::xml::invalid_exception& e)
 			{
 				if (test.get_attribute("TYPE") != "invalid")
+				{
+					++wrong_exception;
 					throw zeep::exception(string("Wrong exception (should have been not-wf):\n\t") + e.what());
+				}
 
 				failed = true;
 				if (VERBOSE)
@@ -289,11 +296,11 @@ int main(int argc, char* argv[])
 	desc.add_options()
 	    ("help", "produce help message")
 	    ("verbose", "verbose output")
-//	    ("input-file", "input file")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
 	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
+	    ("single", po::value<string>(), "Test a single XML file")
 	;
 	
 	po::positional_options_description p;
@@ -315,6 +322,14 @@ int main(int argc, char* argv[])
 	
 	try
 	{
+		if (vm.count("single"))
+		{
+			fs::ifstream file(vm["single"].as<string>());
+			fs::path p;
+			run_valid_test(file, p);
+			return 0;
+		}
+		
 		fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
 		if (vm.count("test"))
 			xmlconfFile = vm["test"].as<string>();
@@ -335,7 +350,7 @@ int main(int argc, char* argv[])
 			 << "summary: " << endl
 			 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
 			 << "  " << error_tests << " threw an exception" << endl
-			 << "  " << failed_tests << " failed" << endl
+			 << "  " << wrong_exception << " wrong exception" << endl
 			 << "  " << should_have_failed << " should have failed but didn't" << endl
 			 << "  " << dubious_tests << " had a dubious output" << endl;
 			

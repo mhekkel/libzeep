@@ -113,9 +113,6 @@ class validator
 						
 						validator(state_ptr state);
 
-//	template<typename A>
-//						validator(const A& allowed);
-	
 						validator(const validator& other);
 	validator&			operator=(const validator& other);
 
@@ -125,18 +122,16 @@ class validator
 
 	bool				operator()(const std::wstring& name)		{ return allow(name); }
 
-	state_ptr			get_state()									{ return m_state; }
-
   private:
-	state_ptr			m_start, m_state;
+	state_ptr			m_state;
+	int					m_nr;
+	static int			s_next_nr;
 };
 
 validator create_single_element_validator(const std::wstring& name);
 
 struct allowed_base
 {
-	enum { may_be_empty = false };
-
 						allowed_base() {}
 	virtual				~allowed_base() {}
 
@@ -147,13 +142,11 @@ typedef boost::shared_ptr<allowed_base>		allowed_ptr;
 
 struct allowed_any : public allowed_base
 {
-	enum { may_be_empty = true };
 	virtual state_ptr	create_state() const;
 };
 
 struct allowed_empty : public allowed_base
 {
-	enum { may_be_empty = true };
 	virtual state_ptr	create_state() const;
 };
 
@@ -169,8 +162,6 @@ struct allowed_element : public allowed_base
 
 struct allowed_zero_or_one : public allowed_base
 {
-	enum { may_be_empty = true };
-
 						allowed_zero_or_one(allowed_ptr allowed)
 							: m_allowed(allowed)
 						{
@@ -197,8 +188,6 @@ struct allowed_one_or_more : public allowed_base
 
 struct allowed_zero_or_more : public allowed_base
 {
-	enum { may_be_empty = true };
-
 						allowed_zero_or_more(allowed_ptr allowed)
 							: m_allowed(allowed)
 						{
@@ -212,13 +201,14 @@ struct allowed_zero_or_more : public allowed_base
 
 struct allowed_seq : public allowed_base
 {
-						allowed_seq(const std::list<allowed_ptr>& allowed)
-							: m_allowed(allowed) {}
+						allowed_seq(const std::list<allowed_ptr>& allowed, bool mixed)
+							: m_allowed(allowed), m_mixed(mixed) {}
 
 	virtual state_ptr	create_state() const;
 
 	std::list<allowed_ptr>
 						m_allowed;
+	bool				m_mixed;
 };
 
 struct allowed_choice : public allowed_base
@@ -230,16 +220,6 @@ struct allowed_choice : public allowed_base
 
 	std::list<allowed_ptr>
 						m_allowed;
-};
-
-struct allowed_mixed : public allowed_choice
-{
-	enum { may_be_empty = true };
-
-						allowed_mixed(const std::list<allowed_ptr>& allowed)
-							: allowed_choice(allowed) {}
-
-	virtual state_ptr	create_state() const;
 };
 
 // --------------------------------------------------------------------
