@@ -663,7 +663,7 @@ struct parser_imp
 	wstring					m_token;
 	float					m_version;
 	encoding_type			m_encoding;
-	wstring					m_standalone;
+	bool					m_standalone;
 	parser&					m_parser;
 	ns_state*				m_ns;
 	bool					m_in_doctype;			// used to keep track where we are (parameter entities are only recognized inside a doctype section)
@@ -715,7 +715,7 @@ parser_imp::parser_imp(
 	, m_data_source(new istream_data_source(data, data_ptr()))
 	, m_version(1.0f)
 	, m_encoding(enc_UTF8)
-	, m_standalone(L"no")
+	, m_standalone(false)
 	, m_parser(parser)
 	, m_ns(nil)
 	, m_in_doctype(false)
@@ -757,7 +757,7 @@ const doctype::entity& parser_imp::get_parameter_entity(const wstring& name) con
 	{
 		boost::wformat msg(L"Undefined parameter entity '%1%'");
 		
-		if (m_standalone == L"yes")
+		if (m_standalone)
 			not_well_formed(msg % m_token);
 		else
 			not_valid(msg % m_token);
@@ -1424,10 +1424,10 @@ void parser_imp::parse(bool validate)
 	if (m_has_dtd and e == nil and m_validating)
 		not_valid(boost::wformat(L"Element '%1%' is not defined in DTD") % m_root_element);
 	
-	doctype::allowed_element allowed(m_root_element);
+	doctype::allowed_ptr allowed(new doctype::allowed_element(m_root_element));
 	
 	if (e != nil)
-		valid = doctype::validator(allowed.create_state());
+		valid = doctype::validator(allowed);
 	
 	element(valid);
 	misc();
@@ -1504,7 +1504,7 @@ void parser_imp::xml_decl()
 				eq();
 				if (m_token != L"yes" and m_token != L"no")
 					not_well_formed(L"Invalid XML declaration, standalone value should be either yes or no");
-				m_standalone = m_token;
+				m_standalone = (m_token == L"yes");
 				match(xml_String);
 				s();
 			}
@@ -1997,7 +1997,7 @@ void parser_imp::contentspec(doctype::element& element)
 			list<doctype::allowed_ptr> children;
 			foreach (const wstring& c, seen)
 				children.push_back(doctype::allowed_ptr(new doctype::allowed_element(c)));
-			allowed.reset(new doctype::allowed_seq(children, true));
+			allowed.reset(new doctype::allowed_choice(children, true));
 		}
 		else					// children
 		{
@@ -2017,7 +2017,7 @@ void parser_imp::contentspec(doctype::element& element)
 				}
 				while (m_lookahead == ',');
 
-				allowed.reset(new doctype::allowed_seq(children, false));
+				allowed.reset(new doctype::allowed_seq(children));
 			}
 			else if (m_lookahead == '|')
 			{
@@ -2031,7 +2031,7 @@ void parser_imp::contentspec(doctype::element& element)
 				}
 				while (m_lookahead == '|');
 
-				allowed.reset(new doctype::allowed_choice(children));
+				allowed.reset(new doctype::allowed_choice(children, false));
 			}
 			else
 				allowed = children.front();
@@ -2044,24 +2044,24 @@ void parser_imp::contentspec(doctype::element& element)
 		
 		if (m_lookahead == '*')
 		{
-			allowed.reset(new doctype::allowed_zero_or_more(allowed));
+			allowed.reset(new doctype::allowed_repeated(allowed, '*'));
 			match('*');
 		}
 		else if (more)
 		{
 			if (mixed)
 			{
-				allowed.reset(new doctype::allowed_zero_or_more(allowed));
+				allowed.reset(new doctype::allowed_repeated(allowed, '*'));
 				match('*');
 			}
 			else if (m_lookahead == '+')
 			{
-				allowed.reset(new doctype::allowed_one_or_more(allowed));
+				allowed.reset(new doctype::allowed_repeated(allowed, '+'));
 				match('+');
 			}
 			else if (m_lookahead == '?')
 			{
-				allowed.reset(new doctype::allowed_zero_or_one(allowed));
+				allowed.reset(new doctype::allowed_repeated(allowed, '?'));
 				match('?');
 			}
 		}
@@ -2094,7 +2094,7 @@ doctype::allowed_ptr parser_imp::cp()
 			}
 			while (m_lookahead == ',');
 
-			result.reset(new doctype::allowed_seq(children, false));
+			result.reset(new doctype::allowed_seq(children));
 		}
 		else if (m_lookahead == '|')
 		{
@@ -2107,7 +2107,7 @@ doctype::allowed_ptr parser_imp::cp()
 			}
 			while (m_lookahead == '|');
 
-			result.reset(new doctype::allowed_choice(children));
+			result.reset(new doctype::allowed_choice(children, false));
 		}
 		else
 			result = children.front();
@@ -2125,9 +2125,9 @@ doctype::allowed_ptr parser_imp::cp()
 	
 	switch (m_lookahead)
 	{
-		case '*':	result.reset(new doctype::allowed_zero_or_more(result));	match('*'); break;
-		case '+':	result.reset(new doctype::allowed_one_or_more(result));		match('+'); break;
-		case '?':	result.reset(new doctype::allowed_zero_or_one(result));		match('?'); break;
+		case '*':	result.reset(new doctype::allowed_repeated(result, '*'));	match('*'); break;
+		case '+':	result.reset(new doctype::allowed_repeated(result, '+'));	match('+'); break;
+		case '?':	result.reset(new doctype::allowed_repeated(result, '?'));	match('?'); break;
 	}
 	
 	return result;
@@ -2987,7 +2987,7 @@ wstring parser_imp::normalize_attribute_value(data_ptr data)
 					if (e.external())
 						not_well_formed(L"attribute value may not contain external entity reference");
 					
-					if (e.externally_defined() and m_standalone == L"yes")
+					if (e.externally_defined() and m_standalone)
 						not_well_formed(L"document marked as standalone but an external entity is referenced");
 					
 					data_ptr next_data(new entity_data_source(name, m_data_source->base_dir(), e.replacement(), data));
@@ -3220,7 +3220,7 @@ void parser_imp::content(doctype::validator& valid)
 				if (m_data_source->is_entity_on_stack(m_token))
 					not_well_formed(L"infinite recursion of entity references");
 				
-				if (e.externally_defined() and m_standalone == L"yes")
+				if (e.externally_defined() and m_standalone)
 					not_well_formed(L"document marked as standalone but an external entity is referenced");
 				
 				if (not e.parsed())

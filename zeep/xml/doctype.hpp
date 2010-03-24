@@ -100,6 +100,9 @@ class attribute : public boost::noncopyable
 // validation of elements is done by the validator classes
 
 class allowed_base;
+typedef boost::shared_ptr<allowed_base>		allowed_ptr;
+typedef std::list<allowed_ptr>				allowed_list;
+
 class validator_imp;
 typedef boost::shared_ptr<validator_imp>	validator_imp_ptr;
 
@@ -111,7 +114,7 @@ class validator
   public:
 						validator();
 						
-						validator(state_ptr state);
+						validator(allowed_ptr allowed);
 
 						validator(const validator& other);
 	validator&			operator=(const validator& other);
@@ -123,10 +126,16 @@ class validator
 	bool				operator()(const std::wstring& name)		{ return allow(name); }
 
   private:
+
+	friend std::ostream& operator<<(std::ostream& lhs, validator& rhs);
+
 	state_ptr			m_state;
+	allowed_ptr			m_allowed;
 	int					m_nr;
 	static int			s_next_nr;
 };
+
+std::ostream& operator<<(std::ostream& lhs, validator& rhs);
 
 validator create_single_element_validator(const std::wstring& name);
 
@@ -136,18 +145,21 @@ struct allowed_base
 	virtual				~allowed_base() {}
 
 	virtual state_ptr	create_state() const = 0;
-};
+	virtual bool		element_content() const			{ return false; }
 
-typedef boost::shared_ptr<allowed_base>		allowed_ptr;
+	virtual void		print(std::ostream& os) = 0;
+};
 
 struct allowed_any : public allowed_base
 {
 	virtual state_ptr	create_state() const;
+	virtual void		print(std::ostream& os);
 };
 
 struct allowed_empty : public allowed_base
 {
 	virtual state_ptr	create_state() const;
+	virtual void		print(std::ostream& os);
 };
 
 struct allowed_element : public allowed_base
@@ -156,70 +168,55 @@ struct allowed_element : public allowed_base
 							: m_name(name) {}
 
 	virtual state_ptr	create_state() const;
+	virtual bool		element_content() const			{ return true; }
+
+	virtual void		print(std::ostream& os);
 
 	std::wstring		m_name;	
 };
 
-struct allowed_zero_or_one : public allowed_base
+struct allowed_repeated : public allowed_base
 {
-						allowed_zero_or_one(allowed_ptr allowed)
-							: m_allowed(allowed)
+						allowed_repeated(allowed_ptr allowed, char repetion)
+							: m_allowed(allowed), m_repetition(repetion)
 						{
 							assert(allowed);
 						}
 
 	virtual state_ptr	create_state() const;
+	virtual bool		element_content() const;
+
+	virtual void		print(std::ostream& os);
 
 	allowed_ptr			m_allowed;
-};
-
-struct allowed_one_or_more : public allowed_base
-{
-						allowed_one_or_more(allowed_ptr allowed)
-							: m_allowed(allowed)
-						{
-							assert(allowed);
-						}
-
-	virtual state_ptr	create_state() const;
-
-	allowed_ptr			m_allowed;
-};
-
-struct allowed_zero_or_more : public allowed_base
-{
-						allowed_zero_or_more(allowed_ptr allowed)
-							: m_allowed(allowed)
-						{
-							assert(allowed);
-						}
-
-	virtual state_ptr	create_state() const;
-
-	allowed_ptr			m_allowed;
+	char				m_repetition;
 };
 
 struct allowed_seq : public allowed_base
 {
-						allowed_seq(const std::list<allowed_ptr>& allowed, bool mixed)
-							: m_allowed(allowed), m_mixed(mixed) {}
+						allowed_seq(const allowed_list& allowed)
+							: m_allowed(allowed) {}
 
 	virtual state_ptr	create_state() const;
+	virtual bool		element_content() const;
 
-	std::list<allowed_ptr>
-						m_allowed;
-	bool				m_mixed;
+	virtual void		print(std::ostream& os);
+
+	allowed_list		m_allowed;
 };
 
 struct allowed_choice : public allowed_base
 {
-						allowed_choice(const std::list<allowed_ptr>& allowed)
-							: m_allowed(allowed) {}
+						allowed_choice(const allowed_list& allowed, bool mixed)
+							: m_allowed(allowed), m_mixed(mixed) {}
 
 	virtual state_ptr	create_state() const;
+	virtual bool		element_content() const;
 
-	std::list<allowed_ptr>
-						m_allowed;
+	virtual void		print(std::ostream& os);
+
+	allowed_list		m_allowed;
+	bool				m_mixed;
 };
 
 // --------------------------------------------------------------------
@@ -242,6 +239,9 @@ class element : boost::noncopyable
 						attributes() const							{ return m_attlist; }
 
 	void				set_allowed(allowed_ptr allowed)			{ m_allowed = allowed; }
+
+	bool				empty() const;
+	bool				element_content() const;
 
 	validator			get_validator() const;
 

@@ -32,121 +32,72 @@ namespace zeep { namespace xml { namespace doctype {
 struct state_base : boost::enable_shared_from_this<state_base>
 {
 						state_base()
-							: m_done(false), m_pcdata(false), m_state(0) {}
+							: m_done(false) {}
 
 	virtual bool		allow(const wstring& name) = 0;
 	
-	virtual bool		allow_pcdata()
+	virtual void		reset()
 						{
-							bool result = m_pcdata;
-							if (m_sub)
-								result = m_sub->allow_pcdata();
+							m_done = false;
+						}
+
+	bool				m_done;
+};
+
+struct state_any : public state_base
+{
+	virtual bool		allow(const wstring& name)			{ return true; }
+};
+
+struct state_empty : public state_base
+{
+	virtual bool		allow(const wstring& name)			{ return false; }
+};
+
+struct state_element : public state_base
+{
+						state_element(const wstring& name)
+							: m_name(name) {}
+
+	virtual bool		allow(const wstring& name)
+						{
+							bool result = false;
+							if (not m_done and m_name == name)
+								m_done = result = true;
 							return result;
 						}
 
-	virtual bool		done()									{ return m_done; }
+	wstring				m_name;
+};
 
-	virtual void		reset()
+struct state_repeated : public state_base
+{
+						state_repeated(allowed_ptr sub, char repetition)
+							: m_sub(sub->create_state()), m_repetition(repetition), m_state(0) {}
+
+	virtual bool		allow(const wstring& name)
 						{
-							if (m_sub)
-								m_sub->reset();
-							m_done = false;
-							m_state = 0;
+							switch (m_repetition)
+							{
+								case '?':	return allow_once(name);
+								case '*':	return allow_any(name);
+								case '+':	return allow_at_least_once(name);
+								default:	return false;
+							}
 						}
-
-	virtual void		print() = 0;
 	
-	bool				m_done, m_pcdata;
-	int					m_state;
+	bool				allow_once(const wstring& name);
+	bool				allow_any(const wstring& name);
+	bool				allow_at_least_once(const wstring& name);
+
+	virtual void		reset()								{ state_base::reset(); m_sub->reset(); m_state = 0; }
+
 	state_ptr			m_sub;
+	char				m_repetition;
+	int					m_state;
 };
 
-template<typename T>
-struct state : public state_base
-{
-	typedef	T			allowed_type;
-		
-						state(const allowed_type& allowed = allowed_type())
-							: state_base()
-							, m_allowed(allowed)
-						{
-						}
-
-	virtual bool		allow(const wstring& name);
-
-	virtual bool		allow_pcdata()							{ return state_base::allow_pcdata(); }
-
-	virtual void		reset()									{ state_base::reset(); }
-
-	virtual void		print();
-
-	const allowed_type&	m_allowed;
-};
-
-// allow any (everything is allowed here)
-template<>
-bool state<allowed_any>::allow(const wstring& name)
-{
-	m_done = false;
-	return true;
-}
-
-template<>
-void state<allowed_any>::print()
-{
-	cout << "ANY";
-}
-
-template<>
-bool state<allowed_any>::allow_pcdata()
-{
-	return true;
-}
-
-// allow empty (nothing is allowed here)
-template<>
-bool state<allowed_empty>::allow(const wstring& name)
-{
-	m_done = true;
-	return false;
-}
-
-template<>
-void state<allowed_empty>::print()
-{
-	cout << "EMPTY";
-}
-
-// allow element, expect just one specific element
-template<>
-bool state<allowed_element>::allow(const wstring& name)
-{
-	bool result = false;
-	if (not m_done and m_allowed.m_name == name)
-	{
-		result = true;
-		m_done = true;
-	}
-	return result;
-}
-
-template<>
-void state<allowed_element>::print()
-{
-	cout << wstring_to_string(m_allowed.m_name);
-}
-
-// allow zero or more ('*')
-
-template<>
-state<allowed_zero_or_more>::state(const allowed_zero_or_more& allowed)
-	: m_allowed(allowed)
-{
-	m_sub = allowed.m_allowed->create_state();
-}
-
-template<>
-bool state<allowed_zero_or_more>::allow(const wstring& name)
+bool state_repeated::allow_any(const wstring& name)
 {
 	// use a state machine
 	enum State {
@@ -171,7 +122,7 @@ bool state<allowed_zero_or_more>::allow(const wstring& name)
 			result = m_sub->allow(name);
 			if (result == false)
 			{
-				if (m_sub->done())
+				if (m_sub->m_done)
 				{
 					m_sub->reset();
 					result = m_sub->allow(name);
@@ -190,24 +141,7 @@ bool state<allowed_zero_or_more>::allow(const wstring& name)
 	return result;
 }
 
-template<>
-void state<allowed_zero_or_more>::print()
-{
-	m_sub->print();
-	cout << '*';
-}
-
-// allow one or more ('+')
-
-template<>
-state<allowed_one_or_more>::state(const allowed_one_or_more& allowed)
-	: m_allowed(allowed)
-{
-	m_sub = allowed.m_allowed->create_state();
-}
-
-template<>
-bool state<allowed_one_or_more>::allow(const wstring& name)
+bool state_repeated::allow_at_least_once(const wstring& name)
 {
 	// use a state machine
 	enum State {
@@ -231,7 +165,7 @@ bool state<allowed_one_or_more>::allow(const wstring& name)
 			result = m_sub->allow(name);
 			if (result == false)
 			{
-				if (m_sub->done())
+				if (m_sub->m_done)
 				{
 					m_sub->reset();
 					result = m_sub->allow(name);
@@ -245,7 +179,7 @@ bool state<allowed_one_or_more>::allow(const wstring& name)
 			result = m_sub->allow(name);
 			if (result == false)
 			{
-				if (m_sub->done())
+				if (m_sub->m_done)
 				{
 					m_sub->reset();
 					result = m_sub->allow(name);
@@ -263,24 +197,9 @@ bool state<allowed_one_or_more>::allow(const wstring& name)
 	return result;
 }
 
-template<>
-void state<allowed_one_or_more>::print()
-{
-	m_sub->print();
-	cout << '+';
-}
 
 // allow zero or one ('?')
-
-template<>
-state<allowed_zero_or_one>::state(const allowed_zero_or_one& allowed)
-	: m_allowed(allowed)
-{
-	m_sub = allowed.m_allowed->create_state();
-}
-
-template<>
-bool state<allowed_zero_or_one>::allow(const wstring& name)
+bool state_repeated::allow_once(const wstring& name)
 {
 	// use a state machine
 	enum State {
@@ -305,7 +224,7 @@ bool state<allowed_zero_or_one>::allow(const wstring& name)
 			result = m_sub->allow(name);
 			if (result == false)
 			{
-				if (m_sub->done())
+				if (m_sub->m_done)
 					m_state = state_Done;
 			}
 			break;
@@ -319,195 +238,167 @@ bool state<allowed_zero_or_one>::allow(const wstring& name)
 	return result;
 }
 
-template<>
-void state<allowed_zero_or_one>::print()
-{
-	m_sub->print();
-	cout << '?';
-}
-
 // allow a sequence
 
-template<>
-struct state<allowed_seq> : public state_base
+struct state_seq : public state_base
 {
-					state(const allowed_seq& allowed)
-						: m_mixed(allowed.m_mixed)
+					state_seq(const allowed_list& allowed)
+						: m_state(0)
 					{
-						foreach (allowed_ptr a, allowed.m_allowed)
+						foreach (allowed_ptr a, allowed)
 							m_states.push_back(a->create_state());
 					}
 
-	virtual bool	allow(const wstring& name)
-					{
-						bool result = false;
-						
-						enum State {
-							state_Start,
-							state_Element,
-							state_Done
-						};
-						
-						switch (m_state)
-						{
-							case state_Start:
-								m_next = m_states.begin();
-								if (m_next == m_states.end())
-								{
-									m_state = state_Done;
-									break;
-								}
-								m_state = state_Element;
-								// fall through
-							
-							case state_Element:
-								result = (*m_next)->allow(name);
-								while (result == false and (*m_next)->done())
-								{
-									++m_next;
-									
-									if (m_next == m_states.end())
-									{
-										m_state = state_Done;
-										break;
-									}
-									else
-										result = (*m_next)->allow(name);
-								}
-								break;
-								
-							case state_Done:
-								break;
-								
-						}
-						
-						m_done = (m_state == state_Done);
-						
-						return result;
-					}
-
-	virtual void	print()
-					{
-						cout << '(';
-						if (m_mixed)
-						{
-							cout << "#PCDATA";
-							if (not m_states.empty())
-								cout << "|";
-						}
-						
-						for (list<state_ptr>::iterator s = m_states.begin(); s != m_states.end(); ++s)
-						{
-							(*s)->print();
-							if (next(s) != m_states.end())
-								cout << ", ";
-						}
-						cout << ')';
-					}
+	virtual bool	allow(const wstring& name);
 
 	virtual void	reset()
 					{
 						state_base::reset();
+						m_state = 0;
 						for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
 					}
-
 	
 	list<state_ptr>				m_states;
 	list<state_ptr>::iterator	m_next;
-	bool						m_mixed;
+	int							m_state;
 };
+
+bool state_seq::allow(const wstring& name)
+{
+	bool result = false;
+	
+	enum State {
+		state_Start,
+		state_Element,
+		state_Done
+	};
+	
+	switch (m_state)
+	{
+		case state_Start:
+			m_next = m_states.begin();
+			if (m_next == m_states.end())
+			{
+				m_state = state_Done;
+				break;
+			}
+			m_state = state_Element;
+			// fall through
+		
+		case state_Element:
+			result = (*m_next)->allow(name);
+			while (result == false and (*m_next)->m_done)
+			{
+				++m_next;
+				
+				if (m_next == m_states.end())
+				{
+					m_state = state_Done;
+					break;
+				}
+				else
+					result = (*m_next)->allow(name);
+			}
+			break;
+			
+		case state_Done:
+			break;
+			
+	}
+	
+	m_done = (m_state == state_Done);
+	
+	return result;
+}
 
 // allow one of a list
 
-template<>
-struct state<allowed_choice> : public state_base
+struct state_choice : public state_base
 {
-					state(const allowed_choice& allowed)
+					state_choice(const allowed_list& allowed, bool mixed)
+						: m_mixed(mixed)
+						, m_state(0)
 					{
-						foreach (allowed_ptr a, allowed.m_allowed)
+						foreach (allowed_ptr a, allowed)
 							m_states.push_back(a->create_state());
 					}
 
-	virtual bool	allow(const wstring& name)
-					{
-						bool result = false;
-						
-						enum State {
-							state_Start,
-							state_Choice,
-							state_Done
-						};
-						
-						switch (m_state)
-						{
-							case state_Start:
-								m_state = state_Done;
-								for (list<state_ptr>::iterator choice = m_states.begin(); choice != m_states.end(); ++choice)
-								{
-									result = (*choice)->allow(name);
-									if (result == true)
-									{
-										m_sub = *choice;
-										m_state = state_Choice;
-										break;
-									}
-								}
-								break;
-
-							case state_Choice:
-								result = m_sub->allow(name);
-								if (result == false and m_sub->done())
-									m_state = state_Done;
-								break;
-							
-							case state_Done:
-								break;
-						}
-						
-						m_done = (m_state == state_Done);
-						
-						return result;
-					}
-
-	virtual void	print()
-					{
-						cout << '(';
-						for (list<state_ptr>::iterator s = m_states.begin(); s != m_states.end(); ++s)
-						{
-							(*s)->print();
-							if (next(s) != m_states.end())
-								cout << "|";
-						}
-						cout << ')';
-					}
+	virtual bool	allow(const wstring& name);
 
 	virtual void	reset()
 					{
 						state_base::reset();
+						m_state = 0;
 						for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
 					}
 	
 	list<state_ptr>	m_states;
+	bool			m_mixed;
+	int				m_state;
+	state_ptr		m_sub;
 };
+
+bool state_choice::allow(const wstring& name)
+{
+	bool result = false;
+	
+	enum State {
+		state_Start,
+		state_Choice,
+		state_Done
+	};
+	
+	switch (m_state)
+	{
+		case state_Start:
+			m_state = state_Done;
+			for (list<state_ptr>::iterator choice = m_states.begin(); choice != m_states.end(); ++choice)
+			{
+				result = (*choice)->allow(name);
+				if (result == true)
+				{
+					m_sub = *choice;
+					m_state = state_Choice;
+					break;
+				}
+			}
+			break;
+
+		case state_Choice:
+			result = m_sub->allow(name);
+			if (result == false and m_sub->m_done)
+				m_state = state_Done;
+			break;
+		
+		case state_Done:
+			break;
+	}
+	
+	m_done = (m_state == state_Done);
+	
+	return result;
+}
 
 // --------------------------------------------------------------------
 
 int validator::s_next_nr = 1;
 
 validator::validator()
-	: m_state(new state<allowed_any>())
+	: m_state(new state_any())
 	, m_nr(0)
 {
 }
 
-validator::validator(state_ptr state)
-	: m_state(state)
+validator::validator(allowed_ptr allowed)
+	: m_state(allowed->create_state())
+	, m_allowed(allowed)
 	, m_nr(s_next_nr++)
 {
 }
 
 validator::validator(const validator& other)
 	: m_state(other.m_state)
+	, m_allowed(other.m_allowed)
 	, m_nr(other.m_nr)
 {
 }
@@ -516,6 +407,7 @@ validator& validator::operator=(const validator& other)
 {
 	m_nr = other.m_nr;
 	m_state = other.m_state;
+	m_allowed = other.m_allowed;
 	return *this;
 }
 
@@ -528,12 +420,13 @@ bool validator::allow(const wstring& name)
 {
 	bool result = m_state->allow(name);
 	
-	if (VERBOSE)
+	if (VERBOSE and m_allowed)
 	{
 		cout << "state machine " << m_nr << ' ' << (result ? "succeeded" : "failed") <<  " for " << wstring_to_string(name) << endl;
-		m_state->print();
+		m_allowed->print(cout);
 		cout << endl << endl;
 	}
+
 	return result;
 }
 
@@ -544,46 +437,132 @@ bool validator::done()
 	return true;
 }
 
+std::ostream& operator<<(std::ostream& lhs, validator& rhs)
+{
+	rhs.m_allowed->print(lhs);
+	return lhs;
+}
+
 // --------------------------------------------------------------------
 
 state_ptr allowed_any::create_state() const
 {
-	return state_ptr(new state<allowed_any>(*this));
+	return state_ptr(new state_any());
+}
+
+void allowed_any::print(ostream& os)
+{
+	os << "ANY";
 }
 
 state_ptr allowed_empty::create_state() const
 {
-	return state_ptr(new state<allowed_empty>(*this));
+	return state_ptr(new state_empty());
+}
+
+void allowed_empty::print(ostream& os)
+{
+	os << "EMPTY";
 }
 
 state_ptr allowed_element::create_state() const
 {
-	return state_ptr(new state<allowed_element>(*this));
+	return state_ptr(new state_element(m_name));
 }
 
-state_ptr allowed_zero_or_one::create_state() const
+void allowed_element::print(ostream& os)
 {
-	return state_ptr(new state<allowed_zero_or_one>(*this));
+	os << wstring_to_string(m_name);
 }
 
-state_ptr allowed_one_or_more::create_state() const
+state_ptr allowed_repeated::create_state() const
 {
-	return state_ptr(new state<allowed_one_or_more>(*this));
+	return state_ptr(new state_repeated(m_allowed, m_repetition));
 }
 
-state_ptr allowed_zero_or_more::create_state() const
+void allowed_repeated::print(ostream& os)
 {
-	return state_ptr(new state<allowed_zero_or_more>(*this));
+	m_allowed->print(os); os << m_repetition;
+}
+
+bool allowed_repeated::element_content() const
+{
+	return m_allowed->element_content();
 }
 
 state_ptr allowed_seq::create_state() const
 {
-	return state_ptr(new state<allowed_seq>(*this));
+	return state_ptr(new state_seq(m_allowed));
+}
+
+void allowed_seq::print(ostream& os)
+{
+	os << '(';
+	for (allowed_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
+	{
+		(*s)->print(os);
+		if (next(s) != m_allowed.end())
+			os << ", ";
+	}
+	os << ')';
+}
+
+bool allowed_seq::element_content() const
+{
+	bool result = true;
+	foreach (allowed_ptr a, m_allowed)
+	{
+		if (not a->element_content())
+		{
+			result = false;
+			break;
+		}
+	}
+	return result;
 }
 
 state_ptr allowed_choice::create_state() const
 {
-	return state_ptr(new state<allowed_choice>(*this));
+	return state_ptr(new state_choice(m_allowed, m_mixed));
+}
+
+void allowed_choice::print(ostream& os)
+{
+	os << '(';
+
+	if (m_mixed)
+	{
+		os << "#PCDATA";
+		if (not m_allowed.empty())
+			os << "|";
+	}
+
+	for (allowed_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
+	{
+		(*s)->print(os);
+		if (next(s) != m_allowed.end())
+			os << "|";
+	}
+	os << ')';
+}
+
+bool allowed_choice::element_content() const
+{
+	bool result = true;
+	if (m_mixed)
+		result = false;
+	else
+	{
+		foreach (allowed_ptr a, m_allowed)
+		{
+			if (not a->element_content())
+			{
+				result = false;
+				break;
+			}
+		}
+	}
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -796,8 +775,22 @@ validator element::get_validator() const
 {
 	validator valid;
 	if (m_allowed)
-		valid = validator(m_allowed->create_state());
+	{
+		valid = validator(m_allowed);
+//		cout << "created validator for " << wstring_to_string(name()) << endl
+//			 << " >> " << valid << endl;
+	}
 	return valid;
+}
+
+bool element::empty() const
+{
+	return dynamic_cast<allowed_empty*>(m_allowed.get()) != nil;
+}
+
+bool element::element_content() const
+{
+	return m_allowed != nil and m_allowed->element_content();
 }
 
 }
