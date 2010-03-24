@@ -82,7 +82,7 @@ class data_source : public boost::enable_shared_from_this<data_source>, boost::n
 {
   public:
 					data_source(data_ptr next)
-						: m_next(next), m_base_dir(fs::current_path()) {}
+						: m_next(next), m_base_dir(fs::current_path()), m_encoding(enc_UTF8) {}
 
 	virtual			~data_source() {}
 
@@ -105,9 +105,12 @@ class data_source : public boost::enable_shared_from_this<data_source>, boost::n
 
 	data_ptr		next_data_source() const						{ return m_next; }
 
+	encoding_type	encoding() const								{ return m_encoding; }
+
   protected:
 	data_ptr		m_next;			// generates a linked list of data_sources
 	fs::path		m_base_dir;
+	encoding_type	m_encoding;
 };
 
 // --------------------------------------------------------------------
@@ -120,7 +123,6 @@ class istream_data_source : public data_source
 						: data_source(next)
 						, m_data(data)
 						, m_char_buffer(0)
-						, m_encoding(enc_UTF8)
 						, m_has_bom(false)
 					{
 						guess_encoding();
@@ -131,7 +133,6 @@ class istream_data_source : public data_source
 						, m_data(*data)
 						, m_data_ptr(data)
 						, m_char_buffer(0)
-						, m_encoding(enc_UTF8)
 						, m_has_bom(false)
 					{
 						guess_encoding();
@@ -162,7 +163,6 @@ class istream_data_source : public data_source
 					m_data_ptr;
 	stack<char>		m_byte_buffer;
 	wchar_t			m_char_buffer;	// used in detecting \r\n algorithm
-	encoding_type	m_encoding;
 
 	boost::function<wchar_t(void)>
 					m_next;
@@ -714,7 +714,6 @@ parser_imp::parser_imp(
 	, m_lookahead(xml_Eof)
 	, m_data_source(new istream_data_source(data, data_ptr()))
 	, m_version(1.0f)
-	, m_encoding(enc_UTF8)
 	, m_standalone(false)
 	, m_parser(parser)
 	, m_ns(nil)
@@ -725,6 +724,8 @@ parser_imp::parser_imp(
 	, m_in_external_dtd(false)
 	, m_allow_parameter_entity_references(false)
 {
+	m_encoding = m_data_source->encoding();
+	
 	// these entities are always recognized:
 	m_general_entities.push_back(new doctype::general_entity(L"lt", L"&#60;"));
 	m_general_entities.push_back(new doctype::general_entity(L"gt", L"&#62;"));
@@ -1453,6 +1454,8 @@ void parser_imp::prolog()
 		doctypedecl();
 		misc();
 	}
+	else if (m_validating)
+		not_valid(L"document type declaration is missing");
 }
 
 void parser_imp::xml_decl()
@@ -3209,7 +3212,14 @@ void parser_imp::content(doctype::validator& valid)
 		switch (m_lookahead)
 		{
 			case xml_Content:
-				m_parser.character_data(m_token);
+				if (valid.allow_char_data())
+					m_parser.character_data(m_token);
+				else
+				{
+					ba::trim(m_token);
+					if (not m_token.empty())
+						not_valid(boost::wformat(L"character data '%1%' not allowed in element") % m_token);
+				}
 				match(xml_Content);
 				break;
 			
@@ -3263,6 +3273,9 @@ void parser_imp::content(doctype::validator& valid)
 				break;
 			
 			case xml_CDSect:
+				if (not valid.allow_char_data())
+					not_valid(boost::wformat(L"character data '%1%' not allowed in element") % m_token);
+
 				m_parser.start_cdata_section();
 				m_parser.character_data(m_token);
 				m_parser.end_cdata_section();

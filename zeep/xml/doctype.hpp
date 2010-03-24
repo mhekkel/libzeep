@@ -121,6 +121,7 @@ class validator
 
 	void				reset();
 	bool				allow(const std::wstring& name);
+	bool				allow_char_data();
 	bool				done();
 
 	bool				operator()(const std::wstring& name)		{ return allow(name); }
@@ -133,6 +134,7 @@ class validator
 	allowed_ptr			m_allowed;
 	int					m_nr;
 	static int			s_next_nr;
+	bool				m_done;
 };
 
 std::ostream& operator<<(std::ostream& lhs, validator& rhs);

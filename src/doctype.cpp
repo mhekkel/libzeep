@@ -22,7 +22,7 @@ namespace ba = boost::algorithm;
 
 #define nil NULL
 
-extern int VERBOSE;
+extern int TRACE;
 
 namespace zeep { namespace xml { namespace doctype {
 
@@ -31,246 +31,234 @@ namespace zeep { namespace xml { namespace doctype {
 
 struct state_base : boost::enable_shared_from_this<state_base>
 {
-						state_base()
-							: m_done(false) {}
-
-	virtual bool		allow(const wstring& name) = 0;
+	virtual						~state_base() {}
 	
-	virtual void		reset()
-						{
-							m_done = false;
-						}
-
-	bool				m_done;
+	virtual tuple<bool,bool>	allow(const wstring& name) = 0;
+	virtual bool				allow_char_data()					{ return false; }
+	
+	virtual void				reset() {}
 };
 
 struct state_any : public state_base
 {
-	virtual bool		allow(const wstring& name)			{ return true; }
+	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(true, false); }
+	virtual bool				allow_char_data()					{ return true; }
 };
 
 struct state_empty : public state_base
 {
-	virtual bool		allow(const wstring& name)			{ return false; }
+	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(false, true); }
 };
 
 struct state_element : public state_base
 {
-						state_element(const wstring& name)
-							: m_name(name) {}
+								state_element(const wstring& name)
+									: m_name(name), m_done(false) {}
 
-	virtual bool		allow(const wstring& name)
-						{
-							bool result = false;
-							if (not m_done and m_name == name)
-								m_done = result = true;
-							return result;
-						}
+	virtual tuple<bool,bool>
+								allow(const wstring& name)
+								{
+									bool result = false;
+									if (not m_done and m_name == name)
+										m_done = result = true;
+//									m_done = true;
+									return make_tuple(result, m_done);
+								}
 
-	wstring				m_name;
+	virtual void				reset()								{ m_done = false; }
+
+	wstring						m_name;
+	bool						m_done;
 };
 
 struct state_repeated : public state_base
 {
-						state_repeated(allowed_ptr sub, char repetition)
-							: m_sub(sub->create_state()), m_repetition(repetition), m_state(0) {}
+								state_repeated(allowed_ptr sub, char repetition)
+									: m_sub(sub->create_state()), m_repetition(repetition), m_state(0) {}
 
-	virtual bool		allow(const wstring& name)
-						{
-							switch (m_repetition)
-							{
-								case '?':	return allow_once(name);
-								case '*':	return allow_any(name);
-								case '+':	return allow_at_least_once(name);
-								default:	return false;
-							}
-						}
+	virtual tuple<bool,bool>	allow(const wstring& name)
+								{
+									switch (m_repetition)
+									{
+										case '?':	return allow_once(name);
+										case '*':	return allow_any(name);
+										case '+':	return allow_at_least_once(name);
+										default:	return make_tuple(false, true);
+									}
+								}
 	
-	bool				allow_once(const wstring& name);
-	bool				allow_any(const wstring& name);
-	bool				allow_at_least_once(const wstring& name);
+	tuple<bool,bool>			allow_once(const wstring& name);
+	tuple<bool,bool>			allow_any(const wstring& name);
+	tuple<bool,bool>			allow_at_least_once(const wstring& name);
 
-	virtual void		reset()								{ state_base::reset(); m_sub->reset(); m_state = 0; }
+	virtual void				reset()								{ m_sub->reset(); m_state = 0; }
 
-	state_ptr			m_sub;
-	char				m_repetition;
-	int					m_state;
+	virtual bool				allow_char_data()					{ return m_sub->allow_char_data(); }
+
+	state_ptr					m_sub;
+	char						m_repetition;
+	int							m_state;
 };
 
-bool state_repeated::allow_any(const wstring& name)
+// this is for '*'
+tuple<bool,bool> state_repeated::allow_any(const wstring& name)
 {
 	// use a state machine
 	enum State {
 		state_Start			= 0,
-		state_Loop,
-		state_Done
+		state_Loop
 	};
 	
-	bool result = false;
+	bool result = false, done;
 	
 	switch (m_state)
 	{
 		case state_Start:
-			result = m_sub->allow(name);
+			tie(result, done) = m_sub->allow(name);
 			if (result == true)
 				m_state = state_Loop;
 			else
-				m_state = state_Done;
+				done = true;
 			break;
 		
 		case state_Loop:
-			result = m_sub->allow(name);
-			if (result == false)
+			tie(result, done) = m_sub->allow(name);
+			if (result == false and done)
 			{
-				if (m_sub->m_done)
-				{
-					m_sub->reset();
-					result = m_sub->allow(name);
-					if (result == false)
-						m_state = state_Done;
-				}
+				m_sub->reset();
+				tie(result, done) = m_sub->allow(name);
+				if (result == false)
+					done = true;
 			}
-			break;
-
-		case state_Done:
 			break;
 	}
 	
-	m_done = (m_state == state_Done);
-	
-	return result;
+	return make_tuple(result, done);
 }
 
-bool state_repeated::allow_at_least_once(const wstring& name)
+// this is for '+'
+tuple<bool,bool> state_repeated::allow_at_least_once(const wstring& name)
 {
 	// use a state machine
 	enum State {
 		state_Start			= 0,
 		state_FirstLoop,
-		state_NextLoop,
-		state_Done
+		state_NextLoop
 	};
 	
-	bool result = false;
+	bool result = false, done;
 	
 	switch (m_state)
 	{
 		case state_Start:
-			result = m_sub->allow(name);
+			tie(result, done) = m_sub->allow(name);
 			if (result == true)
 				m_state = state_FirstLoop;
 			break;
 		
 		case state_FirstLoop:
-			result = m_sub->allow(name);
-			if (result == false)
+			tie(result, done) = m_sub->allow(name);
+			if (result == false and done)
 			{
-				if (m_sub->m_done)
-				{
-					m_sub->reset();
-					result = m_sub->allow(name);
-					if (result == true)
-						m_state = state_NextLoop;
-				}
+				m_sub->reset();
+				tie(result, done) = m_sub->allow(name);
+				if (result == true)
+					m_state = state_NextLoop;
 			}
 			break;
 
 		case state_NextLoop:
-			result = m_sub->allow(name);
-			if (result == false)
+			tie(result, done) = m_sub->allow(name);
+			if (result == false and done)
 			{
-				if (m_sub->m_done)
-				{
-					m_sub->reset();
-					result = m_sub->allow(name);
-					if (result == false)
-						m_state = state_Done;
-				}
+				m_sub->reset();
+				tie(result, done) = m_sub->allow(name);
+				if (result == false)
+					done = true;
 			}
-
-		case state_Done:
 			break;
 	}
 	
-	m_done = (m_state == state_Done);
-	
-	return result;
+	return make_tuple(result, done);
 }
 
-
-// allow zero or one ('?')
-bool state_repeated::allow_once(const wstring& name)
+// this is for '?'
+tuple<bool,bool> state_repeated::allow_once(const wstring& name)
 {
 	// use a state machine
 	enum State {
 		state_Start			= 0,
-		state_Loop,
-		state_Done
+		state_Loop
 	};
 	
-	bool result = false;
+	bool result = false, done;
 	
 	switch (m_state)
 	{
 		case state_Start:
-			result = m_sub->allow(name);
+			tie(result, done) = m_sub->allow(name);
 			if (result == true)
 				m_state = state_Loop;
 			else
-				m_state = state_Done;
+				done = true;
 			break;
 		
 		case state_Loop:
-			result = m_sub->allow(name);
-			if (result == false)
-			{
-				if (m_sub->m_done)
-					m_state = state_Done;
-			}
-			break;
-
-		case state_Done:
+			tie(result, done) = m_sub->allow(name);
+			if (result == false and done)
+				done = true;
 			break;
 	}
 	
-	m_done = (m_state == state_Done);
-	
-	return result;
+	return make_tuple(result, done);
 }
 
 // allow a sequence
 
 struct state_seq : public state_base
 {
-					state_seq(const allowed_list& allowed)
-						: m_state(0)
-					{
-						foreach (allowed_ptr a, allowed)
-							m_states.push_back(a->create_state());
-					}
+								state_seq(const allowed_list& allowed)
+									: m_state(0)
+								{
+									foreach (allowed_ptr a, allowed)
+										m_states.push_back(a->create_state());
+								}
 
-	virtual bool	allow(const wstring& name);
+	virtual tuple<bool,bool>	allow(const wstring& name);
 
-	virtual void	reset()
-					{
-						state_base::reset();
-						m_state = 0;
-						for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
-					}
+	virtual void				reset()
+								{
+									m_state = 0;
+									for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
+								}
+
+	virtual bool				allow_char_data()
+								{
+									bool result = false;
+									foreach (state_ptr s, m_states)
+									{
+										if (s->allow_char_data())
+										{
+											result = true;
+											break;
+										}
+									}
+									
+									return result;
+								}
 	
 	list<state_ptr>				m_states;
 	list<state_ptr>::iterator	m_next;
 	int							m_state;
 };
 
-bool state_seq::allow(const wstring& name)
+tuple<bool,bool> state_seq::allow(const wstring& name)
 {
-	bool result = false;
+	bool result = false, done;
 	
 	enum State {
 		state_Start,
-		state_Element,
-		state_Done
+		state_Element
 	};
 	
 	switch (m_state)
@@ -279,82 +267,75 @@ bool state_seq::allow(const wstring& name)
 			m_next = m_states.begin();
 			if (m_next == m_states.end())
 			{
-				m_state = state_Done;
+				done = true;
 				break;
 			}
 			m_state = state_Element;
 			// fall through
 		
 		case state_Element:
-			result = (*m_next)->allow(name);
-			while (result == false and (*m_next)->m_done)
+			tie(result, done) = (*m_next)->allow(name);
+			while (result == false and done)
 			{
 				++m_next;
 				
 				if (m_next == m_states.end())
 				{
-					m_state = state_Done;
+					done = true;
 					break;
 				}
-				else
-					result = (*m_next)->allow(name);
+
+				tie(result, done) = (*m_next)->allow(name);
 			}
 			break;
-			
-		case state_Done:
-			break;
-			
 	}
 	
-	m_done = (m_state == state_Done);
-	
-	return result;
+	return make_tuple(result, done);
 }
 
 // allow one of a list
 
 struct state_choice : public state_base
 {
-					state_choice(const allowed_list& allowed, bool mixed)
-						: m_mixed(mixed)
-						, m_state(0)
-					{
-						foreach (allowed_ptr a, allowed)
-							m_states.push_back(a->create_state());
-					}
+								state_choice(const allowed_list& allowed, bool mixed)
+									: m_mixed(mixed)
+									, m_state(0)
+								{
+									foreach (allowed_ptr a, allowed)
+										m_states.push_back(a->create_state());
+								}
 
-	virtual bool	allow(const wstring& name);
+	virtual tuple<bool,bool>	allow(const wstring& name);
 
-	virtual void	reset()
-					{
-						state_base::reset();
-						m_state = 0;
-						for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
-					}
+	virtual void				reset()
+								{
+									m_state = 0;
+									for_each(m_states.begin(), m_states.end(), boost::bind(&state_base::reset, _1));
+								}
+
+	virtual bool				allow_char_data()					{ return m_mixed; }
 	
-	list<state_ptr>	m_states;
-	bool			m_mixed;
-	int				m_state;
-	state_ptr		m_sub;
+	list<state_ptr>				m_states;
+	bool						m_mixed;
+	int							m_state;
+	state_ptr					m_sub;
 };
 
-bool state_choice::allow(const wstring& name)
+tuple<bool,bool> state_choice::allow(const wstring& name)
 {
-	bool result = false;
+	bool result = false, done = false;
 	
 	enum State {
 		state_Start,
-		state_Choice,
-		state_Done
+		state_Choice
 	};
 	
 	switch (m_state)
 	{
 		case state_Start:
-			m_state = state_Done;
 			for (list<state_ptr>::iterator choice = m_states.begin(); choice != m_states.end(); ++choice)
 			{
-				result = (*choice)->allow(name);
+				tie(result, done) = (*choice)->allow(name);
 				if (result == true)
 				{
 					m_sub = *choice;
@@ -365,18 +346,11 @@ bool state_choice::allow(const wstring& name)
 			break;
 
 		case state_Choice:
-			result = m_sub->allow(name);
-			if (result == false and m_sub->m_done)
-				m_state = state_Done;
-			break;
-		
-		case state_Done:
+			tie(result, done) = m_sub->allow(name);
 			break;
 	}
 	
-	m_done = (m_state == state_Done);
-	
-	return result;
+	return make_tuple(result, done);
 }
 
 // --------------------------------------------------------------------
@@ -386,6 +360,7 @@ int validator::s_next_nr = 1;
 validator::validator()
 	: m_state(new state_any())
 	, m_nr(0)
+	, m_done(true)
 {
 }
 
@@ -393,6 +368,7 @@ validator::validator(allowed_ptr allowed)
 	: m_state(allowed->create_state())
 	, m_allowed(allowed)
 	, m_nr(s_next_nr++)
+	, m_done(false)
 {
 }
 
@@ -400,6 +376,7 @@ validator::validator(const validator& other)
 	: m_state(other.m_state)
 	, m_allowed(other.m_allowed)
 	, m_nr(other.m_nr)
+	, m_done(other.m_done)
 {
 }
 
@@ -408,19 +385,23 @@ validator& validator::operator=(const validator& other)
 	m_nr = other.m_nr;
 	m_state = other.m_state;
 	m_allowed = other.m_allowed;
+	m_done = other.m_done;
+
 	return *this;
 }
 
 void validator::reset()
 {
+	m_done = false;
 	m_state->reset();
 }
 
 bool validator::allow(const wstring& name)
 {
-	bool result = m_state->allow(name);
+	bool result;
+	tie(result, m_done) = m_state->allow(name);
 	
-	if (VERBOSE and m_allowed)
+	if (TRACE and m_allowed)
 	{
 		cout << "state machine " << m_nr << ' ' << (result ? "succeeded" : "failed") <<  " for " << wstring_to_string(name) << endl;
 		m_allowed->print(cout);
@@ -430,11 +411,21 @@ bool validator::allow(const wstring& name)
 	return result;
 }
 
+bool validator::allow_char_data()
+{
+	return m_state->allow_char_data();
+}
+
 bool validator::done()
 {
-//	(void)m_state->allow(L"");
-//	return m_state->done();
-	return true;
+	if (TRACE and m_allowed)
+	{
+		cout << "finishing state machine " << m_nr << " is " << (m_done ? "ok" : "not ok") <<  endl;
+		m_allowed->print(cout);
+		cout << endl << endl;
+	}
+
+	return m_done;
 }
 
 std::ostream& operator<<(std::ostream& lhs, validator& rhs)
@@ -629,7 +620,7 @@ bool attribute::is_names(wstring& s) const
 
 bool attribute::is_nmtoken(wstring& s) const
 {
-	bool result = true;
+	bool result = false;
 
 	ba::trim(s);
 	
@@ -642,7 +633,7 @@ bool attribute::is_nmtoken(wstring& s) const
 
 bool attribute::is_nmtokens(wstring& s) const
 {
-	bool result = true;
+	bool result = false;
 
 	// remove leading and trailing spaces
 	ba::trim(s);
