@@ -35,19 +35,22 @@ struct state_base : boost::enable_shared_from_this<state_base>
 	
 	virtual tuple<bool,bool>	allow(const wstring& name) = 0;
 	virtual bool				allow_char_data()					{ return false; }
+	virtual bool				allow_empty()						{ return false; }
 	
 	virtual void				reset() {}
 };
 
 struct state_any : public state_base
 {
-	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(true, false); }
+	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(true, true); }
 	virtual bool				allow_char_data()					{ return true; }
+	virtual bool				allow_empty()						{ return true; }
 };
 
 struct state_empty : public state_base
 {
 	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(false, true); }
+	virtual bool				allow_empty()						{ return true; }
 };
 
 struct state_element : public state_base
@@ -94,6 +97,8 @@ struct state_repeated : public state_base
 	virtual void				reset()								{ m_sub->reset(); m_state = 0; }
 
 	virtual bool				allow_char_data()					{ return m_sub->allow_char_data(); }
+
+	virtual bool				allow_empty()						{ return m_repetition != '+'; }
 
 	state_ptr					m_sub;
 	char						m_repetition;
@@ -246,6 +251,8 @@ struct state_seq : public state_base
 									
 									return result;
 								}
+
+	virtual bool				allow_empty()						{ return m_states.empty(); }
 	
 	list<state_ptr>				m_states;
 	list<state_ptr>::iterator	m_next;
@@ -314,6 +321,8 @@ struct state_choice : public state_base
 								}
 
 	virtual bool				allow_char_data()					{ return m_mixed; }
+
+	virtual bool				allow_empty()						{ return false; }
 	
 	list<state_ptr>				m_states;
 	bool						m_mixed;
@@ -360,7 +369,7 @@ int validator::s_next_nr = 1;
 validator::validator()
 	: m_state(new state_any())
 	, m_nr(0)
-	, m_done(true)
+	, m_done(false)
 {
 }
 
@@ -368,7 +377,7 @@ validator::validator(allowed_ptr allowed)
 	: m_state(allowed->create_state())
 	, m_allowed(allowed)
 	, m_nr(s_next_nr++)
-	, m_done(false)
+	, m_done(m_state->allow_empty())
 {
 }
 
@@ -430,7 +439,10 @@ bool validator::done()
 
 std::ostream& operator<<(std::ostream& lhs, validator& rhs)
 {
-	rhs.m_allowed->print(lhs);
+	lhs << " +++ " << rhs.m_nr << " == ";
+	
+	if (rhs.m_allowed)
+		rhs.m_allowed->print(lhs);
 	return lhs;
 }
 
@@ -620,10 +632,10 @@ bool attribute::is_names(wstring& s) const
 
 bool attribute::is_nmtoken(wstring& s) const
 {
-	bool result = false;
-
 	ba::trim(s);
 	
+	bool result = not s.empty();
+
 	wstring::iterator c = s.begin();
 	while (result and ++c != s.end())
 		result = is_name_char(*c);
@@ -633,10 +645,10 @@ bool attribute::is_nmtoken(wstring& s) const
 
 bool attribute::is_nmtokens(wstring& s) const
 {
-	bool result = false;
-
 	// remove leading and trailing spaces
 	ba::trim(s);
+	
+	bool result = not s.empty();
 	
 	wstring::iterator c = s.begin();
 	wstring t;
@@ -766,11 +778,7 @@ validator element::get_validator() const
 {
 	validator valid;
 	if (m_allowed)
-	{
 		valid = validator(m_allowed);
-//		cout << "created validator for " << wstring_to_string(name()) << endl
-//			 << " >> " << valid << endl;
-	}
 	return valid;
 }
 

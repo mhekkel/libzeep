@@ -226,8 +226,8 @@ struct allowed_choice : public allowed_base
 class element : boost::noncopyable
 {
   public:
-						element(const std::wstring& name)
-							: m_name(name) {}
+						element(const std::wstring& name, bool declared)
+							: m_name(name), m_declared(declared) {}
 
 						~element();
 
@@ -242,6 +242,9 @@ class element : boost::noncopyable
 
 	void				set_allowed(allowed_ptr allowed)			{ m_allowed = allowed; }
 
+	void				declared(bool declared)						{ m_declared = declared; }
+	bool				declared() const							{ return m_declared; }
+
 	bool				empty() const;
 	bool				element_content() const;
 
@@ -252,6 +255,7 @@ class element : boost::noncopyable
 	std::wstring		m_name;
 	attribute_list		m_attlist;
 	allowed_ptr			m_allowed;
+	bool				m_declared;
 };
 
 // --------------------------------------------------------------------

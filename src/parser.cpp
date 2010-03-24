@@ -1926,23 +1926,25 @@ void parser_imp::element_decl()
 	s(true);
 
 	wstring name = m_token;
-	auto_ptr<doctype::element> element(new doctype::element(name));
+
+	doctype::element_list::iterator e = find_if(m_doctype.begin(), m_doctype.end(),
+		boost::bind(&doctype::element::name, _1) == name);
+
+	if (e == m_doctype.end())
+		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true));
+	else if (e->declared())
+		not_valid(boost::wformat(L"duplicate element declaration for element '%1%'") % name);
 
 	match(xml_Name);
 	s(true);
 	
-	contentspec(*element);
+	contentspec(*e);
 	s();
 	
 	m_allow_parameter_entity_references = true;
 
 	check.check();
 	match('>');
-	
-	if (find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == name) != m_doctype.end())
-		not_valid(boost::wformat(L"duplicate element declaration for element '%1%'") % name);
-
-	m_doctype.push_back(element.release());
 }
 
 void parser_imp::contentspec(doctype::element& element)
@@ -2257,12 +2259,7 @@ void parser_imp::attlist_decl()
 	doctype::element_list::iterator dte = find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == element);
 	
 	if (dte == m_doctype.end())
-	{
-//		if (VERBOSE)
-//			cerr << "ATTLIST declaration for an undefined ELEMENT " << wstring_to_string(element) << endl;
-		m_doctype.push_back(new doctype::element(element));
-		dte = m_doctype.end() - 1;
-	}
+		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false));
 	
 	// attdef
 	
@@ -3036,7 +3033,12 @@ void parser_imp::element(doctype::validator& valid)
 
 	doctype::validator sub_valid;
 	if (dte != nil)
+	{
 		sub_valid = dte->get_validator();
+		if (TRACE)
+			cout << "=== Created validator for " << wstring_to_string(name) << endl
+				 << sub_valid << endl << endl;
+	}
 
 	list<pair<wstring,wstring> > attrs;
 	
@@ -3197,7 +3199,7 @@ void parser_imp::element(doctype::validator& valid)
 	m_in_content = in_content.m_value;
 	match('>');
 	
-	if (m_validating and dte != nil and not valid.done())
+	if (m_validating and dte != nil and not sub_valid.done())
 		not_valid(boost::wformat(L"missing child elements for element '%1%'") % dte->name());
 	
 	s();
@@ -3205,6 +3207,9 @@ void parser_imp::element(doctype::validator& valid)
 
 void parser_imp::content(doctype::validator& valid)
 {
+	if (TRACE)
+		cout << "... content with valid: " << valid << endl;
+	
 	wstring data;
 	
 	do
