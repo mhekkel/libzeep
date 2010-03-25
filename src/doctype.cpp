@@ -6,6 +6,7 @@
 #include <iostream>
 #include <tr1/tuple>
 #include <typeinfo>
+#include <numeric>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -13,6 +14,7 @@
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#include "zeep/exception.hpp"
 #include "zeep/xml/doctype.hpp"
 #include "zeep/xml/unicode_support.hpp"
 
@@ -22,7 +24,7 @@ namespace ba = boost::algorithm;
 
 #define nil NULL
 
-extern int TRACE;
+extern int TRACE, VERBOSE;
 
 namespace zeep { namespace xml { namespace doctype {
 
@@ -76,37 +78,70 @@ struct state_element : public state_base
 
 struct state_repeated : public state_base
 {
-								state_repeated(allowed_ptr sub, char repetition)
-									: m_sub(sub->create_state()), m_repetition(repetition), m_state(0) {}
-
-	virtual tuple<bool,bool>	allow(const wstring& name)
-								{
-									switch (m_repetition)
-									{
-										case '?':	return allow_once(name);
-										case '*':	return allow_any(name);
-										case '+':	return allow_at_least_once(name);
-										default:	return make_tuple(false, true);
-									}
-								}
-	
-	tuple<bool,bool>			allow_once(const wstring& name);
-	tuple<bool,bool>			allow_any(const wstring& name);
-	tuple<bool,bool>			allow_at_least_once(const wstring& name);
+								state_repeated(allowed_ptr sub)
+									: m_sub(sub->create_state()), m_state(0) {}
 
 	virtual void				reset()								{ m_sub->reset(); m_state = 0; }
 
 	virtual bool				allow_char_data()					{ return m_sub->allow_char_data(); }
 
-	virtual bool				allow_empty()						{ return m_repetition != '+'; }
-
 	state_ptr					m_sub;
-	char						m_repetition;
 	int							m_state;
 };
 
-// this is for '*'
-tuple<bool,bool> state_repeated::allow_any(const wstring& name)
+// repeat for ?
+
+struct state_repeated_zero_or_once : public state_repeated
+{
+								state_repeated_zero_or_once(allowed_ptr sub)
+									: state_repeated(sub) {}
+
+	tuple<bool,bool>			allow(const wstring& name);
+
+	virtual bool				allow_empty()						{ return true; }
+};
+
+tuple<bool,bool> state_repeated_zero_or_once::allow(const wstring& name)
+{
+	// use a state machine
+	enum State {
+		state_Start			= 0,
+		state_Loop
+	};
+	
+	bool result = false, done;
+	
+	switch (m_state)
+	{
+		case state_Start:
+			tie(result, done) = m_sub->allow(name);
+			if (result == true)
+				m_state = state_Loop;
+			else
+				done = true;
+			break;
+		
+		case state_Loop:
+			tie(result, done) = m_sub->allow(name);
+			if (result == false and done)
+				done = true;
+			break;
+	}
+	
+	return make_tuple(result, done);
+}
+
+struct state_repeated_any : public state_repeated
+{
+								state_repeated_any(allowed_ptr sub)
+									: state_repeated(sub) {}
+
+	tuple<bool,bool>			allow(const wstring& name);
+
+	virtual bool				allow_empty()						{ return true; }
+};
+
+tuple<bool,bool> state_repeated_any::allow(const wstring& name)
 {
 	// use a state machine
 	enum State {
@@ -141,8 +176,17 @@ tuple<bool,bool> state_repeated::allow_any(const wstring& name)
 	return make_tuple(result, done);
 }
 
-// this is for '+'
-tuple<bool,bool> state_repeated::allow_at_least_once(const wstring& name)
+struct state_repeated_at_least_once : public state_repeated
+{
+								state_repeated_at_least_once(allowed_ptr sub)
+									: state_repeated(sub) {}
+
+	tuple<bool,bool>			allow(const wstring& name);
+
+	virtual bool				allow_empty()						{ return m_sub->allow_empty(); }
+};
+
+tuple<bool,bool> state_repeated_at_least_once::allow(const wstring& name)
 {
 	// use a state machine
 	enum State {
@@ -187,37 +231,6 @@ tuple<bool,bool> state_repeated::allow_at_least_once(const wstring& name)
 	return make_tuple(result, done);
 }
 
-// this is for '?'
-tuple<bool,bool> state_repeated::allow_once(const wstring& name)
-{
-	// use a state machine
-	enum State {
-		state_Start			= 0,
-		state_Loop
-	};
-	
-	bool result = false, done;
-	
-	switch (m_state)
-	{
-		case state_Start:
-			tie(result, done) = m_sub->allow(name);
-			if (result == true)
-				m_state = state_Loop;
-			else
-				done = true;
-			break;
-		
-		case state_Loop:
-			tie(result, done) = m_sub->allow(name);
-			if (result == false and done)
-				done = true;
-			break;
-	}
-	
-	return make_tuple(result, done);
-}
-
 // allow a sequence
 
 struct state_seq : public state_base
@@ -252,7 +265,7 @@ struct state_seq : public state_base
 									return result;
 								}
 
-	virtual bool				allow_empty()						{ return m_states.empty(); }
+	virtual bool				allow_empty();
 	
 	list<state_ptr>				m_states;
 	list<state_ptr>::iterator	m_next;
@@ -300,6 +313,21 @@ tuple<bool,bool> state_seq::allow(const wstring& name)
 	return make_tuple(result, done);
 }
 
+bool state_seq::allow_empty()
+{
+	bool result;
+
+	if (m_states.empty())
+		result = true;
+	else
+	{
+		result = accumulate(m_states.begin(), m_states.end(), true,
+			boost::bind(&state_base::allow_empty, _2) && _1);
+	}
+	
+	return result;
+}
+
 // allow one of a list
 
 struct state_choice : public state_base
@@ -322,7 +350,7 @@ struct state_choice : public state_base
 
 	virtual bool				allow_char_data()					{ return m_mixed; }
 
-	virtual bool				allow_empty()						{ return false; }
+	virtual bool				allow_empty();
 	
 	list<state_ptr>				m_states;
 	bool						m_mixed;
@@ -362,6 +390,12 @@ tuple<bool,bool> state_choice::allow(const wstring& name)
 	return make_tuple(result, done);
 }
 
+bool state_choice::allow_empty()
+{
+	return m_mixed or
+		find_if(m_states.begin(), m_states.end(), boost::bind(&state_base::allow_empty, _1)) != m_states.end();
+}
+
 // --------------------------------------------------------------------
 
 int validator::s_next_nr = 1;
@@ -379,6 +413,11 @@ validator::validator(allowed_ptr allowed)
 	, m_nr(s_next_nr++)
 	, m_done(m_state->allow_empty())
 {
+	if (VERBOSE)
+	{
+		cout << "Created state machine: " << *this << endl
+			 << "  " << (m_done ? "allows" : "disallows") << " empty content" << endl;
+	}
 }
 
 validator::validator(const validator& other)
@@ -480,7 +519,13 @@ void allowed_element::print(ostream& os)
 
 state_ptr allowed_repeated::create_state() const
 {
-	return state_ptr(new state_repeated(m_allowed, m_repetition));
+	switch (m_repetition)
+	{
+		case '?':	return state_ptr(new state_repeated_zero_or_once(m_allowed));
+		case '*':	return state_ptr(new state_repeated_any(m_allowed));
+		case '+':	return state_ptr(new state_repeated_at_least_once(m_allowed));
+		default:	assert(false); throw zeep::exception("illegal repetition character");
+	}
 }
 
 void allowed_repeated::print(ostream& os)

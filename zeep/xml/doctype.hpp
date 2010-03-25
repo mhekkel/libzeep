@@ -15,8 +15,7 @@
 namespace zeep { namespace xml { namespace doctype {
 
 // --------------------------------------------------------------------
-// doctype support. We don't do full validation yet, but here is the support
-// for filling in default values and cleaning up attributes.
+// doctype support with full validation.
 
 class element;
 class attlist;
@@ -26,75 +25,6 @@ class attribute;
 typedef boost::ptr_vector<entity>		entity_list;
 typedef boost::ptr_vector<element>		element_list;
 typedef boost::ptr_vector<attribute>	attribute_list;
-
-enum AttributeType
-{
-	attTypeString,
-	attTypeTokenizedID,
-	attTypeTokenizedIDREF,
-	attTypeTokenizedIDREFS,
-	attTypeTokenizedENTITY,
-	attTypeTokenizedENTITIES,
-	attTypeTokenizedNMTOKEN,
-	attTypeTokenizedNMTOKENS,
-	attTypeNotation,
-	attTypeEnumerated
-};
-
-enum AttributeDefault
-{
-	attDefNone,
-	attDefRequired,
-	attDefImplied,
-	attDefFixed,
-	attDefDefault
-};
-
-class attribute : public boost::noncopyable
-{
-  public:
-						attribute(const std::wstring& name, AttributeType type)
-							: m_name(name), m_type(type), m_default(attDefNone) {}
-
-						attribute(const std::wstring& name, AttributeType type,
-								const std::vector<std::wstring>& enums)
-							: m_name(name), m_type(type), m_default(attDefNone)
-							, m_enum(enums) {}
-
-	std::wstring		name() const							{ return m_name; }
-
-	bool				validate_value(std::wstring& value, const entity_list& entities) const;
-	
-	void				set_default(AttributeDefault def, const std::wstring& value)
-						{
-							m_default = def;
-							m_default_value = value;
-						}
-
-	boost::tuple<AttributeDefault,std::wstring>
-						get_default() const						{ return boost::make_tuple(m_default, m_default_value); }
-	
-	AttributeType		get_type() const						{ return m_type; }
-	AttributeDefault	get_default_type() const				{ return m_default; }
-	const std::vector<std::wstring>&
-						get_enums() const						{ return m_enum; }
-	
-  private:
-
-	// routines used to check _and_ reformat attribute value strings
-	bool				is_name(std::wstring& s) const;
-	bool				is_names(std::wstring& s) const;
-	bool				is_nmtoken(std::wstring& s) const;
-	bool				is_nmtokens(std::wstring& s) const;
-
-	bool				is_unparsed_entity(const std::wstring& s, const entity_list& l) const;
-
-	std::wstring		m_name;
-	AttributeType		m_type;
-	AttributeDefault	m_default;
-	std::wstring		m_default_value;
-	std::vector<std::wstring>m_enum;
-};
 
 // --------------------------------------------------------------------
 // validation of elements is done by the validator classes
@@ -138,8 +68,6 @@ class validator
 };
 
 std::ostream& operator<<(std::ostream& lhs, validator& rhs);
-
-validator create_single_element_validator(const std::wstring& name);
 
 struct allowed_base
 {
@@ -223,11 +151,87 @@ struct allowed_choice : public allowed_base
 
 // --------------------------------------------------------------------
 
+enum AttributeType
+{
+	attTypeString,
+	attTypeTokenizedID,
+	attTypeTokenizedIDREF,
+	attTypeTokenizedIDREFS,
+	attTypeTokenizedENTITY,
+	attTypeTokenizedENTITIES,
+	attTypeTokenizedNMTOKEN,
+	attTypeTokenizedNMTOKENS,
+	attTypeNotation,
+	attTypeEnumerated
+};
+
+enum AttributeDefault
+{
+	attDefNone,
+	attDefRequired,
+	attDefImplied,
+	attDefFixed,
+	attDefDefault
+};
+
+class attribute : public boost::noncopyable
+{
+  public:
+						attribute(const std::wstring& name, AttributeType type)
+							: m_name(name), m_type(type), m_default(attDefNone), m_external(false) {}
+
+						attribute(const std::wstring& name, AttributeType type,
+								const std::vector<std::wstring>& enums)
+							: m_name(name), m_type(type), m_default(attDefNone)
+							, m_enum(enums), m_external(false) {}
+
+	std::wstring		name() const							{ return m_name; }
+
+	bool				validate_value(std::wstring& value, const entity_list& entities) const;
+	
+	void				set_default(AttributeDefault def, const std::wstring& value)
+						{
+							m_default = def;
+							m_default_value = value;
+						}
+
+	boost::tuple<AttributeDefault,std::wstring>
+						get_default() const						{ return boost::make_tuple(m_default, m_default_value); }
+	
+	AttributeType		get_type() const						{ return m_type; }
+	AttributeDefault	get_default_type() const				{ return m_default; }
+	const std::vector<std::wstring>&
+						get_enums() const						{ return m_enum; }
+
+	void				external(bool external)						{ m_external = external; }
+	bool				external() const							{ return m_external; }
+	
+  private:
+
+	// routines used to check _and_ reformat attribute value strings
+	bool				is_name(std::wstring& s) const;
+	bool				is_names(std::wstring& s) const;
+	bool				is_nmtoken(std::wstring& s) const;
+	bool				is_nmtokens(std::wstring& s) const;
+
+	bool				is_unparsed_entity(const std::wstring& s, const entity_list& l) const;
+
+	std::wstring		m_name;
+	AttributeType		m_type;
+	AttributeDefault	m_default;
+	std::wstring		m_default_value;
+	std::vector<std::wstring>
+						m_enum;
+	bool				m_external;
+};
+
+// --------------------------------------------------------------------
+
 class element : boost::noncopyable
 {
   public:
-						element(const std::wstring& name, bool declared)
-							: m_name(name), m_declared(declared) {}
+						element(const std::wstring& name, bool declared, bool external)
+							: m_name(name), m_declared(declared), m_external(external) {}
 
 						~element();
 
@@ -245,6 +249,9 @@ class element : boost::noncopyable
 	void				declared(bool declared)						{ m_declared = declared; }
 	bool				declared() const							{ return m_declared; }
 
+	void				external(bool external)						{ m_external = external; }
+	bool				external() const							{ return m_external; }
+
 	bool				empty() const;
 	bool				element_content() const;
 
@@ -255,7 +262,7 @@ class element : boost::noncopyable
 	std::wstring		m_name;
 	attribute_list		m_attlist;
 	allowed_ptr			m_allowed;
-	bool				m_declared;
+	bool				m_declared, m_external;
 };
 
 // --------------------------------------------------------------------

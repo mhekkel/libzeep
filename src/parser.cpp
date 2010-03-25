@@ -462,7 +462,7 @@ struct parser_imp
 	void			eq();
 	void			misc();
 	void			element(doctype::validator& valid);
-	void			content(doctype::validator& valid);
+	void			content(doctype::validator& valid, bool check_for_whitespace);
 
 	void			comment();
 	void			pi();
@@ -1931,9 +1931,11 @@ void parser_imp::element_decl()
 		boost::bind(&doctype::element::name, _1) == name);
 
 	if (e == m_doctype.end())
-		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true));
+		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_in_external_dtd));
 	else if (e->declared())
 		not_valid(boost::wformat(L"duplicate element declaration for element '%1%'") % name);
+	else
+		e->external(m_in_external_dtd);
 
 	match(xml_Name);
 	s(true);
@@ -2081,6 +2083,7 @@ doctype::allowed_ptr parser_imp::cp()
 	
 	if (m_lookahead == '(')
 	{
+		valid_nesting_validator check(m_data_source);
 		list<doctype::allowed_ptr> children;
 
 		match('(');
@@ -2118,6 +2121,7 @@ doctype::allowed_ptr parser_imp::cp()
 			result = children.front();
 
 		s();
+		check.check();
 		match(')');
 	}
 	else
@@ -2259,7 +2263,7 @@ void parser_imp::attlist_decl()
 	doctype::element_list::iterator dte = find_if(m_doctype.begin(), m_doctype.end(), boost::bind(&doctype::element::name, _1) == element);
 	
 	if (dte == m_doctype.end())
-		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false));
+		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false, m_in_external_dtd));
 	
 	// attdef
 	
@@ -2429,7 +2433,8 @@ void parser_imp::attlist_decl()
 			if (find_if(atts.begin(), atts.end(), boost::bind(&doctype::attribute::get_type, _1) == doctype::attTypeTokenizedID) != atts.end())
 				not_valid(L"only one attribute per element can have the ID type");
 		}
-		
+
+		attribute->external(m_in_external_dtd);		
 		dte->add_attribute(attribute);
 	}
 
@@ -3066,6 +3071,21 @@ void parser_imp::element(doctype::validator& valid)
 
 		wstring attr_value = normalize_attribute_value(m_token);
 		match(xml_String);
+
+		const doctype::attribute* dta = nil;
+		if (dte != nil)
+			dta = dte->get_attribute(attr_name);
+
+		if (dta == nil and m_validating)
+			not_valid(boost::wformat(L"undeclared attribute '%1%'") % attr_name);
+
+		if (m_validating and
+			dta != nil and
+			dta->get_default_type() == doctype::attDefFixed and
+			attr_value != boost::get<1>(dta->get_default()))
+		{
+			not_valid(L"invalid value specified for fixed attribute");
+		}
 		
 		if (attr_name == L"xmlns" or ba::starts_with(attr_name, L"xmlns:"))	// namespace support
 		{
@@ -3083,39 +3103,40 @@ void parser_imp::element(doctype::validator& valid)
 		}
 		else
 		{
-			if (dte != nil)
+			if (dta != nil)
 			{
-				const doctype::attribute* dta = dte->get_attribute(attr_name);
-				if (dta != nil)
+				wstring v(attr_value);
+				
+				if (not dta->validate_value(attr_value, m_general_entities))
 				{
-					if (not dta->validate_value(attr_value, m_general_entities))
+					not_valid(boost::wformat(L"invalid value ('%2%') for attribute %1%")
+						% attr_name % attr_value);
+				}
+				
+				if (m_validating and m_standalone and dta->external() and v != attr_value)
+					not_valid(L"attribute value modified as a result of an external defined attlist declaration, which is not valid in a standalone document");
+				
+				if (dta->get_type() == doctype::attTypeTokenizedID)
+				{
+					if (m_ids.count(attr_value) > 0)
 					{
-						not_valid(boost::wformat(L"invalid value ('%2%') for attribute %1%")
-							% attr_name % attr_value);
+						not_valid(boost::wformat(L"attribute value ('%1%') for attribute %2% is not unique")
+							% attr_value % attr_name);
 					}
 					
-					if (dta->get_type() == doctype::attTypeTokenizedID)
+					m_ids.insert(attr_value);
+					
+					if (m_unresolved_ids.count(attr_value) > 0)
+						m_unresolved_ids.erase(attr_value);
+				}
+				else if (dta->get_type() == doctype::attTypeTokenizedIDREF or dta->get_type() == doctype::attTypeTokenizedIDREFS)
+				{
+					list<wstring> ids;
+					ba::split(ids, attr_value, ba::is_any_of(L" "));
+					foreach (const wstring& id, ids)
 					{
-						if (m_ids.count(attr_value) > 0)
-						{
-							not_valid(boost::wformat(L"attribute value ('%1%') for attribute %2% is not unique")
-								% attr_value % attr_name);
-						}
-						
-						m_ids.insert(attr_value);
-						
-						if (m_unresolved_ids.count(attr_value) > 0)
-							m_unresolved_ids.erase(attr_value);
-					}
-					else if (dta->get_type() == doctype::attTypeTokenizedIDREF or dta->get_type() == doctype::attTypeTokenizedIDREFS)
-					{
-						list<wstring> ids;
-						ba::split(ids, attr_value, ba::is_any_of(L" "));
-						foreach (const wstring& id, ids)
-						{
-							if (m_ids.count(id) == 0)
-								m_unresolved_ids.insert(id);
-						}
+						if (m_ids.count(id) == 0)
+							m_unresolved_ids.insert(id);
 					}
 				}
 			}
@@ -3147,6 +3168,9 @@ void parser_imp::element(doctype::validator& valid)
 			}
 			else if (not defValue.empty() and attr == attrs.end())
 			{
+				if (m_validating and m_standalone and dta.external())
+					not_valid(L"default value for attribute defined in external declaration which is not allowed in a standalone document");
+				
 				wstring attr_value = normalize_attribute_value(defValue);
 				attrs.push_back(make_pair(attr_name, attr_value));
 			}
@@ -3181,7 +3205,7 @@ void parser_imp::element(doctype::validator& valid)
 			match('>');
 
 			if (m_lookahead != xml_ETag)
-				content(sub_valid);
+				content(sub_valid, m_validating and m_standalone and dte->external() and dte->element_content());
 		}
 		
 		match(xml_ETag);
@@ -3205,7 +3229,7 @@ void parser_imp::element(doctype::validator& valid)
 	s();
 }
 
-void parser_imp::content(doctype::validator& valid)
+void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 {
 	if (TRACE)
 		cout << "... content with valid: " << valid << endl;
@@ -3222,7 +3246,12 @@ void parser_imp::content(doctype::validator& valid)
 				else
 				{
 					ba::trim(m_token);
-					if (not m_token.empty())
+					if (m_token.empty())
+					{
+						if (check_for_whitespace)
+							not_valid(L"element declared in external subset contains white space");
+					}
+					else
 						not_valid(boost::wformat(L"character data '%1%' not allowed in element") % m_token);
 				}
 				match(xml_Content);
@@ -3251,7 +3280,7 @@ void parser_imp::content(doctype::validator& valid)
 					m_in_external_dtd = e.externally_defined();
 					
 					if (m_lookahead != xml_Eof)
-						content(valid);
+						content(valid, check_for_whitespace);
 
 					if (m_lookahead != xml_Eof)
 						not_well_formed(L"entity reference should be a valid content production");
