@@ -2,13 +2,16 @@
 <project version="2.0">
  <syspaths>
   <path>/usr/include</path>
+  <path>../../boost/include</path>
  </syspaths>
  <userpaths>
   <path>..</path>
   <path>../src</path>
   <path>src</path>
  </userpaths>
- <libpaths></libpaths>
+ <libpaths>
+  <path>../../boost/lib</path>
+ </libpaths>
  <files>
   <group name="soap">
    <file>exception.cpp</file>
