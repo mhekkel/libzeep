@@ -24,7 +24,7 @@ namespace ba = boost::algorithm;
 
 #define nil NULL
 
-extern int TRACE, VERBOSE;
+extern int TRACE;
 
 namespace zeep { namespace xml { namespace doctype {
 
@@ -413,11 +413,6 @@ validator::validator(allowed_ptr allowed)
 	, m_nr(s_next_nr++)
 	, m_done(m_state->allow_empty())
 {
-	if (VERBOSE)
-	{
-		cout << "Created state machine: " << *this << endl
-			 << "  " << (m_done ? "allows" : "disallows") << " empty content" << endl;
-	}
 }
 
 validator::validator(const validator& other)

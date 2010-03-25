@@ -3,7 +3,6 @@
 #include <string>
 #include <list>
 
-
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/filesystem/fstream.hpp>
@@ -101,6 +100,15 @@ bool run_valid_test(istream& is, fs::path& outfile)
 bool run_test(xml::node& test, fs::path base_dir)
 {
 	bool result = true;
+
+	if (VERBOSE)
+	{
+		cout << "-----------------------------------------------" << endl
+			 << "ID: " << test.get_attribute("ID") << endl
+			 << "TYPE: " << test.get_attribute("TYPE") << endl
+			 << test.text() << endl
+			 << endl;
+	}
 	
 	++total_tests;
 	
@@ -324,9 +332,14 @@ int main(int argc, char* argv[])
 	{
 		if (vm.count("single"))
 		{
-			fs::ifstream file(vm["single"].as<string>());
-			fs::path p;
-			run_valid_test(file, p);
+			fs::path path(vm["single"].as<string>());
+
+			fs::path dir(path.branch_path());
+			fs::current_path(dir);
+
+			fs::ifstream file(path);
+
+			run_valid_test(file, dir);
 			return 0;
 		}
 		

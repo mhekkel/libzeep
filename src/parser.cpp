@@ -744,7 +744,7 @@ const doctype::entity& parser_imp::get_general_entity(const wstring& name) const
 		boost::bind(&doctype::entity::name, _1) == name);
 	
 	if (e == m_general_entities.end())
-		not_well_formed(boost::wformat(L"undefined entity reference %1%") % name);
+		not_well_formed(boost::wformat(L"undefined entity reference '%1%'") % name);
 	
 	return *e;
 }
@@ -847,7 +847,7 @@ void parser_imp::match(int token)
 		wstring expected = describe_token(token);
 		wstring found = describe_token(m_lookahead);
 	
-		not_well_formed(boost::wformat(L"Error parsing XML, expected %1% but found %2% ('%3%')")
+		not_well_formed(boost::wformat(L"Error parsing XML, expected '%1%' but found '%2%' ('%3%')")
 			% expected % found % m_token);
 	}
 	
@@ -1010,7 +1010,7 @@ int parser_imp::get_next_token()
 					else if (m_token == L"<!NOTATION")
 						token = xml_Notation;
 					else
-						not_well_formed(boost::wformat(L"invalid doctype declaration %1%") % m_token);
+						not_well_formed(boost::wformat(L"invalid doctype declaration '%1%'") % m_token);
 				}
 				break;
 
@@ -1099,7 +1099,7 @@ int parser_imp::get_next_content()
 		wchar_t uc = get_next_char();
 		
 		if (uc != 0 and not is_char(uc))
-			not_well_formed(boost::wformat(L"illegal character in content: 0x'%x'") % int(uc));
+			not_well_formed(boost::wformat(L"illegal character in content: '0x%x'") % int(uc));
 		
 		switch (state)
 		{
@@ -1438,7 +1438,7 @@ void parser_imp::parse(bool validate)
 
 	if (not m_unresolved_ids.empty())
 	{
-		not_valid(boost::wformat(L"document contains references to the following undefined ID's: %1%")
+		not_valid(boost::wformat(L"document contains references to the following undefined ID's: '%1%'")
 			% ba::join(m_unresolved_ids, L", "));
 	}
 }
@@ -1495,7 +1495,7 @@ void parser_imp::xml_decl()
 //				else if (m_token == L"ISO-8859-1")
 //					m_encoding = enc_ISO88591;
 				else
-					not_well_formed(boost::wformat(L"Unsupported encoding value %1%") % m_token);
+					not_well_formed(boost::wformat(L"Unsupported encoding value '%1%'") % m_token);
 				match(xml_String);
 
 				s();
@@ -1640,7 +1640,7 @@ void parser_imp::doctypedecl()
 	foreach (const doctype::entity& e, m_general_entities)
 	{
 		if (e.parsed() == false and m_notations.count(e.ndata()) == 0)
-			not_valid(boost::wformat(L"Undefined NOTATION %1%") % e.ndata());
+			not_valid(boost::wformat(L"Undefined NOTATION '%1%'") % e.ndata());
 	}
 	
 	// and the notations in the doctype attlists
@@ -1654,7 +1654,7 @@ void parser_imp::doctypedecl()
 			foreach (const wstring& n, attr.get_enums())
 			{
 				if (m_notations.count(n) == 0)
-					not_valid(boost::wformat(L"Undefined NOTATION %1%") % n);
+					not_valid(boost::wformat(L"Undefined NOTATION '%1%'") % n);
 			}
 		}
 	}
@@ -1788,7 +1788,7 @@ void parser_imp::conditionalsect()
 	else if (m_token == L"IGNORE")
 		include = false;
 	else if (m_lookahead == xml_Name)
-		not_well_formed(boost::wformat(L"Unexpected literal %1%") % m_token);
+		not_well_formed(boost::wformat(L"Unexpected literal '%1%'") % m_token);
 	
 	match(xml_Name);
 	
@@ -3029,7 +3029,7 @@ void parser_imp::element(doctype::validator& valid)
 	match(xml_Name);
 	
 	if (not valid(name))
-		not_valid(boost::wformat(L"element %1% not expected at this position") % name);
+		not_valid(boost::wformat(L"element '%1%' not expected at this position") % name);
 
 	const doctype::element* dte = get_element(name);
 
@@ -3064,7 +3064,7 @@ void parser_imp::element(doctype::validator& valid)
 		match(xml_Name);
 		
 		if (seen.count(attr_name) > 0)
-			not_well_formed(boost::wformat(L"multiple values for attribute %1%") % attr_name);
+			not_well_formed(boost::wformat(L"multiple values for attribute '%1%'") % attr_name);
 		seen.insert(attr_name);
 		
 		eq();
@@ -3120,7 +3120,7 @@ void parser_imp::element(doctype::validator& valid)
 				{
 					if (m_ids.count(attr_value) > 0)
 					{
-						not_valid(boost::wformat(L"attribute value ('%1%') for attribute %2% is not unique")
+						not_valid(boost::wformat(L"attribute value ('%1%') for attribute '%2%' is not unique")
 							% attr_value % attr_name);
 					}
 					
@@ -3163,7 +3163,7 @@ void parser_imp::element(doctype::validator& valid)
 			if (defType == doctype::attDefRequired)
 			{
 				if (attr == attrs.end())
-					not_valid(boost::wformat(L"missing #REQUIRED attribute %1% for element %2%")
+					not_valid(boost::wformat(L"missing #REQUIRED attribute '%1%' for element '%2%'")
 						% attr_name % name);
 			}
 			else if (not defValue.empty() and attr == attrs.end())
@@ -3346,7 +3346,7 @@ void parser_imp::comment()
 		if (ch == 0)
 			not_well_formed(L"runaway comment");
 		if (not is_char(ch))
-			not_well_formed(boost::wformat(L"illegal character in content: 0x'%x'") % int(ch));
+			not_well_formed(boost::wformat(L"illegal character in content: '0x%x'") % int(ch));
 		
 		switch (state)
 		{
@@ -3414,7 +3414,7 @@ void parser_imp::pi()
 		if (ch == 0)
 			not_well_formed(L"runaway processing instruction");
 		if (not is_char(ch))
-			not_well_formed(boost::wformat(L"illegal character in processing instruction: 0x'%x'") % int(ch));
+			not_well_formed(boost::wformat(L"illegal character in processing instruction: '0x%x'") % int(ch));
 		
 		switch (state)
 		{

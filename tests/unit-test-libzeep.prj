@@ -26,6 +26,7 @@
     <file>node.cpp</file>
     <file>parser.cpp</file>
     <file>unicode_support.cpp</file>
+    <file>xpath.cpp</file>
    </group>
   </group>
   <group name="Sources">
