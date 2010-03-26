@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="2.0">
  <syspaths>
-  <path>/usr/include</path>
   <path>../../boost/include</path>
+  <path>/usr/include</path>
+  <path></path>
  </syspaths>
  <userpaths>
   <path>..</path>
