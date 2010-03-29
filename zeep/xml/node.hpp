@@ -6,6 +6,7 @@
 #ifndef SOAP_XML_NODE_HPP
 #define SOAP_XML_NODE_HPP
 
+#include <iterator>
 #include <string>
 #include <list>
 
@@ -13,318 +14,373 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 //#include <boost/flyweight.hpp>
+#include "zeep/xml/attribute.hpp"
 
 namespace zeep { namespace xml {
 
-class attribute;
-typedef boost::shared_ptr<attribute>	attribute_ptr;
-class									attribute_list;
+class writer;
 
 class node;
-typedef boost::shared_ptr<node>			node_ptr;
-class									node_list;
+class comment;
+class processing_instruction;
+class text;
+class element;
+typedef node* node_ptr;
+class node_set;
 
 class document;
 
-class node : public boost::noncopyable, public boost::enable_shared_from_this<node>
+// --------------------------------------------------------------------
+
+class node
 {
-//	typedef boost::flyweights::flyweight<std::string>	shared_string;
-	typedef std::string									shared_string;
-	
   public:
-						node();
-
-						node(
-							const std::string&	name);
-
-						node(
-							const std::string&	name,
-							const std::string&	prefix);
-
-						node(
-							const std::string&	name,
-							const std::string&	ns,
-							const std::string&	prefix);
-
-	virtual				~node();
-
-	std::string			ns() const								{ return m_ns; }
-	void				ns(const std::string&	ns)				{ m_ns = ns; }
+	// All nodes should be part of a document
+	document*			doc();
+	const document*		doc() const;
 	
-	std::string			prefix() const							{ return m_prefix; }
-	void				prefix(const std::string&
-												prefix)			{ m_prefix = prefix; }
-	
-	std::string			name() const							{ return m_name; }
-	void				name(const std::string&	name)			{ m_name = name; }
-	
-	std::string			content() const;
-	void				content(const std::string&
-												content);
+	// basic access
+	node*				parent()									{ return m_parent; }
+	const node*			parent() const								{ return m_parent; }
 
+	node*				next()										{ return m_next; }
+	const node*			next() const								{ return m_next; }
+	
+	node*				prev()										{ return m_prev; }
+	const node*			prev() const								{ return m_prev; }
+	
 	// return all content concatenated, including that of children.
-	std::string			text() const;
-
-	// utility functions
-	node_ptr			find_first_child(
-							const std::string&	name) const;
-
-	node_ptr			find_child(
-							const std::string&	path) const;
-							
-	node_list			find_all(
-							const std::string&	path) const;
-
-	std::string			get_attribute(
-							const std::string&	name) const;
-
-	// for constructing trees
-
-	void				add_attribute(
-							attribute_ptr		attr);
-	
-	void				add_attribute(
-							const std::string&	name,
-							const std::string&	value);
-
-	void				remove_attribute(const std::string& name);
-	
-	void				add_child(
-							node_ptr			node);
-
-	void				add_content(
-							const char*			text,
-							unsigned long		length);
-
-	void				add_content(const std::string& data);
+	virtual std::string	str() const									{ return ""; }
 
 	// writing out
+	virtual void		write(writer& w) const = 0;
 
-	void				write(
-							std::ostream&		stream,
-							int					level) const;
+	virtual bool		equals(const node* n) const;
 
-	void				write(
-							std::ostream&		stream,
-							int					level,
-							int					indent,
-							bool				empty,
-							bool				wrap,
-							bool				trim,
-							bool				escape_whitespace) const;
+  protected:
 
-	node_list&			children();
-	const node_list&	children() const;
+	friend class element;
+
+						node();
+
+	virtual				~node();
 	
-	attribute_list&		attributes();
-	const attribute_list&
-						attributes() const;
-
-	std::string			find_prefix(
-							const std::string&	uri) const;
+	node*				m_parent;
+	node*				m_next;
+	node*				m_prev;
 
   private:
-	shared_string		m_name;
-	shared_string		m_ns;
-	shared_string		m_prefix;
-	node*				m_parent;
-	struct node_content_imp*
-						m_content;
+
+						node(const node&);
+	node&				operator=(const node&);
 };
 
-class node_list : public boost::noncopyable
+// --------------------------------------------------------------------
+
+// node_set is templated to allow for specialised node_sets for elements
+class node_set
 {
   public:
-						node_list() {}
-
-						node_list(
-							const node_list&
-											other)
-							: m_nodes(other.m_nodes) {}
-
-	node_list&			operator=(
-							const node_list&
-											other)				{
-																	m_nodes = other.m_nodes;
-																	return *this;
-																}
-
-	template<typename Compare>
-	void				sort(Compare comp)						{ std::sort(m_nodes.begin(), m_nodes.end(), comp); }
-
-	template<typename NODE>
-	class iterator_base : public boost::iterator_facade<iterator_base<NODE>, NODE, boost::bidirectional_traversal_tag>
+	struct iterator
 	{
-	    friend class boost::iterator_core_access;
-	    friend class node_list;
-	    template<class> friend class iterator_base;
-	  public:
-
-		typedef typename boost::iterator_facade<iterator_base<NODE>, NODE, boost::bidirectional_traversal_tag>::reference reference;
-
-						iterator_base() {}
-		explicit		iterator_base(std::list<node_ptr>::iterator iter)
-							: m_iter(iter) {}
-
-		template<class OTHER_NODE>
-						iterator_base(
-							const iterator_base<OTHER_NODE>& other)
-							: m_iter(other.m_iter) {}
+		friend class node_set;
 		
-		reference		dereference() const						{ return *m_iter->get(); }
-		void			increment()								{ ++m_iter; }
-		void			decrement()								{ --m_iter; }
-		bool			equal(
-							const iterator_base& rhs) const		{ return m_iter == rhs.m_iter; }
+		typedef ptrdiff_t							difference_type;
+		typedef std::bidirectional_iterator_tag		iterator_category;
+		typedef node								value_type;
+		typedef node*								pointer;
+		typedef node&								reference;
+	
+							iterator() {}
 
+							iterator(std::list<pointer>::iterator e)
+								: m_impl(e) {}
+
+							iterator(const iterator& other)
+								: m_impl(other.m_impl) {}
+
+		iterator&			operator=(const iterator& other)
+							{
+								if (this != &other)
+									m_impl = other.m_impl;
+								return *this;
+							}
+		
+		reference			operator*() const		{ return *(*m_impl); }
+		pointer				operator->() const		{ return *m_impl; }
+		
+		iterator&			operator++()			{ ++m_impl; return *this; }
+		iterator			operator++(int)			{ iterator tmp(*this); operator++(); return tmp; }
+		
+		iterator&			operator--()			{ --m_impl; return *this; }
+		iterator			operator--(int)			{ iterator tmp(*this); operator--(); return tmp; }
+		
+		bool				operator==(const iterator& other) const
+													{ return m_impl == other.m_impl; }
+		bool				operator!=(const iterator& other) const
+													{ return m_impl != other.m_impl; }
+	
 	  private:
-		std::list<node_ptr>::iterator
-						m_iter;
+		std::list<node_ptr>::iterator				m_impl;
 	};
+	
+	struct const_iterator
+	{
+		friend class node_set;
 
-	typedef iterator_base<node>			iterator;
+		typedef ptrdiff_t							difference_type;
+		typedef std::bidirectional_iterator_tag		iterator_category;
+		typedef node								value_type;
+		typedef const node*							pointer;
+		typedef const node&							reference;
+		
+							const_iterator() {}
 
-	iterator			begin()									{ return iterator(m_nodes.begin()); }
-	iterator			end()									{ return iterator(m_nodes.end()); }
+							const_iterator(std::list<node_ptr>::const_iterator e)
+								: m_impl(e) {}
 
-	typedef iterator_base<const node>	const_iterator;
+							const_iterator(const const_iterator& other)
+								: m_impl(other.m_impl) {}
 
-	const_iterator		begin() const							{ return const_iterator(const_cast<std::list<node_ptr>&>(m_nodes).begin()); }
-	const_iterator		end() const								{ return const_iterator(const_cast<std::list<node_ptr>&>(m_nodes).end()); }
+		const_iterator&		operator=(const const_iterator& other)
+							{
+								if (this != &other)
+									m_impl = other.m_impl;
+								return *this;
+							}
+	
+		reference			operator*() const		{ return *(*m_impl); }
+		pointer				operator->() const		{ return *m_impl; }
+		
+		const_iterator&		operator++()			{ ++m_impl; return *this; }
+		const_iterator		operator++(int)			{ const_iterator tmp(*this); operator++(); return tmp; }
+		
+		const_iterator&		operator--()			{ --m_impl; return *this; }
+		const_iterator		operator--(int)			{ const_iterator tmp(*this); operator--(); return tmp; }
+		
+		bool				operator==(const const_iterator& other) const
+													{ return m_impl == other.m_impl; }
+		bool				operator!=(const const_iterator& other) const
+													{ return m_impl != other.m_impl; }
+	
+	  private:
+		std::list<node_ptr>::const_iterator			m_impl;
+	};
+	
+	typedef node									node_type;
+	typedef node_type*								pointer;
+	typedef const node_type*						const_pointer;
+	typedef node_type&								reference;
+	typedef const node_type&						const_reference;
+	typedef std::reverse_iterator<iterator>			reverse_iterator;
+	typedef std::reverse_iterator<const_iterator>	const_reverse_iterator;
+	typedef std::size_t								size_type;
+	typedef ptrdiff_t								difference_type;
 
-	template<typename InputIterator>
-	void				insert(
-							iterator		pos,
-							InputIterator	first,
-							InputIterator	last)				{ m_nodes.insert(pos.m_iter, first.m_iter, last.m_iter); }
+						node_set() {}
 
-	void				push_back(
-							node_ptr		node)				{ m_nodes.push_back(node); }
+						node_set(const node_set& other)
+							: m_nodes(other.m_nodes) {}
+							
+	node_set&			operator=(const node_set& other)
+						{
+							if (this != &other)
+								m_nodes = other.m_nodes;
+							return *this;
+						}
 
-	size_t				size() const							{ return m_nodes.size(); }
+	iterator			begin()						{ return iterator(m_nodes.begin()); }
+	iterator			end()						{ return iterator(m_nodes.end()); }
+	
+	reverse_iterator	rbegin()					{ return reverse_iterator(end()); }
+	reverse_iterator	rend()						{ return reverse_iterator(begin()); }
+	
+	const_iterator		begin() const				{ return const_iterator(m_nodes.begin()); }
+	const_iterator		end() const					{ return const_iterator(m_nodes.begin()); }
+	
+	const_reverse_iterator
+						rbegin() const				{ return const_reverse_iterator(end()); }
+	const_reverse_iterator
+						rend() const				{ return const_reverse_iterator(begin()); }
+	
+	void				clear()						{ m_nodes.clear(); }
+	
+	size_type			size() const				{ return m_nodes.size(); }
+	
+	bool				empty() const				{ return m_nodes.empty(); }
 
-	bool				empty() const							{ return m_nodes.empty(); }
+	void				swap(node_set& other)		{ m_nodes.swap(other.m_nodes); }
+	
+	reference			front()						{ return *m_nodes.front(); }
+	const_reference		front() const				{ return *m_nodes.front(); }
+	
+	reference			back()						{ return *m_nodes.back(); }
+	const_reference		back() const				{ return *m_nodes.back(); }
 
-	node_ptr			front()									{ return m_nodes.front(); }
+	void				push_front(node_ptr n)		{ m_nodes.push_front(n); }
+	void				pop_front()					{ m_nodes.pop_front(); }
+	
+	void				push_back(node_ptr n)		{ m_nodes.push_back(n); }
+	void				pop_back()					{ m_nodes.pop_back(); }
 
-	node_ptr			back()									{ return m_nodes.back(); }
+	iterator			insert(iterator pos, node_ptr n)
+													{ return iterator(m_nodes.insert(pos.m_impl, n)); }
+	iterator			erase(iterator pos)			{ return iterator(m_nodes.erase(pos.m_impl)); }
+
+	void				remove(node_ptr n)			{ m_nodes.remove(n); }
+	
+//	template<typename PRED>
+//	void				remove_if(PRED);
+	
+	void				unique()					{ m_nodes.unique(); }
 
   private:
 	std::list<node_ptr>	m_nodes;
 };
 
-class attribute
+// --------------------------------------------------------------------
+
+class comment : public node
 {
-//	typedef boost::flyweights::flyweight<std::string>	shared_string;
-	typedef std::string									shared_string;
-
-	friend class node;
   public:
-						attribute();
-						
-						attribute(
-							const std::string&	name,
-							const std::string&	value)
-							: m_name(name)
-							, m_value(value) {}
+						comment() {}
 
-	std::string			name() const							{ return m_name; }
-	void				name(const std::string& name)			{ m_name = name; }
+						comment(const std::string& text)
+							: m_text(text) {}
 
-	std::string			value() const							{ return m_value; }
-	void				value(const std::string& value)			{ m_value = value; }
+	virtual std::string	text() const								{ return m_text; }
 
-	bool				operator==(const attribute& a)			{ return m_name == a.m_name and m_value == a.m_value; }
-	
+	void				text(const std::string& text)				{ m_text = text; }
+
+	virtual void		write(writer& w) const;
+
+	virtual bool		equals(const node* n) const;
+
   private:
-	shared_string		m_name;
-	shared_string		m_value;
+	std::string			m_text;
 };
 
-class attribute_list
+// --------------------------------------------------------------------
+
+class processing_instruction : public node
 {
   public:
-						attribute_list() {}
+						processing_instruction() {}
 
-						attribute_list(const attribute_list& other) : m_attributes(other.m_attributes) {}
+						processing_instruction(const std::string& target, const std::string& text)
+							: m_target(target), m_text(text) {}
 
-	attribute_list&		operator=(const attribute_list& other)		{ m_attributes = other.m_attributes; return *this; };
+	std::string			target() const								{ return m_target; }
+	void				target(const std::string& target)			{ m_target = target; }
 
-	void				push_back(
-							attribute_ptr	attr)					{ m_attributes.push_back(attr); }
+	virtual std::string	text() const								{ return m_text; }
+	void				text(const std::string& text)				{ m_text = text; }
 
-	template<typename _Predicate>
-	void				remove_if(
-							_Predicate		pred)					{ m_attributes.erase(std::remove_if(m_attributes.begin(), m_attributes.end(), pred), m_attributes.end()); }
+	virtual void		write(writer& w) const;
 
-	template<typename Compare>
-	void				sort(Compare comp)							{ m_attributes.sort(comp); }
-
-	void				sort();
-	
-	template<typename ATTR>
-	class iterator_base : public boost::iterator_facade<iterator_base<ATTR>, ATTR, boost::bidirectional_traversal_tag>
-	{
-	    friend class boost::iterator_core_access;
-	    template<class> friend class iterator_base;
-
-	  public:
-		typedef typename boost::iterator_facade<iterator_base<ATTR>, ATTR, boost::bidirectional_traversal_tag>::reference reference;
-
-						iterator_base() {}
-
-		template<class OTHER_ATTR>
-						iterator_base(iterator_base<OTHER_ATTR> const& other)
-							: m_iter(other.m_iter) {}
-
-		explicit		iterator_base(std::list<attribute_ptr>::iterator iter)
-							: m_iter(iter) {}
-		
-		reference		dereference() const						{ return *m_iter->get(); }
-		void			increment()								{ ++m_iter; }
-		void			decrement()								{ --m_iter; }
-		bool			equal(
-							const iterator_base& rhs) const		{ return m_iter == rhs.m_iter; }
-
-	  private:
-		std::list<attribute_ptr>::iterator
-						m_iter;
-	};
-
-	typedef iterator_base<attribute>							iterator;
-
-	iterator			begin()									{ return iterator(m_attributes.begin()); }
-	iterator			end()									{ return iterator(m_attributes.end()); }
-
-	typedef iterator_base<const attribute>						const_iterator;
-
-	const_iterator		begin() const							{ return const_iterator(const_cast<std::list<attribute_ptr>&>(m_attributes).begin()); }
-	const_iterator		end() const								{ return const_iterator(const_cast<std::list<attribute_ptr>&>(m_attributes).end()); }
-
-	size_t				size() const							{ return m_attributes.size(); }
-	bool				empty() const							{ return m_attributes.empty(); }
+	virtual bool		equals(const node* n) const;
 
   private:
-	std::list<attribute_ptr>
-						m_attributes;
+	std::string			m_target;
+	std::string			m_text;
+};
+
+// --------------------------------------------------------------------
+
+class text : public node
+{
+  public:
+						text() {}
+						text(const std::string& text)
+							: m_text(text) {}
+
+	virtual std::string	str() const									{ return m_text; }
+
+	void				str(const std::string& text)				{ m_text = text; }
+
+	virtual void		write(writer& w) const;
+
+	virtual bool		equals(const node* n) const;
+
+  private:
+	std::string			m_text;
+};
+
+// --------------------------------------------------------------------
+
+class element : public node
+{
+  public:
+						element(const std::string& name)
+							: m_name(name), m_child(NULL) {}
+
+						element(const std::string& name,
+							const std::string& prefix)
+							: m_name(name), m_prefix(prefix), m_child(NULL) {}
+
+						element(const std::string& name,
+							const std::string& ns, const std::string& prefix)
+							: m_name(name), m_ns(ns), m_prefix(prefix), m_child(NULL) {}
+
+						~element();
+
+//	node*				child()										{ return m_child; }
+//	const node*			child() const								{ return m_child; }
+
+	std::string			ns() const									{ return m_ns; }
+	void				ns(const std::string& ns)					{ m_ns = ns; }
+	
+	std::string			prefix() const								{ return m_prefix; }
+	void				prefix(const std::string& prefix)			{ m_prefix = prefix; }
+	
+	std::string			name() const								{ return m_name; }
+	void				name(const std::string& name)				{ m_name = name; }
+	
+	std::string			content() const;
+	void				content(const std::string& content);
+
+	// utility functions
+	node_ptr			find_first_child(const std::string& name) const;
+
+	node_ptr			find_child(const std::string& path) const;	
+							
+	node_set			find_all(const std::string&	path) const;
+
+	std::string			get_attribute(const std::string& name) const;
+	void				set_attribute(const std::string& ns,
+							const std::string& name, const std::string& value);
+	void				remove_attribute(const std::string& name);
+	
+	void				add(node_ptr node);
+	void				remove(node_ptr node);
+	
+	// convenience routine
+	void				add_text(const std::string& s);
+
+	node_set			children();
+	const node_set		children() const;
+	
+	attribute_list&		attributes()								{ return m_attributes; }
+	const attribute_list&
+						attributes() const							{ return m_attributes; }
+//
+//	std::string			find_prefix(const std::string& uri) const;
+
+	virtual void		write(writer& w) const;
+
+	virtual bool		equals(const node* n) const;
+
+  private:
+	std::string			m_name;
+	std::string			m_ns;
+	std::string			m_prefix;
+	attribute_list		m_attributes;
+	node*				m_child;
 };
 
 std::ostream& operator<<(std::ostream& lhs, const node& rhs);
 
 bool operator==(const node& lhs, const node& rhs);
-bool operator==(const node_list& lhs, const node_list& rhs);
-
-//bool operator==(const attribute& lhs, const attribute& rhs);
-bool operator==(const attribute_list& lhs, const attribute_list& rhs);
-
-// inlines
-// a set of convenience routines to create a nodes along with attributes in one call
-attribute_ptr make_attribute(const std::string& name, const std::string& value);
-node_ptr make_node(const std::string& name,
-	attribute_ptr attr1 = attribute_ptr(), attribute_ptr attr2 = attribute_ptr(),
-	attribute_ptr attr3 = attribute_ptr(), attribute_ptr attr4 = attribute_ptr(),
-	attribute_ptr attr5 = attribute_ptr(), attribute_ptr attr6 = attribute_ptr(),
-	attribute_ptr attr7 = attribute_ptr(), attribute_ptr attr8 = attribute_ptr());
 
 }
 }

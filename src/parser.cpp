@@ -3045,7 +3045,7 @@ void parser_imp::element(doctype::validator& valid)
 				 << sub_valid << endl << endl;
 	}
 
-	list<pair<wstring,wstring> > attrs;
+	list<detail::wattr> attrs;
 	
 	ns_state ns(this);
 	set<wstring> seen;
@@ -3141,7 +3141,26 @@ void parser_imp::element(doctype::validator& valid)
 				}
 			}
 			
-			attrs.push_back(make_pair(attr_name, attr_value));
+			detail::wattr attr;
+			attr.m_name = attr_name;
+			attr.m_value = attr_value;
+			
+			if (m_ns != nil)
+			{
+				wstring::size_type d = attr_name.find(':');
+				if (d != wstring::npos)
+				{
+					wstring ns = m_ns->ns_for_prefix(attr_name.substr(0, d));
+					
+					if (not ns.empty())
+					{
+						attr.m_ns = ns;
+						attr.m_name = attr_name.substr(d + 1);
+					}
+				}
+			}
+			
+			attrs.push_back(attr);
 		}
 	}
 	
@@ -3152,8 +3171,8 @@ void parser_imp::element(doctype::validator& valid)
 		{
 			wstring attr_name = dta.name();
 			
-			list<pair<wstring,wstring> >::iterator attr = find_if(attrs.begin(), attrs.end(),
-				boost::bind(&pair<wstring,wstring>::first, _1) == attr_name);
+			list<detail::wattr>::iterator attr = find_if(attrs.begin(), attrs.end(),
+				boost::bind(&detail::wattr::m_name, _1) == attr_name);
 			
 			doctype::AttributeDefault defType;
 			wstring defValue;
@@ -3170,9 +3189,27 @@ void parser_imp::element(doctype::validator& valid)
 			{
 				if (m_validating and m_standalone and dta.external())
 					not_valid(L"default value for attribute defined in external declaration which is not allowed in a standalone document");
+
+				detail::wattr attr;
+				attr.m_name = attr_name;
+				attr.m_value = normalize_attribute_value(defValue);
 				
-				wstring attr_value = normalize_attribute_value(defValue);
-				attrs.push_back(make_pair(attr_name, attr_value));
+				if (m_ns != nil)
+				{
+					wstring::size_type d = attr_name.find(':');
+					if (d != wstring::npos)
+					{
+						wstring ns = m_ns->ns_for_prefix(attr_name.substr(0, d));
+						
+						if (not ns.empty())
+						{
+							attr.m_ns = ns;
+							attr.m_name = attr_name.substr(d + 1);
+						}
+					}
+				}
+				
+				attrs.push_back(attr);
 			}
 		}
 	}
@@ -3444,6 +3481,7 @@ void parser_imp::pi()
 		}
 	}
 	
+	m_token.erase(m_token.end() - 2, m_token.end());
 	m_parser.processing_instruction(pi_target, m_token);
 	
 	match(xml_PI);

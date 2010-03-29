@@ -13,6 +13,40 @@
 
 namespace zeep { namespace xml {
 
+namespace detail {
+
+// two simple attribute classes
+struct wattr
+{
+	std::wstring	m_ns;
+	std::wstring	m_name;
+	std::wstring	m_value;
+};
+
+struct attr
+{
+	std::string	m_ns;
+	std::string	m_name;
+	std::string	m_value;
+};
+
+template<typename CharT>
+struct attr_type_factory {};
+
+template<>
+struct attr_type_factory<wchar_t>
+{
+	typedef	wattr		type;
+};
+
+template<>
+struct attr_type_factory<char>
+{
+	typedef	attr		type;
+};
+
+}
+
 class invalid_exception : public zeep::exception
 {
   public:
@@ -38,9 +72,7 @@ class basic_parser_base : public boost::noncopyable
 						basic_parser_base(struct parser_imp* impl, std::istream* is)
 							: m_impl(impl), m_istream(is) {}
 
-	typedef std::list<std::pair<std::wstring,std::wstring> >		att_list;
-
-	virtual void		start_element(const std::wstring& name, const std::wstring& uri, const att_list& atts) = 0;
+	virtual void		start_element(const std::wstring& name, const std::wstring& uri, const std::list<detail::wattr>& atts) = 0;
 
 	virtual void		end_element(const std::wstring& name, const std::wstring& uri) = 0;
 
@@ -104,9 +136,11 @@ class basic_parser : public basic_parser_base
 	
   public:
 
-	typedef std::basic_string<CharT>						string_type;
-	typedef parser_text_encoding_traits<CharT>				text_traits;
-	typedef std::list<std::pair<string_type,string_type> >	att_list_type;
+	typedef std::basic_string<CharT>							string_type;
+	typedef parser_text_encoding_traits<CharT>					text_traits;
+	
+	typedef typename detail::attr_type_factory<CharT>::type		attr_type;
+	typedef std::list<attr_type>								attr_list_type;
 
 							basic_parser(
 								std::istream&		data);
@@ -117,7 +151,7 @@ class basic_parser : public basic_parser_base
 							~basic_parser();
 
 	boost::function<void(const string_type& name, const string_type& uri,
-				const att_list_type& atts)>					start_element_handler;
+				const attr_list_type& atts)>				start_element_handler;
 
 	boost::function<void(const string_type& name, const string_type& uri)>
 															end_element_handler;
@@ -147,19 +181,19 @@ class basic_parser : public basic_parser_base
 
   private:
 
-	virtual void			start_element(const std::wstring& name, const std::wstring& uri, const att_list& atts)
+	virtual void			start_element(const std::wstring& name, const std::wstring& uri, const std::list<detail::wattr>& atts)
 							{
 								if (start_element_handler)
 								{
-									att_list_type attributes;
+									attr_list_type attributes;
 									
-									for (att_list::const_iterator att = atts.begin(); att != atts.end(); ++att)
+									for (std::list<detail::wattr>::const_iterator att = atts.begin(); att != atts.end(); ++att)
 									{
-										std::pair<std::string,std::string> attribute;
-										attribute.first = m_traits.convert(att->first);
-										attribute.second = m_traits.convert(att->second);
-										
-										attributes.push_back(attribute);
+										attr_type attr;
+										attr.m_ns = m_traits.convert(att->m_ns);
+										attr.m_name = m_traits.convert(att->m_name);
+										attr.m_value = m_traits.convert(att->m_value);
+										attributes.push_back(attr);
 									}
 									
 									start_element_handler(m_traits.convert(name), m_traits.convert(uri), attributes);

@@ -14,7 +14,7 @@
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/expat_doc.hpp"
 #include "zeep/xml/libxml2_doc.hpp"
-#include "zeep/xml/iomanip.hpp"
+#include "zeep/xml/writer.hpp"
 
 using namespace std;
 using namespace zeep;
@@ -38,10 +38,15 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	is >> indoc;
 	
 	stringstream s;
+	xml::writer w(s);
+	
 	if (indoc.root() != NULL)
-		s << *indoc.root();
+		indoc.root()->write(w);
 	string s1 = s.str();
-//	ba::trim(s1);
+	ba::trim(s1);
+
+	if (TRACE)
+		cout << s1 << endl;
 	
 	if (fs::is_directory(outfile))
 		;
@@ -55,30 +60,19 @@ bool run_valid_test(istream& is, fs::path& outfile)
 			s2 += line;
 		}
 		ba::trim(s2);
-		
+
 		if (s1 != s2)
 		{
-//			if (VERBOSE)
-//			{
-//				cout << "output differs: " << endl
-//					 << s1 << endl
-//					 << s2 << endl
-//					 << endl;
-//			}
+			cout << "output differs: " << endl
+				 << s1 << endl
+				 << s2 << endl
+				 << endl;
 			
 			xml::document a; a.set_validating(false); a.read(s1);
 			xml::document b; b.set_validating(false); b.read(s2);
 			
 			if (a == b)
-			{
 				++dubious_tests;
-				
-				if (VERBOSE)
-				{
-					cout << s1 << endl
-						 << s2 << endl;
-				}
-			}
 			else
 			{
 				stringstream s;
@@ -97,7 +91,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	return result;
 }
 
-bool run_test(xml::node& test, fs::path base_dir)
+bool run_test(const xml::element& test, fs::path base_dir)
 {
 	bool result = true;
 
@@ -106,7 +100,7 @@ bool run_test(xml::node& test, fs::path base_dir)
 		cout << "-----------------------------------------------" << endl
 			 << "ID: " << test.get_attribute("ID") << endl
 			 << "TYPE: " << test.get_attribute("TYPE") << endl
-			 << test.text() << endl
+			 << test.content() << endl
 			 << endl;
 	}
 	
@@ -218,7 +212,7 @@ bool run_test(xml::node& test, fs::path base_dir)
 			cout << "=======================================================" << endl
 				 << "test " << test.get_attribute("ID") << " failed:" << endl
 				 << "\t" << fs::system_complete(input) << endl
-				 << test.text() << endl
+				 << test.content() << endl
 				 << endl
 				 << test.get_attribute("SECTIONS") << endl
 				 << test.get_attribute("TYPE") << endl
@@ -231,7 +225,7 @@ bool run_test(xml::node& test, fs::path base_dir)
 	return result;
 }
 
-void run_test_case(xml::node& testcase, const string& id,
+void run_test_case(const xml::element& testcase, const string& id,
 	const string& type, fs::path base_dir, vector<string>& failed_ids)
 {
 //	if (VERBOSE)
@@ -243,25 +237,31 @@ void run_test_case(xml::node& testcase, const string& id,
 		fs::current_path(base_dir);
 	}
 	
-	foreach (xml::node& testcasenode, testcase.children())
+	xml::node_set children = testcase.children();
+	
+	foreach (const xml::node& testcasenode, children)
 	{
-		if (testcasenode.name() == "TEST")
+		const xml::element* n = dynamic_cast<const xml::element*>(&testcasenode);
+		if (n == NULL)
+			continue;
+		
+		if (n->name() == "TEST")
 		{
-			if ((id.empty() or id == testcasenode.get_attribute("ID")) and
-				(type.empty() or type == testcasenode.get_attribute("TYPE")))
+			if ((id.empty() or id == n->get_attribute("ID")) and
+				(type.empty() or type == n->get_attribute("TYPE")))
 			{
-				if (fs::exists(base_dir / testcasenode.get_attribute("URI")) and
-					not run_test(testcasenode, base_dir))
+				if (fs::exists(base_dir / n->get_attribute("URI")) and
+					not run_test(*n, base_dir))
 				{
-					failed_ids.push_back(testcasenode.get_attribute("ID"));
+					failed_ids.push_back(n->get_attribute("ID"));
 				}
 			}
 		}
-		else if (testcasenode.name() == "TESTCASE" or testcasenode.name() == "TESTCASES")
-			run_test_case(testcasenode, id, type, base_dir, failed_ids);
+		else if (n->name() == "TESTCASE" or n->name() == "TESTCASES")
+			run_test_case(*n, id, type, base_dir, failed_ids);
 		else
 			throw zeep::exception("invalid testcases file: unknown node %s",
-				testcasenode.name().c_str());
+				n->name().c_str());
 	}
 }
 
@@ -286,15 +286,22 @@ void test_testcases(const fs::path& testFile, const string& id,
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	xml::node_ptr root = doc.root();
+	const xml::element* root = doc.root();
 	if (root->name() != "TESTSUITE")
 		throw zeep::exception("Invalid test case file");
 
 	cout << "Running testsuite: " << root->get_attribute("PROFILE") << endl;
+	
+	xml::node_set children = root->children();
+	cout << children.size() << endl;
 
-	foreach (xml::node& test, root->children())
+	foreach (const xml::node& test, children)
 	{
-		run_test_case(test, id, type, base_dir, failed_ids);
+		const xml::element* e = dynamic_cast<const xml::element*>(&test);
+		if (e == NULL)
+			continue;
+		
+		run_test_case(*e, id, type, base_dir, failed_ids);
 	}
 }
 

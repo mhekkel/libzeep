@@ -9,7 +9,7 @@ namespace zeep { namespace xml {
 
 class document;
 class node;
-class node_list;
+class node_set;
 
 class xpath
 {
@@ -17,8 +17,7 @@ class xpath
 						xpath(const std::string& path);
 	virtual				~xpath();
 
-	node_list			evaluate(document& doc);
-	node_list			evaluate(node& root);
+	node_set			evaluate(node& root);
 
   private:
 	struct xpath_imp*	m_impl;

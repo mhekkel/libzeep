@@ -22,7 +22,7 @@ struct xpath_imp
 						xpath_imp(const string& path);
 						~xpath_imp();
 	
-	node_list			evaluate(node& root);
+	node_set			evaluate(node& root);
 
 	enum Token {
 		xp_Undef,
@@ -798,7 +798,7 @@ xpath::~xpath()
 	delete m_impl;
 }
 
-node_list xpath::evaluate(node& root)
+node_set xpath::evaluate(node& root)
 {
 	return m_impl->evaluate(root);
 }

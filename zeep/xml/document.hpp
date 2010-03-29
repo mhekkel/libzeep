@@ -13,62 +13,58 @@
 
 namespace zeep { namespace xml {
 
-class document : boost::noncopyable
+class document : public element
 {
   public:
-					document();
+						document();
 
-	virtual			~document();
+	virtual				~document();
+
+	document*			doc();
+	const document*		doc() const;
 
 	// I/O
-	void			read(const std::string& s);
-	void			read(std::istream& is);
-	void			read(std::istream& is, const boost::filesystem::path& base_dir);
+	void				read(const std::string& s);
+	void				read(std::istream& is);
+	void				read(std::istream& is, const boost::filesystem::path& base_dir);
 
-	void			write(std::ostream& os) const;
+	virtual void		write(writer& w) const;
 
 	// A valid xml document contains exactly one root element
-	void			root(node_ptr root);
-	node_ptr		root() const;
+	void				root(element* root);
+	element*			root() const;
 
 	// Compare two xml documents
-	bool			operator==(const document& doc) const
-					{
-						bool result = false;
-						if (root() and doc.root())
-							result = *root() == *doc.root();
-						return result;
-					}
+	bool				operator==(const document& doc) const;
 
-	bool			operator!=(const document& doc) const		{ return not operator==(doc); }
-
+	bool				operator!=(const document& doc) const		{ return not operator==(doc); }
+	
 	// In case the document needs to locate included DTD files
-	void			base_dir(const boost::filesystem::path& path);
+	void				base_dir(const boost::filesystem::path& path);
 
 	// the encoding to use for output, or the detected encoding in the input
-	encoding_type	encoding() const;
-	void			encoding(encoding_type enc);
+	encoding_type		encoding() const;
+	void				encoding(encoding_type enc);
 
 	// to format the output, use the following:
 	
 	// number of spaces to indent elements:
-	int				indent() const;
-	void			indent(int indent);
+	int					indent() const;
+	void				indent(int indent);
 	
 	// whether to have each element on a separate line
-	bool			wrap() const;
-	void			wrap(bool wrap);
+	bool				wrap() const;
+	void				wrap(bool wrap);
 	
 	// reduce the whitespace in #PCDATA sections
-	bool			trim() const;
-	void			trim(bool trim);
+	bool				trim() const;
+	void				trim(bool trim);
 
 	// option for parsing
-	void			set_validating(bool validate);
+	void				set_validating(bool validate);
 
   private:
-	struct document_imp*
-					m_impl;
+	struct document_imp*m_impl;
 };
 
 std::istream& operator>>(std::istream& lhs, document& rhs);

@@ -15,11 +15,14 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
 
 #include "zeep/xml/parser.hpp"
+#include "zeep/xml/writer.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -31,9 +34,10 @@ namespace zeep { namespace xml {
 
 struct document_imp
 {
-					document_imp();
+					document_imp(document* doc);
 
-	void			StartElementHandler(const string& name, const string& uri, const list<pair<string,string> >& atts);
+	void			StartElementHandler(const string& name, const string& uri,
+						const parser::attr_list_type& atts);
 
 	void			EndElementHandler(const string& name, const string& uri);
 
@@ -53,15 +57,13 @@ struct document_imp
 
 	void			parse(istream& data);
 
-	void			parse_name(const string& name, string& element, string& ns, string& prefix);
-	
 	string			prefix_for_ns(const string& ns);
 	
 	bool			find_external_dtd(const string& uri, fs::path& path);
 
-	void			write(ostream& os);
+	void			write(writer& w) const;
 
-	node_ptr		m_root;
+	element*		m_root;
 	fs::path		m_dtd_dir;
 	
 	// some content information
@@ -74,14 +76,15 @@ struct document_imp
 	
 	bool			m_validating;
 
-	stack<node_ptr>	m_cur;		// construction
+	document*		m_doc;
+	element*		m_cur;		// construction
 	vector<pair<string,string> >
 					m_namespaces;
 };
 
 // --------------------------------------------------------------------
 
-document_imp::document_imp()
+document_imp::document_imp(document* doc)
 	: m_encoding(enc_UTF8)
 	, m_indent(2)
 	, m_empty(true)
@@ -89,39 +92,9 @@ document_imp::document_imp()
 	, m_trim(true)
 	, m_escape_whitespace(false)
 	, m_validating(true)
+	, m_doc(doc)
+	, m_cur(doc)
 {
-}
-
-void document_imp::parse_name(
-	const string&		name,
-	string&				element,
-	string&				ns,
-	string&				prefix)
-{
-	vector<string> n3;
-	ba::split(n3, name, ba::is_any_of("="));
-
-	if (n3.size() == 3)
-	{
-		element = n3[1];
-		ns = n3[0];
-		prefix = n3[2];
-	}
-	else if (n3.size() == 2)
-	{
-		element = n3[1];
-		ns = n3[0];
-		prefix.clear();
-		
-		if (ns.empty() == false and not m_cur.empty())
-			prefix = m_cur.top()->find_prefix(ns);
-	}
-	else
-	{
-		element = n3[0];
-		ns.clear();
-		prefix.clear();
-	}
 }
 
 string document_imp::prefix_for_ns(const string& ns)
@@ -135,81 +108,64 @@ string document_imp::prefix_for_ns(const string& ns)
 	return result;
 }
 
-void document_imp::StartElementHandler(const string& name, const string& uri, const list<pair<string,string> >& atts)
+void document_imp::StartElementHandler(const string& name, const string& uri,
+	const parser::attr_list_type& atts)
 {
-	node_ptr n;
-	
 	string prefix;
 	if (not uri.empty())
 		prefix = prefix_for_ns(uri);
 	
-	n.reset(new node(name, uri, prefix));
+	auto_ptr<element> n(new element(name, uri, prefix));
 
-	if (m_cur.empty())
+	if (m_cur == m_doc)
 	{
-		m_cur.push(n);
-		m_root = m_cur.top();
+		m_doc->add(n.get());
+		m_root = m_cur = n.release();
 	}
 	else
 	{
-		m_cur.top()->add_child(n);
-		m_cur.push(n);
+		m_cur->add(n.get());
+		m_cur = n.release();
 	}
 	
-	for (list<pair<string,string> >::const_iterator ai = atts.begin(); ai != atts.end(); ++ai)
-	{
-		string element, ns, prefix;
-		
-		parse_name(ai->first, element, ns, prefix);
-		if (not prefix.empty())
-			element = prefix + ':' + element;
-		
-		attribute_ptr attr(new xml::attribute(element, ai->second));
-		m_cur.top()->add_attribute(attr);
-	}
+	foreach (const parser::attr_type& a, atts)
+		m_cur->set_attribute(a.m_ns, a.m_name, a.m_value);
 
 	const string name_prefix("xmlns:");
 
 	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
-	{
-		string name;
-		if (ns->first.empty())
-			name = "xmlns";
-		else
-			name = name_prefix + ns->first;
-
-		attribute_ptr attr(new xml::attribute(name, ns->second));
-
-		m_cur.top()->add_attribute(attr);
-	}
+		m_cur->set_attribute("xmlns", ns->first, ns->second);
 	
 	m_namespaces.clear();
+	
+	n.release();
 }
 
 void document_imp::EndElementHandler(const string& name, const string& uri)
 {
-	if (m_cur.empty())
+	if (m_cur == m_doc)
 		throw exception("Empty stack");
 	
-	m_cur.pop();
+	m_cur = dynamic_cast<element*>(m_cur->parent());
+	assert(m_cur);
 }
 
 void document_imp::CharacterDataHandler(const string& data)
 {
-	if (m_cur.empty())
+	if (m_cur == m_doc)
 		throw exception("Empty stack");
 	
-	m_cur.top()->add_content(data);
+	m_cur->add_text(data);
 }
 
 void document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
-//	cerr << "processing instruction, target: " << target << ", data: " << data << endl;
+	m_cur->add(new processing_instruction(target, data));
 }
 
-void document_imp::CommentHandler(const string& comment)
+void document_imp::CommentHandler(const string& s)
 {
-//	cerr << "comment " << data << endl;
+	m_cur->add(new comment(s));
 }
 
 void document_imp::StartCdataSectionHandler()
@@ -253,31 +209,37 @@ void document_imp::parse(
 	p.end_element_handler = boost::bind(&document_imp::EndElementHandler, this, _1, _2);
 	p.character_data_handler = boost::bind(&document_imp::CharacterDataHandler, this, _1);
 	p.start_namespace_decl_handler = boost::bind(&document_imp::StartNamespaceDeclHandler, this, _1, _2);
+	p.processing_instruction_handler = boost::bind(&document_imp::ProcessingInstructionHandler, this, _1, _2);
 
 	p.parse(m_validating);
 }
 
-void document_imp::write(ostream& os)
+void document_imp::write(writer& w) const
 {
-	switch (m_encoding)
-	{
-		case enc_UTF8:
-			os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-			break;
-		default:
-			assert(false);
-	}
+	w.write_xml_decl(1.0f, m_encoding);
 	
-	if (m_wrap)
-		os << endl;
+	m_doc->element::write(w);
 	
-	m_root->write(os, 0, m_indent, m_empty, m_wrap, m_trim, m_escape_whitespace);
+//	switch (m_encoding)
+//	{
+//		case enc_UTF8:
+//			os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+//			break;
+//		default:
+//			assert(false);
+//	}
+//	
+//	if (m_wrap)
+//		os << endl;
+//	
+//	m_root->write(os, 0, m_indent, m_empty, m_wrap, m_trim, m_escape_whitespace);
 }
 
 // --------------------------------------------------------------------
 
 document::document()
-	: m_impl(new document_imp)
+	: element("")
+	, m_impl(new document_imp(this))
 {
 }
 
@@ -303,17 +265,17 @@ void document::read(istream& is, const boost::filesystem::path& base_dir)
 	m_impl->parse(is);
 }
 
-void document::write(ostream& os) const
+void document::write(writer& w) const
 {
-	m_impl->write(os);
+	m_impl->write(w);
 }
 
-node_ptr document::root() const
+element* document::root() const
 {
 	return m_impl->m_root;
 }
 
-void document::root(node_ptr root)
+void document::root(element* root)
 {
 	m_impl->m_root = root;
 }
@@ -368,6 +330,11 @@ void document::set_validating(bool validate)
 	m_impl->m_validating = validate;
 }
 
+bool document::operator==(const document& other) const
+{
+	return equals(&other);
+}
+
 istream& operator>>(istream& lhs, document& rhs)
 {
 	rhs.read(lhs);
@@ -376,7 +343,9 @@ istream& operator>>(istream& lhs, document& rhs)
 
 ostream& operator<<(ostream& lhs, const document& rhs)
 {
-	rhs.write(lhs);
+	writer w(lhs);
+	
+	rhs.write(w);
 	return lhs;
 }
 	
