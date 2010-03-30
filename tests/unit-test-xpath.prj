@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="2.0">
+ <syspaths>
+  <path>../../boost/include</path>
+  <path>/usr/include</path>
+ </syspaths>
+ <userpaths>
+  <path>..</path>
+  <path>../src</path>
+  <path>src</path>
+ </userpaths>
+ <libpaths>
+  <path>../../boost/lib</path>
+ </libpaths>
+ <files>
+  <group name="soap">
+   <file>exception.cpp</file>
+   <group name="xml">
+    <file>document.cpp</file>
+    <file>doctype.cpp</file>
+    <file>node.cpp</file>
+    <file>parser.cpp</file>
+    <file>unicode_support.cpp</file>
+    <file>writer.cpp</file>
+    <file>xpath.cpp</file>
+   </group>
+  </group>
+  <group name="Sources">
+   <file>xpath-test.cpp</file>
+  </group>
+  <group name="Libraries">
+   <link>boost_thread</link>
+   <link>boost_system</link>
+   <link>boost_program_options</link>
+   <link>boost_filesystem</link>
+  </group>
+ </files>
+ <targets>
+  <target kind="Executable">
+   <name>xpath unit test Debug</name>
+   <linkTarget>xpath-unit-test</linkTarget>
+   <compiler>/usr/bin/g++</compiler>
+   <defines>
+    <define>DEBUG</define>
+   </defines>
+   <cflags>
+    <cflag>-O0</cflag>
+    <cflag>-gdwarf-2</cflag>
+   </cflags>
+   <warnings>
+    <warning>all</warning>
+   </warnings>
+  </target>
+  <target kind="Executable">
+   <name>xpath unit test Release</name>
+   <linkTarget>xpath-unit-test</linkTarget>
+   <compiler>/usr/bin/g++</compiler>
+   <defines>
+    <define>NDEBUG</define>
+   </defines>
+   <cflags>
+    <cflag>-O3</cflag>
+   </cflags>
+   <warnings>
+    <warning>all</warning>
+   </warnings>
+  </target>
+ </targets>
+</project>
