@@ -34,7 +34,9 @@ node::node()
 }
 
 node::~node()
-{	
+{
+	if (m_next)
+		delete m_next;
 }
 
 document* node::doc()

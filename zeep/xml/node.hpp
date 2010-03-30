@@ -370,7 +370,7 @@ class element : public node
 
 	virtual bool		equals(const node* n) const;
 
-  private:
+  protected:
 	std::string			m_name;
 	std::string			m_ns;
 	std::string			m_prefix;

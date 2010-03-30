@@ -54,6 +54,8 @@ struct document_imp
 	void			StartNamespaceDeclHandler(const string& prefix, const string& uri);
 
 	void			EndNamespaceDeclHandler(const string& prefix);
+	
+	void			NotationDeclHandler(const string& name, const string& sysid, const string& pubid);
 
 	void			parse(istream& data);
 
@@ -61,13 +63,12 @@ struct document_imp
 	
 	bool			find_external_dtd(const string& uri, fs::path& path);
 
-	void			write(writer& w) const;
-
 	element*		m_root;
 	fs::path		m_dtd_dir;
 	
 	// some content information
 	encoding_type	m_encoding;
+	bool			m_standalone;
 	int				m_indent;
 	bool			m_empty;
 	bool			m_wrap;
@@ -76,16 +77,25 @@ struct document_imp
 	
 	bool			m_validating;
 
+	struct notation
+	{
+		string		m_name;
+		string		m_sysid;
+		string		m_pubid;
+	};
+
 	document*		m_doc;
 	element*		m_cur;		// construction
 	vector<pair<string,string> >
 					m_namespaces;
+	list<notation>	m_notations;
 };
 
 // --------------------------------------------------------------------
 
 document_imp::document_imp(document* doc)
 	: m_encoding(enc_UTF8)
+	, m_standalone(false)
 	, m_indent(2)
 	, m_empty(true)
 	, m_wrap(true)
@@ -187,6 +197,16 @@ void document_imp::EndNamespaceDeclHandler(const string& prefix)
 {
 }
 
+void document_imp::NotationDeclHandler(	const string& name, const string& sysid, const string& pubid)
+{
+	notation n = { name, sysid, pubid };
+	
+	list<notation>::iterator i = find_if(m_notations.begin(), m_notations.end(),
+		boost::bind(&notation::m_name, _1) >= name);
+	
+	m_notations.insert(i, n);
+}
+
 bool document_imp::find_external_dtd(const string& uri, fs::path& path)
 {
 	bool result = false;
@@ -210,29 +230,9 @@ void document_imp::parse(
 	p.character_data_handler = boost::bind(&document_imp::CharacterDataHandler, this, _1);
 	p.start_namespace_decl_handler = boost::bind(&document_imp::StartNamespaceDeclHandler, this, _1, _2);
 	p.processing_instruction_handler = boost::bind(&document_imp::ProcessingInstructionHandler, this, _1, _2);
+	p.notation_decl_handler = boost::bind(&document_imp::NotationDeclHandler, this, _1, _2, _3);
 
 	p.parse(m_validating);
-}
-
-void document_imp::write(writer& w) const
-{
-	w.write_xml_decl(1.0f, m_encoding);
-	
-	m_doc->element::write(w);
-	
-//	switch (m_encoding)
-//	{
-//		case enc_UTF8:
-//			os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-//			break;
-//		default:
-//			assert(false);
-//	}
-//	
-//	if (m_wrap)
-//		os << endl;
-//	
-//	m_root->write(os, 0, m_indent, m_empty, m_wrap, m_trim, m_escape_whitespace);
 }
 
 // --------------------------------------------------------------------
@@ -267,7 +267,25 @@ void document::read(istream& is, const boost::filesystem::path& base_dir)
 
 void document::write(writer& w) const
 {
-	m_impl->write(w);
+	if (m_child == NULL)
+		throw exception("cowardly refuse to write empty document");
+	
+	w.write_xml_decl(m_impl->m_standalone);
+
+	if (not m_impl->m_notations.empty())
+	{
+		w.write_start_doctype(m_impl->m_root->name(), "");
+		foreach (const document_imp::notation& n, m_impl->m_notations)
+			w.write_notation(n.m_name, n.m_sysid, n.m_pubid);
+		w.write_end_doctype();
+	}
+	
+	node* child = m_child;
+	while (child != NULL)
+	{
+		child->write(w);
+		child = child->next();
+	}
 }
 
 element* document::root() const

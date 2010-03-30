@@ -3,7 +3,6 @@
  <syspaths>
   <path>../../boost/include</path>
   <path>/usr/include</path>
-  <path></path>
  </syspaths>
  <userpaths>
   <path>..</path>
@@ -16,31 +15,23 @@
  <files>
   <group name="soap">
    <file>exception.cpp</file>
-   <file>soap-envelope.cpp</file>
-   <file>soap-server.cpp</file>
-   <group name="http">
-    <file>connection.cpp</file>
-    <file>http-server.cpp</file>
-    <file>reply.cpp</file>
-    <file>request_parser.cpp</file>
-   </group>
    <group name="xml">
     <file>document.cpp</file>
     <file>doctype.cpp</file>
     <file>node.cpp</file>
     <file>parser.cpp</file>
     <file>unicode_support.cpp</file>
-    <file>xpath.cpp</file>
+    <file>writer.cpp</file>
    </group>
   </group>
   <group name="Sources">
    <file>parser-test.cpp</file>
   </group>
   <group name="Libraries">
-   <link shared="true">boost_thread</link>
-   <link shared="true">boost_system</link>
-   <link shared="true">boost_program_options</link>
-   <link shared="true">boost_filesystem</link>
+   <link>boost_thread</link>
+   <link>boost_system</link>
+   <link>boost_program_options</link>
+   <link>boost_filesystem</link>
   </group>
  </files>
  <targets>

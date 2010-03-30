@@ -38,10 +38,15 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	is >> indoc;
 	
 	stringstream s;
+
 	xml::writer w(s);
-	
-	if (indoc.root() != NULL)
-		indoc.root()->write(w);
+	w.xml_decl(false);
+	w.indent(0);
+	w.wrap(false);
+	w.collapse_empty_elements(false);
+	w.escape_whitespace(true);
+	indoc.write(w);
+
 	string s1 = s.str();
 	ba::trim(s1);
 
@@ -63,9 +68,9 @@ bool run_valid_test(istream& is, fs::path& outfile)
 
 		if (s1 != s2)
 		{
-			cout << "output differs: " << endl
-				 << s1 << endl
-				 << s2 << endl
+			cout << "output differs" << endl
+				 << "generated:      " << s1 << endl
+				 << "expected:       " << s2 << endl
 				 << endl;
 			
 			xml::document a; a.set_validating(false); a.read(s1);
@@ -95,20 +100,21 @@ bool run_test(const xml::element& test, fs::path base_dir)
 {
 	bool result = true;
 
+	fs::path input(base_dir / test.get_attribute("URI"));
+	fs::path output(base_dir / test.get_attribute("OUTPUT"));
+
 	if (VERBOSE)
 	{
 		cout << "-----------------------------------------------" << endl
 			 << "ID: " << test.get_attribute("ID") << endl
 			 << "TYPE: " << test.get_attribute("TYPE") << endl
+			 << "FILE: " << fs::system_complete(input) << endl
 			 << test.content() << endl
 			 << endl;
 	}
 	
 	++total_tests;
 	
-	fs::path input(base_dir / test.get_attribute("URI"));
-	fs::path output(base_dir / test.get_attribute("OUTPUT"));
-
 	if (not fs::exists(input))
 	{
 		cout << "test file " << input << " does not exist" << endl;
@@ -211,7 +217,6 @@ bool run_test(const xml::element& test, fs::path base_dir)
 		{
 			cout << "=======================================================" << endl
 				 << "test " << test.get_attribute("ID") << " failed:" << endl
-				 << "\t" << fs::system_complete(input) << endl
 				 << test.content() << endl
 				 << endl
 				 << test.get_attribute("SECTIONS") << endl
@@ -293,7 +298,6 @@ void test_testcases(const fs::path& testFile, const string& id,
 	cout << "Running testsuite: " << root->get_attribute("PROFILE") << endl;
 	
 	xml::node_set children = root->children();
-	cout << children.size() << endl;
 
 	foreach (const xml::node& test, children)
 	{

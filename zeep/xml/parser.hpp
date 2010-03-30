@@ -89,6 +89,8 @@ class basic_parser_base : public boost::noncopyable
 	virtual void		start_namespace_decl(const std::wstring& prefix, const std::wstring& uri) = 0;
 
 	virtual void		end_namespace_decl(const std::wstring& prefix) = 0;
+
+	virtual void		notation_decl(const std::wstring& name, const std::wstring& systemId, const std::wstring& publicId) = 0;
 	
 	virtual void		report_invalidation(const std::wstring& msg) = 0;
 
@@ -172,6 +174,10 @@ class basic_parser : public basic_parser_base
 
 	boost::function<void(const string_type& prefix)>		end_namespace_decl_handler;
 
+	boost::function<void(const string_type& name,
+		const string_type& systemId, const string_type& publicId)>
+															notation_decl_handler;
+
 	boost::function<std::istream*(const string_type& pubid, const string_type& uri)>
 															find_external_dtd_handler;
 
@@ -249,7 +255,12 @@ class basic_parser : public basic_parser_base
 								if (end_namespace_decl_handler)
 									end_namespace_decl_handler(m_traits.convert(prefix));
 							}
-	
+
+	virtual void			notation_decl(const std::wstring& name, const std::wstring& systemId, const std::wstring& publicId)
+							{
+								if (notation_decl_handler)
+									notation_decl_handler(m_traits.convert(name), m_traits.convert(systemId), m_traits.convert(publicId));
+							}
 
 	virtual std::istream*	find_external_dtd(const std::wstring& pubid, const std::wstring& uri)
 							{

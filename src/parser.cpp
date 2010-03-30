@@ -2447,24 +2447,24 @@ void parser_imp::notation_decl()
 	match(xml_Notation);
 	s(true);
 	
-	if (m_notations.count(m_token) > 0)
+	wstring name = m_token, pubid, sysid;
+	
+	if (m_notations.count(name) > 0)
 		not_valid(L"notation names should be unique");
-	m_notations.insert(m_token);
+	m_notations.insert(name);
 	
 	match(xml_Name);
 	s(true);
 
-	wstring pubid, system;
-	
 	if (m_token == L"SYSTEM")
 	{
 		match(xml_Name);
 		s(true);
 		
-		system = m_token;
+		sysid = m_token;
 		match(xml_String);
 
-		if (not is_valid_system_literal(system))
+		if (not is_valid_system_literal(sysid))
 			not_well_formed(L"invalid system literal");
 	}
 	else if (m_token == L"PUBLIC")
@@ -2483,7 +2483,7 @@ void parser_imp::notation_decl()
 		
 		if (m_lookahead == xml_String)
 		{
-			system = m_token;
+			sysid = m_token;
 			match(xml_String);
 		}
 	}
@@ -2494,6 +2494,8 @@ void parser_imp::notation_decl()
 
 	m_allow_parameter_entity_references = true;
 	match('>');
+	
+	m_parser.notation_decl(name, sysid, pubid);
 }
 
 data_ptr parser_imp::external_id()
@@ -3226,6 +3228,9 @@ void parser_imp::element(doctype::validator& valid)
 	else
 		uri = ns.default_ns();
 
+	// sort the attributes
+	attrs.sort(boost::bind(&detail::wattr::m_name, _1) < boost::bind(&detail::wattr::m_name, _2));
+
 	if (m_lookahead == '/')
 	{
 		match('/');
@@ -3437,6 +3442,7 @@ void parser_imp::pi()
 	
 	enum {
 		state_Start,
+		state_DataStart,
 		state_Data,
 		state_QuestionMarkSeen,
 		state_PIClosed
@@ -3459,9 +3465,21 @@ void parser_imp::pi()
 				if (ch == '?')
 					state = state_QuestionMarkSeen;
 				else if (ch == ' ' or ch == '\n' or ch == '\t')
-					state = state_Data;
+				{
+					m_token.clear();
+					state = state_DataStart;
+				}
 				else
 					not_well_formed(L"a space is required before pi data");
+				break;
+			
+			case state_DataStart:
+				if (ch == ' ' or ch == '\n' or ch == '\t')
+					m_token.clear();
+				else if (ch == '?')
+					state = state_QuestionMarkSeen;
+				else
+					state = state_Data;
 				break;
 			
 			case state_Data:
