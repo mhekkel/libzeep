@@ -4,7 +4,6 @@
 #include <list>
 
 #include <boost/foreach.hpp>
-#define foreach BOOST_FOREACH
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
@@ -25,6 +24,8 @@ namespace ba = boost::algorithm;
 #define DOC		xml::document
 //#define DOC		xml::expat_doc
 //#define DOC		xml::libxml2_doc
+
+#define foreach BOOST_FOREACH
 
 int VERBOSE;
 int TRACE;
@@ -298,7 +299,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	cout << "Running testsuite: " << root->get_attribute("PROFILE") << endl;
 	
 	xml::node_set children = root->children();
-
+	
 	foreach (const xml::node& test, children)
 	{
 		const xml::element* e = dynamic_cast<const xml::element*>(&test);
