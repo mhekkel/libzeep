@@ -1,0 +1,12 @@
+<xpath-tests>
+	<xpath-test xpath="//ccc" expected-size="2">
+		<![CDATA[
+		<aaa>
+			<bbb>
+				<ccc/>
+				<ccc/>
+			</bbb>
+		</aaa>
+		]]>
+	</xpath-test>
+</xpath-tests>

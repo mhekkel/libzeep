@@ -20,8 +20,9 @@ class document : public element
 
 	virtual				~document();
 
-	document*			doc();
-	const document*		doc() const;
+	virtual document*	doc();
+	virtual const document*
+						doc() const;
 
 	// I/O
 	void				read(const std::string& s);

@@ -248,6 +248,16 @@ document::~document()
 	delete m_impl;
 }
 
+document* document::doc()
+{
+	return this;
+}
+
+const document* document::doc() const
+{
+	return this;
+}
+
 void document::read(const string& s)
 {
 	istringstream is(s);

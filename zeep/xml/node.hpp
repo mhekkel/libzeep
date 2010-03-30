@@ -36,8 +36,9 @@ class node
 {
   public:
 	// All nodes should be part of a document
-	document*			doc();
-	const document*		doc() const;
+	virtual document*	doc();
+	virtual const document*
+						doc() const;
 	
 	// basic access
 	node*				parent()									{ return m_parent; }
@@ -217,17 +218,19 @@ class node_set
 	reference			back()						{ return *m_nodes.back(); }
 	const_reference		back() const				{ return *m_nodes.back(); }
 
-	void				push_front(node_ptr n)		{ m_nodes.push_front(n); }
+	void				push_front(node* n)			{ m_nodes.push_front(n); }
 	void				pop_front()					{ m_nodes.pop_front(); }
 	
-	void				push_back(node_ptr n)		{ m_nodes.push_back(n); }
+	void				push_back(node* n)			{ m_nodes.push_back(n); }
 	void				pop_back()					{ m_nodes.pop_back(); }
 
-	iterator			insert(iterator pos, node_ptr n)
+	iterator			insert(iterator pos, node* n)
 													{ return iterator(m_nodes.insert(pos.m_impl, n)); }
 	iterator			erase(iterator pos)			{ return iterator(m_nodes.erase(pos.m_impl)); }
 
-	void				remove(node_ptr n)			{ m_nodes.remove(n); }
+	void				remove(node* n)				{ m_nodes.remove(n); }
+	
+	int					count(node* n) const		{ return std::count(m_nodes.begin(), m_nodes.end(), n); }
 	
 //	template<typename PRED>
 //	void				remove_if(PRED);
@@ -324,8 +327,8 @@ class element : public node
 
 						~element();
 
-//	node*				child()										{ return m_child; }
-//	const node*			child() const								{ return m_child; }
+	node*				child()										{ return m_child; }
+	const node*			child() const								{ return m_child; }
 
 	std::string			ns() const									{ return m_ns; }
 	void				ns(const std::string& ns)					{ m_ns = ns; }

@@ -6,10 +6,18 @@
 #include <iostream>
 #include <sstream>
 
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include "zeep/exception.hpp"
 #include "zeep/xml/node.hpp"
 #include "zeep/xml/xpath.hpp"
+#include "zeep/xml/document.hpp"
 #include "zeep/xml/unicode_support.hpp"
+
+#define nil NULL
 
 using namespace std;
 
@@ -64,6 +72,60 @@ struct xpath_imp
 		xp_Colon
 	};
 
+	enum AxisType {
+		ax_Ancestor,
+		ax_AncestorOrSelf,
+		ax_Attribute,
+		ax_Child,
+		ax_Descendant,
+		ax_DescendantOrSelf,
+		ax_Following,
+		ax_FollowingSibling,
+		ax_Namespace,
+		ax_Parent,
+		ax_Preceding,
+		ax_PrecedingSibling,
+		ax_Self
+	};
+
+	// the expressions implemented as interpreter objects
+	
+	class step_expr
+	{
+	  public:
+							step_expr(AxisType axis) : m_axis(axis) {}
+		virtual				~step_expr() {}
+	
+		virtual node_set	evaluate(node_set& context) = 0;
+	
+	  protected:
+		
+		template<typename PREDICATE>
+		node_set			generate(PREDICATE p);
+
+		AxisType			m_axis;
+	};
+
+	class name_test_step_expr : public step_expr
+	{
+	  public:
+							name_test_step_expr(AxisType axis, const string& name)
+								: step_expr(axis), m_name(name) {}
+
+		virtual node_set	evaluate(node_set& context);
+
+	  protected:
+		string				m_name;
+	};
+	
+	class document_expr : public step_expr
+	{
+	  public:
+							document_expr() : step_expr(ax_Self) {}
+
+		virtual node_set	evaluate(node_set& context);
+	};
+
 	void				parse(const string& path);
 	
 	unsigned char		next_byte();
@@ -75,11 +137,11 @@ struct xpath_imp
 	
 	void				location_path();
 	void				absolute_location_path();
-	void				relative_location_path();
-	void				step();
-	void				axis_specifier();
+	void				relative_location_path(bool double_slash);
+	void				step(bool double_slash);
+	AxisType			axis_specifier();
 	void				axis_name();
-	void				node_test();
+	void				node_test(AxisType axis);
 	void				predicate();
 	void				predicate_expr();
 	
@@ -108,14 +170,104 @@ struct xpath_imp
 
 	// 
 
+	string				m_path;
 	string::const_iterator
 						m_begin, m_next, m_end;
 	Token				m_lookahead;
 	string				m_token_string;
 	double				m_token_number;
+	AxisType			m_token_axis;
 	
+	// the generated expression
 	
+	list<step_expr*>	m_steps;
 };
+
+// --------------------------------------------------------------------
+
+template<typename PREDICATE>
+void iterate_children(element& e, node_set s, PREDICATE pred)
+{
+	for (node* child = e.child(); child != nil; child = child->next())
+	{
+		element* e = dynamic_cast<element*>(child);
+		if (e == nil)
+			continue;
+
+		if (s.count(child) > 0)
+			continue;
+
+		if (pred(*e))
+			s.push_back(child);
+	}
+}
+
+template<typename PREDICATE>
+void deep_iterate_children(element& e, node_set s, PREDICATE pred)
+{
+	for (node* child = e.child(); child != nil; child = child->next())
+	{
+		element* e = dynamic_cast<element*>(child);
+		if (e == nil)
+			continue;
+		
+		if (s.count(child) > 0)
+			continue;
+		
+		if (pred(*e))
+			s.push_back(child);
+
+		deep_iterate_children(*static_cast<element*>(child), s, pred);
+	}
+}
+
+node_set xpath_imp::name_test_step_expr::evaluate(node_set& context)
+{
+	node_set result;
+
+	foreach (node& n, context)
+	{
+		element* context_element = dynamic_cast<element*>(&n);
+		if (context_element != nil)
+		{
+			switch (m_axis)
+			{
+				case ax_Child:
+					iterate_children(*context_element, result, boost::bind(&element::name, _1) == m_name);
+					break;
+	
+				case ax_Descendant:
+					deep_iterate_children(*context_element, result, boost::bind(&element::name, _1) == m_name);
+					break;
+			}
+		}
+	}
+	
+	return result;
+}
+
+node_set xpath_imp::document_expr::evaluate(node_set& context)
+{
+	assert(context.size() == 1);
+	
+	node_set result;
+	result.push_back(context.front().doc());
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+xpath_imp::xpath_imp(const string& path)
+	: m_path(path)
+	, m_begin(m_path.begin())
+	, m_next(m_begin)
+	, m_end(m_path.end())
+{
+}
+
+xpath_imp::~xpath_imp()
+{
+}	
 
 void xpath_imp::parse(const string& path)
 {
@@ -124,6 +276,8 @@ void xpath_imp::parse(const string& path)
 	
 	m_lookahead = get_next_token();
 	location_path();
+
+	match(xp_EOF);
 }
 
 unsigned char xpath_imp::next_byte()
@@ -463,6 +617,71 @@ xpath_imp::Token xpath_imp::get_next_token()
 							 m_token_string == "round" or
 							 m_token_string == "comment")
 						token = xp_FunctionName;
+					else if (m_token_string == "ancestor")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Ancestor;
+					}
+					else if (m_token_string == "ancestor-or-self")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_AncestorOrSelf;
+					}
+					else if (m_token_string == "attribute")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Attribute;
+					}
+					else if (m_token_string == "child")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Child;
+					}
+					else if (m_token_string == "descendant")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Descendant;
+					}
+					else if (m_token_string == "descendant-or-self")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_DescendantOrSelf;
+					}
+					else if (m_token_string == "following")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Following;
+					}
+					else if (m_token_string == "following-sibling")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_FollowingSibling;
+					}
+					else if (m_token_string == "namespace")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Namespace;
+					}
+					else if (m_token_string == "parent")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Parent;
+					}
+					else if (m_token_string == "preceding")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Preceding;
+					}
+					else if (m_token_string == "preceding-sibling")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_PrecedingSibling;
+					}
+					else if (m_token_string == "self")
+					{
+						token = xp_AxisName;
+						m_token_axis = ax_Self;
+					}
 					else
 						token = xp_NameTest;
 				}
@@ -516,36 +735,49 @@ void xpath_imp::match(Token token)
 
 void xpath_imp::location_path()
 {
-	bool absolute = false;
-	bool abbreviated = false;
+	bool double_slash = false;
 	
 	if (m_lookahead == xp_Slash)
 	{
-		absolute = true;
+		m_steps.push_back(new document_expr());
 		match(xp_Slash);
 	}
 	else if (m_lookahead == xp_DoubleSlash)
 	{
-		absolute = abbreviated = true;
+		m_steps.push_back(new document_expr());
 		match(xp_DoubleSlash);
-	}
-	
-	for (;;)
-	{
-		step();
 		
-		if (m_lookahead == xp_Slash)
-			match(xp_Slash);
-		else if (m_lookahead == xp_DoubleSlash)
-			match(xp_DoubleSlash);
-		else
-			break;
+		double_slash = true;
 	}
 	
-	match(xp_EOF);
+	relative_location_path(double_slash);
 }
 
-void xpath_imp::step()
+void xpath_imp::relative_location_path(bool double_slash)
+{
+	for (;;)
+	{
+		step(double_slash);
+		
+		if (m_lookahead == xp_Slash)
+		{
+			match(xp_Slash);
+			double_slash = false;
+			continue;
+		}
+		
+		if (m_lookahead == xp_DoubleSlash)
+		{
+			match(xp_DoubleSlash);
+			double_slash = true;
+			continue;
+		}
+
+		break;
+	}
+}
+
+void xpath_imp::step(bool double_slash)
 {
 	// abbreviated steps
 	if (m_lookahead == xp_Dot)
@@ -554,8 +786,14 @@ void xpath_imp::step()
 		;
 	else
 	{
-		axis_specifier();
-		node_test();
+		AxisType axis;
+		
+		if (double_slash)
+			axis = ax_Descendant;
+		else
+			axis = axis_specifier();
+
+		node_test(axis);
 		
 		while (m_lookahead == xp_LeftBracket)
 		{
@@ -566,18 +804,26 @@ void xpath_imp::step()
 	}
 }
 
-void xpath_imp::axis_specifier()
+xpath_imp::AxisType xpath_imp::axis_specifier()
 {
+	AxisType result = ax_Child;
+	
 	if (m_lookahead == xp_At)
+	{
+		result = ax_Attribute;
 		match(xp_At);
+	}
 	else if (m_lookahead == xp_AxisName)
 	{
+		result = m_token_axis;
 		match(xp_AxisName);
 		match(xp_DoubleColon);
 	}
+	
+	return result;
 }
 
-void xpath_imp::node_test()
+void xpath_imp::node_test(AxisType axis)
 {
 	if (m_lookahead == xp_NodeType)
 	{
@@ -593,6 +839,8 @@ void xpath_imp::node_test()
 	}
 	else
 	{
+		m_steps.push_back(new name_test_step_expr(axis, m_token_string));
+		
 		match(xp_NameTest);
 	}
 }
@@ -681,12 +929,12 @@ void xpath_imp::path_expr()
 			if (m_lookahead == xp_Slash)
 			{
 				match(xp_Slash);
-				relative_location_path();
+				relative_location_path(false);
 			}
 			else if (m_lookahead == xp_DoubleSlash)
 			{
 				match(xp_DoubleSlash);
-				relative_location_path();
+				relative_location_path(true);
 			}
 			else
 				break;
@@ -788,9 +1036,23 @@ void xpath_imp::unary_expr()
 
 // --------------------------------------------------------------------
 
+node_set xpath_imp::evaluate(node& root)
+{
+	node_set result;
+	result.push_back(&root);
+	
+	foreach (step_expr* expr, m_steps)
+		result = expr->evaluate(result);
+	
+	return result;
+}
+
+// --------------------------------------------------------------------
+
 xpath::xpath(const string& path)
 	: m_impl(new xpath_imp(path))
 {
+	m_impl->parse(path);
 }
 
 xpath::~xpath()
