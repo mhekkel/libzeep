@@ -1,0 +1,33 @@
+<!DOCTYPE xpath-tests [
+<!ELEMENT xpath-tests (xpath-test+)>
+<!ATTLIST xpath-tests xml:base CDATA #IMPLIED>
+<!ELEMENT xpath-test EMPTY>
+<!ATTLIST xpath-test data CDATA #REQUIRED
+					 xpath CDATA #REQUIRED
+					 expected-size NMTOKEN #IMPLIED
+					 test-name NMTOKEN "test"
+					 test-attr NMTOKEN #IMPLIED>
+]>
+<xpath-tests xml:base="XPath-Test-Suite">
+	<xpath-test data="data-002.xml" xpath="/AAA/XXX//GGG/ancestor::*"
+		expected-size="4" test-attr="a" />
+
+	<xpath-test data="data-002.xml" xpath="/AAA/*//GGG/descendant::*"
+		expected-size="3" test-attr="d" />
+
+	<xpath-test data="data-001.xml" xpath="//ccc" expected-size="2" />
+
+	<xpath-test data="data-002.xml" xpath="//GGG/ancestor::*" expected-size="4"
+		test-attr="a" />
+	<xpath-test data="data-002.xml" xpath="//GGG/descendant::*" expected-size="3"
+		test-attr="d" />
+	<xpath-test data="data-002.xml" xpath="//GGG/following::*" expected-size="3"
+		test-attr="f" />
+	<xpath-test data="data-002.xml" xpath="//GGG/preceding::*" expected-size="5"
+		test-attr="p" />
+	<xpath-test data="data-002.xml" xpath="//GGG/self::*" expected-size="1"
+		test-attr="s" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[position() mod 2 = 0 ]" expected-size="4"
+		test-name="test-even" test-attr="1" />
+</xpath-tests>

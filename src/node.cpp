@@ -321,5 +321,26 @@ bool element::equals(const node* n) const
 		m_attributes == static_cast<const element*>(n)->attributes();
 }
 
+// --------------------------------------------------------------------
+// operator<<
+
+ostream& operator<<(ostream& lhs, const node& rhs)
+{
+	if (typeid(rhs) == typeid(node))
+		cout << "base class???";
+	else if (typeid(rhs) == typeid(element))
+		cout << "element <" << static_cast<const element&>(rhs).name() << '>';
+	else if (typeid(rhs) == typeid(comment))
+		cout << "comment";
+	else if (typeid(rhs) == typeid(processing_instruction))
+		cout << "processing_instruction";
+	else if (typeid(rhs) == typeid(document))
+		cout << "document";
+	else
+		cout << typeid(rhs).name();
+		
+	return lhs;
+}
+
 } // xml
 } // zeep

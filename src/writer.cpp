@@ -153,7 +153,7 @@ void writer::write_empty_element(const string& prefix, const string& name,
 	
 	if (m_collapse_empty)
 	{
-		for (int i = 0; i < m_indent * (m_level + 1); ++i)
+		for (int i = 0; i < m_indent * m_level; ++i)
 			m_os << ' ';
 		
 		m_os << '<';
@@ -180,7 +180,7 @@ void writer::write_empty_element(const string& prefix, const string& name,
 void writer::write_start_element(const string& prefix,
 					const string& name, const attribute_list& attrs)
 {
-	for (int i = 0; i < m_indent * (m_level + 1); ++i)
+	for (int i = 0; i < m_indent * m_level; ++i)
 		m_os << ' ';
 		
 	m_os << '<';
@@ -205,7 +205,7 @@ void writer::write_end_element(const string& prefix,
 {
 	--m_level;
 
-	for (int i = 0; i < m_indent * (m_level + 1); ++i)
+	for (int i = 0; i < m_indent * m_level; ++i)
 		m_os << ' ';
 	
 	assert(prefix.empty());

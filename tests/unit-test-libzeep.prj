@@ -22,6 +22,7 @@
     <file>parser.cpp</file>
     <file>unicode_support.cpp</file>
     <file>writer.cpp</file>
+    <file>xpath.cpp</file>
    </group>
   </group>
   <group name="Sources">

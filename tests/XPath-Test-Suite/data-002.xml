@@ -1,0 +1,24 @@
+<AAA test="a">
+  <BBB test="p">
+       <CCC test="p"/>
+       <ZZZ test="p"/>
+  </BBB>
+  <XXX test="a">
+       <DDD test="a">
+            <EEE test="p"/>
+            <FFF test="a">
+                 <HHH test="p"/>
+                 <GGG test="s">
+                      <JJJ test="d">
+                           <QQQ test="d"/>
+                      </JJJ>
+                      <JJJ test="d"/>
+                 </GGG>
+                 <HHH test="f"/>
+            </FFF>
+       </DDD>
+  </XXX>
+  <CCC test="f">
+       <DDD test="f"/>
+  </CCC>
+</AAA> 

@@ -19,6 +19,8 @@
 
 #define nil NULL
 
+extern int VERBOSE;
+
 using namespace std;
 
 namespace zeep { namespace xml {
@@ -88,41 +90,61 @@ struct xpath_imp
 		ax_Self
 	};
 
-	// the expressions implemented as interpreter objects
+	struct name_test {
+		const char*		name;
+		Token			token;
+		int				value;
+	};
 	
-	class step_expr
+	static const name_test s_names[];
+
+	// the expressions implemented as interpreter objects
+
+	class expression
 	{
 	  public:
-							step_expr(AxisType axis) : m_axis(axis) {}
-		virtual				~step_expr() {}
-	
+		virtual				~expression() {}
 		virtual node_set	evaluate(node_set& context) = 0;
+	};
+	
+	class step_expression : public expression
+	{
+	  public:
+							step_expression(AxisType axis) : m_axis(axis) {}
 	
 	  protected:
-		
-		template<typename PREDICATE>
-		node_set			generate(PREDICATE p);
-
 		AxisType			m_axis;
 	};
 
-	class name_test_step_expr : public step_expr
+	class name_test_step_expression : public step_expression
 	{
 	  public:
-							name_test_step_expr(AxisType axis, const string& name)
-								: step_expr(axis), m_name(name) {}
+							name_test_step_expression(AxisType axis, const string& name)
+								: step_expression(axis)
+								, m_name(name)
+							{
+								if (m_name == "*")
+									m_test = boost::bind(&name_test_step_expression::asterisk, _1);
+								else
+									m_test = boost::bind(&element::name, _1) == m_name;
+							}
 
 		virtual node_set	evaluate(node_set& context);
 
 	  protected:
-		string				m_name;
+
+		static bool			asterisk(const element*)
+							{
+								return true;
+							}
+
+		string									m_name;
+		boost::function<bool(const element*)>	m_test;
 	};
 	
-	class document_expr : public step_expr
+	class document_expression : public expression
 	{
 	  public:
-							document_expr() : step_expr(ax_Self) {}
-
 		virtual node_set	evaluate(node_set& context);
 	};
 
@@ -180,15 +202,71 @@ struct xpath_imp
 	
 	// the generated expression
 	
-	list<step_expr*>	m_steps;
+	list<expression*>			m_steps;
+};
+
+const xpath_imp::name_test xpath_imp::s_names[] = {
+	{ "comment",				xpath_imp::xp_NodeType,		0 },
+	{ "text",					xpath_imp::xp_NodeType,		0 },
+	{ "processing-instruction",	xpath_imp::xp_NodeType,		0 },
+	{ "node",					xpath_imp::xp_NodeType,		0 },
+
+	{ "and",					xpath_imp::xp_OperatorAnd,	0 },
+	{ "or",						xpath_imp::xp_OperatorOr,	0 },
+	{ "mod",					xpath_imp::xp_OperatorMod,	0 },
+	{ "div",					xpath_imp::xp_OperatorDiv,	0 },
+
+	{ "last",					xpath_imp::xp_FunctionName,	0 },
+	{ "position",				xpath_imp::xp_FunctionName,	1 },
+	{ "count",					xpath_imp::xp_FunctionName,	2 },
+	{ "id",						xpath_imp::xp_FunctionName,	3 },
+	{ "local-name",				xpath_imp::xp_FunctionName,	4 },
+	{ "namespace-uri",			xpath_imp::xp_FunctionName,	5 },
+	{ "name",					xpath_imp::xp_FunctionName,	6 },
+	{ "string",					xpath_imp::xp_FunctionName,	7 },
+	{ "concat",					xpath_imp::xp_FunctionName,	8 },
+	{ "starts-with",			xpath_imp::xp_FunctionName,	9 },
+	{ "contains",				xpath_imp::xp_FunctionName,	10 },
+	{ "substring-before",		xpath_imp::xp_FunctionName,	11 },
+	{ "substring-after",		xpath_imp::xp_FunctionName,	12 },
+	{ "string-length",			xpath_imp::xp_FunctionName,	13 },
+	{ "normalize-space",		xpath_imp::xp_FunctionName,	14 },
+	{ "translate",				xpath_imp::xp_FunctionName,	15 },
+	{ "boolean",				xpath_imp::xp_FunctionName,	16 },
+	{ "not",					xpath_imp::xp_FunctionName,	17 },
+	{ "true"	,				xpath_imp::xp_FunctionName,	18 },
+	{ "false",					xpath_imp::xp_FunctionName,	19 },
+	{ "lang",					xpath_imp::xp_FunctionName,	20 },
+	{ "number",					xpath_imp::xp_FunctionName,	21 },
+	{ "sum",					xpath_imp::xp_FunctionName,	22 },
+	{ "floor",					xpath_imp::xp_FunctionName,	23 },
+	{ "ceiling",				xpath_imp::xp_FunctionName,	24 },
+	{ "round",					xpath_imp::xp_FunctionName,	25 },
+	{ "comment",				xpath_imp::xp_FunctionName,	26 },
+
+	{ "ancestor",				xpath_imp::xp_AxisName,		xpath_imp::ax_Ancestor },
+	{ "ancestor-or-self",		xpath_imp::xp_AxisName,		xpath_imp::ax_AncestorOrSelf },
+	{ "attribute",				xpath_imp::xp_AxisName,		xpath_imp::ax_Attribute },
+	{ "child",					xpath_imp::xp_AxisName,		xpath_imp::ax_Child },
+	{ "descendant",				xpath_imp::xp_AxisName,		xpath_imp::ax_Descendant },
+	{ "descendant-or-self",		xpath_imp::xp_AxisName,		xpath_imp::ax_DescendantOrSelf },
+	{ "following",				xpath_imp::xp_AxisName,		xpath_imp::ax_Following },
+	{ "following-sibling",		xpath_imp::xp_AxisName,		xpath_imp::ax_FollowingSibling },
+	{ "namespace",				xpath_imp::xp_AxisName,		xpath_imp::ax_Namespace },
+	{ "parent",					xpath_imp::xp_AxisName,		xpath_imp::ax_Parent },
+	{ "preceding",				xpath_imp::xp_AxisName,		xpath_imp::ax_Preceding },
+	{ "preceding-sibling",		xpath_imp::xp_AxisName,		xpath_imp::ax_PrecedingSibling },
+	{ "self",					xpath_imp::xp_AxisName,		xpath_imp::ax_Self },
+
+	{ nil,						xpath_imp::xp_Undef,		0 }
 };
 
 // --------------------------------------------------------------------
 
 template<typename PREDICATE>
-void iterate_children(element& e, node_set s, PREDICATE pred)
+void iterate_children(element* context, node_set& s, bool deep, PREDICATE pred)
 {
-	for (node* child = e.child(); child != nil; child = child->next())
+	for (node* child = context->child(); child != nil; child = child->next())
 	{
 		element* e = dynamic_cast<element*>(child);
 		if (e == nil)
@@ -197,48 +275,156 @@ void iterate_children(element& e, node_set s, PREDICATE pred)
 		if (s.count(child) > 0)
 			continue;
 
-		if (pred(*e))
+		if (pred(e))
 			s.push_back(child);
+
+		if (deep)
+			iterate_children(e, s, true, pred);
 	}
 }
 
 template<typename PREDICATE>
-void deep_iterate_children(element& e, node_set s, PREDICATE pred)
+void iterate_ancestor(element* e, node_set& s, PREDICATE pred)
 {
-	for (node* child = e.child(); child != nil; child = child->next())
+	for (;;)
 	{
-		element* e = dynamic_cast<element*>(child);
+		e = dynamic_cast<element*>(e->parent());
+		
 		if (e == nil)
-			continue;
+			break;
 		
-		if (s.count(child) > 0)
-			continue;
-		
-		if (pred(*e))
-			s.push_back(child);
+		document* d = dynamic_cast<document*>(e);
+		if (d != nil)
+			break;
 
-		deep_iterate_children(*static_cast<element*>(child), s, pred);
+		if (pred(e))
+			s.push_back(e);
 	}
 }
 
-node_set xpath_imp::name_test_step_expr::evaluate(node_set& context)
+template<typename PREDICATE>
+void iterate_preceding(node* n, node_set& s, bool sibling, PREDICATE pred)
+{
+	while (n != nil)
+	{
+		if (n->prev() == nil)
+		{
+			if (sibling)
+				break;
+			
+			n = n->parent();
+			continue;
+		}
+		
+		n = n->prev();
+		
+		element* e = dynamic_cast<element*>(n);
+		if (e == nil)
+			continue;
+		
+		if (pred(e))
+			s.push_back(e);
+		
+		if (sibling == false)
+			iterate_children(e, s, true, pred);
+	}
+}
+
+template<typename PREDICATE>
+void iterate_following(node* n, node_set& s, bool sibling, PREDICATE pred)
+{
+	while (n != nil)
+	{
+		if (n->next() == nil)
+		{
+			if (sibling)
+				break;
+			
+			n = n->parent();
+			continue;
+		}
+		
+		n = n->next();
+		
+		element* e = dynamic_cast<element*>(n);
+		if (e == nil)
+			continue;
+		
+		if (pred(e))
+			s.push_back(e);
+		
+		if (sibling == false)
+			iterate_children(e, s, true, pred);
+	}
+}
+
+node_set xpath_imp::name_test_step_expression::evaluate(node_set& context_set)
 {
 	node_set result;
 
-	foreach (node& n, context)
+	foreach (node& context, context_set)
 	{
-		element* context_element = dynamic_cast<element*>(&n);
+		element* context_element = dynamic_cast<element*>(&context);
 		if (context_element != nil)
 		{
 			switch (m_axis)
 			{
+				case ax_Parent:
+					if (context_element->parent() != nil)
+					{
+						element* e = static_cast<element*>(context_element->parent());
+						if (m_test(e))
+							result.push_back(context_element->parent());
+					}
+					break;
+				
+				case ax_Ancestor:
+					iterate_ancestor(context_element, result, m_test);
+					break;
+
+				case ax_AncestorOrSelf:
+					if (m_test(context_element))
+						result.push_back(context_element);
+					iterate_ancestor(context_element, result, m_test);
+					break;
+				
+				case ax_Self:
+					if (m_test(context_element))
+						result.push_back(context_element);
+					break;
+				
 				case ax_Child:
-					iterate_children(*context_element, result, boost::bind(&element::name, _1) == m_name);
+					iterate_children(context_element, result, false, m_test);
 					break;
 	
 				case ax_Descendant:
-					deep_iterate_children(*context_element, result, boost::bind(&element::name, _1) == m_name);
+					iterate_children(context_element, result, true, m_test);
 					break;
+
+				case ax_DescendantOrSelf:
+					if (m_test(context_element))
+						result.push_back(context_element);
+					iterate_children(context_element, result, true, m_test);
+					break;
+				
+				case ax_Following:
+					iterate_following(context_element, result, false, m_test);
+					break;
+
+				case ax_FollowingSibling:
+					iterate_following(context_element, result, true, m_test);
+					break;
+			
+				case ax_Preceding:
+					iterate_preceding(context_element, result, false, m_test);
+					break;
+
+				case ax_PrecedingSibling:
+					iterate_preceding(context_element, result, true, m_test);
+					break;
+	
+				default:
+					throw exception("unimplemented axis");
 			}
 		}
 	}
@@ -246,12 +432,13 @@ node_set xpath_imp::name_test_step_expr::evaluate(node_set& context)
 	return result;
 }
 
-node_set xpath_imp::document_expr::evaluate(node_set& context)
+node_set xpath_imp::document_expression::evaluate(node_set& context)
 {
 	assert(context.size() == 1);
 	
 	node_set result;
 	result.push_back(context.front().doc());
+
 	return result;
 }
 
@@ -283,12 +470,13 @@ void xpath_imp::parse(const string& path)
 unsigned char xpath_imp::next_byte()
 {
 	char result = 0;
-	if (m_next != m_end)
-	{
+
+	if (m_next < m_end)
 		result = *m_next;
-		m_token_string += result;
-		++m_next;
-	}
+
+	++m_next;
+	m_token_string += result;
+
 	return static_cast<unsigned char>(result);
 }
 
@@ -329,9 +517,6 @@ wchar_t xpath_imp::get_next_char()
 
 	if (result > 0x10ffff)
 		throw exception("invalid utf-8 character (out of range)");
-	
-	if (m_next == m_end)
-		result = 0;
 	
 	return static_cast<wchar_t>(result);
 }
@@ -395,7 +580,7 @@ string xpath_imp::describe_token(Token token)
 	}
 
 	if (token != xp_EOF and token != xp_Undef)
-		result << " (\"" << m_token_string << "\"";
+		result << " (\"" << m_token_string << "\")";
 	return result.str();
 }
 
@@ -576,118 +761,12 @@ xpath_imp::Token xpath_imp::get_next_token()
 					retract();
 					if (variable)
 						token = xp_Variable;
-					else if (m_token_string == "comment" or
-							 m_token_string == "text" or
-							 m_token_string == "processing-instruction" or
-							 m_token_string == "node")
-						token = xp_NodeType;
-					else if (m_token_string == "and")
-						token = xp_OperatorAnd;
-					else if (m_token_string == "or")
-						token = xp_OperatorOr;
-					else if (m_token_string == "mod")
-						token = xp_OperatorMod;
-					else if (m_token_string == "div")
-						token = xp_OperatorDiv;
-					else if (m_token_string == "last" or
-							 m_token_string == "position" or
-							 m_token_string == "count" or
-							 m_token_string == "id" or
-							 m_token_string == "local-name" or
-							 m_token_string == "namespace-uri" or
-							 m_token_string == "name" or
-							 m_token_string == "string" or
-							 m_token_string == "concat" or
-							 m_token_string == "starts-with" or
-							 m_token_string == "contains" or
-							 m_token_string == "substring-before" or
-							 m_token_string == "substring-after" or
-							 m_token_string == "string-length" or
-							 m_token_string == "normalize-space" or
-							 m_token_string == "translate" or
-							 m_token_string == "boolean" or
-							 m_token_string == "not" or
-							 m_token_string == "true" or
-							 m_token_string == "false" or
-							 m_token_string == "lang" or
-							 m_token_string == "number" or
-							 m_token_string == "sum" or
-							 m_token_string == "floor" or
-							 m_token_string == "ceiling" or
-							 m_token_string == "round" or
-							 m_token_string == "comment")
-						token = xp_FunctionName;
-					else if (m_token_string == "ancestor")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Ancestor;
-					}
-					else if (m_token_string == "ancestor-or-self")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_AncestorOrSelf;
-					}
-					else if (m_token_string == "attribute")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Attribute;
-					}
-					else if (m_token_string == "child")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Child;
-					}
-					else if (m_token_string == "descendant")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Descendant;
-					}
-					else if (m_token_string == "descendant-or-self")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_DescendantOrSelf;
-					}
-					else if (m_token_string == "following")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Following;
-					}
-					else if (m_token_string == "following-sibling")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_FollowingSibling;
-					}
-					else if (m_token_string == "namespace")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Namespace;
-					}
-					else if (m_token_string == "parent")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Parent;
-					}
-					else if (m_token_string == "preceding")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Preceding;
-					}
-					else if (m_token_string == "preceding-sibling")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_PrecedingSibling;
-					}
-					else if (m_token_string == "self")
-					{
-						token = xp_AxisName;
-						m_token_axis = ax_Self;
-					}
 					else
 						token = xp_NameTest;
 				}
 			
 			case xps_QName:
-				if (is_name_start_char(ch))
+				if (ch != ':' and is_name_start_char(ch))
 					state = xps_QName2;
 				else
 				{
@@ -701,7 +780,7 @@ xpath_imp::Token xpath_imp::get_next_token()
 				break;
 			
 			case xps_QName2:
-				if (not is_name_char(ch))
+				if (ch == ':' or not is_name_char(ch))
 				{
 					retract();
 					if (variable)
@@ -712,6 +791,22 @@ xpath_imp::Token xpath_imp::get_next_token()
 				break;
 		}
 	}
+
+	if (token == xp_NameTest)	// see if nametest is actually a keyword
+	{
+		for (const name_test* test = s_names; test->name != nil; ++test)
+		{
+			if (m_token_string == test->name)
+			{
+				token = Token(test->token);
+				if (token == xp_AxisName)
+					m_token_axis = AxisType(test->value);
+			}
+		}
+	}
+
+	if (VERBOSE)
+		cout << "get_next_token: " << describe_token(token) << endl;
 	
 	return token;
 }
@@ -739,12 +834,12 @@ void xpath_imp::location_path()
 	
 	if (m_lookahead == xp_Slash)
 	{
-		m_steps.push_back(new document_expr());
+		m_steps.push_back(new document_expression());
 		match(xp_Slash);
 	}
 	else if (m_lookahead == xp_DoubleSlash)
 	{
-		m_steps.push_back(new document_expr());
+		m_steps.push_back(new document_expression());
 		match(xp_DoubleSlash);
 		
 		double_slash = true;
@@ -837,10 +932,14 @@ void xpath_imp::node_test(AxisType axis)
 		
 		match(xp_RightParenthesis);
 	}
+	else if (m_lookahead == xp_Asterisk)
+	{
+		m_steps.push_back(new name_test_step_expression(axis, m_token_string));
+		match(xp_Asterisk);
+	}
 	else
 	{
-		m_steps.push_back(new name_test_step_expr(axis, m_token_string));
-		
+		m_steps.push_back(new name_test_step_expression(axis, m_token_string));
 		match(xp_NameTest);
 	}
 }
@@ -946,16 +1045,13 @@ void xpath_imp::path_expr()
 
 void xpath_imp::filter_expr()
 {
-	for (;;)
+	primary_expr();
+	while (m_lookahead == xp_LeftBracket)
 	{
-		primary_expr();
-		while (m_lookahead == xp_LeftBracket)
-		{
-			match(xp_LeftBracket);
-			expr();
-			match(xp_RightBracket);
-		}
-	}	
+		match(xp_LeftBracket);
+		expr();
+		match(xp_RightBracket);
+	}
 }
 
 void xpath_imp::and_expr()
@@ -1041,7 +1137,7 @@ node_set xpath_imp::evaluate(node& root)
 	node_set result;
 	result.push_back(&root);
 	
-	foreach (step_expr* expr, m_steps)
+	foreach (expression* expr, m_steps)
 		result = expr->evaluate(result);
 	
 	return result;
