@@ -7,11 +7,15 @@
 #include <sstream>
 #include <numeric>
 #include <stack>
+#include <cmath>
+#include <tr1/cmath>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "zeep/exception.hpp"
 #include "zeep/xml/node.hpp"
@@ -24,7 +28,7 @@
 extern int VERBOSE;
 
 using namespace std;
-
+namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
 
@@ -132,6 +136,7 @@ enum CoreFunction
 	cf_Contains,
 	cf_SubstringBefore,
 	cf_SubstringAfter,
+	cf_Substring,
 	cf_StringLength,
 	cf_NormalizeSpace,
 	cf_Translate,
@@ -150,35 +155,43 @@ enum CoreFunction
 	cf_CoreFunctionCount
 };
 
-const char* kCoreFunctionNames[] =
+struct CoreFunctionInfo
 {
-	"last",
-	"position",
-	"count",
-	"id",
-	"local-name",
-	"namespace-uri",
-	"name",
-	"string",
-	"concat",
-	"starts-with",
-	"contains",
-	"substring-before",
-	"substring-after",
-	"string-length",
-	"normalize-space",
-	"translate",
-	"boolean",
-	"not",
-	"true"	,
-	"false",
-	"lang",
-	"number",
-	"sum",
-	"floor",
-	"ceiling",
-	"round",
-	"comment",
+	const char*		name;
+	int				arg_count;
+};
+
+#pragma message("dit moet dus anders... optional parameters en zo")
+const CoreFunctionInfo kCoreFunctionInfo[cf_CoreFunctionCount] =
+{
+	{ "last",				0 },
+	{ "position",			0 },
+	{ "count",				1 },
+	{ "id",					0 },
+	{ "local-name",			0 },
+	{ "namespace-uri",		0 },
+	{ "name",				0 },
+	{ "string",				0 },
+	{ "concat",				-2 },
+	{ "starts-with",		2 },
+	{ "contains",			2 },
+	{ "substring-before",	2 },
+	{ "substring-after",	2 },
+	{ "substring",			3 },
+	{ "string-length",		1 },
+	{ "normalize-space",	1 },
+	{ "translate",			3 },
+	{ "boolean",			1 },
+	{ "not",				1 },
+	{ "true"	,			0 },
+	{ "false",				0 },
+	{ "lang",				0 },
+	{ "number",				-10 },		// signal (this sucks, I know...)
+	{ "sum",				0 },
+	{ "floor",				1 },
+	{ "ceiling",			1 },
+	{ "round",				1 },
+	{ "comment",			1 },
 };
 
 // the expressions implemented as interpreter objects
@@ -209,7 +222,7 @@ class object
 	object_type			type() const					{ return m_type; }
 
 	template<typename T>
-	T&					as();
+	T					as();
 	
   private:
 	object_type			m_type;
@@ -309,7 +322,7 @@ bool object::operator<(const object o)
 }
 
 template<>
-node_set& object::as<node_set>()
+node_set& object::as<node_set&>()
 {
 	if (m_type != ot_node_set)
 		throw exception("object is not of type node-set");
@@ -317,27 +330,70 @@ node_set& object::as<node_set>()
 }
 
 template<>
-bool& object::as<bool>()
+bool object::as<bool>()
 {
-	if (m_type != ot_boolean)
-		throw exception("object is not of type boolean");
-	return m_boolean;
+	bool result;
+	switch (m_type)
+	{
+		case ot_number:		result = m_number != 0 and not isnan(m_number); break;
+		case ot_node_set:	result = not m_node_set.empty(); break;
+		case ot_string:		result = not m_string.empty(); break;
+		case ot_boolean:	result = m_boolean; break;
+		default:			result = false; break;
+	}
+	
+	return result;
 }
 
 template<>
-double& object::as<double>()
+double object::as<double>()
+{
+	double result;
+	switch (m_type)
+	{
+		case ot_number:		result = m_number; break;
+		case ot_node_set:	result = boost::lexical_cast<double>(m_node_set.front()->str()); break;
+		case ot_string:		result = boost::lexical_cast<double>(m_string); break;
+		case ot_boolean:	result = m_boolean; break;
+		default:			result = 0; break;
+	}
+	return result;
+}
+
+template<>
+int object::as<int>()
 {
 	if (m_type != ot_number)
 		throw exception("object is not of type number");
-	return m_number;
+	return round(m_number);
 }
 
 template<>
-string& object::as<string>()
+string& object::as<string&>()
 {
 	if (m_type != ot_string)
 		throw exception("object is not of type string");
 	return m_string;
+}
+
+template<>
+string object::as<string>()
+{
+	string result;
+	
+	switch (m_type)
+	{
+		case ot_number:		result = boost::lexical_cast<string>(m_number); break;
+		case ot_string:		result = m_string; break;
+		case ot_boolean:	result = (m_boolean ? "true" : "false"); break;
+		case ot_node_set:
+			if (not m_node_set.empty())
+				result = m_node_set.front()->str();
+			break;
+		default:			break;
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -845,7 +901,7 @@ object operator_expression<xp_OperatorMod>::evaluate(expression_context& context
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
-	return double(int(v1.as<double>()) % int(v2.as<double>()));
+	return double(v1.as<int>() % v2.as<int>());
 }
 
 template<>
@@ -911,11 +967,11 @@ object path_expression::evaluate(expression_context& context)
 		throw exception("filter does not evaluate to a node-set");
 	
 	node_set result;
-	foreach (node* n, v.as<node_set>())
+	foreach (node* n, v.as<node_set&>())
 	{
-		expression_context ctxt(n, v.as<node_set>());
+		expression_context ctxt(n, v.as<node_set&>());
 		
-		node_set s = m_rhs->evaluate(ctxt).as<node_set>();
+		node_set s = m_rhs->evaluate(ctxt).as<node_set&>();
 
 		copy(s.begin(), s.end(), back_inserter(result));
 	}
@@ -952,13 +1008,21 @@ object predicate_expression::evaluate(expression_context& context)
 	
 	node_set result;
 	
-	foreach (node* n, v.as<node_set>())
+	foreach (node* n, v.as<node_set&>())
 	{
-		expression_context ctxt(n, v.as<node_set>());
+		expression_context ctxt(n, v.as<node_set&>());
 		
 		object test = m_pred->evaluate(ctxt);
-		if (test.as<bool>())
+		
+		if (test.type() == ot_boolean)
+		{
+			if (test.as<bool>())
+				result.push_back(n);
+		}
+		else if (test.type() == ot_number and ctxt.position() == test.as<double>())
+		{
 			result.push_back(n);
+		}
 	}
 	
 	return result;
@@ -1076,6 +1140,293 @@ object core_function_expression<cf_Last>::evaluate(expression_context& context)
 	return object(double(context.last()));
 }
 
+template<>
+object core_function_expression<cf_Count>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	int result = v.as<node_set&>().size();
+	return object(double(result));
+}
+
+//template<>
+//object core_function_expression<cf_Id>::evaluate(expression_context& context)
+//{
+//	object v = m_args.front()->evaluate(context);
+//	int result = v.as<node_set&>().size();
+//	return object(double(result));
+//}
+
+template<>
+object core_function_expression<cf_LocalName>::evaluate(expression_context& context)
+{
+	element* e = dynamic_cast<element*>(context.m_node);
+	if (e == nil)
+		throw exception("context node is not an element");
+	return e->name();
+}
+
+template<>
+object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& context)
+{
+	element* e = dynamic_cast<element*>(context.m_node);
+	if (e == nil)
+		throw exception("context node is not an element");
+	return e->ns();
+}
+
+template<>
+object core_function_expression<cf_Name>::evaluate(expression_context& context)
+{
+	element* e = dynamic_cast<element*>(context.m_node);
+	if (e == nil)
+		throw exception("context node is not an element");
+#pragma message("need to fix this")
+	return e->name();
+}
+
+template<>
+object core_function_expression<cf_String>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return v.as<string>();
+}
+
+template<>
+object core_function_expression<cf_Concat>::evaluate(expression_context& context)
+{
+	string result;
+	foreach (expression_ptr& e, m_args)
+	{
+		object v = e->evaluate(context);
+		result += v.as<string>();
+	}
+	return result;
+}
+
+template<>
+object core_function_expression<cf_StringLength>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return double(v.as<string>().length());
+}
+
+template<>
+object core_function_expression<cf_StartsWith>::evaluate(expression_context& context)
+{
+	object v1 = m_args.front()->evaluate(context);
+	object v2 = m_args.back()->evaluate(context);
+	
+	if (v1.type() != ot_string or v2.type() != ot_string)
+		throw exception("expected two strings as argument for starts-with");
+	
+	return ba::starts_with(v1.as<string>(), v2.as<string>());
+}
+
+template<>
+object core_function_expression<cf_Contains>::evaluate(expression_context& context)
+{
+	object v1 = m_args.front()->evaluate(context);
+	object v2 = m_args.back()->evaluate(context);
+	
+	if (v1.type() != ot_string or v2.type() != ot_string)
+		throw exception("expected two strings as argument for contains");
+	
+	return v1.as<string>().find(v2.as<string>()) != string::npos;
+}
+
+template<>
+object core_function_expression<cf_SubstringBefore>::evaluate(expression_context& context)
+{
+	object v1 = m_args.front()->evaluate(context);
+	object v2 = m_args.back()->evaluate(context);
+	
+	if (v1.type() != ot_string or v2.type() != ot_string)
+		throw exception("expected two strings as argument for substring-before");
+	
+	string result;
+	string::size_type p = v1.as<string>().find(v2.as<string>());
+	if (p != string::npos)
+		result = v1.as<string>().substr(0, p);
+	
+	return result;
+}
+
+template<>
+object core_function_expression<cf_SubstringAfter>::evaluate(expression_context& context)
+{
+	object v1 = m_args.front()->evaluate(context);
+	object v2 = m_args.back()->evaluate(context);
+	
+	if (v1.type() != ot_string or v2.type() != ot_string)
+		throw exception("expected two strings as argument for substring-after");
+	
+	string result;
+	string::size_type p = v1.as<string>().find(v2.as<string>());
+	if (p != string::npos and p + v2.as<string>().length() < v1.as<string>().length())
+		result = v1.as<string>().substr(p + v2.as<string>().length());
+	
+	return result;
+}
+
+template<>
+object core_function_expression<cf_Substring>::evaluate(expression_context& context)
+{
+	expression_list::iterator a = m_args.begin();
+	
+	object v1 = (*a)->evaluate(context);	++a;
+	object v2 = (*a)->evaluate(context);	++a;
+	object v3 = (*a)->evaluate(context);
+	
+	if (v1.type() != ot_string or v2.type() != ot_number or v3.type() != ot_number)
+		throw exception("expected one string and two numbers as argument for substring");
+	
+	return v1.as<string>().substr(v2.as<int>() - 1, v3.as<int>());
+}
+
+template<>
+object core_function_expression<cf_NormalizeSpace>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	
+	if (v.type() != ot_string)
+		throw exception("expected a string as argument for normalize-space");
+	
+	string result;
+	bool space = true;
+	
+	foreach (char c, v.as<string>())
+	{
+		if (isspace(c))
+		{
+			if (not space)
+				result += ' ';
+			space = true;
+		}
+		else
+		{
+			result += c;
+			space = false;
+		}
+	}
+	
+	if (not result.empty() and space)
+		result.erase(result.end() - 1);
+	
+	return result;
+}
+
+template<>
+object core_function_expression<cf_Translate>::evaluate(expression_context& context)
+{
+	expression_list::iterator a = m_args.begin();
+	
+	object v1 = (*a)->evaluate(context);	++a;
+	object v2 = (*a)->evaluate(context);	++a;
+	object v3 = (*a)->evaluate(context);
+	
+	if (v1.type() != ot_string or v2.type() != ot_string or v3.type() != ot_string)
+		throw exception("expected three strings as arguments for translate");
+	
+	string& f = v2.as<string&>();
+	string& r = v3.as<string&>();
+	
+	string result;
+	result.reserve(v1.as<string>().length());
+	foreach (char c, v1.as<string>())
+	{
+		string::size_type fi = f.find(c);
+		if (fi == string::npos)
+			result += c;
+		else if (fi < r.length())
+			result += r[fi];
+	}
+
+	return result;
+}
+
+template<>
+object core_function_expression<cf_Boolean>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return v.as<bool>();
+}
+
+template<>
+object core_function_expression<cf_Not>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return not v.as<bool>();
+}
+
+template<>
+object core_function_expression<cf_True>::evaluate(expression_context& context)
+{
+	return true;
+}
+
+template<>
+object core_function_expression<cf_False>::evaluate(expression_context& context)
+{
+	return false;
+}
+
+template<>
+object core_function_expression<cf_Lang>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	
+	string test = v.as<string>();
+	ba::to_lower(test);
+	
+	string lang = context.m_node->lang();
+	ba::to_lower(lang);
+	
+	bool result = test == lang;
+	
+	string::size_type s;
+	
+	if (result == false and (s = lang.find('-')) != string::npos)
+		result = test == lang.substr(0, s);
+	
+	return result;
+}
+
+template<>
+object core_function_expression<cf_Number>::evaluate(expression_context& context)
+{
+	object v;
+	
+	if (m_args.size() == 1)
+		v = m_args.front()->evaluate(context);
+	else
+		v = boost::lexical_cast<double>(context.m_node->str());
+
+	return v.as<double>();
+}
+
+template<>
+object core_function_expression<cf_Floor>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return floor(v.as<double>());
+}
+
+template<>
+object core_function_expression<cf_Ceiling>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return ceil(v.as<double>());
+}
+
+template<>
+object core_function_expression<cf_Round>::evaluate(expression_context& context)
+{
+	object v = m_args.front()->evaluate(context);
+	return round(v.as<double>());
+}
+
+
+
 // --------------------------------------------------------------------
 
 class union_expression : public expression
@@ -1107,8 +1458,8 @@ object union_expression::evaluate(expression_context& context)
 	if (v1.type() != ot_node_set or v2.type() != ot_node_set)
 		throw exception("union operator works only on node sets");
 	
-	node_set s1 = v1.as<node_set>();
-	node_set s2 = v2.as<node_set>();
+	node_set s1 = v1.as<node_set&>();
+	node_set s2 = v2.as<node_set&>();
 	
 	copy(s2.begin(), s2.end(), back_inserter(s1));
 	
@@ -1213,6 +1564,12 @@ void xpath_imp::parse(const string& path)
 	
 	m_lookahead = get_next_token();
 	m_expr = location_path();
+	
+	while (m_lookahead == xp_OperatorUnion)
+	{
+		match(xp_OperatorUnion);
+		m_expr.reset(new union_expression(m_expr, location_path()));
+	}
 
 	if (VERBOSE)
 		m_expr->print(0);
@@ -1351,8 +1708,6 @@ string xpath_imp::describe_token(Token token)
 		case xp_Colon:				result << "colon"; break;
 	}
 
-	if (token != xp_EOF and token != xp_Undef)
-		result << " (\"" << m_token_string << "\")";
 	return result.str();
 }
 
@@ -1371,13 +1726,15 @@ Token xpath_imp::get_next_token()
 		xps_NumberFraction,
 		xps_Name,
 		xps_QName,
-		xps_QName2
+		xps_QName2,
+		xps_Literal
 	} start, state;
 	start = state = xps_Start;
 
 	Token token = xp_Undef;
 	bool variable = false;
 	double fraction;
+	wchar_t quoteChar;
 
 	m_token_string.clear();
 	
@@ -1415,6 +1772,8 @@ Token xpath_imp::get_next_token()
 					case '\t':
 						m_token_string.clear();
 						break;
+					case '\'':	quoteChar = ch; state = xps_Literal; break;
+					case '"':	quoteChar = ch; state = xps_Literal; break;
 					default:
 						if (ch >= '0' and ch <= '9')
 						{
@@ -1565,6 +1924,16 @@ Token xpath_imp::get_next_token()
 						token = xp_Name;
 				}
 				break;
+			
+			case xps_Literal:
+				if (ch == 0)
+					throw exception("run-away string, missing quote character?");
+				else if (ch == quoteChar)
+				{
+					token = xp_Literal;
+					m_token_string = m_token_string.substr(1, m_token_string.length() - 2);
+				}
+				break;
 		}
 	}
 
@@ -1596,12 +1965,17 @@ Token xpath_imp::get_next_token()
 				}
 				else
 				{
-					token = xp_FunctionName;
+					for (int i = 0; i < cf_CoreFunctionCount; ++i)
+					{
+						if (m_token_string == kCoreFunctionInfo[i].name)
+						{
+							token = xp_FunctionName;
+							m_token_function = CoreFunction(i);
+							break;
+						}
+					}
 
-					const char** a = find(kCoreFunctionNames, kCoreFunctionNames + cf_CoreFunctionCount, m_token_string);
-					if (a != kCoreFunctionNames + cf_CoreFunctionCount)
-						m_token_function = CoreFunction(a - kCoreFunctionNames);
-					else
+					if (token != xp_FunctionName)
 						throw exception("invalid function %s", m_token_string.c_str());
 				}
 			}
@@ -1625,10 +1999,18 @@ void xpath_imp::match(Token token)
 		// aargh... syntax error
 		
 		string found = describe_token(m_lookahead);
+		
+		if (m_lookahead != xp_EOF and m_lookahead != xp_Undef)
+		{
+			found += " (\"";
+			found += m_token_string;
+			found += "\")";
+		}
+		
 		string expected = describe_token(token);
 		
 		stringstream s;
-		s << "syntax error in xpath, expected '" << expected << "' but found '" << found << "'";
+		s << "syntax error in xpath, expected " << expected << " but found " << found;
 		throw exception(s.str());
 	}
 }
@@ -1797,6 +2179,8 @@ expression_ptr xpath_imp::primary_expr()
 
 expression_ptr xpath_imp::function_call()
 {
+	CoreFunction function = m_token_function;
+	
 	match(xp_FunctionName);
 	match(xp_LeftParenthesis);
 	
@@ -1817,7 +2201,15 @@ expression_ptr xpath_imp::function_call()
 	
 	expression_ptr result;
 	
-	switch (m_token_function)
+	int expected_arg_count = kCoreFunctionInfo[int(function)].arg_count;
+	if (expected_arg_count > 0 and int(arguments.size()) != expected_arg_count)
+		throw exception("invalid number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+	else if (expected_arg_count == -10 and arguments.size() > 1)
+		throw exception("incorrect number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+	else if (expected_arg_count < 0 and int(arguments.size()) < -expected_arg_count)
+		throw exception("insufficient number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+	
+	switch (function)
 	{
 		case cf_Last:			result.reset(new core_function_expression<cf_Last>(arguments)); break;
 		case cf_Position:		result.reset(new core_function_expression<cf_Position>(arguments)); break;
@@ -2022,7 +2414,7 @@ node_set xpath_imp::evaluate(node& root)
 {
 	node_set empty;
 	expression_context ctxt(&root, empty);
-	return m_expr->evaluate(ctxt).as<node_set>();
+	return m_expr->evaluate(ctxt).as<node_set&>();
 }
 
 // --------------------------------------------------------------------

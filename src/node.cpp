@@ -70,6 +70,14 @@ bool node::equals(const node* n) const
 	return result;
 }
 
+string node::lang() const
+{
+	string result;
+	if (m_parent != nil)
+		result = m_parent->lang();
+	return result;
+}
+
 // --------------------------------------------------------------------
 // comment
 
@@ -126,7 +134,7 @@ element::~element()
 	delete m_child;
 }
 
-string element::content() const
+string element::str() const
 {
 	string result;
 	
@@ -134,6 +142,21 @@ string element::content() const
 	while (child != nil)
 	{
 		result += child->str();
+		child = child->next();
+	}
+	
+	return result;
+}
+
+string element::content() const
+{
+	string result;
+	
+	const node* child = m_child;
+	while (child != nil)
+	{
+		if (dynamic_cast<const text*>(child) != nil)
+			result += child->str();
 		child = child->next();
 	}
 	
@@ -290,6 +313,14 @@ void element::set_attribute(const string& ns, const string& name, const string& 
 		a->value(value);
 	else
 		m_attributes.push_back(new attribute(/*ns, */name, value));
+}
+
+string element::lang() const
+{
+	string result = get_attribute("xml:lang");
+	if (result.empty())
+		result = node::lang();
+	return result;
 }
 
 void element::write(writer& w) const
