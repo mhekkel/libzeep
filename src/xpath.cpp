@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <sstream>
+#include <numeric>
+#include <stack>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -27,239 +29,161 @@ namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
 
-struct xpath_imp
+enum Token {
+	xp_Undef,
+	xp_EOF,
+	xp_LeftParenthesis,
+	xp_RightParenthesis,
+	xp_LeftBracket,
+	xp_RightBracket,
+	xp_Dot,
+	xp_DoubleDot,
+	xp_Slash,
+	xp_DoubleSlash,
+	xp_At,
+	xp_Comma,
+	xp_DoubleColon,
+	xp_Name,
+	
+	xp_AxisName,
+	xp_FunctionName,
+	xp_NodeType,
+
+	xp_OperatorUnion,
+	xp_OperatorAdd,
+	xp_OperatorSubstract,
+	xp_OperatorEqual,
+	xp_OperatorNotEqual,
+	xp_OperatorLess,
+	xp_OperatorLessOrEqual,
+	xp_OperatorGreater,
+	xp_OperatorGreaterOrEqual,
+	xp_OperatorAnd,
+	xp_OperatorOr,
+	xp_OperatorMod,
+	xp_OperatorDiv,
+
+	xp_Literal,
+	xp_Number,
+	xp_Variable,
+	xp_Asterisk,
+	xp_Colon
+};
+
+enum AxisType {
+	ax_Ancestor,
+	ax_AncestorOrSelf,
+	ax_Attribute,
+	ax_Child,
+	ax_Descendant,
+	ax_DescendantOrSelf,
+	ax_Following,
+	ax_FollowingSibling,
+	ax_Namespace,
+	ax_Parent,
+	ax_Preceding,
+	ax_PrecedingSibling,
+	ax_Self,
+	
+	ax_Count
+};
+
+const char* kAxisNames[] = {
+	"ancestor",
+	"ancestor-or-self",
+	"attribute",
+	"child",
+	"descendant",
+	"descendant-or-self",
+	"following",
+	"following-sibling",
+	"namespace",
+	"parent",
+	"preceding",
+	"preceding-sibling",
+	"self",
+	nil
+};
+
+//	{ "and",					xp_OperatorAnd,	0 },
+//	{ "or",						xp_OperatorOr,	0 },
+//	{ "mod",					xp_OperatorMod,	0 },
+//	{ "div",					xp_OperatorDiv,	0 },
+
+const char* kCoreFunctionNames[] = {
+	"last",
+	"position",
+	"count",
+	"id",
+	"local-name",
+	"namespace-uri",
+	"name",
+	"string",
+	"concat",
+	"starts-with",
+	"contains",
+	"substring-before",
+	"substring-after",
+	"string-length",
+	"normalize-space",
+	"translate",
+	"boolean",
+	"not",
+	"true"	,
+	"false",
+	"lang",
+	"number",
+	"sum",
+	"floor",
+	"ceiling",
+	"round",
+	"comment",
+};
+
+const int kCoreFunctionCount = sizeof(kCoreFunctionNames) / sizeof(const char*);
+
+// the expressions implemented as interpreter objects
+
+enum object_type
 {
-						xpath_imp(const string& path);
-						~xpath_imp();
-	
-	node_set			evaluate(node& root);
-
-	enum Token {
-		xp_Undef,
-		xp_EOF,
-		xp_LeftParenthesis,
-		xp_RightParenthesis,
-		xp_LeftBracket,
-		xp_RightBracket,
-		xp_Dot,
-		xp_DoubleDot,
-		xp_Slash,
-		xp_DoubleSlash,
-		xp_At,
-		xp_Comma,
-		xp_DoubleColon,
-		xp_NameTest,
-		xp_NodeType,
-
-		xp_OperatorUnion,
-		xp_OperatorAdd,
-		xp_OperatorSubstract,
-		xp_OperatorEqual,
-		xp_OperatorNotEqual,
-		xp_OperatorLess,
-		xp_OperatorLessOrEqual,
-		xp_OperatorGreater,
-		xp_OperatorGreaterOrEqual,
-		xp_OperatorAnd,
-		xp_OperatorOr,
-		xp_OperatorMod,
-		xp_OperatorDiv,
-
-		xp_FunctionName,
-		xp_AxisName,
-		xp_Literal,
-		xp_Number,
-		xp_Variable,
-		xp_Asterisk,
-		xp_Colon
-	};
-
-	enum AxisType {
-		ax_Ancestor,
-		ax_AncestorOrSelf,
-		ax_Attribute,
-		ax_Child,
-		ax_Descendant,
-		ax_DescendantOrSelf,
-		ax_Following,
-		ax_FollowingSibling,
-		ax_Namespace,
-		ax_Parent,
-		ax_Preceding,
-		ax_PrecedingSibling,
-		ax_Self
-	};
-
-	struct name_test {
-		const char*		name;
-		Token			token;
-		int				value;
-	};
-	
-	static const name_test s_names[];
-
-	// the expressions implemented as interpreter objects
-
-	class expression
-	{
-	  public:
-		virtual				~expression() {}
-		virtual node_set	evaluate(node_set& context) = 0;
-	};
-	
-	class step_expression : public expression
-	{
-	  public:
-							step_expression(AxisType axis) : m_axis(axis) {}
-	
-	  protected:
-		AxisType			m_axis;
-	};
-
-	class name_test_step_expression : public step_expression
-	{
-	  public:
-							name_test_step_expression(AxisType axis, const string& name)
-								: step_expression(axis)
-								, m_name(name)
-							{
-								if (m_name == "*")
-									m_test = boost::bind(&name_test_step_expression::asterisk, _1);
-								else
-									m_test = boost::bind(&element::name, _1) == m_name;
-							}
-
-		virtual node_set	evaluate(node_set& context);
-
-	  protected:
-
-		static bool			asterisk(const element*)
-							{
-								return true;
-							}
-
-		string									m_name;
-		boost::function<bool(const element*)>	m_test;
-	};
-	
-	class document_expression : public expression
-	{
-	  public:
-		virtual node_set	evaluate(node_set& context);
-	};
-
-	void				parse(const string& path);
-	
-	unsigned char		next_byte();
-	wchar_t				get_next_char();
-	void				retract();
-	Token				get_next_token();
-	string				describe_token(Token token);
-	void				match(Token token);
-	
-	void				location_path();
-	void				absolute_location_path();
-	void				relative_location_path(bool double_slash);
-	void				step(bool double_slash);
-	AxisType			axis_specifier();
-	void				axis_name();
-	void				node_test(AxisType axis);
-	void				predicate();
-	void				predicate_expr();
-	
-	void				abbr_absolute_location_path();
-	void				abbr_relative_location_path();
-	void				abbr_step();
-	void				abbr_axis_specifier();
-	
-	void				expr();
-	void				primary_expr();
-	void				function_call();
-	void				argument();
-	
-	void				union_expr();
-	void				path_expr();
-	void				filter_expr();
-
-	void				or_expr();
-	void				and_expr();
-	void				equality_expr();
-	void				relational_expr();
-	
-	void				additive_expr();
-	void				multiplicative_expr();
-	void				unary_expr();
-
-	// 
-
-	string				m_path;
-	string::const_iterator
-						m_begin, m_next, m_end;
-	Token				m_lookahead;
-	string				m_token_string;
-	double				m_token_number;
-	AxisType			m_token_axis;
-	
-	// the generated expression
-	
-	list<expression*>			m_steps;
+	ot_undef,
+	ot_node_set,
+	ot_boolean,
+	ot_number,
+	ot_string
 };
 
-const xpath_imp::name_test xpath_imp::s_names[] = {
-	{ "comment",				xpath_imp::xp_NodeType,		0 },
-	{ "text",					xpath_imp::xp_NodeType,		0 },
-	{ "processing-instruction",	xpath_imp::xp_NodeType,		0 },
-	{ "node",					xpath_imp::xp_NodeType,		0 },
+class object
+{
+  public:
+						object();
+						object(node_set ns);
+						object(bool b);
+						object(double n);
+						object(const string& s);
+						object(const object& o);
+	object&				operator=(const object& o);
 
-	{ "and",					xpath_imp::xp_OperatorAnd,	0 },
-	{ "or",						xpath_imp::xp_OperatorOr,	0 },
-	{ "mod",					xpath_imp::xp_OperatorMod,	0 },
-	{ "div",					xpath_imp::xp_OperatorDiv,	0 },
+	object_type			type() const;
 
-	{ "last",					xpath_imp::xp_FunctionName,	0 },
-	{ "position",				xpath_imp::xp_FunctionName,	1 },
-	{ "count",					xpath_imp::xp_FunctionName,	2 },
-	{ "id",						xpath_imp::xp_FunctionName,	3 },
-	{ "local-name",				xpath_imp::xp_FunctionName,	4 },
-	{ "namespace-uri",			xpath_imp::xp_FunctionName,	5 },
-	{ "name",					xpath_imp::xp_FunctionName,	6 },
-	{ "string",					xpath_imp::xp_FunctionName,	7 },
-	{ "concat",					xpath_imp::xp_FunctionName,	8 },
-	{ "starts-with",			xpath_imp::xp_FunctionName,	9 },
-	{ "contains",				xpath_imp::xp_FunctionName,	10 },
-	{ "substring-before",		xpath_imp::xp_FunctionName,	11 },
-	{ "substring-after",		xpath_imp::xp_FunctionName,	12 },
-	{ "string-length",			xpath_imp::xp_FunctionName,	13 },
-	{ "normalize-space",		xpath_imp::xp_FunctionName,	14 },
-	{ "translate",				xpath_imp::xp_FunctionName,	15 },
-	{ "boolean",				xpath_imp::xp_FunctionName,	16 },
-	{ "not",					xpath_imp::xp_FunctionName,	17 },
-	{ "true"	,				xpath_imp::xp_FunctionName,	18 },
-	{ "false",					xpath_imp::xp_FunctionName,	19 },
-	{ "lang",					xpath_imp::xp_FunctionName,	20 },
-	{ "number",					xpath_imp::xp_FunctionName,	21 },
-	{ "sum",					xpath_imp::xp_FunctionName,	22 },
-	{ "floor",					xpath_imp::xp_FunctionName,	23 },
-	{ "ceiling",				xpath_imp::xp_FunctionName,	24 },
-	{ "round",					xpath_imp::xp_FunctionName,	25 },
-	{ "comment",				xpath_imp::xp_FunctionName,	26 },
-
-	{ "ancestor",				xpath_imp::xp_AxisName,		xpath_imp::ax_Ancestor },
-	{ "ancestor-or-self",		xpath_imp::xp_AxisName,		xpath_imp::ax_AncestorOrSelf },
-	{ "attribute",				xpath_imp::xp_AxisName,		xpath_imp::ax_Attribute },
-	{ "child",					xpath_imp::xp_AxisName,		xpath_imp::ax_Child },
-	{ "descendant",				xpath_imp::xp_AxisName,		xpath_imp::ax_Descendant },
-	{ "descendant-or-self",		xpath_imp::xp_AxisName,		xpath_imp::ax_DescendantOrSelf },
-	{ "following",				xpath_imp::xp_AxisName,		xpath_imp::ax_Following },
-	{ "following-sibling",		xpath_imp::xp_AxisName,		xpath_imp::ax_FollowingSibling },
-	{ "namespace",				xpath_imp::xp_AxisName,		xpath_imp::ax_Namespace },
-	{ "parent",					xpath_imp::xp_AxisName,		xpath_imp::ax_Parent },
-	{ "preceding",				xpath_imp::xp_AxisName,		xpath_imp::ax_Preceding },
-	{ "preceding-sibling",		xpath_imp::xp_AxisName,		xpath_imp::ax_PrecedingSibling },
-	{ "self",					xpath_imp::xp_AxisName,		xpath_imp::ax_Self },
-
-	{ nil,						xpath_imp::xp_Undef,		0 }
+	template<typename T>
+	T&					as();
+	
+  private:
+	object_type			m_type;
+	node_set			m_node_set;
+	bool				m_boolean;
+	double				m_number;
+	string				m_string;
 };
+
+template<>
+node_set& object::as<node_set>()
+{
+	if (m_type != ot_node_set)
+		throw exception("object is not of type node-set");
+	return m_node_set;
+}
 
 // --------------------------------------------------------------------
 
@@ -358,9 +282,42 @@ void iterate_following(node* n, node_set& s, bool sibling, PREDICATE pred)
 	}
 }
 
-node_set xpath_imp::name_test_step_expression::evaluate(node_set& context_set)
+// --------------------------------------------------------------------
+
+class expression
+{
+  public:
+	virtual				~expression() {}
+	virtual object		evaluate(object& context) = 0;
+};
+
+typedef boost::shared_ptr<expression>	expression_ptr;
+typedef list<expression_ptr>			expression_list;
+
+// --------------------------------------------------------------------
+
+class step_expression : public expression
+{
+  public:
+						step_expression(AxisType axis) : m_axis(axis) {}
+
+  protected:
+
+	template<typename T>
+	object				evaluate(object& arg, T pred);
+
+	AxisType			m_axis;
+};
+
+template<typename T>
+object step_expression::evaluate(object& arg, T pred)
 {
 	node_set result;
+	
+	if (arg.type() != ot_node_set)
+		throw exception("expected node-set in step expression");
+	
+	node_set context_set = arg.as<node_set>();
 
 	foreach (node& context, context_set)
 	{
@@ -373,54 +330,54 @@ node_set xpath_imp::name_test_step_expression::evaluate(node_set& context_set)
 					if (context_element->parent() != nil)
 					{
 						element* e = static_cast<element*>(context_element->parent());
-						if (m_test(e))
+						if (pred(e))
 							result.push_back(context_element->parent());
 					}
 					break;
 				
 				case ax_Ancestor:
-					iterate_ancestor(context_element, result, m_test);
+					iterate_ancestor(context_element, result, pred);
 					break;
 
 				case ax_AncestorOrSelf:
-					if (m_test(context_element))
+					if (pred(context_element))
 						result.push_back(context_element);
-					iterate_ancestor(context_element, result, m_test);
+					iterate_ancestor(context_element, result, pred);
 					break;
 				
 				case ax_Self:
-					if (m_test(context_element))
+					if (pred(context_element))
 						result.push_back(context_element);
 					break;
 				
 				case ax_Child:
-					iterate_children(context_element, result, false, m_test);
+					iterate_children(context_element, result, false, pred);
 					break;
 	
 				case ax_Descendant:
-					iterate_children(context_element, result, true, m_test);
+					iterate_children(context_element, result, true, pred);
 					break;
 
 				case ax_DescendantOrSelf:
-					if (m_test(context_element))
+					if (pred(context_element))
 						result.push_back(context_element);
-					iterate_children(context_element, result, true, m_test);
+					iterate_children(context_element, result, true, pred);
 					break;
 				
 				case ax_Following:
-					iterate_following(context_element, result, false, m_test);
+					iterate_following(context_element, result, false, pred);
 					break;
 
 				case ax_FollowingSibling:
-					iterate_following(context_element, result, true, m_test);
+					iterate_following(context_element, result, true, pred);
 					break;
 			
 				case ax_Preceding:
-					iterate_preceding(context_element, result, false, m_test);
+					iterate_preceding(context_element, result, false, pred);
 					break;
 
 				case ax_PrecedingSibling:
-					iterate_preceding(context_element, result, true, m_test);
+					iterate_preceding(context_element, result, true, pred);
 					break;
 	
 				default:
@@ -428,19 +385,325 @@ node_set xpath_imp::name_test_step_expression::evaluate(node_set& context_set)
 			}
 		}
 	}
-	
+
 	return result;
 }
 
-node_set xpath_imp::document_expression::evaluate(node_set& context)
+// --------------------------------------------------------------------
+
+class name_test_step_expression : public step_expression
 {
-	assert(context.size() == 1);
+  public:
+						name_test_step_expression(AxisType axis, const string& name)
+							: step_expression(axis)
+							, m_name(name)
+						{
+							if (m_name == "*")
+								m_test = boost::bind(&name_test_step_expression::asterisk, _1);
+							else
+								m_test = boost::bind(&element::name, _1) == m_name;
+						}
+
+	virtual object		evaluate(object& arg);
+
+  protected:
+
+	static bool			asterisk(const element*)					{ return true; }
+
+	string									m_name;
+	boost::function<bool(const element*)>	m_test;
+};
+
+object name_test_step_expression::evaluate(object& arg)
+{
+	return step_expression::evaluate(arg, m_test);
+}
+
+// --------------------------------------------------------------------
+
+template<typename T>
+class node_type_expression : public step_expression
+{
+  public:
+						node_type_expression(AxisType axis)
+							: step_expression(axis)
+						{
+							m_test = boost::bind(&node_type_expression::test, _1);
+						}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	static bool			test(const node* n)
+						{
+							return dynamic_cast<T*>(n) != nil;
+						}
+
+	boost::function<bool(const element*)>	m_test;
+};
+
+template<typename T>
+object node_type_expression<T>::evaluate(object& arg)
+{
+	return step_expression::evaluate(arg, m_test);
+}
+
+// --------------------------------------------------------------------
+
+class document_expression : public expression
+{
+  public:
+	virtual object		evaluate(object& arg);
+};
+
+object document_expression::evaluate(object& arg)
+{
+	assert(arg.type() == ot_node_set);
+	assert(arg.as<node_set>().size() == 1);
 	
 	node_set result;
-	result.push_back(context.front().doc());
+	result.push_back(arg.as<node_set>().front().doc());
 
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+class or_expression : public expression
+{
+  public:
+						or_expression(expression_ptr lhs, expression_ptr rhs)
+							: m_lhs(lhs), m_rhs(rhs) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	expression_ptr		m_lhs, m_rhs;
+};
+
+object or_expression::evaluate(object& arg)
+{
+	object v1 = m_lhs->evaluate(arg);
+	object v2 = m_rhs->evaluate(arg);
+	
+	return v1.as<bool>() and v2.as<bool>();
+}
+
+// --------------------------------------------------------------------
+
+class path_expression : public expression
+{
+  public:
+						path_expression(expression_ptr lhs, expression_ptr rhs)
+							: m_lhs(lhs), m_rhs(rhs) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	expression_ptr		m_lhs, m_rhs;
+};
+
+object path_expression::evaluate(object& arg)
+{
+	object v = m_lhs->evaluate(arg);
+	if (v.type() != ot_node_set)
+		throw exception("filter does not evaluate to a node-set");
+	
+	return m_rhs->evaluate(v);
+}
+
+// --------------------------------------------------------------------
+
+class variable_expression : public expression
+{
+  public:
+						variable_expression(const string& name)
+							: m_var(name) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	string				m_var;
+};
+
+object variable_expression::evaluate(object& arg)
+{
+	throw exception("variables are not supported yet");
+	return object();
+}
+
+// --------------------------------------------------------------------
+
+class literal_expression : public expression
+{
+  public:
+						literal_expression(const string& lit)
+							: m_lit(lit) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	string				m_lit;
+};
+
+object literal_expression::evaluate(object& arg)
+{
+	return object(m_lit);
+}
+
+// --------------------------------------------------------------------
+
+class number_expression : public expression
+{
+  public:
+						number_expression(double number)
+							: m_number(number) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	double				m_number;
+};
+
+object number_expression::evaluate(object& arg)
+{
+	return object(m_number);
+}
+
+// --------------------------------------------------------------------
+
+class core_function_expression : public expression
+{
+  public:
+						core_function_expression(int function_nr, expression_list& arguments)
+							: m_function_nr(function_nr), m_args(arguments) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	int					m_function_nr;
+	expression_list		m_args;
+};
+
+object core_function_expression::evaluate(object& arg)
+{
+	object result;
+	
+	switch (m_function_nr)
+	{
+		
+		default: throw exception("unimplemented function ");
+	}
+	
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+class union_expression : public expression
+{
+  public:
+						union_expression(expression_ptr lhs, expression_ptr rhs)
+							: m_lhs(lhs), m_rhs(rhs) {}
+
+	virtual object		evaluate(object& arg);
+
+  private:
+	expression_ptr		m_lhs, m_rhs;
+};
+
+object union_expression::evaluate(object& arg)
+{
+	object v1 = m_lhs->evaluate(arg);
+	object v2 = m_rhs->evaluate(arg);
+	
+	if (v1.type() != ot_node_set or v2.type() != ot_node_set)
+		throw exception("union operator works only on node sets");
+	
+	node_set s1 = v1.as<node_set>();
+	node_set s2 = v2.as<node_set>();
+	
+	copy(s2.begin(), s2.end(), back_inserter(s1));
+	
+	return s1;
+}
+
+// --------------------------------------------------------------------
+
+struct xpath_imp
+{
+						xpath_imp(const string& path);
+						~xpath_imp();
+	
+	node_set			evaluate(node& root);
+
+	void				parse(const string& path);
+	
+	unsigned char		next_byte();
+	wchar_t				get_next_char();
+	void				retract();
+	Token				get_next_token();
+	string				describe_token(Token token);
+	void				match(Token token);
+	
+	expression_ptr		location_path();
+	expression_ptr		absolute_location_path();
+	expression_ptr		relative_location_path();
+	expression_ptr		step();
+	AxisType			axis_specifier();
+	expression_ptr		node_test(AxisType axis);
+//	expression_ptr		predicate();
+//	expression_ptr		predicate_expr();
+	
+//	expression_ptr		abbr_absolute_location_path();
+//	expression_ptr		abbr_relative_location_path();
+//	expression_ptr		abbr_step();
+//	expression_ptr		abbr_axis_specifier();
+	
+	expression_ptr		expr();
+	expression_ptr		primary_expr();
+	expression_ptr		function_call();
+	expression_ptr		argument();
+	
+	expression_ptr		union_expr();
+	expression_ptr		path_expr();
+	expression_ptr		filter_expr();
+
+	expression_ptr		or_expr();
+	expression_ptr		and_expr();
+	expression_ptr		equality_expr();
+	expression_ptr		relational_expr();
+	
+	expression_ptr		additive_expr();
+	expression_ptr		multiplicative_expr();
+	expression_ptr		unary_expr();
+
+	// 
+	struct state {
+		string::const_iterator	begin, next, end;
+	};
+	
+	void				push_state(const string& replacement);
+	void				pop_state();
+
+	static const string	kDoubleSlash;
+
+	string				m_path;
+	string::const_iterator
+						m_begin, m_next, m_end;
+	Token				m_lookahead;
+	string				m_token_string;
+	double				m_token_number;
+	AxisType			m_token_axis;
+	int					m_token_function;
+
+	
+	// the generated expression
+	expression_ptr		m_expr;
+	stack<state>		m_state;
+};
+
+const string xpath_imp::kDoubleSlash("descendant-or-self::node()/");
 
 // --------------------------------------------------------------------
 
@@ -467,9 +730,29 @@ void xpath_imp::parse(const string& path)
 	match(xp_EOF);
 }
 
+void xpath_imp::push_state(const string& replacement)
+{
+	state s = { m_begin, m_next, m_end };
+	m_state.push(s);
+	m_begin = m_next = replacement.begin();
+	m_end = replacement.end();
+}
+
+void xpath_imp::pop_state()
+{
+	m_begin = m_state.top().begin;
+	m_next = m_state.top().next;
+	m_end = m_state.top().end;
+	
+	m_state.pop();
+}
+
 unsigned char xpath_imp::next_byte()
 {
 	char result = 0;
+	
+	while (m_next == m_end and not m_state.empty())
+		pop_state();
 
 	if (m_next < m_end)
 		result = *m_next;
@@ -552,9 +835,10 @@ string xpath_imp::describe_token(Token token)
 		case xp_At:					result << "at sign"; break;
 		case xp_Comma:				result << "comma"; break;
 		case xp_DoubleColon:		result << "double colon"; break;
-		case xp_NameTest:			result << "name test"; break;
-		case xp_NodeType:			result << "node type"; break;
-//		case xp_Operator:			result << "operator"; break;
+		case xp_Name:				result << "name"; break;
+		case xp_AxisName:			result << "axis specification"; break;
+		case xp_FunctionName:		result << "function name"; break;
+		case xp_NodeType:			result << "node type specification"; break;
 		case xp_OperatorUnion:		result << "union operator"; break;
 		case xp_OperatorAdd:		result << "addition operator"; break;
 		case xp_OperatorSubstract:	result << "substraction operator"; break;
@@ -570,8 +854,6 @@ string xpath_imp::describe_token(Token token)
 		case xp_OperatorMod:		result << "modulus operator"; break;
 		case xp_OperatorDiv:		result << "division operator"; break;
 
-		case xp_FunctionName:		result << "function name"; break;
-		case xp_AxisName:			result << "axis name"; break;
 		case xp_Literal:			result << "literal"; break;
 		case xp_Number:				result << "number"; break;
 		case xp_Variable:			result << "variable"; break;
@@ -584,7 +866,7 @@ string xpath_imp::describe_token(Token token)
 	return result.str();
 }
 
-xpath_imp::Token xpath_imp::get_next_token()
+Token xpath_imp::get_next_token()
 {
 	enum State {
 		xps_Start,
@@ -673,7 +955,11 @@ xpath_imp::Token xpath_imp::get_next_token()
 					token = xp_Slash;
 				}
 				else
-					token = xp_DoubleSlash;
+				{
+//					token = xp_DoubleSlash;
+					push_state(kDoubleSlash);
+					token = xp_Slash;
+				}
 				break;
 			
 			case xps_FirstColon:
@@ -762,7 +1048,7 @@ xpath_imp::Token xpath_imp::get_next_token()
 					if (variable)
 						token = xp_Variable;
 					else
-						token = xp_NameTest;
+						token = xp_Name;
 				}
 			
 			case xps_QName:
@@ -775,7 +1061,7 @@ xpath_imp::Token xpath_imp::get_next_token()
 					if (variable)
 						token = xp_Variable;
 					else
-						token = xp_NameTest;
+						token = xp_Name;
 				}
 				break;
 			
@@ -786,22 +1072,51 @@ xpath_imp::Token xpath_imp::get_next_token()
 					if (variable)
 						token = xp_Variable;
 					else
-						token = xp_NameTest;
+						token = xp_Name;
 				}
 				break;
 		}
 	}
 
-	if (token == xp_NameTest)	// see if nametest is actually a keyword
+	if (token == xp_Name)		// we've scanned a name, but it might as well be a function, nodetype or axis
 	{
-		for (const name_test* test = s_names; test->name != nil; ++test)
+		// look forward and see what's ahead
+		
+		for (string::const_iterator c = m_next; c != m_end; ++c)
 		{
-			if (m_token_string == test->name)
+			if (*c == ' ' or *c == '\t' or *c == '\n' or *c == '\r')
+				continue;
+			
+			if (*c == ':' and *(c + 1) == ':')		// it must be an axis specifier
 			{
-				token = Token(test->token);
-				if (token == xp_AxisName)
-					m_token_axis = AxisType(test->value);
+				token = xp_AxisName;
+				
+				const char** a = find(kAxisNames, kAxisNames + ax_Count, m_token_string);
+				if (*a != nil)
+					m_token_axis = AxisType(a - kAxisNames);
+				else
+					throw exception("invalid axis specification %s", m_token_string.c_str());
 			}
+			else if (*c == '(')
+			{
+				if (m_token_string == "comment" or m_token_string == "text" or
+					m_token_string == "processing-instruction" or m_token_string == "node")
+				{
+					token = xp_NodeType;
+				}
+				else
+				{
+					token = xp_FunctionName;
+
+					const char** a = find(kCoreFunctionNames, kCoreFunctionNames + kCoreFunctionCount, m_token_string);
+					if (a != kCoreFunctionNames + kCoreFunctionCount)
+						m_token_function = (a - kCoreFunctionNames);
+					else
+						throw exception("invalid function %s", m_token_string.c_str());
+				}
+			}
+			
+			break;
 		}
 	}
 
@@ -828,52 +1143,40 @@ void xpath_imp::match(Token token)
 	}
 }
 
-void xpath_imp::location_path()
+expression_ptr xpath_imp::location_path()
 {
-	bool double_slash = false;
-	
+	bool absolute = false;
 	if (m_lookahead == xp_Slash)
 	{
-		m_steps.push_back(new document_expression());
+		absolute = true;
 		match(xp_Slash);
 	}
-	else if (m_lookahead == xp_DoubleSlash)
+	
+	expression_ptr result(relative_location_path());
+	
+	if (absolute)
+		result.reset(new path_expression(expression_ptr(new document_expression()), result));
+
+	return result;
+}
+
+expression_ptr xpath_imp::relative_location_path()
+{
+	expression_ptr result(step());
+	
+	while (m_lookahead == xp_Slash)
 	{
-		m_steps.push_back(new document_expression());
-		match(xp_DoubleSlash);
-		
-		double_slash = true;
+		match(xp_Slash);
+		result.reset(new path_expression(result, step()));
 	}
 	
-	relative_location_path(double_slash);
+	return result;
 }
 
-void xpath_imp::relative_location_path(bool double_slash)
+expression_ptr xpath_imp::step()
 {
-	for (;;)
-	{
-		step(double_slash);
-		
-		if (m_lookahead == xp_Slash)
-		{
-			match(xp_Slash);
-			double_slash = false;
-			continue;
-		}
-		
-		if (m_lookahead == xp_DoubleSlash)
-		{
-			match(xp_DoubleSlash);
-			double_slash = true;
-			continue;
-		}
-
-		break;
-	}
-}
-
-void xpath_imp::step(bool double_slash)
-{
+	expression_ptr result;
+	
 	// abbreviated steps
 	if (m_lookahead == xp_Dot)
 		;
@@ -881,25 +1184,22 @@ void xpath_imp::step(bool double_slash)
 		;
 	else
 	{
-		AxisType axis;
-		
-		if (double_slash)
-			axis = ax_Descendant;
-		else
-			axis = axis_specifier();
-
-		node_test(axis);
+		AxisType axis = axis_specifier();
+		result = node_test(axis);
+		step_expression* step = static_cast<step_expression*>(result.get());
 		
 		while (m_lookahead == xp_LeftBracket)
 		{
 			match(xp_LeftBracket);
-			expr();
+			step->add_predicate(expr());
 			match(xp_RightBracket);
 		}
 	}
+	
+	return result;
 }
 
-xpath_imp::AxisType xpath_imp::axis_specifier()
+AxisType xpath_imp::axis_specifier()
 {
 	AxisType result = ax_Child;
 	
@@ -918,84 +1218,102 @@ xpath_imp::AxisType xpath_imp::axis_specifier()
 	return result;
 }
 
-void xpath_imp::node_test(AxisType axis)
+expression_ptr xpath_imp::node_test(AxisType axis)
 {
-	if (m_lookahead == xp_NodeType)
+	expression_ptr result;
+	
+	if (m_lookahead == xp_Asterisk)
 	{
-		string nodeType = m_token_string;
-		
-		match(xp_NodeType);
-		match(xp_LeftParenthesis);
-		
-		if (nodeType == "processing-instruction")
-			match(xp_Literal);
-		
-		match(xp_RightParenthesis);
-	}
-	else if (m_lookahead == xp_Asterisk)
-	{
-		m_steps.push_back(new name_test_step_expression(axis, m_token_string));
+		result.reset(new name_test_step_expression(axis, m_token_string));
 		match(xp_Asterisk);
+	}
+	else if (m_lookahead == xp_NodeType)
+	{
+		// see if the name is followed by a parenthesis, if so, it must be a nodetype function
+		string name = m_token_string;
+		match(xp_NodeType);
+		
+		if (name == "comment")
+			result.reset(new node_type_expression<comment>(axis));
+		else if (name == "text")
+			result.reset(new node_type_expression<text>(axis));
+		else if (name == "processing-instruction")
+			result.reset(new node_type_expression<processing_instruction>(axis));
+		else if (name == "node")
+			result.reset(new node_type_expression<node>(axis));
+		else
+			throw exception("invalid node type specified: %s", name.c_str());
 	}
 	else
 	{
-		m_steps.push_back(new name_test_step_expression(axis, m_token_string));
-		match(xp_NameTest);
+		result.reset(new name_test_step_expression(axis, m_token_string));
+		match(xp_Name);
 	}
 }
 
-void xpath_imp::expr()
+expression_ptr xpath_imp::expr()
 {
-	for (;;)
+	expression_ptr result(and_expr());
+
+	while (m_lookahead == xp_OperatorOr)
 	{
-		and_expr();
-		if (m_lookahead == xp_OperatorOr)
-			match(xp_OperatorOr);
-		else
-			break;
+		match(xp_OperatorOr);
+		result.reset(new or_expression(result, and_expr()));
 	}
+	
+	return result;
 }
 
-void xpath_imp::primary_expr()
+expression_ptr xpath_imp::primary_expr()
 {
+	expression_ptr result;
+	
 	switch (m_lookahead)
 	{
 		case xp_Variable:
+			result.reset(new variable_expression(m_token_string));
 			match(xp_Variable);
 			break;
 		
 		case xp_LeftParenthesis:
 			match(xp_LeftParenthesis);
-			expr();
+			result = expr();
 			match(xp_RightParenthesis);
 			break;
 			
 		case xp_Literal:
+			result.reset(new literal_expression(m_token_string));
 			match(xp_Literal);
 			break;
 		
 		case xp_Number:
+			result.reset(new number_expression(m_token_number));
 			match(xp_Number);
 			break;
 		
 		case xp_FunctionName:
-			function_call();
+			result = function_call();
 			break;
 		
 		default:
 			throw exception("invalid primary expression in xpath");
 	}
+	
+	return result;
 }
 
-void xpath_imp::function_call()
+expression_ptr xpath_imp::function_call()
 {
 	match(xp_FunctionName);
 	match(xp_LeftParenthesis);
+	
+	expression_list arguments;
+	
 	if (m_lookahead != xp_RightParenthesis)
 	{
 		for (;;)
 		{
-			expr();
+			arguments.push_back(expr());
 			if (m_lookahead == xp_Comma)
 				match(xp_Comma);
 			else
@@ -1003,108 +1321,112 @@ void xpath_imp::function_call()
 		}
 	}
 	match(xp_RightParenthesis);
+	
+	return expression_ptr(new core_function_expression(m_token_function, arguments));
 }
 
-void xpath_imp::union_expr()
+expression_ptr xpath_imp::union_expr()
 {
-	for (;;)
+	expression_ptr result(path_expr());
+	
+	while (m_lookahead == xp_OperatorUnion)
 	{
-		path_expr();
-		if (m_lookahead == xp_OperatorUnion)
-			match(m_lookahead);
-		else
-			break;
+		match(m_lookahead);
+		result.reset(new union_expression(result, path_expr()));
 	}
+	
+	return result;
 }
 
-void xpath_imp::path_expr()
+expression_ptr xpath_imp::path_expr()
 {
+	expression_ptr result;
+	
 	if (m_lookahead == xp_Variable or m_lookahead == xp_LeftParenthesis or
 		m_lookahead == xp_Literal or m_lookahead == xp_Number or m_lookahead == xp_FunctionName)
 	{
-		for (;;)
+		result = filter_expr();
+		
+		if (m_lookahead == xp_Slash)
 		{
-			filter_expr();
-			if (m_lookahead == xp_Slash)
-			{
-				match(xp_Slash);
-				relative_location_path(false);
-			}
-			else if (m_lookahead == xp_DoubleSlash)
-			{
-				match(xp_DoubleSlash);
-				relative_location_path(true);
-			}
-			else
-				break;
+			match(xp_Slash);
+			result.reset(new path_expression(result, relative_location_path()));
 		}
 	}
 	else
-		location_path();
+		result = location_path();
+	
+	return result;
 }
 
-void xpath_imp::filter_expr()
+expression_ptr xpath_imp::filter_expr()
 {
-	primary_expr();
+	expression_ptr result(primary_expr());
+
 	while (m_lookahead == xp_LeftBracket)
 	{
 		match(xp_LeftBracket);
-		expr();
+		result.reset(new path_expression(result, expr()));
 		match(xp_RightBracket);
 	}
+
+	return result;
 }
 
-void xpath_imp::and_expr()
+expression_ptr xpath_imp::and_expr()
 {
-	for (;;)
+	expression_ptr result(equality_expr());
+	
+	while (m_lookahead == xp_OperatorAnd)
 	{
-		equality_expr();
-		if (m_lookahead == xp_OperatorAnd)
-			match(xp_OperatorAnd);
-		else
-			break;
+		match(xp_OperatorAnd);
+		result.reset(new operator_expression(result, relational_expr(), xp_OperatorAnd));
 	}
+
+	return result;
 }
 
 void xpath_imp::equality_expr()
 {
-	for (;;)
+	expression_ptr result(relational_expr());
+
+	while (m_lookahead == xp_OperatorEqual or m_lookahead == xp_OperatorNotEqual)
 	{
-		relational_expr();
-		if (m_lookahead == xp_OperatorEqual)
-			match(xp_OperatorEqual);
-		else if (m_lookahead == xp_OperatorNotEqual)
-			match(xp_OperatorNotEqual);
-		else
-			break;
+		Token op = m_lookahead;
+		match(m_lookahead);
+		result.reset(new operator_expression(result, relational_expr(), op));
 	}
+	
+	return result;
 }
 
 void xpath_imp::relational_expr()
 {
-	for (;;)
+	expression_ptr result(additive_expr());
+
+	while (m_lookahead == xp_OperatorLess or m_lookahead == xp_OperatorLessOrEqual or
+		   m_lookahead == xp_OperatorGreater or m_lookahead == xp_OperatorGreaterOrEqual)
 	{
-		additive_expr();
-		if (m_lookahead == xp_OperatorLess or m_lookahead == xp_OperatorLessOrEqual or
-			m_lookahead == xp_OperatorGreater or m_lookahead == xp_OperatorGreaterOrEqual)
-		{
-			match(m_lookahead);
-		}
-		else
-			break;
+		Token op = m_lookahead;
+		match(m_lookahead);
+		result.reset(new operator_expression(result, additive_expr(), op));
 	}
+	
+	return result;
 }
 
 void xpath_imp::additive_expr()
 {
-	for (;;)
+	expression_ptr result(multiplicative_expr());
+	
+	while (m_lookahead == xp_OperatorAdd or m_lookahead == xp_OperatorSubstract)
 	{
-		multiplicative_expr();
-		if (m_lookahead == xp_OperatorAdd or m_lookahead == xp_OperatorSubstract)
-			match(m_lookahead);
-		else
-			break;
+		Token op = m_lookahead;
+		match(m_lookahead);
+		result.reset(new operator_expression(result, multiplicative_expr(), op));
 	}
+	
+	return result;
 }
 
 void xpath_imp::multiplicative_expr()
