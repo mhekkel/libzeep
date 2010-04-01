@@ -25,7 +25,15 @@ extern int VERBOSE;
 
 using namespace std;
 
+
 namespace zeep { namespace xml {
+
+// debug code
+ostream& operator<<(ostream& lhs, const node* rhs)
+{
+	lhs << *rhs;
+	return lhs;
+}
 
 // --------------------------------------------------------------------
 
@@ -58,6 +66,8 @@ enum Token {
 	xp_OperatorLessOrEqual,
 	xp_OperatorGreater,
 	xp_OperatorGreaterOrEqual,
+
+	// next four operators are pseudo tokens, i.e. they are returned as xp_Name from get_next_token
 	xp_OperatorAnd,
 	xp_OperatorOr,
 	xp_OperatorMod,
@@ -70,7 +80,8 @@ enum Token {
 	xp_Colon
 };
 
-enum AxisType {
+enum AxisType
+{
 	ax_Ancestor,
 	ax_AncestorOrSelf,
 	ax_Attribute,
@@ -88,7 +99,8 @@ enum AxisType {
 	ax_Count
 };
 
-const char* kAxisNames[] = {
+const char* kAxisNames[] =
+{
 	"ancestor",
 	"ancestor-or-self",
 	"attribute",
@@ -105,12 +117,41 @@ const char* kAxisNames[] = {
 	nil
 };
 
-//	{ "and",					xp_OperatorAnd,	0 },
-//	{ "or",						xp_OperatorOr,	0 },
-//	{ "mod",					xp_OperatorMod,	0 },
-//	{ "div",					xp_OperatorDiv,	0 },
+enum CoreFunction
+{
+	cf_Last,
+	cf_Position,
+	cf_Count,
+	cf_Id,
+	cf_LocalName,
+	cf_NamespaceUri,
+	cf_Name,
+	cf_String,
+	cf_Concat,
+	cf_StartsWith,
+	cf_Contains,
+	cf_SubstringBefore,
+	cf_SubstringAfter,
+	cf_StringLength,
+	cf_NormalizeSpace,
+	cf_Translate,
+	cf_Boolean,
+	cf_Not,
+	cf_True,
+	cf_False,
+	cf_Lang,
+	cf_Number,
+	cf_Sum,
+	cf_Floor,
+	cf_Ceiling,
+	cf_Round,
+	cf_Comment,
+	
+	cf_CoreFunctionCount
+};
 
-const char* kCoreFunctionNames[] = {
+const char* kCoreFunctionNames[] =
+{
 	"last",
 	"position",
 	"count",
@@ -140,8 +181,6 @@ const char* kCoreFunctionNames[] = {
 	"comment",
 };
 
-const int kCoreFunctionCount = sizeof(kCoreFunctionNames) / sizeof(const char*);
-
 // the expressions implemented as interpreter objects
 
 enum object_type
@@ -164,7 +203,10 @@ class object
 						object(const object& o);
 	object&				operator=(const object& o);
 
-	object_type			type() const;
+	bool				operator==(const object o);
+	bool				operator<(const object o);
+
+	object_type			type() const					{ return m_type; }
 
 	template<typename T>
 	T&					as();
@@ -177,12 +219,125 @@ class object
 	string				m_string;
 };
 
+object operator%(const object& lhs, const object& rhs);
+object operator/(const object& lhs, const object& rhs);
+object operator+(const object& lhs, const object& rhs);
+object operator-(const object& lhs, const object& rhs);
+
+object::object()
+	: m_type(ot_undef)
+{
+}
+
+object::object(node_set ns)
+	: m_type(ot_node_set)
+	, m_node_set(ns)
+{
+}
+
+object::object(bool b)
+	: m_type(ot_boolean)
+	, m_boolean(b)
+{
+}
+
+object::object(double n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(const string& s)
+	: m_type(ot_string)
+	, m_string(s)
+{
+}
+
+object::object(const object& o)
+	: m_type(o.m_type)
+{
+	switch (m_type)
+	{
+		case ot_node_set:	m_node_set = o.m_node_set; break;
+		case ot_boolean:	m_boolean = o.m_boolean; break;
+		case ot_number:		m_number = o.m_number; break;
+		case ot_string:		m_string = o.m_string; break;
+		default: 			break;
+	}
+}
+
+object& object::operator=(const object& o)
+{
+	m_type = o.m_type;
+	switch (m_type)
+	{
+		case ot_node_set:	m_node_set = o.m_node_set; break;
+		case ot_boolean:	m_boolean = o.m_boolean; break;
+		case ot_number:		m_number = o.m_number; break;
+		case ot_string:		m_string = o.m_string; break;
+		default: 			break;
+	}
+	return *this;
+}
+
+bool object::operator==(const object o)
+{
+	bool result = true;
+	switch (m_type)
+	{
+		case ot_node_set:	result = m_node_set == o.m_node_set; break;
+		case ot_boolean:	result = m_boolean == o.m_boolean; break;
+		case ot_number:		result = m_number == o.m_number; break;
+		case ot_string:		result = m_string == o.m_string; break;
+		default: 			break;
+	}
+	return result;
+}
+
+bool object::operator<(const object o)
+{
+	bool result = true;
+	switch (m_type)
+	{
+		case ot_node_set:	result = m_node_set < o.m_node_set; break;
+		case ot_boolean:	result = m_boolean < o.m_boolean; break;
+		case ot_number:		result = m_number < o.m_number; break;
+		case ot_string:		result = m_string < o.m_string; break;
+		default: 			break;
+	}
+	return result;
+}
+
 template<>
 node_set& object::as<node_set>()
 {
 	if (m_type != ot_node_set)
 		throw exception("object is not of type node-set");
 	return m_node_set;
+}
+
+template<>
+bool& object::as<bool>()
+{
+	if (m_type != ot_boolean)
+		throw exception("object is not of type boolean");
+	return m_boolean;
+}
+
+template<>
+double& object::as<double>()
+{
+	if (m_type != ot_number)
+		throw exception("object is not of type number");
+	return m_number;
+}
+
+template<>
+string& object::as<string>()
+{
+	if (m_type != ot_string)
+		throw exception("object is not of type string");
+	return m_string;
 }
 
 // --------------------------------------------------------------------
@@ -196,7 +351,7 @@ void iterate_children(element* context, node_set& s, bool deep, PREDICATE pred)
 		if (e == nil)
 			continue;
 
-		if (s.count(child) > 0)
+		if (find(s.begin(), s.end(), child) != s.end())
 			continue;
 
 		if (pred(e))
@@ -283,12 +438,110 @@ void iterate_following(node* n, node_set& s, bool sibling, PREDICATE pred)
 }
 
 // --------------------------------------------------------------------
+// context for the expressions
+
+struct expression_context
+{
+//						context(node* n, node_set& s)
+//							: m_node(n), m_node_set(s) {}
+
+						expression_context(node* n, node_set& s)
+							: m_node(n), m_node_set(s) {}
+
+	void				dump();
+	
+	int					position() const;
+	int					last() const;
+	
+	node*				m_node;
+	node_set&			m_node_set;
+};
+
+int expression_context::position() const
+{
+	int result = 0;
+	foreach (const node* n, m_node_set)
+	{
+		++result;
+		if (n == m_node)
+			break;
+	}
+
+	if (result == 0)
+		throw exception("invalid context for position");
+
+	return result;
+}
+
+int expression_context::last() const
+{
+	return m_node_set.size();
+}
+
+void expression_context::dump()
+{
+	cout << "context node: " << *m_node << endl
+		 << "context node-set: ";
+	copy(m_node_set.begin(), m_node_set.end(), ostream_iterator<node*>(cout, ", "));
+	cout << endl;
+}
+
+ostream& operator<<(ostream& lhs, expression_context& rhs)
+{
+	rhs.dump();
+	return lhs;
+}
+
+#if 0
+// --------------------------------------------------------------------
+
+struct trace
+{
+				trace(const char* func, expression_context& context)
+					: m_func(func)
+					, m_context(context)
+				{
+					for (int i = 0; i < s_nesting_level; ++i)
+						cout << "  ";
+					cout << m_func << endl << m_context << endl;
+					++s_nesting_level;
+				}
+		
+				~trace()
+				{
+					--s_nesting_level;
+					for (int i = 0; i < s_nesting_level; ++i)
+						cout << "  ";
+					cout << '~' << m_func << endl << m_context << endl;
+				}
+
+	const char*	m_func;
+	expression_context&
+				m_context;
+	static int	s_nesting_level;
+};
+
+int trace::s_nesting_level;
+
+#define TRACE	trace trace(BOOST_CURRENT_FUNCTION, context);
+#else
+#define TRACE
+#endif
+
+void indent(int level)
+{
+	while (level-- > 0) cout << ' ';
+}
+
+// --------------------------------------------------------------------
 
 class expression
 {
   public:
 	virtual				~expression() {}
-	virtual object		evaluate(object& context) = 0;
+	virtual object		evaluate(expression_context& context) = 0;
+
+	virtual void		print(int level) = 0;
 };
 
 typedef boost::shared_ptr<expression>	expression_ptr;
@@ -304,85 +557,78 @@ class step_expression : public expression
   protected:
 
 	template<typename T>
-	object				evaluate(object& arg, T pred);
+	object				evaluate(expression_context& context, T pred);
 
 	AxisType			m_axis;
 };
 
 template<typename T>
-object step_expression::evaluate(object& arg, T pred)
+object step_expression::evaluate(expression_context& context, T pred)
 {
+	TRACE
 	node_set result;
 	
-	if (arg.type() != ot_node_set)
-		throw exception("expected node-set in step expression");
-	
-	node_set context_set = arg.as<node_set>();
-
-	foreach (node& context, context_set)
+	element* context_element = dynamic_cast<element*>(context.m_node);
+	if (context_element != nil)
 	{
-		element* context_element = dynamic_cast<element*>(&context);
-		if (context_element != nil)
+		switch (m_axis)
 		{
-			switch (m_axis)
-			{
-				case ax_Parent:
-					if (context_element->parent() != nil)
-					{
-						element* e = static_cast<element*>(context_element->parent());
-						if (pred(e))
-							result.push_back(context_element->parent());
-					}
-					break;
-				
-				case ax_Ancestor:
-					iterate_ancestor(context_element, result, pred);
-					break;
-
-				case ax_AncestorOrSelf:
-					if (pred(context_element))
-						result.push_back(context_element);
-					iterate_ancestor(context_element, result, pred);
-					break;
-				
-				case ax_Self:
-					if (pred(context_element))
-						result.push_back(context_element);
-					break;
-				
-				case ax_Child:
-					iterate_children(context_element, result, false, pred);
-					break;
-	
-				case ax_Descendant:
-					iterate_children(context_element, result, true, pred);
-					break;
-
-				case ax_DescendantOrSelf:
-					if (pred(context_element))
-						result.push_back(context_element);
-					iterate_children(context_element, result, true, pred);
-					break;
-				
-				case ax_Following:
-					iterate_following(context_element, result, false, pred);
-					break;
-
-				case ax_FollowingSibling:
-					iterate_following(context_element, result, true, pred);
-					break;
+			case ax_Parent:
+				if (context_element->parent() != nil)
+				{
+					element* e = static_cast<element*>(context_element->parent());
+					if (pred(e))
+						result.push_back(context_element->parent());
+				}
+				break;
 			
-				case ax_Preceding:
-					iterate_preceding(context_element, result, false, pred);
-					break;
-
-				case ax_PrecedingSibling:
-					iterate_preceding(context_element, result, true, pred);
-					break;
+			case ax_Ancestor:
+				iterate_ancestor(context_element, result, pred);
+				break;
 	
-				default:
-					throw exception("unimplemented axis");
-			}
+			case ax_AncestorOrSelf:
+				if (pred(context_element))
+					result.push_back(context_element);
+				iterate_ancestor(context_element, result, pred);
+				break;
+			
+			case ax_Self:
+				if (pred(context_element))
+					result.push_back(context_element);
+				break;
+			
+			case ax_Child:
+				iterate_children(context_element, result, false, pred);
+				break;
+	
+			case ax_Descendant:
+				iterate_children(context_element, result, true, pred);
+				break;
+	
+			case ax_DescendantOrSelf:
+				if (pred(context_element))
+					result.push_back(context_element);
+				iterate_children(context_element, result, true, pred);
+				break;
+			
+			case ax_Following:
+				iterate_following(context_element, result, false, pred);
+				break;
+	
+			case ax_FollowingSibling:
+				iterate_following(context_element, result, true, pred);
+				break;
+		
+			case ax_Preceding:
+				iterate_preceding(context_element, result, false, pred);
+				break;
+	
+			case ax_PrecedingSibling:
+				iterate_preceding(context_element, result, true, pred);
+				break;
+	
+			default:
+				throw exception("unimplemented axis");
 		}
 	}
 
@@ -404,7 +650,9 @@ class name_test_step_expression : public step_expression
 								m_test = boost::bind(&element::name, _1) == m_name;
 						}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "name test step " << m_name << endl; }
 
   protected:
 
@@ -414,9 +662,10 @@ class name_test_step_expression : public step_expression
 	boost::function<bool(const element*)>	m_test;
 };
 
-object name_test_step_expression::evaluate(object& arg)
+object name_test_step_expression::evaluate(expression_context& context)
 {
-	return step_expression::evaluate(arg, m_test);
+	TRACE
+	return step_expression::evaluate(context, m_test);
 }
 
 // --------------------------------------------------------------------
@@ -431,21 +680,21 @@ class node_type_expression : public step_expression
 							m_test = boost::bind(&node_type_expression::test, _1);
 						}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "node type step " << typeid(T).name() << endl; }
 
   private:
-	static bool			test(const node* n)
-						{
-							return dynamic_cast<T*>(n) != nil;
-						}
+	static bool			test(const node* n)					{ return dynamic_cast<const T*>(n) != nil; }
 
 	boost::function<bool(const element*)>	m_test;
 };
 
 template<typename T>
-object node_type_expression<T>::evaluate(object& arg)
+object node_type_expression<T>::evaluate(expression_context& context)
 {
-	return step_expression::evaluate(arg, m_test);
+	TRACE
+	return step_expression::evaluate(context, m_test);
 }
 
 // --------------------------------------------------------------------
@@ -453,40 +702,183 @@ object node_type_expression<T>::evaluate(object& arg)
 class document_expression : public expression
 {
   public:
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "document" << endl; }
 };
 
-object document_expression::evaluate(object& arg)
+object document_expression::evaluate(expression_context& context)
 {
-	assert(arg.type() == ot_node_set);
-	assert(arg.as<node_set>().size() == 1);
-	
+	TRACE
 	node_set result;
-	result.push_back(arg.as<node_set>().front().doc());
-
+	result.push_back(context.m_node->doc());
 	return result;
 }
 
 // --------------------------------------------------------------------
 
-class or_expression : public expression
+template<Token OP>
+class operator_expression : public expression
 {
   public:
-						or_expression(expression_ptr lhs, expression_ptr rhs)
+						operator_expression(expression_ptr lhs, expression_ptr rhs)
 							: m_lhs(lhs), m_rhs(rhs) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level)
+						{
+							indent(level);
+							cout << "operator " << typeid(OP).name() << endl;
+							m_lhs->print(level + 1);
+							m_rhs->print(level + 1);
+						}
 
   private:
 	expression_ptr		m_lhs, m_rhs;
 };
 
-object or_expression::evaluate(object& arg)
+template<>
+object operator_expression<xp_OperatorAdd>::evaluate(expression_context& context)
 {
-	object v1 = m_lhs->evaluate(arg);
-	object v2 = m_rhs->evaluate(arg);
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1.as<double>() + v2.as<double>();
+}
+
+template<>
+object operator_expression<xp_OperatorSubstract>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1.as<double>() - v2.as<double>();
+}
+
+template<>
+object operator_expression<xp_OperatorEqual>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1 == v2;
+}
+
+template<>
+object operator_expression<xp_OperatorNotEqual>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return not (v1 == v2);
+}
+
+template<>
+object operator_expression<xp_OperatorLess>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1 < v2;
+}
+
+template<>
+object operator_expression<xp_OperatorLessOrEqual>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1 < v2 or v1 == v2;
+}
+
+template<>
+object operator_expression<xp_OperatorGreater>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v2 < v1;
+}
+
+template<>
+object operator_expression<xp_OperatorGreaterOrEqual>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v2 < v1 or v1 == v2;
+}
+
+template<>
+object operator_expression<xp_OperatorAnd>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
 	
 	return v1.as<bool>() and v2.as<bool>();
+}
+
+template<>
+object operator_expression<xp_OperatorOr>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1.as<bool>() or v2.as<bool>();
+}
+
+template<>
+object operator_expression<xp_OperatorMod>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return double(int(v1.as<double>()) % int(v2.as<double>()));
+}
+
+template<>
+object operator_expression<xp_OperatorDiv>::evaluate(expression_context& context)
+{
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1.as<double>() / v2.as<double>();
+}
+
+// --------------------------------------------------------------------
+
+class negate_expression : public expression
+{
+  public:
+						negate_expression(expression_ptr expr)
+							: m_expr(expr) {}
+
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "negate" << endl; m_expr->print(level + 1); }
+
+  private:
+	expression_ptr		m_expr;
+};
+
+object negate_expression::evaluate(expression_context& context)
+{
+	TRACE
+	object v = m_expr->evaluate(context);
+	return -v.as<double>();
 }
 
 // --------------------------------------------------------------------
@@ -497,19 +889,79 @@ class path_expression : public expression
 						path_expression(expression_ptr lhs, expression_ptr rhs)
 							: m_lhs(lhs), m_rhs(rhs) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level)
+						{
+							indent(level);
+							cout << "path" << endl;
+							m_lhs->print(level + 1);
+							m_rhs->print(level + 1);
+						}
 
   private:
 	expression_ptr		m_lhs, m_rhs;
 };
 
-object path_expression::evaluate(object& arg)
+object path_expression::evaluate(expression_context& context)
 {
-	object v = m_lhs->evaluate(arg);
+	TRACE
+	object v = m_lhs->evaluate(context);
 	if (v.type() != ot_node_set)
 		throw exception("filter does not evaluate to a node-set");
 	
-	return m_rhs->evaluate(v);
+	node_set result;
+	foreach (node* n, v.as<node_set>())
+	{
+		expression_context ctxt(n, v.as<node_set>());
+		
+		node_set s = m_rhs->evaluate(ctxt).as<node_set>();
+
+		copy(s.begin(), s.end(), back_inserter(result));
+	}
+	
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+class predicate_expression : public expression
+{
+  public:
+						predicate_expression(expression_ptr path, expression_ptr pred)
+							: m_path(path), m_pred(pred) {}
+
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level)
+						{
+							indent(level);
+							cout << "predicate" << endl;
+							m_path->print(level + 1);
+							m_pred->print(level + 1);
+						}
+
+  private:
+	expression_ptr		m_path, m_pred;
+};
+
+object predicate_expression::evaluate(expression_context& context)
+{
+	TRACE
+	object v = m_path->evaluate(context);
+	
+	node_set result;
+	
+	foreach (node* n, v.as<node_set>())
+	{
+		expression_context ctxt(n, v.as<node_set>());
+		
+		object test = m_pred->evaluate(ctxt);
+		if (test.as<bool>())
+			result.push_back(n);
+	}
+	
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -520,14 +972,17 @@ class variable_expression : public expression
 						variable_expression(const string& name)
 							: m_var(name) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "variable " << m_var << endl; }
 
   private:
 	string				m_var;
 };
 
-object variable_expression::evaluate(object& arg)
+object variable_expression::evaluate(expression_context& context)
 {
+	TRACE
 	throw exception("variables are not supported yet");
 	return object();
 }
@@ -540,14 +995,17 @@ class literal_expression : public expression
 						literal_expression(const string& lit)
 							: m_lit(lit) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "literal " << m_lit << endl; }
 
   private:
 	string				m_lit;
 };
 
-object literal_expression::evaluate(object& arg)
+object literal_expression::evaluate(expression_context& context)
 {
+	TRACE
 	return object(m_lit);
 }
 
@@ -559,43 +1017,63 @@ class number_expression : public expression
 						number_expression(double number)
 							: m_number(number) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level) { indent(level); cout << "number " << m_number << endl; }
 
   private:
 	double				m_number;
 };
 
-object number_expression::evaluate(object& arg)
+object number_expression::evaluate(expression_context& context)
 {
+	TRACE
 	return object(m_number);
 }
 
 // --------------------------------------------------------------------
 
+template<CoreFunction CF>
 class core_function_expression : public expression
 {
   public:
-						core_function_expression(int function_nr, expression_list& arguments)
-							: m_function_nr(function_nr), m_args(arguments) {}
+						core_function_expression(expression_list& arguments)
+							: m_args(arguments) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level)
+						{
+							indent(level);
+							cout << "function call " << typeid(CF).name() << endl;
+							for_each(m_args.begin(), m_args.end(),
+								boost::bind(&expression::print, _1, level + 1));
+						}
 
   private:
-	int					m_function_nr;
 	expression_list		m_args;
 };
 
-object core_function_expression::evaluate(object& arg)
+template<CoreFunction CF>
+object core_function_expression<CF>::evaluate(expression_context& context)
 {
-	object result;
-	
-	switch (m_function_nr)
-	{
-		
-		default: throw exception("unimplemented function ");
-	}
-	
-	return result;
+	TRACE
+	throw exception("unimplemented function ");
+	return object();
+}
+
+template<>
+object core_function_expression<cf_Position>::evaluate(expression_context& context)
+{
+	TRACE
+	return object(double(context.position()));
+}
+
+template<>
+object core_function_expression<cf_Last>::evaluate(expression_context& context)
+{
+	TRACE
+	return object(double(context.last()));
 }
 
 // --------------------------------------------------------------------
@@ -606,16 +1084,25 @@ class union_expression : public expression
 						union_expression(expression_ptr lhs, expression_ptr rhs)
 							: m_lhs(lhs), m_rhs(rhs) {}
 
-	virtual object		evaluate(object& arg);
+	virtual object		evaluate(expression_context& context);
+
+	virtual void		print(int level)
+						{
+							indent(level);
+							cout << "union" << endl;
+							m_lhs->print(level + 1);
+							m_rhs->print(level + 1);
+						}
 
   private:
 	expression_ptr		m_lhs, m_rhs;
 };
 
-object union_expression::evaluate(object& arg)
+object union_expression::evaluate(expression_context& context)
 {
-	object v1 = m_lhs->evaluate(arg);
-	object v2 = m_rhs->evaluate(arg);
+	TRACE
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
 	
 	if (v1.type() != ot_node_set or v2.type() != ot_node_set)
 		throw exception("union operator works only on node sets");
@@ -695,7 +1182,7 @@ struct xpath_imp
 	string				m_token_string;
 	double				m_token_number;
 	AxisType			m_token_axis;
-	int					m_token_function;
+	CoreFunction		m_token_function;
 
 	
 	// the generated expression
@@ -725,7 +1212,10 @@ void xpath_imp::parse(const string& path)
 	m_end = path.end();
 	
 	m_lookahead = get_next_token();
-	location_path();
+	m_expr = location_path();
+
+	if (VERBOSE)
+		m_expr->print(0);
 
 	match(xp_EOF);
 }
@@ -1108,9 +1598,9 @@ Token xpath_imp::get_next_token()
 				{
 					token = xp_FunctionName;
 
-					const char** a = find(kCoreFunctionNames, kCoreFunctionNames + kCoreFunctionCount, m_token_string);
-					if (a != kCoreFunctionNames + kCoreFunctionCount)
-						m_token_function = (a - kCoreFunctionNames);
+					const char** a = find(kCoreFunctionNames, kCoreFunctionNames + cf_CoreFunctionCount, m_token_string);
+					if (a != kCoreFunctionNames + cf_CoreFunctionCount)
+						m_token_function = CoreFunction(a - kCoreFunctionNames);
 					else
 						throw exception("invalid function %s", m_token_string.c_str());
 				}
@@ -1186,12 +1676,11 @@ expression_ptr xpath_imp::step()
 	{
 		AxisType axis = axis_specifier();
 		result = node_test(axis);
-		step_expression* step = static_cast<step_expression*>(result.get());
 		
 		while (m_lookahead == xp_LeftBracket)
 		{
 			match(xp_LeftBracket);
-			step->add_predicate(expr());
+			result.reset(new predicate_expression(result, expr()));
 			match(xp_RightBracket);
 		}
 	}
@@ -1232,6 +1721,8 @@ expression_ptr xpath_imp::node_test(AxisType axis)
 		// see if the name is followed by a parenthesis, if so, it must be a nodetype function
 		string name = m_token_string;
 		match(xp_NodeType);
+		match(xp_LeftParenthesis);
+		match(xp_RightParenthesis);
 		
 		if (name == "comment")
 			result.reset(new node_type_expression<comment>(axis));
@@ -1249,16 +1740,18 @@ expression_ptr xpath_imp::node_test(AxisType axis)
 		result.reset(new name_test_step_expression(axis, m_token_string));
 		match(xp_Name);
 	}
+	
+	return result;
 }
 
 expression_ptr xpath_imp::expr()
 {
 	expression_ptr result(and_expr());
 
-	while (m_lookahead == xp_OperatorOr)
+	while (m_lookahead == xp_Name and m_token_string == "or")
 	{
-		match(xp_OperatorOr);
-		result.reset(new or_expression(result, and_expr()));
+		match(xp_Name);
+		result.reset(new operator_expression<xp_OperatorOr>(result, and_expr()));
 	}
 	
 	return result;
@@ -1322,7 +1815,41 @@ expression_ptr xpath_imp::function_call()
 	}
 	match(xp_RightParenthesis);
 	
-	return expression_ptr(new core_function_expression(m_token_function, arguments));
+	expression_ptr result;
+	
+	switch (m_token_function)
+	{
+		case cf_Last:			result.reset(new core_function_expression<cf_Last>(arguments)); break;
+		case cf_Position:		result.reset(new core_function_expression<cf_Position>(arguments)); break;
+		case cf_Count:			result.reset(new core_function_expression<cf_Count>(arguments)); break;
+		case cf_Id:				result.reset(new core_function_expression<cf_Id>(arguments)); break;
+		case cf_LocalName:		result.reset(new core_function_expression<cf_LocalName>(arguments)); break;
+		case cf_NamespaceUri:	result.reset(new core_function_expression<cf_NamespaceUri>(arguments)); break;
+		case cf_Name:			result.reset(new core_function_expression<cf_Name>(arguments)); break;
+		case cf_String:			result.reset(new core_function_expression<cf_String>(arguments)); break;
+		case cf_Concat:			result.reset(new core_function_expression<cf_Concat>(arguments)); break;
+		case cf_StartsWith:		result.reset(new core_function_expression<cf_StartsWith>(arguments)); break;
+		case cf_Contains:		result.reset(new core_function_expression<cf_Contains>(arguments)); break;
+		case cf_SubstringBefore:result.reset(new core_function_expression<cf_SubstringBefore>(arguments)); break;
+		case cf_SubstringAfter:	result.reset(new core_function_expression<cf_SubstringAfter>(arguments)); break;
+		case cf_StringLength:	result.reset(new core_function_expression<cf_StringLength>(arguments)); break;
+		case cf_NormalizeSpace:	result.reset(new core_function_expression<cf_NormalizeSpace>(arguments)); break;
+		case cf_Translate:		result.reset(new core_function_expression<cf_Translate>(arguments)); break;
+		case cf_Boolean:		result.reset(new core_function_expression<cf_Boolean>(arguments)); break;
+		case cf_Not:			result.reset(new core_function_expression<cf_Not>(arguments)); break;
+		case cf_True:			result.reset(new core_function_expression<cf_True>(arguments)); break;
+		case cf_False:			result.reset(new core_function_expression<cf_False>(arguments)); break;
+		case cf_Lang:			result.reset(new core_function_expression<cf_Lang>(arguments)); break;
+		case cf_Number:			result.reset(new core_function_expression<cf_Number>(arguments)); break;
+		case cf_Sum:			result.reset(new core_function_expression<cf_Sum>(arguments)); break;
+		case cf_Floor:			result.reset(new core_function_expression<cf_Floor>(arguments)); break;
+		case cf_Ceiling:		result.reset(new core_function_expression<cf_Ceiling>(arguments)); break;
+		case cf_Round:			result.reset(new core_function_expression<cf_Round>(arguments)); break;
+		case cf_Comment:		result.reset(new core_function_expression<cf_Comment>(arguments)); break;
+		default:				break;
+	}
+	
+	return result;
 }
 
 expression_ptr xpath_imp::union_expr()
@@ -1366,7 +1893,7 @@ expression_ptr xpath_imp::filter_expr()
 	while (m_lookahead == xp_LeftBracket)
 	{
 		match(xp_LeftBracket);
-		result.reset(new path_expression(result, expr()));
+		result.reset(new predicate_expression(result, expr()));
 		match(xp_RightBracket);
 	}
 
@@ -1377,16 +1904,16 @@ expression_ptr xpath_imp::and_expr()
 {
 	expression_ptr result(equality_expr());
 	
-	while (m_lookahead == xp_OperatorAnd)
+	while (m_lookahead == xp_Name and m_token_string == "and")
 	{
-		match(xp_OperatorAnd);
-		result.reset(new operator_expression(result, relational_expr(), xp_OperatorAnd));
+		match(xp_Name);
+		result.reset(new operator_expression<xp_OperatorAnd>(result, relational_expr()));
 	}
 
 	return result;
 }
 
-void xpath_imp::equality_expr()
+expression_ptr xpath_imp::equality_expr()
 {
 	expression_ptr result(relational_expr());
 
@@ -1394,13 +1921,16 @@ void xpath_imp::equality_expr()
 	{
 		Token op = m_lookahead;
 		match(m_lookahead);
-		result.reset(new operator_expression(result, relational_expr(), op));
+		if (op == xp_OperatorEqual)
+			result.reset(new operator_expression<xp_OperatorEqual>(result, relational_expr()));
+		else
+			result.reset(new operator_expression<xp_OperatorNotEqual>(result, relational_expr()));
 	}
 	
 	return result;
 }
 
-void xpath_imp::relational_expr()
+expression_ptr xpath_imp::relational_expr()
 {
 	expression_ptr result(additive_expr());
 
@@ -1409,13 +1939,35 @@ void xpath_imp::relational_expr()
 	{
 		Token op = m_lookahead;
 		match(m_lookahead);
-		result.reset(new operator_expression(result, additive_expr(), op));
+		
+		expression_ptr rhs = additive_expr();
+		switch (op)
+		{
+			case xp_OperatorLess:
+				result.reset(new operator_expression<xp_OperatorLess>(result, rhs));
+				break;
+
+			case xp_OperatorLessOrEqual:
+				result.reset(new operator_expression<xp_OperatorLessOrEqual>(result, rhs));
+				break;
+
+			case xp_OperatorGreater:
+				result.reset(new operator_expression<xp_OperatorGreater>(result, rhs));
+				break;
+
+			case xp_OperatorGreaterOrEqual:
+				result.reset(new operator_expression<xp_OperatorGreaterOrEqual>(result, rhs));
+				break;
+			
+			default:
+				break;
+		}
 	}
 	
 	return result;
 }
 
-void xpath_imp::additive_expr()
+expression_ptr xpath_imp::additive_expr()
 {
 	expression_ptr result(multiplicative_expr());
 	
@@ -1423,46 +1975,54 @@ void xpath_imp::additive_expr()
 	{
 		Token op = m_lookahead;
 		match(m_lookahead);
-		result.reset(new operator_expression(result, multiplicative_expr(), op));
+		if (op == xp_OperatorAdd)
+			result.reset(new operator_expression<xp_OperatorAdd>(result, multiplicative_expr()));
+		else
+			result.reset(new operator_expression<xp_OperatorSubstract>(result, multiplicative_expr()));
 	}
 	
 	return result;
 }
 
-void xpath_imp::multiplicative_expr()
+expression_ptr xpath_imp::multiplicative_expr()
 {
-	for (;;)
+	expression_ptr result(unary_expr());
+	
+	while (m_lookahead == xp_Name and (m_token_string == "mod" or m_token_string == "div"))
 	{
-		unary_expr();
-		if (m_lookahead == xp_OperatorDiv or m_lookahead == xp_OperatorMod)
-			match(m_lookahead);
+		string op = m_token_string;
+		match(m_lookahead);
+		if (op == "mod")
+			result.reset(new operator_expression<xp_OperatorMod>(result, unary_expr()));
 		else
-			break;
+			result.reset(new operator_expression<xp_OperatorDiv>(result, unary_expr()));
 	}
+	
+	return result;
 }
 
-void xpath_imp::unary_expr()
+expression_ptr xpath_imp::unary_expr()
 {
+	expression_ptr result;
+	
 	if (m_lookahead == xp_OperatorSubstract)
 	{
 		match(xp_OperatorSubstract);
-		unary_expr();
+		result.reset(new negate_expression(unary_expr()));
 	}
 	else
-		union_expr();
+		result = union_expr();
+	
+	return result;
 }
 
 // --------------------------------------------------------------------
 
 node_set xpath_imp::evaluate(node& root)
 {
-	node_set result;
-	result.push_back(&root);
-	
-	foreach (expression* expr, m_steps)
-		result = expr->evaluate(result);
-	
-	return result;
+	node_set empty;
+	expression_context ctxt(&root, empty);
+	return m_expr->evaluate(ctxt).as<node_set>();
 }
 
 // --------------------------------------------------------------------

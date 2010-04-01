@@ -9,7 +9,6 @@ namespace zeep { namespace xml {
 
 class document;
 class node;
-class node_set;
 
 class xpath
 {

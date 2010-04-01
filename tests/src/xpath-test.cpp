@@ -56,8 +56,8 @@ bool run_test(const xml::element& test)
 	if (VERBOSE)
 	{
 		int nr = 1;
-		foreach (const xml::node& n, ns)
-			cout << nr++ << ">> " << n << endl;
+		foreach (const xml::node* n, ns)
+			cout << nr++ << ">> " << *n << endl;
 	}
 	
 	bool result = true;
@@ -76,9 +76,9 @@ bool run_test(const xml::element& test)
 		if (VERBOSE)
 			cout << "testing attribute " << test_attr_name << " for " << attr_test << endl;
 		
-		foreach (const xml::node& n, ns)
+		foreach (const xml::node* n, ns)
 		{
-			const xml::element* e = dynamic_cast<const xml::element*>(&n);
+			const xml::element* e = dynamic_cast<const xml::element*>(n);
 			if (e == NULL)
 				continue;
 			
@@ -115,9 +115,9 @@ void run_tests(const fs::path& file)
 	int nr_of_tests = 0, failed_nr_of_tests = 0;
 	
 	xml::node_set tests = doc.root()->children();
-	foreach (const xml::node& n, tests)
+	foreach (const xml::node* n, tests)
 	{
-		const xml::element* test = dynamic_cast<const xml::element*>(&n);
+		const xml::element* test = dynamic_cast<const xml::element*>(n);
 		if (test != NULL)
 		{
 			++nr_of_tests;

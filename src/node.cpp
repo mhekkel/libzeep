@@ -329,7 +329,15 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 	if (typeid(rhs) == typeid(node))
 		cout << "base class???";
 	else if (typeid(rhs) == typeid(element))
-		cout << "element <" << static_cast<const element&>(rhs).name() << '>';
+	{
+		cout << "element <" << static_cast<const element&>(rhs).name();
+		
+		const element* e = static_cast<const element*>(&rhs);
+		foreach (const attribute& attr, e->attributes())
+			cout << ' ' << attr.name() << "=\"" << attr.value() << '"';
+		
+		cout << '>';
+	}
 	else if (typeid(rhs) == typeid(comment))
 		cout << "comment";
 	else if (typeid(rhs) == typeid(processing_instruction))
