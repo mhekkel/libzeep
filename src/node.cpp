@@ -303,6 +303,27 @@ string element::get_attribute(const string& name) const
 	return result;
 }
 
+attribute_node* element::get_attribute_node(const string& name)
+{
+	attribute_node* result = m_attribute_nodes;
+	while (result != nil)
+	{
+		if (result->name() == name)
+			break;
+		result = dynamic_cast<attribute_node*>(result->next());
+	}
+	
+	if (result == nil)
+	{
+		result = new attribute_node(name, "", get_attribute(name));
+		result->m_next = m_attribute_nodes;
+		m_attribute_nodes = result;
+		result->m_parent = this;
+	}
+
+	return result;
+}
+
 void element::set_attribute(const string& ns, const string& name, const string& value)
 {
 	attribute_list::iterator a = find_if(
@@ -350,6 +371,13 @@ bool element::equals(const node* n) const
 		m_name == static_cast<const element*>(n)->m_name and
 		m_prefix == static_cast<const element*>(n)->m_prefix and
 		m_attributes == static_cast<const element*>(n)->attributes();
+}
+
+// --------------------------------------------------------------------
+
+void attribute_node::write(writer& w) const
+{
+	assert(false);
 }
 
 // --------------------------------------------------------------------

@@ -55,10 +55,10 @@ class writer
 
 	virtual void	write_text(const std::string& text);
 
-  protected:
-
 	virtual void	write_attribute(const std::string& prefix, const std::string& name,
 						const std::string& value);
+
+  protected:
 
 	std::ostream&	m_os;
 	encoding_type	m_encoding;

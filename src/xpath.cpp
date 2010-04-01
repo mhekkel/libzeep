@@ -48,16 +48,12 @@ enum Token {
 	xp_RightParenthesis,
 	xp_LeftBracket,
 	xp_RightBracket,
-	xp_Dot,
-	xp_DoubleDot,
 	xp_Slash,
 	xp_DoubleSlash,
-	xp_At,
 	xp_Comma,
-	xp_DoubleColon,
 	xp_Name,
 	
-	xp_AxisName,
+	xp_AxisSpec,
 	xp_FunctionName,
 	xp_NodeType,
 
@@ -98,12 +94,10 @@ enum AxisType
 	ax_Parent,
 	ax_Preceding,
 	ax_PrecedingSibling,
-	ax_Self,
-	
-	ax_Count
+	ax_Self
 };
 
-const char* kAxisNames[] =
+const char* kAxisNames[ax_Self + 1] =
 {
 	"ancestor",
 	"ancestor-or-self",
@@ -117,8 +111,7 @@ const char* kAxisNames[] =
 	"parent",
 	"preceding",
 	"preceding-sibling",
-	"self",
-	nil
+	"self"
 };
 
 enum CoreFunction
@@ -493,6 +486,13 @@ void iterate_following(node* n, node_set& s, bool sibling, PREDICATE pred)
 	}
 }
 
+template<typename PREDICATE>
+void iterate_attributes(element* e, node_set& s, PREDICATE pred)
+{
+	foreach (const attribute& a, e->attributes())
+		s.push_back(e->get_attribute_node(a.node()));
+}
+
 // --------------------------------------------------------------------
 // context for the expressions
 
@@ -683,7 +683,11 @@ object step_expression::evaluate(expression_context& context, T pred)
 				iterate_preceding(context_element, result, true, pred);
 				break;
 	
-			default:
+			case ax_Attribute:
+				iterate_attributes(context_element, result, pred);
+				break;
+
+			case ax_Namespace:
 				throw exception("unimplemented axis");
 		}
 	}
@@ -1488,15 +1492,7 @@ struct xpath_imp
 	expression_ptr		absolute_location_path();
 	expression_ptr		relative_location_path();
 	expression_ptr		step();
-	AxisType			axis_specifier();
 	expression_ptr		node_test(AxisType axis);
-//	expression_ptr		predicate();
-//	expression_ptr		predicate_expr();
-	
-//	expression_ptr		abbr_absolute_location_path();
-//	expression_ptr		abbr_relative_location_path();
-//	expression_ptr		abbr_step();
-//	expression_ptr		abbr_axis_specifier();
 	
 	expression_ptr		expr();
 	expression_ptr		primary_expr();
@@ -1516,15 +1512,15 @@ struct xpath_imp
 	expression_ptr		multiplicative_expr();
 	expression_ptr		unary_expr();
 
-	// 
+	// abbreviated steps are expanded like macros by the scanner
+
 	struct state {
+		string					replacement;
 		string::const_iterator	begin, next, end;
 	};
 	
 	void				push_state(const string& replacement);
 	void				pop_state();
-
-	static const string	kDoubleSlash;
 
 	string				m_path;
 	string::const_iterator
@@ -1540,8 +1536,6 @@ struct xpath_imp
 	expression_ptr		m_expr;
 	stack<state>		m_state;
 };
-
-const string xpath_imp::kDoubleSlash("descendant-or-self::node()/");
 
 // --------------------------------------------------------------------
 
@@ -1579,10 +1573,10 @@ void xpath_imp::parse(const string& path)
 
 void xpath_imp::push_state(const string& replacement)
 {
-	state s = { m_begin, m_next, m_end };
+	state s = { replacement, m_begin, m_next, m_end };
 	m_state.push(s);
-	m_begin = m_next = replacement.begin();
-	m_end = replacement.end();
+	m_begin = m_next = m_state.top().replacement.begin();
+	m_end = m_state.top().replacement.end();
 }
 
 void xpath_imp::pop_state()
@@ -1675,15 +1669,11 @@ string xpath_imp::describe_token(Token token)
 		case xp_RightParenthesis:	result << "right parenthesis"; break;
 		case xp_LeftBracket:		result << "left bracket"; break;
 		case xp_RightBracket:		result << "right bracket"; break;
-		case xp_Dot:				result << "dot"; break;
-		case xp_DoubleDot:			result << "double dot"; break;
 		case xp_Slash:				result << "forward slash"; break;
 		case xp_DoubleSlash:		result << "double forward slash"; break;
-		case xp_At:					result << "at sign"; break;
 		case xp_Comma:				result << "comma"; break;
-		case xp_DoubleColon:		result << "double colon"; break;
 		case xp_Name:				result << "name"; break;
-		case xp_AxisName:			result << "axis specification"; break;
+		case xp_AxisSpec:			result << "axis specification"; break;
 		case xp_FunctionName:		result << "function name"; break;
 		case xp_NodeType:			result << "node type specification"; break;
 		case xp_OperatorUnion:		result << "union operator"; break;
@@ -1716,7 +1706,6 @@ Token xpath_imp::get_next_token()
 	enum State {
 		xps_Start,
 		xps_FirstDot,
-		xps_FirstColon,
 		xps_VariableStart,
 		xps_FirstSlash,
 		xps_ExclamationMark,
@@ -1753,9 +1742,8 @@ Token xpath_imp::get_next_token()
 					case '[':	token = xp_LeftBracket; break;
 					case ']':	token = xp_RightBracket; break;
 					case '.':	state = xps_FirstDot; break;
-					case '@':	token = xp_At; break;
 					case ',':	token = xp_Comma; break;
-					case ':':	state = xps_FirstColon; break;
+					case ':':	token = xp_Colon; break;
 					case '$':	state = xps_VariableStart; break;
 					case '*':	token = xp_Asterisk; break;
 					case '/':	state = xps_FirstSlash; break;
@@ -1774,6 +1762,12 @@ Token xpath_imp::get_next_token()
 						break;
 					case '\'':	quoteChar = ch; state = xps_Literal; break;
 					case '"':	quoteChar = ch; state = xps_Literal; break;
+
+					case '@':
+						token = xp_AxisSpec;
+						m_token_axis = ax_Attribute;
+						break;
+
 					default:
 						if (ch >= '0' and ch <= '9')
 						{
@@ -1788,13 +1782,12 @@ Token xpath_imp::get_next_token()
 				break;
 			
 			case xps_FirstDot:
+				token = xp_AxisSpec;
+				push_state("node()");
 				if (ch == '.')
-					token = xp_DoubleDot;
+					m_token_axis = ax_Parent;
 				else
-				{
-					retract();
-					token = xp_Dot;
-				}
+					m_token_axis = ax_Self;
 				break;
 			
 			case xps_FirstSlash:
@@ -1805,19 +1798,8 @@ Token xpath_imp::get_next_token()
 				}
 				else
 				{
-//					token = xp_DoubleSlash;
-					push_state(kDoubleSlash);
+					push_state("descendant-or-self::node()/");
 					token = xp_Slash;
-				}
-				break;
-			
-			case xps_FirstColon:
-				if (ch == ':')
-					token = xp_DoubleColon;
-				else
-				{
-					retract();
-					token = xp_Colon;
 				}
 				break;
 			
@@ -1948,13 +1930,17 @@ Token xpath_imp::get_next_token()
 			
 			if (*c == ':' and *(c + 1) == ':')		// it must be an axis specifier
 			{
-				token = xp_AxisName;
+				token = xp_AxisSpec;
 				
-				const char** a = find(kAxisNames, kAxisNames + ax_Count, m_token_string);
+				const int kAxisNameCount = sizeof(kAxisNames) / sizeof(const char*);
+				const char** a = find(kAxisNames, kAxisNames + kAxisNameCount, m_token_string);
 				if (*a != nil)
 					m_token_axis = AxisType(a - kAxisNames);
 				else
 					throw exception("invalid axis specification %s", m_token_string.c_str());
+
+				// skip over the double colon
+				m_next = c + 2;
 			}
 			else if (*c == '(')
 			{
@@ -2049,41 +2035,20 @@ expression_ptr xpath_imp::step()
 {
 	expression_ptr result;
 	
-	// abbreviated steps
-	if (m_lookahead == xp_Dot)
-		;
-	else if (m_lookahead == xp_DoubleDot)
-		;
-	else
+	AxisType axis = ax_Child;
+	if (m_lookahead == xp_AxisSpec)
 	{
-		AxisType axis = axis_specifier();
-		result = node_test(axis);
-		
-		while (m_lookahead == xp_LeftBracket)
-		{
-			match(xp_LeftBracket);
-			result.reset(new predicate_expression(result, expr()));
-			match(xp_RightBracket);
-		}
+		axis = m_token_axis;
+		match(xp_AxisSpec);
 	}
-	
-	return result;
-}
 
-AxisType xpath_imp::axis_specifier()
-{
-	AxisType result = ax_Child;
+	result = node_test(axis);
 	
-	if (m_lookahead == xp_At)
+	while (m_lookahead == xp_LeftBracket)
 	{
-		result = ax_Attribute;
-		match(xp_At);
-	}
-	else if (m_lookahead == xp_AxisName)
-	{
-		result = m_token_axis;
-		match(xp_AxisName);
-		match(xp_DoubleColon);
+		match(xp_LeftBracket);
+		result.reset(new predicate_expression(result, expr()));
+		match(xp_RightBracket);
 	}
 	
 	return result;

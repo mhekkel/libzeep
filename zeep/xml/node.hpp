@@ -25,6 +25,10 @@ class comment;
 class processing_instruction;
 class text;
 class element;
+
+// for internal use (by xpath) only:
+class attribute_node;
+
 typedef node* node_ptr;
 typedef std::list<node_ptr>	node_set;
 
@@ -157,15 +161,15 @@ class element : public node
 {
   public:
 						element(const std::string& name)
-							: m_name(name), m_child(NULL) {}
+							: m_name(name), m_child(NULL), m_attribute_nodes(NULL) {}
 
 						element(const std::string& name,
 							const std::string& prefix)
-							: m_name(name), m_prefix(prefix), m_child(NULL) {}
+							: m_name(name), m_prefix(prefix), m_child(NULL), m_attribute_nodes(NULL) {}
 
 						element(const std::string& name,
 							const std::string& ns, const std::string& prefix)
-							: m_name(name), m_ns(ns), m_prefix(prefix), m_child(NULL) {}
+							: m_name(name), m_ns(ns), m_prefix(prefix), m_child(NULL), m_attribute_nodes(NULL) {}
 
 						~element();
 
@@ -210,8 +214,8 @@ class element : public node
 	attribute_list&		attributes()								{ return m_attributes; }
 	const attribute_list&
 						attributes() const							{ return m_attributes; }
-//
-//	std::string			find_prefix(const std::string& uri) const;
+
+	attribute_node*		get_attribute_node(const std::string& name);
 
 	virtual void		write(writer& w) const;
 
@@ -226,6 +230,29 @@ class element : public node
 	std::string			m_prefix;
 	attribute_list		m_attributes;
 	node*				m_child;
+	attribute_node*		m_attribute_nodes;
+};
+
+// --------------------------------------------------------------------
+// attribute_node is intended to be used by xpath only
+
+class attribute_node : public node
+{
+  public:
+						attribute_node(const std::string& name,
+							const std::string& prefix, const std::string& value)
+							: m_name(name), m_prefix(prefix), m_value(value) {}
+
+	std::string			name() const								{ return m_name; }
+	std::string			prefix() const								{ return m_prefix; }
+	std::string			value() const								{ return m_value; }
+
+	virtual std::string	str() const									{ return value(); }
+
+	virtual void		write(writer& w) const;
+
+  private:
+	std::string			m_name, m_prefix, m_value;
 };
 
 std::ostream& operator<<(std::ostream& lhs, const node& rhs);

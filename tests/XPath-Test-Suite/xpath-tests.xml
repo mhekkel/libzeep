@@ -82,7 +82,11 @@
 	<xpath-test data="data-007.xml" xpath="/AAA/EEE | //DDD/CCC | /AAA | //BBB" expected-size="4"
 		test-name="un-3" test-attr="1" />
 
+	<xpath-test data="data-007.xml" xpath="/AAA/../AAA/BBB" expected-size="1"
+		test-name="un-3" test-attr="1" />
+
 	<xpath-test data="data-008.xml" xpath="//*[lang('nl')]" expected-size="4" />
+	
 
 
 </xpath-tests>
