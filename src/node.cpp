@@ -127,11 +127,34 @@ bool text::equals(const node* n) const
 }
 
 // --------------------------------------------------------------------
+// attribute
+
+void attribute::write(writer& w) const
+{
+	assert(false);
+}
+
+bool attribute::equals(const node* n) const
+{
+	bool result = false;
+	if (node::equals(n))
+	{
+		const attribute* a = static_cast<const attribute*>(n);
+		
+		result = m_name == a->m_name and
+				 m_value == a->m_value and
+				 m_prefix == a->m_prefix;
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
 // element
 
 element::~element()
 {
 	delete m_child;
+	delete m_attribute;
 }
 
 string element::str() const
@@ -261,7 +284,7 @@ void element::add_text(const std::string& s)
 		add(new text(s));
 }
 
-node_set element::children()
+node_set element::children() const
 {
 	node_set result;
 	
@@ -275,15 +298,15 @@ node_set element::children()
 	return result;
 }
 
-const node_set element::children() const
+attribute_set element::attributes() const
 {
-	node_set result;
+	attribute_set result;
 	
-	node* child = m_child;
-	while (child != nil)
+	node* attr = m_attribute;
+	while (attr != nil)
 	{
-		result.push_back(child);
-		child = child->next();
+		result.push_back(static_cast<attribute*>(attr));
+		attr = attr->next();
 	}
 	
 	return result;
@@ -293,47 +316,44 @@ string element::get_attribute(const string& name) const
 {
 	string result;
 
-	attribute_list::const_iterator a = find_if(
-		m_attributes.begin(), m_attributes.end(),
-		boost::bind(&attribute::name, _1) == name);
-
-	if (a != m_attributes.end())
-		result = a->value();
+	for (attribute* attr = m_attribute; attr != nil; attr = static_cast<attribute*>(attr->next()))
+	{
+		if (attr->name() == name)
+		{
+			result = attr->value();
+			break;
+		}
+	}
 
 	return result;
 }
 
-attribute_node* element::get_attribute_node(const string& name)
+attribute* element::get_attribute_node(const string& name) const
 {
-	attribute_node* result = m_attribute_nodes;
-	while (result != nil)
+	attribute* attr = m_attribute;
+
+	while (attr != nil)
 	{
-		if (result->name() == name)
+		if (attr->name() == name)
 			break;
-		result = dynamic_cast<attribute_node*>(result->next());
-	}
-	
-	if (result == nil)
-	{
-		result = new attribute_node(name, "", get_attribute(name));
-		result->m_next = m_attribute_nodes;
-		m_attribute_nodes = result;
-		result->m_parent = this;
+		attr = static_cast<attribute*>(attr->next());
 	}
 
-	return result;
+	return attr;
 }
 
 void element::set_attribute(const string& ns, const string& name, const string& value)
 {
-	attribute_list::iterator a = find_if(
-		m_attributes.begin(), m_attributes.end(),
-		boost::bind(&attribute::name, _1) == name);
-	
-	if (a != m_attributes.end())
-		a->value(value);
+	attribute* attr = get_attribute_node(name);
+	if (attr != nil)
+		attr->value(value);
 	else
-		m_attributes.push_back(new attribute(/*ns, */name, value));
+	{
+		attr = new attribute(name, "", value);
+		attr->m_next = m_attribute;
+		m_attribute = attr;
+	}
+#pragma message("fix me")
 }
 
 string element::lang() const
@@ -346,11 +366,20 @@ string element::lang() const
 
 void element::write(writer& w) const
 {
+	attribute_list attrs;
+	
+	attribute* attr = m_attribute;
+	while (attr != nil)
+	{
+		attrs.push_back(make_pair(attr->name(), attr->value()));
+		attr = static_cast<attribute*>(attr->next());
+	}
+	
 	if (m_child == nil)
-		w.write_empty_element(m_ns, m_name, m_attributes);
+		w.write_empty_element(m_ns, m_name, attrs);
 	else
 	{
-		w.write_start_element(m_ns, m_name, m_attributes);
+		w.write_start_element(m_ns, m_name, attrs);
 
 		node* child = m_child;
 		while (child != nil)
@@ -365,19 +394,24 @@ void element::write(writer& w) const
 
 bool element::equals(const node* n) const
 {
-	return
-		node::equals(n) and
+	bool result = false;
+	if (node::equals(n) and
 		m_ns == static_cast<const element*>(n)->m_ns and
 		m_name == static_cast<const element*>(n)->m_name and
-		m_prefix == static_cast<const element*>(n)->m_prefix and
-		m_attributes == static_cast<const element*>(n)->attributes();
-}
+		m_prefix == static_cast<const element*>(n)->m_prefix)
+	{
+		result = true;
+		
+		const element* e = static_cast<const element*>(n);
+		
+		if (m_child != nil and e->m_child != nil)
+			result = m_child->equals(e->m_child);
+		
+		if (result and m_attribute != nil and e->m_attribute != nil)
+			result = m_attribute->equals(e->m_attribute);
+	}
 
-// --------------------------------------------------------------------
-
-void attribute_node::write(writer& w) const
-{
-	assert(false);
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -392,8 +426,8 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 		cout << "element <" << static_cast<const element&>(rhs).name();
 		
 		const element* e = static_cast<const element*>(&rhs);
-		foreach (const attribute& attr, e->attributes())
-			cout << ' ' << attr.name() << "=\"" << attr.value() << '"';
+		foreach (const attribute* attr, e->attributes())
+			cout << ' ' << attr->name() << "=\"" << attr->value() << '"';
 		
 		cout << '>';
 	}

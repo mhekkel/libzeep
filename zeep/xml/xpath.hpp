@@ -16,7 +16,7 @@ class xpath
 						xpath(const std::string& path);
 	virtual				~xpath();
 
-	node_set			evaluate(node& root);
+	node_set			evaluate(const node& root);
 
   private:
 	struct xpath_imp*	m_impl;

@@ -8,6 +8,7 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
+#include <boost/bind.hpp>
 
 #include "zeep/xml/writer.hpp"
 #include "zeep/exception.hpp"
@@ -106,8 +107,7 @@ void writer::write_notation(const string& name,
 		m_os << endl;
 }
 
-void writer::write_attribute(const string& prefix, const string& name,
-	const string& value)
+void writer::write_attribute(const string& name, const string& value)
 {
 	if (m_wrap == false)
 		m_os << ' ';
@@ -116,9 +116,6 @@ void writer::write_attribute(const string& prefix, const string& name,
 		for (int i = 0; i < m_indent * (m_level + 1); ++i)
 			m_os << ' ';
 	}
-	
-	if (not prefix.empty())
-		m_os << prefix << ':';
 	
 	m_os << name << "=\"";
 	
@@ -161,9 +158,10 @@ void writer::write_empty_element(const string& prefix, const string& name,
 			m_os << prefix << ':';
 		m_os << name;
 		
-#pragma warning("fix me!")
-		foreach (const attribute& attr, attrs)
-			write_attribute(""/*attr.prefix()*/, attr.name(), attr.value());
+		for_each (attrs.begin(), attrs.end(),
+			boost::bind(&writer::write_attribute, this,
+				boost::bind(&pair<string,string>::first, _1),
+				boost::bind(&pair<string,string>::second, _1)));
 		
 		m_os << "/>";
 		
@@ -188,9 +186,10 @@ void writer::write_start_element(const string& prefix,
 		m_os << prefix << ':';
 	m_os << name;
 
-#pragma warning("fix me!")
-	foreach (const attribute& attr, attrs)
-		write_attribute(""/*attr.prefix()*/, attr.name(), attr.value());
+	for_each (attrs.begin(), attrs.end(),
+		boost::bind(&writer::write_attribute, this,
+			boost::bind(&pair<string,string>::first, _1),
+			boost::bind(&pair<string,string>::second, _1)));
 
 	m_os << '>';
 	

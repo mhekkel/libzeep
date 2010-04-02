@@ -13,22 +13,12 @@
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-//#include <boost/flyweight.hpp>
-#include "zeep/xml/attribute.hpp"
 
 namespace zeep { namespace xml {
 
 class writer;
 
 class node;
-class comment;
-class processing_instruction;
-class text;
-class element;
-
-// for internal use (by xpath) only:
-class attribute_node;
-
 typedef node* node_ptr;
 typedef std::list<node_ptr>	node_set;
 
@@ -156,22 +146,57 @@ class text : public node
 };
 
 // --------------------------------------------------------------------
+// an attribute is a node, has an element as parent, but is not a child of this parent (!)
+
+class attribute : public node
+{
+  public:
+						attribute(const std::string& name,
+							const std::string& prefix, const std::string& value)
+							: m_name(name), m_prefix(prefix), m_value(value) {}
+
+	std::string			name() const								{ return m_name; }
+	void				name(const std::string& n)					{ m_name = n; }
+
+	std::string			prefix() const								{ return m_prefix; }
+	void				prefix(const std::string& p)				{ m_prefix = p; }
+
+	std::string			value() const								{ return m_value; }
+	void				value(const std::string& v)					{ m_value = v; }
+
+	virtual std::string	str() const									{ return value(); }
+
+	virtual void		write(writer& w) const;
+
+	virtual bool		equals(const node* n) const;
+
+  private:
+	std::string			m_name, m_prefix, m_value;
+};
+
+typedef std::list<attribute*> attribute_set;
+
+// --------------------------------------------------------------------
 
 class element : public node
 {
   public:
 						element(const std::string& name)
-							: m_name(name), m_child(NULL), m_attribute_nodes(NULL) {}
+							: m_name(name), m_child(NULL), m_attribute(NULL) {}
 
 						element(const std::string& name,
 							const std::string& prefix)
-							: m_name(name), m_prefix(prefix), m_child(NULL), m_attribute_nodes(NULL) {}
+							: m_name(name), m_prefix(prefix), m_child(NULL), m_attribute(NULL) {}
 
 						element(const std::string& name,
 							const std::string& ns, const std::string& prefix)
-							: m_name(name), m_ns(ns), m_prefix(prefix), m_child(NULL), m_attribute_nodes(NULL) {}
+							: m_name(name), m_ns(ns), m_prefix(prefix), m_child(NULL), m_attribute(NULL) {}
 
 						~element();
+
+	virtual void		write(writer& w) const;
+
+	virtual bool		equals(const node* n) const;
 
 	virtual std::string	str() const;
 
@@ -198,8 +223,11 @@ class element : public node
 	node_set			find_all(const std::string&	path) const;
 
 	std::string			get_attribute(const std::string& name) const;
+	attribute*			get_attribute_node(const std::string& name) const;
+
 	void				set_attribute(const std::string& ns,
 							const std::string& name, const std::string& value);
+
 	void				remove_attribute(const std::string& name);
 	
 	void				add(node_ptr node);
@@ -208,18 +236,9 @@ class element : public node
 	// convenience routine
 	void				add_text(const std::string& s);
 
-	node_set			children();
-	const node_set		children() const;
+	node_set			children() const;
 	
-	attribute_list&		attributes()								{ return m_attributes; }
-	const attribute_list&
-						attributes() const							{ return m_attributes; }
-
-	attribute_node*		get_attribute_node(const std::string& name);
-
-	virtual void		write(writer& w) const;
-
-	virtual bool		equals(const node* n) const;
+	attribute_set		attributes() const;
 
 	// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
@@ -228,31 +247,8 @@ class element : public node
 	std::string			m_name;
 	std::string			m_ns;
 	std::string			m_prefix;
-	attribute_list		m_attributes;
 	node*				m_child;
-	attribute_node*		m_attribute_nodes;
-};
-
-// --------------------------------------------------------------------
-// attribute_node is intended to be used by xpath only
-
-class attribute_node : public node
-{
-  public:
-						attribute_node(const std::string& name,
-							const std::string& prefix, const std::string& value)
-							: m_name(name), m_prefix(prefix), m_value(value) {}
-
-	std::string			name() const								{ return m_name; }
-	std::string			prefix() const								{ return m_prefix; }
-	std::string			value() const								{ return m_value; }
-
-	virtual std::string	str() const									{ return value(); }
-
-	virtual void		write(writer& w) const;
-
-  private:
-	std::string			m_name, m_prefix, m_value;
+	attribute*			m_attribute;
 };
 
 std::ostream& operator<<(std::ostream& lhs, const node& rhs);

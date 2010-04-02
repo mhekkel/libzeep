@@ -14,6 +14,7 @@
 #include "zeep/xml/expat_doc.hpp"
 #include "zeep/xml/libxml2_doc.hpp"
 #include "zeep/xml/writer.hpp"
+#include "zeep/xml/xpath.hpp"
 
 using namespace std;
 using namespace zeep;
@@ -231,43 +232,36 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	return result;
 }
 
-void run_test_case(const xml::element& testcase, const string& id,
+void run_test_case(const xml::element* testcase, const string& id,
 	const string& type, fs::path base_dir, vector<string>& failed_ids)
 {
-//	if (VERBOSE)
-//		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
+	if (VERBOSE and id.empty())
+		cout << "Running testcase " << testcase->get_attribute("PROFILE") << endl;
 
-	if (not testcase.get_attribute("xml:base").empty())
+	if (not testcase->get_attribute("xml:base").empty())
 	{
-		base_dir /= testcase.get_attribute("xml:base");
+		base_dir /= testcase->get_attribute("xml:base");
 		fs::current_path(base_dir);
 	}
 	
-	xml::node_set children = testcase.children();
+	string path;
+	if (id.empty())
+		path = "TEST";
+	else
+		path = string("TEST[@ID='") + id + "']";
 	
-	foreach (const xml::node& testcasenode, children)
+	foreach (const xml::node* testcasenode, xml::xpath(path).evaluate(*testcase))
 	{
-		const xml::element* n = dynamic_cast<const xml::element*>(&testcasenode);
-		if (n == NULL)
-			continue;
-		
-		if (n->name() == "TEST")
+		const xml::element* n = dynamic_cast<const xml::element*>(testcasenode);
+		if ((id.empty() or id == n->get_attribute("ID")) and
+			(type.empty() or type == n->get_attribute("TYPE")))
 		{
-			if ((id.empty() or id == n->get_attribute("ID")) and
-				(type.empty() or type == n->get_attribute("TYPE")))
+			if (fs::exists(base_dir / n->get_attribute("URI")) and
+				not run_test(*n, base_dir))
 			{
-				if (fs::exists(base_dir / n->get_attribute("URI")) and
-					not run_test(*n, base_dir))
-				{
-					failed_ids.push_back(n->get_attribute("ID"));
-				}
+				failed_ids.push_back(n->get_attribute("ID"));
 			}
 		}
-		else if (n->name() == "TESTCASE" or n->name() == "TESTCASES")
-			run_test_case(*n, id, type, base_dir, failed_ids);
-		else
-			throw zeep::exception("invalid testcases file: unknown node %s",
-				n->name().c_str());
 	}
 }
 
@@ -292,21 +286,9 @@ void test_testcases(const fs::path& testFile, const string& id,
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	const xml::element* root = doc.root();
-	if (root->name() != "TESTSUITE")
-		throw zeep::exception("Invalid test case file");
-
-	cout << "Running testsuite: " << root->get_attribute("PROFILE") << endl;
-	
-	xml::node_set children = root->children();
-	
-	foreach (const xml::node& test, children)
+	foreach (const xml::node* test, xml::xpath("/TESTSUITE//TESTCASES").evaluate(doc))
 	{
-		const xml::element* e = dynamic_cast<const xml::element*>(&test);
-		if (e == NULL)
-			continue;
-		
-		run_test_case(*e, id, type, base_dir, failed_ids);
+		run_test_case(static_cast<const xml::element*>(test), id, type, base_dir, failed_ids);
 	}
 }
 

@@ -520,12 +520,10 @@ void iterate_following(node* n, node_set& s, bool sibling, PREDICATE pred)
 template<typename PREDICATE>
 void iterate_attributes(element* e, node_set& s, PREDICATE pred)
 {
-	foreach (const attribute& a, e->attributes())
+	foreach (attribute* a, e->attributes())
 	{
-		attribute_node* an = e->get_attribute_node(a.name());
-		
-		if (pred(an))
-			s.push_back(an);
+		if (pred(a))
+			s.push_back(a);
 	}
 }
 
@@ -765,7 +763,7 @@ class name_test_step_expression : public step_expression
 
 							if (result == false)
 							{
-								const attribute_node* a = dynamic_cast<const attribute_node*>(n);
+								const attribute* a = dynamic_cast<const attribute*>(n);
 								if (a != nil and a->name() == m_name)
 									result = true;
 							}
@@ -879,8 +877,6 @@ object operator_expression<xp_OperatorEqual>::evaluate(expression_context& conte
 	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
-	
-cout << "compare equal v1(" << v1 << ") and v2(" << v2 << ") results in " << (v1 == v2 ? "true" : "false" ) << endl;
 
 	return v1 == v2;
 }
@@ -1074,9 +1070,6 @@ object predicate_expression::evaluate(expression_context& context)
 		expression_context ctxt(n, v.as<const node_set&>());
 		
 		object test = m_pred->evaluate(ctxt);
-
-if (VERBOSE)
-	cout << "result for test is " << test << endl;
 
 		if (test.type() == ot_number)
 		{
@@ -1668,8 +1661,8 @@ void xpath_imp::parse(const string& path)
 		m_expr.reset(new union_expression(m_expr, location_path()));
 	}
 
-	if (VERBOSE)
-		m_expr->print(0);
+//	if (VERBOSE)
+//		m_expr->print(0);
 
 	match(xp_EOF);
 }
@@ -2112,8 +2105,8 @@ Token xpath_imp::get_next_token()
 		}
 	}
 
-	if (VERBOSE)
-		cout << "get_next_token: " << describe_token(token) << endl;
+//	if (VERBOSE)
+//		cout << "get_next_token: " << describe_token(token) << endl;
 	
 	return token;
 }
@@ -2541,9 +2534,9 @@ xpath::~xpath()
 	delete m_impl;
 }
 
-node_set xpath::evaluate(node& root)
+node_set xpath::evaluate(const node& root)
 {
-	return m_impl->evaluate(root);
+	return m_impl->evaluate(const_cast<node&>(root));
 }
 
 }

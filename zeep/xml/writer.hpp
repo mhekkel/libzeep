@@ -6,10 +6,11 @@
 #ifndef SOAP_XML_WRITER_HPP
 #define SOAP_XML_WRITER_HPP
 
-#include "zeep/xml/attribute.hpp"
 #include "zeep/xml/unicode_support.hpp"
 
 namespace zeep { namespace xml {
+
+typedef std::list<std::pair<std::string,std::string> >	attribute_list;
 
 class writer
 {
@@ -55,8 +56,7 @@ class writer
 
 	virtual void	write_text(const std::string& text);
 
-	virtual void	write_attribute(const std::string& prefix, const std::string& name,
-						const std::string& value);
+	virtual void	write_attribute(const std::string& name, const std::string& value);
 
   protected:
 
