@@ -1,0 +1,10 @@
+<AAA>
+  <BBB/>
+  <BBB/>
+  <BBB test="1">
+  	<CCC id="x">aap</CCC>
+  </BBB>
+  <BBB>
+  	<CCC id="y"/>
+  </BBB>
+</AAA> 
