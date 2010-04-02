@@ -40,14 +40,13 @@ class writer
 	virtual void	write_notation(const std::string& name,
 						const std::string& sysid, const std::string& pubid);
 
-	virtual void	write_empty_element(const std::string& prefix,
-						const std::string& name, const attribute_list& attrs);
+	virtual void	write_empty_element(const std::string& name,
+						const attribute_list& attrs);
 
-	virtual void	write_start_element(const std::string& prefix,
-						const std::string& name, const attribute_list& attrs);
+	virtual void	write_start_element(const std::string& name,
+						const attribute_list& attrs);
 
-	virtual void	write_end_element(const std::string& prefix,
-						const std::string& name);
+	virtual void	write_end_element(const std::string& name);
 
 	virtual void	write_comment(const std::string& text);
 
@@ -70,6 +69,7 @@ class writer
 	bool			m_trim;
 	int				m_indent;
 	int				m_level;
+	bool			m_wrote_element;
 };
 
 }

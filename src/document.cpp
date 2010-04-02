@@ -101,7 +101,7 @@ document_imp::document_imp(document* doc)
 	, m_wrap(true)
 	, m_trim(true)
 	, m_escape_whitespace(false)
-	, m_validating(true)
+	, m_validating(false)
 	, m_doc(doc)
 	, m_cur(doc)
 {
@@ -115,36 +115,51 @@ string document_imp::prefix_for_ns(const string& ns)
 	string result;
 	if (i != m_namespaces.end())
 		result = i->first;
+	else if (m_cur != NULL)
+		result = m_cur->prefix_for_ns_name(ns);
+	else
+		throw exception("namespace not found: %s", ns.c_str());
+	
 	return result;
 }
 
 void document_imp::StartElementHandler(const string& name, const string& uri,
 	const parser::attr_list_type& atts)
 {
-	string prefix;
+	string qname = name;
 	if (not uri.empty())
-		prefix = prefix_for_ns(uri);
-	
-	auto_ptr<element> n(new element(name, uri, prefix));
+	{
+		string prefix = prefix_for_ns(uri);
+		if (not prefix.empty())
+			qname = prefix + ':' + name;
+	}
+
+	auto_ptr<element> n(new element(qname));
 
 	if (m_cur == m_doc)
 	{
-		m_doc->add(n.get());
+		m_doc->append(n.get());
 		m_root = m_cur = n.release();
 	}
 	else
 	{
-		m_cur->add(n.get());
+		m_cur->append(n.get());
 		m_cur = n.release();
 	}
 	
 	foreach (const parser::attr_type& a, atts)
-		m_cur->set_attribute(a.m_ns, a.m_name, a.m_value);
+	{
+		qname = a.m_name;
+		if (not a.m_ns.empty())
+			qname = prefix_for_ns(a.m_ns) + ':' + a.m_name;
+		
+		m_cur->set_attribute(qname, a.m_value);
+	}
 
 	const string name_prefix("xmlns:");
 
 	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
-		m_cur->set_attribute("xmlns", ns->first, ns->second);
+		m_cur->set_name_space(ns->first, ns->second);
 	
 	m_namespaces.clear();
 	
@@ -156,6 +171,10 @@ void document_imp::EndElementHandler(const string& name, const string& uri)
 	if (m_cur == m_doc)
 		throw exception("Empty stack");
 	
+//	string qname = name;
+//	if (not uri.empty())
+//		qname = prefix_for_ns(uri) + ':' + name;
+//
 	m_cur = dynamic_cast<element*>(m_cur->parent());
 	assert(m_cur);
 }
@@ -170,12 +189,12 @@ void document_imp::CharacterDataHandler(const string& data)
 
 void document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
-	m_cur->add(new processing_instruction(target, data));
+	m_cur->append(new processing_instruction(target, data));
 }
 
 void document_imp::CommentHandler(const string& s)
 {
-	m_cur->add(new comment(s));
+	m_cur->append(new comment(s));
 }
 
 void document_imp::StartCdataSectionHandler()
@@ -284,7 +303,7 @@ void document::write(writer& w) const
 
 	if (not m_impl->m_notations.empty())
 	{
-		w.write_start_doctype(m_impl->m_root->name(), "");
+		w.write_start_doctype(m_impl->m_root->qname(), "");
 		foreach (const document_imp::notation& n, m_impl->m_notations)
 			w.write_notation(n.m_name, n.m_sysid, n.m_pubid);
 		w.write_end_doctype();
@@ -305,6 +324,12 @@ element* document::root() const
 
 void document::root(element* root)
 {
+	if (m_child != NULL)
+		remove(m_child);
+	m_child = NULL;
+	
+	if (root != NULL)
+		append(root);
 	m_impl->m_root = root;
 }
 

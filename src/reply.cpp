@@ -8,6 +8,7 @@
 
 #include "zeep/http/reply.hpp"
 #include "zeep/xml/document.hpp"
+#include "zeep/xml/writer.hpp"
 
 using namespace std;
 
@@ -92,13 +93,20 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 	return result;
 }
 
-void reply::set_content(xml::node_ptr data)
+void reply::set_content(xml::element* data)
 {
 	stringstream s;
 
 	xml::document doc;
 	doc.root(data);
-	s << doc;
+	
+	xml::writer w(s);
+	w.wrap(false);
+	w.indent(0);
+//	w.trim(true);
+	doc.write(w);
+	
+	doc.root(NULL);
 	
 	content = s.str();
 	status = ok;

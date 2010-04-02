@@ -13,6 +13,8 @@
 
 using namespace std;
 
+int TRACE, VERBOSE;
+
 // the data types used in our communication with the outside world
 // are wrapped in a namespace.
 
@@ -193,7 +195,7 @@ void my_server::Find(
 
 int main(int argc, const char* argv[])
 {
-#if defined(FORKED_MODE)
+#if FORKED_MODE
  	for (;;)
  	{
  		cout << "restarting server" << endl;
@@ -244,7 +246,7 @@ int main(int argc, const char* argv[])
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
 	my_server server("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server));
+    boost::thread t(boost::bind(&my_server::run, &server, "0.0.0.0", 10333, 1));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 

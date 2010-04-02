@@ -36,10 +36,10 @@ struct parameter_deserializer
 {
 	typedef Iterator		result_type;
 	
-	node_ptr	m_node;
+	element*	m_node;
 	
 				parameter_deserializer(
-					node_ptr	node)
+					element*	node)
 					: m_node(node) {}
 	
 	// due to a change in fusion::accumulate we have to define both functors:
@@ -66,11 +66,11 @@ struct parameter_types
 	typedef Iterator		result_type;
 	
 	type_map&	m_types;
-	node_ptr	m_node;
+	element*	m_node;
 	
 				parameter_types(
 					type_map&	types,
-					node_ptr	node)
+					element*	node)
 					: m_types(types)
 					, m_node(node) {}
 	
@@ -116,7 +116,7 @@ struct handler_traits<void(Class::*)(R&)>
 #include BOOST_PP_ITERATE()
 
 // messages can be used by more than one action, so we need a way to avoid duplicates
-typedef std::map<std::string,node_ptr>	message_map;
+typedef std::map<std::string,element*>	message_map;
 
 struct handler_base
 {
@@ -124,10 +124,10 @@ struct handler_base
 							: m_action(action)
 							, m_response(action + "Response") {}
 
-	virtual node_ptr	call(node_ptr in) = 0;
+	virtual element*	call(element* in) = 0;
 
 	virtual void		collect(type_map& types, message_map& messages,
-							node_ptr portType, node_ptr binding) = 0;
+							element* portType, element* binding) = 0;
 	
 	const std::string&	get_action_name() const						{ return m_action; }
 
@@ -157,7 +157,7 @@ struct handler : public handler_base
 							copy(names, names + name_count, m_names.begin());
 						}
 	
-	virtual node_ptr	call(node_ptr in)
+	virtual element*	call(element* in)
 						{
 							// start by collecting all the parameters
 							argument_type args;
@@ -169,7 +169,7 @@ struct handler : public handler_base
 							handler_traits<Function>::invoke(m_object, m_method, args, response);
 							
 							// and serialize the result back into XML
-							node_ptr result(new node(get_response_name()));
+							element* result(new element(get_response_name()));
 							serializer sr(result, false);
 							sr & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
 
@@ -178,33 +178,33 @@ struct handler : public handler_base
 						}
 
 	virtual void		collect(type_map& types, message_map& messages,
-							node_ptr portType, node_ptr binding)
+							element* portType, element* binding)
 						{
 							// the request type
-							node_ptr requestType(new node("element", "xsd"));
-							requestType->add_attribute("name", get_action_name());
+							element* requestType(new element("xsd:element"));
+							requestType->set_attribute("name", get_action_name());
 							types[get_action_name()] = requestType;
 							
-							node_ptr complexType(new node("complexType", "xsd"));
-							requestType->add_child(complexType);
+							element* complexType(new element("xsd:complexType"));
+							requestType->append(complexType);
 							
-							node_ptr sequence(new node("sequence", "xsd"));
-							complexType->add_child(sequence);
+							element* sequence(new element("xsd:sequence"));
+							complexType->append(sequence);
 							
 							argument_type args;
 							boost::fusion::accumulate(args, m_names.begin(),
 								parameter_types<std::string*>(types, sequence));
 
 							// and the response type
-							node_ptr responseType(new node("element", "xsd"));
-							responseType->add_attribute("name", get_response_name());
+							element* responseType(new element("xsd:element"));
+							responseType->set_attribute("name", get_response_name());
 							types[get_response_name()] = responseType;
 
-							complexType.reset(new node("complexType", "xsd"));
-							responseType->add_child(complexType);
+							complexType = new element("xsd:complexType");
+							responseType->append(complexType);
 							
-							sequence.reset(new node("sequence", "xsd"));
-							complexType->add_child(sequence);
+							sequence = new element("xsd:sequence");
+							complexType->append(sequence);
 							
 							wsdl_creator wc(types, sequence, false);
 
@@ -212,56 +212,52 @@ struct handler : public handler_base
 							wc & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
 							
 							// now the wsdl operations
-							node_ptr message =
-								make_node("wsdl:message",
-									make_attribute("name", get_action_name() + "RequestMessage"));
-							message->add_child(
-								make_node("wsdl:part",
-										make_attribute("name", "parameters"),
-										make_attribute("element", kPrefix + ':' + get_action_name()))
-								);
+							element* message = new element("wsdl:message");
+							message->set_attribute("name", get_action_name() + "RequestMessage");
+							element* n = new element("wsdl:part");
+							n->set_attribute("name", "parameters");
+							n->set_attribute("element", kPrefix + ':' + get_action_name());
+							message->append(n);
 							messages[message->get_attribute("name")] = message;
 
-							message =
-								make_node("wsdl:message",
-									make_attribute("name", get_response_name() + "Message"));
-							message->add_child(
-								make_node("wsdl:part",
-										make_attribute("name", "parameters"),
-										make_attribute("element", kPrefix + ':' + get_response_name()))
-								);
+							message = new element("wsdl:message");
+							message->set_attribute("name", get_response_name() + "Message");
+							n = new element("wsdl:part");
+							n->set_attribute("name", "parameters");
+							n->set_attribute("element", kPrefix + ':' + get_response_name());
+							message->append(n);
 							messages[message->get_attribute("name")] = message;
 							
 							// port type
 							
-							node_ptr operation(new node("operation", "wsdl"));
-							operation->add_attribute("name", get_action_name());
+							element* operation(new element("wsdl:operation"));
+							operation->set_attribute("name", get_action_name());
 							
-							node_ptr input(new node("input", "wsdl"));
-							input->add_attribute("message", kPrefix + ':' + get_action_name() + "RequestMessage");
-							operation->add_child(input);
+							element* input(new element("wsdl:input"));
+							input->set_attribute("message", kPrefix + ':' + get_action_name() + "RequestMessage");
+							operation->append(input);
 
-							node_ptr output(new node("output", "wsdl"));
-							output->add_attribute("message", kPrefix + ':' + get_response_name() + "Message");
-							operation->add_child(output);
+							element* output(new element("wsdl:output"));
+							output->set_attribute("message", kPrefix + ':' + get_response_name() + "Message");
+							operation->append(output);
 							
-							portType->add_child(operation);
+							portType->append(operation);
 							
 							// and the soap operations
-							operation.reset(new node("operation", "wsdl"));
-							operation->add_attribute("name", get_action_name());
-							binding->add_child(operation);
+							operation = new element("wsdl:operation");
+							operation->set_attribute("name", get_action_name());
+							binding->append(operation);
 							
-							input.reset(new node("input", "wsdl"));
-							operation->add_child(input);
+							input = new element("wsdl:input");
+							operation->append(input);
 							
-							output.reset(new node("output", "wsdl"));
-							operation->add_child(output);
+							output = new element("wsdl:output");
+							operation->append(output);
 							
-							node_ptr body(new node("body", "soap"));
-							body->add_attribute("use", "literal");
-							input->add_child(body);
-							output->add_child(body);
+							element* body(new element("soap:body"));
+							body->set_attribute("use", "literal");
+							input->append(body);
+							output->append(body);
 						}
 
 	Class*				m_object;
@@ -291,7 +287,7 @@ class dispatcher
 							m_handlers.push_back(new detail::handler<Class,Function>(action, server, call, arg));
 						}
 
-	xml::node_ptr		dispatch(const std::string& action, xml::node_ptr in)
+	xml::element*		dispatch(const std::string& action, xml::element* in)
 						{
 //							if (in->ns() != m_ns)
 //								throw exception("Invalid request, no match for namespace");
@@ -303,46 +299,46 @@ class dispatcher
 							if (cb == m_handlers.end())
 								throw exception("Action %s is not defined", action.c_str());
 
-							xml::node_ptr result = cb->call(in);
-							result->add_attribute("xmlns", m_ns);
+							xml::element* result = cb->call(in);
+							result->set_name_space("", m_ns);
 							return result;
 						}
 
-	xml::node_ptr		make_wsdl(const std::string& address)
+	xml::element*		make_wsdl(const std::string& address)
 						{
 							// start by making the root node: wsdl:definitions
-							xml::node_ptr wsdl(new xml::node("definitions", "wsdl"));
-							wsdl->add_attribute("targetNamespace", m_ns);
-							wsdl->add_attribute("xmlns:wsdl", "http://schemas.xmlsoap.org/wsdl/");
-							wsdl->add_attribute("xmlns:" + xml::kPrefix, m_ns);
-							wsdl->add_attribute("xmlns:soap", "http://schemas.xmlsoap.org/wsdl/soap/");
+							xml::element* wsdl(new xml::element("wsdl:definitions"));
+							wsdl->set_attribute("targetNamespace", m_ns);
+							wsdl->set_name_space("wsdl", "http://schemas.xmlsoap.org/wsdl/");
+							wsdl->set_name_space(xml::kPrefix, m_ns);
+							wsdl->set_name_space("soap", "http://schemas.xmlsoap.org/wsdl/soap/");
 							
 							// add wsdl:types
-							xml::node_ptr types(new xml::node("types", "wsdl"));
-							wsdl->add_child(types);
+							xml::element* types(new xml::element("wsdl:types"));
+							wsdl->append(types);
 
 							// add xsd:schema
-							xml::node_ptr schema(new xml::node("schema", "xsd"));
-							schema->add_attribute("targetNamespace", m_ns);
-							schema->add_attribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
-							schema->add_attribute("elementFormDefault", "qualified");
-							schema->add_attribute("attributeFormDefault", "unqualified");
-							types->add_child(schema);
+							xml::element* schema(new xml::element("xsd:schema"));
+							schema->set_attribute("targetNamespace", m_ns);
+							schema->set_name_space("xsd", "http://www.w3.org/2001/XMLSchema");
+							schema->set_attribute("elementFormDefault", "qualified");
+							schema->set_attribute("attributeFormDefault", "unqualified");
+							types->append(schema);
 
 							// add wsdl:binding
-							xml::node_ptr binding(new xml::node("binding", "wsdl"));
-							binding->add_attribute("name", m_service);
-							binding->add_attribute("type", xml::kPrefix + ':' + m_service + "PortType");
+							xml::element* binding(new xml::element("wsdl:binding"));
+							binding->set_attribute("name", m_service);
+							binding->set_attribute("type", xml::kPrefix + ':' + m_service + "PortType");
 							
 							// add soap:binding
-							xml::node_ptr soapBinding(new xml::node("binding", "soap"));
-							soapBinding->add_attribute("style", "document");
-							soapBinding->add_attribute("transport", "http://schemas.xmlsoap.org/soap/http");
-							binding->add_child(soapBinding);
+							xml::element* soapBinding(new xml::element("soap:binding"));
+							soapBinding->set_attribute("style", "document");
+							soapBinding->set_attribute("transport", "http://schemas.xmlsoap.org/soap/http");
+							binding->append(soapBinding);
 							
 							// add wsdl:portType
-							xml::node_ptr portType(new xml::node("portType", "wsdl"));
-							portType->add_attribute("name", m_service + "PortType");
+							xml::element* portType(new xml::element("wsdl:portType"));
+							portType->set_attribute("name", m_service + "PortType");
 							
 							// and the types
 							xml::type_map typeMap;
@@ -352,27 +348,27 @@ class dispatcher
 								cb->collect(typeMap, messageMap, portType, binding);
 							
 							for (detail::message_map::iterator m = messageMap.begin(); m != messageMap.end(); ++m)
-								wsdl->add_child(m->second);
+								wsdl->append(m->second);
 							
 							for (xml::type_map::iterator t = typeMap.begin(); t != typeMap.end(); ++t)
-								schema->add_child(t->second);
+								schema->append(t->second);
 							
-							wsdl->add_child(portType);
-							wsdl->add_child(binding);
+							wsdl->append(portType);
+							wsdl->append(binding);
 							
 							// finish with the wsdl:service
-							xml::node_ptr service(new xml::node("service", "wsdl"));
-							service->add_attribute("name", m_service);
-							wsdl->add_child(service);
+							xml::element* service(new xml::element("wsdl:service"));
+							service->set_attribute("name", m_service);
+							wsdl->append(service);
 							
-							xml::node_ptr port(new xml::node("port", "wsdl"));
-							port->add_attribute("name", m_service);
-							port->add_attribute("binding", xml::kPrefix + ':' + m_service);
-							service->add_child(port);
+							xml::element* port(new xml::element("wsdl:port"));
+							port->set_attribute("name", m_service);
+							port->set_attribute("binding", xml::kPrefix + ':' + m_service);
+							service->append(port);
 							
-							xml::node_ptr soapAddress(new xml::node("address", "soap"));
-							soapAddress->add_attribute("location", address);
-							port->add_child(soapAddress);
+							xml::element* soapAddress(new xml::element("soap:address"));
+							soapAddress->set_attribute("location", address);
+							port->append(soapAddress);
 							
 							return wsdl;
 						}

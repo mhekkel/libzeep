@@ -41,7 +41,7 @@ struct reply
 	std::vector<header>	headers;
 	std::string			content;
 
-	void				set_content(xml::node_ptr data);
+	void				set_content(xml::element* data);
 	
 	void				set_content(const std::string& data,
 							const std::string& mimetype);

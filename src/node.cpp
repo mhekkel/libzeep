@@ -16,6 +16,7 @@
 #include "zeep/xml/node.hpp"
 #include "zeep/xml/document.hpp"
 #include "zeep/xml/writer.hpp"
+#include "zeep/exception.hpp"
 
 #define nil NULL
 
@@ -78,6 +79,38 @@ string node::lang() const
 	return result;
 }
 
+void node::append_to_list(node* n)
+{
+	if (m_next != nil)
+		m_next->append_to_list(n);
+	else
+	{
+		m_next = n;
+		n->m_prev = this;
+		n->m_parent = m_parent;
+		n->m_next = nil;
+	}
+}
+
+void node::remove_from_list(node* n)
+{
+	assert (this != n);
+	if (this == n)
+		throw exception("inconsistent node tree");
+
+	if (m_next == n)
+	{
+		m_next = n->m_next;
+		if (m_next != nil)
+			m_next->m_prev = m_next;
+		n->m_next = n->m_prev = n->m_parent = nil;
+	}
+	else if (m_next != nil)
+		m_next->remove_from_list(n);
+	else
+		throw exception("remove for a node not found in the list");
+}
+
 // --------------------------------------------------------------------
 // comment
 
@@ -129,6 +162,28 @@ bool text::equals(const node* n) const
 // --------------------------------------------------------------------
 // attribute
 
+string attribute::local_name() const
+{
+	string result = m_qname;
+	
+	string::size_type d = m_qname.find(':');
+	if (d != string::npos)
+		result = result.substr(d + 1);
+
+	return result;
+}
+
+string attribute::prefix() const
+{
+	string result = m_qname;
+	
+	string::size_type d = m_qname.find(':');
+	if (d != string::npos)
+		result = result.substr(0, d);
+
+	return result;
+}
+
 void attribute::write(writer& w) const
 {
 	assert(false);
@@ -141,9 +196,27 @@ bool attribute::equals(const node* n) const
 	{
 		const attribute* a = static_cast<const attribute*>(n);
 		
-		result = m_name == a->m_name and
-				 m_value == a->m_value and
-				 m_prefix == a->m_prefix;
+		result = m_qname == a->m_qname and
+				 m_value == a->m_value;
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+// name_space
+
+void name_space::write(writer& w) const
+{
+	assert(false);
+}
+
+bool name_space::equals(const node* n) const
+{
+	bool result = false;
+	if (node::equals(n))
+	{
+		const name_space* ns = static_cast<const name_space*>(n);
+		result = m_prefix == ns->m_prefix and m_uri == ns->m_uri;
 	}
 	return result;
 }
@@ -151,10 +224,41 @@ bool attribute::equals(const node* n) const
 // --------------------------------------------------------------------
 // element
 
+element::element(const std::string& qname)
+	: m_qname(qname)
+	, m_child(nil)
+	, m_attribute(nil)
+	, m_name_space(nil)
+{
+}
+
 element::~element()
 {
 	delete m_child;
 	delete m_attribute;
+	delete m_name_space;
+}
+
+string element::local_name() const
+{
+	string result = m_qname;
+	
+	string::size_type d = m_qname.find(':');
+	if (d != string::npos)
+		result = result.substr(d + 1);
+
+	return result;
+}
+
+string element::prefix() const
+{
+	string result = m_qname;
+	
+	string::size_type d = m_qname.find(':');
+	if (d != string::npos)
+		result = result.substr(0, d);
+
+	return result;
 }
 
 string element::str() const
@@ -196,7 +300,7 @@ void element::content(const string& s)
 	
 	// if there was none, add it
 	if (child == nil)
-		add(new text(s));
+		append(new text(s));
 	else
 	{
 		// otherwise, replace its content
@@ -209,10 +313,7 @@ void element::content(const string& s)
 			
 			if (dynamic_cast<text*>(next) != nil)
 			{
-				child->m_next = next->m_next;
-				if (child->m_next != nil)
-					child->m_next->m_prev = child;
-				
+				child->remove_from_list(next);
 				delete next;
 			}
 			else
@@ -221,24 +322,16 @@ void element::content(const string& s)
 	}
 }
 
-void element::add(node_ptr n)
+void element::append(node_ptr n)
 {
-	n->m_parent = this;
-	n->m_next = nil;
-
 	if (m_child == nil)
 	{
 		m_child = n;
-		n->m_prev = nil;
+		m_child->m_parent = this;
+		m_child->m_next = m_child->m_prev = nil;
 	}
 	else
-	{
-		node* child = m_child;
-		while (child->m_next != nil)
-			child = child->m_next;
-		child->m_next = n;
-		n->m_prev = child;
-	}
+		m_child->append_to_list(n);
 }
 
 void element::remove(node_ptr n)
@@ -252,21 +345,7 @@ void element::remove(node_ptr n)
 			m_child->m_prev = nil;
 	}
 	else
-	{
-		node* child = m_child;
-		while (child->m_next != nil and child->m_next != n)
-			child = child->m_next;
-		
-		assert(child != nil);
-		assert(child->m_next == n);
-		
-		if (child != nil and child->m_next == n)
-		{
-			child->m_next = n->m_next;
-			if (child->m_next != nil)
-				child->m_next->m_prev = child;
-		}
-	}
+		m_child->remove_from_list(n);
 }
 
 void element::add_text(const std::string& s)
@@ -281,7 +360,7 @@ void element::add_text(const std::string& s)
 	if (t != nil)
 		t->str(t->str() + s);
 	else
-		add(new text(s));
+		append(new text(s));
 }
 
 node_set element::children() const
@@ -298,6 +377,18 @@ node_set element::children() const
 	return result;
 }
 
+element* element::find_first_child(const std::string& name)
+{
+	node* result = m_child;
+	while (result != nil)
+	{
+		if (dynamic_cast<element*>(result) != nil and static_cast<element*>(result)->local_name() == name)
+			break;
+		result = result->next();
+	}
+	return static_cast<element*>(result);
+}
+
 attribute_set element::attributes() const
 {
 	attribute_set result;
@@ -312,13 +403,13 @@ attribute_set element::attributes() const
 	return result;
 }
 
-string element::get_attribute(const string& name) const
+string element::get_attribute(const string& qname) const
 {
 	string result;
 
 	for (attribute* attr = m_attribute; attr != nil; attr = static_cast<attribute*>(attr->next()))
 	{
-		if (attr->name() == name)
+		if (attr->qname() == qname)
 		{
 			result = attr->value();
 			break;
@@ -328,13 +419,13 @@ string element::get_attribute(const string& name) const
 	return result;
 }
 
-attribute* element::get_attribute_node(const string& name) const
+attribute* element::get_attribute_node(const string& qname) const
 {
 	attribute* attr = m_attribute;
 
 	while (attr != nil)
 	{
-		if (attr->name() == name)
+		if (attr->qname() == qname)
 			break;
 		attr = static_cast<attribute*>(attr->next());
 	}
@@ -342,18 +433,106 @@ attribute* element::get_attribute_node(const string& name) const
 	return attr;
 }
 
-void element::set_attribute(const string& ns, const string& name, const string& value)
+void element::set_attribute(const string& qname, const string& value)
 {
-	attribute* attr = get_attribute_node(name);
+	attribute* attr = get_attribute_node(qname);
 	if (attr != nil)
 		attr->value(value);
 	else
 	{
-		attr = new attribute(name, "", value);
-		attr->m_next = m_attribute;
-		m_attribute = attr;
+		attr = new attribute(qname, value);
+		
+		if (m_attribute == nil)
+		{
+			m_attribute = attr;
+			m_attribute->m_parent = this;
+		}
+		else
+			m_attribute->append_to_list(attr);
 	}
-#pragma message("fix me")
+}
+
+void element::remove_attribute(const string& qname)
+{
+	attribute* n = get_attribute_node(qname);
+	
+	if (n != nil)
+	{
+		assert(n->m_parent == this);
+		
+		if (m_attribute == n)
+		{
+			m_attribute = static_cast<attribute*>(m_attribute->m_next);
+			if (m_attribute != nil)
+				m_attribute->m_prev = nil;
+		}
+		else
+			m_attribute->remove_from_list(n);
+	}	
+}
+
+string element::ns_name_for_prefix(const string& prefix) const
+{
+	string result;
+	
+	for (name_space* ns = m_name_space; ns != nil; ns = static_cast<name_space*>(ns->next()))
+	{
+		if (ns->prefix() == prefix)
+		{
+			result = ns->uri();
+			break;
+		}
+	}
+	
+	if (result.empty() and dynamic_cast<element*>(m_parent) != nil)
+		result = static_cast<element*>(m_parent)->ns_name_for_prefix(prefix);
+	
+	return result;
+}
+
+string element::prefix_for_ns_name(const string& uri) const
+{
+	string result;
+	
+	for (name_space* ns = m_name_space; ns != nil; ns = static_cast<name_space*>(ns->next()))
+	{
+		if (ns->uri() == uri)
+		{
+			result = ns->prefix();
+			break;
+		}
+	}
+	
+	if (result.empty() and dynamic_cast<element*>(m_parent) != nil)
+		result = static_cast<element*>(m_parent)->prefix_for_ns_name(uri);
+	
+	return result;
+}
+
+void element::set_name_space(const string& prefix, const string& uri)
+{
+	name_space* ns;
+	for (ns = m_name_space; ns != nil; ns = static_cast<name_space*>(ns->next()))
+	{
+		if (ns->prefix() == prefix)
+		{
+			ns->uri(uri);
+			break;
+		}
+	}
+	
+	if (ns == nil)
+	{
+		ns = new name_space(prefix, uri);
+
+		if (m_name_space == nil)
+		{
+			m_name_space = ns;
+			m_name_space->m_parent = this;
+		}
+		else
+			m_name_space->append_to_list(ns);
+	}
 }
 
 string element::lang() const
@@ -371,15 +550,25 @@ void element::write(writer& w) const
 	attribute* attr = m_attribute;
 	while (attr != nil)
 	{
-		attrs.push_back(make_pair(attr->name(), attr->value()));
+		attrs.push_back(make_pair(attr->qname(), attr->value()));
 		attr = static_cast<attribute*>(attr->next());
 	}
 	
+	name_space* ns = m_name_space;
+	while (ns != nil)
+	{
+		if (ns->prefix().empty())
+			attrs.push_back(make_pair("xmlns", ns->uri()));
+		else
+			attrs.push_back(make_pair(string("xmlns") + ':' + ns->prefix(), ns->uri()));
+		ns = static_cast<name_space*>(ns->next());
+	}
+
 	if (m_child == nil)
-		w.write_empty_element(m_ns, m_name, attrs);
+		w.write_empty_element(m_qname, attrs);
 	else
 	{
-		w.write_start_element(m_ns, m_name, attrs);
+		w.write_start_element(m_qname, attrs);
 
 		node* child = m_child;
 		while (child != nil)
@@ -388,7 +577,7 @@ void element::write(writer& w) const
 			child = child->next();
 		}
 		
-		w.write_end_element(m_ns, m_name);
+		w.write_end_element(m_qname);
 	}
 }
 
@@ -396,9 +585,7 @@ bool element::equals(const node* n) const
 {
 	bool result = false;
 	if (node::equals(n) and
-		m_ns == static_cast<const element*>(n)->m_ns and
-		m_name == static_cast<const element*>(n)->m_name and
-		m_prefix == static_cast<const element*>(n)->m_prefix)
+		m_qname == static_cast<const element*>(n)->m_qname)
 	{
 		result = true;
 		
@@ -406,9 +593,19 @@ bool element::equals(const node* n) const
 		
 		if (m_child != nil and e->m_child != nil)
 			result = m_child->equals(e->m_child);
+		else
+			result = m_child == nil and e->m_child == nil;
 		
 		if (result and m_attribute != nil and e->m_attribute != nil)
 			result = m_attribute->equals(e->m_attribute);
+		else
+			result = m_attribute == nil and e->m_attribute == nil;
+
+		if (result and m_name_space != nil and e->m_name_space != nil)
+			result = m_name_space->equals(e->m_name_space);
+		else
+			result = m_name_space == nil and e->m_name_space == nil;
+
 	}
 
 	return result;
@@ -423,11 +620,11 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 		cout << "base class???";
 	else if (typeid(rhs) == typeid(element))
 	{
-		cout << "element <" << static_cast<const element&>(rhs).name();
+		cout << "element <" << static_cast<const element&>(rhs).qname();
 		
 		const element* e = static_cast<const element*>(&rhs);
 		foreach (const attribute* attr, e->attributes())
-			cout << ' ' << attr->name() << "=\"" << attr->value() << '"';
+			cout << ' ' << attr->qname() << "=\"" << attr->value() << '"';
 		
 		cout << '>';
 	}

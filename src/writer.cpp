@@ -29,6 +29,7 @@ writer::writer(std::ostream& os)
 	, m_trim(false)
 	, m_indent(2)
 	, m_level(0)
+	, m_wrote_element(false)
 {
 }
 				
@@ -59,6 +60,8 @@ void writer::write_xml_decl(bool standalone)
 		if (m_wrap)
 			m_os << endl;
 	}
+	
+	m_wrote_element = true;
 }
 
 void writer::write_start_doctype(const string& root, const string& dtd)
@@ -70,6 +73,8 @@ void writer::write_start_doctype(const string& root, const string& dtd)
 
 	if (m_wrap)
 		m_os << endl;
+
+	m_wrote_element = true;
 }
 
 void writer::write_end_doctype()
@@ -77,6 +82,8 @@ void writer::write_end_doctype()
 	m_os << "]>";
 	if (m_wrap)
 		m_os << endl;
+
+	m_wrote_element = true;
 }
 
 void writer::write_empty_doctype(const string& root, const string& dtd)
@@ -88,6 +95,8 @@ void writer::write_empty_doctype(const string& root, const string& dtd)
 
 	if (m_wrap)
 		m_os << endl;
+
+	m_wrote_element = true;
 }
 
 void writer::write_notation(const string& name,
@@ -105,6 +114,8 @@ void writer::write_notation(const string& name,
 	m_os << '>';
 	if (m_wrap)
 		m_os << endl;
+
+	m_wrote_element = true;
 }
 
 void writer::write_attribute(const string& name, const string& value)
@@ -113,6 +124,7 @@ void writer::write_attribute(const string& name, const string& value)
 		m_os << ' ';
 	else
 	{
+		m_os << endl;
 		for (int i = 0; i < m_indent * (m_level + 1); ++i)
 			m_os << ' ';
 	}
@@ -138,25 +150,19 @@ void writer::write_attribute(const string& name, const string& value)
 	}
 	
 	m_os << '"';
-
-	if (m_wrap)
-		m_os << endl;
 }
 
-void writer::write_empty_element(const string& prefix, const string& name,
-	const attribute_list& attrs)
+void writer::write_empty_element(const string& qname, const attribute_list& attrs)
 {
-	assert(prefix.empty());
-	
 	if (m_collapse_empty)
 	{
 		for (int i = 0; i < m_indent * m_level; ++i)
 			m_os << ' ';
 		
-		m_os << '<';
-		if (not prefix.empty())
-			m_os << prefix << ':';
-		m_os << name;
+		m_os << '<' << qname;
+
+		if (not attrs.empty() and m_wrap)
+			m_os << endl;
 		
 		for_each (attrs.begin(), attrs.end(),
 			boost::bind(&writer::write_attribute, this,
@@ -170,21 +176,20 @@ void writer::write_empty_element(const string& prefix, const string& name,
 	}
 	else
 	{
-		write_start_element(prefix, name, attrs);
-		write_end_element(prefix, name);
+		write_start_element(qname, attrs);
+		write_end_element(qname);
 	}
+
+	m_wrote_element = true;
 }
 
-void writer::write_start_element(const string& prefix,
-					const string& name, const attribute_list& attrs)
+void writer::write_start_element(const string& qname,
+	const attribute_list& attrs)
 {
 	for (int i = 0; i < m_indent * m_level; ++i)
 		m_os << ' ';
 		
-	m_os << '<';
-	if (not prefix.empty())
-		m_os << prefix << ':';
-	m_os << name;
+	m_os << '<' << qname;
 
 	for_each (attrs.begin(), attrs.end(),
 		boost::bind(&writer::write_attribute, this,
@@ -197,32 +202,50 @@ void writer::write_start_element(const string& prefix,
 		m_os << endl;
 	
 	++m_level;
+	m_wrote_element = true;
 }
 
-void writer::write_end_element(const string& prefix,
-					const string& name)
+void writer::write_end_element(const string& qname)
 {
 	--m_level;
 
-	for (int i = 0; i < m_indent * m_level; ++i)
-		m_os << ' ';
+	if (m_wrote_element)
+	{
+		for (int i = 0; i < m_indent * m_level; ++i)
+			m_os << ' ';
+	}
 	
-	assert(prefix.empty());
-	m_os << "</" << name << '>';
+	m_os << "</" << qname << '>';
 	
 	if (m_wrap)
 		m_os << endl;
+
+	m_wrote_element = true;
 }
 
 void writer::write_comment(const string& text)
 {
+	if (m_wrap)
+		m_os << endl;
+	
+	for (int i = 0; i < m_indent * m_level; ++i)
+		m_os << ' ';
+
 	m_os << "<!--" << text << "-->";
+	m_wrote_element = true;
 }
 
 void writer::write_processing_instruction(const string& target,
 					const string& text)
 {
+	if (m_wrap)
+		m_os << endl;
+	
+	for (int i = 0; i < m_indent * m_level; ++i)
+		m_os << ' ';
+
 	m_os << "<?" << target << ' ' << text << "?>";
+	m_wrote_element = true;
 }
 
 void writer::write_text(const string& text)
@@ -244,6 +267,8 @@ void writer::write_text(const string& text)
 			default:	m_os << c;					last_is_space = false; break;
 		}
 	}
+
+	m_wrote_element = false;
 }
 
 }

@@ -16,53 +16,53 @@ envelope::envelope()
 
 envelope::envelope(xml::document& data)
 {
-	xml::node_ptr env = data.root();	// envelope
-	if (env->name() != "Envelope" or env->ns() != "http://schemas.xmlsoap.org/soap/envelope/")
+	xml::element* env = data.root();	// envelope
+	if (env->local_name() != "Envelope" or env->ns_name() != "http://schemas.xmlsoap.org/soap/envelope/")
 		throw exception("Invalid SOAP envelope");
 	
 	if (env->children().empty())
 		throw exception("Invalid SOAP envelope, missing body");
 	
-	m_body = env->children().front();
-	if (not m_body or m_body->ns() != "http://schemas.xmlsoap.org/soap/envelope/")
+	m_body = dynamic_cast<xml::element*>(env->children().front());
+	if (not m_body or m_body->ns_name() != "http://schemas.xmlsoap.org/soap/envelope/")
 		throw exception("Invalid SOAP envelope");
 }
 
-xml::node_ptr envelope::request()
+xml::element* envelope::request()
 {
 	if (m_body->children().empty())
 		throw exception("Invalid SOAP envelope, missing request");
 	
-	return m_body->children().front();
+	return dynamic_cast<xml::element*>(m_body->children().front());
 }
 
-xml::node_ptr make_envelope(xml::node_ptr data)
+xml::element* make_envelope(xml::element* data)
 {
-	xml::node_ptr env(new xml::node("Envelope", "http://schemas.xmlsoap.org/soap/envelope/", "env"));
-	env->add_attribute("xmlns:env", "http://schemas.xmlsoap.org/soap/envelope/");
-	xml::node_ptr body(new xml::node("env:Body"));
-	env->add_child(body);
-	body->add_child(data);
+	xml::element* env(new xml::element("env:Envelope"));
+	env->set_name_space("env", "http://schemas.xmlsoap.org/soap/envelope/");
+	xml::element* body(new xml::element("env:Body"));
+	env->append(body);
+	body->append(data);
 	
 	return env;
 }
 
-xml::node_ptr make_fault(const string& what)
+xml::element* make_fault(const string& what)
 {
-	xml::node_ptr fault(new xml::node("env:Fault"));
+	xml::element* fault(new xml::element("env:Fault"));
 	
-	xml::node_ptr faultCode(new xml::node("faultcode"));
-	faultCode->add_content("env:Server");
-	fault->add_child(faultCode);
+	xml::element* faultCode(new xml::element("faultcode"));
+	faultCode->content("env:Server");
+	fault->append(faultCode);
 	
-	xml::node_ptr faultString(new xml::node("faultstring"));
-	faultString->add_content(what);
-	fault->add_child(faultString);
+	xml::element* faultString(new xml::element("faultstring"));
+	faultString->content(what);
+	fault->append(faultString);
 
 	return make_envelope(fault);
 }
 
-xml::node_ptr make_fault(const std::exception& ex)
+xml::element* make_fault(const std::exception& ex)
 {
 	return make_fault(ex.what());
 }

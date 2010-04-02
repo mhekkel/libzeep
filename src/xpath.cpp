@@ -757,14 +757,14 @@ class name_test_step_expression : public step_expression
 							if (result == false)
 							{
 								const element* e = dynamic_cast<const element*>(n);
-								if (e != nil and e->name() == m_name)
+								if (e != nil and e->qname() == m_name)
 									result = true;
 							}
 
 							if (result == false)
 							{
 								const attribute* a = dynamic_cast<const attribute*>(n);
-								if (a != nil and a->name() == m_name)
+								if (a != nil and a->qname() == m_name)
 									result = true;
 							}
 							
@@ -1228,7 +1228,7 @@ object core_function_expression<cf_LocalName>::evaluate(expression_context& cont
 	if (e == nil)
 		throw exception("argument is not an element in function 'local-name'");
 
-	return e->name();
+	return e->local_name();
 }
 
 template<>
@@ -1247,7 +1247,7 @@ object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& c
 		
 	if (e == nil)
 		throw exception("argument is not an element in function 'namespace-uri'");
-	return e->ns();
+	return e->ns_name_for_prefix(e->prefix());
 }
 
 template<>
@@ -1267,7 +1267,7 @@ object core_function_expression<cf_Name>::evaluate(expression_context& context)
 	if (e == nil)
 		throw exception("argument is not an element in function 'name'");
 
-	return e->name();
+	return e->qname();
 }
 
 template<>

@@ -246,9 +246,9 @@ void run_test_case(const xml::element* testcase, const string& id,
 	
 	string path;
 	if (id.empty())
-		path = "TEST";
+		path = ".//TEST";
 	else
-		path = string("TEST[@ID='") + id + "']";
+		path = string(".//TEST[@ID='") + id + "']";
 	
 	foreach (const xml::node* testcasenode, xml::xpath(path).evaluate(*testcase))
 	{
@@ -286,7 +286,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	foreach (const xml::node* test, xml::xpath("/TESTSUITE//TESTCASES").evaluate(doc))
+	foreach (const xml::node* test, xml::xpath("//TESTCASES").evaluate(doc))
 	{
 		run_test_case(static_cast<const xml::element*>(test), id, type, base_dir, failed_ids);
 	}
