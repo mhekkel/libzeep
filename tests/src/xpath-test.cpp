@@ -64,7 +64,12 @@ bool run_test(const xml::element& test)
 	
 	if (ns.size() != boost::lexical_cast<unsigned int>(test.get_attribute("expected-size")))
 	{
-		cout << "incorrect number of nodes in returned node-set" << endl;
+		cout << "incorrect number of nodes in returned node-set: " << endl;
+
+		int nr = 1;
+		foreach (const xml::node* n, ns)
+			cout << nr++ << ">> " << *n << endl;
+
 		result = false;
 	}
 

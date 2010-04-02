@@ -94,10 +94,12 @@ enum AxisType
 	ax_Parent,
 	ax_Preceding,
 	ax_PrecedingSibling,
-	ax_Self
+	ax_Self,
+	
+	ax_AxisTypeCount
 };
 
-const char* kAxisNames[ax_Self + 1] =
+const char* kAxisNames[ax_AxisTypeCount] =
 {
 	"ancestor",
 	"ancestor-or-self",
@@ -154,32 +156,33 @@ struct CoreFunctionInfo
 	int				arg_count;
 };
 
-#pragma message("dit moet dus anders... optional parameters en zo")
+const int kOptionalArgument = -100;
+
 const CoreFunctionInfo kCoreFunctionInfo[cf_CoreFunctionCount] =
 {
 	{ "last",				0 },
 	{ "position",			0 },
 	{ "count",				1 },
 	{ "id",					0 },
-	{ "local-name",			0 },
-	{ "namespace-uri",		0 },
-	{ "name",				0 },
-	{ "string",				0 },
+	{ "local-name",			kOptionalArgument },
+	{ "namespace-uri",		kOptionalArgument },
+	{ "name",				kOptionalArgument },
+	{ "string",				kOptionalArgument },
 	{ "concat",				-2 },
 	{ "starts-with",		2 },
 	{ "contains",			2 },
 	{ "substring-before",	2 },
 	{ "substring-after",	2 },
-	{ "substring",			3 },
-	{ "string-length",		1 },
-	{ "normalize-space",	1 },
+	{ "substring",			-2 },
+	{ "string-length",		kOptionalArgument },
+	{ "normalize-space",	kOptionalArgument },
 	{ "translate",			3 },
 	{ "boolean",			1 },
 	{ "not",				1 },
 	{ "true"	,			0 },
 	{ "false",				0 },
 	{ "lang",				0 },
-	{ "number",				-10 },		// signal (this sucks, I know...)
+	{ "number",				kOptionalArgument },
 	{ "sum",				0 },
 	{ "floor",				1 },
 	{ "ceiling",			1 },
@@ -215,7 +218,7 @@ class object
 	object_type			type() const					{ return m_type; }
 
 	template<typename T>
-	T					as();
+	const T				as() const;
 	
   private:
 	object_type			m_type;
@@ -286,36 +289,8 @@ object& object::operator=(const object& o)
 	return *this;
 }
 
-bool object::operator==(const object o)
-{
-	bool result = true;
-	switch (m_type)
-	{
-		case ot_node_set:	result = m_node_set == o.m_node_set; break;
-		case ot_boolean:	result = m_boolean == o.m_boolean; break;
-		case ot_number:		result = m_number == o.m_number; break;
-		case ot_string:		result = m_string == o.m_string; break;
-		default: 			break;
-	}
-	return result;
-}
-
-bool object::operator<(const object o)
-{
-	bool result = true;
-	switch (m_type)
-	{
-		case ot_node_set:	result = m_node_set < o.m_node_set; break;
-		case ot_boolean:	result = m_boolean < o.m_boolean; break;
-		case ot_number:		result = m_number < o.m_number; break;
-		case ot_string:		result = m_string < o.m_string; break;
-		default: 			break;
-	}
-	return result;
-}
-
 template<>
-node_set& object::as<node_set&>()
+const node_set& object::as<const node_set&>() const
 {
 	if (m_type != ot_node_set)
 		throw exception("object is not of type node-set");
@@ -323,7 +298,7 @@ node_set& object::as<node_set&>()
 }
 
 template<>
-bool object::as<bool>()
+const bool object::as<bool>() const
 {
 	bool result;
 	switch (m_type)
@@ -339,7 +314,7 @@ bool object::as<bool>()
 }
 
 template<>
-double object::as<double>()
+const double object::as<double>() const
 {
 	double result;
 	switch (m_type)
@@ -354,7 +329,7 @@ double object::as<double>()
 }
 
 template<>
-int object::as<int>()
+const int object::as<int>() const
 {
 	if (m_type != ot_number)
 		throw exception("object is not of type number");
@@ -362,7 +337,7 @@ int object::as<int>()
 }
 
 template<>
-string& object::as<string&>()
+const string& object::as<const string&>() const
 {
 	if (m_type != ot_string)
 		throw exception("object is not of type string");
@@ -370,7 +345,7 @@ string& object::as<string&>()
 }
 
 template<>
-string object::as<string>()
+const string object::as<string>() const
 {
 	string result;
 	
@@ -387,6 +362,62 @@ string object::as<string>()
 	}
 
 	return result;
+}
+
+bool object::operator==(const object o)
+{
+	bool result = false;
+	
+	if (m_type == o.m_type)
+	{
+		switch (m_type)
+		{
+			case ot_node_set:	result = m_node_set == o.m_node_set; break;
+			case ot_boolean:	result = m_boolean == o.m_boolean; break;
+			case ot_number:		result = m_number == o.m_number; break;
+			case ot_string:		result = m_string == o.m_string; break;
+			default: 			break;
+		}
+	}
+	else
+	{
+		if (m_type == ot_number or o.m_type == ot_number)
+			result = as<double>() == o.as<double>();
+		else if (m_type == ot_string or o.m_type == ot_string)
+			result = as<string>() == o.as<string>();
+		else if (m_type == ot_boolean or o.m_type == ot_boolean)
+			result = as<bool>() == o.as<bool>();
+	}
+	
+	return result;
+}
+
+bool object::operator<(const object o)
+{
+	bool result = false;
+	switch (m_type)
+	{
+		case ot_node_set:	result = m_node_set < o.m_node_set; break;
+		case ot_boolean:	result = m_boolean < o.m_boolean; break;
+		case ot_number:		result = m_number < o.m_number; break;
+		case ot_string:		result = m_string < o.m_string; break;
+		default: 			break;
+	}
+	return result;
+}
+
+ostream& operator<<(ostream& lhs, object& rhs)
+{
+	switch (rhs.type())
+	{
+		case ot_undef:		lhs << "undef()";						break;
+		case ot_number:		lhs << "number(" << rhs.as<double>() << ')';	break;
+		case ot_string:		lhs << "string(" << rhs.as<string>() << ')'; break;
+		case ot_boolean:	lhs << "boolean(" << (rhs.as<bool>() ? "true" : "false") << ')'; break;
+		case ot_node_set:	lhs << "node_set(#" << rhs.as<const node_set&>().size() << ')'; break;
+	}
+	
+	return lhs;
 }
 
 // --------------------------------------------------------------------
@@ -490,7 +521,12 @@ template<typename PREDICATE>
 void iterate_attributes(element* e, node_set& s, PREDICATE pred)
 {
 	foreach (const attribute& a, e->attributes())
-		s.push_back(e->get_attribute_node(a.node()));
+	{
+		attribute_node* an = e->get_attribute_node(a.name());
+		
+		if (pred(an))
+			s.push_back(an);
+	}
 }
 
 // --------------------------------------------------------------------
@@ -501,7 +537,7 @@ struct expression_context
 //						context(node* n, node_set& s)
 //							: m_node(n), m_node_set(s) {}
 
-						expression_context(node* n, node_set& s)
+						expression_context(node* n, const node_set& s)
 							: m_node(n), m_node_set(s) {}
 
 	void				dump();
@@ -510,7 +546,7 @@ struct expression_context
 	int					last() const;
 	
 	node*				m_node;
-	node_set&			m_node_set;
+	const node_set&		m_node_set;
 };
 
 int expression_context::position() const
@@ -548,18 +584,38 @@ ostream& operator<<(ostream& lhs, expression_context& rhs)
 	return lhs;
 }
 
-#if 0
+void indent(int level)
+{
+	while (level-- > 0) cout << ' ';
+}
+
 // --------------------------------------------------------------------
 
+class expression
+{
+  public:
+	virtual				~expression() {}
+	virtual object		evaluate(expression_context& context) = 0;
+
+	virtual void		print(int level) = 0;
+};
+
+typedef boost::shared_ptr<expression>	expression_ptr;
+typedef list<expression_ptr>			expression_list;
+
+// --------------------------------------------------------------------
+
+#if 0
 struct trace
 {
-				trace(const char* func, expression_context& context)
+				trace(const char* func, expression_context& context, expression* expr)
 					: m_func(func)
 					, m_context(context)
 				{
 					for (int i = 0; i < s_nesting_level; ++i)
 						cout << "  ";
 					cout << m_func << endl << m_context << endl;
+					cout << " >>> "; expr->print(s_nesting_level);
 					++s_nesting_level;
 				}
 		
@@ -579,29 +635,10 @@ struct trace
 
 int trace::s_nesting_level;
 
-#define TRACE	trace trace(BOOST_CURRENT_FUNCTION, context);
+#define TRACE	trace trace(BOOST_CURRENT_FUNCTION, context, this);
 #else
 #define TRACE
 #endif
-
-void indent(int level)
-{
-	while (level-- > 0) cout << ' ';
-}
-
-// --------------------------------------------------------------------
-
-class expression
-{
-  public:
-	virtual				~expression() {}
-	virtual object		evaluate(expression_context& context) = 0;
-
-	virtual void		print(int level) = 0;
-};
-
-typedef boost::shared_ptr<expression>	expression_ptr;
-typedef list<expression_ptr>			expression_list;
 
 // --------------------------------------------------------------------
 
@@ -689,6 +726,9 @@ object step_expression::evaluate(expression_context& context, T pred)
 
 			case ax_Namespace:
 				throw exception("unimplemented axis");
+				
+			case ax_AxisTypeCount:
+				;
 		}
 	}
 
@@ -704,10 +744,7 @@ class name_test_step_expression : public step_expression
 							: step_expression(axis)
 							, m_name(name)
 						{
-							if (m_name == "*")
-								m_test = boost::bind(&name_test_step_expression::asterisk, _1);
-							else
-								m_test = boost::bind(&element::name, _1) == m_name;
+							m_test = boost::bind(&name_test_step_expression::name_matches, this, _1);
 						}
 
 	virtual object		evaluate(expression_context& context);
@@ -716,10 +753,28 @@ class name_test_step_expression : public step_expression
 
   protected:
 
-	static bool			asterisk(const element*)					{ return true; }
+	bool				name_matches(const node* n)
+						{
+							bool result = m_name == "*";
+							if (result == false)
+							{
+								const element* e = dynamic_cast<const element*>(n);
+								if (e != nil and e->name() == m_name)
+									result = true;
+							}
+
+							if (result == false)
+							{
+								const attribute_node* a = dynamic_cast<const attribute_node*>(n);
+								if (a != nil and a->name() == m_name)
+									result = true;
+							}
+							
+							return result;
+						}
 
 	string									m_name;
-	boost::function<bool(const element*)>	m_test;
+	boost::function<bool(const node*)>		m_test;
 };
 
 object name_test_step_expression::evaluate(expression_context& context)
@@ -747,7 +802,7 @@ class node_type_expression : public step_expression
   private:
 	static bool			test(const node* n)					{ return dynamic_cast<const T*>(n) != nil; }
 
-	boost::function<bool(const element*)>	m_test;
+	boost::function<bool(const node*)>		m_test;
 };
 
 template<typename T>
@@ -825,6 +880,8 @@ object operator_expression<xp_OperatorEqual>::evaluate(expression_context& conte
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
+cout << "compare equal v1(" << v1 << ") and v2(" << v2 << ") results in " << (v1 == v2 ? "true" : "false" ) << endl;
+
 	return v1 == v2;
 }
 
@@ -971,11 +1028,11 @@ object path_expression::evaluate(expression_context& context)
 		throw exception("filter does not evaluate to a node-set");
 	
 	node_set result;
-	foreach (node* n, v.as<node_set&>())
+	foreach (node* n, v.as<const node_set&>())
 	{
-		expression_context ctxt(n, v.as<node_set&>());
+		expression_context ctxt(n, v.as<const node_set&>());
 		
-		node_set s = m_rhs->evaluate(ctxt).as<node_set&>();
+		node_set s = m_rhs->evaluate(ctxt).as<const node_set&>();
 
 		copy(s.begin(), s.end(), back_inserter(result));
 	}
@@ -1012,21 +1069,22 @@ object predicate_expression::evaluate(expression_context& context)
 	
 	node_set result;
 	
-	foreach (node* n, v.as<node_set&>())
+	foreach (node* n, v.as<const node_set&>())
 	{
-		expression_context ctxt(n, v.as<node_set&>());
+		expression_context ctxt(n, v.as<const node_set&>());
 		
 		object test = m_pred->evaluate(ctxt);
-		
-		if (test.type() == ot_boolean)
+
+if (VERBOSE)
+	cout << "result for test is " << test << endl;
+
+		if (test.type() == ot_number)
 		{
-			if (test.as<bool>())
+			if (ctxt.position() == test.as<double>())
 				result.push_back(n);
 		}
-		else if (test.type() == ot_number and ctxt.position() == test.as<double>())
-		{
+		else if (test.as<bool>())
 			result.push_back(n);
-		}
 	}
 	
 	return result;
@@ -1148,7 +1206,7 @@ template<>
 object core_function_expression<cf_Count>::evaluate(expression_context& context)
 {
 	object v = m_args.front()->evaluate(context);
-	int result = v.as<node_set&>().size();
+	int result = v.as<const node_set&>().size();
 	return object(double(result));
 }
 
@@ -1156,43 +1214,83 @@ object core_function_expression<cf_Count>::evaluate(expression_context& context)
 //object core_function_expression<cf_Id>::evaluate(expression_context& context)
 //{
 //	object v = m_args.front()->evaluate(context);
-//	int result = v.as<node_set&>().size();
+//	int result = v.as<const node_set&>().size();
 //	return object(double(result));
 //}
 
 template<>
 object core_function_expression<cf_LocalName>::evaluate(expression_context& context)
 {
-	element* e = dynamic_cast<element*>(context.m_node);
+	element* e;
+	
+	if (m_args.empty())
+		e = dynamic_cast<element*>(context.m_node);
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		if (not v.as<const node_set&>().empty())
+			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+	}
+		
 	if (e == nil)
-		throw exception("context node is not an element");
+		throw exception("argument is not an element in function 'local-name'");
+
 	return e->name();
 }
 
 template<>
 object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& context)
 {
-	element* e = dynamic_cast<element*>(context.m_node);
+	element* e;
+	
+	if (m_args.empty())
+		e = dynamic_cast<element*>(context.m_node);
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		if (not v.as<const node_set&>().empty())
+			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+	}
+		
 	if (e == nil)
-		throw exception("context node is not an element");
+		throw exception("argument is not an element in function 'namespace-uri'");
 	return e->ns();
 }
 
 template<>
 object core_function_expression<cf_Name>::evaluate(expression_context& context)
 {
-	element* e = dynamic_cast<element*>(context.m_node);
+	element* e;
+	
+	if (m_args.empty())
+		e = dynamic_cast<element*>(context.m_node);
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		if (not v.as<const node_set&>().empty())
+			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+	}
+		
 	if (e == nil)
-		throw exception("context node is not an element");
-#pragma message("need to fix this")
+		throw exception("argument is not an element in function 'name'");
+
 	return e->name();
 }
 
 template<>
 object core_function_expression<cf_String>::evaluate(expression_context& context)
 {
-	object v = m_args.front()->evaluate(context);
-	return v.as<string>();
+	string result;
+	
+	if (m_args.empty())
+		result = context.m_node->str();
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		result = v.as<string>();
+	}
+		
+	return result;
 }
 
 template<>
@@ -1210,8 +1308,17 @@ object core_function_expression<cf_Concat>::evaluate(expression_context& context
 template<>
 object core_function_expression<cf_StringLength>::evaluate(expression_context& context)
 {
-	object v = m_args.front()->evaluate(context);
-	return double(v.as<string>().length());
+	string result;
+	
+	if (m_args.empty())
+		result = context.m_node->str();
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		result = v.as<string>();
+	}
+
+	return double(result.length());
 }
 
 template<>
@@ -1290,15 +1397,20 @@ object core_function_expression<cf_Substring>::evaluate(expression_context& cont
 template<>
 object core_function_expression<cf_NormalizeSpace>::evaluate(expression_context& context)
 {
-	object v = m_args.front()->evaluate(context);
+	string s;
 	
-	if (v.type() != ot_string)
-		throw exception("expected a string as argument for normalize-space");
+	if (m_args.empty())
+		s = context.m_node->str();
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		s = v.as<string>();
+	}
 	
 	string result;
 	bool space = true;
 	
-	foreach (char c, v.as<string>())
+	foreach (char c, s)
 	{
 		if (isspace(c))
 		{
@@ -1331,8 +1443,8 @@ object core_function_expression<cf_Translate>::evaluate(expression_context& cont
 	if (v1.type() != ot_string or v2.type() != ot_string or v3.type() != ot_string)
 		throw exception("expected three strings as arguments for translate");
 	
-	string& f = v2.as<string&>();
-	string& r = v3.as<string&>();
+	const string& f = v2.as<const string&>();
+	const string& r = v3.as<const string&>();
 	
 	string result;
 	result.reserve(v1.as<string>().length());
@@ -1462,8 +1574,8 @@ object union_expression::evaluate(expression_context& context)
 	if (v1.type() != ot_node_set or v2.type() != ot_node_set)
 		throw exception("union operator works only on node sets");
 	
-	node_set s1 = v1.as<node_set&>();
-	node_set s2 = v2.as<node_set&>();
+	node_set s1 = v1.as<const node_set&>();
+	node_set s2 = v2.as<const node_set&>();
 	
 	copy(s2.begin(), s2.end(), back_inserter(s1));
 	
@@ -1474,12 +1586,14 @@ object union_expression::evaluate(expression_context& context)
 
 struct xpath_imp
 {
-						xpath_imp(const string& path);
+						xpath_imp();
 						~xpath_imp();
 	
 	node_set			evaluate(node& root);
 
 	void				parse(const string& path);
+	
+	void				preprocess(const string& path);
 	
 	unsigned char		next_byte();
 	wchar_t				get_next_char();
@@ -1513,15 +1627,6 @@ struct xpath_imp
 	expression_ptr		unary_expr();
 
 	// abbreviated steps are expanded like macros by the scanner
-
-	struct state {
-		string					replacement;
-		string::const_iterator	begin, next, end;
-	};
-	
-	void				push_state(const string& replacement);
-	void				pop_state();
-
 	string				m_path;
 	string::const_iterator
 						m_begin, m_next, m_end;
@@ -1534,16 +1639,11 @@ struct xpath_imp
 	
 	// the generated expression
 	expression_ptr		m_expr;
-	stack<state>		m_state;
 };
 
 // --------------------------------------------------------------------
 
-xpath_imp::xpath_imp(const string& path)
-	: m_path(path)
-	, m_begin(m_path.begin())
-	, m_next(m_begin)
-	, m_end(m_path.end())
+xpath_imp::xpath_imp()
 {
 }
 
@@ -1553,8 +1653,11 @@ xpath_imp::~xpath_imp()
 
 void xpath_imp::parse(const string& path)
 {
-	m_begin = m_next = path.begin();
-	m_end = path.end();
+	// start by expanding the abbreviations in the path
+	preprocess(path);
+
+	m_begin = m_next = m_path.begin();
+	m_end = m_path.end();
 	
 	m_lookahead = get_next_token();
 	m_expr = location_path();
@@ -1571,30 +1674,81 @@ void xpath_imp::parse(const string& path)
 	match(xp_EOF);
 }
 
-void xpath_imp::push_state(const string& replacement)
+void xpath_imp::preprocess(const string& path)
 {
-	state s = { replacement, m_begin, m_next, m_end };
-	m_state.push(s);
-	m_begin = m_next = m_state.top().replacement.begin();
-	m_end = m_state.top().replacement.end();
-}
-
-void xpath_imp::pop_state()
-{
-	m_begin = m_state.top().begin;
-	m_next = m_state.top().next;
-	m_end = m_state.top().end;
+	// preprocessing consists of expanding abbreviations
+	// replacements are:
+	// @  => replaced by 'attribute::'
+	// // => replaced by '/descendant-or-self::node()/'
+	// . (if at a step location) => 'self::node()'
+	// ..  (if at a step location) => 'parent::node()'
 	
-	m_state.pop();
+	m_path.clear();
+	
+	enum State
+	{
+		pp_Step,
+		pp_Data,
+		pp_Dot,
+		pp_Slash
+	} state;
+	
+	state = pp_Step;
+	
+	for (string::const_iterator ch = path.begin(); ch != path.end(); ++ch)
+	{
+		switch (state)
+		{
+			case pp_Step:
+				state = pp_Data;
+				switch (*ch)
+				{
+					case '@': m_path += "attribute::"; break;
+					case '.': state = pp_Dot;	break;
+					case '/': state = pp_Slash;	break;
+					default: m_path += *ch; break;
+				}
+				break;
+			
+			case pp_Data:
+				switch (*ch)
+				{
+					case '@': m_path += "attribute::"; break;
+					case '/': state = pp_Slash; break;
+					case '[': m_path += '['; state = pp_Step; break;
+					default: m_path += *ch; break;
+				}
+				break;
+			
+			case pp_Dot:
+				if (*ch == '.')
+					m_path += "parent::node()";
+				else
+				{
+					--ch;
+					m_path += "self::node()";
+				}
+				state = pp_Step;
+				break;
+			
+			case pp_Slash:
+				if (*ch == '/')
+					m_path += "/descendant-or-self::node()/";
+				else
+				{
+					--ch;
+					m_path += '/';
+				}
+				state = pp_Step;
+				break;
+		}
+	}
 }
 
 unsigned char xpath_imp::next_byte()
 {
 	char result = 0;
 	
-	while (m_next == m_end and not m_state.empty())
-		pop_state();
-
 	if (m_next < m_end)
 		result = *m_next;
 
@@ -1705,9 +1859,7 @@ Token xpath_imp::get_next_token()
 {
 	enum State {
 		xps_Start,
-		xps_FirstDot,
 		xps_VariableStart,
-		xps_FirstSlash,
 		xps_ExclamationMark,
 		xps_LessThan,
 		xps_GreaterThan,
@@ -1741,12 +1893,11 @@ Token xpath_imp::get_next_token()
 					case ')':	token = xp_RightParenthesis; break;
 					case '[':	token = xp_LeftBracket; break;
 					case ']':	token = xp_RightBracket; break;
-					case '.':	state = xps_FirstDot; break;
 					case ',':	token = xp_Comma; break;
 					case ':':	token = xp_Colon; break;
 					case '$':	state = xps_VariableStart; break;
 					case '*':	token = xp_Asterisk; break;
-					case '/':	state = xps_FirstSlash; break;
+					case '/':	token = xp_Slash; break;
 					case '|':	token = xp_OperatorUnion; break;
 					case '+':	token = xp_OperatorAdd; break;
 					case '-':	token = xp_OperatorSubstract; break;
@@ -1769,7 +1920,12 @@ Token xpath_imp::get_next_token()
 						break;
 
 					default:
-						if (ch >= '0' and ch <= '9')
+						if (ch == '.')
+						{
+							m_token_number = 0;
+							state = xps_NumberFraction;
+						}
+						else if (ch >= '0' and ch <= '9')
 						{
 							m_token_number = ch - '0';
 							state = xps_Number;
@@ -1778,28 +1934,6 @@ Token xpath_imp::get_next_token()
 							state = xps_Name;
 						else
 							throw exception("invalid character in xpath");
-				}
-				break;
-			
-			case xps_FirstDot:
-				token = xp_AxisSpec;
-				push_state("node()");
-				if (ch == '.')
-					m_token_axis = ax_Parent;
-				else
-					m_token_axis = ax_Self;
-				break;
-			
-			case xps_FirstSlash:
-				if (ch != '/')
-				{
-					retract();
-					token = xp_Slash;
-				}
-				else
-				{
-					push_state("descendant-or-self::node()/");
-					token = xp_Slash;
 				}
 				break;
 			
@@ -1925,7 +2059,7 @@ Token xpath_imp::get_next_token()
 		
 		for (string::const_iterator c = m_next; c != m_end; ++c)
 		{
-			if (*c == ' ' or *c == '\t' or *c == '\n' or *c == '\r')
+			if (isspace(*c))
 				continue;
 			
 			if (*c == ':' and *(c + 1) == ':')		// it must be an axis specifier
@@ -1948,6 +2082,14 @@ Token xpath_imp::get_next_token()
 					m_token_string == "processing-instruction" or m_token_string == "node")
 				{
 					token = xp_NodeType;
+					
+					// set input pointer after the parenthesis
+					m_next = c + 1;
+					while (m_next != m_end and isspace(*m_next))
+						++m_next;
+					if (*m_next != ')')
+						throw exception("expected '()' after a node type specifier");
+					++m_next;
 				}
 				else
 				{
@@ -2068,8 +2210,6 @@ expression_ptr xpath_imp::node_test(AxisType axis)
 		// see if the name is followed by a parenthesis, if so, it must be a nodetype function
 		string name = m_token_string;
 		match(xp_NodeType);
-		match(xp_LeftParenthesis);
-		match(xp_RightParenthesis);
 		
 		if (name == "comment")
 			result.reset(new node_type_expression<comment>(axis));
@@ -2167,10 +2307,16 @@ expression_ptr xpath_imp::function_call()
 	expression_ptr result;
 	
 	int expected_arg_count = kCoreFunctionInfo[int(function)].arg_count;
-	if (expected_arg_count > 0 and int(arguments.size()) != expected_arg_count)
-		throw exception("invalid number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
-	else if (expected_arg_count == -10 and arguments.size() > 1)
-		throw exception("incorrect number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+	if (expected_arg_count > 0)
+	{
+		if (int(arguments.size()) != expected_arg_count)
+			throw exception("invalid number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+	}
+	else if (expected_arg_count == kOptionalArgument)
+	{
+		if (arguments.size() > 1)
+			throw exception("incorrect number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+	}
 	else if (expected_arg_count < 0 and int(arguments.size()) < -expected_arg_count)
 		throw exception("insufficient number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
 	
@@ -2379,13 +2525,13 @@ node_set xpath_imp::evaluate(node& root)
 {
 	node_set empty;
 	expression_context ctxt(&root, empty);
-	return m_expr->evaluate(ctxt).as<node_set&>();
+	return m_expr->evaluate(ctxt).as<const node_set&>();
 }
 
 // --------------------------------------------------------------------
 
 xpath::xpath(const string& path)
-	: m_impl(new xpath_imp(path))
+	: m_impl(new xpath_imp())
 {
 	m_impl->parse(path);
 }

@@ -34,7 +34,7 @@
 	<xpath-test data="data-003.xml" xpath="//BBB[1]" expected-size="1"
 		test-name="test-first" test-attr="1" />
 
-	<xpath-test data="data-003.xml" xpath="//BBB[name() = translate('--bbb--', 'abc-', 'ABC')][1]" expected-size="1"
+	<xpath-test data="data-003.xml" xpath="//BBB[name() = translate('-bbb-', 'abc-', 'ABC')][1]" expected-size="1"
 		test-name="test-first" test-attr="1" />
 
 	<xpath-test data="data-003.xml" xpath="//BBB[position() mod 2 = 0 ]" expected-size="4"
@@ -87,6 +87,38 @@
 
 	<xpath-test data="data-008.xml" xpath="//*[lang('nl')]" expected-size="4" />
 	
+	<xpath-test data="data-009.xml" xpath="//@id" expected-size="2" />
+
+	<xpath-test data="data-009.xml" xpath="//@*" expected-size="3" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[@id]" expected-size="2" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[@name]" expected-size="1" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[@*]" expected-size="3" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[not(@*)]" expected-size="1" />
+
+	<xpath-test data="data-010.xml" xpath="//BBB[@id='b1']" expected-size="1" />
+
+	<xpath-test data="data-010.xml" xpath="//BBB[@name='bbb']" expected-size="1" />
+
+	<xpath-test data="data-010.xml" xpath="//BBB[normalize-space(@name)='bbb']" expected-size="2" />
+
+	<xpath-test data="data-011.xml" xpath="//BBB[CCC[@id='x']]" expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//BBB[./CCC[@id='x']]" expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//CCC[@id='x']/.." expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//CCC[string()='aap']/.." expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//BBB[./CCC='aap']" expected-size="1"
+		test-name="test" test-attr="1" />
 
 
 </xpath-tests>
