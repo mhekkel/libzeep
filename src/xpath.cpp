@@ -757,14 +757,14 @@ class name_test_step_expression : public step_expression
 							if (result == false)
 							{
 								const element* e = dynamic_cast<const element*>(n);
-								if (e != nil and e->qname() == m_name)
+								if (e != nil and e->local_name() == m_name)
 									result = true;
 							}
 
 							if (result == false)
 							{
 								const attribute* a = dynamic_cast<const attribute*>(n);
-								if (a != nil and a->qname() == m_name)
+								if (a != nil and a->local_name() == m_name)
 									result = true;
 							}
 							
@@ -1267,7 +1267,7 @@ object core_function_expression<cf_Name>::evaluate(expression_context& context)
 	if (e == nil)
 		throw exception("argument is not an element in function 'name'");
 
-	return e->qname();
+	return e->local_name();
 }
 
 template<>
@@ -1629,7 +1629,6 @@ struct xpath_imp
 	AxisType			m_token_axis;
 	CoreFunction		m_token_function;
 
-	
 	// the generated expression
 	expression_ptr		m_expr;
 };
@@ -1683,10 +1682,12 @@ void xpath_imp::preprocess(const string& path)
 		pp_Step,
 		pp_Data,
 		pp_Dot,
-		pp_Slash
+		pp_Slash,
+		pp_String
 	} state;
 	
 	state = pp_Step;
+	wchar_t quoteChar;
 	
 	for (string::const_iterator ch = path.begin(); ch != path.end(); ++ch)
 	{
@@ -1699,6 +1700,12 @@ void xpath_imp::preprocess(const string& path)
 					case '@': m_path += "attribute::"; break;
 					case '.': state = pp_Dot;	break;
 					case '/': state = pp_Slash;	break;
+					case '\'':
+					case '\"':
+						m_path += *ch;
+						quoteChar = *ch;
+						state = pp_String;
+						break;
 					default: m_path += *ch; break;
 				}
 				break;
@@ -1709,6 +1716,12 @@ void xpath_imp::preprocess(const string& path)
 					case '@': m_path += "attribute::"; break;
 					case '/': state = pp_Slash; break;
 					case '[': m_path += '['; state = pp_Step; break;
+					case '\'':
+					case '\"':
+						m_path += *ch;
+						quoteChar = *ch;
+						state = pp_String;
+						break;
 					default: m_path += *ch; break;
 				}
 				break;
@@ -1733,6 +1746,12 @@ void xpath_imp::preprocess(const string& path)
 					m_path += '/';
 				}
 				state = pp_Step;
+				break;
+			
+			case pp_String:
+				m_path += *ch;
+				if (*ch == quoteChar)
+						state = pp_Data;
 				break;
 		}
 	}
