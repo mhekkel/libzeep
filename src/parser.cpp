@@ -3074,6 +3074,8 @@ void parser_imp::element(doctype::validator& valid)
 		wstring attr_value = normalize_attribute_value(m_token);
 		match(xml_String);
 
+#pragma message("add xml:id support. And prefix check?")
+
 		const doctype::attribute* dta = nil;
 		if (dte != nil)
 			dta = dte->get_attribute(attr_name);

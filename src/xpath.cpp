@@ -1323,7 +1323,8 @@ object core_function_expression<cf_StartsWith>::evaluate(expression_context& con
 	if (v1.type() != ot_string or v2.type() != ot_string)
 		throw exception("expected two strings as argument for starts-with");
 	
-	return ba::starts_with(v1.as<string>(), v2.as<string>());
+	return v2.as<string>().empty() or
+		ba::starts_with(v1.as<string>(), v2.as<string>());
 }
 
 template<>
@@ -1335,7 +1336,8 @@ object core_function_expression<cf_Contains>::evaluate(expression_context& conte
 	if (v1.type() != ot_string or v2.type() != ot_string)
 		throw exception("expected two strings as argument for contains");
 	
-	return v1.as<string>().find(v2.as<string>()) != string::npos;
+	return v2.as<string>().empty() or
+		v1.as<string>().find(v2.as<string>()) != string::npos;
 }
 
 template<>
@@ -1348,9 +1350,12 @@ object core_function_expression<cf_SubstringBefore>::evaluate(expression_context
 		throw exception("expected two strings as argument for substring-before");
 	
 	string result;
-	string::size_type p = v1.as<string>().find(v2.as<string>());
-	if (p != string::npos)
-		result = v1.as<string>().substr(0, p);
+	if (not v2.as<string>().empty())
+	{
+		string::size_type p = v1.as<string>().find(v2.as<string>());
+		if (p != string::npos)
+			result = v1.as<string>().substr(0, p);
+	}
 	
 	return result;
 }
@@ -1365,9 +1370,14 @@ object core_function_expression<cf_SubstringAfter>::evaluate(expression_context&
 		throw exception("expected two strings as argument for substring-after");
 	
 	string result;
-	string::size_type p = v1.as<string>().find(v2.as<string>());
-	if (p != string::npos and p + v2.as<string>().length() < v1.as<string>().length())
-		result = v1.as<string>().substr(p + v2.as<string>().length());
+	if (v2.as<string>().empty())
+		result = v1.as<string>();
+	else
+	{
+		string::size_type p = v1.as<string>().find(v2.as<string>());
+		if (p != string::npos and p + v2.as<string>().length() < v1.as<string>().length())
+			result = v1.as<string>().substr(p + v2.as<string>().length());
+	}
 	
 	return result;
 }

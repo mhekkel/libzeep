@@ -363,7 +363,8 @@ void element::add_text(const std::string& s)
 		append(new text(s));
 }
 
-node_set element::children() const
+template<>
+node_set element::children<node_set>() const
 {
 	node_set result;
 	
@@ -371,6 +372,22 @@ node_set element::children() const
 	while (child != nil)
 	{
 		result.push_back(child);
+		child = child->next();
+	}
+	
+	return result;
+}
+
+template<>
+element_set element::children<element_set>() const
+{
+	element_set result;
+	
+	node* child = m_child;
+	while (child != nil)
+	{
+		if (typeid(*child) == typeid(element))
+			result.push_back(static_cast<element*>(child));
 		child = child->next();
 	}
 	

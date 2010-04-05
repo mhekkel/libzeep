@@ -20,7 +20,11 @@ class writer;
 
 class node;
 typedef node* node_ptr;
-typedef std::list<node_ptr>	node_set;
+typedef std::list<node_ptr>		node_set;
+
+class element;
+typedef element* element_ptr;
+typedef std::list<element_ptr>	element_set;
 
 class document;
 
@@ -260,7 +264,9 @@ class element : public node
 	// convenience routines
 	void				add_text(const std::string& s);
 
-	node_set			children() const;
+	template<typename NODE_TYPE>
+	std::list<NODE_TYPE*>
+						children() const;
 	attribute_set		attributes() const;
 	name_space_list		name_spaces() const;
 
@@ -277,6 +283,15 @@ class element : public node
 std::ostream& operator<<(std::ostream& lhs, const node& rhs);
 
 bool operator==(const node& lhs, const node& rhs);
+
+// very often, we want to iterate over child elements of an element
+// therefore we have a templated version of children.
+
+template<>
+std::list<node*> element::children<node>() const;
+
+template<>
+std::list<element*> element::children<element>() const;
 
 }
 }
