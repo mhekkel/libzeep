@@ -23,11 +23,11 @@ writer::writer(std::ostream& os)
 	, m_encoding(enc_UTF8)
 	, m_version(1.0f)
 	, m_write_xml_decl(true)
-	, m_wrap(false)
+	, m_wrap(true)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
-	, m_indent(0)
+	, m_indent(2)
 	, m_level(0)
 	, m_wrote_element(false)
 {
@@ -56,9 +56,6 @@ void writer::write_xml_decl(bool standalone)
 			m_os << " standalone=\"yes\"";
 		
 		m_os << "?>";
-		
-		if (m_wrap)
-			m_os << endl;
 	}
 	
 	m_wrote_element = true;
@@ -120,16 +117,7 @@ void writer::write_notation(const string& name,
 
 void writer::write_attribute(const string& name, const string& value)
 {
-	if (m_wrap == false)
-		m_os << ' ';
-	else
-	{
-		m_os << endl;
-		for (int i = 0; i < m_indent * (m_level + 1); ++i)
-			m_os << ' ';
-	}
-	
-	m_os << name << "=\"";
+	m_os << ' ' << name << "=\"";
 	
 	bool last_is_space = false;
 
@@ -186,9 +174,14 @@ void writer::write_empty_element(const string& qname, const attribute_list& attr
 void writer::write_start_element(const string& qname,
 	const attribute_list& attrs)
 {
+	if (m_wrote_element and m_wrap)
+		m_os << endl;
+	
 	for (int i = 0; i < m_indent * m_level; ++i)
 		m_os << ' ';
 		
+	++m_level;
+
 	m_os << '<' << qname;
 
 	for_each (attrs.begin(), attrs.end(),
@@ -198,29 +191,32 @@ void writer::write_start_element(const string& qname,
 
 	m_os << '>';
 	
-	if (m_wrap)
-		m_os << endl;
-	
-	++m_level;
 	m_wrote_element = true;
 }
 
 void writer::write_end_element(const string& qname)
 {
+	assert(m_level > 0);
+	
 	--m_level;
+	if (m_level < 0)
+		m_level = 0;
 
 	if (m_wrote_element)
 	{
+		if (m_wrap)
+			m_os << endl;
+		
 		for (int i = 0; i < m_indent * m_level; ++i)
 			m_os << ' ';
 	}
 	
 	m_os << "</" << qname << '>';
 	
-	if (m_wrap)
-		m_os << endl;
-
 	m_wrote_element = true;
+	
+	if (m_level == 0)	// finish the document with an empty line
+		m_os << endl;
 }
 
 void writer::write_element(const string& qname, const attribute_list& attrs, const string& content)

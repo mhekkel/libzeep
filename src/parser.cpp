@@ -3222,7 +3222,7 @@ void parser_imp::element(doctype::validator& valid)
 	wstring uri, raw(name);
 	list<wstring> qname;
 	ba::split(qname, name, ba::is_any_of(L":"));
-	if (qname.size() == 2)
+	if (qname.size() == 2 and not qname.front().empty())
 	{
 		uri = ns.ns_for_prefix(qname.front());
 		name = qname.back();
