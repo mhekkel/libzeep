@@ -262,6 +262,21 @@ document::document()
 {
 }
 
+document::document(const string& s)
+	: element("")
+	, m_impl(new document_imp(this))
+{
+	istringstream is(s);
+	read(is);
+}
+
+document::document(std::istream& is)
+	: element("")
+	, m_impl(new document_imp(this))
+{
+	read(is);
+}
+
 document::~document()
 {
 	delete m_impl;

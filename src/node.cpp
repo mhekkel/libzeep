@@ -149,7 +149,7 @@ bool processing_instruction::equals(const node* n) const
 
 void text::write(writer& w) const
 {
-	w.write_text(m_text);
+	w.write_content(m_text);
 }
 
 bool text::equals(const node* n) const

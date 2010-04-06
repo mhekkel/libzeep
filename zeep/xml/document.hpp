@@ -17,6 +17,8 @@ class document : public element
 {
   public:
 						document();
+						document(const std::string& s);
+						document(std::istream& is);
 
 	virtual				~document();
 

@@ -41,19 +41,24 @@ class writer
 						const std::string& sysid, const std::string& pubid);
 
 	virtual void	write_empty_element(const std::string& name,
-						const attribute_list& attrs);
+						const attribute_list& attrs = attribute_list());
 
 	virtual void	write_start_element(const std::string& name,
-						const attribute_list& attrs);
+						const attribute_list& attrs = attribute_list());
 
 	virtual void	write_end_element(const std::string& name);
+
+	virtual void	write_element(const std::string& name, const std::string& content);
+
+	virtual void	write_element(const std::string& name, const attribute_list& attrs,
+						const std::string& content);
+
+	virtual void	write_content(const std::string& content);
 
 	virtual void	write_comment(const std::string& text);
 
 	virtual void	write_processing_instruction(const std::string& target,
 						const std::string& text);
-
-	virtual void	write_text(const std::string& text);
 
 	virtual void	write_attribute(const std::string& name, const std::string& value);
 

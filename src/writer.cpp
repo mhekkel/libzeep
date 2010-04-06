@@ -23,11 +23,11 @@ writer::writer(std::ostream& os)
 	, m_encoding(enc_UTF8)
 	, m_version(1.0f)
 	, m_write_xml_decl(true)
-	, m_wrap(true)
+	, m_wrap(false)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
-	, m_indent(2)
+	, m_indent(0)
 	, m_level(0)
 	, m_wrote_element(false)
 {
@@ -223,6 +223,24 @@ void writer::write_end_element(const string& qname)
 	m_wrote_element = true;
 }
 
+void writer::write_element(const string& qname, const attribute_list& attrs, const string& content)
+{
+	if (m_collapse_empty and content.empty())
+		write_empty_element(qname);
+	else
+	{
+		write_start_element(qname, attrs);
+		if (not content.empty())
+			write_content(content);
+		write_end_element(qname);
+	}
+}
+
+void writer::write_element(const string& qname, const string& content)
+{
+	write_element(qname, attribute_list(), content);
+}
+
 void writer::write_comment(const string& text)
 {
 	if (m_wrap)
@@ -248,7 +266,7 @@ void writer::write_processing_instruction(const string& target,
 	m_wrote_element = true;
 }
 
-void writer::write_text(const string& text)
+void writer::write_content(const string& text)
 {
 	bool last_is_space = false;
 	
