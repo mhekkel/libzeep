@@ -5,35 +5,23 @@
 
 #include "zeep/exception.hpp"
 #include "zeep/envelope.hpp"
+#include "zeep/xml/xpath.hpp"
 
 using namespace std;
 
 namespace zeep {
 
 envelope::envelope()
+	: m_request(NULL)
 {
 }
 
 envelope::envelope(xml::document& data)
 {
-	xml::element* env = data.root();	// envelope
-	if (env->local_name() != "Envelope" or env->ns_name() != "http://schemas.xmlsoap.org/soap/envelope/")
-		throw exception("Invalid SOAP envelope");
+	const xml::xpath
+		sRequestPath("/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
 	
-	if (env->children().empty())
-		throw exception("Invalid SOAP envelope, missing body");
-	
-	m_body = dynamic_cast<xml::element*>(env->children().front());
-	if (not m_body or m_body->ns_name() != "http://schemas.xmlsoap.org/soap/envelope/")
-		throw exception("Invalid SOAP envelope");
-}
-
-xml::element* envelope::request()
-{
-	if (m_body->children().empty())
-		throw exception("Invalid SOAP envelope, missing request");
-	
-	return dynamic_cast<xml::element*>(m_body->children().front());
+	m_request = sRequestPath.evaluate<xml::element>(data).front();
 }
 
 xml::element* make_envelope(xml::element* data)

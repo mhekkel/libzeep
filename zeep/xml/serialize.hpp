@@ -463,17 +463,16 @@ deserializer& deserializer::operator&(
 
 	if (serialize_type<value_type>::is_vector)
 	{
-		node_set children = m_node->children();
-		for (node_set::iterator e = children.begin(); e != children.end(); ++e)
+		element_set children = m_node->children<element>();
+		for (element_set::iterator e = children.begin(); e != children.end(); ++e)
 		{
-			element *n = dynamic_cast<element*>(*e);
-			if (n != NULL and n->local_name() == rhs.name())
-				s_type::deserialize(*n, rhs.value());
+			if ((*e)->local_name() == rhs.name())
+				s_type::deserialize(**e, rhs.value());
 		}
 	}
 	else
 	{
-		element* n = m_node->find_first_child(rhs.name());
+		element* n = m_node->find_first(rhs.name());
 		if (n)
 			s_type::deserialize(*n, rhs.value());
 	}

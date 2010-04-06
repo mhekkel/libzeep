@@ -2563,9 +2563,26 @@ xpath::~xpath()
 	delete m_impl;
 }
 
-node_set xpath::evaluate(const node& root)
+template<>
+node_set xpath::evaluate<node>(const node& root) const
 {
 	return m_impl->evaluate(const_cast<node&>(root));
+}
+
+template<>
+element_set xpath::evaluate<element>(const node& root) const
+{
+	element_set result;
+	
+	object s(m_impl->evaluate(const_cast<node&>(root)));	
+	foreach (node* n, s.as<const node_set&>())
+	{
+		element* e = dynamic_cast<element*>(n);
+		if (e != nil)
+			result.push_back(e);
+	}
+	
+	return result;
 }
 
 }

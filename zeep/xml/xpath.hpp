@@ -5,22 +5,30 @@
 
 #include <string>
 
+#include "zeep/xml/node.hpp"
+
 namespace zeep { namespace xml {
 
 class document;
-class node;
 
 class xpath
 {
   public:
-						xpath(const std::string& path);
-	virtual				~xpath();
+							xpath(const std::string& path);
+	virtual					~xpath();
 
-	node_set			evaluate(const node& root);
+	template<typename NODE_TYPE>
+	std::list<NODE_TYPE*>	evaluate(const node& root) const;
 
   private:
-	struct xpath_imp*	m_impl;
+	struct xpath_imp*		m_impl;
 };
+
+template<>
+node_set xpath::evaluate<node>(const node& root) const;
+
+template<>
+element_set xpath::evaluate<element>(const node& root) const;
 	
 }
 }

@@ -16,6 +16,7 @@
 #include "zeep/xml/node.hpp"
 #include "zeep/xml/document.hpp"
 #include "zeep/xml/writer.hpp"
+#include "zeep/xml/xpath.hpp"
 #include "zeep/exception.hpp"
 
 #define nil NULL
@@ -364,7 +365,7 @@ void element::add_text(const std::string& s)
 }
 
 template<>
-node_set element::children<node_set>() const
+node_set element::children<node>() const
 {
 	node_set result;
 	
@@ -379,7 +380,7 @@ node_set element::children<node_set>() const
 }
 
 template<>
-element_set element::children<element_set>() const
+element_set element::children<element>() const
 {
 	element_set result;
 	
@@ -394,16 +395,19 @@ element_set element::children<element_set>() const
 	return result;
 }
 
-element* element::find_first_child(const std::string& name)
+element_set element::find(const std::string& path) const
 {
-	node* result = m_child;
-	while (result != nil)
-	{
-		if (dynamic_cast<element*>(result) != nil and static_cast<element*>(result)->local_name() == name)
-			break;
-		result = result->next();
-	}
-	return static_cast<element*>(result);
+	return xpath(path).evaluate<element>(*this);
+}
+
+element* element::find_first(const std::string& path) const
+{
+	element_set s = xpath(path).evaluate<element>(*this);
+	
+	element* result = nil;
+	if (not s.empty())
+		result = s.front();
+	return result;
 }
 
 attribute_set element::attributes() const

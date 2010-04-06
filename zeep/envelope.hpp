@@ -19,10 +19,10 @@ class envelope : public boost::noncopyable
 	
 					envelope(xml::document& data);
 
-	xml::element*	request();
+	xml::element*	request()						{ return m_request; }
 
   private:
-	xml::element*	m_body;
+	xml::element*	m_request;
 };
 
 xml::element* make_envelope(xml::element* data);

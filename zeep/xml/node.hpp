@@ -245,10 +245,6 @@ class element : public node
 	std::string			content() const;
 	void				content(const std::string& content);
 
-	// utility functions
-						// find first element child having localname 'name'
-	element*			find_first_child(const std::string& name);
-
 	std::string			get_attribute(const std::string& qname) const;
 	attribute*			get_attribute_node(const std::string& qname) const;
 	void				set_attribute(const std::string& qname, const std::string& value);
@@ -269,6 +265,10 @@ class element : public node
 						children() const;
 	attribute_set		attributes() const;
 	name_space_list		name_spaces() const;
+
+	// xpath wrappers
+	element_set			find(const std::string& path) const;
+	element*			find_first(const std::string& path) const;
 
 	// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
