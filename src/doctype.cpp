@@ -24,7 +24,9 @@ namespace ba = boost::algorithm;
 
 #define nil NULL
 
+#ifdef DEBUG
 extern int TRACE;
+#endif
 
 namespace zeep { namespace xml { namespace doctype {
 
@@ -109,7 +111,7 @@ tuple<bool,bool> state_repeated_zero_or_once::allow(const wstring& name)
 		state_Loop
 	};
 	
-	bool result = false, done;
+	bool result = false, done = false;
 	
 	switch (m_state)
 	{
@@ -149,7 +151,7 @@ tuple<bool,bool> state_repeated_any::allow(const wstring& name)
 		state_Loop
 	};
 	
-	bool result = false, done;
+	bool result = false, done = false;
 	
 	switch (m_state)
 	{
@@ -195,7 +197,7 @@ tuple<bool,bool> state_repeated_at_least_once::allow(const wstring& name)
 		state_NextLoop
 	};
 	
-	bool result = false, done;
+	bool result = false, done = false;
 	
 	switch (m_state)
 	{
@@ -274,7 +276,7 @@ struct state_seq : public state_base
 
 tuple<bool,bool> state_seq::allow(const wstring& name)
 {
-	bool result = false, done;
+	bool result = false, done = false;
 	
 	enum State {
 		state_Start,
@@ -444,12 +446,14 @@ bool validator::allow(const wstring& name)
 	bool result;
 	tie(result, m_done) = m_state->allow(name);
 	
+#if DEBUG
 	if (TRACE and m_allowed)
 	{
 		cout << "state machine " << m_nr << ' ' << (result ? "succeeded" : "failed") <<  " for " << wstring_to_string(name) << endl;
 		m_allowed->print(cout);
 		cout << endl << endl;
 	}
+#endif
 
 	return result;
 }
@@ -461,12 +465,14 @@ bool validator::allow_char_data()
 
 bool validator::done()
 {
+#if DEBUG
 	if (TRACE and m_allowed)
 	{
 		cout << "finishing state machine " << m_nr << " is " << (m_done ? "ok" : "not ok") <<  endl;
 		m_allowed->print(cout);
 		cout << endl << endl;
 	}
+#endif
 
 	return m_done;
 }

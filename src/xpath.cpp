@@ -603,43 +603,6 @@ typedef list<expression_ptr>			expression_list;
 
 // --------------------------------------------------------------------
 
-#if 0
-struct trace
-{
-				trace(const char* func, expression_context& context, expression* expr)
-					: m_func(func)
-					, m_context(context)
-				{
-					for (int i = 0; i < s_nesting_level; ++i)
-						cout << "  ";
-					cout << m_func << endl << m_context << endl;
-					cout << " >>> "; expr->print(s_nesting_level);
-					++s_nesting_level;
-				}
-		
-				~trace()
-				{
-					--s_nesting_level;
-					for (int i = 0; i < s_nesting_level; ++i)
-						cout << "  ";
-					cout << '~' << m_func << endl << m_context << endl;
-				}
-
-	const char*	m_func;
-	expression_context&
-				m_context;
-	static int	s_nesting_level;
-};
-
-int trace::s_nesting_level;
-
-#define TRACE	trace trace(BOOST_CURRENT_FUNCTION, context, this);
-#else
-#define TRACE
-#endif
-
-// --------------------------------------------------------------------
-
 class step_expression : public expression
 {
   public:
@@ -656,7 +619,6 @@ class step_expression : public expression
 template<typename T>
 object step_expression::evaluate(expression_context& context, T pred)
 {
-	TRACE
 	node_set result;
 	
 	element* context_element = dynamic_cast<element*>(context.m_node);
@@ -777,7 +739,6 @@ class name_test_step_expression : public step_expression
 
 object name_test_step_expression::evaluate(expression_context& context)
 {
-	TRACE
 	return step_expression::evaluate(context, m_test);
 }
 
@@ -806,7 +767,6 @@ class node_type_expression : public step_expression
 template<typename T>
 object node_type_expression<T>::evaluate(expression_context& context)
 {
-	TRACE
 	return step_expression::evaluate(context, m_test);
 }
 
@@ -822,7 +782,6 @@ class document_expression : public expression
 
 object document_expression::evaluate(expression_context& context)
 {
-	TRACE
 	node_set result;
 	result.push_back(context.m_node->doc());
 	return result;
@@ -854,7 +813,6 @@ class operator_expression : public expression
 template<>
 object operator_expression<xp_OperatorAdd>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -864,7 +822,6 @@ object operator_expression<xp_OperatorAdd>::evaluate(expression_context& context
 template<>
 object operator_expression<xp_OperatorSubstract>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -874,7 +831,6 @@ object operator_expression<xp_OperatorSubstract>::evaluate(expression_context& c
 template<>
 object operator_expression<xp_OperatorEqual>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 
@@ -884,7 +840,6 @@ object operator_expression<xp_OperatorEqual>::evaluate(expression_context& conte
 template<>
 object operator_expression<xp_OperatorNotEqual>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -894,7 +849,6 @@ object operator_expression<xp_OperatorNotEqual>::evaluate(expression_context& co
 template<>
 object operator_expression<xp_OperatorLess>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -904,7 +858,6 @@ object operator_expression<xp_OperatorLess>::evaluate(expression_context& contex
 template<>
 object operator_expression<xp_OperatorLessOrEqual>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -914,7 +867,6 @@ object operator_expression<xp_OperatorLessOrEqual>::evaluate(expression_context&
 template<>
 object operator_expression<xp_OperatorGreater>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -924,7 +876,6 @@ object operator_expression<xp_OperatorGreater>::evaluate(expression_context& con
 template<>
 object operator_expression<xp_OperatorGreaterOrEqual>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -934,7 +885,6 @@ object operator_expression<xp_OperatorGreaterOrEqual>::evaluate(expression_conte
 template<>
 object operator_expression<xp_OperatorAnd>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -944,7 +894,6 @@ object operator_expression<xp_OperatorAnd>::evaluate(expression_context& context
 template<>
 object operator_expression<xp_OperatorOr>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -954,7 +903,6 @@ object operator_expression<xp_OperatorOr>::evaluate(expression_context& context)
 template<>
 object operator_expression<xp_OperatorMod>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -964,7 +912,6 @@ object operator_expression<xp_OperatorMod>::evaluate(expression_context& context
 template<>
 object operator_expression<xp_OperatorDiv>::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -989,7 +936,6 @@ class negate_expression : public expression
 
 object negate_expression::evaluate(expression_context& context)
 {
-	TRACE
 	object v = m_expr->evaluate(context);
 	return -v.as<double>();
 }
@@ -1018,7 +964,6 @@ class path_expression : public expression
 
 object path_expression::evaluate(expression_context& context)
 {
-	TRACE
 	object v = m_lhs->evaluate(context);
 	if (v.type() != ot_node_set)
 		throw exception("filter does not evaluate to a node-set");
@@ -1060,7 +1005,6 @@ class predicate_expression : public expression
 
 object predicate_expression::evaluate(expression_context& context)
 {
-	TRACE
 	object v = m_path->evaluate(context);
 	
 	node_set result;
@@ -1101,7 +1045,6 @@ class variable_expression : public expression
 
 object variable_expression::evaluate(expression_context& context)
 {
-	TRACE
 	throw exception("variables are not supported yet");
 	return object();
 }
@@ -1124,7 +1067,6 @@ class literal_expression : public expression
 
 object literal_expression::evaluate(expression_context& context)
 {
-	TRACE
 	return object(m_lit);
 }
 
@@ -1146,7 +1088,6 @@ class number_expression : public expression
 
 object number_expression::evaluate(expression_context& context)
 {
-	TRACE
 	return object(m_number);
 }
 
@@ -1176,7 +1117,6 @@ class core_function_expression : public expression
 template<CoreFunction CF>
 object core_function_expression<CF>::evaluate(expression_context& context)
 {
-	TRACE
 	throw exception("unimplemented function ");
 	return object();
 }
@@ -1184,14 +1124,12 @@ object core_function_expression<CF>::evaluate(expression_context& context)
 template<>
 object core_function_expression<cf_Position>::evaluate(expression_context& context)
 {
-	TRACE
 	return object(double(context.position()));
 }
 
 template<>
 object core_function_expression<cf_Last>::evaluate(expression_context& context)
 {
-	TRACE
 	return object(double(context.last()));
 }
 
@@ -1214,7 +1152,7 @@ object core_function_expression<cf_Count>::evaluate(expression_context& context)
 template<>
 object core_function_expression<cf_LocalName>::evaluate(expression_context& context)
 {
-	element* e;
+	element* e = nil;
 	
 	if (m_args.empty())
 		e = dynamic_cast<element*>(context.m_node);
@@ -1234,7 +1172,7 @@ object core_function_expression<cf_LocalName>::evaluate(expression_context& cont
 template<>
 object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& context)
 {
-	element* e;
+	element* e = nil;
 	
 	if (m_args.empty())
 		e = dynamic_cast<element*>(context.m_node);
@@ -1253,7 +1191,7 @@ object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& c
 template<>
 object core_function_expression<cf_Name>::evaluate(expression_context& context)
 {
-	element* e;
+	element* e = nil;
 	
 	if (m_args.empty())
 		e = dynamic_cast<element*>(context.m_node);
@@ -1570,7 +1508,6 @@ class union_expression : public expression
 
 object union_expression::evaluate(expression_context& context)
 {
-	TRACE
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
 	
@@ -1697,7 +1634,7 @@ void xpath_imp::preprocess(const string& path)
 	} state;
 	
 	state = pp_Step;
-	wchar_t quoteChar;
+	wchar_t quoteChar = 0;
 	
 	for (string::const_iterator ch = path.begin(); ch != path.end(); ++ch)
 	{
@@ -1896,7 +1833,7 @@ Token xpath_imp::get_next_token()
 
 	Token token = xp_Undef;
 	bool variable = false;
-	double fraction;
+	double fraction = 1.0;
 	wchar_t quoteChar;
 
 	m_token_string.clear();

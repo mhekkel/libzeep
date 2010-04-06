@@ -32,8 +32,6 @@ using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 
-extern int TRACE;
-
 #ifndef nil
 #define nil NULL
 #endif
@@ -901,7 +899,7 @@ int parser_imp::get_next_token()
 	};
 
 	int token = xml_Undef;
-	wchar_t quote_char;
+	wchar_t quote_char = 0;
 	int state = state_Start;
 
 	m_token.clear();
@@ -1064,9 +1062,6 @@ int parser_imp::get_next_token()
 				not_well_formed(L"state should never be reached");
 		}
 	}
-
-if (TRACE)
-	cout << ">> token=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
 	
 	return token;
 }
@@ -1325,9 +1320,6 @@ int parser_imp::get_next_content()
 		}
 	}
 
-if (TRACE)
-	cout << ">> content=" << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ")" << endl;
-	
 	return token;
 }
 
@@ -1775,7 +1767,7 @@ void parser_imp::conditionalsect()
 	
 	s();
 	
-	bool include;
+	bool include = false;
 	
 	if (m_lookahead == xml_PEReference)
 	{
@@ -3040,12 +3032,7 @@ void parser_imp::element(doctype::validator& valid)
 
 	doctype::validator sub_valid;
 	if (dte != nil)
-	{
 		sub_valid = dte->get_validator();
-		if (TRACE)
-			cout << "=== Created validator for " << wstring_to_string(name) << endl
-				 << sub_valid << endl << endl;
-	}
 
 	list<detail::wattr> attrs;
 	
@@ -3275,9 +3262,6 @@ void parser_imp::element(doctype::validator& valid)
 
 void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 {
-	if (TRACE)
-		cout << "... content with valid: " << valid << endl;
-	
 	wstring data;
 	
 	do
