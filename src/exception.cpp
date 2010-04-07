@@ -8,7 +8,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-#include <expat.h>
+//#include <expat.h>
 
 #include "zeep/exception.hpp"
 
@@ -74,35 +74,35 @@ exception::exception(
 	m_message = msg_buffer;
 }
 
-exception::exception(
-	XML_Parser		parser)
-{
-	try
-	{
-		stringstream s;
-		
-		XML_Error error = XML_GetErrorCode(parser);
-		if (error <= XML_ERROR_RESERVED_NAMESPACE_URI)
-			s << kXML_Parser_Error_Messages[error];
-		else
-			s << "Unknown Expat error code";
-	
-		s << endl
-		  << "Parse error at line " << XML_GetCurrentLineNumber(parser)
-		  << " column " << XML_GetCurrentColumnNumber(parser)
-		  << ":" << endl;
-		 
-		int offset = 0, size = 0;
-		const char* context = XML_GetInputContext(parser, &offset, &size);
-		if (context != NULL)
-			s << string(context + offset, size) << endl;
-	
-		m_message = s.str();
-	}
-	catch (...)
-	{
-		m_message = "oeps";
-	}
-}
+//exception::exception(
+//	XML_Parser		parser)
+//{
+//	try
+//	{
+//		stringstream s;
+//		
+//		XML_Error error = XML_GetErrorCode(parser);
+//		if (error <= XML_ERROR_RESERVED_NAMESPACE_URI)
+//			s << kXML_Parser_Error_Messages[error];
+//		else
+//			s << "Unknown Expat error code";
+//	
+//		s << endl
+//		  << "Parse error at line " << XML_GetCurrentLineNumber(parser)
+//		  << " column " << XML_GetCurrentColumnNumber(parser)
+//		  << ":" << endl;
+//		 
+//		int offset = 0, size = 0;
+//		const char* context = XML_GetInputContext(parser, &offset, &size);
+//		if (context != NULL)
+//			s << string(context + offset, size) << endl;
+//	
+//		m_message = s.str();
+//	}
+//	catch (...)
+//	{
+//		m_message = "oeps";
+//	}
+//}
 
 }

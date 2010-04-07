@@ -67,15 +67,16 @@ void server::handle_request(const http::request& req, http::reply& rep)
 	
 	try
 	{
-		xml::node_ptr response;
+		xml::element* response;
 		
 		if (req.method == "POST")	// must be a SOAP call
 		{
-			xml::document doc(req.payload);
+			xml::document doc;
+			doc.read(req.payload);
 			envelope env(doc);
-			xml::node_ptr request = env.request();
+			xml::element* request = env.request();
 			
-			action = request->name();
+			action = request->local_name();
 			log() << action << ' ';
 			response = make_envelope(dispatch(action, env.request()));
 		}
@@ -108,16 +109,16 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			{
 				action = *p++;
 				
-				xml::node_ptr request(new xml::node(action));
+				xml::element* request(new xml::element(action));
 				while (p != path.end())
 				{
 					string name = detail::decode(*p++);
 					if (p == path.end())
 						break;
-					xml::node_ptr param(new xml::node(name));
+					xml::element* param(new xml::element(name));
 					string value = detail::decode(*p++);
 					param->content(value);
-					request->add_child(param);
+					request->append(param);
 				}
 				
 				log() << action << ' ';

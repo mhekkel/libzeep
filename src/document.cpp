@@ -3,20 +3,30 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <expat.h>
-
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <stack>
+#include <deque>
+#include <map>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
 
+#include "zeep/xml/parser.hpp"
+#include "zeep/xml/writer.hpp"
+
 using namespace std;
 namespace ba = boost::algorithm;
+namespace fs = boost::filesystem;
 
 namespace zeep { namespace xml {
 
@@ -24,284 +34,167 @@ namespace zeep { namespace xml {
 
 struct document_imp
 {
-	node_ptr		root;
+					document_imp(document* doc);
 
-	stack<node_ptr>	cur;		// construction
-	vector<pair<string,string> >
-					namespaces;
+	void			StartElementHandler(const string& name, const string& uri,
+						const parser::attr_list_type& atts);
 
-	static void		XML_StartElementHandler(
-						void*				userData,
-						const XML_Char*		name,
-						const XML_Char**	atts);
+	void			EndElementHandler(const string& name, const string& uri);
 
-	static void		XML_EndElementHandler(
-						void*				userData,
-						const XML_Char*		name);
+	void			CharacterDataHandler(const string& data);
 
-	static void		XML_CharacterDataHandler(
-						void*				userData,
-						const XML_Char*		s,
-						int					len);
+	void			ProcessingInstructionHandler(const string& target, const string& data);
 
-	static void		XML_ProcessingInstructionHandler(
-						void*				userData,
-						const XML_Char*		target,
-						const XML_Char*		data);
-
-	static void		XML_CommentHandler(
-						void*				userData,
-						const XML_Char*		data);
-
-	static void		XML_StartCdataSectionHandler(
-						void *userData);
-
-	static void		XML_EndCdataSectionHandler(
-						void *userData);
-
-	static void		XML_StartNamespaceDeclHandler(
-                        void*				userData,
-                        const XML_Char*		prefix,
-                        const XML_Char*		uri);
-
-	static void		XML_EndNamespaceDeclHandler(
-						void*				userData,
-						const XML_Char*		prefix);
-
-	void			StartElementHandler(
-						const XML_Char*		name,
-						const XML_Char**	atts);
-
-	void			EndElementHandler(
-						const XML_Char*		name);
-
-	void			CharacterDataHandler(
-						const XML_Char*		s,
-						int					len);
-
-	void			ProcessingInstructionHandler(
-						const XML_Char*		target,
-						const XML_Char*		data);
-
-	void			CommentHandler(
-						const XML_Char*		data);
+	void			CommentHandler(const string& comment);
 
 	void			StartCdataSectionHandler();
 
 	void			EndCdataSectionHandler();
 
-	void			StartNamespaceDeclHandler(
-                        const XML_Char*		prefix,
-                        const XML_Char*		uri);
+	void			StartNamespaceDeclHandler(const string& prefix, const string& uri);
 
-	void			EndNamespaceDeclHandler(
-						const XML_Char*		prefix);
+	void			EndNamespaceDeclHandler(const string& prefix);
+	
+	void			NotationDeclHandler(const string& name, const string& sysid, const string& pubid);
 
-	void			parse(
-						istream&			data);
+	void			parse(istream& data);
 
+	string			prefix_for_ns(const string& ns);
+	
+	bool			find_external_dtd(const string& uri, fs::path& path);
 
-	void			parse_name(
-						const char*			name,
-						string&				element,
-						string&				ns,
-						string&				prefix);
+	element*		m_root;
+	fs::path		m_dtd_dir;
+	
+	// some content information
+	encoding_type	m_encoding;
+	bool			m_standalone;
+	int				m_indent;
+	bool			m_empty;
+	bool			m_wrap;
+	bool			m_trim;
+	bool			m_escape_whitespace;
+	
+	bool			m_validating;
+
+	struct notation
+	{
+		string		m_name;
+		string		m_sysid;
+		string		m_pubid;
+	};
+
+	document*		m_doc;
+	element*		m_cur;		// construction
+	vector<pair<string,string> >
+					m_namespaces;
+	list<notation>	m_notations;
 };
 
 // --------------------------------------------------------------------
-//
-// --------------------------------------------------------------------
 
-void document_imp::XML_StartElementHandler(
-	void*				userData,
-	const XML_Char*		name,
-	const XML_Char**	atts)
+document_imp::document_imp(document* doc)
+	: m_encoding(enc_UTF8)
+	, m_standalone(false)
+	, m_indent(2)
+	, m_empty(true)
+	, m_wrap(true)
+	, m_trim(true)
+	, m_escape_whitespace(false)
+	, m_validating(false)
+	, m_doc(doc)
+	, m_cur(doc)
 {
-	assert(name);
-	static_cast<document_imp*>(userData)->StartElementHandler(name, atts);
 }
 
-void document_imp::XML_EndElementHandler(
-	void*				userData,
-	const XML_Char*		name)
+string document_imp::prefix_for_ns(const string& ns)
 {
-	assert(name);
-	static_cast<document_imp*>(userData)->EndElementHandler(name);
-}
-
-void document_imp::XML_CharacterDataHandler(
-	void*				userData,
-	const XML_Char*		s,
-	int					len)
-{
-	assert(s);
-	static_cast<document_imp*>(userData)->CharacterDataHandler(s, len);
-}
-
-void document_imp::XML_ProcessingInstructionHandler(
-	void*				userData,
-	const XML_Char*		target,
-	const XML_Char*		data)
-{
-	assert(target);
-	assert(data);
-	static_cast<document_imp*>(userData)->ProcessingInstructionHandler(target, data);
-}
-
-void document_imp::XML_CommentHandler(
-	void*				userData,
-	const XML_Char*		data)
-{
-	assert(data);
-	static_cast<document_imp*>(userData)->CommentHandler(data);
-}
-
-void document_imp::XML_StartCdataSectionHandler(
-	void *userData)
-{
-	static_cast<document_imp*>(userData)->StartCdataSectionHandler();
-}
-
-void document_imp::XML_EndCdataSectionHandler(
-	void *userData)
-{
-	static_cast<document_imp*>(userData)->EndCdataSectionHandler();
-}
-
-void document_imp::XML_StartNamespaceDeclHandler(
-    void*				userData,
-    const XML_Char*		prefix,
-    const XML_Char*		uri)
-{
-	assert(uri);
-	static_cast<document_imp*>(userData)->StartNamespaceDeclHandler(prefix ? prefix : "", uri);
-}
-
-void document_imp::XML_EndNamespaceDeclHandler(
-	void*				userData,
-	const XML_Char*		prefix)
-{
-	static_cast<document_imp*>(userData)->EndNamespaceDeclHandler(prefix ? prefix : "");
-}
-
-// --------------------------------------------------------------------
-
-void document_imp::parse_name(
-	const char*			name,
-	string&				element,
-	string&				ns,
-	string&				prefix)
-{
-	vector<string> n3;
-	ba::split(n3, name, ba::is_any_of("="));
-
-	if (n3.size() == 3)
-	{
-		element = n3[1];
-		ns = n3[0];
-		prefix = n3[2];
-	}
-	else if (n3.size() == 2)
-	{
-		element = n3[1];
-		ns = n3[0];
-		prefix.clear();
-		
-		if (ns.empty() == false and not cur.empty())
-			prefix = cur.top()->find_prefix(ns);
-	}
+	vector<pair<string,string> >::iterator i = find_if(m_namespaces.begin(), m_namespaces.end(),
+		boost::bind(&pair<string,string>::second, _1) == ns);
+	
+	string result;
+	if (i != m_namespaces.end())
+		result = i->first;
+	else if (m_cur != NULL)
+		result = m_cur->prefix_for_ns_name(ns);
 	else
-	{
-		element = n3[0];
-		ns.clear();
-		prefix.clear();
-	}
+		throw exception("namespace not found: %s", ns.c_str());
+	
+	return result;
 }
 
-void document_imp::StartElementHandler(
-	const XML_Char*		name,
-	const XML_Char**	atts)
+void document_imp::StartElementHandler(const string& name, const string& uri,
+	const parser::attr_list_type& atts)
 {
-	string element, ns, prefix;
-	
-	parse_name(name, element, ns, prefix);
-
-	node_ptr n;
-	
-	n.reset(new node(element, ns, prefix));
-
-	if (cur.empty())
+	string qname = name;
+	if (not uri.empty())
 	{
-		cur.push(n);
-		root = cur.top();
-	}
-	else
-	{
-		cur.top()->add_child(n);
-		cur.push(n);
-	}
-	
-	for (const char** att = atts; *att; att += 2)
-	{
-		if (not att[0] or not att[1])
-			break;
-		
-		parse_name(att[0], element, ns, prefix);
+		string prefix = prefix_for_ns(uri);
 		if (not prefix.empty())
-			element = prefix + ':' + element;
+			qname = prefix + ':' + name;
+	}
+
+	auto_ptr<element> n(new element(qname));
+
+	if (m_cur == m_doc)
+	{
+		m_doc->append(n.get());
+		m_root = m_cur = n.release();
+	}
+	else
+	{
+		m_cur->append(n.get());
+		m_cur = n.release();
+	}
+	
+	foreach (const parser::attr_type& a, atts)
+	{
+		qname = a.m_name;
+		if (not a.m_ns.empty())
+			qname = prefix_for_ns(a.m_ns) + ':' + a.m_name;
 		
-		attribute_ptr attr(new xml::attribute(element, att[1]));
-		cur.top()->add_attribute(attr);
+		m_cur->set_attribute(qname, a.m_value);
 	}
 
 	const string name_prefix("xmlns:");
 
-	for (vector<pair<string,string> >::iterator ns = namespaces.begin(); ns != namespaces.end(); ++ns)
-	{
-		string name;
-		if (ns->first.empty())
-			name = "xmlns";
-		else
-			name = name_prefix + ns->first;
-
-		attribute_ptr attr(new xml::attribute(name, ns->second));
-
-		cur.top()->add_attribute(attr);
-	}
+	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
+		m_cur->set_name_space(ns->first, ns->second);
 	
-	namespaces.clear();
+	m_namespaces.clear();
+	
+	n.release();
 }
 
-void document_imp::EndElementHandler(
-	const XML_Char*		name)
+void document_imp::EndElementHandler(const string& name, const string& uri)
 {
-	if (cur.empty())
+	if (m_cur == m_doc)
 		throw exception("Empty stack");
 	
-	cur.pop();
+//	string qname = name;
+//	if (not uri.empty())
+//		qname = prefix_for_ns(uri) + ':' + name;
+//
+	m_cur = dynamic_cast<element*>(m_cur->parent());
+	assert(m_cur);
 }
 
-void document_imp::CharacterDataHandler(
-	const XML_Char*		s,
-	int					len)
+void document_imp::CharacterDataHandler(const string& data)
 {
-	if (cur.empty())
+	if (m_cur == m_doc)
 		throw exception("Empty stack");
 	
-	cur.top()->add_content(s, len);
+	m_cur->add_text(data);
 }
 
-void document_imp::ProcessingInstructionHandler(
-	const XML_Char*		target,
-	const XML_Char*		data)
+void document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
-//	cerr << "processing instruction, target: " << target << ", data: " << data << endl;
+	m_cur->append(new processing_instruction(target, data));
 }
 
-void document_imp::CommentHandler(
-	const XML_Char*		data)
+void document_imp::CommentHandler(const string& s)
 {
-//	cerr << "comment " << data << endl;
+	m_cur->append(new comment(s));
 }
 
 void document_imp::StartCdataSectionHandler()
@@ -314,19 +207,34 @@ void document_imp::EndCdataSectionHandler()
 //	cerr << "end cdata" << endl;
 }
 
-void document_imp::StartNamespaceDeclHandler(
-	const XML_Char*		prefix,
-	const XML_Char*		uri)
+void document_imp::StartNamespaceDeclHandler(const string& prefix, const string& uri)
 {
-	if (prefix == NULL)
-		prefix = "";
-
-	namespaces.push_back(make_pair(prefix, uri));
+	m_namespaces.push_back(make_pair(prefix, uri));
 }
 	
-void document_imp::EndNamespaceDeclHandler(
-	const XML_Char*		prefix)
+void document_imp::EndNamespaceDeclHandler(const string& prefix)
 {
+}
+
+void document_imp::NotationDeclHandler(	const string& name, const string& sysid, const string& pubid)
+{
+	notation n = { name, sysid, pubid };
+	
+	list<notation>::iterator i = find_if(m_notations.begin(), m_notations.end(),
+		boost::bind(&notation::m_name, _1) >= name);
+	
+	m_notations.insert(i, n);
+}
+
+bool document_imp::find_external_dtd(const string& uri, fs::path& path)
+{
+	bool result = false;
+	if (not m_dtd_dir.empty() and fs::exists(m_dtd_dir))
+	{
+		path = m_dtd_dir / uri;
+		result = fs::exists(path);
+	}
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -334,99 +242,178 @@ void document_imp::EndNamespaceDeclHandler(
 void document_imp::parse(
 	istream&		data)
 {
-	XML_Parser p = XML_ParserCreateNS(NULL, '=');
-	
-	if (p == NULL)
-		throw exception("failed to create expat parser object");
-	
-	try
-	{
-		XML_SetUserData(p, this);
-		XML_SetElementHandler(p, XML_StartElementHandler, XML_EndElementHandler);
-		XML_SetCharacterDataHandler(p, XML_CharacterDataHandler);
-//		XML_SetProcessingInstructionHandler(p, XML_ProcessingInstructionHandler);
-//		XML_SetCommentHandler(p, XML_CommentHandler);
-//		XML_SetCdataSectionHandler(p, XML_StartCdataSectionHandler, XML_EndCdataSectionHandler);
-//		XML_SetDefaultHandler(p, XML_DefaultHandler);
-//		XML_SetDoctypeDeclHandler(p, XML_StartDoctypeDeclHandler, XML_EndDoctypeDeclHandler);
-//		XML_SetUnparsedEntityDeclHandler(p, XML_UnparsedEntityDeclHandler);
-//		XML_SetNotationDeclHandler(p, XML_NotationDeclHandler);
-		XML_SetNamespaceDeclHandler(p, XML_StartNamespaceDeclHandler, XML_EndNamespaceDeclHandler);
-		XML_SetReturnNSTriplet(p, true);
+	parser p(data);
 
-		// for some reason, readsome does not work when using
-		// boost::iostreams::stream<boost::iostreams::array_source>
-		// and so we have to come up with a kludge.
-		
-		data.seekg (0, ios::end);
-		unsigned long length = data.tellg();
-		data.seekg (0, ios::beg);
+	p.start_element_handler = boost::bind(&document_imp::StartElementHandler, this, _1, _2, _3);
+	p.end_element_handler = boost::bind(&document_imp::EndElementHandler, this, _1, _2);
+	p.character_data_handler = boost::bind(&document_imp::CharacterDataHandler, this, _1);
+	p.start_namespace_decl_handler = boost::bind(&document_imp::StartNamespaceDeclHandler, this, _1, _2);
+	p.processing_instruction_handler = boost::bind(&document_imp::ProcessingInstructionHandler, this, _1, _2);
+	p.notation_decl_handler = boost::bind(&document_imp::NotationDeclHandler, this, _1, _2, _3);
 
-		while (length > 0)
-		{
-			char buffer[256];
-
-			unsigned long k = length;
-			if (k > sizeof(buffer))
-				k = sizeof(buffer);
-			length -= k;
-			
-			data.read(buffer, k);
-			
-			XML_Status err = XML_Parse(p, buffer, k, length == 0);
-			if (err != XML_STATUS_OK)
-				throw exception(p);
-		}
-	}
-	catch (std::exception& e)
-	{
-		XML_ParserFree(p);
-		throw;
-	}
-
-	XML_ParserFree(p);
+	p.parse(m_validating);
 }
 
-document::document(
-	istream&		data)
-	: impl(new document_imp)
+// --------------------------------------------------------------------
+
+document::document()
+	: element("")
+	, m_impl(new document_imp(this))
 {
-	impl->parse(data);
-}
-					
-document::document(
-	const string&	data)
-	: impl(new document_imp)
-{
-	stringstream s;
-	s.str(data);
-	impl->parse(s);
 }
 
-document::document(
-	node_ptr		data)
-	: impl(new document_imp)
+document::document(const string& s)
+	: element("")
+	, m_impl(new document_imp(this))
 {
-	impl->root = data;
+	istringstream is(s);
+	read(is);
 }
-					
+
+document::document(std::istream& is)
+	: element("")
+	, m_impl(new document_imp(this))
+{
+	read(is);
+}
+
 document::~document()
 {
-	delete impl;
+	delete m_impl;
 }
 
-node_ptr document::root() const
+document* document::doc()
 {
-	return impl->root;
+	return this;
+}
+
+const document* document::doc() const
+{
+	return this;
+}
+
+void document::read(const string& s)
+{
+	istringstream is(s);
+	read(is);
+}
+
+void document::read(istream& is)
+{
+	m_impl->parse(is);
+}
+
+void document::read(istream& is, const boost::filesystem::path& base_dir)
+{
+	m_impl->m_dtd_dir = base_dir;
+	m_impl->parse(is);
+}
+
+void document::write(writer& w) const
+{
+	if (m_child == NULL)
+		throw exception("cowardly refuse to write empty document");
+	
+	w.write_xml_decl(m_impl->m_standalone);
+
+	if (not m_impl->m_notations.empty())
+	{
+		w.write_start_doctype(m_impl->m_root->qname(), "");
+		foreach (const document_imp::notation& n, m_impl->m_notations)
+			w.write_notation(n.m_name, n.m_sysid, n.m_pubid);
+		w.write_end_doctype();
+	}
+	
+	node* child = m_child;
+	while (child != NULL)
+	{
+		child->write(w);
+		child = child->next();
+	}
+}
+
+element* document::root() const
+{
+	return m_impl->m_root;
+}
+
+void document::root(element* root)
+{
+	if (m_child != NULL)
+		remove(m_child);
+	m_child = NULL;
+	
+	if (root != NULL)
+		append(root);
+	m_impl->m_root = root;
+}
+
+void document::base_dir(const fs::path& path)
+{
+	m_impl->m_dtd_dir = path;
+}
+
+encoding_type document::encoding() const
+{
+	return m_impl->m_encoding;
+}
+
+void document::encoding(encoding_type enc)
+{
+	m_impl->m_encoding = enc;
+}
+
+int document::indent() const
+{
+	return m_impl->m_indent;
+}
+
+void document::indent(int indent)
+{
+	m_impl->m_indent = indent;
+}
+
+bool document::wrap() const
+{
+	return m_impl->m_wrap;
+}
+
+void document::wrap(bool wrap)
+{
+	m_impl->m_wrap = wrap;
+}
+
+bool document::trim() const
+{
+	return m_impl->m_trim;
+}
+
+void document::trim(bool trim)
+{
+	m_impl->m_trim = trim;
+}
+
+void document::set_validating(bool validate)
+{
+	m_impl->m_validating = validate;
+}
+
+bool document::operator==(const document& other) const
+{
+	return equals(&other);
+}
+
+istream& operator>>(istream& lhs, document& rhs)
+{
+	rhs.read(lhs);
+	return lhs;
 }
 
 ostream& operator<<(ostream& lhs, const document& rhs)
 {
-	lhs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
+	writer w(lhs);
 	
-	if (rhs.root())
-		rhs.root()->write(lhs, 0);
-
+	rhs.write(w);
 	return lhs;
 }
 	
