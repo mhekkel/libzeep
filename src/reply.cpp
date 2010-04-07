@@ -115,7 +115,7 @@ void reply::set_content(xml::element* data)
 	headers[0].name = "Content-Length";
 	headers[0].value = boost::lexical_cast<string>(content.length());
 	headers[1].name = "Content-Type";
-	headers[1].value = "text/xml";
+	headers[1].value = "text/xml; charset=utf-8";
 }
 
 void reply::set_content(const string& data, const string& mimetype)
@@ -174,7 +174,7 @@ reply reply::stock_reply(status_type status)
 	result.headers[0].name = "Content-Length";
 	result.headers[0].value = boost::lexical_cast<string>(result.content.length());
 	result.headers[1].name = "Content-Type";
-	result.headers[1].value = "text/html";
+	result.headers[1].value = "text/html; charset=utf-8";
 	
 	return result;
 }
