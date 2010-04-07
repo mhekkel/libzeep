@@ -100,6 +100,10 @@ class my_server : public zeep::server
 							int							maxresultcount,
 							WSSearchNS::FindResult&		out);
 
+	void				VoorBas(
+							const string&				s,
+							string&						out);
+
 };
 
 my_server::my_server(const string& address, short port)
@@ -138,6 +142,13 @@ my_server::my_server(const string& address, short port)
 	};
 	
 	register_action("Find", this, &my_server::Find, kFindParameterNames);
+
+	const char* kVoorBasParameterNames[] = {
+		"s",
+		"out"
+	};
+	
+	register_action("VoorBas", this, &my_server::VoorBas, kVoorBasParameterNames);
 }
 
 void my_server::ListDatabanks(
@@ -189,6 +200,15 @@ void my_server::Find(
 	h.title = "aap <&> noot mies";
 	
 	out.hits.push_back(h);
+}
+
+void my_server::VoorBas(
+	const string&				s,
+	string&						out)
+{
+	log() << s;
+	
+	out = s;
 }
 
 #define FORKED_MODE 0
@@ -245,8 +265,8 @@ int main(int argc, const char* argv[])
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server, "0.0.0.0", 10333, 1));
+	my_server server("lord-jim.cmbi.umcn.nl", 10333);
+    boost::thread t(boost::bind(&my_server::run, &server, "lord-jim.cmbi.umcn.nl", 10333, 1));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 

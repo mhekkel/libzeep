@@ -1974,6 +1974,7 @@ Token xpath_imp::get_next_token()
 					else
 						token = xp_Name;
 				}
+				break;
 			
 			case xps_QName:
 				if (ch != ':' and is_name_start_char(ch))

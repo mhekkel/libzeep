@@ -154,6 +154,8 @@ class text : public node
 
 	void				str(const std::string& text)				{ m_text = text; }
 
+	void				append(const std::string& text)				{ m_text.append(text); }
+
 	virtual void		write(writer& w) const;
 
 	virtual bool		equals(const node* n) const;

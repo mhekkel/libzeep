@@ -51,7 +51,7 @@ bool run_test(const xml::element& test)
 //		cout << "test doc:" << endl << doc << endl;
 	
 	xml::xpath xp(test.get_attribute("xpath"));
-	xml::node_set ns = xp.evaluate(doc);
+	xml::node_set ns = xp.evaluate<xml::node>(doc);
 
 	if (VERBOSE)
 	{
@@ -119,16 +119,12 @@ void run_tests(const fs::path& file)
 	
 	int nr_of_tests = 0, failed_nr_of_tests = 0;
 	
-	xml::node_set tests = doc.root()->children();
-	foreach (const xml::node* n, tests)
+	xml::element_set tests = doc.root()->children<xml::element>();
+	foreach (const xml::element* test, tests)
 	{
-		const xml::element* test = dynamic_cast<const xml::element*>(n);
-		if (test != NULL)
-		{
-			++nr_of_tests;
-			if (run_test(*test) == false)
-				++failed_nr_of_tests;
-		}
+		++nr_of_tests;
+		if (run_test(*test) == false)
+			++failed_nr_of_tests;
 	}
 	
 	cout << endl;

@@ -82,15 +82,14 @@ string node::lang() const
 
 void node::append_to_list(node* n)
 {
-	if (m_next != nil)
-		m_next->append_to_list(n);
-	else
-	{
-		m_next = n;
-		n->m_prev = this;
-		n->m_parent = m_parent;
-		n->m_next = nil;
-	}
+	node* p = this;
+	while (p->m_next != nil)
+		p = p->m_next;
+
+	p->m_next = n;
+	n->m_prev = p;
+	n->m_parent = m_parent;
+	n->m_next = nil;
 }
 
 void node::remove_from_list(node* n)
@@ -99,15 +98,17 @@ void node::remove_from_list(node* n)
 	if (this == n)
 		throw exception("inconsistent node tree");
 
-	if (m_next == n)
+	node* p = this;
+	while (p != nil and p->m_next != n)
+		p = p->m_next;
+
+	if (p != nil and p->m_next == n)
 	{
-		m_next = n->m_next;
-		if (m_next != nil)
-			m_next->m_prev = m_next;
+		p->m_next = n->m_next;
+		if (p->m_next != nil)
+			p->m_next->m_prev = m_next;
 		n->m_next = n->m_prev = n->m_parent = nil;
 	}
-	else if (m_next != nil)
-		m_next->remove_from_list(n);
 	else
 		throw exception("remove for a node not found in the list");
 }
@@ -351,15 +352,20 @@ void element::remove(node_ptr n)
 
 void element::add_text(const std::string& s)
 {
-	node* child = m_child;
-
-	while (child != nil)
-		child = child->m_next;
-
-	text* t = dynamic_cast<text*>(child);
+	text* textNode = nil;
 	
-	if (t != nil)
-		t->str(t->str() + s);
+	if (m_child != nil)
+	{
+		node* child = m_child;
+	
+		while (child->m_next != nil)
+			child = child->m_next;
+	
+		textNode = dynamic_cast<text*>(child);
+	}
+	
+	if (textNode != nil)
+		textNode->append(s);
 	else
 		append(new text(s));
 }

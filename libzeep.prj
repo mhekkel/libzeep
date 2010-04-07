@@ -61,10 +61,29 @@
         <define>NDEBUG</define>
       </defines>
       <cflags>
+        <cflag>-O3</cflag>
         <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
         <cflag>-fPIC</cflag>
+      </cflags>
+      <warnings>
+        <warning>all</warning>
+        <warning>no-deprecated</warning>
+      </warnings>
+    </target>
+    <target kind="Static Library">
+      <name>zeep Profile</name>
+      <linkTarget>libzeep</linkTarget>
+      <compiler>/usr/bin/c++</compiler>
+      <defines>
+        <define>NDEBUG</define>
+      </defines>
+      <cflags>
         <cflag>-O3</cflag>
+        <cflag>-pthread</cflag>
+        <cflag>-gdwarf-2</cflag>
+        <cflag>-fPIC</cflag>
+        <cflag>-pg</cflag>
       </cflags>
       <warnings>
         <warning>all</warning>

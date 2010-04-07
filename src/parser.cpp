@@ -36,6 +36,10 @@ namespace fs = boost::filesystem;
 #define nil NULL
 #endif
 
+//#if DEBUG
+//extern int VERBOSE;
+//#endif
+
 namespace zeep { namespace xml {
 
 // --------------------------------------------------------------------
@@ -1063,6 +1067,11 @@ int parser_imp::get_next_token()
 		}
 	}
 	
+//#if DEBUG
+//	if (VERBOSE)
+//		cout << "token: " << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ')' << endl;
+//#endif
+	
 	return token;
 }
 
@@ -1319,6 +1328,11 @@ int parser_imp::get_next_content()
 				not_well_formed(L"state reached that should not be reachable");
 		}
 	}
+
+//#if DEBUG
+//	if (VERBOSE)
+//		cout << "content: " << wstring_to_string(describe_token(token)) << " (" << wstring_to_string(m_token) << ')' << endl;
+//#endif
 
 	return token;
 }
@@ -3262,8 +3276,6 @@ void parser_imp::element(doctype::validator& valid)
 
 void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 {
-	wstring data;
-	
 	do
 	{
 		switch (m_lookahead)
