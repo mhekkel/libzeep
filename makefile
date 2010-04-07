@@ -8,9 +8,9 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
-#BOOST_LIB_DIR		= /usr/local/lib/
-#BOOST_INC_DIR		= /usr/local/include/boost-1_37
+#BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
+BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 DESTDIR				?= /usr/local/
 LIBDIR				= $(DESTDIR)lib
@@ -19,41 +19,49 @@ MANDIR				= $(DESTDIR)man/man3
 
 BOOST_LIBS			= boost_system boost_thread
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
-LIBS				= expat $(BOOST_LIBS)
-LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -gdwarf-2
+LIBS				= $(BOOST_LIBS)
+LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -gdwarf-2 -pthread
 
 CC					?= c++
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC
+CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC -pthread
 
 VPATH += src
 
 OBJECTS = \
+	obj/doctype.o \
 	obj/document.o \
 	obj/exception.o \
 	obj/node.o \
 	obj/soap-envelope.o \
+	obj/parser.o \
 	obj/request_parser.o \
 	obj/reply.o \
 	obj/connection.o \
 	obj/http-server.o \
-	obj/soap-server.o
+	obj/soap-server.o \
+	obj/unicode_support.o \
+	obj/xpath.o \
+	obj/writer.o
 
-lib: libzeep.a libzeep.so
+lib: libzeep.a
 
 libzeep.a: $(OBJECTS)
-	ld -r -o $@ $?
+	ld -r -o $@ $(OBJECTS)
 
 libzeep.so: $(OBJECTS)
 	c++ -shared -o $@ $(LDOPTS) $?
 
 zeep-test: lib obj/zeep-test.o
-	c++ -o $@ $(OBJECTS) $(LDOPTS) libzeep.a
+	c++ -o $@ libzeep.a $(LDOPTS) -lboost_filesystem obj/zeep-test.o
+
+parser-test: lib obj/parser-test.o
+	c++ -o $@ $(OBJECTS) $(LDOPTS)
 
 install: lib
 	install -d $(LIBDIR) $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	install ./libzeep.so $(LIBDIR)/libzeep.so.1
-	ln -fs $(LIBDIR)libzeep.so.1 $(LIBDIR)libzeep.so
+	ln -fs $(LIBDIR)/libzeep.so.1 $(LIBDIR)/libzeep.so
 	install zeep/http/reply.hpp $(INCDIR)/zeep/http/reply.hpp
 	install zeep/http/connection.hpp $(INCDIR)/zeep/http/connection.hpp
 	install zeep/http/request_parser.hpp $(INCDIR)/zeep/http/request_parser.hpp
@@ -64,6 +72,7 @@ install: lib
 	install zeep/xml/document.hpp $(INCDIR)/zeep/xml/document.hpp
 	install zeep/xml/node.hpp $(INCDIR)/zeep/xml/node.hpp
 	install zeep/xml/serialize.hpp $(INCDIR)/zeep/xml/serialize.hpp
+	install zeep/xml/parser.hpp $(INCDIR)/zeep/xml/parser.hpp
 	install zeep/envelope.hpp $(INCDIR)/zeep/envelope.hpp
 	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
 	install zeep/dispatcher.hpp $(INCDIR)/zeep/dispatcher.hpp

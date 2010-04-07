@@ -1,0 +1,9 @@
+<aaa>
+	<bbb xml:lang="en" />
+	<bbb xml:lang="nl" />
+	<bbb xml:lang="fr" />
+	<bbb xml:lang="nl-NL">
+		<bbb/>
+		<bbb/>
+	</bbb>
+</aaa>

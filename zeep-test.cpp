@@ -13,6 +13,8 @@
 
 using namespace std;
 
+int TRACE, VERBOSE;
+
 // the data types used in our communication with the outside world
 // are wrapped in a namespace.
 
@@ -98,6 +100,10 @@ class my_server : public zeep::server
 							int							maxresultcount,
 							WSSearchNS::FindResult&		out);
 
+	void				VoorBas(
+							const string&				s,
+							string&						out);
+
 };
 
 my_server::my_server(const string& address, short port)
@@ -105,7 +111,7 @@ my_server::my_server(const string& address, short port)
 {
 	using namespace WSSearchNS;
 
-	SOAP_XML_SET_STRUCT_NAME(Hit);
+	zeep::xml::serialize_struct<Hit>::set_struct_name("Hit");
 	SOAP_XML_SET_STRUCT_NAME(FindResult);
 
 	const char* kListDatabanksParameterNames[] = {
@@ -120,9 +126,14 @@ my_server::my_server(const string& address, short port)
 	
 	register_action("Count", this, &my_server::Count, kCountParameterNames);
 	
-	SOAP_XML_ADD_ENUM(Algorithm, Vector);
-	SOAP_XML_ADD_ENUM(Algorithm, Dice);
-	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
+	zeep::xml::enum_map<Algorithm>::instance("Algorithm").add_enum()
+		( "Vector", Vector )
+		( "Dice", Dice )
+		( "Jaccard", Jaccard )
+		;
+//	SOAP_XML_ADD_ENUM(Algorithm, Vector);
+//	SOAP_XML_ADD_ENUM(Algorithm, Dice);
+//	SOAP_XML_ADD_ENUM(Algorithm, Jaccard);
 
 	const char* kFindParameterNames[] = {
 		"db", "queryterms", "algorithm",
@@ -131,6 +142,13 @@ my_server::my_server(const string& address, short port)
 	};
 	
 	register_action("Find", this, &my_server::Find, kFindParameterNames);
+
+	const char* kVoorBasParameterNames[] = {
+		"s",
+		"out"
+	};
+	
+	register_action("VoorBas", this, &my_server::VoorBas, kVoorBasParameterNames);
 }
 
 void my_server::ListDatabanks(
@@ -184,11 +202,20 @@ void my_server::Find(
 	out.hits.push_back(h);
 }
 
-#define FORKED_MODE 1
+void my_server::VoorBas(
+	const string&				s,
+	string&						out)
+{
+	log() << s;
+	
+	out = s;
+}
+
+#define FORKED_MODE 0
 
 int main(int argc, const char* argv[])
 {
-#if defined(FORKED_MODE)
+#if FORKED_MODE
  	for (;;)
  	{
  		cout << "restarting server" << endl;
@@ -238,8 +265,8 @@ int main(int argc, const char* argv[])
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server));
+	my_server server("lord-jim.cmbi.umcn.nl", 10333);
+    boost::thread t(boost::bind(&my_server::run, &server, "lord-jim.cmbi.umcn.nl", 10333, 1));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
