@@ -42,8 +42,8 @@ ostream& operator<<(ostream& lhs, const node* rhs)
 // --------------------------------------------------------------------
 
 enum Token {
-	xp_Undef,
-	xp_EOF,
+	xp_Undef				= 0,
+	xp_EOF					= 256,
 	xp_LeftParenthesis,
 	xp_RightParenthesis,
 	xp_LeftBracket,
@@ -190,7 +190,8 @@ const CoreFunctionInfo kCoreFunctionInfo[cf_CoreFunctionCount] =
 	{ "comment",			1 },
 };
 
-// the expressions implemented as interpreter objects
+// the expressions are implemented as interpreter objects
+// they return 'objects' that can hold various data.
 
 enum object_type
 {
@@ -421,6 +422,7 @@ ostream& operator<<(ostream& lhs, object& rhs)
 }
 
 // --------------------------------------------------------------------
+// visiting (or better, collecting) other nodes in the hierarchy is done here.
 
 template<typename PREDICATE>
 void iterate_children(element* context, node_set& s, bool deep, PREDICATE pred)
@@ -529,6 +531,7 @@ void iterate_attributes(element* e, node_set& s, PREDICATE pred)
 
 // --------------------------------------------------------------------
 // context for the expressions
+// Need to add support for external variables here.
 
 struct expression_context
 {
@@ -595,6 +598,7 @@ class expression
 	virtual				~expression() {}
 	virtual object		evaluate(expression_context& context) = 0;
 
+						// print exists only for debugging purposes
 	virtual void		print(int level) = 0;
 };
 
@@ -684,6 +688,7 @@ object step_expression::evaluate(expression_context& context, T pred)
 				iterate_attributes(context_element, result, pred);
 				break;
 
+#pragma message("need to implement namespace axis")
 			case ax_Namespace:
 				throw exception("unimplemented axis");
 				
@@ -1045,6 +1050,7 @@ class variable_expression : public expression
 
 object variable_expression::evaluate(expression_context& context)
 {
+#pragma message("need to add variables support")
 	throw exception("variables are not supported yet");
 	return object();
 }
@@ -1141,6 +1147,7 @@ object core_function_expression<cf_Count>::evaluate(expression_context& context)
 	return object(double(result));
 }
 
+#pragma message("implement id core function")
 //template<>
 //object core_function_expression<cf_Id>::evaluate(expression_context& context)
 //{
@@ -1185,6 +1192,7 @@ object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& c
 		
 	if (e == nil)
 		throw exception("argument is not an element in function 'namespace-uri'");
+
 	return e->ns_name_for_prefix(e->prefix());
 }
 
@@ -1481,8 +1489,6 @@ object core_function_expression<cf_Round>::evaluate(expression_context& context)
 	object v = m_args.front()->evaluate(context);
 	return round(v.as<double>());
 }
-
-
 
 // --------------------------------------------------------------------
 
@@ -1803,7 +1809,6 @@ string xpath_imp::describe_token(Token token)
 		case xp_OperatorOr:			result << "logical-or operator"; break;
 		case xp_OperatorMod:		result << "modulus operator"; break;
 		case xp_OperatorDiv:		result << "division operator"; break;
-
 		case xp_Literal:			result << "literal"; break;
 		case xp_Number:				result << "number"; break;
 		case xp_Variable:			result << "variable"; break;
@@ -2016,7 +2021,6 @@ Token xpath_imp::get_next_token()
 	if (token == xp_Name)		// we've scanned a name, but it might as well be a function, nodetype or axis
 	{
 		// look forward and see what's ahead
-		
 		for (string::const_iterator c = m_next; c != m_end; ++c)
 		{
 			if (isspace(*c))
