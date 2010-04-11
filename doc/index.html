@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>libzeep documentation</title>
+    <meta name="author" content="Maarten L. Hekkelman" />
+    <meta name="generator" content="Japi" />
+	<link rel="stylesheet" type="text/css" href="zeep.css" />
+	<!-- Date:		 zondag 11 april, 2010 -->
+</head>
+<body>
+	<h2>Contents</h2>
+	<ul>
+		<li><a href="#intro">Introduction</a></li>
+		<li><a href="#examples">Examples</a></li>
+		<li><a href="#reference">Reference</a></li>
+	</ul>
+	
+	
+	
+	<a name="intro"/>
+	<h2>Introduction</h2>
+	
+	<p>libzeep is a library that consists of two main parts. The first and arguably most useful for many is the XML processing part. It consists of a SAX parser, a DOM implementation, an XML writing module and an XPath implementation. The parser can act as a validating parser using the Document Type Definition to check the content. Schema support is not yet implemented but will be in a future release.
+	</p>
+	
+	<p>The second part of libzeep (and the part it all started with, hence the name) is a skeleton to build SOAP server implementations. It uses the XML part as well as various <a href="http://www.boost.org">Boost</a> libraries to achieve its usefulness. It allows the creation of a SOAP server by implementing only the serving routines in C++ and calling a routine for each to export of them. Code is then automatically generated to do all the SOAP message parsing and WSDL's generation occurs on-the-fly at runtime.
+	</p>
+
+	<p>libzeep comes with headers and libraries. The headers all have <code>zeep</code> as namespace. All code heavily depends on the boost libraries.
+	</p>
+
+
+	<a name="examples"/>
+	<h2>Examples</h2>
+	
+	<p>Using libzeep is fairly straightforward. E.g., if we take the following XML file:
+	</p>
+	
+	<pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;employees&gt;
+  &lt;employee&gt;
+    &lt;name id="1"&gt;Joe Doe&lt;/name&gt;
+    &lt;address&gt;Main street&lt;/address&gt;
+  &lt;/employee&gt;
+  &lt;employee&gt;
+    &lt;name id="2"&gt;Jack Daniels&lt;/name&gt;
+    &lt;address&gt;Backstreet&lt;/address&gt;
+  &lt;/employee&gt;
+&lt;/employees&gt;</pre>
+	
+	<p>Reading this file is simple:
+	</p>
+
+<pre>#include &lt;zeep/xml/document.hpp&gt;
+
+using namespace zeep;
+using namespace std;
+
+ifstream data("/tmp/myfile.xml");
+xml::document doc;
+data >> doc;
+</pre>
+
+	<p>The result of this code is a DOM tree with <code>doc</code> as root. An <code>xml::document</code> is derived from <code>xml::element</code> and can only have one <code>xml::element</code> child. Since it is a DOM tree, and since it is implemented in the classic link-list approach, you can use the <code>next()</code>, <code>prev()</code>, <code>parent()</code> and <code>child()</code> methods to navigate the tree. 
+	</p>
+	
+	<p>But to stick to STL coding styles, walking a tree can also be done using the <code>children()</code> method which returns a <code>std::list</code> of pointers to its children. This method is templated since an element can have non-element child nodes like comments and processing instruction but most often you're only interested in the element child nodes.
+	</p>
+	
+	<p>Using the <code>children</code> method, iterating over all employees can be done like this:</p>
+
+<pre><span class="comment">// iterate over employees</span>
+xml::element_set employees = doc.root()->children&lt;xml::element&gt;();
+for (xml::element_set::iterator employee = employees.begin(); employee != employees.end(); ++employee)
+{
+	<span style="comment">// employee points to an element and we want its first child</span>
+	xml::element* name = (*employee)->child();
+	<span style="comment">// it really should be a name, right?</span>
+	assert(name->qname() == "name");
+    cout &lt;&lt; "Name: " &lt;&lt; name->content() &lt;&lt; endl;
+}
+</pre>
+
+	<p>Of course, using Boost's foreach this looks a lot nicer:</p>
+
+<pre><span class="comment">// iterate over employees, boost foreach style</span>
+#include &lt;boost/foreach.hpp&gt;
+#define foreach BOOST_FOREACH
+
+...
+
+for (xml::element* employee, doc.root()->children&lt;xml::element&gt;())
+{
+	xml::element* name = (*employee)->child();
+	...
+}
+</pre>
+
+	<p>Still, we can do better. Using XPaths. Just like the <code>children()</code> method of <code>xml::element</code> the xpath evaluation method returns all nodes, if you're only interested in <code>xml::element</code> nodes, you can specify this.</p>
+	
+<pre>#include &lt;boost/foreach.hpp&gt;
+#define foreach BOOST_FOREACH
+
+...
+
+xpath p("//employee/name");
+
+for (xml::element* name, p.evaluate&lt;xml::element&gt;(doc))
+{
+    cout &lt;&lt; "Name: " &lt;&lt; name->content() &lt;&lt; endl;
+}
+</pre>
+
+	<p>The <code>find</code> method of <code>xml::element</code> is a shortcut to <code>xpath::evaluate()</code>, it always returns <code>xml::element</code> nodes.</p>
+	
+<pre>for (xml::element* name = doc.find("//employee/name"))
+    cout &lt;&lt; "Name: " &lt;&lt; name->content() &lt;&lt; endl;
+</pre>
+
+	<p>The XPath implementation in libzeep (will eventually) implement the full XPath 1.0 specification. That means you can also do this:
+
+<pre>// Fetch Jack's record by name:	
+xml::element* jack = doc.find("//employee[name = 'Jack Daniels']");
+
+// or by id:
+jack = doc.find("//employee[@id='2']");
+
+// or by position in the list, jack is always last...
+jack = doc.find("//employee[position() = last()]");
+</pre>
+
+
+	<a name="reference"/>
+	<h2>Reference</h2>
+	
+	<p>
+	</p>
+		
+	
+</body>
+</html>
