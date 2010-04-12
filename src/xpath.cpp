@@ -20,8 +20,9 @@
 #include "zeep/exception.hpp"
 #include "zeep/xml/node.hpp"
 #include "zeep/xml/xpath.hpp"
-#include "zeep/xml/document.hpp"
 #include "zeep/xml/unicode_support.hpp"
+
+#include "zeep/xml/writer.hpp"
 
 #define nil NULL
 
@@ -425,11 +426,11 @@ ostream& operator<<(ostream& lhs, object& rhs)
 // visiting (or better, collecting) other nodes in the hierarchy is done here.
 
 template<typename PREDICATE>
-void iterate_children(element* context, node_set& s, bool deep, PREDICATE pred)
+void iterate_children(container* context, node_set& s, bool deep, PREDICATE pred)
 {
 	for (node* child = context->child(); child != nil; child = child->next())
 	{
-		element* e = dynamic_cast<element*>(child);
+		container* e = dynamic_cast<container*>(child);
 		if (e == nil)
 			continue;
 
@@ -445,17 +446,17 @@ void iterate_children(element* context, node_set& s, bool deep, PREDICATE pred)
 }
 
 template<typename PREDICATE>
-void iterate_ancestor(element* e, node_set& s, PREDICATE pred)
+void iterate_ancestor(container* e, node_set& s, PREDICATE pred)
 {
 	for (;;)
 	{
-		e = dynamic_cast<element*>(e->parent());
+		e = dynamic_cast<container*>(e->parent());
 		
 		if (e == nil)
 			break;
 		
-		document* d = dynamic_cast<document*>(e);
-		if (d != nil)
+		root* r = dynamic_cast<root*>(e);
+		if (r != nil)
 			break;
 
 		if (pred(e))
@@ -479,7 +480,7 @@ void iterate_preceding(node* n, node_set& s, bool sibling, PREDICATE pred)
 		
 		n = n->prev();
 		
-		element* e = dynamic_cast<element*>(n);
+		container* e = dynamic_cast<container*>(n);
 		if (e == nil)
 			continue;
 		
@@ -507,7 +508,7 @@ void iterate_following(node* n, node_set& s, bool sibling, PREDICATE pred)
 		
 		n = n->next();
 		
-		element* e = dynamic_cast<element*>(n);
+		container* e = dynamic_cast<container*>(n);
 		if (e == nil)
 			continue;
 		
@@ -523,6 +524,16 @@ template<typename PREDICATE>
 void iterate_attributes(element* e, node_set& s, PREDICATE pred)
 {
 	foreach (attribute* a, e->attributes())
+	{
+		if (pred(a))
+			s.push_back(a);
+	}
+}
+
+template<typename PREDICATE>
+void iterate_namespaces(element* e, node_set& s, PREDICATE pred)
+{
+	foreach (name_space* a, e->name_spaces())
 	{
 		if (pred(a))
 			s.push_back(a);
@@ -625,7 +636,7 @@ object step_expression::evaluate(expression_context& context, T pred)
 {
 	node_set result;
 	
-	element* context_element = dynamic_cast<element*>(context.m_node);
+	container* context_element = dynamic_cast<container*>(context.m_node);
 	if (context_element != nil)
 	{
 		switch (m_axis)
@@ -633,7 +644,7 @@ object step_expression::evaluate(expression_context& context, T pred)
 			case ax_Parent:
 				if (context_element->parent() != nil)
 				{
-					element* e = static_cast<element*>(context_element->parent());
+					container* e = static_cast<container*>(context_element->parent());
 					if (pred(e))
 						result.push_back(context_element->parent());
 				}
@@ -685,12 +696,14 @@ object step_expression::evaluate(expression_context& context, T pred)
 				break;
 	
 			case ax_Attribute:
-				iterate_attributes(context_element, result, pred);
+				if (dynamic_cast<element*>(context_element) != nil)
+					iterate_attributes(static_cast<element*>(context_element), result, pred);
 				break;
 
-#pragma message("need to implement namespace axis")
 			case ax_Namespace:
-				throw exception("unimplemented axis");
+				if (dynamic_cast<element*>(context_element) != nil)
+					iterate_namespaces(static_cast<element*>(context_element), result, pred);
+				break;
 				
 			case ax_AxisTypeCount:
 				;
@@ -724,14 +737,14 @@ class name_test_step_expression : public step_expression
 							if (result == false)
 							{
 								const element* e = dynamic_cast<const element*>(n);
-								if (e != nil and e->local_name() == m_name)
+								if (e != nil and e->name() == m_name)
 									result = true;
 							}
 
 							if (result == false)
 							{
 								const attribute* a = dynamic_cast<const attribute*>(n);
-								if (a != nil and a->local_name() == m_name)
+								if (a != nil and a->name() == m_name)
 									result = true;
 							}
 							
@@ -777,18 +790,18 @@ object node_type_expression<T>::evaluate(expression_context& context)
 
 // --------------------------------------------------------------------
 
-class document_expression : public expression
+class root_expression : public expression
 {
   public:
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); cout << "document" << endl; }
+	virtual void		print(int level) { indent(level); cout << "root" << endl; }
 };
 
-object document_expression::evaluate(expression_context& context)
+object root_expression::evaluate(expression_context& context)
 {
 	node_set result;
-	result.push_back(context.m_node->doc());
+	result.push_back(context.m_node->root_node());
 	return result;
 }
 
@@ -1144,6 +1157,8 @@ object core_function_expression<cf_Count>::evaluate(expression_context& context)
 {
 	object v = m_args.front()->evaluate(context);
 	int result = v.as<const node_set&>().size();
+
+cout << "result for cf_Count: " << *context.m_node << " == " << result << endl;
 	return object(double(result));
 }
 
@@ -1159,61 +1174,61 @@ object core_function_expression<cf_Count>::evaluate(expression_context& context)
 template<>
 object core_function_expression<cf_LocalName>::evaluate(expression_context& context)
 {
-	element* e = nil;
+	node* n = nil;
 	
 	if (m_args.empty())
-		e = dynamic_cast<element*>(context.m_node);
+		n = context.m_node;
 	else
 	{
 		object v = m_args.front()->evaluate(context);
 		if (not v.as<const node_set&>().empty())
-			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+			n = v.as<const node_set&>().front();
 	}
 		
-	if (e == nil)
+	if (n == nil)
 		throw exception("argument is not an element in function 'local-name'");
 
-	return e->local_name();
+	return n->name();
 }
 
 template<>
 object core_function_expression<cf_NamespaceUri>::evaluate(expression_context& context)
 {
-	element* e = nil;
+	node* n = nil;
 	
 	if (m_args.empty())
-		e = dynamic_cast<element*>(context.m_node);
+		n = context.m_node;
 	else
 	{
 		object v = m_args.front()->evaluate(context);
 		if (not v.as<const node_set&>().empty())
-			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+			n = v.as<const node_set&>().front();
 	}
 		
-	if (e == nil)
+	if (n == nil)
 		throw exception("argument is not an element in function 'namespace-uri'");
 
-	return e->ns_name_for_prefix(e->prefix());
+	return n->ns();
 }
 
 template<>
 object core_function_expression<cf_Name>::evaluate(expression_context& context)
 {
-	element* e = nil;
+	node* n = nil;
 	
 	if (m_args.empty())
-		e = dynamic_cast<element*>(context.m_node);
+		n = context.m_node;
 	else
 	{
 		object v = m_args.front()->evaluate(context);
 		if (not v.as<const node_set&>().empty())
-			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+			n = v.as<const node_set&>().front();
 	}
 		
-	if (e == nil)
+	if (n == nil)
 		throw exception("argument is not an element in function 'name'");
 
-	return e->local_name();
+	return n->qname();
 }
 
 template<>
@@ -2119,7 +2134,7 @@ expression_ptr xpath_imp::location_path()
 	expression_ptr result(relative_location_path());
 	
 	if (absolute)
-		result.reset(new path_expression(expression_ptr(new document_expression()), result));
+		result.reset(new path_expression(expression_ptr(new root_expression()), result));
 
 	return result;
 }

@@ -13,7 +13,7 @@
 
 namespace zeep { namespace xml {
 
-class document : public element
+class document
 {
   public:
 						document();
@@ -22,9 +22,8 @@ class document : public element
 
 	virtual				~document();
 
-	virtual document*	doc();
-	virtual const document*
-						doc() const;
+//	root*				get_root();
+//	const root*			get_root() const;
 
 	// I/O
 	void				read(const std::string& s);
@@ -34,8 +33,13 @@ class document : public element
 	virtual void		write(writer& w) const;
 
 	// A valid xml document contains exactly one root element
-	void				root(element* root);
-	element*			root() const;
+	void				root_node(root* root);
+	root*				root_node() const;
+
+	// helper functions
+	element*			get_element();
+	element_set			find(const std::string& path);
+	element*			find_first(const std::string& path);
 
 	// Compare two xml documents
 	bool				operator==(const document& doc) const;

@@ -59,11 +59,11 @@ struct document_imp
 
 	void			parse(istream& data);
 
-	string			prefix_for_ns(const string& ns);
+	string			prefix_for_namespace(const string& ns);
 	
 	bool			find_external_dtd(const string& uri, fs::path& path);
 
-	element*		m_root;
+	root			m_root;
 	fs::path		m_dtd_dir;
 	
 	// some content information
@@ -103,11 +103,11 @@ document_imp::document_imp(document* doc)
 	, m_escape_whitespace(false)
 	, m_validating(false)
 	, m_doc(doc)
-	, m_cur(doc)
+	, m_cur(NULL)
 {
 }
 
-string document_imp::prefix_for_ns(const string& ns)
+string document_imp::prefix_for_namespace(const string& ns)
 {
 	vector<pair<string,string> >::iterator i = find_if(m_namespaces.begin(), m_namespaces.end(),
 		boost::bind(&pair<string,string>::second, _1) == ns);
@@ -116,7 +116,7 @@ string document_imp::prefix_for_ns(const string& ns)
 	if (i != m_namespaces.end())
 		result = i->first;
 	else if (m_cur != NULL)
-		result = m_cur->prefix_for_ns_name(ns);
+		result = m_cur->prefix_for_namespace(ns);
 	else
 		throw exception("namespace not found: %s", ns.c_str());
 	
@@ -129,29 +129,25 @@ void document_imp::StartElementHandler(const string& name, const string& uri,
 	string qname = name;
 	if (not uri.empty())
 	{
-		string prefix = prefix_for_ns(uri);
+		string prefix = prefix_for_namespace(uri);
 		if (not prefix.empty())
 			qname = prefix + ':' + name;
 	}
 
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == m_doc)
-	{
-		m_doc->append(n.get());
-		m_root = m_cur = n.release();
-	}
+	if (m_cur == NULL)
+		m_root.child_element(n.get());
 	else
-	{
 		m_cur->append(n.get());
-		m_cur = n.release();
-	}
+
+	m_cur = n.release();
 	
 	foreach (const parser::attr_type& a, atts)
 	{
 		qname = a.m_name;
 		if (not a.m_ns.empty())
-			qname = prefix_for_ns(a.m_ns) + ':' + a.m_name;
+			qname = prefix_for_namespace(a.m_ns) + ':' + a.m_name;
 		
 		m_cur->set_attribute(qname, a.m_value);
 	}
@@ -168,20 +164,15 @@ void document_imp::StartElementHandler(const string& name, const string& uri,
 
 void document_imp::EndElementHandler(const string& name, const string& uri)
 {
-	if (m_cur == m_doc)
+	if (m_cur == NULL)
 		throw exception("Empty stack");
 	
-//	string qname = name;
-//	if (not uri.empty())
-//		qname = prefix_for_ns(uri) + ':' + name;
-//
 	m_cur = dynamic_cast<element*>(m_cur->parent());
-	assert(m_cur);
 }
 
 void document_imp::CharacterDataHandler(const string& data)
 {
-	if (m_cur == m_doc)
+	if (m_cur == NULL)
 		throw exception("Empty stack");
 	
 	m_cur->add_text(data);
@@ -189,12 +180,18 @@ void document_imp::CharacterDataHandler(const string& data)
 
 void document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
-	m_cur->append(new processing_instruction(target, data));
+	if (m_cur != NULL)
+		m_cur->append(new processing_instruction(target, data));
+	else
+		m_root.append(new processing_instruction(target, data));
 }
 
 void document_imp::CommentHandler(const string& s)
 {
-	m_cur->append(new comment(s));
+	if (m_cur != NULL)
+		m_cur->append(new comment(s));
+	else
+		m_root.append(new comment(s));
 }
 
 void document_imp::StartCdataSectionHandler()
@@ -257,22 +254,19 @@ void document_imp::parse(
 // --------------------------------------------------------------------
 
 document::document()
-	: element("")
-	, m_impl(new document_imp(this))
+	: m_impl(new document_imp(this))
 {
 }
 
 document::document(const string& s)
-	: element("")
-	, m_impl(new document_imp(this))
+	: m_impl(new document_imp(this))
 {
 	istringstream is(s);
 	read(is);
 }
 
 document::document(std::istream& is)
-	: element("")
-	, m_impl(new document_imp(this))
+	: m_impl(new document_imp(this))
 {
 	read(is);
 }
@@ -280,16 +274,6 @@ document::document(std::istream& is)
 document::~document()
 {
 	delete m_impl;
-}
-
-document* document::doc()
-{
-	return this;
-}
-
-const document* document::doc() const
-{
-	return this;
 }
 
 void document::read(const string& s)
@@ -311,41 +295,42 @@ void document::read(istream& is, const boost::filesystem::path& base_dir)
 
 void document::write(writer& w) const
 {
-	if (m_child == NULL)
-		throw exception("cowardly refuse to write empty document");
+	element* e = m_impl->m_root.child_element();
 	
-	w.write_xml_decl(m_impl->m_standalone);
+	if (e == NULL)
+		throw exception("cannot write an empty XML document");
+	
+	w.xml_decl(m_impl->m_standalone);
 
 	if (not m_impl->m_notations.empty())
 	{
-		w.write_start_doctype(m_impl->m_root->qname(), "");
+		w.start_doctype(e->qname(), "");
 		foreach (const document_imp::notation& n, m_impl->m_notations)
-			w.write_notation(n.m_name, n.m_sysid, n.m_pubid);
-		w.write_end_doctype();
+			w.notation(n.m_name, n.m_sysid, n.m_pubid);
+		w.end_doctype();
 	}
 	
-	node* child = m_child;
-	while (child != NULL)
-	{
-		child->write(w);
-		child = child->next();
-	}
+	m_impl->m_root.write(w);
 }
 
-element* document::root() const
+root* document::root_node() const
 {
-	return m_impl->m_root;
+	return &m_impl->m_root;
 }
 
-void document::root(element* root)
+element* document::get_element()
 {
-	if (m_child != NULL)
-		remove(m_child);
-	m_child = NULL;
-	
-	if (root != NULL)
-		append(root);
-	m_impl->m_root = root;
+	return m_impl->m_root.child_element();
+}
+
+element_set document::find(const std::string& path)
+{
+	return m_impl->m_root.find(path);
+}
+
+element* document::find_first(const std::string& path)
+{
+	return m_impl->m_root.find_first(path);
 }
 
 void document::base_dir(const fs::path& path)
@@ -400,7 +385,7 @@ void document::set_validating(bool validate)
 
 bool document::operator==(const document& other) const
 {
-	return equals(&other);
+	return m_impl->m_root.equals(&other.m_impl->m_root);
 }
 
 istream& operator>>(istream& lhs, document& rhs)

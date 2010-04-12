@@ -34,7 +34,7 @@ bool run_test(const xml::element& test)
 		 << endl
 		 << "xpath: " << test.get_attribute("xpath") << endl
 //		 << "data: " << test.content() << endl
-		 << "expected-size: " << test.get_attribute("expected-size") << endl
+//		 << "expected-size: " << test.get_attribute("expected-size") << endl
 		 << endl;
 
 	fs::path data_file = fs::current_path() / test.get_attribute("data");
@@ -47,11 +47,11 @@ bool run_test(const xml::element& test)
 	fs::ifstream file(data_file);
 	file >> doc;
 	
-//	if (VERBOSE)
-//		cout << "test doc:" << endl << doc << endl;
+	if (VERBOSE)
+		cout << "test doc:" << endl << doc << endl;
 	
 	xml::xpath xp(test.get_attribute("xpath"));
-	xml::node_set ns = xp.evaluate<xml::node>(doc);
+	xml::node_set ns = xp.evaluate<xml::node>(*doc.root_node());
 
 	if (VERBOSE)
 	{
@@ -64,11 +64,13 @@ bool run_test(const xml::element& test)
 	
 	if (ns.size() != boost::lexical_cast<unsigned int>(test.get_attribute("expected-size")))
 	{
-		cout << "incorrect number of nodes in returned node-set: " << endl;
+		cout << "incorrect number of nodes in returned node-set" << endl
+			 << "expected: " << test.get_attribute("expected-size") << endl
+			 << "found: " << endl;
 
 		int nr = 1;
 		foreach (const xml::node* n, ns)
-			cout << nr++ << ">> " << *n << endl;
+			cout << nr++ << ") " << *n << endl;
 
 		result = false;
 	}
@@ -113,13 +115,13 @@ void run_tests(const fs::path& file)
 	fs::ifstream input(file);
 	input >> doc;
 
-	string base = doc.root()->get_attribute("xml:base");
+	string base = doc.root_node()->child_element()->get_attribute("xml:base");
 	if (not base.empty())
 		fs::current_path(base);
 	
 	int nr_of_tests = 0, failed_nr_of_tests = 0;
 	
-	xml::element_set tests = doc.root()->children<xml::element>();
+	xml::element_set tests = doc.root_node()->child_element()->children<xml::element>();
 	foreach (const xml::element* test, tests)
 	{
 		++nr_of_tests;
