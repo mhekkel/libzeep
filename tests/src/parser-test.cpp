@@ -42,11 +42,11 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	stringstream s;
 
 	xml::writer w(s);
-	w.xml_decl(false);
-	w.indent(0);
-	w.wrap(false);
-	w.collapse_empty_elements(false);
-	w.escape_whitespace(true);
+	w.set_xml_decl(false);
+	w.set_indent(0);
+	w.set_wrap(false);
+	w.set_collapse_empty_elements(false);
+	w.set_escape_whitespace(true);
 	indoc.write(w);
 
 	string s1 = s.str();
@@ -250,9 +250,8 @@ void run_test_case(const xml::element* testcase, const string& id,
 	else
 		path = string(".//TEST[@ID='") + id + "']";
 	
-	foreach (const xml::node* testcasenode, xml::xpath(path).evaluate(*testcase))
+	foreach (const xml::element* n, xml::xpath(path).evaluate<xml::element>(*testcase))
 	{
-		const xml::element* n = dynamic_cast<const xml::element*>(testcasenode);
 		if ((id.empty() or id == n->get_attribute("ID")) and
 			(type.empty() or type == n->get_attribute("TYPE")))
 		{
@@ -286,9 +285,9 @@ void test_testcases(const fs::path& testFile, const string& id,
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	foreach (const xml::node* test, xml::xpath("//TESTCASES").evaluate(doc))
+	foreach (const xml::element* test, xml::xpath("//TESTCASES").evaluate<xml::element>(*doc.root_node()))
 	{
-		run_test_case(static_cast<const xml::element*>(test), id, type, base_dir, failed_ids);
+		run_test_case(test, id, type, base_dir, failed_ids);
 	}
 }
 

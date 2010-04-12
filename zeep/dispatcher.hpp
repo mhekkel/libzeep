@@ -257,6 +257,9 @@ struct handler : public handler_base
 							element* body(new element("soap:body"));
 							body->set_attribute("use", "literal");
 							input->append(body);
+
+							body = new element("soap:body");
+							body->set_attribute("use", "literal");
 							output->append(body);
 						}
 

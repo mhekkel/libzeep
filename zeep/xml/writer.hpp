@@ -6,11 +6,12 @@
 #ifndef SOAP_XML_WRITER_HPP
 #define SOAP_XML_WRITER_HPP
 
+#include <stack>
 #include "zeep/xml/unicode_support.hpp"
 
 namespace zeep { namespace xml {
 
-typedef std::list<std::pair<std::string,std::string> >	attribute_list;
+extern std::string k_empty_string;
 
 class writer
 {
@@ -20,47 +21,44 @@ class writer
 	virtual			~writer();
 
 	// behaviour
-	void			encoding(encoding_type enc)					{ m_encoding = enc; }
-	void			xml_decl(bool flag)							{ m_write_xml_decl = flag; }
-	void			indent(int indentation)						{ m_indent = indentation; }
-	void			wrap(bool flag)								{ m_wrap = flag; }
-	void			trim(bool flag)								{ m_trim = flag; }
-	void			collapse_empty_elements(bool collapse)		{ m_collapse_empty = collapse; }
-	void			escape_whitespace(bool escape)				{ m_escape_whitespace = escape; }
+	void			set_encoding(encoding_type enc)					{ m_encoding = enc; }
+	void			set_xml_decl(bool flag)							{ m_write_xml_decl = flag; }
+	void			set_indent(int indentation)						{ m_indent = indentation; }
+	void			set_wrap(bool flag)								{ m_wrap = flag; }
+	void			set_trim(bool flag)								{ m_trim = flag; }
+	void			set_collapse_empty_elements(bool collapse)		{ m_collapse_empty = collapse; }
+	void			set_escape_whitespace(bool escape)				{ m_escape_whitespace = escape; }
 
 	// actual writing routines
-	virtual void	write_xml_decl(bool standalone);
+	virtual void	xml_decl(bool standalone);
 
-	virtual void	write_start_doctype(const std::string& root, const std::string& dtd);
+	virtual void	start_doctype(const std::string& root, const std::string& dtd);
 
-	virtual void	write_end_doctype();
+	virtual void	end_doctype();
 	
-	virtual void	write_empty_doctype(const std::string& root, const std::string& dtd);
+	virtual void	empty_doctype(const std::string& root, const std::string& dtd);
 
-	virtual void	write_notation(const std::string& name,
+	virtual void	notation(const std::string& name,
 						const std::string& sysid, const std::string& pubid);
 
-	virtual void	write_empty_element(const std::string& name,
-						const attribute_list& attrs = attribute_list());
+					// ... but more often you will want to use the following
+	virtual void	start_element(const std::string& name);
+	virtual void	end_element();
+	virtual void	attribute(const std::string& name, const std::string& value);
+	virtual void	content(const std::string& content);
 
-	virtual void	write_start_element(const std::string& name,
-						const attribute_list& attrs = attribute_list());
+					// a couple of convenience routines to do all the four above in one call
+	typedef std::pair<std::string,std::string>		attrib;
+	virtual void	element(const std::string& name, const std::string& s = k_empty_string);
+	virtual void	element(const std::string& name, const attrib& a1, const std::string& s = k_empty_string);
+	virtual void	element(const std::string& name, const attrib& a1, const attrib& a2, const std::string& s = k_empty_string);
+	virtual void	element(const std::string& name, const attrib& a1, const attrib& a2, const attrib& a3, const std::string& s = k_empty_string);
+	virtual void	element(const std::string& name, const attrib& a1, const attrib& a2, const attrib& a3, const attrib& a4, const std::string& s = k_empty_string);
 
-	virtual void	write_end_element(const std::string& name);
+	virtual void	comment(const std::string& text);
 
-	virtual void	write_element(const std::string& name, const std::string& content);
-
-	virtual void	write_element(const std::string& name, const attribute_list& attrs,
-						const std::string& content);
-
-	virtual void	write_content(const std::string& content);
-
-	virtual void	write_comment(const std::string& text);
-
-	virtual void	write_processing_instruction(const std::string& target,
+	virtual void	processing_instruction(const std::string& target,
 						const std::string& text);
-
-	virtual void	write_attribute(const std::string& name, const std::string& value);
 
   protected:
 
@@ -74,7 +72,28 @@ class writer
 	bool			m_trim;
 	int				m_indent;
 	int				m_level;
-	bool			m_wrote_element;
+	bool			m_element_open;
+	std::stack<std::string>
+					m_stack;
+};
+
+class write_element
+{
+  public:
+				write_element(writer& w, const std::string& name)
+					: m_writer(w), m_name(name)
+				{
+					m_writer.start_element(name);
+				}
+
+				~write_element()
+				{
+					m_writer.end_element();
+				}
+
+  private:
+	writer&		m_writer;
+	std::string	m_name;
 };
 
 }

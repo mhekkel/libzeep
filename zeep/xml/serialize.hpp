@@ -58,12 +58,12 @@ struct serializer
 
 struct deserializer
 {
-					deserializer(element* node) : m_node(node) {}
+					deserializer(container* node) : m_node(node) {}
 
 	template<typename T>
 	deserializer&	operator&(const boost::serialization::nvp<T>& rhs);
 
-	element*		m_node;
+	container*		m_node;
 };
 
 typedef std::map<std::string,element*> type_map;
@@ -466,7 +466,7 @@ deserializer& deserializer::operator&(
 		element_set children = m_node->children<element>();
 		for (element_set::iterator e = children.begin(); e != children.end(); ++e)
 		{
-			if ((*e)->local_name() == rhs.name())
+			if ((*e)->name() == rhs.name())
 				s_type::deserialize(**e, rhs.value());
 		}
 	}

@@ -76,7 +76,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			envelope env(doc);
 			xml::element* request = env.request();
 			
-			action = request->local_name();
+			action = request->name();
 			log() << action << ' ';
 			response = make_envelope(dispatch(action, env.request()));
 		}

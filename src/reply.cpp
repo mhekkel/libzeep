@@ -98,15 +98,13 @@ void reply::set_content(xml::element* data)
 	stringstream s;
 
 	xml::document doc;
-	doc.root(data);
+	doc.root_node()->child_element(data);
 	
 	xml::writer w(s);
-	w.wrap(false);
-	w.indent(0);
+	w.set_wrap(false);
+	w.set_indent(0);
 //	w.trim(true);
 	doc.write(w);
-	
-	doc.root(NULL);
 	
 	content = s.str();
 	status = ok;

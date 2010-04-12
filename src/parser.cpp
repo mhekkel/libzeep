@@ -77,7 +77,7 @@ class source_exception : public zeep::exception
 	wstring		m_wmsg;
 };
 
-// A data source can have a base dir, that is the directory the data came from.
+// A data source can have a base dir which is the directory the data came from.
 // This information is needed when a relative uri is found in an external ID.
 
 class data_source : public boost::enable_shared_from_this<data_source>, boost::noncopyable
@@ -764,6 +764,8 @@ const doctype::entity& parser_imp::get_parameter_entity(const wstring& name) con
 			not_well_formed(msg % m_token);
 		else
 			not_valid(msg % m_token);
+		
+		throw zeep::exception(wstring_to_string(msg.str()));
 	}
 	
 	return *e;

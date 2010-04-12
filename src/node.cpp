@@ -14,7 +14,6 @@
 #include <typeinfo>
 
 #include "zeep/xml/node.hpp"
-#include "zeep/xml/document.hpp"
 #include "zeep/xml/writer.hpp"
 #include "zeep/xml/xpath.hpp"
 #include "zeep/exception.hpp"
@@ -41,19 +40,19 @@ node::~node()
 		delete m_next;
 }
 
-document* node::doc()
+root* node::root_node()
 {
-	document* result = nil;
+	root* result = nil;
 	if (m_parent != nil)
-		result = m_parent->doc();
+		result = m_parent->root_node();
 	return result;
 }
 
-const document* node::doc() const
+const root* node::root_node() const
 {
-	const document* result = nil;
+	const root* result = nil;
 	if (m_parent != nil)
-		result = m_parent->doc();
+		result = m_parent->root_node();
 	return result;
 }
 
@@ -113,12 +112,246 @@ void node::remove_from_list(node* n)
 		throw exception("remove for a node not found in the list");
 }
 
+void node::parent(node* n)
+{
+	assert(m_parent == nil);
+	m_parent = n;
+}
+
+string node::qname() const
+{
+	return "";
+}
+
+string node::name() const
+{
+	string qn = qname();
+	string::size_type s = qn.find(':');
+	if (s != string::npos)
+		qn.erase(0, s + 1);
+	return qn;
+}
+
+string node::prefix() const
+{
+	string qn = qname();
+	string::size_type s = qn.find(':');
+	if (s != string::npos)
+		qn.erase(s);
+	return qn;
+}
+
+string node::ns() const
+{
+	string result, p = prefix();
+	if (not p.empty())
+		result = namespace_for_prefix(p);
+	return result;
+}
+
+string node::namespace_for_prefix(const string& prefix) const
+{
+	string result;
+	if (m_parent != nil)
+		result = m_parent->namespace_for_prefix(prefix);
+	return result;
+}
+
+string node::prefix_for_namespace(const string& uri) const
+{
+	string result;
+	if (m_parent != nil)
+		result = m_parent->prefix_for_namespace(uri);
+	return result;
+}
+
+// --------------------------------------------------------------------
+// container_node
+
+container::container()
+	: m_child(nil)
+{
+}
+
+container::~container()
+{
+	delete m_child;
+}
+
+template<>
+node_set container::children<node>() const
+{
+	node_set result;
+	
+	node* child = m_child;
+	while (child != nil)
+	{
+		result.push_back(child);
+		child = child->next();
+	}
+	
+	return result;
+}
+
+template<>
+element_set container::children<element>() const
+{
+	element_set result;
+	
+	node* child = m_child;
+	while (child != nil)
+	{
+		if (typeid(*child) == typeid(element))
+			result.push_back(static_cast<element*>(child));
+		child = child->next();
+	}
+	
+	return result;
+}
+
+void container::append(node_ptr n)
+{
+	n->parent(this);
+	
+	if (m_child == nil)
+	{
+		m_child = n;
+		m_child->m_next = m_child->m_prev = nil;
+	}
+	else
+		m_child->append_to_list(n);
+}
+
+void container::remove(node_ptr n)
+{
+	assert(n->m_parent == this);
+	
+	if (m_child == n)
+	{
+		m_child = m_child->m_next;
+		if (m_child != nil)
+			m_child->m_prev = nil;
+	}
+	else
+		m_child->remove_from_list(n);
+}
+
+element_set container::find(const std::string& path) const
+{
+	return xpath(path).evaluate<element>(*this);
+}
+
+element* container::find_first(const std::string& path) const
+{
+	element_set s = xpath(path).evaluate<element>(*this);
+	
+	element* result = nil;
+	if (not s.empty())
+		result = s.front();
+	return result;
+}
+
+// --------------------------------------------------------------------
+// root
+
+root::root()
+{
+}
+
+root::~root()
+{
+}
+
+root* root::root_node()
+{
+	return this;
+}
+
+const root*	root::root_node() const
+{
+	return this;
+}
+
+string root::str() const
+{
+	string result;
+	element* e = child_element();
+	if (e != nil)
+		result = e->str();
+	return result;
+}
+
+element* root::child_element() const
+{
+	element* result = nil;
+
+	node* n = m_child;
+	while (n != nil and result == nil)
+	{
+		result = dynamic_cast<element*>(n);
+		n = n->next();
+	}
+	
+	return result;
+}
+
+void root::child_element(element* child)
+{
+	element* e = child_element();
+	if (e != nil)
+	{
+		container::remove(e);
+		delete e;
+	}
+	
+	container::append(child);
+}
+
+void root::write(writer& w) const
+{
+	node* child = m_child;
+	while (child != nil)
+	{
+		child->write(w);
+		child = child->next();
+	}
+}
+
+bool root::equals(const node* n) const
+{
+	bool result = false;
+	if (typeid(n) == typeid(*this))
+	{
+		result = true;
+		
+		const root* e = static_cast<const root*>(n);
+		
+		if (m_child != nil and e->m_child != nil)
+			result = m_child->equals(e->m_child);
+		else
+			result = m_child == nil and e->m_child == nil;
+	}
+
+	return result;
+}
+
+void root::append(node* n)
+{
+	if (dynamic_cast<processing_instruction*>(n) == nil and
+		dynamic_cast<comment*>(n) == nil)
+	{
+		throw exception("can only append comment and processing instruction nodes to a root");
+	}
+	
+	container::append(n);
+}
+
 // --------------------------------------------------------------------
 // comment
 
 void comment::write(writer& w) const
 {
-	w.write_comment(m_text);
+	w.comment(m_text);
 }
 
 bool comment::equals(const node* n) const
@@ -134,7 +367,7 @@ bool comment::equals(const node* n) const
 
 void processing_instruction::write(writer& w) const
 {
-	w.write_processing_instruction(m_target, m_text);
+	w.processing_instruction(m_target, m_text);
 }
 
 bool processing_instruction::equals(const node* n) const
@@ -150,7 +383,7 @@ bool processing_instruction::equals(const node* n) const
 
 void text::write(writer& w) const
 {
-	w.write_content(m_text);
+	w.content(m_text);
 }
 
 bool text::equals(const node* n) const
@@ -163,28 +396,6 @@ bool text::equals(const node* n) const
 
 // --------------------------------------------------------------------
 // attribute
-
-string attribute::local_name() const
-{
-	string result = m_qname;
-	
-	string::size_type d = m_qname.find(':');
-	if (d != string::npos)
-		result = result.substr(d + 1);
-
-	return result;
-}
-
-string attribute::prefix() const
-{
-	string result = m_qname;
-	
-	string::size_type d = m_qname.find(':');
-	if (d != string::npos)
-		result = result.substr(0, d);
-
-	return result;
-}
 
 void attribute::write(writer& w) const
 {
@@ -228,7 +439,6 @@ bool name_space::equals(const node* n) const
 
 element::element(const std::string& qname)
 	: m_qname(qname)
-	, m_child(nil)
 	, m_attribute(nil)
 	, m_name_space(nil)
 {
@@ -236,31 +446,8 @@ element::element(const std::string& qname)
 
 element::~element()
 {
-	delete m_child;
 	delete m_attribute;
 	delete m_name_space;
-}
-
-string element::local_name() const
-{
-	string result = m_qname;
-	
-	string::size_type d = m_qname.find(':');
-	if (d != string::npos)
-		result = result.substr(d + 1);
-
-	return result;
-}
-
-string element::prefix() const
-{
-	string result = m_qname;
-	
-	string::size_type d = m_qname.find(':');
-	if (d != string::npos)
-		result = result.substr(0, d);
-
-	return result;
 }
 
 string element::str() const
@@ -309,45 +496,19 @@ void element::content(const string& s)
 		static_cast<text*>(child)->str(s);
 		
 		// and remove any other text nodes we might have
-		while (child->m_next != nil)
+		while (child->next() != nil)
 		{
-			node* next = child->m_next;
+			node* next = child->next();
 			
 			if (dynamic_cast<text*>(next) != nil)
 			{
-				child->remove_from_list(next);
+				container::remove(next);
 				delete next;
 			}
 			else
 				child = next;
 		}
 	}
-}
-
-void element::append(node_ptr n)
-{
-	if (m_child == nil)
-	{
-		m_child = n;
-		m_child->m_parent = this;
-		m_child->m_next = m_child->m_prev = nil;
-	}
-	else
-		m_child->append_to_list(n);
-}
-
-void element::remove(node_ptr n)
-{
-	assert(n->m_parent == this);
-	
-	if (m_child == n)
-	{
-		m_child = m_child->m_next;
-		if (m_child != nil)
-			m_child->m_prev = nil;
-	}
-	else
-		m_child->remove_from_list(n);
 }
 
 void element::add_text(const std::string& s)
@@ -370,52 +531,6 @@ void element::add_text(const std::string& s)
 		append(new text(s));
 }
 
-template<>
-node_set element::children<node>() const
-{
-	node_set result;
-	
-	node* child = m_child;
-	while (child != nil)
-	{
-		result.push_back(child);
-		child = child->next();
-	}
-	
-	return result;
-}
-
-template<>
-element_set element::children<element>() const
-{
-	element_set result;
-	
-	node* child = m_child;
-	while (child != nil)
-	{
-		if (typeid(*child) == typeid(element))
-			result.push_back(static_cast<element*>(child));
-		child = child->next();
-	}
-	
-	return result;
-}
-
-element_set element::find(const std::string& path) const
-{
-	return xpath(path).evaluate<element>(*this);
-}
-
-element* element::find_first(const std::string& path) const
-{
-	element_set s = xpath(path).evaluate<element>(*this);
-	
-	element* result = nil;
-	if (not s.empty())
-		result = s.front();
-	return result;
-}
-
 attribute_set element::attributes() const
 {
 	attribute_set result;
@@ -425,6 +540,20 @@ attribute_set element::attributes() const
 	{
 		result.push_back(static_cast<attribute*>(attr));
 		attr = attr->next();
+	}
+	
+	return result;
+}
+
+name_space_list element::name_spaces() const
+{
+	name_space_list result;
+	
+	node* ns = m_name_space;
+	while (ns != nil)
+	{
+		result.push_back(static_cast<name_space*>(ns));
+		ns = ns->next();
 	}
 	
 	return result;
@@ -472,7 +601,7 @@ void element::set_attribute(const string& qname, const string& value)
 		if (m_attribute == nil)
 		{
 			m_attribute = attr;
-			m_attribute->m_parent = this;
+			m_attribute->parent(this);
 		}
 		else
 			m_attribute->append_to_list(attr);
@@ -498,7 +627,7 @@ void element::remove_attribute(const string& qname)
 	}	
 }
 
-string element::ns_name_for_prefix(const string& prefix) const
+string element::namespace_for_prefix(const string& prefix) const
 {
 	string result;
 	
@@ -512,12 +641,12 @@ string element::ns_name_for_prefix(const string& prefix) const
 	}
 	
 	if (result.empty() and dynamic_cast<element*>(m_parent) != nil)
-		result = static_cast<element*>(m_parent)->ns_name_for_prefix(prefix);
+		result = static_cast<element*>(m_parent)->namespace_for_prefix(prefix);
 	
 	return result;
 }
 
-string element::prefix_for_ns_name(const string& uri) const
+string element::prefix_for_namespace(const string& uri) const
 {
 	string result;
 	
@@ -531,7 +660,7 @@ string element::prefix_for_ns_name(const string& uri) const
 	}
 	
 	if (result.empty() and dynamic_cast<element*>(m_parent) != nil)
-		result = static_cast<element*>(m_parent)->prefix_for_ns_name(uri);
+		result = static_cast<element*>(m_parent)->prefix_for_namespace(uri);
 	
 	return result;
 }
@@ -555,7 +684,7 @@ void element::set_name_space(const string& prefix, const string& uri)
 		if (m_name_space == nil)
 		{
 			m_name_space = ns;
-			m_name_space->m_parent = this;
+			m_name_space->parent(this);
 		}
 		else
 			m_name_space->append_to_list(ns);
@@ -572,12 +701,12 @@ string element::lang() const
 
 void element::write(writer& w) const
 {
-	attribute_list attrs;
-	
+	w.start_element(m_qname);
+
 	attribute* attr = m_attribute;
 	while (attr != nil)
 	{
-		attrs.push_back(make_pair(attr->qname(), attr->value()));
+		w.attribute(attr->qname(), attr->value());
 		attr = static_cast<attribute*>(attr->next());
 	}
 	
@@ -585,27 +714,20 @@ void element::write(writer& w) const
 	while (ns != nil)
 	{
 		if (ns->prefix().empty())
-			attrs.push_back(make_pair("xmlns", ns->uri()));
+			w.attribute("xmlns", ns->uri());
 		else
-			attrs.push_back(make_pair(string("xmlns") + ':' + ns->prefix(), ns->uri()));
+			w.attribute(string("xmlns:") + ns->prefix(), ns->uri());
 		ns = static_cast<name_space*>(ns->next());
 	}
 
-	if (m_child == nil)
-		w.write_empty_element(m_qname, attrs);
-	else
+	node* child = m_child;
+	while (child != nil)
 	{
-		w.write_start_element(m_qname, attrs);
-
-		node* child = m_child;
-		while (child != nil)
-		{
-			child->write(w);
-			child = child->next();
-		}
-		
-		w.write_end_element(m_qname);
+		child->write(w);
+		child = child->next();
 	}
+
+	w.end_element();
 }
 
 bool element::equals(const node* n) const
@@ -645,6 +767,8 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 {
 	if (typeid(rhs) == typeid(node))
 		cout << "base class???";
+	else if (typeid(rhs) == typeid(root))
+		cout << "root";
 	else if (typeid(rhs) == typeid(element))
 	{
 		cout << "element <" << static_cast<const element&>(rhs).qname();
@@ -659,8 +783,6 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 		cout << "comment";
 	else if (typeid(rhs) == typeid(processing_instruction))
 		cout << "processing_instruction";
-	else if (typeid(rhs) == typeid(document))
-		cout << "document";
 	else
 		cout << typeid(rhs).name();
 		

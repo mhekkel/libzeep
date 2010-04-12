@@ -24,10 +24,6 @@ namespace ba = boost::algorithm;
 
 #define nil NULL
 
-#ifdef DEBUG
-extern int TRACE;
-#endif
-
 namespace zeep { namespace xml { namespace doctype {
 
 // --------------------------------------------------------------------
@@ -324,7 +320,7 @@ bool state_seq::allow_empty()
 	else
 	{
 		result = accumulate(m_states.begin(), m_states.end(), true,
-			boost::bind(&state_base::allow_empty, _2) && _1);
+			boost::bind(&state_base::allow_empty, _2) and _1);
 	}
 	
 	return result;
@@ -445,16 +441,6 @@ bool validator::allow(const wstring& name)
 {
 	bool result;
 	tie(result, m_done) = m_state->allow(name);
-	
-#if DEBUG
-	if (TRACE and m_allowed)
-	{
-		cout << "state machine " << m_nr << ' ' << (result ? "succeeded" : "failed") <<  " for " << wstring_to_string(name) << endl;
-		m_allowed->print(cout);
-		cout << endl << endl;
-	}
-#endif
-
 	return result;
 }
 
@@ -465,15 +451,6 @@ bool validator::allow_char_data()
 
 bool validator::done()
 {
-#if DEBUG
-	if (TRACE and m_allowed)
-	{
-		cout << "finishing state machine " << m_nr << " is " << (m_done ? "ok" : "not ok") <<  endl;
-		m_allowed->print(cout);
-		cout << endl << endl;
-	}
-#endif
-
 	return m_done;
 }
 

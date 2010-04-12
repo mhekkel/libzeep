@@ -9,6 +9,7 @@
 #include <iterator>
 #include <string>
 #include <list>
+#include <tr1/tuple>
 
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -26,27 +27,17 @@ class element;
 typedef element* element_ptr;
 typedef std::list<element_ptr>	element_set;
 
-class document;
-
-// --------------------------------------------------------------------
-// local_name is used by elements and attributes, it is a pair consisting
-// of the namespace uri and the local-name
-
-struct exp_name
-{
-	std::string		ns_name;
-	std::string		local_name;
-};
+class root;
+class container;
 
 // --------------------------------------------------------------------
 
 class node
 {
   public:
-	// All nodes should be part of a document
-	virtual document*	doc();
-	virtual const document*
-						doc() const;
+	// All nodes should be part of a single root node
+	virtual root*		root_node();
+	virtual const root*	root_node() const;
 	
 	// basic access
 	node*				parent()									{ return m_parent; }
@@ -60,6 +51,24 @@ class node
 
 	// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
+
+	// Nodes can have a name, and the XPath specification requires that a node can
+	// have a so-called expanded-name. This name consists of a local-name and a
+	// namespace which is a URI. And we can have a QName which is a concatenation of
+	// a prefix (that points to a namespace URI) and a local-name separated by a colon.
+	//
+	// To reduce storage requirements, names are stored in nodes as qnames, if at all.
+	virtual std::string	qname() const;
+
+	// the convenience functions name() and prefix() parse the qname(). ns() returns
+	// the namespace URI for the node, if it can be resolved.
+	virtual std::string	name() const;
+	virtual std::string	prefix() const;
+	virtual std::string	ns() const;
+
+	// resolving prefixes and namespaces is done hierarchically
+	virtual std::string	namespace_for_prefix(const std::string& prefix) const;
+	virtual std::string	prefix_for_namespace(const std::string& uri) const;
 	
 	// return all content concatenated, including that of children.
 	virtual std::string	str() const = 0;
@@ -71,23 +80,81 @@ class node
 
   protected:
 
+	friend class container;
 	friend class element;
 
 						node();
-
 	virtual				~node();
 
 	virtual void		append_to_list(node* n);
 	virtual void		remove_from_list(node* n);
-	
+
+	void				parent(node* p);
+	void				next(node* n);
+	void				prev(node* n);
+
+  private:
 	node*				m_parent;
 	node*				m_next;
 	node*				m_prev;
 
-  private:
-
 						node(const node&);
 	node&				operator=(const node&);
+};
+
+// --------------------------------------------------------------------
+
+class container : public node
+{
+  public:
+						~container();
+
+	node*				child()										{ return m_child; }
+	const node*			child() const								{ return m_child; }
+
+	template<typename NODE_TYPE>
+	std::list<NODE_TYPE*>
+						children() const;
+
+	virtual void		append(node* node);
+	virtual void		remove(node* node);
+
+	// xpath wrappers
+	element_set			find(const std::string& path) const;
+	element*			find_first(const std::string& path) const;
+
+  protected:
+						container();
+
+	node*				m_child;
+};
+
+// --------------------------------------------------------------------
+
+class root : public container
+{
+  public:
+						root();
+						~root();
+
+	// All nodes should be part of a single root node
+	virtual root*		root_node();
+	virtual const root*	root_node() const;
+
+	// root nodes have only one child element:
+	element*			child_element() const;
+	void				child_element(element* e);
+
+	// string is the concatenation of the string-value of all
+	// descendant text-nodes.
+	virtual std::string	str() const;
+
+	// for adding other nodes, like processing instructions and comments
+	virtual void		append(node* node);
+
+	virtual void		write(writer& w) const;
+
+	virtual bool		equals(const node* n) const;
 };
 
 // --------------------------------------------------------------------
@@ -124,6 +191,7 @@ class processing_instruction : public node
 						processing_instruction(const std::string& target, const std::string& text)
 							: m_target(target), m_text(text) {}
 
+	virtual std::string	qname() const								{ return m_target; }
 	virtual std::string	str() const									{ return m_target + ' ' + m_text; }
 
 	std::string			target() const								{ return m_target; }
@@ -174,8 +242,6 @@ class attribute : public node
 							: m_qname(qname), m_value(value) {}
 
 	std::string			qname() const								{ return m_qname; }
-	std::string			local_name() const;
-	std::string			prefix() const;
 
 	std::string			value() const								{ return m_value; }
 	void				value(const std::string& v)					{ m_value = v; }
@@ -200,8 +266,11 @@ class name_space : public node
   public:
 						name_space(const std::string& prefix, const std::string& uri)
 							: m_prefix(prefix), m_uri(uri) {}
+
+	virtual std::string	qname() const								{ return m_prefix; }
+	virtual std::string	ns() const									{ return ""; }
+	virtual std::string	prefix() const								{ return m_prefix; }
 	
-	std::string			prefix() const								{ return m_prefix; }
 	void				prefix(const std::string& p)				{ m_prefix = p; }
 	
 	std::string			uri() const									{ return m_uri; }
@@ -221,7 +290,7 @@ typedef std::list<name_space*>	name_space_list;
 
 // --------------------------------------------------------------------
 
-class element : public node
+class element : public container
 {
   public:
 						element(const std::string& qname);
@@ -233,16 +302,10 @@ class element : public node
 
 	virtual std::string	str() const;
 
-	node*				child()										{ return m_child; }
-	const node*			child() const								{ return m_child; }
-
-	std::string			ns_name_for_prefix(const std::string& prefix) const;
-	std::string			prefix_for_ns_name(const std::string& uri) const;
-	
 	std::string			qname() const								{ return m_qname; }
-	std::string			prefix() const;
-	std::string			local_name() const;
-	std::string			ns_name() const								{ return ns_name_for_prefix(prefix()); }
+	
+	std::string			namespace_for_prefix(const std::string& prefix) const;
+	std::string			prefix_for_namespace(const std::string& uri) const;
 	
 	std::string			content() const;
 	void				content(const std::string& content);
@@ -256,28 +319,17 @@ class element : public node
 							const std::string& uri);
 //	void				remove_name_space(const std::string& uri);
 	
-	void				append(node* node);
-	void				remove(node* node);
-	
 	// convenience routines
 	void				add_text(const std::string& s);
 
-	template<typename NODE_TYPE>
-	std::list<NODE_TYPE*>
-						children() const;
 	attribute_set		attributes() const;
 	name_space_list		name_spaces() const;
-
-	// xpath wrappers
-	element_set			find(const std::string& path) const;
-	element*			find_first(const std::string& path) const;
 
 	// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
 
   protected:
 	std::string			m_qname;
-	node*				m_child;
 	attribute*			m_attribute;
 	name_space*			m_name_space;
 };
@@ -290,10 +342,13 @@ bool operator==(const node& lhs, const node& rhs);
 // therefore we have a templated version of children.
 
 template<>
-std::list<node*> element::children<node>() const;
+std::list<node*> container::children<node>() const;
 
 template<>
-std::list<element*> element::children<element>() const;
+std::list<container*> container::children<container>() const;
+
+template<>
+std::list<element*> container::children<element>() const;
 
 }
 }
