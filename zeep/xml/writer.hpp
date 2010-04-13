@@ -109,7 +109,7 @@ class writer
 
   private:
 					writer(const writer&);
-	writer&			operator(const writer&);
+	writer&			operator=(const writer&);
 };
 
 class write_element
