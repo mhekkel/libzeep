@@ -54,10 +54,7 @@ libzeep.so: $(OBJECTS)
 zeep-test: lib obj/zeep-test.o
 	c++ -o $@ libzeep.a $(LDOPTS) -lboost_filesystem obj/zeep-test.o
 
-parser-test: lib obj/parser-test.o
-	c++ -o $@ $(OBJECTS) $(LDOPTS)
-
-install: lib
+install: libzeep.a libzeep.so
 	install -d $(LIBDIR) $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	install ./libzeep.so $(LIBDIR)/libzeep.so.1
@@ -73,6 +70,11 @@ install: lib
 	install zeep/xml/node.hpp $(INCDIR)/zeep/xml/node.hpp
 	install zeep/xml/serialize.hpp $(INCDIR)/zeep/xml/serialize.hpp
 	install zeep/xml/parser.hpp $(INCDIR)/zeep/xml/parser.hpp
+	install zeep/xml/iomanip.hpp $(INCDIR)/zeep/xml/iomanip.hpp
+	install zeep/xml/unicode_support.hpp $(INCDIR)/zeep/xml/unicode_support.hpp
+	install zeep/xml/doctype.hpp $(INCDIR)/zeep/xml/doctype.hpp
+	install zeep/xml/xpath.hpp $(INCDIR)/zeep/xml/xpath.hpp
+	install zeep/xml/writer.hpp $(INCDIR)/zeep/xml/writer.hpp
 	install zeep/envelope.hpp $(INCDIR)/zeep/envelope.hpp
 	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
 	install zeep/dispatcher.hpp $(INCDIR)/zeep/dispatcher.hpp
