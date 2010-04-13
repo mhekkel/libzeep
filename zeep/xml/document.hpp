@@ -22,9 +22,6 @@ class document
 
 	virtual				~document();
 
-//	root*				get_root();
-//	const root*			get_root() const;
-
 	// I/O
 	void				read(const std::string& s);
 	void				read(std::istream& is);
@@ -33,11 +30,13 @@ class document
 	virtual void		write(writer& w) const;
 
 	// A valid xml document contains exactly one root element
-	void				root_node(root* root);
-	root*				root_node() const;
-
+	root_node*			root() const;
+	
+	// and this root has one child xml::element
+	element*			child() const;
+	void				child(element* e);
+	
 	// helper functions
-	element*			get_element();
 	element_set			find(const std::string& path);
 	element*			find_first(const std::string& path);
 

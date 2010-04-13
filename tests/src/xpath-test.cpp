@@ -51,7 +51,12 @@ bool run_test(const xml::element& test)
 		cout << "test doc:" << endl << doc << endl;
 	
 	xml::xpath xp(test.get_attribute("xpath"));
-	xml::node_set ns = xp.evaluate<xml::node>(*doc.root_node());
+
+	xml::context context;
+	foreach (const xml::element* e, test.find("var"))
+		context.set(e->get_attribute("name"), e->get_attribute("value"));
+	
+	xml::node_set ns = xp.evaluate<xml::node>(*doc.root(), context);
 
 	if (VERBOSE)
 	{
@@ -65,12 +70,7 @@ bool run_test(const xml::element& test)
 	if (ns.size() != boost::lexical_cast<unsigned int>(test.get_attribute("expected-size")))
 	{
 		cout << "incorrect number of nodes in returned node-set" << endl
-			 << "expected: " << test.get_attribute("expected-size") << endl
-			 << "found: " << endl;
-
-		int nr = 1;
-		foreach (const xml::node* n, ns)
-			cout << nr++ << ") " << *n << endl;
+			 << "expected: " << test.get_attribute("expected-size") << endl;
 
 		result = false;
 	}
@@ -100,7 +100,13 @@ bool run_test(const xml::element& test)
 	if (result)
 		cout << "Test passed" << endl;
 	else
+	{
 		cout << "Test failed" << endl;
+		
+		int nr = 1;
+		foreach (const xml::node* n, ns)
+			cout << nr++ << ") " << *n << endl;
+	}
 	
 	return result;
 }
@@ -115,14 +121,13 @@ void run_tests(const fs::path& file)
 	fs::ifstream input(file);
 	input >> doc;
 
-	string base = doc.root_node()->child_element()->get_attribute("xml:base");
+	string base = doc.child()->get_attribute("xml:base");
 	if (not base.empty())
 		fs::current_path(base);
 	
 	int nr_of_tests = 0, failed_nr_of_tests = 0;
 	
-	xml::element_set tests = doc.root_node()->child_element()->children<xml::element>();
-	foreach (const xml::element* test, tests)
+	foreach (const xml::element* test, doc.find("//xpath-test"))
 	{
 		++nr_of_tests;
 		if (run_test(*test) == false)

@@ -21,7 +21,7 @@ envelope::envelope(xml::document& data)
 	const xml::xpath
 		sRequestPath("/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
 	
-	m_request = sRequestPath.evaluate<xml::element>(*data.root_node()).front();
+	m_request = sRequestPath.evaluate<xml::element>(*data.root()).front();
 }
 
 xml::element* make_envelope(xml::element* data)

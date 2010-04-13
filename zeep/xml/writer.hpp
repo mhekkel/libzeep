@@ -75,6 +75,7 @@ class writer
 	bool			m_element_open;
 	std::stack<std::string>
 					m_stack;
+	bool			m_wrote_element;
 };
 
 class write_element

@@ -21,13 +21,15 @@ struct wattr
 	std::wstring	m_ns;
 	std::wstring	m_name;
 	std::wstring	m_value;
+	bool			m_id;		// whether the attribute is defined as type ID in its ATTLIST decl
 };
 
 struct attr
 {
-	std::string	m_ns;
-	std::string	m_name;
-	std::string	m_value;
+	std::string		m_ns;
+	std::string		m_name;
+	std::string		m_value;
+	bool			m_id;		// whether the attribute is defined as type ID in its ATTLIST decl
 };
 
 template<typename CharT>
@@ -199,6 +201,7 @@ class basic_parser : public basic_parser_base
 										attr.m_ns = m_traits.convert(att->m_ns);
 										attr.m_name = m_traits.convert(att->m_name);
 										attr.m_value = m_traits.convert(att->m_value);
+										attr.m_id = att->m_id;
 										attributes.push_back(attr);
 									}
 									

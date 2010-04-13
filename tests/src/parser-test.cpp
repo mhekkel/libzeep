@@ -285,7 +285,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	foreach (const xml::element* test, xml::xpath("//TESTCASES").evaluate<xml::element>(*doc.root_node()))
+	foreach (const xml::element* test, doc.find("//TESTCASES"))
 	{
 		run_test_case(test, id, type, base_dir, failed_ids);
 	}

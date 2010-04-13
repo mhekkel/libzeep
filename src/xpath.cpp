@@ -9,6 +9,7 @@
 #include <stack>
 #include <cmath>
 #include <tr1/cmath>
+#include <map>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -455,7 +456,7 @@ void iterate_ancestor(container* e, node_set& s, PREDICATE pred)
 		if (e == nil)
 			break;
 		
-		root* r = dynamic_cast<root*>(e);
+		root_node* r = dynamic_cast<root_node*>(e);
 		if (r != nil)
 			break;
 
@@ -544,19 +545,44 @@ void iterate_namespaces(element* e, node_set& s, PREDICATE pred)
 // context for the expressions
 // Need to add support for external variables here.
 
-struct expression_context
+struct context_imp
 {
-//						context(node* n, node_set& s)
-//							: m_node(n), m_node_set(s) {}
+	virtual				~context_imp() {}
+	
+	virtual object&		get(const string& name)
+						{
+							return m_variables[name];
+						}
+						
+	virtual void		set(const string& name, const object& value)
+						{
+							m_variables[name] = value;
+						}
+						
+	map<string,object>	m_variables;
+};
 
-						expression_context(node* n, const node_set& s)
-							: m_node(n), m_node_set(s) {}
+struct expression_context : public context_imp
+{
+						expression_context(context_imp& next, node* n, const node_set& s)
+							: m_next(next), m_node(n), m_node_set(s) {}
+
+	virtual object&		get(const string& name)
+						{
+							return m_next.get(name);
+						}
+						
+	virtual void		set(const string& name, const object& value)
+						{
+							m_next.set(name, value);
+						}
 
 	void				dump();
 	
 	int					position() const;
 	int					last() const;
 	
+	context_imp&		m_next;
 	node*				m_node;
 	const node_set&		m_node_set;
 };
@@ -801,7 +827,7 @@ class root_expression : public expression
 object root_expression::evaluate(expression_context& context)
 {
 	node_set result;
-	result.push_back(context.m_node->root_node());
+	result.push_back(context.m_node->root());
 	return result;
 }
 
@@ -989,7 +1015,7 @@ object path_expression::evaluate(expression_context& context)
 	node_set result;
 	foreach (node* n, v.as<const node_set&>())
 	{
-		expression_context ctxt(n, v.as<const node_set&>());
+		expression_context ctxt(context, n, v.as<const node_set&>());
 		
 		node_set s = m_rhs->evaluate(ctxt).as<const node_set&>();
 
@@ -1029,7 +1055,7 @@ object predicate_expression::evaluate(expression_context& context)
 	
 	foreach (node* n, v.as<const node_set&>())
 	{
-		expression_context ctxt(n, v.as<const node_set&>());
+		expression_context ctxt(context, n, v.as<const node_set&>());
 		
 		object test = m_pred->evaluate(ctxt);
 
@@ -1063,9 +1089,7 @@ class variable_expression : public expression
 
 object variable_expression::evaluate(expression_context& context)
 {
-#pragma message("need to add variables support")
-	throw exception("variables are not supported yet");
-	return object();
+	return context.get(m_var);
 }
 
 // --------------------------------------------------------------------
@@ -1158,18 +1182,28 @@ object core_function_expression<cf_Count>::evaluate(expression_context& context)
 	object v = m_args.front()->evaluate(context);
 	int result = v.as<const node_set&>().size();
 
-cout << "result for cf_Count: " << *context.m_node << " == " << result << endl;
 	return object(double(result));
 }
 
-#pragma message("implement id core function")
-//template<>
-//object core_function_expression<cf_Id>::evaluate(expression_context& context)
-//{
-//	object v = m_args.front()->evaluate(context);
-//	int result = v.as<const node_set&>().size();
-//	return object(double(result));
-//}
+template<>
+object core_function_expression<cf_Id>::evaluate(expression_context& context)
+{
+	element* e = nil;
+	
+	if (m_args.empty())
+		e = dynamic_cast<element*>(context.m_node);
+	else
+	{
+		object v = m_args.front()->evaluate(context);
+		if (not v.as<const node_set&>().empty())
+			e = dynamic_cast<element*>(v.as<const node_set&>().front());
+	}
+		
+	if (e == nil)
+		throw exception("argument is not an element in function 'id()'");
+
+	return e->id();
+}
 
 template<>
 object core_function_expression<cf_LocalName>::evaluate(expression_context& context)
@@ -1550,7 +1584,7 @@ struct xpath_imp
 						xpath_imp();
 						~xpath_imp();
 	
-	node_set			evaluate(node& root);
+	node_set			evaluate(node& root, context_imp& context);
 
 	void				parse(const string& path);
 	
@@ -2230,7 +2264,7 @@ expression_ptr xpath_imp::primary_expr()
 	switch (m_lookahead)
 	{
 		case xp_Variable:
-			result.reset(new variable_expression(m_token_string));
+			result.reset(new variable_expression(m_token_string.substr(1)));
 			match(xp_Variable);
 			break;
 		
@@ -2500,11 +2534,47 @@ expression_ptr xpath_imp::unary_expr()
 
 // --------------------------------------------------------------------
 
-node_set xpath_imp::evaluate(node& root)
+node_set xpath_imp::evaluate(node& root, context_imp& ctxt)
 {
 	node_set empty;
-	expression_context ctxt(&root, empty);
-	return m_expr->evaluate(ctxt).as<const node_set&>();
+	expression_context context(ctxt, &root, empty);
+	return m_expr->evaluate(context).as<const node_set&>();
+}
+
+// --------------------------------------------------------------------
+
+context::context()
+	: m_impl(new context_imp)
+{
+}
+
+context::~context()
+{
+	delete m_impl;
+}
+
+template<>
+void context::set<double>(const string& name, const double& value)
+{
+	m_impl->set(name, value);
+}
+
+template<>
+double context::get<double>(const string& name)
+{
+	return m_impl->get(name).as<double>();
+}
+
+template<>
+void context::set<string>(const string& name, const string& value)
+{
+	m_impl->set(name, value);
+}
+
+template<>
+string context::get<string>(const string& name)
+{
+	return m_impl->get(name).as<string>();
 }
 
 // --------------------------------------------------------------------
@@ -2523,15 +2593,29 @@ xpath::~xpath()
 template<>
 node_set xpath::evaluate<node>(const node& root) const
 {
-	return m_impl->evaluate(const_cast<node&>(root));
+	context ctxt;
+	return evaluate<node>(root, ctxt);
+}
+
+template<>
+node_set xpath::evaluate<node>(const node& root, context& ctxt) const
+{
+	return m_impl->evaluate(const_cast<node&>(root), *ctxt.m_impl);
 }
 
 template<>
 element_set xpath::evaluate<element>(const node& root) const
 {
+	context ctxt;
+	return evaluate<element>(root, ctxt);
+}
+
+template<>
+element_set xpath::evaluate<element>(const node& root, context& ctxt) const
+{
 	element_set result;
 	
-	object s(m_impl->evaluate(const_cast<node&>(root)));	
+	object s(m_impl->evaluate(const_cast<node&>(root), *ctxt.m_impl));
 	foreach (node* n, s.as<const node_set&>())
 	{
 		element* e = dynamic_cast<element*>(n);

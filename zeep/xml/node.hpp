@@ -27,7 +27,7 @@ class element;
 typedef element* element_ptr;
 typedef std::list<element_ptr>	element_set;
 
-class root;
+class root_node;
 class container;
 
 // --------------------------------------------------------------------
@@ -36,8 +36,9 @@ class node
 {
   public:
 	// All nodes should be part of a single root node
-	virtual root*		root_node();
-	virtual const root*	root_node() const;
+	virtual root_node*	root();
+	virtual const root_node*
+						root() const;
 	
 	// basic access
 	node*				parent()									{ return m_parent; }
@@ -86,8 +87,8 @@ class node
 						node();
 	virtual				~node();
 
-	virtual void		append_to_list(node* n);
-	virtual void		remove_from_list(node* n);
+	virtual void		append_sibling(node* n);
+	virtual void		remove_sibling(node* n);
 
 	void				parent(node* p);
 	void				next(node* n);
@@ -131,15 +132,16 @@ class container : public node
 
 // --------------------------------------------------------------------
 
-class root : public container
+class root_node : public container
 {
   public:
-						root();
-						~root();
+						root_node();
+						~root_node();
 
 	// All nodes should be part of a single root node
-	virtual root*		root_node();
-	virtual const root*	root_node() const;
+	virtual root_node*	root();
+	virtual const root_node*
+						root() const;
 
 	// root nodes have only one child element:
 	element*			child_element() const;
@@ -238,8 +240,8 @@ class text : public node
 class attribute : public node
 {
   public:
-						attribute(const std::string& qname, const std::string& value)
-							: m_qname(qname), m_value(value) {}
+						attribute(const std::string& qname, const std::string& value, bool id = false)
+							: m_qname(qname), m_value(value), m_id(id) {}
 
 	std::string			qname() const								{ return m_qname; }
 
@@ -251,9 +253,12 @@ class attribute : public node
 	virtual void		write(writer& w) const;
 
 	virtual bool		equals(const node* n) const;
+	
+	virtual bool		id() const									{ return m_id; }
 
   private:
 	std::string			m_qname, m_value;
+	bool				m_id;
 };
 
 typedef std::list<attribute*> attribute_set;
@@ -312,21 +317,29 @@ class element : public container
 
 	std::string			get_attribute(const std::string& qname) const;
 	attribute*			get_attribute_node(const std::string& qname) const;
-	void				set_attribute(const std::string& qname, const std::string& value);
+						// the DOCTYPE can specify some attributes as ID						
+	void				set_attribute(const std::string& qname, const std::string& value, bool id = false);
 	void				remove_attribute(const std::string& qname);
 
 	void				set_name_space(const std::string& prefix,
 							const std::string& uri);
 //	void				remove_name_space(const std::string& uri);
 	
-	// convenience routines
+	// The add_text method checks if the last added child is a text node,
+	// and if so, it appends the string to this node's value. Otherwise,
+	// it adds a new text node child with the new text.
 	void				add_text(const std::string& s);
 
+	// to iterate over the attribute and namespace nodes
 	attribute_set		attributes() const;
 	name_space_list		name_spaces() const;
 
 	// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
+	
+	// content of the xml:id attribute, or the attribute that was defined to be
+	// of type ID by the DOCTYPE.
+	std::string			id() const;
 
   protected:
 	std::string			m_qname;
