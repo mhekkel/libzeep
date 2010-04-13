@@ -63,7 +63,7 @@ struct document_imp
 	
 	bool			find_external_dtd(const string& uri, fs::path& path);
 
-	root			m_root;
+	root_node		m_root;
 	fs::path		m_dtd_dir;
 	
 	// some content information
@@ -149,7 +149,7 @@ void document_imp::StartElementHandler(const string& name, const string& uri,
 		if (not a.m_ns.empty())
 			qname = prefix_for_namespace(a.m_ns) + ':' + a.m_name;
 		
-		m_cur->set_attribute(qname, a.m_value);
+		m_cur->set_attribute(qname, a.m_value, a.m_id);
 	}
 
 	const string name_prefix("xmlns:");
@@ -313,14 +313,19 @@ void document::write(writer& w) const
 	m_impl->m_root.write(w);
 }
 
-root* document::root_node() const
+root_node* document::root() const
 {
 	return &m_impl->m_root;
 }
 
-element* document::get_element()
+element* document::child() const
 {
 	return m_impl->m_root.child_element();
+}
+
+void document::child(element* e)
+{
+	return m_impl->m_root.child_element(e);
 }
 
 element_set document::find(const std::string& path)

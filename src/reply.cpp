@@ -98,7 +98,7 @@ void reply::set_content(xml::element* data)
 	stringstream s;
 
 	xml::document doc;
-	doc.root_node()->child_element(data);
+	doc.child(data);
 	
 	xml::writer w(s);
 	w.set_wrap(false);

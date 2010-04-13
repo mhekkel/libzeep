@@ -3077,8 +3077,6 @@ void parser_imp::element(doctype::validator& valid)
 		wstring attr_value = normalize_attribute_value(m_token);
 		match(xml_String);
 
-#pragma message("add xml:id support. And prefix check?")
-
 		const doctype::attribute* dta = nil;
 		if (dte != nil)
 			dta = dte->get_attribute(attr_name);
@@ -3110,6 +3108,8 @@ void parser_imp::element(doctype::validator& valid)
 		}
 		else
 		{
+			bool id = (attr_name == L"xml:id");
+			
 			if (dta != nil)
 			{
 				wstring v(attr_value);
@@ -3125,6 +3125,8 @@ void parser_imp::element(doctype::validator& valid)
 				
 				if (dta->get_type() == doctype::attTypeTokenizedID)
 				{
+					id = true;
+					
 					if (m_ids.count(attr_value) > 0)
 					{
 						not_valid(boost::wformat(L"attribute value ('%1%') for attribute '%2%' is not unique")
@@ -3151,6 +3153,7 @@ void parser_imp::element(doctype::validator& valid)
 			detail::wattr attr;
 			attr.m_name = attr_name;
 			attr.m_value = attr_value;
+			attr.m_id = id;
 			
 			if (m_ns != nil)
 			{
@@ -3200,6 +3203,7 @@ void parser_imp::element(doctype::validator& valid)
 				detail::wattr attr;
 				attr.m_name = attr_name;
 				attr.m_value = normalize_attribute_value(defValue);
+				attr.m_id = false;
 				
 				if (m_ns != nil)
 				{

@@ -32,6 +32,7 @@ writer::writer(std::ostream& os)
 	, m_indent(2)
 	, m_level(0)
 	, m_element_open(false)
+	, m_wrote_element(false)
 {
 }
 				
@@ -58,6 +59,9 @@ void writer::xml_decl(bool standalone)
 			m_os << " standalone=\"yes\"";
 		
 		m_os << "?>";
+		
+		if (m_wrap)
+			m_os << endl;
 	}
 }
 
@@ -153,6 +157,7 @@ void writer::start_element(const string& qname)
 	
 	m_stack.push(qname);
 	m_element_open = true;
+	m_wrote_element = false;
 }
 
 void writer::end_element()
@@ -163,6 +168,8 @@ void writer::end_element()
 	if (m_level == 0 or m_stack.empty())
 		throw exception("inconsistent state in xml::writer");
 	
+	--m_level;
+
 	if (m_element_open)
 	{
 		if (m_collapse_empty)
@@ -173,8 +180,11 @@ void writer::end_element()
 	}
 	else
 	{
-		for (int i = 0; i < m_indent * m_level; ++i)
-			m_os << ' ';
+		if (m_wrote_element)
+		{
+			for (int i = 0; i < m_indent * m_level; ++i)
+				m_os << ' ';
+		}
 
 		m_os << "</" << m_stack.top() << '>';
 	}
@@ -182,9 +192,9 @@ void writer::end_element()
 	if (m_wrap)
 		m_os << endl;
 
-	--m_level;
 	m_stack.pop();
 	m_element_open = false;
+	m_wrote_element = true;
 }
 
 void writer::comment(const string& text)
@@ -241,6 +251,7 @@ void writer::content(const string& text)
 			default:	m_os << c;					last_is_space = false; break;
 		}
 	}
+	m_wrote_element = false;
 }
 
 // extra

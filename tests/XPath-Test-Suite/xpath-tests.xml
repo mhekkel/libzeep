@@ -1,12 +1,15 @@
 <!DOCTYPE xpath-tests [
 <!ELEMENT xpath-tests (xpath-test+)>
 <!ATTLIST xpath-tests xml:base CDATA #IMPLIED>
-<!ELEMENT xpath-test EMPTY>
+<!ELEMENT xpath-test (var)*>
 <!ATTLIST xpath-test data CDATA #REQUIRED
 					 xpath CDATA #REQUIRED
 					 expected-size NMTOKEN #IMPLIED
 					 test-name NMTOKEN "test"
 					 test-attr NMTOKEN #IMPLIED>
+<!ELEMENT var EMPTY>
+<!ATTLIST var name NMTOKEN #REQUIRED
+			  value CDATA #REQUIRED>
 ]>
 <xpath-tests xml:base="XPath-Test-Suite">
 
@@ -114,6 +117,11 @@
 	<xpath-test data="data-011.xml" xpath="//CCC[string()='aap']/.." expected-size="1"
 		test-name="test" test-attr="1" />
 
+	<xpath-test data="data-011.xml" xpath="//BBB[./CCC[string()=$v]]" expected-size="1"
+		test-name="test" test-attr="1">
+		<var name="v" value="aap" />
+	</xpath-test>
+
 	<xpath-test data="data-011.xml" xpath="//BBB[./CCC='aap']" expected-size="1"
 		test-name="test" test-attr="1" />
 
@@ -122,8 +130,14 @@
 				/Body[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']" expected-size="1"
 		 />
 
-<!--	<xpath-test data="data-013.xml"-->
-<!--		xpath="//page/id" expected-size="1"-->
-<!--		 />-->
+	<xpath-test data="data-013.xml"
+		xpath="//page/id" expected-size="1"
+		 />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='aap']" expected-size="1"
+		test-name="ident" test-attr="aap" />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='noot']" expected-size="1"
+		test-name="ident" test-attr="noot" />
 
 </xpath-tests>

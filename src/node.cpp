@@ -40,19 +40,19 @@ node::~node()
 		delete m_next;
 }
 
-root* node::root_node()
+root_node* node::root()
 {
-	root* result = nil;
+	root_node* result = nil;
 	if (m_parent != nil)
-		result = m_parent->root_node();
+		result = m_parent->root();
 	return result;
 }
 
-const root* node::root_node() const
+const root_node* node::root() const
 {
-	const root* result = nil;
+	const root_node* result = nil;
 	if (m_parent != nil)
-		result = m_parent->root_node();
+		result = m_parent->root();
 	return result;
 }
 
@@ -79,7 +79,7 @@ string node::lang() const
 	return result;
 }
 
-void node::append_to_list(node* n)
+void node::append_sibling(node* n)
 {
 	node* p = this;
 	while (p->m_next != nil)
@@ -91,7 +91,7 @@ void node::append_to_list(node* n)
 	n->m_next = nil;
 }
 
-void node::remove_from_list(node* n)
+void node::remove_sibling(node* n)
 {
 	assert (this != n);
 	if (this == n)
@@ -219,7 +219,7 @@ void container::append(node_ptr n)
 		m_child->m_next = m_child->m_prev = nil;
 	}
 	else
-		m_child->append_to_list(n);
+		m_child->append_sibling(n);
 }
 
 void container::remove(node_ptr n)
@@ -233,7 +233,7 @@ void container::remove(node_ptr n)
 			m_child->m_prev = nil;
 	}
 	else
-		m_child->remove_from_list(n);
+		m_child->remove_sibling(n);
 }
 
 element_set container::find(const std::string& path) const
@@ -252,27 +252,27 @@ element* container::find_first(const std::string& path) const
 }
 
 // --------------------------------------------------------------------
-// root
+// root_node
 
-root::root()
+root_node::root_node()
 {
 }
 
-root::~root()
+root_node::~root_node()
 {
 }
 
-root* root::root_node()
-{
-	return this;
-}
-
-const root*	root::root_node() const
+root_node* root_node::root()
 {
 	return this;
 }
 
-string root::str() const
+const root_node* root_node::root() const
+{
+	return this;
+}
+
+string root_node::str() const
 {
 	string result;
 	element* e = child_element();
@@ -281,7 +281,7 @@ string root::str() const
 	return result;
 }
 
-element* root::child_element() const
+element* root_node::child_element() const
 {
 	element* result = nil;
 
@@ -295,7 +295,7 @@ element* root::child_element() const
 	return result;
 }
 
-void root::child_element(element* child)
+void root_node::child_element(element* child)
 {
 	element* e = child_element();
 	if (e != nil)
@@ -307,7 +307,7 @@ void root::child_element(element* child)
 	container::append(child);
 }
 
-void root::write(writer& w) const
+void root_node::write(writer& w) const
 {
 	node* child = m_child;
 	while (child != nil)
@@ -317,14 +317,14 @@ void root::write(writer& w) const
 	}
 }
 
-bool root::equals(const node* n) const
+bool root_node::equals(const node* n) const
 {
 	bool result = false;
 	if (typeid(n) == typeid(*this))
 	{
 		result = true;
 		
-		const root* e = static_cast<const root*>(n);
+		const root_node* e = static_cast<const root_node*>(n);
 		
 		if (m_child != nil and e->m_child != nil)
 			result = m_child->equals(e->m_child);
@@ -335,12 +335,12 @@ bool root::equals(const node* n) const
 	return result;
 }
 
-void root::append(node* n)
+void root_node::append(node* n)
 {
 	if (dynamic_cast<processing_instruction*>(n) == nil and
 		dynamic_cast<comment*>(n) == nil)
 	{
-		throw exception("can only append comment and processing instruction nodes to a root");
+		throw exception("can only append comment and processing instruction nodes to a root_node");
 	}
 	
 	container::append(n);
@@ -589,14 +589,14 @@ attribute* element::get_attribute_node(const string& qname) const
 	return attr;
 }
 
-void element::set_attribute(const string& qname, const string& value)
+void element::set_attribute(const string& qname, const string& value, bool id)
 {
 	attribute* attr = get_attribute_node(qname);
 	if (attr != nil)
 		attr->value(value);
 	else
 	{
-		attr = new attribute(qname, value);
+		attr = new attribute(qname, value, id);
 		
 		if (m_attribute == nil)
 		{
@@ -604,7 +604,7 @@ void element::set_attribute(const string& qname, const string& value)
 			m_attribute->parent(this);
 		}
 		else
-			m_attribute->append_to_list(attr);
+			m_attribute->append_sibling(attr);
 	}
 }
 
@@ -623,7 +623,7 @@ void element::remove_attribute(const string& qname)
 				m_attribute->m_prev = nil;
 		}
 		else
-			m_attribute->remove_from_list(n);
+			m_attribute->remove_sibling(n);
 	}	
 }
 
@@ -687,7 +687,7 @@ void element::set_name_space(const string& prefix, const string& uri)
 			m_name_space->parent(this);
 		}
 		else
-			m_name_space->append_to_list(ns);
+			m_name_space->append_sibling(ns);
 	}
 }
 
@@ -696,6 +696,24 @@ string element::lang() const
 	string result = get_attribute("xml:lang");
 	if (result.empty())
 		result = node::lang();
+	return result;
+}
+
+string element::id() const
+{
+	string result;
+	
+	attribute* attr = m_attribute;
+	while (attr != nil)
+	{
+		if (attr->id())
+		{
+			result = attr->value();
+			break;
+		}
+		attr = static_cast<attribute*>(attr->next());
+	}
+	
 	return result;
 }
 
@@ -767,8 +785,8 @@ ostream& operator<<(ostream& lhs, const node& rhs)
 {
 	if (typeid(rhs) == typeid(node))
 		cout << "base class???";
-	else if (typeid(rhs) == typeid(root))
-		cout << "root";
+	else if (typeid(rhs) == typeid(root_node))
+		cout << "root_node";
 	else if (typeid(rhs) == typeid(element))
 	{
 		cout << "element <" << static_cast<const element&>(rhs).qname();
