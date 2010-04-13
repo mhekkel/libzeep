@@ -13,35 +13,65 @@ namespace zeep { namespace xml {
 
 extern std::string k_empty_string;
 
+//! Use xml::writer to write XML documents to a stream
+
+//! The zeep::xml::writer class is used to write XML documents. It has
+//! several options that influence the way the data is written. E.g. it
+//! is possible to specify whether to wrap the elements and what indentation
+//! to use. The writer keeps track of opened elements and therefore knows
+//! how to close an element.
+//! 
+//! The writer writes out XML 1.0 files. 
+
 class writer
 {
   public:
+					//! The constructor takes a std::ostream as argument
 					writer(std::ostream& os);
 					
 	virtual			~writer();
 
 	// behaviour
-	void			set_encoding(encoding_type enc)					{ m_encoding = enc; }
+	//! set_encoding is not yet implemented, we only support UTF-8 for now
+//	void			set_encoding(encoding_type enc)					{ m_encoding = enc; }
+
+	//! the xml declaration flag (<?xml version...) is not written by default
 	void			set_xml_decl(bool flag)							{ m_write_xml_decl = flag; }
+
+	//! the indentation in number of spaces, default is two.
 	void			set_indent(int indentation)						{ m_indent = indentation; }
+
+	//! default is to wrap XML files
 	void			set_wrap(bool flag)								{ m_wrap = flag; }
+
+	//! if the trim flag is set, all whitespace will be trimmed to one space exactly
 	void			set_trim(bool flag)								{ m_trim = flag; }
+
+	//! collapsing empty elements (<empyt/>) is the default behaviour
 	void			set_collapse_empty_elements(bool collapse)		{ m_collapse_empty = collapse; }
+
+	//! escape whitespace into character refences can be specified.
 	void			set_escape_whitespace(bool escape)				{ m_escape_whitespace = escape; }
 
 	// actual writing routines
+	
+	//! write a xml declaration, version will be 1.0, standalone can be specified.
 	virtual void	xml_decl(bool standalone);
 
-	virtual void	start_doctype(const std::string& root, const std::string& dtd);
-
-	virtual void	end_doctype();
-	
+	//! To write an empty DOCTYPE specifying an external subset
 	virtual void	empty_doctype(const std::string& root, const std::string& dtd);
 
+	//! This opens a DOCTYPE declaration. The root parameter is the name of the base element.
+	virtual void	start_doctype(const std::string& root, const std::string& dtd);
+
+	//! To write a NOTATION declaration
 	virtual void	notation(const std::string& name,
 						const std::string& sysid, const std::string& pubid);
 
-					// ... but more often you will want to use the following
+	//! End a DOCTYPE declaration.
+	virtual void	end_doctype();
+	
+					// writing elements
 	virtual void	start_element(const std::string& name);
 	virtual void	end_element();
 	virtual void	attribute(const std::string& name, const std::string& value);
@@ -76,6 +106,10 @@ class writer
 	std::stack<std::string>
 					m_stack;
 	bool			m_wrote_element;
+
+  private:
+					writer(const writer&);
+	writer&			operator(const writer&);
 };
 
 class write_element
@@ -93,6 +127,10 @@ class write_element
 				}
 
   private:
+				write_element(const write_element&);
+	write_element&
+				operator=(const write_element&);
+
 	writer&		m_writer;
 	std::string	m_name;
 };
