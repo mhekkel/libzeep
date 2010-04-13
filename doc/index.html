@@ -135,14 +135,126 @@ jack = doc.find("//employee[position() = last()]");
 
 	<h3>SOAP server</h3>
 
-	<p></p>
+	<p>This comes from the man page for the 1.0 version of libzeep. I'll have to improve this one day:</p>
+
+<pre>libzeep(3)                        subroutine                        libzeep(3)
+
+
+
+NAME
+       libzeep - A C++ library to create SOAP servers
+
+SYNOPSIS
+       #include &lt;zeep/server.hpp&gt;
+
+       class my_server : public zeep::server
+       {
+         public:
+           my_server(const char* addr, short port);
+           void sum(int a, int b, int&amp; c) { c = a + b; }
+       };
+
+       my_server::my_server(const char* addr, short port)
+         : zeep::server("http//www.acme.org/...", addr, port)
+       {
+         const char kSumParameterNames[] = { "a", "b", "c" };
+         register_action("sum", this, &amp;my_server::sum, kSumParameterNames);
+       }
+
+        ...
+
+       my_server server("0.0.0.0", 10333);
+       boost::thread t(boost::bind(&amp;my_server::run, &amp;server));
+       // and wait for a signal to stop using e.g. sigwait(3)
+
+
+DESCRIPTION
+       Using   libzeep   you  can  create  a  SOAP  server  by  deriving  from
+       zeep::server.  In the constructor of your server,  you  call  the  base
+       class  constructor  with three arguments: ns, a namespace for your SOAP
+       server, address, the address to listen to, usually "0.0.0.0" to  listen
+       to all available addresses. And port, the port number to bind to.
+
+       SOAP actions are simply members of the server object and are registered
+       using the register_action member  function  of  the  zeep::server  base
+       class.  After  initializing the server object, the run member is called
+       and the server then starts listening to the address and port specified.
+
+       The resulting web service application will  process  incoming  request.
+       There  are  three kinds of requests, the server can return an automati-
+       cally generated WSDL, it can process standard SOAP message send in SOAP
+       envelopes  and  it  can  handle REST style requests which are mapped to
+       corresponding SOAP messages internally.
+
+       The signature of the registered actions are used to  generate  all  the
+       code needed to serialize and deserialize SOAP envelopes and to create a
+       corresponding WSDL file. The signature can be as simple as the  example
+       above but can also be as complex as in this one:
+
+         void myAction(
+                const std::vector&lt;MyStructIn&gt;&amp; input,
+                MyStructOut&amp; output);
+
+       In  order to make this work, you have to notify the library of the map
+       ping  of  your   structure   type   to   a   name   using   the   macro
+       SOAP_XML_SET_STRUCT_NAME like this:
+
+                SOAP_XML_SET_STRUCT_NAME(MyStructIn);
+                SOAP_XML_SET_STRUCT_NAME(MyStructOut);
+
+       Next  to  this,  you have to provide a way to serialize and deserialize
+       your structure. For this,  libzeep  uses  the  same  mechanism  as  the
+       Boost::serialize  library, which means you have to add a templated mem
+       ber function called serialize to your structure. The result  will  look
+       like this:
+
+       struct MyStructIn {
+         string myField1;
+         int myField2;
+
+         template&lt;class Archive&gt;
+         void serialize(Archive&amp; ar, const unsigned int version)
+         {
+           ar &amp; BOOST_SERIALIZATION_NVP(myField1)
+              &amp; BOOST_SERIALIZATION_NVP(myField2);
+         }
+       };
+
+       Similarly  you  can  use  enum's in an action signature or as structure
+       member variables. Again we need to tell the library the type  name  for
+       the   enum  and  the  possible  enum  values.  We  do  this  using  the
+       SOAP_XML_ADD_ENUM macro, like this:
+
+          enum MyEnum { "one", "two" };
+          SOAP_XML_ADD_ENUM(myEnum, one);
+          SOAP_XML_ADD_ENUM(myEnum, two);
+
+       As shown above, you can also use std::vector containers in  the  signa-
+       ture  of  actions.  Support for other STL containers is not implemented
+       yet.
+
+       If the address used by clients of your server  is  different  from  the
+       address  of  your  local  machine  (which can happen if you're behind a
+       reverse proxy e.g.) you can specify the location using the set_location
+       member  function  of  zeep::server.  The specified address will then be
+       used in the WSDL file.
+
+
+BUGS
+       Undoubtedly libzeep will contain bugs. One of the more obvious  one  is
+       the  missing  support  for  signatures  using STL containers other than
+       std::vector.
+
+
+
+version 1.0                       12-jan-2009                       libzeep(3)
+</pre>
+
 
 	<a name="reference"/>
 	<h2>Reference</h2>
 	
-	<p>
-	</p>
-		
+	<p>Well, read the code for now. If I can find the time I will do better.</p>
 	
 </body>
 </html>
