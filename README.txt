@@ -1,4 +1,10 @@
-This is the first release of libzeep.
+This is the second release of libzeep.
+
+The second release of libzeep introduces a full XML library. You no longer
+need expat to build libzeep. The XML library comes with a full validating
+SAX parser. There's also a complete XPath 1.0 implementation.
+
+The rest of this file describes the SOAP functionality of libzeep.
 
 It is supposed to become a very easy way to create SOAP server software in
 C++. You use it to export a C++ object's methods as SOAP actions. The library
@@ -12,7 +18,7 @@ libasio along with Boost 1.35 instead.
 
 To test out libzeep, you have to edit the makefile and make sure the names
 of the boost libraries are correct for your installation. After this you
-simply type 'make' and a 'zeep' executable is build.
+simply type 'make zeep-test' and a 'zeep-test' executable is build.
 
 Have a look at the zeep-test.cpp file to see how to create a server. This
 example server is not entirely trivial since it has three exported methods
