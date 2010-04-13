@@ -121,16 +121,26 @@ for (xml::element* name, p.evaluate&lt;xml::element&gt;(doc))
     cout &lt;&lt; "Name: " &lt;&lt; name->content() &lt;&lt; endl;
 </pre>
 
-	<p>The XPath implementation in libzeep (will eventually) implement the full XPath 1.0 specification. That means you can also do this:
+	<p>The XPath implementation in libzeep implements the full XPath 1.0 specification. That means you can also do this:
 
 <pre>// Fetch Jack's record by name:	
-xml::element* jack = doc.find("//employee[name = 'Jack Daniels']");
+xml::element* jack = doc.find_first("//employee[name = 'Jack Daniels']");
 
 // or by id:
-jack = doc.find("//employee[@id='2']");
+jack = doc.find_first("//employee[@id='2']");
 
 // or by position in the list, jack is always last...
-jack = doc.find("//employee[position() = last()]");
+jack = doc.find_first("//employee[position() = last()]");
+</pre>
+
+	<p>You can even use variables:</p>
+
+<pre>// Fetch Jack's record by name:
+xml::context context;
+context.set("var", "Jack Daniels");
+xml::xpath xpath("//employee[name = $var]");
+
+xml::element* jack = xpath.evaluate(*doc.root(), context).front();
 </pre>
 
 	<h3>SOAP server</h3>
