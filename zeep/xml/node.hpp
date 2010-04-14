@@ -9,8 +9,8 @@
 #include <iterator>
 #include <string>
 #include <list>
-#include <tr1/tuple>
 
+#include <boost/tr1/tuple.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>

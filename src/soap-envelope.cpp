@@ -52,7 +52,7 @@ xml::element* make_fault(const string& what)
 
 xml::element* make_fault(const std::exception& ex)
 {
-	return make_fault(ex.what());
+	return make_fault(string(ex.what()));
 }
 
 }
