@@ -11,12 +11,19 @@
 #include <stack>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
+#include "zeep/xml/unicode_support.hpp"
 #include "zeep/xml/expat_doc.hpp"
 #include "zeep/exception.hpp"
+#include "zeep/xml/writer.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
+namespace fs = boost::filesystem;
 
 namespace zeep { namespace xml {
 
@@ -24,11 +31,7 @@ namespace zeep { namespace xml {
 
 struct expat_doc_imp
 {
-	node_ptr		root;
-
-	stack<node_ptr>	cur;		// construction
-	vector<pair<string,string> >
-					namespaces;
+					expat_doc_imp(expat_doc* doc);
 
 	static void		XML_StartElementHandler(
 						void*				userData,
@@ -106,6 +109,37 @@ struct expat_doc_imp
 						string&				element,
 						string&				ns,
 						string&				prefix);
+
+	string			prefix_for_namespace(const string& ns);
+	
+	bool			find_external_dtd(const string& uri, fs::path& path);
+
+	root_node		m_root;
+	fs::path		m_dtd_dir;
+	
+	// some content information
+	encoding_type	m_encoding;
+	bool			m_standalone;
+	int				m_indent;
+	bool			m_empty;
+	bool			m_wrap;
+	bool			m_trim;
+	bool			m_escape_whitespace;
+	
+	bool			m_validating;
+
+	struct notation
+	{
+		string		m_name;
+		string		m_sysid;
+		string		m_pubid;
+	};
+
+	expat_doc*		m_doc;
+	element*		m_cur;		// construction
+	vector<pair<string,string> >
+					m_namespaces;
+	list<notation>	m_notations;
 };
 
 // --------------------------------------------------------------------
@@ -186,6 +220,36 @@ void expat_doc_imp::XML_EndNamespaceDeclHandler(
 
 // --------------------------------------------------------------------
 
+expat_doc_imp::expat_doc_imp(expat_doc* doc)
+	: m_encoding(enc_UTF8)
+	, m_standalone(false)
+	, m_indent(2)
+	, m_empty(true)
+	, m_wrap(true)
+	, m_trim(true)
+	, m_escape_whitespace(false)
+	, m_validating(false)
+	, m_doc(doc)
+	, m_cur(NULL)
+{
+}
+
+string expat_doc_imp::prefix_for_namespace(const string& ns)
+{
+	vector<pair<string,string> >::iterator i = find_if(m_namespaces.begin(), m_namespaces.end(),
+		boost::bind(&pair<string,string>::second, _1) == ns);
+	
+	string result;
+	if (i != m_namespaces.end())
+		result = i->first;
+	else if (m_cur != NULL)
+		result = m_cur->prefix_for_namespace(ns);
+	else
+		throw exception("namespace not found: %s", ns.c_str());
+	
+	return result;
+}
+
 void expat_doc_imp::parse_name(
 	const char*			name,
 	string&				element,
@@ -207,8 +271,8 @@ void expat_doc_imp::parse_name(
 		ns = n3[0];
 		prefix.clear();
 		
-		if (ns.empty() == false and not cur.empty())
-			prefix = cur.top()->find_prefix(ns);
+		if (not ns.empty())
+			prefix = prefix_for_namespace(ns);
 	}
 	else
 	{
@@ -222,86 +286,81 @@ void expat_doc_imp::StartElementHandler(
 	const XML_Char*		name,
 	const XML_Char**	atts)
 {
-	string element, ns, prefix;
+	string qname, uri, prefix;
 	
-	parse_name(name, element, ns, prefix);
-
-	node_ptr n;
+	parse_name(name, qname, uri, prefix);
 	
-	n.reset(new node(element, ns, prefix));
+	if (not prefix.empty())
+		qname = prefix + ':' + qname;
 
-	if (cur.empty())
-	{
-		cur.push(n);
-		root = cur.top();
-	}
+	auto_ptr<element> n(new element(qname));
+
+	if (m_cur == NULL)
+		m_root.child_element(n.get());
 	else
-	{
-		cur.top()->add_child(n);
-		cur.push(n);
-	}
+		m_cur->append(n.get());
+
+	m_cur = n.release();
 	
 	for (const char** att = atts; *att; att += 2)
 	{
 		if (not att[0] or not att[1])
 			break;
 		
-		parse_name(att[0], element, ns, prefix);
+		parse_name(att[0], qname, uri, prefix);
 		if (not prefix.empty())
-			element = prefix + ':' + element;
-		
-		attribute_ptr attr(new xml::attribute(element, att[1]));
-		cur.top()->add_attribute(attr);
+			qname = prefix + ':' + qname;
+
+#pragma message("need to find the ID here")		
+		m_cur->set_attribute(qname, att[1], false);
 	}
 
 	const string name_prefix("xmlns:");
 
-	for (vector<pair<string,string> >::iterator ns = namespaces.begin(); ns != namespaces.end(); ++ns)
-	{
-		string name;
-		if (ns->first.empty())
-			name = "xmlns";
-		else
-			name = name_prefix + ns->first;
-
-		attribute_ptr attr(new xml::attribute(name, ns->second));
-
-		cur.top()->add_attribute(attr);
-	}
+	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
+		m_cur->set_name_space(ns->first, ns->second);
 	
-	namespaces.clear();
+	m_namespaces.clear();
+	
+	n.release();
 }
 
 void expat_doc_imp::EndElementHandler(
 	const XML_Char*		name)
 {
-	if (cur.empty())
+	if (m_cur == NULL)
 		throw exception("Empty stack");
 	
-	cur.pop();
+	m_cur = dynamic_cast<element*>(m_cur->parent());
 }
 
 void expat_doc_imp::CharacterDataHandler(
 	const XML_Char*		s,
 	int					len)
 {
-	if (cur.empty())
+	if (m_cur == NULL)
 		throw exception("Empty stack");
 	
-	cur.top()->add_content(s, len);
+	m_cur->add_text(string(s, len));
 }
 
 void expat_doc_imp::ProcessingInstructionHandler(
 	const XML_Char*		target,
 	const XML_Char*		data)
 {
-//	cerr << "processing instruction, target: " << target << ", data: " << data << endl;
+	if (m_cur != NULL)
+		m_cur->append(new processing_instruction(target, data));
+	else
+		m_root.append(new processing_instruction(target, data));
 }
 
 void expat_doc_imp::CommentHandler(
 	const XML_Char*		data)
 {
-//	cerr << "comment " << data << endl;
+	if (m_cur != NULL)
+		m_cur->append(new comment(data));
+	else
+		m_root.append(new comment(data));
 }
 
 void expat_doc_imp::StartCdataSectionHandler()
@@ -321,7 +380,7 @@ void expat_doc_imp::StartNamespaceDeclHandler(
 	if (prefix == NULL)
 		prefix = "";
 
-	namespaces.push_back(make_pair(prefix, uri));
+	m_namespaces.push_back(make_pair(prefix, uri));
 }
 	
 void expat_doc_imp::EndNamespaceDeclHandler(
@@ -342,6 +401,8 @@ void expat_doc_imp::parse(
 	try
 	{
 		XML_SetParamEntityParsing(p, XML_PARAM_ENTITY_PARSING_ALWAYS);
+		
+//		XML_UseForeignDTD(p, true);
 		
 		XML_SetUserData(p, this);
 		XML_SetElementHandler(p, XML_StartElementHandler, XML_EndElementHandler);
@@ -377,7 +438,7 @@ void expat_doc_imp::parse(
 			
 			XML_Status err = XML_Parse(p, buffer, k, length == 0);
 			if (err != XML_STATUS_OK)
-				throw exception(p);
+				throw exception("expat error"/*p*/);
 		}
 	}
 	catch (std::exception& e)
@@ -389,46 +450,157 @@ void expat_doc_imp::parse(
 	XML_ParserFree(p);
 }
 
-expat_doc::expat_doc(
-	istream&		data)
-	: impl(new expat_doc_imp)
+expat_doc::expat_doc()
+	: m_impl(new expat_doc_imp(this))
 {
-	impl->parse(data);
-}
-					
-expat_doc::expat_doc(
-	const string&	data)
-	: impl(new expat_doc_imp)
-{
-	stringstream s;
-	s.str(data);
-	impl->parse(s);
 }
 
-expat_doc::expat_doc(
-	node_ptr		data)
-	: impl(new expat_doc_imp)
+expat_doc::expat_doc(const string& s)
+	: m_impl(new expat_doc_imp(this))
 {
-	impl->root = data;
+	istringstream is(s);
+	read(is);
 }
-					
+
+expat_doc::expat_doc(std::istream& is)
+	: m_impl(new expat_doc_imp(this))
+{
+	read(is);
+}
+
 expat_doc::~expat_doc()
 {
-	delete impl;
+	delete m_impl;
 }
 
-node_ptr expat_doc::root() const
+void expat_doc::read(const string& s)
 {
-	return impl->root;
+	istringstream is(s);
+	read(is);
+}
+
+void expat_doc::read(istream& is)
+{
+	m_impl->parse(is);
+}
+
+void expat_doc::read(istream& is, const boost::filesystem::path& base_dir)
+{
+	m_impl->m_dtd_dir = base_dir;
+	m_impl->parse(is);
+}
+
+void expat_doc::write(writer& w) const
+{
+	element* e = m_impl->m_root.child_element();
+	
+	if (e == NULL)
+		throw exception("cannot write an empty XML expat_doc");
+	
+	w.xml_decl(m_impl->m_standalone);
+
+	if (not m_impl->m_notations.empty())
+	{
+		w.start_doctype(e->qname(), "");
+		foreach (const expat_doc_imp::notation& n, m_impl->m_notations)
+			w.notation(n.m_name, n.m_sysid, n.m_pubid);
+		w.end_doctype();
+	}
+	
+	m_impl->m_root.write(w);
+}
+
+root_node* expat_doc::root() const
+{
+	return &m_impl->m_root;
+}
+
+element* expat_doc::child() const
+{
+	return m_impl->m_root.child_element();
+}
+
+void expat_doc::child(element* e)
+{
+	return m_impl->m_root.child_element(e);
+}
+
+element_set expat_doc::find(const std::string& path)
+{
+	return m_impl->m_root.find(path);
+}
+
+element* expat_doc::find_first(const std::string& path)
+{
+	return m_impl->m_root.find_first(path);
+}
+
+void expat_doc::base_dir(const fs::path& path)
+{
+	m_impl->m_dtd_dir = path;
+}
+
+encoding_type expat_doc::encoding() const
+{
+	return m_impl->m_encoding;
+}
+
+void expat_doc::encoding(encoding_type enc)
+{
+	m_impl->m_encoding = enc;
+}
+
+int expat_doc::indent() const
+{
+	return m_impl->m_indent;
+}
+
+void expat_doc::indent(int indent)
+{
+	m_impl->m_indent = indent;
+}
+
+bool expat_doc::wrap() const
+{
+	return m_impl->m_wrap;
+}
+
+void expat_doc::wrap(bool wrap)
+{
+	m_impl->m_wrap = wrap;
+}
+
+bool expat_doc::trim() const
+{
+	return m_impl->m_trim;
+}
+
+void expat_doc::trim(bool trim)
+{
+	m_impl->m_trim = trim;
+}
+
+void expat_doc::set_validating(bool validate)
+{
+	m_impl->m_validating = validate;
+}
+
+bool expat_doc::operator==(const expat_doc& other) const
+{
+	return m_impl->m_root.equals(&other.m_impl->m_root);
+}
+
+istream& operator>>(istream& lhs, expat_doc& rhs)
+{
+	rhs.read(lhs);
+	return lhs;
 }
 
 ostream& operator<<(ostream& lhs, const expat_doc& rhs)
 {
-	lhs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
+	writer w(lhs);
 	
-	if (rhs.root())
-		rhs.root()->write(lhs, 0);
-
+	rhs.write(w);
 	return lhs;
 }
 	

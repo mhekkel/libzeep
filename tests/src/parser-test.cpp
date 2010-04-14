@@ -23,6 +23,7 @@ namespace fs = boost::filesystem;
 namespace ba = boost::algorithm;
 
 #define DOC		xml::document
+//#include <expat.h>
 //#define DOC		xml::expat_doc
 //#define DOC		xml::libxml2_doc
 
