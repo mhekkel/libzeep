@@ -16,36 +16,17 @@ namespace zeep { namespace xml {
 namespace detail {
 
 // two simple attribute classes
-struct wattr
-{
-	std::wstring	m_ns;
-	std::wstring	m_name;
-	std::wstring	m_value;
-	bool			m_id;		// whether the attribute is defined as type ID in its ATTLIST decl
-};
-
-struct attr
-{
-	std::string		m_ns;
-	std::string		m_name;
-	std::string		m_value;
-	bool			m_id;		// whether the attribute is defined as type ID in its ATTLIST decl
-};
-
 template<typename CharT>
-struct attr_type_factory {};
-
-template<>
-struct attr_type_factory<wchar_t>
+struct basic_attr
 {
-	typedef	wattr		type;
+	std::basic_string<CharT>	m_ns;
+	std::basic_string<CharT>	m_name;
+	std::basic_string<CharT>	m_value;
+	bool						m_id;		// whether the attribute is defined as type ID in its ATTLIST decl
 };
 
-template<>
-struct attr_type_factory<char>
-{
-	typedef	attr		type;
-};
+typedef basic_attr<wchar_t>		wattr;
+typedef basic_attr<char>		attr;
 
 }
 
@@ -104,9 +85,7 @@ class basic_parser_base : public boost::noncopyable
 };
 
 template<typename CharT>
-struct parser_text_encoding_traits
-{
-};
+struct parser_text_encoding_traits;
 
 template<>
 struct parser_text_encoding_traits<char>
@@ -140,11 +119,11 @@ class basic_parser : public basic_parser_base
 	
   public:
 
-	typedef std::basic_string<CharT>							string_type;
-	typedef parser_text_encoding_traits<CharT>					text_traits;
+	typedef std::basic_string<CharT>						string_type;
+	typedef parser_text_encoding_traits<CharT>				text_traits;
 	
-	typedef typename detail::attr_type_factory<CharT>::type		attr_type;
-	typedef std::list<attr_type>								attr_list_type;
+	typedef typename detail::basic_attr<CharT>				attr_type;
+	typedef std::list<attr_type>							attr_list_type;
 
 							basic_parser(
 								std::istream&		data);
