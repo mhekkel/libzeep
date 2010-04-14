@@ -8,9 +8,9 @@
 #include <numeric>
 #include <stack>
 #include <cmath>
-#include <tr1/cmath>
 #include <map>
 
+#include <boost/tr1/cmath.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -30,6 +30,7 @@
 extern int VERBOSE;
 
 using namespace std;
+using namespace tr1;
 namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
@@ -336,7 +337,7 @@ const int object::as<int>() const
 {
 	if (m_type != ot_number)
 		throw exception("object is not of type number");
-	return round(m_number);
+	return static_cast<int>(round(m_number));
 }
 
 template<>
@@ -1764,9 +1765,11 @@ unsigned char xpath_imp::next_byte()
 	char result = 0;
 	
 	if (m_next < m_end)
+	{
 		result = *m_next;
+		++m_next;
+	}
 
-	++m_next;
 	m_token_string += result;
 
 	return static_cast<unsigned char>(result);
@@ -1822,7 +1825,8 @@ void xpath_imp::retract()
 	// is valid UTF-8
 	do --c; while ((*c & 0x0c0) == 0x080);
 	
-	m_next -= m_token_string.end() - c;
+	if (m_next != m_end or *c != 0)
+		m_next -= m_token_string.end() - c;
 	m_token_string.erase(c, m_token_string.end());
 }
 

@@ -312,7 +312,7 @@ struct enum_map
 
 	class add_enum_helper
 	{
-		friend class enum_map;
+		friend struct enum_map;
 					add_enum_helper(name_mapping_type& mapping)
 						: m_mapping(mapping) {}
 		

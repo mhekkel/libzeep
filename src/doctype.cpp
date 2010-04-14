@@ -4,10 +4,10 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-#include <tr1/tuple>
 #include <typeinfo>
 #include <numeric>
 
+#include <boost/tr1/tuple.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -527,7 +527,7 @@ void allowed_seq::print(ostream& os)
 	for (allowed_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
 	{
 		(*s)->print(os);
-		if (next(s) != m_allowed.end())
+		if (boost::next(s) != m_allowed.end())
 			os << ", ";
 	}
 	os << ')';
@@ -566,7 +566,7 @@ void allowed_choice::print(ostream& os)
 	for (allowed_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
 	{
 		(*s)->print(os);
-		if (next(s) != m_allowed.end())
+		if (boost::next(s) != m_allowed.end())
 			os << "|";
 	}
 	os << ')';
@@ -639,11 +639,11 @@ bool attribute::is_names(wstring& s) const
 			if (c == s.end())
 				break;
 			
-			result = isspace(*c);
+			result = isspace(*c) != 0;
 			++c;
 			t += ' '; 
 			
-			while (isspace(*c))
+			while (c != s.end() and isspace(*c))
 				++c;
 		}
 
@@ -701,7 +701,7 @@ bool attribute::is_nmtokens(wstring& s) const
 			result = true;
 			++c;
 		}
-		while (isspace(*c));
+		while (c != s.end() and isspace(*c));
 		
 		t += ' ';
 	}

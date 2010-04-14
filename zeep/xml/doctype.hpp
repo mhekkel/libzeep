@@ -29,7 +29,7 @@ typedef boost::ptr_vector<attribute>	attribute_list;
 // --------------------------------------------------------------------
 // validation of elements is done by the validator classes
 
-class allowed_base;
+struct allowed_base;
 typedef boost::shared_ptr<allowed_base>		allowed_ptr;
 typedef std::list<allowed_ptr>				allowed_list;
 
