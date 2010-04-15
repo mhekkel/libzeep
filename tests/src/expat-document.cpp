@@ -71,6 +71,13 @@ struct expat_doc_imp
 						void*				userData,
 						const XML_Char*		prefix);
 
+	static void		XML_NotationDeclHandler(
+                        void*				userData,
+                        const XML_Char*		notationName,
+                        const XML_Char*		base,
+                        const XML_Char*		systemId,
+                        const XML_Char*		publicId);
+
 	void			StartElementHandler(
 						const XML_Char*		name,
 						const XML_Char**	atts);
@@ -99,6 +106,12 @@ struct expat_doc_imp
 
 	void			EndNamespaceDeclHandler(
 						const XML_Char*		prefix);
+
+	void			NotationDeclHandler(
+                        const XML_Char*		notationName,
+                        const XML_Char*		base,
+                        const XML_Char*		systemId,
+                        const XML_Char*		publicId);
 
 	void			parse(
 						istream&			data);
@@ -218,6 +231,16 @@ void expat_doc_imp::XML_EndNamespaceDeclHandler(
 	static_cast<expat_doc_imp*>(userData)->EndNamespaceDeclHandler(prefix ? prefix : "");
 }
 
+void expat_doc_imp::XML_NotationDeclHandler(
+	void*				userData,
+	const XML_Char*		notationName,
+	const XML_Char*		base,
+	const XML_Char*		systemId,
+	const XML_Char*		publicId)
+{
+	static_cast<expat_doc_imp*>(userData)->NotationDeclHandler(notationName, base, systemId, publicId);
+}
+	
 // --------------------------------------------------------------------
 
 expat_doc_imp::expat_doc_imp(expat_doc* doc)
@@ -261,18 +284,18 @@ void expat_doc_imp::parse_name(
 
 	if (n3.size() == 3)
 	{
-		element = n3[1];
 		ns = n3[0];
+		element = n3[1];
 		prefix = n3[2];
 	}
 	else if (n3.size() == 2)
 	{
-		element = n3[1];
 		ns = n3[0];
-		prefix.clear();
-		
+		element = n3[1];
 		if (not ns.empty())
 			prefix = prefix_for_namespace(ns);
+		else
+			prefix.clear();
 	}
 	else
 	{
@@ -388,6 +411,20 @@ void expat_doc_imp::EndNamespaceDeclHandler(
 {
 }
 
+void expat_doc_imp::NotationDeclHandler(
+    const XML_Char*		notationName,
+    const XML_Char*		base,
+    const XML_Char*		systemId,
+    const XML_Char*		publicId)
+{
+	notation n = { notationName, systemId, publicId };
+	
+	list<notation>::iterator i = find_if(m_notations.begin(), m_notations.end(),
+		boost::bind(&notation::m_name, _1) >= notationName);
+	
+	m_notations.insert(i, n);
+}
+
 // --------------------------------------------------------------------
 
 void expat_doc_imp::parse(
@@ -402,18 +439,20 @@ void expat_doc_imp::parse(
 	{
 		XML_SetParamEntityParsing(p, XML_PARAM_ENTITY_PARSING_ALWAYS);
 		
-//		XML_UseForeignDTD(p, true);
+		XML_UseForeignDTD(p, true);
+		
+		XML_SetBase(p, fs::current_path().string().c_str());
 		
 		XML_SetUserData(p, this);
 		XML_SetElementHandler(p, XML_StartElementHandler, XML_EndElementHandler);
 		XML_SetCharacterDataHandler(p, XML_CharacterDataHandler);
-//		XML_SetProcessingInstructionHandler(p, XML_ProcessingInstructionHandler);
+		XML_SetProcessingInstructionHandler(p, XML_ProcessingInstructionHandler);
 //		XML_SetCommentHandler(p, XML_CommentHandler);
 //		XML_SetCdataSectionHandler(p, XML_StartCdataSectionHandler, XML_EndCdataSectionHandler);
 //		XML_SetDefaultHandler(p, XML_DefaultHandler);
 //		XML_SetDoctypeDeclHandler(p, XML_StartDoctypeDeclHandler, XML_EndDoctypeDeclHandler);
 //		XML_SetUnparsedEntityDeclHandler(p, XML_UnparsedEntityDeclHandler);
-//		XML_SetNotationDeclHandler(p, XML_NotationDeclHandler);
+		XML_SetNotationDeclHandler(p, XML_NotationDeclHandler);
 		XML_SetNamespaceDeclHandler(p, XML_StartNamespaceDeclHandler, XML_EndNamespaceDeclHandler);
 		XML_SetReturnNSTriplet(p, true);
 

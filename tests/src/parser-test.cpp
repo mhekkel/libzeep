@@ -22,10 +22,13 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace ba = boost::algorithm;
 
-#define DOC		xml::document
-//#include <expat.h>
-//#define DOC		xml::expat_doc
-//#define DOC		xml::libxml2_doc
+#if 1
+#	define DOC		xml::document
+#else
+//#	include <expat.h>
+//#	define DOC		xml::expat_doc
+#	define DOC		xml::libxml2_doc
+#endif
 
 #define foreach BOOST_FOREACH
 
@@ -76,8 +79,8 @@ bool run_valid_test(istream& is, fs::path& outfile)
 				 << "expected:       " << s2 << endl
 				 << endl;
 			
-			xml::document a; a.set_validating(false); a.read(s1);
-			xml::document b; b.set_validating(false); b.read(s2);
+			DOC a; a.set_validating(false); a.read(s1);
+			DOC b; b.set_validating(false); b.read(s2);
 			
 			if (a == b)
 				++dubious_tests;
@@ -109,9 +112,11 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	if (VERBOSE)
 	{
 		cout << "-----------------------------------------------" << endl
-			 << "ID: " << test.get_attribute("ID") << endl
-			 << "TYPE: " << test.get_attribute("TYPE") << endl
-			 << "FILE: " << fs::system_complete(input) << endl
+			 << "ID:      " << test.get_attribute("ID") << endl
+			 << "TYPE:    " << test.get_attribute("TYPE") << endl
+			 << "FILE:    " << fs::system_complete(input) << endl
+			 << "SECTION: " << test.get_attribute("SECTIONS") << endl
+			 << "TYPE:    " << test.get_attribute("TYPE") << endl
 			 << test.content() << endl
 			 << endl;
 	}
@@ -218,12 +223,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 		
 		if (VERBOSE)
 		{
-			cout << "=======================================================" << endl
-				 << "test " << test.get_attribute("ID") << " failed:" << endl
-				 << test.content() << endl
-				 << endl
-				 << test.get_attribute("SECTIONS") << endl
-				 << test.get_attribute("TYPE") << endl
+			cout << "FAILED" << endl
 				 << endl
 				 << "exception: " << e.what() << endl
 				 << endl;
@@ -279,7 +279,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
 	fs::current_path(base_dir);
 
-	xml::document doc;
+	DOC doc;
 	doc.set_validating(false);
 	file >> doc;
 
