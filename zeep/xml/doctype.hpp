@@ -281,8 +281,7 @@ class entity : boost::noncopyable
   public:
 	const std::wstring&	name() const							{ return m_name; }		
 	const std::wstring&	replacement() const						{ return m_replacement; }		
-	const boost::filesystem::path&
-						path() const							{ return m_path; }		
+	const std::string&	path() const							{ return m_path; }
 	bool				parameter() const						{ return m_parameter; }		
 
 	bool				parsed() const							{ return m_parsed; }
@@ -304,15 +303,14 @@ class entity : boost::noncopyable
 							, m_externally_defined(false) {}
 
 						entity(const std::wstring& name, const std::wstring& replacement,
-								const boost::filesystem::path& path)
+								const std::string& path)
 							: m_name(name), m_replacement(replacement), m_path(path), m_parameter(true), m_parsed(true), m_external(true)
 							, m_externally_defined(false) {}
 
 	std::wstring		m_name;
 	std::wstring		m_replacement;
 	std::wstring		m_ndata;
-	boost::filesystem::path
-						m_path;
+	std::string			m_path;
 	bool				m_parameter;
 	bool				m_parsed;
 	bool				m_external;
@@ -331,7 +329,7 @@ class parameter_entity : public entity
 {
   public:
 						parameter_entity(const std::wstring& name, const std::wstring& replacement,
-								const boost::filesystem::path& path)
+								const std::string& path)
 							: entity(name, replacement, path) {}
 };
 	

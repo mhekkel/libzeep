@@ -83,7 +83,7 @@ class data_source
 {
   public:
 					data_source(data_source* next)
-						: m_next(next), m_base_dir(fs::current_path()), m_encoding(enc_UTF8)
+						: m_next(next), m_base("."), m_encoding(enc_UTF8)
 					{
 						static int sNextID = 0;
 						m_id = sNextID++;
@@ -103,8 +103,8 @@ class data_source
 						return result;
 					}
 
-	void			base_dir(const fs::path& dir)					{ m_base_dir = dir; }
-	const fs::path&	base_dir() const								{ return m_base_dir; }
+	void			base(const string& dir)							{ m_base = dir; }
+	const string&	base() const									{ return m_base; }
 
 	virtual bool	auto_discard() const							{ return false; }
 
@@ -119,7 +119,7 @@ class data_source
 	data_source&	operator=(const data_source&);
 
 	data_source*	m_next;			// generates a linked list of data_sources
-	fs::path		m_base_dir;
+	string			m_base;
 	encoding_type	m_encoding;
 	int				m_id;			// for nesting checks
 };
@@ -386,12 +386,12 @@ wchar_t	wstring_data_source::get_next_char()
 class entity_data_source : public wstring_data_source
 {
   public:
-					entity_data_source(const wstring& entity_name, const fs::path& entity_path,
+					entity_data_source(const wstring& entity_name, const string& entity_path,
 							const wstring& text, data_source* next = nil)
 						: wstring_data_source(text, next)
 						, m_entity_name(entity_name)
 					{
-						base_dir(entity_path.branch_path());
+						base(entity_path);
 					}
 
 	virtual bool	is_entity_on_stack(const wstring& name)
@@ -411,10 +411,10 @@ class entity_data_source : public wstring_data_source
 class parameter_entity_data_source : public wstring_data_source
 {
   public:
-					parameter_entity_data_source(const wstring& data, const fs::path& base, data_source* next = nil)
+					parameter_entity_data_source(const wstring& data, const string& base_dir, data_source* next = nil)
 						: wstring_data_source(wstring(L" ") + data + L" ", next)
 					{
-						base_dir(base);
+						base(base_dir);
 					}
 
 	virtual bool	auto_discard() const							{ return m_next != nil; }
@@ -475,7 +475,7 @@ struct parser_imp
 	
 	void			doctypedecl();
 	data_source*	external_id();
-	boost::tuple<fs::path,wstring>
+	boost::tuple<string,wstring>
 					read_external_id();
 	void			intsubset();
 	void			extsubset();
@@ -2190,7 +2190,7 @@ void parser_imp::parameter_entity_decl()
 	
 	s(true);
 
-	fs::path path;
+	string path;
 	wstring value;
 
 	m_allow_parameter_entity_references = false;
@@ -2226,7 +2226,6 @@ void parser_imp::general_entity_decl()
 	match(xml_Name);
 	s(true);
 	
-	fs::path path; // not used
 	wstring value, ndata;
 	bool external = false;
 	bool parsed = true;
@@ -2240,6 +2239,7 @@ void parser_imp::general_entity_decl()
 	}
 	else // ... or an ExternalID
 	{
+		string path; // not used
 		boost::tie(path, value) = read_external_id();
 		match(xml_String);
 		external = true;
@@ -2567,7 +2567,7 @@ data_source* parser_imp::external_id()
 		// if that fails, we try it ourselves
 		if (is.get() == nil)
 		{
-			path = fs::system_complete(m_data_source->base_dir() / wstring_to_string(system));
+			path = fs::system_complete(m_data_source->base()) / wstring_to_string(system);
 	
 			if (fs::exists(path))
 				is.reset(new fs::ifstream(path));
@@ -2578,17 +2578,17 @@ data_source* parser_imp::external_id()
 			result = new istream_data_source(is);
 			
 			if (fs::exists(path) and fs::exists(path.branch_path()))
-				result->base_dir(path.branch_path());
+				result->base(path.branch_path().string());
 		}
 	}
 
 	return result;
 }
 
-boost::tuple<fs::path,wstring> parser_imp::read_external_id()
+boost::tuple<string,wstring> parser_imp::read_external_id()
 {
 	wstring result;
-	fs::path path;
+	string path;
 
 	auto_ptr<data_source> data(external_id());
 
@@ -2596,7 +2596,7 @@ boost::tuple<fs::path,wstring> parser_imp::read_external_id()
 	
 	if (m_data_source)
 	{
-		path = m_data_source->base_dir();
+		path = m_data_source->base();
 		
 		m_lookahead = get_next_token();
 
@@ -3024,7 +3024,7 @@ wstring parser_imp::normalize_attribute_value(data_source* data)
 					if (e.externally_defined() and m_standalone)
 						not_well_formed(L"document marked as standalone but an external entity is referenced");
 					
-					entity_data_source next_data(name, m_data_source->base_dir(), e.replacement(), data);
+					entity_data_source next_data(name, m_data_source->base(), e.replacement(), data);
 					wstring replacement = normalize_attribute_value(&next_data);
 					result += replacement;
 
@@ -3337,7 +3337,7 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 				
 				// scope
 				{
-					entity_data_source source(m_token, m_data_source->base_dir(), e.replacement(), m_data_source);
+					entity_data_source source(m_token, m_data_source->base(), e.replacement(), m_data_source);
 					parser_state state(this, &source);
 					
 					m_lookahead = get_next_content();
