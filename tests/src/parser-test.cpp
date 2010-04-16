@@ -12,7 +12,6 @@
 #include "zeep/exception.hpp"
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/expat_doc.hpp"
-#include "zeep/xml/document-libxml2.hpp"
 #include "zeep/xml/writer.hpp"
 #include "zeep/xml/xpath.hpp"
 
@@ -28,24 +27,12 @@ int VERBOSE;
 int TRACE;
 int dubious_tests, error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
 
-struct doc_factory
-{
-	virtual xml::document*	create()		{ return new xml::document; }
-};
-
-struct libxml2_doc_factory : public doc_factory
-{
-	virtual xml::document*	create()		{ return new xml::libxml2_document; }
-};
-
-auto_ptr<doc_factory> gDocFactory;
-
 bool run_valid_test(istream& is, fs::path& outfile)
 {
 	bool result = true;
 	
-	auto_ptr<xml::document> indoc(gDocFactory->create());
-	is >> *indoc;
+	xml::document indoc;
+	is >> indoc;
 	
 	stringstream s;
 
@@ -55,7 +42,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	w.set_wrap(false);
 	w.set_collapse_empty_elements(false);
 	w.set_escape_whitespace(true);
-	indoc->write(w);
+	indoc.write(w);
 
 	string s1 = s.str();
 	ba::trim(s1);
@@ -83,10 +70,10 @@ bool run_valid_test(istream& is, fs::path& outfile)
 //				 << "expected:       " << s2 << endl
 //				 << endl;
 			
-			auto_ptr<xml::document> a(gDocFactory->create()); a->set_validating(false); a->read(s1);
-			auto_ptr<xml::document> b(gDocFactory->create()); b->set_validating(false); b->read(s2);
+			xml::document a; a.set_validating(false); a.read(s1);
+			xml::document b; b.set_validating(false); b.read(s2);
 			
-			if (*a == *b)
+			if (a == b)
 				++dubious_tests;
 			else
 			{
@@ -158,9 +145,9 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				auto_ptr<xml::document> doc(gDocFactory->create());
-				doc->set_validating(test.get_attribute("TYPE") == "invalid");
-				doc->read(is);
+				xml::document doc;
+				doc.set_validating(test.get_attribute("TYPE") == "invalid");
+				doc.read(is);
 				++should_have_failed;
 				result = false;
 				
@@ -202,8 +189,8 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				auto_ptr<xml::document> doc(gDocFactory->create());
-				doc->read(is);
+				xml::document doc;
+				doc.read(is);
 				++should_have_failed;
 				result = false;
 			}
@@ -283,14 +270,14 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
 	fs::current_path(base_dir);
 
-	auto_ptr<xml::document> doc(gDocFactory->create());
-	doc->set_validating(false);
-	doc->read(file);
+	xml::document doc;
+	doc.set_validating(false);
+	doc.read(file);
 
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	foreach (const xml::element* test, doc->find("//TESTCASES"))
+	foreach (const xml::element* test, doc.find("//TESTCASES"))
 	{
 		run_test_case(test, id, type, base_dir, failed_ids);
 	}
@@ -301,7 +288,6 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	    ("help", "produce help message")
-	    ("libxml2", "Use libxml2 as parser backend")
 	    ("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
@@ -323,11 +309,6 @@ int main(int argc, char* argv[])
 		cout << desc << endl;
 		return 1;
 	}
-	
-	if (vm.count("libxml2"))
-		gDocFactory.reset(new libxml2_doc_factory);
-	else
-		gDocFactory.reset(new doc_factory);
 	
 	VERBOSE = vm.count("verbose");
 	TRACE = vm.count("trace");

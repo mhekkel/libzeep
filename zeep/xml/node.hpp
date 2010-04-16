@@ -128,6 +128,7 @@ class container : public node
 						container();
 
 	node*				m_child;
+	node*				m_last;
 };
 
 // --------------------------------------------------------------------
