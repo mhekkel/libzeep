@@ -12,7 +12,7 @@
 #include "zeep/exception.hpp"
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/expat_doc.hpp"
-#include "zeep/xml/libxml2_doc.hpp"
+#include "zeep/xml/document-libxml2.hpp"
 #include "zeep/xml/writer.hpp"
 #include "zeep/xml/xpath.hpp"
 
@@ -33,10 +33,10 @@ struct doc_factory
 	virtual xml::document*	create()		{ return new xml::document; }
 };
 
-//struct libxml2_doc_factory : public doc_factory
-//{
-//	virtual xml::document*	create()		{ return new xml::libxml2_document; }
-//};
+struct libxml2_doc_factory : public doc_factory
+{
+	virtual xml::document*	create()		{ return new xml::libxml2_document; }
+};
 
 auto_ptr<doc_factory> gDocFactory;
 
@@ -324,9 +324,9 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-//	if (vm.count("libxml2"))
-//		gDocFactory.reset(new libxml2_doc_factory);
-//	else
+	if (vm.count("libxml2"))
+		gDocFactory.reset(new libxml2_doc_factory);
+	else
 		gDocFactory.reset(new doc_factory);
 	
 	VERBOSE = vm.count("verbose");
