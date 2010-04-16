@@ -29,15 +29,26 @@ namespace zeep { namespace xml { namespace doctype {
 // --------------------------------------------------------------------
 // validator code
 
+// a refcounted state base class
 struct state_base : boost::enable_shared_from_this<state_base>
 {
-	virtual						~state_base() {}
-	
+								state_base() : m_ref_count(1) {}
+
 	virtual tuple<bool,bool>	allow(const wstring& name) = 0;
 	virtual bool				allow_char_data()					{ return false; }
 	virtual bool				allow_empty()						{ return false; }
 	
 	virtual void				reset() {}
+
+	void						reference()							{ ++m_ref_count; }
+	void						release()							{ if (--m_ref_count == 0) delete this; }
+
+  protected:
+
+	virtual						~state_base() { assert(m_ref_count == 0); }
+
+  private:	
+	int							m_ref_count;
 };
 
 struct state_any : public state_base
@@ -78,6 +89,11 @@ struct state_repeated : public state_base
 {
 								state_repeated(allowed_ptr sub)
 									: m_sub(sub->create_state()), m_state(0) {}
+
+								~state_repeated()
+								{
+									m_sub->release();
+								}
 
 	virtual void				reset()								{ m_sub->reset(); m_state = 0; }
 
@@ -240,6 +256,12 @@ struct state_seq : public state_base
 										m_states.push_back(a->create_state());
 								}
 
+								~state_seq()
+								{
+									foreach (state_ptr s, m_states)
+										s->release();
+								}
+
 	virtual tuple<bool,bool>	allow(const wstring& name);
 
 	virtual void				reset()
@@ -337,6 +359,12 @@ struct state_choice : public state_base
 									foreach (allowed_ptr a, allowed)
 										m_states.push_back(a->create_state());
 								}
+								
+								~state_choice()
+								{
+									foreach (state_ptr s, m_states)
+										s->release();
+								}
 
 	virtual tuple<bool,bool>	allow(const wstring& name);
 
@@ -421,12 +449,27 @@ validator::validator(const validator& other)
 {
 }
 
+validator::~validator()
+{
+	m_state->release();
+}
+
 validator& validator::operator=(const validator& other)
 {
-	m_nr = other.m_nr;
-	m_state = other.m_state;
-	m_allowed = other.m_allowed;
-	m_done = other.m_done;
+	if (&other != this)
+	{
+		m_nr = other.m_nr;
+		
+		if (m_state != other.m_state)
+		{
+			m_state->release();
+			m_state = other.m_state;
+			m_state->reference();
+		}
+			
+		m_allowed = other.m_allowed;
+		m_done = other.m_done;
+	}
 
 	return *this;
 }
@@ -467,7 +510,7 @@ std::ostream& operator<<(std::ostream& lhs, validator& rhs)
 
 state_ptr allowed_any::create_state() const
 {
-	return state_ptr(new state_any());
+	return new state_any();
 }
 
 void allowed_any::print(ostream& os)
@@ -479,7 +522,7 @@ void allowed_any::print(ostream& os)
 
 state_ptr allowed_empty::create_state() const
 {
-	return state_ptr(new state_empty());
+	return new state_empty();
 }
 
 void allowed_empty::print(ostream& os)
@@ -491,7 +534,7 @@ void allowed_empty::print(ostream& os)
 
 state_ptr allowed_element::create_state() const
 {
-	return state_ptr(new state_element(m_name));
+	return new state_element(m_name);
 }
 
 void allowed_element::print(ostream& os)
@@ -510,9 +553,9 @@ state_ptr allowed_repeated::create_state() const
 {
 	switch (m_repetition)
 	{
-		case '?':	return state_ptr(new state_repeated_zero_or_once(m_allowed));
-		case '*':	return state_ptr(new state_repeated_any(m_allowed));
-		case '+':	return state_ptr(new state_repeated_at_least_once(m_allowed));
+		case '?':	return new state_repeated_zero_or_once(m_allowed);
+		case '*':	return new state_repeated_any(m_allowed);
+		case '+':	return new state_repeated_at_least_once(m_allowed);
 		default:	assert(false); throw zeep::exception("illegal repetition character");
 	}
 }
@@ -542,7 +585,7 @@ void allowed_seq::add(allowed_ptr a)
 
 state_ptr allowed_seq::create_state() const
 {
-	return state_ptr(new state_seq(m_allowed));
+	return new state_seq(m_allowed);
 }
 
 void allowed_seq::print(ostream& os)
@@ -586,7 +629,7 @@ void allowed_choice::add(allowed_ptr a)
 
 state_ptr allowed_choice::create_state() const
 {
-	return state_ptr(new state_choice(m_allowed, m_mixed));
+	return new state_choice(m_allowed, m_mixed);
 }
 
 void allowed_choice::print(ostream& os)

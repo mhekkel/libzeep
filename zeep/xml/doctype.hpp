@@ -34,11 +34,8 @@ struct allowed_base;
 typedef allowed_base*					allowed_ptr;
 typedef std::list<allowed_ptr>			allowed_list;
 
-class validator_imp;
-typedef boost::shared_ptr<validator_imp>	validator_imp_ptr;
-
 struct state_base;
-typedef boost::shared_ptr<state_base>	state_ptr;
+typedef state_base*						state_ptr;
 
 class validator
 {
@@ -49,6 +46,8 @@ class validator
 
 						validator(const validator& other);
 	validator&			operator=(const validator& other);
+	
+						~validator();
 
 	void				reset();
 	bool				allow(const std::wstring& name);

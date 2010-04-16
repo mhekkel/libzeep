@@ -167,7 +167,7 @@ class istream_data_source : public data_source
 	
 	wchar_t			next_iso88591_char();
 
-	char			next_byte();
+	unsigned char	next_byte();
 
 	istream&		m_data;
 	auto_ptr<istream>
@@ -249,7 +249,7 @@ void istream_data_source::guess_encoding()
 	}
 }
 
-char istream_data_source::next_byte()
+unsigned char istream_data_source::next_byte()
 {
 	char result = 0;
 	
@@ -264,50 +264,52 @@ char istream_data_source::next_byte()
 		m_byte_buffer.pop();
 	}
 
-	return result;
+	return static_cast<unsigned char>(result);
 }
 
 wchar_t istream_data_source::next_utf8_char()
 {
-	unsigned long result = 0;
-	unsigned char ch[5];
+	wchar_t result = next_byte();
 	
-	ch[0] = next_byte();
-	
-	if ((ch[0] & 0x080) == 0)
-		result = ch[0];
-	else if ((ch[0] & 0x0E0) == 0x0C0)
+	if (result > 0x07f)
 	{
-		ch[1] = next_byte();
-		if ((ch[1] & 0x0c0) != 0x080)
-			throw source_exception(L"Invalid utf-8");
-		result = static_cast<unsigned long>(((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F));
-	}
-	else if ((ch[0] & 0x0F0) == 0x0E0)
-	{
-		ch[1] = next_byte();
-		ch[2] = next_byte();
-		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
-			throw source_exception(L"Invalid utf-8");
-		result = static_cast<unsigned long>(((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
-	}
-	else if ((ch[0] & 0x0F8) == 0x0F0)
-	{
-		ch[1] = next_byte();
-		ch[2] = next_byte();
-		ch[3] = next_byte();
-		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
-			throw source_exception(L"Invalid utf-8");
-		result = static_cast<unsigned long>(((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
-	}
-
-	if (result > 0x10ffff)
-		throw source_exception(L"invalid utf-8 character (out of range)");
+		unsigned char ch[5];
+		
+//		ch[0] = static_cast<unsigned char>(result);
+		
+		if ((result & 0x0E0) == 0x0C0)
+		{
+			ch[1] = next_byte();
+			if ((ch[1] & 0x0c0) != 0x080)
+				throw source_exception(L"Invalid utf-8");
+			result = static_cast<unsigned long>(((result & 0x01F) << 6) | (ch[1] & 0x03F));
+		}
+		else if ((result & 0x0F0) == 0x0E0)
+		{
+			ch[1] = next_byte();
+			ch[2] = next_byte();
+			if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
+				throw source_exception(L"Invalid utf-8");
+			result = static_cast<unsigned long>(((result & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+		}
+		else if ((result & 0x0F8) == 0x0F0)
+		{
+			ch[1] = next_byte();
+			ch[2] = next_byte();
+			ch[3] = next_byte();
+			if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
+				throw source_exception(L"Invalid utf-8");
+			result = static_cast<unsigned long>(((result & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
+		}
 	
-	if (m_data.eof())
-		result = 0;
+		if (result > 0x10ffff)
+			throw source_exception(L"invalid utf-8 character (out of range)");
+	}
 	
-	return static_cast<wchar_t>(result);
+//	if (m_data.eof())
+//		result = 0;
+	
+	return result;
 }
 
 wchar_t istream_data_source::next_utf16le_char()
