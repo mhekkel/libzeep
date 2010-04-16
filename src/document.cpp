@@ -24,6 +24,10 @@
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/writer.hpp"
 
+#if SOAP_XML_ENABLE_LIBXML2_IMPL
+#include <libxml/xmlreader.h>
+#endif
+
 using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
@@ -35,29 +39,9 @@ namespace zeep { namespace xml {
 struct document_imp
 {
 					document_imp(document* doc);
+	virtual			~document_imp();
 
-	void			StartElementHandler(const string& name, const string& uri,
-						const parser::attr_list_type& atts);
-
-	void			EndElementHandler(const string& name, const string& uri);
-
-	void			CharacterDataHandler(const string& data);
-
-	void			ProcessingInstructionHandler(const string& target, const string& data);
-
-	void			CommentHandler(const string& comment);
-
-	void			StartCdataSectionHandler();
-
-	void			EndCdataSectionHandler();
-
-	void			StartNamespaceDeclHandler(const string& prefix, const string& uri);
-
-	void			EndNamespaceDeclHandler(const string& prefix);
-	
-	void			NotationDeclHandler(const string& name, const string& sysid, const string& pubid);
-
-	void			parse(istream& data);
+	virtual void	parse(istream& data) = 0;
 
 	string			prefix_for_namespace(const string& ns);
 	
@@ -107,6 +91,10 @@ document_imp::document_imp(document* doc)
 {
 }
 
+document_imp::~document_imp()
+{
+}
+
 string document_imp::prefix_for_namespace(const string& ns)
 {
 	vector<pair<string,string> >::iterator i = find_if(m_namespaces.begin(), m_namespaces.end(),
@@ -123,7 +111,65 @@ string document_imp::prefix_for_namespace(const string& ns)
 	return result;
 }
 
-void document_imp::StartElementHandler(const string& name, const string& uri,
+bool document_imp::find_external_dtd(const string& uri, fs::path& path)
+{
+	bool result = false;
+	if (not m_dtd_dir.empty() and fs::exists(m_dtd_dir))
+	{
+		path = m_dtd_dir / uri;
+		result = fs::exists(path);
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+struct zeep_document_imp : public document_imp
+{
+					zeep_document_imp(document* doc);
+
+	void			StartElementHandler(const string& name, const string& uri,
+						const parser::attr_list_type& atts);
+
+	void			EndElementHandler(const string& name, const string& uri);
+
+	void			CharacterDataHandler(const string& data);
+
+	void			ProcessingInstructionHandler(const string& target, const string& data);
+
+	void			CommentHandler(const string& comment);
+
+	void			StartCdataSectionHandler();
+
+	void			EndCdataSectionHandler();
+
+	void			StartNamespaceDeclHandler(const string& prefix, const string& uri);
+
+	void			EndNamespaceDeclHandler(const string& prefix);
+	
+	void			NotationDeclHandler(const string& name, const string& sysid, const string& pubid);
+
+	virtual void	parse(istream& data);
+};
+
+// --------------------------------------------------------------------
+
+zeep_document_imp::zeep_document_imp(document* doc)
+	: document_imp(doc)
+//	, m_encoding(enc_UTF8)
+//	, m_standalone(false)
+//	, m_indent(2)
+//	, m_empty(true)
+//	, m_wrap(true)
+//	, m_trim(true)
+//	, m_escape_whitespace(false)
+//	, m_validating(false)
+//	, m_doc(doc)
+//	, m_cur(NULL)
+{
+}
+
+void zeep_document_imp::StartElementHandler(const string& name, const string& uri,
 	const parser::attr_list_type& atts)
 {
 	string qname = name;
@@ -162,7 +208,7 @@ void document_imp::StartElementHandler(const string& name, const string& uri,
 	n.release();
 }
 
-void document_imp::EndElementHandler(const string& name, const string& uri)
+void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
 {
 	if (m_cur == NULL)
 		throw exception("Empty stack");
@@ -170,7 +216,7 @@ void document_imp::EndElementHandler(const string& name, const string& uri)
 	m_cur = dynamic_cast<element*>(m_cur->parent());
 }
 
-void document_imp::CharacterDataHandler(const string& data)
+void zeep_document_imp::CharacterDataHandler(const string& data)
 {
 	if (m_cur == NULL)
 		throw exception("Empty stack");
@@ -178,7 +224,7 @@ void document_imp::CharacterDataHandler(const string& data)
 	m_cur->add_text(data);
 }
 
-void document_imp::ProcessingInstructionHandler(const string& target, const string& data)
+void zeep_document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
 	if (m_cur != NULL)
 		m_cur->append(new processing_instruction(target, data));
@@ -186,7 +232,7 @@ void document_imp::ProcessingInstructionHandler(const string& target, const stri
 		m_root.append(new processing_instruction(target, data));
 }
 
-void document_imp::CommentHandler(const string& s)
+void zeep_document_imp::CommentHandler(const string& s)
 {
 	if (m_cur != NULL)
 		m_cur->append(new comment(s));
@@ -194,26 +240,26 @@ void document_imp::CommentHandler(const string& s)
 		m_root.append(new comment(s));
 }
 
-void document_imp::StartCdataSectionHandler()
+void zeep_document_imp::StartCdataSectionHandler()
 {
 //	cerr << "start cdata" << endl;
 }
 
-void document_imp::EndCdataSectionHandler()
+void zeep_document_imp::EndCdataSectionHandler()
 {
 //	cerr << "end cdata" << endl;
 }
 
-void document_imp::StartNamespaceDeclHandler(const string& prefix, const string& uri)
+void zeep_document_imp::StartNamespaceDeclHandler(const string& prefix, const string& uri)
 {
 	m_namespaces.push_back(make_pair(prefix, uri));
 }
 	
-void document_imp::EndNamespaceDeclHandler(const string& prefix)
+void zeep_document_imp::EndNamespaceDeclHandler(const string& prefix)
 {
 }
 
-void document_imp::NotationDeclHandler(	const string& name, const string& sysid, const string& pubid)
+void zeep_document_imp::NotationDeclHandler(	const string& name, const string& sysid, const string& pubid)
 {
 	notation n = { name, sysid, pubid };
 	
@@ -223,52 +269,295 @@ void document_imp::NotationDeclHandler(	const string& name, const string& sysid,
 	m_notations.insert(i, n);
 }
 
-bool document_imp::find_external_dtd(const string& uri, fs::path& path)
-{
-	bool result = false;
-	if (not m_dtd_dir.empty() and fs::exists(m_dtd_dir))
-	{
-		path = m_dtd_dir / uri;
-		result = fs::exists(path);
-	}
-	return result;
-}
-
 // --------------------------------------------------------------------
 
-void document_imp::parse(
+void zeep_document_imp::parse(
 	istream&		data)
 {
 	parser p(data);
 
-	p.start_element_handler = boost::bind(&document_imp::StartElementHandler, this, _1, _2, _3);
-	p.end_element_handler = boost::bind(&document_imp::EndElementHandler, this, _1, _2);
-	p.character_data_handler = boost::bind(&document_imp::CharacterDataHandler, this, _1);
-	p.start_namespace_decl_handler = boost::bind(&document_imp::StartNamespaceDeclHandler, this, _1, _2);
-	p.processing_instruction_handler = boost::bind(&document_imp::ProcessingInstructionHandler, this, _1, _2);
-	p.notation_decl_handler = boost::bind(&document_imp::NotationDeclHandler, this, _1, _2, _3);
+	p.start_element_handler = boost::bind(&zeep_document_imp::StartElementHandler, this, _1, _2, _3);
+	p.end_element_handler = boost::bind(&zeep_document_imp::EndElementHandler, this, _1, _2);
+	p.character_data_handler = boost::bind(&zeep_document_imp::CharacterDataHandler, this, _1);
+	p.start_namespace_decl_handler = boost::bind(&zeep_document_imp::StartNamespaceDeclHandler, this, _1, _2);
+	p.processing_instruction_handler = boost::bind(&zeep_document_imp::ProcessingInstructionHandler, this, _1, _2);
+	p.notation_decl_handler = boost::bind(&zeep_document_imp::NotationDeclHandler, this, _1, _2, _3);
 
 	p.parse(m_validating);
 }
 
 // --------------------------------------------------------------------
 
+#if SOAP_XML_ENABLE_LIBXML2_IMPL
+
+struct libxml2_doc_imp : public document_imp
+{
+					libxml2_doc_imp(document* doc);
+
+	void			ProcessNode(
+						xmlTextReaderPtr	reader);
+
+	void			StartElementHandler(
+						xmlTextReaderPtr	reader);
+
+	void			EndElementHandler(
+						xmlTextReaderPtr	reader);
+
+	void			CharacterDataHandler(
+						xmlTextReaderPtr	reader);
+
+	void			ProcessingInstructionHandler(
+						xmlTextReaderPtr	reader);
+
+	void			CommentHandler(
+						xmlTextReaderPtr	reader);
+
+	static void		ErrorHandler(
+						void*					arg,
+						const char*				msg, 
+						xmlParserSeverities		severity, 
+						xmlTextReaderLocatorPtr	locator);
+
+	virtual void	parse(
+						istream&			data);
+
+	int				m_depth;
+};
+
+// --------------------------------------------------------------------
+
+libxml2_doc_imp::libxml2_doc_imp(document* doc)
+	: document_imp(doc)
+	, m_depth(0)
+{
+}
+
+void libxml2_doc_imp::StartElementHandler(
+	xmlTextReaderPtr		inReader)
+{
+	const char* qname = (const char*)xmlTextReaderConstName(inReader);
+	if (qname == NULL)
+		throw exception("nil qname");
+	
+	auto_ptr<element> n(new element(qname));
+
+	if (m_cur == NULL)
+		m_root.child_element(n.get());
+	else
+		m_cur->append(n.get());
+
+	m_cur = n.release();
+	
+	unsigned int count = xmlTextReaderAttributeCount(inReader);
+	for (unsigned int i = 0; i < count; ++i)
+	{
+		xmlTextReaderMoveToAttributeNo(inReader, i);
+		m_cur->set_attribute(
+			(const char*)xmlTextReaderConstName(inReader),
+			(const char*)xmlTextReaderConstValue(inReader));
+	}
+
+	const string name_prefix("xmlns:");
+
+	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
+		m_cur->set_name_space(ns->first, ns->second);
+	
+	m_namespaces.clear();
+	
+	if (xmlTextReaderIsEmptyElement(inReader))
+		EndElementHandler(inReader);
+	else
+		++m_depth;
+}
+
+void libxml2_doc_imp::EndElementHandler(
+	xmlTextReaderPtr		inReader)
+{
+	if (m_cur == NULL)
+		throw exception("Empty stack");
+	
+	m_cur = dynamic_cast<element*>(m_cur->parent());
+	--m_depth;
+}
+
+void libxml2_doc_imp::CharacterDataHandler(
+	xmlTextReaderPtr		inReader)
+{
+	while (m_depth > 0 and m_depth != xmlTextReaderDepth(inReader))
+	{
+		m_cur = dynamic_cast<element*>(m_cur->parent());
+		--m_depth;
+	}
+	
+	if (m_cur == NULL)
+		throw exception("Empty stack");
+	
+	m_cur->add_text((const char*)xmlTextReaderConstValue(inReader));
+}
+
+void libxml2_doc_imp::ProcessingInstructionHandler(
+	xmlTextReaderPtr		inReader)
+{
+	const char* target = (const char*)xmlTextReaderConstName(inReader);
+	const char* data = (const char*)xmlTextReaderConstValue(inReader);
+	
+	if (m_cur != NULL)
+		m_cur->append(new processing_instruction(target, data));
+	else
+		m_root.append(new processing_instruction(target, data));
+}
+
+void libxml2_doc_imp::CommentHandler(
+	xmlTextReaderPtr		inReader)
+{
+	const char* data = (const char*)xmlTextReaderConstValue(inReader);
+	
+	if (m_cur != NULL)
+		m_cur->append(new comment(data));
+	else
+		m_root.append(new comment(data));
+}
+
+
+void libxml2_doc_imp::ProcessNode(
+	xmlTextReaderPtr reader)
+{
+	switch (xmlTextReaderNodeType(reader))
+	{
+		case XML_READER_TYPE_ELEMENT:
+			StartElementHandler(reader);
+			break;
+		
+		case XML_READER_TYPE_END_ELEMENT:
+			EndElementHandler(reader);
+			break;
+
+		case XML_READER_TYPE_WHITESPACE:
+		case XML_READER_TYPE_SIGNIFICANT_WHITESPACE:
+		case XML_READER_TYPE_TEXT:
+		case XML_READER_TYPE_CDATA:
+			CharacterDataHandler(reader);
+			break;
+
+		case XML_READER_TYPE_PROCESSING_INSTRUCTION:
+			ProcessingInstructionHandler(reader);
+			break;
+
+		case XML_READER_TYPE_COMMENT:
+//			CommentHandler(reader);
+			break;
+
+		case XML_READER_TYPE_DOCUMENT:
+//			cout << "document" << endl;
+			break;
+
+		case XML_READER_TYPE_DOCUMENT_TYPE:
+			if (m_validating)
+				xmlTextReaderSetParserProp(reader, XML_PARSER_VALIDATE, 1);
+			break;
+
+		case XML_READER_TYPE_DOCUMENT_FRAGMENT:
+//			cout << "document fragment" << endl;
+			break;
+
+		case XML_READER_TYPE_NOTATION:
+			cout << "notation" << endl;
+			break;
+
+		case XML_READER_TYPE_END_ENTITY:
+			cout << "end entity" << endl;
+			break;
+
+		case XML_READER_TYPE_XML_DECLARATION:
+			cout << "xml decl" << endl;
+			break;
+
+	}
+}
+
+void libxml2_doc_imp::ErrorHandler(
+	void*					arg,
+	const char*				msg, 
+	xmlParserSeverities		severity, 
+	xmlTextReaderLocatorPtr	locator)
+{
+	throw invalid_exception(msg);
+}
+
+// --------------------------------------------------------------------
+
+void libxml2_doc_imp::parse(
+	istream&		data)
+{
+	// get length of file:
+	data.seekg(0, ios::end);
+	size_t length = data.tellg();
+	data.seekg(0, ios::beg);
+	
+	// allocate memory:
+	vector<char> buffer(length);
+	
+	// read data as a block:
+	data.read(&buffer[0], length);
+	bool valid = true;
+
+	xmlTextReaderPtr reader = xmlReaderForMemory(&buffer[0], length,
+		(fs::current_path().string() + "/").c_str(),
+		NULL, 
+		XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_XINCLUDE);
+
+	if (reader != NULL)
+	{
+		xmlTextReaderSetErrorHandler(reader, &libxml2_doc_imp::ErrorHandler, this);
+		try
+		{
+			int ret = xmlTextReaderRead(reader);
+			while (ret == 1)
+			{
+				ProcessNode(reader);
+				ret = xmlTextReaderRead(reader);
+			}
+		}
+		catch (...)
+		{
+			xmlFreeTextReader(reader);
+			throw;
+		}
+		
+		if (xmlTextReaderIsValid(reader) != 1)
+			valid = false;
+		
+		xmlFreeTextReader(reader);
+	}
+	
+	if (m_validating and not valid)
+		throw invalid_exception("document is not valid");
+}
+
+#endif
+// --------------------------------------------------------------------
+
 document::document()
-	: m_impl(new document_imp(this))
+	: m_impl(new zeep_document_imp(this))
 {
 }
 
 document::document(const string& s)
-	: m_impl(new document_imp(this))
+	: m_impl(new zeep_document_imp(this))
 {
 	istringstream is(s);
 	read(is);
 }
 
 document::document(std::istream& is)
-	: m_impl(new document_imp(this))
+	: m_impl(new zeep_document_imp(this))
 {
 	read(is);
+}
+
+document::document(document_imp* impl)
+	: m_impl(impl)
+{
 }
 
 document::~document()
@@ -406,6 +695,30 @@ ostream& operator<<(ostream& lhs, const document& rhs)
 	rhs.write(w);
 	return lhs;
 }
+
+// --------------------------------------------------------------------
+
+#if SOAP_XML_ENABLE_LIBXML2_IMPL
+
+libxml2_document::libxml2_document()
+	: document(new libxml2_doc_imp(this))
+{
+}
+
+libxml2_document::libxml2_document(const string& s)
+	: document(new libxml2_doc_imp(this))
+{
+	istringstream is(s);
+	read(is);
+}
+
+libxml2_document::libxml2_document(istream& is)
+	: document(new libxml2_doc_imp(this))
+{
+	read(is);
+}
+
+#endif
 	
 } // xml
 } // zeep

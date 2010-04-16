@@ -22,26 +22,30 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace ba = boost::algorithm;
 
-#if 1
-#	define DOC		xml::document
-#else
-//#	include <expat.h>
-//#	define DOC		xml::expat_doc
-#	define DOC		xml::libxml2_doc
-#endif
-
 #define foreach BOOST_FOREACH
 
 int VERBOSE;
 int TRACE;
 int dubious_tests, error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
 
+struct doc_factory
+{
+	virtual xml::document*	create()		{ return new xml::document; }
+};
+
+//struct libxml2_doc_factory : public doc_factory
+//{
+//	virtual xml::document*	create()		{ return new xml::libxml2_document; }
+//};
+
+auto_ptr<doc_factory> gDocFactory;
+
 bool run_valid_test(istream& is, fs::path& outfile)
 {
 	bool result = true;
 	
-	DOC indoc;
-	is >> indoc;
+	auto_ptr<xml::document> indoc(gDocFactory->create());
+	is >> *indoc;
 	
 	stringstream s;
 
@@ -51,7 +55,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	w.set_wrap(false);
 	w.set_collapse_empty_elements(false);
 	w.set_escape_whitespace(true);
-	indoc.write(w);
+	indoc->write(w);
 
 	string s1 = s.str();
 	ba::trim(s1);
@@ -74,23 +78,23 @@ bool run_valid_test(istream& is, fs::path& outfile)
 
 		if (s1 != s2)
 		{
-			cout << "output differs" << endl
-				 << "generated:      " << s1 << endl
-				 << "expected:       " << s2 << endl
-				 << endl;
+//			cout << "output differs" << endl
+//				 << "generated:      " << s1 << endl
+//				 << "expected:       " << s2 << endl
+//				 << endl;
 			
-			DOC a; a.set_validating(false); a.read(s1);
-			DOC b; b.set_validating(false); b.read(s2);
+			auto_ptr<xml::document> a(gDocFactory->create()); a->set_validating(false); a->read(s1);
+			auto_ptr<xml::document> b(gDocFactory->create()); b->set_validating(false); b->read(s2);
 			
-			if (a == b)
+			if (*a == *b)
 				++dubious_tests;
 			else
 			{
-				stringstream s;
-				s	 << "output differs: " << endl
-					 << s1 << endl
-					 << s2 << endl
-					 << endl;
+//				stringstream s;
+//				s	 << "output differs: " << endl
+//					 << s1 << endl
+//					 << s2 << endl
+//					 << endl;
 
 				throw zeep::exception(s.str());
 			}
@@ -154,9 +158,9 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				DOC doc;
-				doc.set_validating(test.get_attribute("TYPE") == "invalid");
-				is >> doc;
+				auto_ptr<xml::document> doc(gDocFactory->create());
+				doc->set_validating(test.get_attribute("TYPE") == "invalid");
+				doc->read(is);
 				++should_have_failed;
 				result = false;
 				
@@ -198,8 +202,8 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				DOC doc;
-				is >> doc;
+				auto_ptr<xml::document> doc(gDocFactory->create());
+				doc->read(is);
 				++should_have_failed;
 				result = false;
 			}
@@ -279,14 +283,14 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
 	fs::current_path(base_dir);
 
-	DOC doc;
-	doc.set_validating(false);
-	file >> doc;
+	auto_ptr<xml::document> doc(gDocFactory->create());
+	doc->set_validating(false);
+	doc->read(file);
 
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	foreach (const xml::element* test, doc.find("//TESTCASES"))
+	foreach (const xml::element* test, doc->find("//TESTCASES"))
 	{
 		run_test_case(test, id, type, base_dir, failed_ids);
 	}
@@ -297,6 +301,7 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	    ("help", "produce help message")
+	    ("libxml2", "Use libxml2 as parser backend")
 	    ("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
@@ -318,6 +323,11 @@ int main(int argc, char* argv[])
 		cout << desc << endl;
 		return 1;
 	}
+	
+//	if (vm.count("libxml2"))
+//		gDocFactory.reset(new libxml2_doc_factory);
+//	else
+		gDocFactory.reset(new doc_factory);
 	
 	VERBOSE = vm.count("verbose");
 	TRACE = vm.count("trace");
@@ -361,15 +371,15 @@ int main(int argc, char* argv[])
 			 << "  " << should_have_failed << " should have failed but didn't" << endl
 			 << "  " << dubious_tests << " had a dubious output" << endl;
 			
-		if (id.empty())
-		{
-			cout << endl
-				 << "ID's for the failed tests: " << endl;
-			
-			copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
-			
-			cout << endl;
-		}
+//		if (id.empty())
+//		{
+//			cout << endl
+//				 << "ID's for the failed tests: " << endl;
+//			
+//			copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
+//			
+//			cout << endl;
+//		}
 	}
 	catch (std::exception& e)
 	{

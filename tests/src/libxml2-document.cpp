@@ -175,8 +175,11 @@ void libxml2_doc_imp::EndElementHandler(
 void libxml2_doc_imp::CharacterDataHandler(
 	xmlTextReaderPtr		inReader)
 {
-	while (m_depth != xmlTextReaderDepth(inReader))
+	while (m_depth > 0 and m_depth != xmlTextReaderDepth(inReader))
+	{
 		m_cur = dynamic_cast<element*>(m_cur->parent());
+		--m_depth;
+	}
 	
 	if (m_cur == NULL)
 		throw exception("Empty stack");

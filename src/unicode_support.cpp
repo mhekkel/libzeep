@@ -40,11 +40,11 @@ bool is_name_start_char(wchar_t uc)
 bool is_name_char(wchar_t uc)
 {
 	return
-		is_name_start_char(uc) or
 		uc == '-' or
 		uc == '.' or
 		(uc >= '0' and uc <= '9') or
 		uc == 0x0B7 or
+		is_name_start_char(uc) or
 		(uc >= 0x00300 and uc <= 0x0036F) or
 		(uc >= 0x0203F and uc <= 0x02040);
 }

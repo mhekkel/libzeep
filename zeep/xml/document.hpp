@@ -6,6 +6,10 @@
 #ifndef SOAP_XML_DOCUMENT_H
 #define SOAP_XML_DOCUMENT_H
 
+#ifndef SOAP_XML_ENABLE_LIBXML2_IMPL
+#define SOAP_XML_ENABLE_LIBXML2_IMPL 0
+#endif
+
 #include <boost/filesystem/path.hpp>
 
 #include "zeep/xml/node.hpp"
@@ -69,12 +73,25 @@ class document
 	// option for parsing
 	void				set_validating(bool validate);
 
+  protected:
+						document(struct document_imp* impl);
+
   private:
 	struct document_imp*m_impl;
 };
 
 std::istream& operator>>(std::istream& lhs, document& rhs);
 std::ostream& operator<<(std::ostream& lhs, const document& rhs);
+
+#if SOAP_XML_ENABLE_LIBXML2_IMPL
+class libxml2_document : public document
+{
+  public:
+						libxml2_document();
+						libxml2_document(const std::string& s);
+						libxml2_document(std::istream& is);
+};
+#endif
 
 }
 }
