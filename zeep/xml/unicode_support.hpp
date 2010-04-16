@@ -31,6 +31,20 @@ bool is_valid_public_id(const std::wstring& s);
 // Convert a string from UCS4 to UTF-8
 std::string wstring_to_string(const std::wstring& s);
 
+// inlines
+
+inline bool is_char(wchar_t uc)
+{
+	return
+		uc == 0x09 or
+		uc == 0x0A or
+		uc == 0x0D or
+		(uc >= 0x020 and uc <= 0x0D7FF) or
+		(uc >= 0x0E000 and uc <= 0x0FFFD) or
+		(uc >= 0x010000 and uc <= 0x010FFFF);
+}
+
+
 }
 }
 

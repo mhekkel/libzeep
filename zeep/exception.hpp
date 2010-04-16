@@ -27,7 +27,7 @@ class exception : public std::exception
 	virtual const char*
 				what() const throw()			{ return m_message.c_str(); }
 
-  private:
+  protected:
 	std::string	m_message;
 };
 
