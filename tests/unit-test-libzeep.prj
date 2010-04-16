@@ -20,6 +20,7 @@
       <group name="xml">
         <file>document.cpp</file>
         <file>doctype.cpp</file>
+        <file>document-libxml2.cpp</file>
         <file>node.cpp</file>
         <file>parser.cpp</file>
         <file>unicode_support.cpp</file>
@@ -29,7 +30,6 @@
     </group>
     <group name="Sources">
       <file>parser-test.cpp</file>
-      <file>libxml2-document.cpp</file>
     </group>
     <group name="Libraries">
       <link>boost_thread</link>
