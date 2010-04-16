@@ -172,13 +172,16 @@ class istream_data_source : public data_source
 	istream&		m_data;
 	auto_ptr<istream>
 					m_data_ptr;
-	stack<char>		m_byte_buffer;
 	wchar_t			m_char_buffer;	// used in detecting \r\n algorithm
 
 	boost::function<wchar_t(void)>
 					m_next;
 	bool			m_has_bom;
 	bool			m_valid_utf8;
+
+	char			m_buffer[256];
+	int				m_buffer_ix;
+	int				m_buffer_size;
 };
 
 void istream_data_source::guess_encoding()
@@ -186,59 +189,50 @@ void istream_data_source::guess_encoding()
 	// see if there is a BOM
 	// if there isn't, we assume the data is UTF-8
 	
-	char c1 = 0, c2 = 0, c3 = 0;
+	m_buffer[0] = 0;
 	
-	m_data.read(&c1, 1);
+	m_data.read(m_buffer, 1);
+	m_buffer_ix = 0;
+	m_buffer_size = 0;
 
-	if (c1 == char(0xfe))
+	if (m_buffer[0] == char(0xfe))
 	{
-		m_data.read(&c2, 1);
+		m_data.read(m_buffer + 1, 1);
 		
-		if (c2 == char(0xff))
+		if (m_buffer[1] == char(0xff))
 		{
 			m_encoding = enc_UTF16BE;
 			m_has_bom = true;
 		}
 		else
-		{
-			m_byte_buffer.push(c2);
-			m_byte_buffer.push(c1);
-		}
+			m_buffer_size = 2;
 	}
-	else if (c1 == char(0xff))
+	else if (m_buffer[0] == char(0xff))
 	{
-		m_data.read(&c2, 1);
+		m_data.read(m_buffer + 1, 1);
 		
-		if (c2 == char(0xfe))
+		if (m_buffer[1] == char(0xfe))
 		{
 			m_encoding = enc_UTF16LE;
 			m_has_bom = true;
 		}
 		else
-		{
-			m_byte_buffer.push(c2);
-			m_byte_buffer.push(c1);
-		}
+			m_buffer_size = 2;
 	}
-	else if (c1 == char(0xef))
+	else if (m_buffer[0] == char(0xef))
 	{
-		m_data.read(&c2, 1);
-		m_data.read(&c3, 1);
+		m_data.read(m_buffer + 1, 2);
 		
-		if (c2 == char(0xbb) and c3 == char(0xbf))
+		if (m_buffer[1] == char(0xbb) and m_buffer[2] == char(0xbf))
 		{
 			m_encoding = enc_UTF8;
 			m_has_bom = true;
 		}
 		else
-		{
-			m_byte_buffer.push(c3);
-			m_byte_buffer.push(c2);
-			m_byte_buffer.push(c1);
-		}
+			m_buffer_size = 3;
 	}
-	else
-		m_byte_buffer.push(c1);
+	else if (not m_data.eof())
+		m_buffer_size = 1;
 
 	switch (m_encoding)
 	{
@@ -253,17 +247,18 @@ unsigned char istream_data_source::next_byte()
 {
 	char result = 0;
 	
-	if (m_byte_buffer.empty())
+	if (m_buffer_ix >= m_buffer_size and not m_data.eof())
 	{
-		if (not m_data.eof())
-			m_data.read(&result, 1);
+		m_buffer_size = m_data.readsome(m_buffer, sizeof(m_buffer));
+		m_buffer_ix = 0;
 	}
-	else
+	
+	if (m_buffer_ix < m_buffer_size)
 	{
-		result = m_byte_buffer.top();
-		m_byte_buffer.pop();
+		result = m_buffer[m_buffer_ix];
+		++m_buffer_ix;
 	}
-
+		
 	return static_cast<unsigned char>(result);
 }
 
@@ -305,9 +300,6 @@ wchar_t istream_data_source::next_utf8_char()
 		if (result > 0x10ffff)
 			throw source_exception(L"invalid utf-8 character (out of range)");
 	}
-	
-//	if (m_data.eof())
-//		result = 0;
 	
 	return result;
 }
