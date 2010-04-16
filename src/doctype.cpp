@@ -475,6 +475,8 @@ void allowed_any::print(ostream& os)
 	os << "ANY";
 }
 
+// --------------------------------------------------------------------
+
 state_ptr allowed_empty::create_state() const
 {
 	return state_ptr(new state_empty());
@@ -485,6 +487,8 @@ void allowed_empty::print(ostream& os)
 	os << "EMPTY";
 }
 
+// --------------------------------------------------------------------
+
 state_ptr allowed_element::create_state() const
 {
 	return state_ptr(new state_element(m_name));
@@ -493,6 +497,13 @@ state_ptr allowed_element::create_state() const
 void allowed_element::print(ostream& os)
 {
 	os << wstring_to_string(m_name);
+}
+
+// --------------------------------------------------------------------
+
+allowed_repeated::~allowed_repeated()
+{
+	delete m_allowed;
 }
 
 state_ptr allowed_repeated::create_state() const
@@ -514,6 +525,19 @@ void allowed_repeated::print(ostream& os)
 bool allowed_repeated::element_content() const
 {
 	return m_allowed->element_content();
+}
+
+// --------------------------------------------------------------------
+
+allowed_seq::~allowed_seq()
+{
+	foreach (allowed_ptr a, m_allowed)
+		delete a;
+}
+
+void allowed_seq::add(allowed_ptr a)
+{
+	m_allowed.push_back(a);
 }
 
 state_ptr allowed_seq::create_state() const
@@ -545,6 +569,19 @@ bool allowed_seq::element_content() const
 		}
 	}
 	return result;
+}
+
+// --------------------------------------------------------------------
+
+allowed_choice::~allowed_choice()
+{
+	foreach (allowed_ptr a, m_allowed)
+		delete a;
+}
+
+void allowed_choice::add(allowed_ptr a)
+{
+	m_allowed.push_back(a);
 }
 
 state_ptr allowed_choice::create_state() const
@@ -776,6 +813,16 @@ bool attribute::is_unparsed_entity(const wstring& s, const entity_list& l) const
 
 element::~element()
 {
+	delete m_allowed;
+}
+
+void element::set_allowed(allowed_ptr allowed)
+{
+	if (allowed != m_allowed)
+	{
+		delete m_allowed;
+		m_allowed = allowed;
+	}
 }
 
 void element::add_attribute(auto_ptr<attribute> attr)
@@ -807,7 +854,7 @@ validator element::get_validator() const
 
 bool element::empty() const
 {
-	return dynamic_cast<allowed_empty*>(m_allowed.get()) != nil;
+	return dynamic_cast<allowed_empty*>(m_allowed) != nil;
 }
 
 bool element::element_content() const
