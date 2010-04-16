@@ -170,6 +170,7 @@ string node::prefix_for_namespace(const string& uri) const
 
 container::container()
 	: m_child(nil)
+	, m_last(nil)
 {
 }
 
@@ -215,11 +216,14 @@ void container::append(node_ptr n)
 	
 	if (m_child == nil)
 	{
-		m_child = n;
+		m_last = m_child = n;
 		m_child->m_next = m_child->m_prev = nil;
 	}
 	else
-		m_child->append_sibling(n);
+	{
+		m_last->append_sibling(n);
+		m_last = n;
+	}
 }
 
 void container::remove(node_ptr n)
@@ -234,6 +238,13 @@ void container::remove(node_ptr n)
 	}
 	else
 		m_child->remove_sibling(n);
+	
+	if (n == m_last)
+	{
+		m_last = m_child;
+		while (m_last->m_next != nil)
+			m_last = m_last->m_next;
+	}
 }
 
 element_set container::find(const std::string& path) const
@@ -513,17 +524,7 @@ void element::content(const string& s)
 
 void element::add_text(const std::string& s)
 {
-	text* textNode = nil;
-	
-	if (m_child != nil)
-	{
-		node* child = m_child;
-	
-		while (child->m_next != nil)
-			child = child->m_next;
-	
-		textNode = dynamic_cast<text*>(child);
-	}
+	text* textNode = dynamic_cast<text*>(m_last);
 	
 	if (textNode != nil)
 		textNode->append(s);
