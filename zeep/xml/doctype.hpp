@@ -9,6 +9,7 @@
 #include <set>
 
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/ptr_container/ptr_list.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/filesystem/operations.hpp>
 
@@ -30,8 +31,8 @@ typedef boost::ptr_vector<attribute>	attribute_list;
 // validation of elements is done by the validator classes
 
 struct allowed_base;
-typedef boost::shared_ptr<allowed_base>		allowed_ptr;
-typedef std::list<allowed_ptr>				allowed_list;
+typedef allowed_base*					allowed_ptr;
+typedef std::list<allowed_ptr>			allowed_list;
 
 class validator_imp;
 typedef boost::shared_ptr<validator_imp>	validator_imp_ptr;
@@ -113,6 +114,8 @@ struct allowed_repeated : public allowed_base
 							assert(allowed);
 						}
 
+						~allowed_repeated();
+
 	virtual state_ptr	create_state() const;
 	virtual bool		element_content() const;
 
@@ -124,8 +127,10 @@ struct allowed_repeated : public allowed_base
 
 struct allowed_seq : public allowed_base
 {
-						allowed_seq(const allowed_list& allowed)
-							: m_allowed(allowed) {}
+						allowed_seq(allowed_ptr a) { add(a); }
+						~allowed_seq();
+
+	void				add(allowed_ptr a);
 
 	virtual state_ptr	create_state() const;
 	virtual bool		element_content() const;
@@ -137,8 +142,13 @@ struct allowed_seq : public allowed_base
 
 struct allowed_choice : public allowed_base
 {
-						allowed_choice(const allowed_list& allowed, bool mixed)
-							: m_allowed(allowed), m_mixed(mixed) {}
+						allowed_choice(bool mixed)
+							: m_mixed(mixed) {}
+						allowed_choice(allowed_ptr a, bool mixed)
+							: m_mixed(mixed) { add(a); }
+						~allowed_choice();
+
+	void				add(allowed_ptr a);
 
 	virtual state_ptr	create_state() const;
 	virtual bool		element_content() const;
@@ -231,7 +241,7 @@ class element : boost::noncopyable
 {
   public:
 						element(const std::wstring& name, bool declared, bool external)
-							: m_name(name), m_declared(declared), m_external(external) {}
+							: m_name(name), m_allowed(NULL), m_declared(declared), m_external(external) {}
 
 						~element();
 
@@ -244,7 +254,7 @@ class element : boost::noncopyable
 	const attribute_list&
 						attributes() const							{ return m_attlist; }
 
-	void				set_allowed(allowed_ptr allowed)			{ m_allowed = allowed; }
+	void				set_allowed(allowed_ptr allowed);
 
 	void				declared(bool declared)						{ m_declared = declared; }
 	bool				declared() const							{ return m_declared; }
