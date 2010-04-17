@@ -57,6 +57,39 @@ struct value_saver
 		~value_saver() { m_ref = m_value; }
 };
 
+class mini_stack
+{
+  public:
+			mini_stack() : m_ix(-1)	{}
+	
+	wchar_t	top()
+			{
+				assert(m_ix >= 0 and m_used < sizeof(m_data) / sizeof(wchar_t));
+				return m_data[m_ix];
+			}
+
+	void	pop()
+			{
+				--m_ix;
+			}
+			
+	void	push(wchar_t uc)
+			{
+				++m_ix;
+				assert(m_ix < sizeof(m_data) / sizeof(wchar_t));
+				m_data[m_ix] = uc;
+			}
+
+	bool	empty() const
+			{
+				return m_ix == -1;
+			}
+
+  private:
+	wchar_t	m_data[2];
+	int		m_ix;
+};
+
 }
 
 // parsing XML is somewhat like macro processing,
@@ -174,8 +207,9 @@ class istream_data_source : public data_source
 					m_data_ptr;
 	wchar_t			m_char_buffer;	// used in detecting \r\n algorithm
 
-	boost::function<wchar_t(void)>
-					m_next;
+	typedef wchar_t (istream_data_source::*next_func)(void);
+
+	next_func		m_next;
 	bool			m_has_bom;
 	bool			m_valid_utf8;
 
@@ -236,10 +270,10 @@ void istream_data_source::guess_encoding()
 
 	switch (m_encoding)
 	{
-		case enc_UTF8:		m_next = boost::bind(&istream_data_source::next_utf8_char, this); break;
-		case enc_UTF16LE:	m_next = boost::bind(&istream_data_source::next_utf16le_char, this); break;
-		case enc_UTF16BE:	m_next = boost::bind(&istream_data_source::next_utf16be_char, this); break;
-//		case enc_ISO88591:	m_next = boost::bind(&istream_data_source::next_iso88591_char, this); break;
+		case enc_UTF8:		m_next = &istream_data_source::next_utf8_char; break;
+		case enc_UTF16LE:	m_next = &istream_data_source::next_utf16le_char; break;
+		case enc_UTF16BE:	m_next = &istream_data_source::next_utf16be_char; break;
+//		case enc_ISO88591:	m_next = &istream_data_source::next_iso88591_char; break;
 	}
 }
 
@@ -334,13 +368,13 @@ wchar_t istream_data_source::get_next_char()
 	wchar_t ch = m_char_buffer;
 
 	if (ch == 0)
-		ch = m_next();
+		ch = (this->*m_next)();
 	else
 		m_char_buffer = 0;
 	
 	if (ch == '\r')
 	{
-		ch = m_next();
+		ch = (this->*m_next)();
 		if (ch != '\n')
 			m_char_buffer = ch;
 		ch = '\n';
@@ -612,7 +646,7 @@ struct parser_imp
 		parser_imp*		m_impl;
 		int				m_lookahead;
 		data_source*	m_data_source;
-		stack<wchar_t>	m_buffer;
+		mini_stack		m_buffer;
 		wstring			m_token;
 		float			m_version;
 		encoding_type	m_encoding;
@@ -667,7 +701,7 @@ struct parser_imp
 	bool					m_has_dtd;
 	int						m_lookahead;
 	data_source*			m_data_source;
-	stack<wchar_t>			m_buffer;
+	mini_stack				m_buffer;
 	wstring					m_token;
 	float					m_version;
 	encoding_type			m_encoding;
