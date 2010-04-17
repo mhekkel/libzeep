@@ -194,7 +194,7 @@ class attribute : public boost::noncopyable
 							: m_name(name), m_type(type), m_default(attDefNone)
 							, m_enum(enums), m_external(false) {}
 
-	std::wstring		name() const							{ return m_name; }
+	const std::wstring&	name() const							{ return m_name; }
 
 	bool				validate_value(std::wstring& value, const entity_list& entities) const;
 	
@@ -248,7 +248,7 @@ class element : boost::noncopyable
 	
 	const attribute*	get_attribute(const std::wstring& name) const;
 
-	std::wstring		name() const								{ return m_name; }
+	const std::wstring&	name() const								{ return m_name; }
 	
 	const attribute_list&
 						attributes() const							{ return m_attlist; }
