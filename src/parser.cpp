@@ -247,9 +247,10 @@ unsigned char istream_data_source::next_byte()
 {
 	char result = 0;
 	
-	if (m_buffer_ix >= m_buffer_size and not m_data.eof())
+	if (m_buffer_ix >= m_buffer_size)
 	{
-		m_buffer_size = m_data.readsome(m_buffer, sizeof(m_buffer));
+		m_data.read(m_buffer, sizeof(m_buffer));
+		m_buffer_size = m_data.gcount();
 		m_buffer_ix = 0;
 	}
 	
