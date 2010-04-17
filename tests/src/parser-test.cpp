@@ -320,6 +320,8 @@ int main(int argc, char* argv[])
 	VERBOSE = vm.count("verbose");
 	TRACE = vm.count("trace");
 	
+	fs::path savedwd = fs::current_path();
+	
 	try
 	{
 		if (vm.count("single"))
@@ -332,32 +334,34 @@ int main(int argc, char* argv[])
 			fs::ifstream file(path);
 
 			run_valid_test(file, dir);
-			return 0;
 		}
-		
-		fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
-		if (vm.count("test"))
-			xmlconfFile = vm["test"].as<string>();
-		
-		string id;
-		if (vm.count("id"))
-			id = vm["id"].as<string>();
-		
-		string type;
-		if (vm.count("type"))
-			type = vm["type"].as<string>();
-		
-		vector<string> failed_ids;
-		
-		test_testcases(xmlconfFile, id, type, failed_ids);
-		
-		cout << endl
-			 << "summary: " << endl
-			 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
-			 << "  " << error_tests << " threw an exception" << endl
-			 << "  " << wrong_exception << " wrong exception" << endl
-			 << "  " << should_have_failed << " should have failed but didn't" << endl
-			 << "  " << dubious_tests << " had a dubious output" << endl;
+		else
+		{
+			
+			fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
+			if (vm.count("test"))
+				xmlconfFile = vm["test"].as<string>();
+			
+			string id;
+			if (vm.count("id"))
+				id = vm["id"].as<string>();
+			
+			string type;
+			if (vm.count("type"))
+				type = vm["type"].as<string>();
+			
+			vector<string> failed_ids;
+			
+			test_testcases(xmlconfFile, id, type, failed_ids);
+			
+			cout << endl
+				 << "summary: " << endl
+				 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
+				 << "  " << error_tests << " threw an exception" << endl
+				 << "  " << wrong_exception << " wrong exception" << endl
+				 << "  " << should_have_failed << " should have failed but didn't" << endl
+				 << "  " << dubious_tests << " had a dubious output" << endl;
+		}
 			
 //		if (id.empty())
 //		{
@@ -374,6 +378,8 @@ int main(int argc, char* argv[])
 		cout << e.what() << endl;
 		return 1;
 	}
+	
+	fs::current_path(savedwd);
 	
 	return 0;
 }
