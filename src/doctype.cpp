@@ -34,7 +34,7 @@ struct state_base : boost::enable_shared_from_this<state_base>
 {
 								state_base() : m_ref_count(1) {}
 
-	virtual tuple<bool,bool>	allow(const wstring& name) = 0;
+	virtual tuple<bool,bool>	allow(const string& name) = 0;
 	virtual bool				allow_char_data()					{ return false; }
 	virtual bool				allow_empty()						{ return false; }
 	
@@ -53,24 +53,24 @@ struct state_base : boost::enable_shared_from_this<state_base>
 
 struct state_any : public state_base
 {
-	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(true, true); }
+	virtual tuple<bool,bool>	allow(const string& name)			{ return make_tuple(true, true); }
 	virtual bool				allow_char_data()					{ return true; }
 	virtual bool				allow_empty()						{ return true; }
 };
 
 struct state_empty : public state_base
 {
-	virtual tuple<bool,bool>	allow(const wstring& name)			{ return make_tuple(false, true); }
+	virtual tuple<bool,bool>	allow(const string& name)			{ return make_tuple(false, true); }
 	virtual bool				allow_empty()						{ return true; }
 };
 
 struct state_element : public state_base
 {
-								state_element(const wstring& name)
+								state_element(const string& name)
 									: m_name(name), m_done(false) {}
 
 	virtual tuple<bool,bool>
-								allow(const wstring& name)
+								allow(const string& name)
 								{
 									bool result = false;
 									if (not m_done and m_name == name)
@@ -81,7 +81,7 @@ struct state_element : public state_base
 
 	virtual void				reset()								{ m_done = false; }
 
-	wstring						m_name;
+	string						m_name;
 	bool						m_done;
 };
 
@@ -110,12 +110,12 @@ struct state_repeated_zero_or_once : public state_repeated
 								state_repeated_zero_or_once(allowed_ptr sub)
 									: state_repeated(sub) {}
 
-	tuple<bool,bool>			allow(const wstring& name);
+	tuple<bool,bool>			allow(const string& name);
 
 	virtual bool				allow_empty()						{ return true; }
 };
 
-tuple<bool,bool> state_repeated_zero_or_once::allow(const wstring& name)
+tuple<bool,bool> state_repeated_zero_or_once::allow(const string& name)
 {
 	// use a state machine
 	enum State {
@@ -150,12 +150,12 @@ struct state_repeated_any : public state_repeated
 								state_repeated_any(allowed_ptr sub)
 									: state_repeated(sub) {}
 
-	tuple<bool,bool>			allow(const wstring& name);
+	tuple<bool,bool>			allow(const string& name);
 
 	virtual bool				allow_empty()						{ return true; }
 };
 
-tuple<bool,bool> state_repeated_any::allow(const wstring& name)
+tuple<bool,bool> state_repeated_any::allow(const string& name)
 {
 	// use a state machine
 	enum State {
@@ -195,12 +195,12 @@ struct state_repeated_at_least_once : public state_repeated
 								state_repeated_at_least_once(allowed_ptr sub)
 									: state_repeated(sub) {}
 
-	tuple<bool,bool>			allow(const wstring& name);
+	tuple<bool,bool>			allow(const string& name);
 
 	virtual bool				allow_empty()						{ return m_sub->allow_empty(); }
 };
 
-tuple<bool,bool> state_repeated_at_least_once::allow(const wstring& name)
+tuple<bool,bool> state_repeated_at_least_once::allow(const string& name)
 {
 	// use a state machine
 	enum State {
@@ -262,7 +262,7 @@ struct state_seq : public state_base
 										s->release();
 								}
 
-	virtual tuple<bool,bool>	allow(const wstring& name);
+	virtual tuple<bool,bool>	allow(const string& name);
 
 	virtual void				reset()
 								{
@@ -292,7 +292,7 @@ struct state_seq : public state_base
 	int							m_state;
 };
 
-tuple<bool,bool> state_seq::allow(const wstring& name)
+tuple<bool,bool> state_seq::allow(const string& name)
 {
 	bool result = false, done = false;
 	
@@ -366,7 +366,7 @@ struct state_choice : public state_base
 										s->release();
 								}
 
-	virtual tuple<bool,bool>	allow(const wstring& name);
+	virtual tuple<bool,bool>	allow(const string& name);
 
 	virtual void				reset()
 								{
@@ -384,7 +384,7 @@ struct state_choice : public state_base
 	state_ptr					m_sub;
 };
 
-tuple<bool,bool> state_choice::allow(const wstring& name)
+tuple<bool,bool> state_choice::allow(const string& name)
 {
 	bool result = false, done = false;
 	
@@ -480,7 +480,7 @@ void validator::reset()
 	m_state->reset();
 }
 
-bool validator::allow(const wstring& name)
+bool validator::allow(const string& name)
 {
 	bool result;
 	tie(result, m_done) = m_state->allow(name);
@@ -539,7 +539,7 @@ state_ptr allowed_element::create_state() const
 
 void allowed_element::print(ostream& os)
 {
-	os << wstring_to_string(m_name);
+	os << m_name;
 }
 
 // --------------------------------------------------------------------
@@ -673,7 +673,7 @@ bool allowed_choice::element_content() const
 
 // --------------------------------------------------------------------
 
-bool attribute::is_name(wstring& s) const
+bool attribute::is_name(string& s) const
 {
 	bool result = true;
 	
@@ -681,7 +681,7 @@ bool attribute::is_name(wstring& s) const
 	
 	if (not s.empty())
 	{
-		wstring::iterator c = s.begin();
+		string::iterator c = s.begin();
 		
 		if (c != s.end())
 			result = is_name_start_char(*c);
@@ -693,7 +693,7 @@ bool attribute::is_name(wstring& s) const
 	return result;
 }
 
-bool attribute::is_names(wstring& s) const
+bool attribute::is_names(string& s) const
 {
 	bool result = true;
 
@@ -701,8 +701,8 @@ bool attribute::is_names(wstring& s) const
 	
 	if (not s.empty())
 	{
-		wstring::iterator c = s.begin();
-		wstring t;
+		string::iterator c = s.begin();
+		string t;
 		
 		while (result and c != s.end())
 		{
@@ -733,28 +733,28 @@ bool attribute::is_names(wstring& s) const
 	return result;
 }
 
-bool attribute::is_nmtoken(wstring& s) const
+bool attribute::is_nmtoken(string& s) const
 {
 	ba::trim(s);
 	
 	bool result = not s.empty();
 
-	wstring::iterator c = s.begin();
+	string::iterator c = s.begin();
 	while (result and ++c != s.end())
 		result = is_name_char(*c);
 	
 	return result;
 }
 
-bool attribute::is_nmtokens(wstring& s) const
+bool attribute::is_nmtokens(string& s) const
 {
 	// remove leading and trailing spaces
 	ba::trim(s);
 	
 	bool result = not s.empty();
 	
-	wstring::iterator c = s.begin();
-	wstring t;
+	string::iterator c = s.begin();
+	string t;
 	
 	while (result and c != s.end())
 	{
@@ -792,7 +792,7 @@ bool attribute::is_nmtokens(wstring& s) const
 	return result;
 }
 
-bool attribute::validate_value(wstring& value, const entity_list& entities) const
+bool attribute::validate_value(string& value, const entity_list& entities) const
 {
 	bool result = true;
 
@@ -811,9 +811,9 @@ bool attribute::validate_value(wstring& value, const entity_list& entities) cons
 		result = is_names(value);
 		if (result)
 		{
-			vector<wstring> values;
+			vector<string> values;
 			ba::split(values, value, ba::is_any_of(" "));
-			foreach (const wstring& v, values)
+			foreach (const string& v, values)
 			{
 				if (not is_unparsed_entity(v, entities))
 				{
@@ -841,7 +841,7 @@ bool attribute::validate_value(wstring& value, const entity_list& entities) cons
 	return result;
 }
 
-bool attribute::is_unparsed_entity(const wstring& s, const entity_list& l) const
+bool attribute::is_unparsed_entity(const string& s, const entity_list& l) const
 {
 	bool result = false;
 	
@@ -874,7 +874,7 @@ void element::add_attribute(auto_ptr<attribute> attr)
 		m_attlist.push_back(attr.release());
 }
 
-const attribute* element::get_attribute(const wstring& name) const
+const attribute* element::get_attribute(const string& name) const
 {
 	attribute_list::const_iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == name);
