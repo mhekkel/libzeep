@@ -20,6 +20,7 @@
       <group name="xml">
         <file>document.cpp</file>
         <file>doctype.cpp</file>
+        <file>document-expat.cpp</file>
         <file>node.cpp</file>
         <file>parser.cpp</file>
         <file>unicode_support.cpp</file>
@@ -35,6 +36,7 @@
       <link>boost_system</link>
       <link>boost_program_options</link>
       <link>boost_filesystem</link>
+      <link>expat</link>
     </group>
   </files>
   <targets>
@@ -62,6 +64,7 @@
       </defines>
       <cflags>
         <cflag>-O3</cflag>
+        <cflag>-gdwarf-2</cflag>
       </cflags>
       <warnings>
         <warning>all</warning>

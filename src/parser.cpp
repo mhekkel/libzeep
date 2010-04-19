@@ -168,7 +168,6 @@ class istream_data_source : public data_source
 						, m_data(data)
 						, m_char_buffer(0)
 						, m_has_bom(false)
-						, m_eof(false)
 					{
 						guess_encoding();
 					}
@@ -179,7 +178,6 @@ class istream_data_source : public data_source
 						, m_data_ptr(data)
 						, m_char_buffer(0)
 						, m_has_bom(false)
-						, m_eof(false)
 					{
 						guess_encoding();
 					}
@@ -213,12 +211,6 @@ class istream_data_source : public data_source
 
 	next_func		m_next;
 	bool			m_has_bom;
-	bool			m_valid_utf8;
-
-	char			m_buffer[256];
-	int				m_buffer_ix;
-	int				m_buffer_size;
-	bool			m_eof;
 };
 
 void istream_data_source::guess_encoding()
@@ -226,50 +218,50 @@ void istream_data_source::guess_encoding()
 	// see if there is a BOM
 	// if there isn't, we assume the data is UTF-8
 	
-	m_buffer[0] = 0;
-	
-	m_data.read(m_buffer, 1);
-	m_buffer_ix = 0;
-	m_buffer_size = 0;
+	char ch1 = m_data.rdbuf()->sgetc();
 
-	if (m_buffer[0] == char(0xfe))
+	if (ch1 == char(0xfe))
 	{
-		m_data.read(m_buffer + 1, 1);
+		char ch2 = m_data.rdbuf()->snextc();
 		
-		if (m_buffer[1] == char(0xff))
+		if (ch2 == char(0xff))
 		{
+			m_data.rdbuf()->snextc();
 			m_encoding = enc_UTF16BE;
 			m_has_bom = true;
 		}
 		else
-			m_buffer_size = 2;
+			m_data.rdbuf()->sungetc();
 	}
-	else if (m_buffer[0] == char(0xff))
+	else if (ch1 == char(0xff))
 	{
-		m_data.read(m_buffer + 1, 1);
+		char ch2 = m_data.rdbuf()->snextc();
 		
-		if (m_buffer[1] == char(0xfe))
+		if (ch2 == char(0xfe))
 		{
+			m_data.rdbuf()->snextc();
 			m_encoding = enc_UTF16LE;
 			m_has_bom = true;
 		}
 		else
-			m_buffer_size = 2;
+			m_data.rdbuf()->sungetc();
 	}
-	else if (m_buffer[0] == char(0xef))
+	else if (ch1 == char(0xef))
 	{
-		m_data.read(m_buffer + 1, 2);
+		char ch2 = m_data.rdbuf()->snextc();
 		
-		if (m_buffer[1] == char(0xbb) and m_buffer[2] == char(0xbf))
+		if (ch2 == char(0xbb) and m_data.rdbuf()->sgetc() == char(0xbf))
 		{
+			m_data.rdbuf()->snextc();
 			m_encoding = enc_UTF8;
 			m_has_bom = true;
 		}
 		else
-			m_buffer_size = 3;
+		{
+			m_data.rdbuf()->sungetc();
+			m_data.rdbuf()->sputbackc(ch1);
+		}
 	}
-	else if (not m_data.eof())
-		m_buffer_size = 1;
 
 	switch (m_encoding)
 	{
@@ -280,40 +272,12 @@ void istream_data_source::guess_encoding()
 	}
 }
 
-unsigned char istream_data_source::next_byte()
+inline unsigned char istream_data_source::next_byte()
 {
-	char result = 0;
-	
-	if (m_buffer_ix >= m_buffer_size and not m_eof)
-	{
-		m_buffer_ix = 0;
-		m_buffer_size = m_data.rdbuf()->in_avail();
-		
-		if (m_buffer_size == 0)
-		{
-			int r = m_data.rdbuf()->sgetc();
-			if (r != streambuf::traits_type::eof())
-				m_buffer_size = 1;
-			else
-				m_eof = true;
-		}
-		else
-		{
-			if (m_buffer_size > int(sizeof(m_buffer)))
-				m_buffer_size = sizeof(m_buffer);
-			
-			m_data.rdbuf()->sgetn(m_buffer, m_buffer_size);
-		}
-	}
-	
-	if (m_buffer_ix < m_buffer_size)
-	{
-		result = m_buffer[m_buffer_ix];
-		++m_buffer_ix;
-	}
+	int result = m_data.rdbuf()->sbumpc();
 
-//if (VERBOSE)
-//	cout << "next byte: '" << (isgraph(result) ? result : '.') << "' int(" << int(result) << ')' << endl;
+	if (result == streambuf::traits_type::eof())
+		result = 0;
 		
 	return static_cast<unsigned char>(result);
 }
@@ -322,39 +286,37 @@ wchar_t istream_data_source::next_utf8_char()
 {
 	unsigned long result = next_byte();
 	
-	if (result > 0x07f)
+	if (result & 0x080)
 	{
-		unsigned char ch[5];
-		
-//		ch[0] = static_cast<unsigned char>(result);
+		unsigned char ch[3];
 		
 		if ((result & 0x0E0) == 0x0C0)
 		{
-			ch[1] = next_byte();
-			if ((ch[1] & 0x0c0) != 0x080)
+			ch[0] = next_byte();
+			if ((ch[0] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
-			result = static_cast<unsigned long>(((result & 0x01F) << 6) | (ch[1] & 0x03F));
+			result = static_cast<unsigned long>(((result & 0x01F) << 6) | (ch[0] & 0x03F));
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
+			ch[0] = next_byte();
 			ch[1] = next_byte();
-			ch[2] = next_byte();
-			if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
-			result = static_cast<unsigned long>(((result & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+			result = static_cast<unsigned long>(((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F));
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
+			ch[0] = next_byte();
 			ch[1] = next_byte();
 			ch[2] = next_byte();
-			ch[3] = next_byte();
-			if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 				throw source_exception("Invalid utf-8");
-			result = static_cast<unsigned long>(((result & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
+			result = static_cast<unsigned long>(((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+		
+			if (result > 0x10ffff)
+				throw source_exception("invalid utf-8 character (out of range)");
 		}
-	
-		if (result > 0x10ffff)
-			throw source_exception("invalid utf-8 character (out of range)");
 	}
 	
 	return static_cast<wchar_t>(result);
@@ -435,25 +397,25 @@ wchar_t	string_data_source::get_next_char()
 
 		if (result > 0x07f)
 		{
-			unsigned char ch[5];
+			unsigned char ch[3];
 			
 			if ((result & 0x0E0) == 0x0C0)
 			{
-				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-				result = static_cast<unsigned long>(((result & 0x01F) << 6) | (ch[1] & 0x03F));
+				ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				result = static_cast<unsigned long>(((result & 0x01F) << 6) | (ch[0] & 0x03F));
 			}
 			else if ((result & 0x0F0) == 0x0E0)
 			{
+				ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
 				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-				ch[2] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-				result = static_cast<unsigned long>(((result & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+				result = static_cast<unsigned long>(((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F));
 			}
 			else if ((result & 0x0F8) == 0x0F0)
 			{
+				ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
 				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
 				ch[2] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-				ch[3] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-				result = static_cast<unsigned long>(((result & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
+				result = static_cast<unsigned long>(((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
 			}
 		}
 	}
@@ -880,51 +842,89 @@ wchar_t parser_imp::get_next_char()
 {
 	wchar_t result = 0;
 
-	if (not m_buffer.empty())
+	if (not m_buffer.empty())		// if buffer is not empty we already did all the validity checks
 	{
 		result = m_buffer.top();
 		m_buffer.pop();
 	}
-
-	try
+	else
 	{
-		while (result == 0 and m_data_source != nil)
+		for (;;)
 		{
-			result = m_data_source->get_next_char();
-			if (result == 0)
+			try
 			{
-				if (m_data_source->auto_discard())
-				{
-					data_source* next = m_data_source->next_data_source();
-					delete m_data_source;
-					m_data_source = next;
-				}
-				else
-					break;
+				result = m_data_source->get_next_char();
 			}
+			catch (source_exception& e)
+			{
+				not_well_formed(e.m_wmsg);
+			}
+
+			if (result == 0 and m_data_source->auto_discard())
+			{
+				data_source* next = m_data_source->next_data_source();
+				delete m_data_source;
+				m_data_source = next;
+				
+				if (m_data_source != nil)
+					continue;
+			}
+
+			break;
+		}
+	
+		if (result >= 0x080)
+		{
+			if (result == 0x0ffff or result == 0x0fffe)
+				not_well_formed(boost::format("character 0x%x is not allowed") % int(result));
+		
+			// surrogate support
+			else if (result >= 0x0D800 and result <= 0x0DBFF)
+			{
+				wchar_t uc2 = get_next_char();
+				if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
+					result = (result - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
+				else
+					not_well_formed("leading surrogate character without trailing surrogate character");
+			}
+			else if (result >= 0x0DC00 and result <= 0x0DFFF)
+				not_well_formed("trailing surrogate character without a leading surrogate");
 		}
 	}
-	catch (source_exception& e)
-	{
-		not_well_formed(e.m_wmsg);
-	}
 	
-	if (result == 0x0ffff or result == 0x0fffe)
-		not_well_formed(boost::format("character 0x%x is not allowed") % int(result));
-
-	// surrogate support
-	if (result >= 0x0D800 and result <= 0x0DBFF)
-	{
-		wchar_t uc2 = get_next_char();
-		if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
-			result = (result - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
-		else
-			not_well_formed("leading surrogate character without trailing surrogate character");
-	}
-	else if (result >= 0x0DC00 and result <= 0x0DFFF)
-		not_well_formed("trailing surrogate character without a leading surrogate");
+//	append(m_token, result);	
+	// somehow, append refuses to inline, so we have to do it ourselves
+	unsigned long cv = static_cast<unsigned long>(result);
 	
-	append(m_token, result);
+	if (cv < 0x080)
+		m_token += (static_cast<const char> (cv));
+	else if (cv < 0x0800)
+	{
+		char ch[2] = {
+			static_cast<const char> (0x0c0 | (cv >> 6)),
+			static_cast<const char> (0x080 | (cv & 0x3f))
+		};
+		m_token.append(ch, 2);
+	}
+	else if (cv < 0x00010000)
+	{
+		char ch[3] = {
+			static_cast<const char> (0x0e0 | (cv >> 12)),
+			static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)),
+			static_cast<const char> (0x080 | (cv & 0x3f))
+		};
+		m_token.append(ch, 3);
+	}
+	else
+	{
+		char ch[4] = {
+			static_cast<const char> (0x0f0 | (cv >> 18)),
+			static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)),
+			static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)),
+			static_cast<const char> (0x080 | (cv & 0x3f))
+		};
+		m_token.append(ch, 4);
+	}
 
 	return result;
 }
