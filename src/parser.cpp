@@ -64,7 +64,7 @@ class mini_stack
 	
 	wchar_t	top()
 			{
-				assert(m_ix >= 0 and m_ix < sizeof(m_data) / sizeof(wchar_t));
+				assert(m_ix >= 0 and m_ix < int(sizeof(m_data) / sizeof(wchar_t)));
 				return m_data[m_ix];
 			}
 
@@ -76,7 +76,7 @@ class mini_stack
 	void	push(wchar_t uc)
 			{
 				++m_ix;
-				assert(m_ix < sizeof(m_data) / sizeof(wchar_t));
+				assert(m_ix < int(sizeof(m_data) / sizeof(wchar_t)));
 				m_data[m_ix] = uc;
 			}
 
@@ -168,6 +168,7 @@ class istream_data_source : public data_source
 						, m_data(data)
 						, m_char_buffer(0)
 						, m_has_bom(false)
+						, m_eof(false)
 					{
 						guess_encoding();
 					}
@@ -178,6 +179,7 @@ class istream_data_source : public data_source
 						, m_data_ptr(data)
 						, m_char_buffer(0)
 						, m_has_bom(false)
+						, m_eof(false)
 					{
 						guess_encoding();
 					}
@@ -216,6 +218,7 @@ class istream_data_source : public data_source
 	char			m_buffer[256];
 	int				m_buffer_ix;
 	int				m_buffer_size;
+	bool			m_eof;
 };
 
 void istream_data_source::guess_encoding()
@@ -281,29 +284,43 @@ unsigned char istream_data_source::next_byte()
 {
 	char result = 0;
 	
-	if (not m_data.eof())
-		m_data.read(&result, 1);
+	if (m_buffer_ix >= m_buffer_size and not m_eof)
+	{
+		m_buffer_ix = 0;
+		m_buffer_size = m_data.rdbuf()->in_avail();
+		
+		if (m_buffer_size == 0)
+		{
+			int r = m_data.rdbuf()->sgetc();
+			if (r != streambuf::traits_type::eof())
+				m_buffer_size = 1;
+			else
+				m_eof = true;
+		}
+		else
+		{
+			if (m_buffer_size > int(sizeof(m_buffer)))
+				m_buffer_size = sizeof(m_buffer);
+			
+			m_data.rdbuf()->sgetn(m_buffer, m_buffer_size);
+		}
+	}
 	
-//	if (m_buffer_ix >= m_buffer_size)
-//	{
-//		m_buffer_ix = 0;
-//		m_buffer[0] = 0;
-//		m_data.read(m_buffer, sizeof(m_buffer));
-//		m_buffer_size = m_data.gcount();
-//	}
-//	
-//	if (m_buffer_ix < m_buffer_size)
-//	{
-//		result = m_buffer[m_buffer_ix];
-//		++m_buffer_ix;
-//	}
+	if (m_buffer_ix < m_buffer_size)
+	{
+		result = m_buffer[m_buffer_ix];
+		++m_buffer_ix;
+	}
+
+//if (VERBOSE)
+//	cout << "next byte: '" << (isgraph(result) ? result : '.') << "' int(" << int(result) << ')' << endl;
 		
 	return static_cast<unsigned char>(result);
 }
 
 wchar_t istream_data_source::next_utf8_char()
 {
-	wchar_t result = next_byte();
+	unsigned long result = next_byte();
 	
 	if (result > 0x07f)
 	{
@@ -340,7 +357,7 @@ wchar_t istream_data_source::next_utf8_char()
 			throw source_exception("invalid utf-8 character (out of range)");
 	}
 	
-	return result;
+	return static_cast<wchar_t>(result);
 }
 
 wchar_t istream_data_source::next_utf16le_char()
@@ -409,15 +426,39 @@ class string_data_source : public data_source
 
 wchar_t	string_data_source::get_next_char()
 {
-	wchar_t result = 0;
+	unsigned long result = 0;
 
 	if (m_ptr != m_data.end())
 	{
-		result = *m_ptr;
+		result = static_cast<unsigned char>(*m_ptr);
 		++m_ptr;
+
+		if (result > 0x07f)
+		{
+			unsigned char ch[5];
+			
+			if ((result & 0x0E0) == 0x0C0)
+			{
+				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				result = static_cast<unsigned long>(((result & 0x01F) << 6) | (ch[1] & 0x03F));
+			}
+			else if ((result & 0x0F0) == 0x0E0)
+			{
+				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				ch[2] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				result = static_cast<unsigned long>(((result & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+			}
+			else if ((result & 0x0F8) == 0x0F0)
+			{
+				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				ch[2] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				ch[3] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				result = static_cast<unsigned long>(((result & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
+			}
+		}
 	}
 
-	return result;
+	return static_cast<wchar_t>(result);
 }
 
 // --------------------------------------------------------------------
@@ -883,24 +924,14 @@ wchar_t parser_imp::get_next_char()
 	else if (result >= 0x0DC00 and result <= 0x0DFFF)
 		not_well_formed("trailing surrogate character without a leading surrogate");
 	
-//	m_token += result;
 	append(m_token, result);
 
-if (VERBOSE)
-	cout << "get_next_char: " << m_token << endl;
-	
 	return result;
 }
 
 void parser_imp::retract()
 {
 	assert(not m_token.empty());
-	
-//	string::iterator last_char = m_token.end() - 1;
-//	
-//	m_buffer.push(*last_char);
-//	m_token.erase(last_char);
-	
 	m_buffer.push(pop_last_char(m_token));
 }
 
@@ -1324,7 +1355,8 @@ int parser_imp::get_next_content()
 				{
 					if (not is_char(charref))
 						not_well_formed("Illegal character in content text");
-					m_token = charref;
+					m_token.clear();
+					append(m_token, charref);
 					token = xml_Content;
 				}
 				else
@@ -1362,7 +1394,8 @@ int parser_imp::get_next_content()
 				{
 					if (not is_char(charref))
 						not_well_formed("Illegal character in content text");
-					m_token = charref;
+					m_token.clear();
+					append(m_token, charref);
 					token = xml_Content;
 				}
 				else
@@ -2653,7 +2686,7 @@ boost::tuple<string,string> parser_imp::read_external_id()
 		result = m_token;
 	
 		while (wchar_t ch = get_next_char())
-			result += ch;
+			append(result, ch);
 	}
 	
 	return boost::make_tuple(path, result);
@@ -2687,7 +2720,7 @@ void parser_imp::parse_parameter_entity_declaration(string& s)
 						not_well_formed("parameter entities may not occur in declarations that are not in an external subset");
 				}
 				else
-					result += c;
+					append(result, c);
 				break;
 			
 			case 1:
@@ -2696,7 +2729,7 @@ void parser_imp::parse_parameter_entity_declaration(string& s)
 				else
 				{
 					result += '&';
-					result += c;
+					append(result, c);
 					state = 0;
 				}
 				break;
@@ -2721,7 +2754,7 @@ void parser_imp::parse_parameter_entity_declaration(string& s)
 					if (not is_char(charref))
 						not_well_formed(boost::format("Illegal character referenced: 0x%x") % int(charref));
 
-					result += charref;
+					append(result, charref);
 					state = 0;
 				}
 				else
@@ -2760,7 +2793,7 @@ void parser_imp::parse_parameter_entity_declaration(string& s)
 					if (not is_char(charref))
 						not_well_formed(boost::format("Illegal character referenced: 0x%x") % int(charref));
 					
-					result += charref;
+					append(result, charref);
 					state = 0;
 				}
 				else
@@ -2775,7 +2808,7 @@ void parser_imp::parse_parameter_entity_declaration(string& s)
 					state = 0;
 				}
 				else if (is_name_char(c))
-					name += c;
+					append(name, c);
 				else
 					not_well_formed("invalid parameter entity reference");
 				break;
@@ -2822,7 +2855,7 @@ void parser_imp::parse_general_entity_declaration(string& s)
 						not_well_formed("parameter entities may not occur in declarations that are not in an external subset");
 				}
 				else
-					result += c;
+					append(result, c);
 				break;
 			
 			case 1:
@@ -2830,6 +2863,7 @@ void parser_imp::parse_general_entity_declaration(string& s)
 					state = 2;
 				else if (is_name_start_char(c))
 				{
+					name.clear();
 					append(name, c);
 					state = 10;
 				}
@@ -2855,7 +2889,7 @@ void parser_imp::parse_general_entity_declaration(string& s)
 					if (not is_char(charref))
 						not_well_formed(boost::format("Illegal character referenced: 0x%x") % int(charref));
 
-					result += charref;
+					append(result, charref);
 					state = 0;
 				}
 				else
@@ -2894,7 +2928,7 @@ void parser_imp::parse_general_entity_declaration(string& s)
 					if (not is_char(charref))
 						not_well_formed(boost::format("Illegal character referenced: 0x%x") % int(charref));
 
-					result += charref;
+					append(result, charref);
 					state = 0;
 				}
 				else
@@ -2911,7 +2945,7 @@ void parser_imp::parse_general_entity_declaration(string& s)
 					state = 0;
 				}
 				else if (is_name_char(c))
-					name += c;
+					append(name, c);
 				else
 					not_well_formed("invalid entity reference");
 				break;
@@ -2924,7 +2958,7 @@ void parser_imp::parse_general_entity_declaration(string& s)
 					state = 0;
 				}
 				else if (is_name_char(c))
-					name += c;
+					append(name, c);
 				else
 					not_well_formed("invalid parameter entity reference");
 				break;
@@ -2977,7 +3011,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 				else if (c == ' ' or c == '\n' or c == '\t' or c == '\r')
 					result += ' ';
 				else
-					result += c;
+					append(result, c);
 				break;
 			
 			case state_ReferenceStart:
@@ -2985,6 +3019,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 					state = state_CharReferenceStart;
 				else if (is_name_start_char(c))
 				{
+					name.clear();
 					append(name, c);
 					state = state_EntityReference;
 				}
@@ -3012,7 +3047,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 					if (not is_char(charref))
 						not_well_formed(boost::format("Illegal character referenced: 0x%x") % int(charref));
 
-					result += charref;
+					append(result, charref);
 					state = state_Start;
 				}
 				else
@@ -3051,7 +3086,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 					if (not is_char(charref))
 						not_well_formed(boost::format("Illegal character referenced: 0x%x") % int(charref));
 
-					result += charref;
+					append(result, charref);
 					state = state_Start;
 				}
 				else
@@ -3079,7 +3114,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 					state = state_Start;
 				}
 				else if (is_name_char(c))
-					name += c;
+					append(name, c);
 				else
 					not_well_formed("invalid entity reference");
 				break;

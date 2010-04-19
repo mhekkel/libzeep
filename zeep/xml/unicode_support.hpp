@@ -47,6 +47,74 @@ inline bool is_char(wchar_t uc)
 		(uc >= 0x010000 and uc <= 0x010FFFF);
 }
 
+inline void append(std::string& s, wchar_t ch)
+{
+	unsigned long cv = static_cast<unsigned long>(ch);
+	
+	if (cv < 0x080)
+		s += (static_cast<const char> (cv));
+	else if (cv < 0x0800)
+	{
+		s += (static_cast<const char> (0x0c0 | (cv >> 6)));
+		s += (static_cast<const char> (0x080 | (cv & 0x3f)));
+	}
+	else if (cv < 0x00010000)
+	{
+		s += (static_cast<const char> (0x0e0 | (cv >> 12)));
+		s += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
+		s += (static_cast<const char> (0x080 | (cv & 0x3f)));
+	}
+	else
+	{
+		s += (static_cast<const char> (0x0f0 | (cv >> 18)));
+		s += (static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)));
+		s += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
+		s += (static_cast<const char> (0x080 | (cv & 0x3f)));
+	}
+}
+
+inline wchar_t pop_last_char(std::string& s)
+{
+	assert(not s.empty());
+	
+	wchar_t result = 0;
+
+	if (not s.empty())
+	{
+		std::string::iterator ch = s.end() - 1;
+		
+		if ((*ch & 0x0080) == 0)
+		{
+			result = *ch;
+			s.erase(ch);
+		}
+		else
+		{
+			int o = 0;
+			
+			do
+			{
+				result |= (*ch & 0x03F) << o;
+				o += 6;
+				--ch;
+			}
+			while (ch != s.begin() and (*ch & 0x0C0) == 0x080);
+			
+			switch (o)
+			{
+				case  6: result |= (*ch & 0x01F) <<  6; break;
+				case 12: result |= (*ch & 0x00F) << 12; break;
+				case 18: result |= (*ch & 0x007) << 18; break;
+			}
+			
+			s.erase(ch, s.end());
+		}
+	}
+	
+	return result;
+}
+
+
 }
 }
 
