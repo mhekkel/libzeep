@@ -55,21 +55,30 @@ inline void append(std::string& s, wchar_t ch)
 		s += (static_cast<const char> (cv));
 	else if (cv < 0x0800)
 	{
-		s += (static_cast<const char> (0x0c0 | (cv >> 6)));
-		s += (static_cast<const char> (0x080 | (cv & 0x3f)));
+		char ch[2] = {
+			static_cast<const char> (0x0c0 | (cv >> 6)),
+			static_cast<const char> (0x080 | (cv & 0x3f))
+		};
+		s.append(ch, 2);
 	}
 	else if (cv < 0x00010000)
 	{
-		s += (static_cast<const char> (0x0e0 | (cv >> 12)));
-		s += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
-		s += (static_cast<const char> (0x080 | (cv & 0x3f)));
+		char ch[3] = {
+			static_cast<const char> (0x0e0 | (cv >> 12)),
+			static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)),
+			static_cast<const char> (0x080 | (cv & 0x3f))
+		};
+		s.append(ch, 3);
 	}
 	else
 	{
-		s += (static_cast<const char> (0x0f0 | (cv >> 18)));
-		s += (static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)));
-		s += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
-		s += (static_cast<const char> (0x080 | (cv & 0x3f)));
+		char ch[4] = {
+			static_cast<const char> (0x0f0 | (cv >> 18)),
+			static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)),
+			static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)),
+			static_cast<const char> (0x080 | (cv & 0x3f))
+		};
+		s.append(ch, 4);
 	}
 }
 
