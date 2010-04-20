@@ -3238,13 +3238,30 @@ void parser_imp::element(doctype::validator& valid)
 					if (m_unresolved_ids.count(attr_value) > 0)
 						m_unresolved_ids.erase(attr_value);
 				}
-				else if (dta->get_type() == doctype::attTypeTokenizedIDREF or dta->get_type() == doctype::attTypeTokenizedIDREFS)
+				else if (dta->get_type() == doctype::attTypeTokenizedIDREF)
 				{
-					list<string> ids;
-					ba::split(ids, attr_value, ba::is_any_of(" "));
-					foreach (const string& id, ids)
+					if (not m_ids.count(attr_value))
+						m_unresolved_ids.insert(attr_value);
+				}
+				else if (dta->get_type() == doctype::attTypeTokenizedIDREFS)
+				{
+					string::size_type b = 0, e = attr_value.find(' ');
+					while (e != string::npos)
 					{
-						if (m_ids.count(id) == 0)
+						if (e - b > 0)
+						{
+							string id = attr_value.substr(b, e);
+							if (not m_ids.count(id))
+								m_unresolved_ids.insert(id);
+						}
+						b = e + 1;
+						e = attr_value.find(' ');
+					}
+					
+					if (b != string::npos and b < attr_value.length())
+					{
+						string id = attr_value.substr(b);
+						if (not m_ids.count(id))
 							m_unresolved_ids.insert(id);
 					}
 				}
