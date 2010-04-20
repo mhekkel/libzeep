@@ -29,6 +29,7 @@ writer::writer(std::ostream& os)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
+	, m_no_comment(false)
 	, m_indent(2)
 	, m_level(0)
 	, m_element_open(false)
@@ -199,17 +200,20 @@ void writer::end_element()
 
 void writer::comment(const string& text)
 {
-	if (m_element_open)
-		m_os << '>';
-	m_element_open = false;
-
-	for (int i = 0; i < m_indent * m_level; ++i)
-		m_os << ' ';
-
-	m_os << "<!--" << text << "-->";
+	if (not m_no_comment)
+	{
+		if (m_element_open)
+			m_os << '>';
+		m_element_open = false;
 	
-	if (m_wrap)
-		m_os << endl;
+		for (int i = 0; i < m_indent * m_level; ++i)
+			m_os << ' ';
+	
+		m_os << "<!--" << text << "-->";
+		
+		if (m_wrap)
+			m_os << endl;
+	}
 }
 
 void writer::processing_instruction(const string& target,

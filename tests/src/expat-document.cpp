@@ -253,7 +253,7 @@ expat_doc_imp::expat_doc_imp(expat_doc* doc)
 	, m_escape_whitespace(false)
 	, m_validating(false)
 	, m_doc(doc)
-	, m_cur(NULL)
+	, m_cur(nil)
 {
 }
 
@@ -265,7 +265,7 @@ string expat_doc_imp::prefix_for_namespace(const string& ns)
 	string result;
 	if (i != m_namespaces.end())
 		result = i->first;
-	else if (m_cur != NULL)
+	else if (m_cur != nil)
 		result = m_cur->prefix_for_namespace(ns);
 	else
 		throw exception("namespace not found: %s", ns.c_str());
@@ -318,7 +318,7 @@ void expat_doc_imp::StartElementHandler(
 
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		m_root.child_element(n.get());
 	else
 		m_cur->append(n.get());
@@ -351,7 +351,7 @@ void expat_doc_imp::StartElementHandler(
 void expat_doc_imp::EndElementHandler(
 	const XML_Char*		name)
 {
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur = dynamic_cast<element*>(m_cur->parent());
@@ -361,7 +361,7 @@ void expat_doc_imp::CharacterDataHandler(
 	const XML_Char*		s,
 	int					len)
 {
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur->add_text(string(s, len));
@@ -371,7 +371,7 @@ void expat_doc_imp::ProcessingInstructionHandler(
 	const XML_Char*		target,
 	const XML_Char*		data)
 {
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -380,7 +380,7 @@ void expat_doc_imp::ProcessingInstructionHandler(
 void expat_doc_imp::CommentHandler(
 	const XML_Char*		data)
 {
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new comment(data));
 	else
 		m_root.append(new comment(data));
@@ -400,7 +400,7 @@ void expat_doc_imp::StartNamespaceDeclHandler(
 	const XML_Char*		prefix,
 	const XML_Char*		uri)
 {
-	if (prefix == NULL)
+	if (prefix == nil)
 		prefix = "";
 
 	m_namespaces.push_back(make_pair(prefix, uri));
@@ -430,9 +430,9 @@ void expat_doc_imp::NotationDeclHandler(
 void expat_doc_imp::parse(
 	istream&		data)
 {
-	XML_Parser p = XML_ParserCreateNS(NULL, '=');
+	XML_Parser p = XML_ParserCreateNS(nil, '=');
 	
-	if (p == NULL)
+	if (p == nil)
 		throw exception("failed to create expat parser object");
 	
 	try
@@ -533,7 +533,7 @@ void expat_doc::write(writer& w) const
 {
 	element* e = m_impl->m_root.child_element();
 	
-	if (e == NULL)
+	if (e == nil)
 		throw exception("cannot write an empty XML expat_doc");
 	
 	w.xml_decl(m_impl->m_standalone);

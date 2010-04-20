@@ -6,6 +6,8 @@
 #ifndef ZEEP_XML_DOCTYPE_HPP
 #define ZEEP_XML_DOCTYPE_HPP
 
+#include "zeep/config.hpp"
+
 #include <set>
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -240,7 +242,7 @@ class element : boost::noncopyable
 {
   public:
 						element(const std::string& name, bool declared, bool external)
-							: m_name(name), m_allowed(NULL), m_declared(declared), m_external(external) {}
+							: m_name(name), m_allowed(nil), m_declared(declared), m_external(external) {}
 
 						~element();
 

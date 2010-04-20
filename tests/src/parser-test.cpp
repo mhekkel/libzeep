@@ -11,7 +11,6 @@
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/xml/parser.hpp"
-#include "zeep/xml/document-expat.hpp"
 #include "zeep/xml/writer.hpp"
 #include "zeep/xml/xpath.hpp"
 #include "zeep/xml/unicode_support.hpp"
@@ -24,26 +23,16 @@ namespace ba = boost::algorithm;
 
 #define foreach BOOST_FOREACH
 
-struct doc_factory
-{
-	virtual xml::document*	create()		{ return new xml::document; }
-};
-
-struct expat_doc_factory : public doc_factory
-{
-	virtual xml::document*	create()		{ return new xml::expat_document; }
-};
-
 int VERBOSE;
 int TRACE;
 int dubious_tests, error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
 
-bool run_valid_test(istream& is, fs::path& outfile, doc_factory& f)
+bool run_valid_test(istream& is, fs::path& outfile)
 {
 	bool result = true;
 	
-	auto_ptr<xml::document> indoc(f.create());
-	is >> *indoc;
+	xml::document indoc;
+	is >> indoc;
 	
 	stringstream s;
 
@@ -53,7 +42,8 @@ bool run_valid_test(istream& is, fs::path& outfile, doc_factory& f)
 	w.set_wrap(false);
 	w.set_collapse_empty_elements(false);
 	w.set_escape_whitespace(true);
-	indoc->write(w);
+	w.set_no_comment(true);
+	indoc.write(w);
 
 	string s1 = s.str();
 	ba::trim(s1);
@@ -76,15 +66,15 @@ bool run_valid_test(istream& is, fs::path& outfile, doc_factory& f)
 
 		if (s1 != s2)
 		{
-			auto_ptr<xml::document> a(f.create());
-			a->set_validating(false);
-			a->read(s1);
+			xml::document a;
+			a.set_validating(false);
+			a.read(s1);
 
-			auto_ptr<xml::document> b(f.create());
-			b->set_validating(false);
-			b->read(s2);
+			xml::document b;
+			b.set_validating(false);
+			b.read(s2);
 			
-			if (*a == *b)
+			if (a == b)
 				++dubious_tests;
 			else
 			{
@@ -104,7 +94,7 @@ bool run_valid_test(istream& is, fs::path& outfile, doc_factory& f)
 	return result;
 }
 
-bool run_test(const xml::element& test, fs::path base_dir, doc_factory& f)
+bool run_test(const xml::element& test, fs::path base_dir)
 {
 	bool result = true;
 
@@ -140,15 +130,15 @@ bool run_test(const xml::element& test, fs::path base_dir, doc_factory& f)
 		fs::current_path(input.branch_path());
 		
 		if (test.get_attribute("TYPE") == "valid")
-			result = run_valid_test(is, output, f);
+			result = run_valid_test(is, output);
 		else if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "invalid")
 		{
 			bool failed = false;
 			try
 			{
-				auto_ptr<xml::document> doc(f.create());
-				doc->set_validating(test.get_attribute("TYPE") == "invalid");
-				doc->read(is);
+				xml::document doc;
+				doc.set_validating(test.get_attribute("TYPE") == "invalid");
+				doc.read(is);
 				++should_have_failed;
 				result = false;
 				
@@ -190,8 +180,8 @@ bool run_test(const xml::element& test, fs::path base_dir, doc_factory& f)
 			bool failed = false;
 			try
 			{
-				auto_ptr<xml::document> doc(f.create());
-				doc->read(is);
+				xml::document doc;
+				doc.read(is);
 				++should_have_failed;
 				result = false;
 			}
@@ -237,8 +227,7 @@ bool run_test(const xml::element& test, fs::path base_dir, doc_factory& f)
 }
 
 void run_test_case(const xml::element* testcase, const string& id,
-	const string& type, fs::path base_dir, vector<string>& failed_ids,
-	doc_factory& f)
+	const string& type, fs::path base_dir, vector<string>& failed_ids)
 {
 	if (VERBOSE and id.empty())
 		cout << "Running testcase " << testcase->get_attribute("PROFILE") << endl;
@@ -261,7 +250,7 @@ void run_test_case(const xml::element* testcase, const string& id,
 			(type.empty() or type == n->get_attribute("TYPE")))
 		{
 			if (fs::exists(base_dir / n->get_attribute("URI")) and
-				not run_test(*n, base_dir, f))
+				not run_test(*n, base_dir))
 			{
 				failed_ids.push_back(n->get_attribute("ID"));
 			}
@@ -283,7 +272,7 @@ void run_utf_tests()
 }
 
 void test_testcases(const fs::path& testFile, const string& id,
-	const string& type, vector<string>& failed_ids, doc_factory& f)
+	const string& type, vector<string>& failed_ids)
 {
 	fs::ifstream file(testFile);
 	
@@ -296,16 +285,16 @@ void test_testcases(const fs::path& testFile, const string& id,
 	fs::path base_dir = fs::system_complete(testFile.branch_path());
 	fs::current_path(base_dir);
 
-	auto_ptr<xml::document> doc(f.create());
-	doc->set_validating(false);
-	doc->read(file);
+	xml::document doc;
+	doc.set_validating(false);
+	doc.read(file);
 
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
 	
-	foreach (const xml::element* test, doc->find("//TESTCASES"))
+	foreach (const xml::element* test, doc.find("//TESTCASES"))
 	{
-		run_test_case(test, id, type, base_dir, failed_ids, f);
+		run_test_case(test, id, type, base_dir, failed_ids);
 	}
 }
 
@@ -352,11 +341,8 @@ int main(int argc, char* argv[])
 	
 	try
 	{
-		auto_ptr<doc_factory> f;
 		if (vm.count("expat"))
-			f.reset(new expat_doc_factory());
-		else
-			f.reset(new doc_factory());
+			xml::document::set_parser_type(xml::parser_expat);
 		
 		if (vm.count("single"))
 		{
@@ -367,7 +353,7 @@ int main(int argc, char* argv[])
 
 			fs::ifstream file(path);
 
-			run_valid_test(file, dir, *f);
+			run_valid_test(file, dir);
 		}
 		else
 		{
@@ -386,7 +372,7 @@ int main(int argc, char* argv[])
 			
 			vector<string> failed_ids;
 			
-			test_testcases(xmlconfFile, id, type, failed_ids, *f);
+			test_testcases(xmlconfFile, id, type, failed_ids);
 			
 			cout << endl
 				 << "summary: " << endl

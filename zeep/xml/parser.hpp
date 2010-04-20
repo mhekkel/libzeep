@@ -77,8 +77,8 @@ class parser
 		const std::string& systemId, const std::string& publicId)>
 															notation_decl_handler;
 
-	boost::function<std::istream*(const std::string& pubid, const std::string& uri)>
-															find_external_dtd_handler;
+	boost::function<std::istream*(const std::string& base, const std::string& pubid, const std::string& uri)>
+															external_entity_ref_handler;
 
 	boost::function<void(const std::string& msg)>			report_invalidation_handler;
 
@@ -87,7 +87,8 @@ class parser
   protected:
 	friend class parser_imp;
 
-	virtual void		start_element(const std::string& name, const std::string& uri, const attr_list_type& atts);
+	virtual void		start_element(const std::string& name,
+							const std::string& uri, const attr_list_type& atts);
 
 	virtual void		end_element(const std::string& name, const std::string& uri);
 
@@ -105,12 +106,14 @@ class parser
 
 	virtual void		end_namespace_decl(const std::string& prefix);
 
-	virtual void		notation_decl(const std::string& name, const std::string& systemId, const std::string& publicId);
+	virtual void		notation_decl(const std::string& name,
+							const std::string& systemId, const std::string& publicId);
 	
 	virtual void		report_invalidation(const std::string& msg);
 
 	virtual std::istream*
-						find_external_dtd(const std::string& pubid, const std::string& uri);
+						external_entity_ref(const std::string& base,
+							const std::string& pubid, const std::string& uri);
 
 	struct parser_imp*	m_impl;
 	std::istream*		m_istream;

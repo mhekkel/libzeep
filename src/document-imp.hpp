@@ -21,9 +21,6 @@ struct document_imp
 
 	std::string		prefix_for_namespace(const std::string& ns);
 	
-	bool			find_external_dtd(const std::string& uri,
-						boost::filesystem::path& path);
-
 	root_node		m_root;
 	boost::filesystem::path
 					m_dtd_dir;
@@ -36,8 +33,12 @@ struct document_imp
 	bool			m_wrap;
 	bool			m_trim;
 	bool			m_escape_whitespace;
+	bool			m_no_comment;
 	
 	bool			m_validating;
+
+	std::istream*	external_entity_ref(const std::string& base,
+						const std::string& pubid, const std::string& sysid);
 
 	struct notation
 	{

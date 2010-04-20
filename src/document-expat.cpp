@@ -3,8 +3,6 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <expat.h>
-
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -18,8 +16,7 @@
 #define foreach BOOST_FOREACH
 
 #include "zeep/xml/unicode_support.hpp"
-#include "document-imp.hpp"
-#include "zeep/xml/document-expat.hpp"
+#include "document-expat.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/xml/writer.hpp"
 
@@ -73,7 +70,6 @@ const char* kXML_Parser_Error_Messages[] = {
 	"RESERVED_NAMESPACE_URI",
 };
 	
-	
 class expat_exception : public zeep::exception
 {
   public:
@@ -101,7 +97,7 @@ expat_exception::expat_exception(
 		 
 		int offset = 0, size = 0;
 		const char* context = XML_GetInputContext(parser, &offset, &size);
-		if (context != NULL)
+		if (context != nil)
 			s << string(context + offset, size) << endl;
 	
 		m_message = s.str();
@@ -111,111 +107,6 @@ expat_exception::expat_exception(
 		m_message = "oeps";
 	}
 }
-
-
-// --------------------------------------------------------------------
-
-struct expat_doc_imp : public document_imp
-{
-					expat_doc_imp(document* doc);
-
-	static void		XML_StartElementHandler(
-						void*				userData,
-						const XML_Char*		name,
-						const XML_Char**	atts);
-
-	static void		XML_EndElementHandler(
-						void*				userData,
-						const XML_Char*		name);
-
-	static void		XML_CharacterDataHandler(
-						void*				userData,
-						const XML_Char*		s,
-						int					len);
-
-	static void		XML_ProcessingInstructionHandler(
-						void*				userData,
-						const XML_Char*		target,
-						const XML_Char*		data);
-
-	static void		XML_CommentHandler(
-						void*				userData,
-						const XML_Char*		data);
-
-	static void		XML_StartCdataSectionHandler(
-						void *userData);
-
-	static void		XML_EndCdataSectionHandler(
-						void *userData);
-
-	static void		XML_StartNamespaceDeclHandler(
-                        void*				userData,
-                        const XML_Char*		prefix,
-                        const XML_Char*		uri);
-
-	static void		XML_EndNamespaceDeclHandler(
-						void*				userData,
-						const XML_Char*		prefix);
-
-	static void		XML_NotationDeclHandler(
-                        void*				userData,
-                        const XML_Char*		notationName,
-                        const XML_Char*		base,
-                        const XML_Char*		systemId,
-                        const XML_Char*		publicId);
-
-	static int		XML_ExternalEntityRefHandler(
-                        XML_Parser			parser,
-                        const XML_Char*		context,
-                        const XML_Char*		base,
-                        const XML_Char*		systemId,
-                        const XML_Char*		publicId);
-
-	void			StartElementHandler(
-						const XML_Char*		name,
-						const XML_Char**	atts);
-
-	void			EndElementHandler(
-						const XML_Char*		name);
-
-	void			CharacterDataHandler(
-						const XML_Char*		s,
-						int					len);
-
-	void			ProcessingInstructionHandler(
-						const XML_Char*		target,
-						const XML_Char*		data);
-
-	void			CommentHandler(
-						const XML_Char*		data);
-
-	void			StartCdataSectionHandler();
-
-	void			EndCdataSectionHandler();
-
-	void			StartNamespaceDeclHandler(
-                        const XML_Char*		prefix,
-                        const XML_Char*		uri);
-
-	void			EndNamespaceDeclHandler(
-						const XML_Char*		prefix);
-
-	void			NotationDeclHandler(
-                        const XML_Char*		notationName,
-                        const XML_Char*		base,
-                        const XML_Char*		systemId,
-                        const XML_Char*		publicId);
-
-	void			parse(
-						istream&			data);
-
-	void			parse_name(
-						const char*			name,
-						string&				element,
-						string&				ns,
-						string&				prefix);
-
-};
 
 // --------------------------------------------------------------------
 
@@ -310,7 +201,7 @@ int expat_doc_imp::XML_ExternalEntityRefHandler(
 {
 	int result = XML_STATUS_OK;
 	
-	if (base != NULL and systemId != NULL)
+	if (base != nil and systemId != nil)
 	{
 		fs::path basedir(base);
 		fs::path file = basedir / systemId;
@@ -400,7 +291,7 @@ void expat_doc_imp::StartElementHandler(
 
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		m_root.child_element(n.get());
 	else
 		m_cur->append(n.get());
@@ -433,7 +324,7 @@ void expat_doc_imp::StartElementHandler(
 void expat_doc_imp::EndElementHandler(
 	const XML_Char*		name)
 {
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur = dynamic_cast<element*>(m_cur->parent());
@@ -443,7 +334,7 @@ void expat_doc_imp::CharacterDataHandler(
 	const XML_Char*		s,
 	int					len)
 {
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur->add_text(string(s, len));
@@ -453,7 +344,7 @@ void expat_doc_imp::ProcessingInstructionHandler(
 	const XML_Char*		target,
 	const XML_Char*		data)
 {
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -462,7 +353,7 @@ void expat_doc_imp::ProcessingInstructionHandler(
 void expat_doc_imp::CommentHandler(
 	const XML_Char*		data)
 {
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new comment(data));
 	else
 		m_root.append(new comment(data));
@@ -482,7 +373,7 @@ void expat_doc_imp::StartNamespaceDeclHandler(
 	const XML_Char*		prefix,
 	const XML_Char*		uri)
 {
-	if (prefix == NULL)
+	if (prefix == nil)
 		prefix = "";
 
 	m_namespaces.push_back(make_pair(prefix, uri));
@@ -516,9 +407,9 @@ void expat_doc_imp::NotationDeclHandler(
 void expat_doc_imp::parse(
 	istream&		data)
 {
-	XML_Parser p = XML_ParserCreateNS(NULL, '=');
+	XML_Parser p = XML_ParserCreateNS(nil, '=');
 	
-	if (p == NULL)
+	if (p == nil)
 		throw exception("failed to create expat parser object");
 	
 	try
@@ -531,7 +422,7 @@ void expat_doc_imp::parse(
 		XML_SetElementHandler(p, XML_StartElementHandler, XML_EndElementHandler);
 		XML_SetCharacterDataHandler(p, XML_CharacterDataHandler);
 		XML_SetProcessingInstructionHandler(p, XML_ProcessingInstructionHandler);
-//		XML_SetCommentHandler(p, XML_CommentHandler);
+		XML_SetCommentHandler(p, XML_CommentHandler);
 //		XML_SetCdataSectionHandler(p, XML_StartCdataSectionHandler, XML_EndCdataSectionHandler);
 //		XML_SetDefaultHandler(p, XML_DefaultHandler);
 //		XML_SetDoctypeDeclHandler(p, XML_StartDoctypeDeclHandler, XML_EndDoctypeDeclHandler);
@@ -574,26 +465,5 @@ void expat_doc_imp::parse(
 	XML_ParserFree(p);
 }
 
-// --------------------------------------------------------------------
-
-expat_document::expat_document()
-	: document(new expat_doc_imp(this))
-{
-}
-
-expat_document::expat_document(const string& s)
-	: document(new expat_doc_imp(this))
-{
-	istringstream is(s);
-	read(is);
-}
-
-expat_document::expat_document(istream& is)
-	: document(new expat_doc_imp(this))
-{
-	read(is);
-}
-
-	
 } // xml
 } // zeep

@@ -410,7 +410,7 @@ void server_starter::write_socket_to_worker(int fd_socket, boost::asio::ip::tcp:
 	cmptr->cmsg_type = SCM_RIGHTS;
 	*(reinterpret_cast<native_type*>(CMSG_DATA(cmptr))) = socket.native();
 	
-	msg.msg_name = NULL;
+	msg.msg_name = nil;
 	msg.msg_namelen = 0;
 	
 	struct iovec iov[1];

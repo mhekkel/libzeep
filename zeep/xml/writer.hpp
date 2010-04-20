@@ -53,6 +53,9 @@ class writer
 	//! escape whitespace into character refences can be specified.
 	void			set_escape_whitespace(bool escape)				{ m_escape_whitespace = escape; }
 
+	//! do not write out comments
+	void			set_no_comment(bool no_comment)					{ m_no_comment = no_comment; }
+
 	// actual writing routines
 	
 	//! write a xml declaration, version will be 1.0, standalone can be specified.
@@ -100,6 +103,7 @@ class writer
 	bool			m_collapse_empty;
 	bool			m_escape_whitespace;
 	bool			m_trim;
+	bool			m_no_comment;
 	int				m_indent;
 	int				m_level;
 	bool			m_element_open;
