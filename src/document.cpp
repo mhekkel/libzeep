@@ -15,14 +15,19 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
+#include "zeep/config.hpp"
 #include "document-imp.hpp"
 #include "zeep/exception.hpp"
-
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/writer.hpp"
+
+#if SOAP_XML_HAS_EXPAT_SUPPORT
+#include "document-expat.hpp"
+#endif
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -40,9 +45,10 @@ document_imp::document_imp(document* doc)
 	, m_wrap(true)
 	, m_trim(true)
 	, m_escape_whitespace(false)
+	, m_no_comment(false)
 	, m_validating(false)
 	, m_doc(doc)
-	, m_cur(NULL)
+	, m_cur(nil)
 {
 }
 
@@ -58,7 +64,7 @@ string document_imp::prefix_for_namespace(const string& ns)
 	string result;
 	if (i != m_namespaces.end())
 		result = i->first;
-	else if (m_cur != NULL)
+	else if (m_cur != nil)
 		result = m_cur->prefix_for_namespace(ns);
 	else
 		throw exception("namespace not found: %s", ns.c_str());
@@ -66,14 +72,29 @@ string document_imp::prefix_for_namespace(const string& ns)
 	return result;
 }
 
-bool document_imp::find_external_dtd(const string& uri, fs::path& path)
+istream* document_imp::external_entity_ref(const string& base, const string& pubid, const string& sysid)
 {
-	bool result = false;
-	if (not m_dtd_dir.empty() and fs::exists(m_dtd_dir))
+	istream* result = nil;
+	
+	if (m_doc->external_entity_ref_handler)
+		result = m_doc->external_entity_ref_handler(base, pubid, sysid);
+	
+	if (result == nil and not sysid.empty())
 	{
-		path = m_dtd_dir / uri;
-		result = fs::exists(path);
+		fs::path path;
+		
+		if (base.empty())
+			path = sysid;
+		else
+			path = base + '/' + sysid;
+		
+		if (not fs::exists(path))
+			path = m_dtd_dir / path;
+
+		if (fs::exists(path))
+			result = new fs::ifstream(m_dtd_dir / path);
 	}
+	
 	return result;
 }
 
@@ -111,16 +132,6 @@ struct zeep_document_imp : public document_imp
 
 zeep_document_imp::zeep_document_imp(document* doc)
 	: document_imp(doc)
-//	, m_encoding(enc_UTF8)
-//	, m_standalone(false)
-//	, m_indent(2)
-//	, m_empty(true)
-//	, m_wrap(true)
-//	, m_trim(true)
-//	, m_escape_whitespace(false)
-//	, m_validating(false)
-//	, m_doc(doc)
-//	, m_cur(NULL)
 {
 }
 
@@ -137,7 +148,7 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		m_root.child_element(n.get());
 	else
 		m_cur->append(n.get());
@@ -165,7 +176,7 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 
 void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
 {
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur = dynamic_cast<element*>(m_cur->parent());
@@ -173,7 +184,7 @@ void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
 
 void zeep_document_imp::CharacterDataHandler(const string& data)
 {
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur->add_text(data);
@@ -181,7 +192,7 @@ void zeep_document_imp::CharacterDataHandler(const string& data)
 
 void zeep_document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -189,7 +200,7 @@ void zeep_document_imp::ProcessingInstructionHandler(const string& target, const
 
 void zeep_document_imp::CommentHandler(const string& s)
 {
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new comment(s));
 	else
 		m_root.append(new comment(s));
@@ -214,7 +225,8 @@ void zeep_document_imp::EndNamespaceDeclHandler(const string& prefix)
 {
 }
 
-void zeep_document_imp::NotationDeclHandler(	const string& name, const string& sysid, const string& pubid)
+void zeep_document_imp::NotationDeclHandler(
+	const string& name, const string& sysid, const string& pubid)
 {
 	notation n = { name, sysid, pubid };
 	
@@ -236,27 +248,50 @@ void zeep_document_imp::parse(
 	p.character_data_handler = boost::bind(&zeep_document_imp::CharacterDataHandler, this, _1);
 	p.start_namespace_decl_handler = boost::bind(&zeep_document_imp::StartNamespaceDeclHandler, this, _1, _2);
 	p.processing_instruction_handler = boost::bind(&zeep_document_imp::ProcessingInstructionHandler, this, _1, _2);
+	p.comment_handler = boost::bind(&zeep_document_imp::CommentHandler, this, _1);
 	p.notation_decl_handler = boost::bind(&zeep_document_imp::NotationDeclHandler, this, _1, _2, _3);
+	p.external_entity_ref_handler = boost::bind(&document_imp::external_entity_ref, this, _1, _2, _3);
 
 	p.parse(m_validating);
 }
 
 // --------------------------------------------------------------------
 
+parser_type document::s_parser_type = parser_zeep;
+
+document_imp* document::create_imp(document* doc)
+{
+	document_imp* impl;
+	
+	if (s_parser_type == parser_expat)
+		impl = new expat_doc_imp(doc);
+	else if (s_parser_type == parser_zeep)
+		impl = new zeep_document_imp(doc);
+	else
+		throw zeep::exception("invalid parser type specified");
+	
+	return impl;
+}
+
+void document::set_parser_type(parser_type type)
+{
+	s_parser_type = type;
+}
+
 document::document()
-	: m_impl(new zeep_document_imp(this))
+	: m_impl(create_imp(this))
 {
 }
 
 document::document(const string& s)
-	: m_impl(new zeep_document_imp(this))
+	: m_impl(create_imp(this))
 {
 	istringstream is(s);
 	read(is);
 }
 
 document::document(std::istream& is)
-	: m_impl(new zeep_document_imp(this))
+	: m_impl(create_imp(this))
 {
 	read(is);
 }
@@ -290,9 +325,16 @@ void document::read(istream& is, const boost::filesystem::path& base_dir)
 
 void document::write(writer& w) const
 {
+//	w.set_xml_decl(true);
+//	w.set_indent(m_impl->m_indent);
+//	w.set_wrap(m_impl->m_wrap);
+//	w.set_trim(m_impl->m_trim);
+//	w.set_escape_whitespace(m_impl->m_escape_whitespace);
+//	w.set_no_comment(m_impl->m_no_comment);
+	
 	element* e = m_impl->m_root.child_element();
 	
-	if (e == NULL)
+	if (e == nil)
 		throw exception("cannot write an empty XML document");
 	
 	w.xml_decl(m_impl->m_standalone);
@@ -376,6 +418,16 @@ bool document::trim() const
 void document::trim(bool trim)
 {
 	m_impl->m_trim = trim;
+}
+
+bool document::no_comment() const
+{
+	return m_impl->m_no_comment;
+}
+
+void document::no_comment(bool no_comment)
+{
+	m_impl->m_no_comment = no_comment;
 }
 
 void document::set_validating(bool validate)

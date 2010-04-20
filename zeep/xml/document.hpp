@@ -1,4 +1,4 @@
-//  Copyright Maarten L. Hekkelman, Radboud University 2008.
+//  Copyright Maarten L. Hekkelman, Radboud University 2010.
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -6,12 +6,24 @@
 #ifndef SOAP_XML_DOCUMENT_H
 #define SOAP_XML_DOCUMENT_H
 
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
+#include "zeep/config.hpp"
 #include "zeep/xml/node.hpp"
 #include "zeep/xml/unicode_support.hpp"
 
 namespace zeep { namespace xml {
+
+// You can choose between the libzeep parser and expat.
+enum parser_type
+{
+	parser_zeep,
+#if SOAP_XML_HAS_EXPAT_SUPPORT
+	parser_expat
+#endif
+};
+
+struct document_imp;
 
 class document
 {
@@ -42,11 +54,16 @@ class document
 
 	// Compare two xml documents
 	bool				operator==(const document& doc) const;
-
 	bool				operator!=(const document& doc) const		{ return not operator==(doc); }
 	
 	// In case the document needs to locate included DTD files
 	void				base_dir(const boost::filesystem::path& path);
+
+	// The default for libzeep is to locate the external reference based
+	// on sysid and base_dir. Only local files are loaded this way.
+	// You can specify a entity loader here.
+	boost::function<std::istream*(const std::string& base, const std::string& pubid, const std::string& sysid)>
+						external_entity_ref_handler;
 
 	// the encoding to use for output, or the detected encoding in the input
 	encoding_type		encoding() const;
@@ -66,14 +83,28 @@ class document
 	bool				trim() const;
 	void				trim(bool trim);
 
+	// suppress writing out comments
+	bool				no_comment() const;
+	void				no_comment(bool no_comment);
+
 	// option for parsing
 	void				set_validating(bool validate);
+	
+	// By default, libzeep uses its own parser implementation. But if you prefer
+	// expat you can specify that here.
+	static void			set_parser_type(parser_type type);
 
   protected:
 						document(struct document_imp* impl);
 
+	static parser_type	s_parser_type;
+	document_imp*		create_imp(document* doc);
+
+	document_imp*		m_impl;
+
   private:
-	struct document_imp*m_impl;
+						document(const document&);
+	document&			operator=(const document&);
 };
 
 std::istream& operator>>(std::istream& lhs, document& rhs);

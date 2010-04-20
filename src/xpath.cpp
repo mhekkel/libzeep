@@ -3,6 +3,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include "zeep/config.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <numeric>
@@ -24,8 +26,6 @@
 #include "zeep/xml/unicode_support.hpp"
 
 #include "zeep/xml/writer.hpp"
-
-#define nil NULL
 
 extern int VERBOSE;
 

@@ -94,7 +94,7 @@ exception::exception(
 //		 
 //		int offset = 0, size = 0;
 //		const char* context = XML_GetInputContext(parser, &offset, &size);
-//		if (context != NULL)
+//		if (context != nil)
 //			s << string(context + offset, size) << endl;
 //	
 //		m_message = s.str();

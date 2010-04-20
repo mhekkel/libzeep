@@ -4,37 +4,22 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-#include <sstream>
-#include <vector>
-#include <stack>
-#include <deque>
 #include <map>
-#include <set>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH 
 #include <boost/format.hpp>
 
-#include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
-
 #include "zeep/xml/parser.hpp"
 #include "zeep/xml/doctype.hpp"
 #include "zeep/xml/unicode_support.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
-namespace fs = boost::filesystem;
-
-#ifndef nil
-#define nil NULL
-#endif
 
 #if DEBUG
 extern int VERBOSE;
@@ -89,6 +74,26 @@ class mini_stack
 	wchar_t	m_data[2];
 	int		m_ix;
 };
+
+bool is_absolute_path(const string& s)
+{
+	bool result = false;
+	
+	if (not s.empty())
+	{
+		if (s[0] == '/')
+			result = true;
+		else if (isalpha(s[0]))
+		{
+			string::const_iterator ch = s.begin() + 1;
+			while (ch != s.end() and isalpha(*ch))
+				++ch;
+			result = ch != s.end() and *ch == ':';
+		}
+	}
+	
+	return result;
+}
 
 }
 
@@ -2607,16 +2612,16 @@ void parser_imp::notation_decl()
 data_source* parser_imp::external_id()
 {
 	data_source* result = nil;
-	string pubid, system;
+	string pubid, sysid;
 	
 	if (m_token == "SYSTEM")
 	{
 		match(xml_Name);
 		s(true);
 		
-		system = m_token;
+		sysid = m_token;
 
-		if (not is_valid_system_literal(system))
+		if (not is_valid_system_literal(sysid))
 			not_well_formed("invalid system literal");
 	}
 	else if (m_token == "PUBLIC")
@@ -2632,34 +2637,27 @@ data_source* parser_imp::external_id()
 			not_well_formed("Invalid public ID");
 		
 		s(true);
-		system = m_token;
+		sysid = m_token;
 	}
 	else
 		not_well_formed("Expected external id starting with either SYSTEM or PUBLIC");
 
-	if (not system.empty())
+	auto_ptr<istream> is(m_parser.external_entity_ref(m_data_source->base(), pubid, sysid));
+	if (is.get() != nil)
 	{
-		auto_ptr<istream> is;
-		fs::path path;
+		result = new istream_data_source(is);
 		
-		// first allow the client to retrieve the dtd
-		is.reset(m_parser.find_external_dtd(pubid, system));
-		
-		// if that fails, we try it ourselves
-		if (is.get() == nil)
+		string::size_type s = sysid.rfind('/');
+		if (s == string::npos)
+			result->base(m_data_source->base());
+		else
 		{
-			path = fs::system_complete(m_data_source->base()) / system;
-	
-			if (fs::exists(path))
-				is.reset(new fs::ifstream(path));
-		}
+			sysid.erase(s, string::npos);
 		
-		if (is.get() != nil)
-		{
-			result = new istream_data_source(is);
-			
-			if (fs::exists(path) and fs::exists(path.branch_path()))
-				result->base(path.branch_path().string());
+			if (is_absolute_path(sysid))
+				result->base(sysid);
+			else
+				result->base(m_data_source->base() + '/' + sysid);
 		}
 	}
 
@@ -3697,11 +3695,11 @@ void parser::notation_decl(const string& name, const string& systemId, const str
 		notation_decl_handler(name, systemId, publicId);
 }
 
-istream* parser::find_external_dtd(const string& pubid, const string& uri)
+istream* parser::external_entity_ref(const string& base, const string& pubid, const string& uri)
 {
-	istream* result = NULL;
-	if (find_external_dtd_handler)
-		result = find_external_dtd_handler(pubid, uri);
+	istream* result = nil;
+	if (external_entity_ref_handler)
+		result = external_entity_ref_handler(base, pubid, uri);
 	return result;
 }
 

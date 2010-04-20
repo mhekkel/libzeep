@@ -181,7 +181,7 @@ void libxml2_doc_imp::CharacterDataHandler(
 		--m_depth;
 	}
 	
-	if (m_cur == NULL)
+	if (m_cur == nil)
 		throw exception("Empty stack");
 	
 	m_cur->add_text((const char*)xmlTextReaderConstValue(inReader));
@@ -193,7 +193,7 @@ void libxml2_doc_imp::ProcessingInstructionHandler(
 	const char* target = (const char*)xmlTextReaderConstName(inReader);
 	const char* data = (const char*)xmlTextReaderConstValue(inReader);
 	
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -204,7 +204,7 @@ void libxml2_doc_imp::CommentHandler(
 {
 	const char* data = (const char*)xmlTextReaderConstValue(inReader);
 	
-	if (m_cur != NULL)
+	if (m_cur != nil)
 		m_cur->append(new comment(data));
 	else
 		m_root.append(new comment(data));
@@ -295,10 +295,10 @@ void libxml2_doc_imp::parse(
 
 	xmlTextReaderPtr reader = xmlReaderForMemory(&buffer[0], length,
 		(fs::current_path().string() + "/").c_str(),
-		NULL, 
+		nil, 
 		XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_XINCLUDE);
 
-	if (reader != NULL)
+	if (reader != nil)
 	{
 		xmlTextReaderSetErrorHandler(reader, &libxml2_doc_imp::ErrorHandler, this);
 		try
@@ -370,7 +370,7 @@ void libxml2_doc::write(writer& w) const
 {
 	element* e = m_impl->m_root.child_element();
 	
-	if (e == NULL)
+	if (e == nil)
 		throw exception("cannot write an empty XML libxml2_doc");
 	
 	w.xml_decl(m_impl->m_standalone);

@@ -22,8 +22,6 @@ using namespace std;
 using namespace tr1;
 namespace ba = boost::algorithm;
 
-#define nil NULL
-
 namespace zeep { namespace xml { namespace doctype {
 
 // --------------------------------------------------------------------
