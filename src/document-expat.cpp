@@ -3,6 +3,10 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include "zeep/config.hpp"
+
+#if SOAP_XML_HAS_EXPAT_SUPPORT
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -467,3 +471,5 @@ void expat_doc_imp::parse(
 
 } // xml
 } // zeep
+
+#endif
