@@ -6,7 +6,7 @@
 #ifndef SOAP_XML_DOCUMENT_H
 #define SOAP_XML_DOCUMENT_H
 
-#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "zeep/config.hpp"
 #include "zeep/xml/node.hpp"
