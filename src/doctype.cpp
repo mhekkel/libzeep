@@ -445,6 +445,7 @@ validator::validator(const validator& other)
 	, m_nr(other.m_nr)
 	, m_done(other.m_done)
 {
+	m_state->reference();
 }
 
 validator::~validator()
