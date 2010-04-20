@@ -263,12 +263,16 @@ document_imp* document::create_imp(document* doc)
 {
 	document_imp* impl;
 	
+#if SOAP_XML_HAS_EXPAT_SUPPORT
 	if (s_parser_type == parser_expat)
 		impl = new expat_doc_imp(doc);
 	else if (s_parser_type == parser_zeep)
 		impl = new zeep_document_imp(doc);
 	else
 		throw zeep::exception("invalid parser type specified");
+#else
+	impl = new zeep_document_imp(doc);
+#endif
 	
 	return impl;
 }

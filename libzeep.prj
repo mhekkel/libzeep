@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project version="2.0">
   <syspaths>
     <path>../boost/include</path>
@@ -25,6 +24,7 @@
       </group>
       <group name="xml">
         <file>document.cpp</file>
+        <file>document-expat.cpp</file>
         <file>doctype.cpp</file>
         <file>node.cpp</file>
         <file>parser.cpp</file>
@@ -41,12 +41,13 @@
       <compiler>/usr/bin/c++</compiler>
       <defines>
         <define>DEBUG</define>
+        <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
       </defines>
       <cflags>
+        <cflag>-O0</cflag>
         <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
         <cflag>-fPIC</cflag>
-        <cflag>-O0</cflag>
       </cflags>
       <warnings>
         <warning>all</warning>

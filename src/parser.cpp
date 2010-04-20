@@ -1452,7 +1452,7 @@ string parser_imp::describe_token(int token)
 		stringstream s;
 		
 		if (isprint(token))
-			s << '\'' << wchar_t(token) << '\'';
+			s << char(token);
 		else
 			s << "&#x" << hex << token << ';';
 		
