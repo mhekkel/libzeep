@@ -3,6 +3,30 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+/// Dispatcher is the class that implements the code to dispatch calls
+/// based on an incoming SOAP message. This code uses boost::fusion for
+/// most of its tricks.
+/// 
+/// The way dispatches works is as follows. The class dispatches has a
+/// member called m_handlers which is a list of available methods bound
+/// to a SOAP action. You can add functions to this list by calling
+/// register_action. This function takes four arguments:
+/// - The name of the action as it is included in the WSDL.
+/// - A pointer to the owning object of the function.
+/// - The actual function/method.
+/// - A list of argument names. The number of names in this list
+///   is specified by the signature of the function and an error
+///   will be reported if these are not equal.
+/// 
+/// The dispatcher will create a wrapping handler object for each of
+/// the registered actions. Each handler object has two main methods.
+/// One to do the actual call to the method as registered. This one
+/// uses the zeep::xml::serializer code to collect the values out of
+/// the SOAP message and passes these using fusion calls to the 
+/// registered method.
+/// The second method of the handler class is collect which is used
+/// to collect all the information required to create a complete WSDL.
+
 #ifndef SOAP_DISPATCHER_H
 
 #if not defined(BOOST_PP_IS_ITERATING)
@@ -38,8 +62,7 @@ struct parameter_deserializer
 	
 	element*	m_node;
 	
-				parameter_deserializer(
-					element*	node)
+				parameter_deserializer(element* node)
 					: m_node(node) {}
 	
 	// due to a change in fusion::accumulate we have to define both functors:
@@ -68,11 +91,8 @@ struct parameter_types
 	type_map&	m_types;
 	element*	m_node;
 	
-				parameter_types(
-					type_map&	types,
-					element*	node)
-					: m_types(types)
-					, m_node(node) {}
+				parameter_types(type_map& types, element* node)
+					: m_types(types), m_node(node) {}
 	
 	template<typename T>
 	Iterator	operator()(Iterator i, T& t) const
@@ -229,7 +249,6 @@ struct handler : public handler_base
 							messages[message->get_attribute("name")] = message;
 							
 							// port type
-							
 							element* operation(new element("wsdl:operation"));
 							operation->set_attribute("name", get_action_name());
 							

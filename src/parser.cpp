@@ -3240,11 +3240,17 @@ void parser_imp::element(doctype::validator& valid)
 				}
 				else if (dta->get_type() == doctype::attTypeTokenizedIDREF)
 				{
+					if (attr_value.empty())
+						not_valid(boost::format("attribute value for attribute '%1%' may not be empty") % attr_name);
+					
 					if (not m_ids.count(attr_value))
 						m_unresolved_ids.insert(attr_value);
 				}
 				else if (dta->get_type() == doctype::attTypeTokenizedIDREFS)
 				{
+					if (attr_value.empty())
+						not_valid(boost::format("attribute value for attribute '%1%' may not be empty") % attr_name);
+
 					string::size_type b = 0, e = attr_value.find(' ');
 					while (e != string::npos)
 					{
@@ -3255,7 +3261,7 @@ void parser_imp::element(doctype::validator& valid)
 								m_unresolved_ids.insert(id);
 						}
 						b = e + 1;
-						e = attr_value.find(' ');
+						e = attr_value.find(b, ' ');
 					}
 					
 					if (b != string::npos and b < attr_value.length())
