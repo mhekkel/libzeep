@@ -306,7 +306,9 @@ int main(int argc, char* argv[])
 	    ("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
+#if SOAP_XML_HAS_EXPAT_SUPPORT
 	    ("expat", "Use expat parser")
+#endif
 	    ("utf-test", "Test UTF-8 routines")
 	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
@@ -341,8 +343,10 @@ int main(int argc, char* argv[])
 	
 	try
 	{
+#if SOAP_XML_HAS_EXPAT_SUPPORT
 		if (vm.count("expat"))
 			xml::document::set_parser_type(xml::parser_expat);
+#endif
 		
 		if (vm.count("single"))
 		{

@@ -60,6 +60,7 @@
       <compiler>/usr/bin/c++</compiler>
       <defines>
         <define>NDEBUG</define>
+        <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
       </defines>
       <cflags>
         <cflag>-O3</cflag>
