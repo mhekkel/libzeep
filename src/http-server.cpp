@@ -29,11 +29,13 @@ namespace detail {
 // a thread specific logger
 
 boost::thread_specific_ptr<ostringstream>	s_log;
-boost::mutex						s_log_lock;
+boost::mutex								s_log_lock;
 
 }
 
 server::server(const std::string& address, short port)
+	: m_address(address)
+	, m_port(port)
 {
 }
 
@@ -42,7 +44,7 @@ server::~server()
 	stop();
 }
 
-void server::run(const std::string& address, short port, int nr_of_threads)
+void server::run(int nr_of_threads)
 {
 	assert(not m_acceptor);
 	
@@ -50,7 +52,7 @@ void server::run(const std::string& address, short port, int nr_of_threads)
 	m_new_connection.reset(new connection(m_io_service, *this));
 
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<string>(port));
+	boost::asio::ip::tcp::resolver::query query(m_address, boost::lexical_cast<string>(m_port));
 	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
 
 	m_acceptor->open(endpoint.protocol());
