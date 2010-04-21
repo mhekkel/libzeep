@@ -15,6 +15,10 @@
 #define SOAP_XML_HAS_EXPAT_SUPPORT 0
 #endif
 
+#ifndef SOAP_XML_NO_INT_TYPEDEFS
+#define SOAP_XML_NO_INT_TYPEDEFS 0
+#endif
+
 /// see if we're using Visual C++, if so we have to include
 /// some VC specific include files to make the standard C++
 /// keywords work.
@@ -43,14 +47,14 @@
 #define nil NULL
 #endif
 
-#ifndef int8
-typedef char				int8;
+#if ! SOAP_XML_NO_INT_TYPEDEFS
+typedef signed char			int8;
 typedef unsigned char		uint8;
-typedef short				int16;
+typedef signed short		int16;
 typedef unsigned short		uint16;
-typedef int					int32;
+typedef signed int			int32;
 typedef unsigned int		uint32;
-typedef long long			int64;
+typedef signed long long	int64;
 typedef unsigned long long	uint64;
 #endif
 
