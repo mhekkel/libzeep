@@ -258,19 +258,6 @@ void run_test_case(const xml::element* testcase, const string& id,
 	}
 }
 
-void run_utf_tests()
-{
-	string s;
-	
-//	for (wchar_t ch = 0; ch <= 0x010ffff; ++ch)
-	{
-		wchar_t ch = 0x0ab;
-		
-		xml::append(s, ch);
-		assert(xml::pop_last_char(s) == ch);
-	}
-}
-
 void test_testcases(const fs::path& testFile, const string& id,
 	const string& type, vector<string>& failed_ids)
 {
@@ -309,7 +296,6 @@ int main(int argc, char* argv[])
 #if SOAP_XML_HAS_EXPAT_SUPPORT
 	    ("expat", "Use expat parser")
 #endif
-	    ("utf-test", "Test UTF-8 routines")
 	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
 	    ("single", po::value<string>(), "Test a single XML file")
@@ -333,12 +319,6 @@ int main(int argc, char* argv[])
 	VERBOSE = vm.count("verbose");
 	TRACE = vm.count("trace");
 
-	if (vm.count("utf-test"))
-	{
-		run_utf_tests();
-		return 0;
-	}
-	
 	fs::path savedwd = fs::current_path();
 	
 	try
