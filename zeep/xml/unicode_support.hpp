@@ -6,6 +6,8 @@
 #ifndef ZEEP_XML_UNICODE_SUPPORT_HPP
 #define ZEEP_XML_UNICODE_SUPPORT_HPP
 
+#include "zeep/config.hpp"
+
 #include <string>
 
 namespace zeep { namespace xml {
@@ -20,23 +22,23 @@ enum encoding_type
 };
 
 // some character classification routines
-bool is_name_start_char(wchar_t uc);
-bool is_name_char(wchar_t uc);
-bool is_char(wchar_t uc);
-bool is_valid_system_literal_char(wchar_t uc);
+bool is_name_start_char(uint32 uc);
+bool is_name_char(uint32 uc);
+bool is_char(uint32 uc);
+bool is_valid_system_literal_char(uint32 uc);
 bool is_valid_system_literal(const std::string& s);
-bool is_valid_public_id_char(wchar_t uc);
+bool is_valid_public_id_char(uint32 uc);
 bool is_valid_public_id(const std::string& s);
 
 // Convert a string from UCS4 to UTF-8
 std::string wstring_to_string(const std::wstring& s);
 
-void append(std::string& s, wchar_t ch);
-wchar_t pop_last_char(std::string& s);
+void append(std::string& s, uint32 ch);
+uint32 pop_last_char(std::string& s);
 
 // inlines
 
-inline bool is_char(wchar_t uc)
+inline bool is_char(uint32 uc)
 {
 	return
 		uc == 0x09 or
@@ -47,7 +49,7 @@ inline bool is_char(wchar_t uc)
 		(uc >= 0x010000 and uc <= 0x010FFFF);
 }
 
-inline void append(std::string& s, wchar_t ch)
+inline void append(std::string& s, uint32 ch)
 {
 	unsigned long cv = static_cast<unsigned long>(ch);
 	
@@ -82,11 +84,11 @@ inline void append(std::string& s, wchar_t ch)
 	}
 }
 
-inline wchar_t pop_last_char(std::string& s)
+inline uint32 pop_last_char(std::string& s)
 {
 	assert(not s.empty());
 	
-	wchar_t result = 0;
+	uint32 result = 0;
 
 	if (not s.empty())
 	{

@@ -16,7 +16,7 @@ namespace zeep { namespace xml {
 
 // some very basic code to check the class of scanned characters
 
-bool is_name_start_char(wchar_t uc)
+bool is_name_start_char(uint32 uc)
 {
 	return
 		uc == L':' or
@@ -37,7 +37,7 @@ bool is_name_start_char(wchar_t uc)
 		(uc >= 0x010000 and uc <= 0x0EFFFF);	
 }
 
-bool is_name_char(wchar_t uc)
+bool is_name_char(uint32 uc)
 {
 	return
 		uc == '-' or
@@ -49,18 +49,7 @@ bool is_name_char(wchar_t uc)
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
-//bool is_char(wchar_t uc)
-//{
-//	return
-//		uc == 0x09 or
-//		uc == 0x0A or
-//		uc == 0x0D or
-//		(uc >= 0x020 and uc <= 0x0D7FF) or
-//		(uc >= 0x0E000 and uc <= 0x0FFFD) or
-//		(uc >= 0x010000 and uc <= 0x010FFFF);
-//}
-
-bool is_valid_system_literal_char(wchar_t uc)
+bool is_valid_system_literal_char(uint32 uc)
 {
 	return
 		not (uc >= 0x0 and uc <= 0x1f) and
@@ -87,7 +76,7 @@ bool is_valid_system_literal(const string& s)
 	return result;
 }
 
-bool is_valid_public_id_char(wchar_t uc)
+bool is_valid_public_id_char(uint32 uc)
 {
 	return
 		(uc >= 'a' and uc <= 'z') or
@@ -111,42 +100,6 @@ bool is_valid_public_id(const string& s)
 		result = is_valid_public_id_char(*ch);
 	return result;
 }
-
-// wstring_to_string is a very simplistic UCS4 to UTF-8 converter
-string wstring_to_string(const wstring& s)
-{
-	string result;
-	result.reserve(s.length());
-	
-	for (wstring::const_iterator ch = s.begin(); ch != s.end(); ++ch)
-	{
-		unsigned long cv = static_cast<unsigned long>(*ch);
-		
-		if (cv < 0x080)
-			result += (static_cast<const char> (cv));
-		else if (cv < 0x0800)
-		{
-			result += (static_cast<const char> (0x0c0 | (cv >> 6)));
-			result += (static_cast<const char> (0x080 | (cv & 0x3f)));
-		}
-		else if (cv < 0x00010000)
-		{
-			result += (static_cast<const char> (0x0e0 | (cv >> 12)));
-			result += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
-			result += (static_cast<const char> (0x080 | (cv & 0x3f)));
-		}
-		else
-		{
-			result += (static_cast<const char> (0x0f0 | (cv >> 18)));
-			result += (static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)));
-			result += (static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)));
-			result += (static_cast<const char> (0x080 | (cv & 0x3f)));
-		}
-	}
-	
-	return result;
-}
-
 
 }
 }

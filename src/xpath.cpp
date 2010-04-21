@@ -1592,7 +1592,7 @@ struct xpath_imp
 	void				preprocess(const string& path);
 	
 	unsigned char		next_byte();
-	wchar_t				get_next_char();
+	uint32				get_next_char();
 	void				retract();
 	Token				get_next_token();
 	string				describe_token(Token token);
@@ -1690,7 +1690,7 @@ void xpath_imp::preprocess(const string& path)
 	} state;
 	
 	state = pp_Step;
-	wchar_t quoteChar = 0;
+	uint32 quoteChar = 0;
 	
 	for (string::const_iterator ch = path.begin(); ch != path.end(); ++ch)
 	{
@@ -1776,9 +1776,9 @@ unsigned char xpath_imp::next_byte()
 }
 
 // We assume all paths are in valid UTF-8 encoding
-wchar_t xpath_imp::get_next_char()
+uint32 xpath_imp::get_next_char()
 {
-	unsigned long result = 0;
+	uint32 result = 0;
 	unsigned char ch[5];
 	
 	ch[0] = next_byte();
@@ -1790,7 +1790,7 @@ wchar_t xpath_imp::get_next_char()
 		ch[1] = next_byte();
 		if ((ch[1] & 0x0c0) != 0x080)
 			throw exception("Invalid utf-8");
-		result = static_cast<unsigned long>(((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F));
+		result = ((ch[0] & 0x01F) << 6) | (ch[1] & 0x03F);
 	}
 	else if ((ch[0] & 0x0F0) == 0x0E0)
 	{
@@ -1798,7 +1798,7 @@ wchar_t xpath_imp::get_next_char()
 		ch[2] = next_byte();
 		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
 			throw exception("Invalid utf-8");
-		result = static_cast<unsigned long>(((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F));
+		result = ((ch[0] & 0x00F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 	}
 	else if ((ch[0] & 0x0F8) == 0x0F0)
 	{
@@ -1807,13 +1807,13 @@ wchar_t xpath_imp::get_next_char()
 		ch[3] = next_byte();
 		if ((ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080 or (ch[3] & 0x0c0) != 0x080)
 			throw exception("Invalid utf-8");
-		result = static_cast<unsigned long>(((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F));
+		result = ((ch[0] & 0x007) << 18) | ((ch[1] & 0x03F) << 12) | ((ch[2] & 0x03F) << 6) | (ch[3] & 0x03F);
 	}
 
 	if (result > 0x10ffff)
 		throw exception("invalid utf-8 character (out of range)");
 	
-	return static_cast<wchar_t>(result);
+	return result;
 }
 
 void xpath_imp::retract()
@@ -1892,13 +1892,13 @@ Token xpath_imp::get_next_token()
 	Token token = xp_Undef;
 	bool variable = false;
 	double fraction = 1.0;
-	wchar_t quoteChar;
+	uint32 quoteChar;
 
 	m_token_string.clear();
 	
 	while (token == xp_Undef)
 	{
-		wchar_t ch = get_next_char();
+		uint32 ch = get_next_char();
 		
 		switch (state)
 		{
