@@ -7,14 +7,15 @@
 
 #if SOAP_SERVER_HAS_PREFORK
 #include "zeep/http/preforked-server.hpp"
+#include <sys/wait.h>
+#include <unistd.h>
 #endif
+
 #include "zeep/server.hpp"
 
 #include <iostream>
 
 #include <boost/lexical_cast.hpp>
-#include <sys/wait.h>
-#include <unistd.h>
 
 using namespace std;
 
@@ -270,12 +271,17 @@ int main(int argc, const char* argv[])
 		
 		break;
  	}
+#elif defined(_MSC_VER)
+
+	my_server server("0.0.0.0", 10333, 1, "blabla");
+    boost::thread t(boost::bind(&my_server::run, &server));
+
 #else
     sigset_t new_mask, old_mask;
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("0.0.0.0", 10333, 1);
+	my_server server("0.0.0.0", 10333, 1, "blabla");
     boost::thread t(boost::bind(&my_server::run, &server));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);

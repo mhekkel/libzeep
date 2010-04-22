@@ -211,7 +211,7 @@ int expat_doc_imp::XML_ExternalEntityRefHandler(
 		fs::path file = basedir / systemId;
 		if (fs::exists(file))
 		{
-			fs::ifstream data(file);
+			fs::ifstream data(file, ios::binary);
 	
 			XML_Parser entParser = XML_ExternalEntityParserCreate(parser, context, 0);
 			XML_SetBase(entParser, file.string().c_str());

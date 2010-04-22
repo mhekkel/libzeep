@@ -92,7 +92,7 @@ istream* document_imp::external_entity_ref(const string& base, const string& pub
 			path = m_dtd_dir / path;
 
 		if (fs::exists(path))
-			result = new fs::ifstream(m_dtd_dir / path);
+			result = new fs::ifstream(m_dtd_dir / path, ios::binary);
 	}
 	
 	return result;
