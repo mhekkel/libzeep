@@ -23,7 +23,7 @@ LIBS				= $(BOOST_LIBS)
 LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -gdwarf-2 -pthread
 
 CC					?= c++
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC -pthread
+CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC -O3 -pthread
 
 VPATH += src
 
