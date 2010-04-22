@@ -79,15 +79,7 @@ class writer
 	virtual void	end_element();
 	virtual void	attribute(const std::string& name, const std::string& value);
 	virtual void	content(const std::string& content);
-
-					// a couple of convenience routines to do all the four above in one call
-	typedef std::pair<std::string,std::string>		attrib;
-	virtual void	element(const std::string& name, const std::string& s = k_empty_string);
-	virtual void	element(const std::string& name, const attrib& a1, const std::string& s = k_empty_string);
-	virtual void	element(const std::string& name, const attrib& a1, const attrib& a2, const std::string& s = k_empty_string);
-	virtual void	element(const std::string& name, const attrib& a1, const attrib& a2, const attrib& a3, const std::string& s = k_empty_string);
-	virtual void	element(const std::string& name, const attrib& a1, const attrib& a2, const attrib& a3, const attrib& a4, const std::string& s = k_empty_string);
-
+	
 	virtual void	comment(const std::string& text);
 
 	virtual void	processing_instruction(const std::string& target,
@@ -114,29 +106,6 @@ class writer
   private:
 					writer(const writer&);
 	writer&			operator=(const writer&);
-};
-
-class write_element
-{
-  public:
-				write_element(writer& w, const std::string& name)
-					: m_writer(w), m_name(name)
-				{
-					m_writer.start_element(name);
-				}
-
-				~write_element()
-				{
-					m_writer.end_element();
-				}
-
-  private:
-				write_element(const write_element&);
-	write_element&
-				operator=(const write_element&);
-
-	writer&		m_writer;
-	std::string	m_name;
 };
 
 }

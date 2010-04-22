@@ -7,6 +7,38 @@
 #define SOAP_HTTP_PREFORKED_SERVER_HPP
 
 #include "zeep/http/server.hpp"
+#include <boost/type_traits/remove_reference.hpp>
+#include <boost/type_traits/remove_const.hpp>
+
+/// preforked server support.
+/// A preforked server means you have a master process that listens to a port
+/// and whenever a request comes in, the socket is passed to a client. This
+/// client will then process the request.
+/// This approach has several advantages related to security and stability.
+///
+/// The way it works in libzeep is, you still create a server that derives
+/// from zeep::server (if you need a SOAP server) or zeep::http::server (if
+/// you only want a HTTP server). You then create a
+/// zeep::http::preforked_server_base<YourServer> instance passing in the
+/// parameters required and then call run() on this preforked server.
+///
+///	The preforked_server class records the way your server needs to be
+/// constructed. When this preforked_server is run, it forks and then
+/// constructs your server class in the child process.
+///
+/// Example:
+///
+///		class my_server {
+///						my_server(const string& address, short port, int nr_of_threads,
+///							const string& my_param);
+///		....
+///
+///		zeep::http::preforked_server<my_server> server("0.0.0.0", 10333, 2, "my extra param");
+///		boost::thread t(
+///			boost::bind(&zeep::http::preforked_server<my_server>::run, &server));
+///		... // wait for signal to stop
+///		server.stop();
+///		t.join();
 
 namespace zeep { namespace http {
 
@@ -79,7 +111,10 @@ struct preforked_server_base::server_constructor<void(Server::*)(T0)> : public s
 						{ return new Server(address, port, nr_of_threads, m_t0); }
 
   private:
-	T0				m_t0;
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T0>::type>::type	value_type_0;
+
+	value_type_0	m_t0;
 };
 
 template<class Server, typename T0, typename T1>
@@ -92,15 +127,17 @@ struct preforked_server_base::server_constructor<void(Server::*)(T0,T1)> : publi
 						{ return new Server(address, port, nr_of_threads, m_t0, m_t1); }
 
   private:
-	T0				m_t0;
-	T1				m_t1;
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T0>::type>::type	value_type_0;
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T1>::type>::type	value_type_1;
+
+	value_type_0	m_t0;
+	value_type_1	m_t1;
 };
 
-template<class Signature>
-class preforked_server;
-
 template<class Server>
-class preforked_server<void(Server::*)()> : public preforked_server_base
+class preforked_server : public preforked_server_base
 {
 	typedef	Server									server_type;
 
@@ -110,35 +147,19 @@ class preforked_server<void(Server::*)()> : public preforked_server_base
 							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)()>())
 						{
 						}
-};
 
-template<class Server, typename T0>
-class preforked_server<void(Server::*)(T0)> : public preforked_server_base
-{
-	typedef	Server									server_type;
-
-  public:
-
+	template<typename T0>
 						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0)
 							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0)>(t0))
 						{
 						}
-};
 
-template<class Server, typename T0, typename T1>
-class preforked_server<void(Server::*)(T0,T1)> : public preforked_server_base
-{
-	typedef	Server									server_type;
-
-  public:
-
+	template<typename T0, typename T1>
 						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0, T1 t1)
 							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0,T1)>(t0, t1))
 						{
 						}
 };
-
-
 
 }
 }

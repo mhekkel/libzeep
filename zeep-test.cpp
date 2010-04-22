@@ -238,9 +238,9 @@ int main(int argc, const char* argv[])
 	    sigfillset(&new_mask);
 	    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 	
-		zeep::http::preforked_server<void(my_server::*)(string)> server("0.0.0.0", 10333, 2, "bla bla");
+		zeep::http::preforked_server<my_server> server("0.0.0.0", 10333, 2, "bla bla");
 		boost::thread t(
-			boost::bind(&zeep::http::preforked_server<void(my_server::*)(string)>::run, &server));
+			boost::bind(&zeep::http::preforked_server<my_server>::run, &server));
 	
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 	

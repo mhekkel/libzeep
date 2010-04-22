@@ -203,7 +203,12 @@ void writer::comment(const string& text)
 	if (not m_no_comment)
 	{
 		if (m_element_open)
+		{
 			m_os << '>';
+			if (m_wrap)
+				m_os << endl;
+		}
+
 		m_element_open = false;
 	
 		for (int i = 0; i < m_indent * m_level; ++i)
@@ -256,58 +261,6 @@ void writer::content(const string& text)
 		}
 	}
 	m_wrote_element = false;
-}
-
-// extra
-// a couple of convenience routines
-void writer::element(const std::string& name, const std::string& text)
-{
-	start_element(name);
-	if (not text.empty())
-		content(text);
-	end_element();
-}
-
-void writer::element(const std::string& name, const attrib& a1, const std::string& text)
-{
-	start_element(name);
-	attribute(a1.first, a1.second);
-	if (not text.empty())
-		content(text);
-	end_element();
-}
-
-void writer::element(const std::string& name, const attrib& a1, const attrib& a2, const std::string& text)
-{
-	start_element(name);
-	attribute(a1.first, a1.second);
-	attribute(a2.first, a2.second);
-	if (not text.empty())
-		content(text);
-	end_element();
-}
-
-void writer::element(const std::string& name, const attrib& a1, const attrib& a2, const attrib& a3, const std::string& text)
-{
-	start_element(name);
-	attribute(a1.first, a1.second);
-	attribute(a2.first, a2.second);
-	attribute(a3.first, a3.second);
-	if (not text.empty())
-		content(text);
-	end_element();
-}
-
-void writer::element(const std::string& name, const attrib& a1, const attrib& a2, const attrib& a3, const attrib& a4, const std::string& text)
-{
-	start_element(name);
-	attribute(a1.first, a1.second);
-	attribute(a2.first, a2.second);
-	attribute(a3.first, a3.second);
-	attribute(a4.first, a4.second);
-	if (not text.empty())
-		content(text);
-	end_element();
 }
 
 }
