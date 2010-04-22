@@ -85,7 +85,7 @@ class parser
 	void					parse(bool validate);
 
   protected:
-	friend class parser_imp;
+	friend struct parser_imp;
 
 	virtual void		start_element(const std::string& name,
 							const std::string& uri, const attr_list_type& atts);
