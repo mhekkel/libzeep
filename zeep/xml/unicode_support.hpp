@@ -12,6 +12,8 @@
 
 namespace zeep { namespace xml {
 
+typedef unsigned long unicode;
+
 // the supported encodings. Perhaps we should extend this list a bit?
 enum encoding_type
 {
@@ -22,23 +24,23 @@ enum encoding_type
 };
 
 // some character classification routines
-bool is_name_start_char(uint32 uc);
-bool is_name_char(uint32 uc);
-bool is_char(uint32 uc);
-bool is_valid_system_literal_char(uint32 uc);
+bool is_name_start_char(unicode uc);
+bool is_name_char(unicode uc);
+bool is_char(unicode uc);
+bool is_valid_system_literal_char(unicode uc);
 bool is_valid_system_literal(const std::string& s);
-bool is_valid_public_id_char(uint32 uc);
+bool is_valid_public_id_char(unicode uc);
 bool is_valid_public_id(const std::string& s);
 
 // Convert a string from UCS4 to UTF-8
 std::string wstring_to_string(const std::wstring& s);
 
-void append(std::string& s, uint32 ch);
-uint32 pop_last_char(std::string& s);
+void append(std::string& s, unicode ch);
+unicode pop_last_char(std::string& s);
 
 // inlines
 
-inline bool is_char(uint32 uc)
+inline bool is_char(unicode uc)
 {
 	return
 		uc == 0x09 or
@@ -49,46 +51,42 @@ inline bool is_char(uint32 uc)
 		(uc >= 0x010000 and uc <= 0x010FFFF);
 }
 
-inline void append(std::string& s, uint32 ch)
+inline void append(std::string& s, unicode uc)
 {
-	unsigned long cv = static_cast<unsigned long>(ch);
-	
-	if (cv < 0x080)
-		s += (static_cast<const char> (cv));
-	else if (cv < 0x0800)
+	if (uc < 0x080)
+		s += (static_cast<char>(uc));
+	else if (uc < 0x0800)
 	{
 		char ch[2] = {
-			static_cast<const char> (0x0c0 | (cv >> 6)),
-			static_cast<const char> (0x080 | (cv & 0x3f))
+			static_cast<char>(0x0c0 | (uc >> 6)),
+			static_cast<char>(0x080 | (uc & 0x3f))
 		};
 		s.append(ch, 2);
 	}
-	else if (cv < 0x00010000)
+	else if (uc < 0x00010000)
 	{
 		char ch[3] = {
-			static_cast<const char> (0x0e0 | (cv >> 12)),
-			static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)),
-			static_cast<const char> (0x080 | (cv & 0x3f))
+			static_cast<char>(0x0e0 | (uc >> 12)),
+			static_cast<char>(0x080 | ((uc >> 6) & 0x3f)),
+			static_cast<char>(0x080 | (uc & 0x3f))
 		};
 		s.append(ch, 3);
 	}
 	else
 	{
 		char ch[4] = {
-			static_cast<const char> (0x0f0 | (cv >> 18)),
-			static_cast<const char> (0x080 | ((cv >> 12) & 0x3f)),
-			static_cast<const char> (0x080 | ((cv >> 6) & 0x3f)),
-			static_cast<const char> (0x080 | (cv & 0x3f))
+			static_cast<char>(0x0f0 | (uc >> 18)),
+			static_cast<char>(0x080 | ((uc >> 12) & 0x3f)),
+			static_cast<char>(0x080 | ((uc >> 6) & 0x3f)),
+			static_cast<char>(0x080 | (uc & 0x3f))
 		};
 		s.append(ch, 4);
 	}
 }
 
-inline uint32 pop_last_char(std::string& s)
+inline unicode pop_last_char(std::string& s)
 {
-	assert(not s.empty());
-	
-	uint32 result = 0;
+	unicode result = 0;
 
 	if (not s.empty())
 	{

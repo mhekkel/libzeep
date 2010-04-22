@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <boost/bind.hpp>
-#include <boost/algorithm/string/classification.hpp>
 
 #include "zeep/xml/unicode_support.hpp"
 
@@ -16,7 +15,7 @@ namespace zeep { namespace xml {
 
 // some very basic code to check the class of scanned characters
 
-bool is_name_start_char(uint32 uc)
+bool is_name_start_char(unicode uc)
 {
 	return
 		uc == L':' or
@@ -37,7 +36,7 @@ bool is_name_start_char(uint32 uc)
 		(uc >= 0x010000 and uc <= 0x0EFFFF);	
 }
 
-bool is_name_char(uint32 uc)
+bool is_name_char(unicode uc)
 {
 	return
 		uc == '-' or
@@ -49,7 +48,7 @@ bool is_name_char(uint32 uc)
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
-bool is_valid_system_literal_char(uint32 uc)
+bool is_valid_system_literal_char(unicode uc)
 {
 	return
 		not (uc >= 0x0 and uc <= 0x1f) and
@@ -60,14 +59,6 @@ bool is_valid_system_literal_char(uint32 uc)
 		uc != '#';
 }
 
-bool is_valid_system_literal(const wstring& s)
-{
-	bool result = true;
-	for (wstring::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
-		result = is_valid_system_literal_char(*ch);
-	return result;
-}
-
 bool is_valid_system_literal(const string& s)
 {
 	bool result = true;
@@ -76,21 +67,15 @@ bool is_valid_system_literal(const string& s)
 	return result;
 }
 
-bool is_valid_public_id_char(uint32 uc)
+bool is_valid_public_id_char(unicode uc)
 {
+	static const string kPubChars(" \r\n-'()+,./:=?;!*#@$_%");
+	
 	return
 		(uc >= 'a' and uc <= 'z') or
 		(uc >= 'A' and uc <= 'Z') or
 		(uc >= '0' and uc <= '9') or
-		boost::is_any_of(L" \r\n-'()+,./:=?;!*#@$_%")(uc);
-}
-
-bool is_valid_public_id(const wstring& s)
-{
-	bool result = true;
-	for (wstring::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
-		result = is_valid_public_id_char(*ch);
-	return result;
+		kPubChars.find(uc) != string::npos;
 }
 
 bool is_valid_public_id(const string& s)

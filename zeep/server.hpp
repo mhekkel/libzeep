@@ -6,6 +6,7 @@
 #ifndef SOAP_SERVER_HPP
 #define SOAP_SERVER_HPP
 
+#include "zeep/config.hpp"
 #include "zeep/http/server.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/reply.hpp"
@@ -19,7 +20,7 @@ class server
 {
   public:
 					server(const std::string& ns, const std::string& service,
-						const std::string& address, short port);
+						const std::string& address, short port, int nr_of_threads);
 
 					// if the default is not correct (reverse proxy e.g.)
 	void			set_location(const std::string& location)
