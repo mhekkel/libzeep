@@ -11,8 +11,6 @@
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/xml/parser.hpp"
-#include "zeep/xml/expat_doc.hpp"
-#include "zeep/xml/libxml2_doc.hpp"
 #include "zeep/xml/writer.hpp"
 #include "zeep/xml/xpath.hpp"
 
@@ -44,7 +42,7 @@ bool run_test(const xml::element& test)
 	xml::document doc;
 	doc.set_validating(false);
 	
-	fs::ifstream file(data_file);
+	fs::ifstream file(data_file, ios::binary);
 	file >> doc;
 	
 	if (VERBOSE)
@@ -118,7 +116,7 @@ void run_tests(const fs::path& file)
 	
 	xml::document doc;
 	doc.set_validating(false);
-	fs::ifstream input(file);
+	fs::ifstream input(file, ios::binary);
 	input >> doc;
 
 	string base = doc.child()->get_attribute("xml:base");

@@ -75,7 +75,7 @@ bool is_valid_public_id_char(unicode uc)
 		(uc >= 'a' and uc <= 'z') or
 		(uc >= 'A' and uc <= 'Z') or
 		(uc >= '0' and uc <= '9') or
-		kPubChars.find(uc) != string::npos;
+		(uc < 128 and kPubChars.find(static_cast<char>(uc)) != string::npos);
 }
 
 bool is_valid_public_id(const string& s)

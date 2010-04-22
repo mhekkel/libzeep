@@ -18,8 +18,6 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <sys/wait.h>
-
 using namespace std;
 
 namespace zeep { namespace http {

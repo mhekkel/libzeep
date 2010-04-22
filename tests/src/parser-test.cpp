@@ -55,7 +55,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 		;
 	else if (fs::exists(outfile))
 	{
-		fs::ifstream out(outfile);
+		fs::ifstream out(outfile, ios::binary);
 		string s2, line;
 		while (not out.eof())
 		{
@@ -119,7 +119,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	
 	fs::current_path(input.branch_path());
 
-	fs::ifstream is(input);
+	fs::ifstream is(input, ios::binary);
 	if (not is.is_open())
 		throw zeep::exception("test file not open");
 	
@@ -261,7 +261,7 @@ void run_test_case(const xml::element* testcase, const string& id,
 void test_testcases(const fs::path& testFile, const string& id,
 	const string& type, vector<string>& failed_ids)
 {
-	fs::ifstream file(testFile);
+	fs::ifstream file(testFile, ios::binary);
 	
 	int saved_verbose = VERBOSE;
 	VERBOSE = 0;
@@ -335,7 +335,7 @@ int main(int argc, char* argv[])
 			fs::path dir(path.branch_path());
 			fs::current_path(dir);
 
-			fs::ifstream file(path);
+			fs::ifstream file(path, ios::binary);
 
 			run_valid_test(file, dir);
 		}
