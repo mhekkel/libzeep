@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project version="2.0">
   <syspaths>
     <path>../boost/include</path>
@@ -20,6 +19,7 @@
       <group name="http">
         <file>connection.cpp</file>
         <file>http-server.cpp</file>
+        <file>preforked-http-server.cpp</file>
         <file>reply.cpp</file>
         <file>request_parser.cpp</file>
       </group>

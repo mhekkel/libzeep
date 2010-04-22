@@ -15,8 +15,20 @@
 #define SOAP_XML_HAS_EXPAT_SUPPORT 0
 #endif
 
-#ifndef SOAP_XML_NO_INT_TYPEDEFS
-#define SOAP_XML_NO_INT_TYPEDEFS 0
+// The http server implementation in libzeep can use a
+// preforked mode. That means the main process listens to
+// a network port and passes the socket to a client process
+// for doing the actual handling. The advantages for a setup
+// like this is that if the client fails, the server can detect
+// this and restart the client thereby guaranteeing a better
+// uptime.
+
+#ifndef SOAP_SERVER_HAS_PREFORK
+#if defined(_MSC_VER)
+#define SOAP_SERVER_HAS_PREFORK 0
+#else
+#define SOAP_SERVER_HAS_PREFORK 1
+#endif
 #endif
 
 /// see if we're using Visual C++, if so we have to include
@@ -39,25 +51,12 @@
 #	endif // _MSC_EXTENSIONS
 #endif
 
-/// My code uses nil as NULL, it just looks better on my eyes.
+/// libzeep code uses nil as NULL, it just looks better on my eyes.
 /// Eventually we'll have to change this to the new C++x0 keyword
 /// nullptr.
 
 #ifndef nil
 #define nil NULL
 #endif
-
-#if ! SOAP_XML_NO_INT_TYPEDEFS
-typedef signed char			int8;
-typedef unsigned char		uint8;
-typedef signed short		int16;
-typedef unsigned short		uint16;
-typedef signed int			int32;
-typedef unsigned int		uint32;
-typedef signed long long	int64;
-typedef unsigned long long	uint64;
-#endif
-
-// more defines may follow here
 
 #endif

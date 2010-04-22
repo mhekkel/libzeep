@@ -1592,7 +1592,7 @@ struct xpath_imp
 	void				preprocess(const string& path);
 	
 	unsigned char		next_byte();
-	uint32				get_next_char();
+	unicode				get_next_char();
 	void				retract();
 	Token				get_next_token();
 	string				describe_token(Token token);
@@ -1690,7 +1690,7 @@ void xpath_imp::preprocess(const string& path)
 	} state;
 	
 	state = pp_Step;
-	uint32 quoteChar = 0;
+	unicode quoteChar = 0;
 	
 	for (string::const_iterator ch = path.begin(); ch != path.end(); ++ch)
 	{
@@ -1753,7 +1753,7 @@ void xpath_imp::preprocess(const string& path)
 			
 			case pp_String:
 				m_path += *ch;
-				if (*ch == quoteChar)
+				if (static_cast<unsigned char>(*ch) == quoteChar)
 						state = pp_Data;
 				break;
 		}
@@ -1776,9 +1776,9 @@ unsigned char xpath_imp::next_byte()
 }
 
 // We assume all paths are in valid UTF-8 encoding
-uint32 xpath_imp::get_next_char()
+unicode xpath_imp::get_next_char()
 {
-	uint32 result = 0;
+	unicode result = 0;
 	unsigned char ch[5];
 	
 	ch[0] = next_byte();
@@ -1892,13 +1892,13 @@ Token xpath_imp::get_next_token()
 	Token token = xp_Undef;
 	bool variable = false;
 	double fraction = 1.0;
-	uint32 quoteChar;
+	unicode quoteChar;
 
 	m_token_string.clear();
 	
 	while (token == xp_Undef)
 	{
-		uint32 ch = get_next_char();
+		unicode ch = get_next_char();
 		
 		switch (state)
 		{

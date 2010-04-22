@@ -47,9 +47,9 @@ class mini_stack
   public:
 			mini_stack() : m_ix(-1)	{}
 	
-	uint32	top()
+	unicode	top()
 			{
-				assert(m_ix >= 0 and m_ix < int(sizeof(m_data) / sizeof(uint32)));
+				assert(m_ix >= 0 and m_ix < int(sizeof(m_data) / sizeof(unicode)));
 				return m_data[m_ix];
 			}
 
@@ -58,10 +58,10 @@ class mini_stack
 				--m_ix;
 			}
 			
-	void	push(uint32 uc)
+	void	push(unicode uc)
 			{
 				++m_ix;
-				assert(m_ix < int(sizeof(m_data) / sizeof(uint32)));
+				assert(m_ix < int(sizeof(m_data) / sizeof(unicode)));
 				m_data[m_ix] = uc;
 			}
 
@@ -71,7 +71,7 @@ class mini_stack
 			}
 
   private:
-	uint32	m_data[2];
+	unicode	m_data[2];
 	int		m_ix;
 };
 
@@ -130,7 +130,7 @@ class data_source
 	virtual			~data_source() {}
 
 	// data_source is a virtual base class. Derivatives need to declare the next function.
-	virtual uint32	get_next_char() = 0;
+	virtual unicode	get_next_char() = 0;
 
 	// to avoid recursively nested entity values, we have a check:
 	virtual bool	is_entity_on_stack(const string& name)
@@ -195,24 +195,24 @@ class istream_data_source : public data_source
 	
 	void			parse_text_decl();
 	
-	virtual uint32	get_next_char();
+	virtual unicode	get_next_char();
 
-	uint32			next_utf8_char();
+	unicode			next_utf8_char();
 	
-	uint32			next_utf16le_char();
+	unicode			next_utf16le_char();
 	
-	uint32			next_utf16be_char();
+	unicode			next_utf16be_char();
 	
-	uint32			next_iso88591_char();
+	unicode			next_iso88591_char();
 
-	uint8			next_byte();
+	unsigned char	next_byte();
 
 	istream&		m_data;
 	auto_ptr<istream>
 					m_data_ptr;
-	uint32			m_char_buffer;	// used in detecting \r\n algorithm
+	unicode			m_char_buffer;	// used in detecting \r\n algorithm
 
-	typedef uint32 (istream_data_source::*next_func)(void);
+	typedef unicode (istream_data_source::*next_func)(void);
 
 	next_func		m_next;
 	bool			m_has_bom;
@@ -277,23 +277,23 @@ void istream_data_source::guess_encoding()
 	}
 }
 
-inline uint8 istream_data_source::next_byte()
+inline unsigned char istream_data_source::next_byte()
 {
 	int result = m_data.rdbuf()->sbumpc();
 
 	if (result == streambuf::traits_type::eof())
 		result = 0;
 		
-	return static_cast<uint8>(result);
+	return static_cast<unsigned char>(result);
 }
 
-uint32 istream_data_source::next_utf8_char()
+unicode istream_data_source::next_utf8_char()
 {
-	uint32 result = next_byte();
+	unicode result = next_byte();
 	
 	if (result & 0x080)
 	{
-		uint8 ch[3];
+		unsigned char ch[3];
 		
 		if ((result & 0x0E0) == 0x0C0)
 		{
@@ -327,33 +327,33 @@ uint32 istream_data_source::next_utf8_char()
 	return result;
 }
 
-uint32 istream_data_source::next_utf16le_char()
+unicode istream_data_source::next_utf16le_char()
 {
-	uint8 c1 = next_byte(), c2 = next_byte();
+	unsigned char c1 = next_byte(), c2 = next_byte();
 	
-	uint32 result = (static_cast<uint32>(c2) << 8) | c1;
+	unicode result = (static_cast<unicode>(c2) << 8) | c1;
 
 	return result;
 }
 
-uint32 istream_data_source::next_utf16be_char()
+unicode istream_data_source::next_utf16be_char()
 {
-	uint8 c1 = next_byte(), c2 = next_byte();
+	unsigned char c1 = next_byte(), c2 = next_byte();
 	
-	uint32 result = (static_cast<uint32>(c1) << 8) | c2;
+	unicode result = (static_cast<unicode>(c1) << 8) | c2;
 
 	return result;
 }
 
-uint32 istream_data_source::next_iso88591_char()
+unicode istream_data_source::next_iso88591_char()
 {
 	throw source_exception("to be implemented");
 	return 0;
 }
 
-uint32 istream_data_source::get_next_char()
+unicode istream_data_source::get_next_char()
 {
-	uint32 ch = m_char_buffer;
+	unicode ch = m_char_buffer;
 
 	if (ch == 0)
 		ch = (this->*m_next)();
@@ -385,41 +385,41 @@ class string_data_source : public data_source
 
   private:
 
-	virtual uint32		get_next_char();
+	virtual unicode		get_next_char();
 
 	string				m_data;
 	string::iterator	m_ptr;
 };
 
-uint32	string_data_source::get_next_char()
+unicode	string_data_source::get_next_char()
 {
-	uint32 result = 0;
+	unicode result = 0;
 
 	if (m_ptr != m_data.end())
 	{
-		result = static_cast<uint8>(*m_ptr);
+		result = static_cast<unsigned char>(*m_ptr);
 		++m_ptr;
 
 		if (result > 0x07f)
 		{
-			uint8 ch[3];
+			unsigned char ch[3];
 			
 			if ((result & 0x0E0) == 0x0C0)
 			{
-				ch[0] = static_cast<uint8>(*m_ptr); ++m_ptr;
+				ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
 				result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 			}
 			else if ((result & 0x0F0) == 0x0E0)
 			{
-				ch[0] = static_cast<uint8>(*m_ptr); ++m_ptr;
-				ch[1] = static_cast<uint8>(*m_ptr); ++m_ptr;
+				ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
 				result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 			}
 			else if ((result & 0x0F8) == 0x0F0)
 			{
-				ch[0] = static_cast<uint8>(*m_ptr); ++m_ptr;
-				ch[1] = static_cast<uint8>(*m_ptr); ++m_ptr;
-				ch[2] = static_cast<uint8>(*m_ptr); ++m_ptr;
+				ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
+				ch[2] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
 				result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 			}
 		}
@@ -586,7 +586,7 @@ struct parser_imp
 	// for debugging and error reporting we have the following describing routine
 	string			describe_token(int token);
 
-	uint32			get_next_char();
+	unicode			get_next_char();
 	
 	// Recognizing tokens differs if we are expecting markup or content in elements:
 	int				get_next_token();
@@ -843,9 +843,9 @@ const doctype::element* parser_imp::get_element(const string& name) const
 	return result;
 }
 
-uint32 parser_imp::get_next_char()
+unicode parser_imp::get_next_char()
 {
-	uint32 result = 0;
+	unicode result = 0;
 
 	if (not m_buffer.empty())		// if buffer is not empty we already did all the validity checks
 	{
@@ -886,7 +886,7 @@ uint32 parser_imp::get_next_char()
 			// surrogate support
 			else if (result >= 0x0D800 and result <= 0x0DBFF)
 			{
-				uint32 uc2 = get_next_char();
+				unicode uc2 = get_next_char();
 				if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
 					result = (result - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
 				else
@@ -999,7 +999,7 @@ int parser_imp::get_next_token()
 	};
 
 	int token = xml_Undef;
-	uint32 quote_char = 0;
+	unicode quote_char = 0;
 	int state = state_Start;
 	bool might_be_name = false;
 
@@ -1007,7 +1007,7 @@ int parser_imp::get_next_token()
 	
 	while (token == xml_Undef)
 	{
-		uint32 uc = get_next_char();
+		unicode uc = get_next_char();
 		
 		switch (state)
 		{
@@ -1196,13 +1196,13 @@ int parser_imp::get_next_content()
 
 	int token = xml_Undef;
 	int state = state_Start;
-	uint32 charref = 0;
+	unicode charref = 0;
 	
 	m_token.clear();
 
 	while (token == xml_Undef)
 	{
-		uint32 uc = get_next_char();
+		unicode uc = get_next_char();
 		
 		if (uc != 0 and not is_char(uc))
 			not_well_formed(boost::format("illegal character in content: '0x%x'") % int(uc));
@@ -1932,7 +1932,7 @@ void parser_imp::ignoresectcontents()
 	
 	while (not done)
 	{
-		uint32 ch = get_next_char();
+		unicode ch = get_next_char();
 		if (ch == 0)
 			not_well_formed("runaway IGNORE section");
 		
@@ -2681,7 +2681,7 @@ boost::tuple<string,string> parser_imp::read_external_id()
 		
 		result = m_token;
 	
-		while (uint32 ch = get_next_char())
+		while (unicode ch = get_next_char())
 			append(result, ch);
 	}
 	
@@ -2693,12 +2693,12 @@ void parser_imp::parse_parameter_entity_declaration(string& s)
 	string result;
 	
 	int state = 0;
-	uint32 charref = 0;
+	unicode charref = 0;
 	string name;
 	
 	for (string::const_iterator i = s.begin(); i != s.end(); ++i)
 	{
-		uint32 c = *i;
+		unicode c = *i;
 		
 		switch (state)
 		{
@@ -2828,12 +2828,12 @@ void parser_imp::parse_general_entity_declaration(string& s)
 	string result;
 	
 	int state = 0;
-	uint32 charref = 0;
+	unicode charref = 0;
 	string name;
 	
 	for (string::const_iterator i = s.begin(); i != s.end(); ++i)
 	{
-		uint32 c = *i;
+		unicode c = *i;
 		
 		switch (state)
 		{
@@ -2975,7 +2975,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 {
 	string result;
 	
-	uint32 charref = 0;
+	unicode charref = 0;
 	string name;
 	
 	enum State {
@@ -2991,7 +2991,7 @@ string parser_imp::normalize_attribute_value(data_source* data)
 	
 	for (;;)
 	{
-		uint32 c = data->get_next_char();
+		unicode c = data->get_next_char();
 		
 		if (c == 0)
 			break;
@@ -3507,7 +3507,7 @@ void parser_imp::comment()
 
 	while (state != state_CommentClosed)
 	{
-		uint32 ch = get_next_char();
+		unicode ch = get_next_char();
 		
 		if (ch == 0)
 			not_well_formed("runaway comment");
@@ -3576,7 +3576,7 @@ void parser_imp::pi()
 
 	while (state != state_PIClosed)
 	{
-		uint32 ch = get_next_char();
+		unicode ch = get_next_char();
 		
 		if (ch == 0)
 			not_well_formed("runaway processing instruction");

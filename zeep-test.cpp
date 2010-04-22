@@ -3,6 +3,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include "zeep/config.hpp"
+
+#if SOAP_SERVER_HAS_PREFORK
+#include "zeep/http/preforked-server.hpp"
+#endif
 #include "zeep/server.hpp"
 
 #include <iostream>
@@ -80,7 +85,9 @@ class my_server : public zeep::server
   public:
 						my_server(
 							const string&				address,
-							short						port);
+							short						port,
+							int							nr_of_threads,
+							const string&				my_param);
 
 	void				ListDatabanks(
 							vector<string>&				databanks);
@@ -100,14 +107,15 @@ class my_server : public zeep::server
 							int							maxresultcount,
 							WSSearchNS::FindResult&		out);
 
-	void				VoorBas(
-							const string&				s,
-							string&						out);
+	void				ForceStop(string&				out);
 
+  private:
+	string				m_param;
 };
 
-my_server::my_server(const string& address, short port)
-	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port)
+my_server::my_server(const string& address, short port, int nr_of_threads, const string& param)
+	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port, nr_of_threads)
+	, m_param(param)
 {
 	using namespace WSSearchNS;
 
@@ -147,6 +155,12 @@ my_server::my_server(const string& address, short port)
 	};
 	
 	register_action("Find", this, &my_server::Find, kFindParameterNames);
+
+	const char* kForceStopParameterNames[] = {
+		"out"
+	};
+	
+	register_action("ForceStop", this, &my_server::ForceStop, kForceStopParameterNames);
 }
 
 void my_server::ListDatabanks(
@@ -198,13 +212,24 @@ void my_server::Find(
 	h.title = "aap <&> noot mies";
 	
 	out.hits.push_back(h);
+
+	h.db = "param";
+	h.id = "param-id";
+	h.score = 0.6f;
+	h.title = m_param;
+	
+	out.hits.push_back(h);
 }
 
-#define FORKED_MODE 0
+void my_server::ForceStop(
+	string&						out)
+{
+	exit(1);
+}
 
 int main(int argc, const char* argv[])
 {
-#if FORKED_MODE
+#if SOAP_SERVER_HAS_PREFORK
  	for (;;)
  	{
  		cout << "restarting server" << endl;
@@ -213,16 +238,12 @@ int main(int argc, const char* argv[])
 	    sigfillset(&new_mask);
 	    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 	
-		auto_ptr<zeep::http::server_starter> starter(
-			zeep::http::server_starter::create<my_server>("0.0.0.0", 10333, true, 2));
+		zeep::http::preforked_server<void(my_server::*)(string)> server("0.0.0.0", 10333, 2, "bla bla");
 		boost::thread t(
-			boost::bind(&zeep::http::server_starter::run, starter.get()));
+			boost::bind(&zeep::http::preforked_server<void(my_server::*)(string)>::run, &server));
 	
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 	
-		// start listening
-		starter->start_listening();
-	 
 		// Wait for signal indicating time to shut down.
 		sigset_t wait_mask;
 		sigemptyset(&wait_mask);
@@ -234,7 +255,7 @@ int main(int argc, const char* argv[])
 		int sig = 0;
 		sigwait(&wait_mask, &sig);
 	
-		starter->stop();
+		server.stop();
 		t.join();
 		
 		if (sig == SIGCHLD)
@@ -254,8 +275,8 @@ int main(int argc, const char* argv[])
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server, "0.0.0.0", 10333, 1));
+	my_server server("0.0.0.0", 10333, 1);
+    boost::thread t(boost::bind(&my_server::run, &server));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
