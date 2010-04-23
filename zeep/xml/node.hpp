@@ -420,6 +420,75 @@ class element : public container
 	// of type ID by the DOCTYPE.
 	std::string			id() const;
 
+	// as a service to the user, we define an attribute iterator here
+	class attribute_iterator : public std::iterator<std::bidirectional_iterator_tag, attribute>
+	{
+	  public:
+							attribute_iterator() : m_current(nil)				{}
+							attribute_iterator(attribute* e) : m_current(e)		{}
+							attribute_iterator(const attribute_iterator& other)
+								: m_current(other.m_current)					{}
+
+		attribute_iterator&	operator=(const attribute_iterator& other)			{ m_current = other.m_current; return *this; }
+		
+		reference			operator*() const									{ return *m_current; }
+		pointer				operator->() const									{ return m_current; }
+
+		attribute_iterator&	operator++()										{ m_current = dynamic_cast<attribute*>(m_current->next()); return *this; }
+		attribute_iterator	operator++(int)										{ attribute_iterator iter(*this); operator++(); return iter; }
+
+		attribute_iterator&	operator--()										{ m_current = dynamic_cast<attribute*>(m_current->prev()); return *this; }
+		attribute_iterator	operator--(int)										{ attribute_iterator iter(*this); operator++(); return iter; }
+
+		bool				operator==(const attribute_iterator& other) const	{ return m_current == other.m_current; }
+		bool				operator!=(const attribute_iterator& other) const	{ return m_current != other.m_current; }
+
+		pointer				base() const										{ return m_current; }
+
+	  private:
+		attribute*			m_current;
+	};
+
+	attribute_iterator	attr_begin()											{ return attribute_iterator(m_attribute); }
+	attribute_iterator	attr_end()												{ return attribute_iterator(); }
+
+	class const_attribute_iterator : public std::iterator<std::bidirectional_iterator_tag, const attribute>
+	{
+	  public:
+							const_attribute_iterator() : m_current(nil)				{}
+							const_attribute_iterator(attribute* e) : m_current(e)	{}
+							const_attribute_iterator(const attribute_iterator& other)
+								: m_current(other.base())							{}
+							const_attribute_iterator(const const_attribute_iterator& other)
+								: m_current(other.m_current)						{}
+
+		const_attribute_iterator&	operator=(const const_attribute_iterator& other){ m_current = other.m_current; return *this; }
+		
+		reference			operator*() const										{ return *m_current; }
+		pointer				operator->() const										{ return m_current; }
+
+		const_attribute_iterator&
+							operator++()											{ m_current = dynamic_cast<const attribute*>(m_current->next()); return *this; }
+		const_attribute_iterator
+							operator++(int)											{ const_attribute_iterator iter(*this); operator++(); return iter; }
+
+		const_attribute_iterator&
+							operator--()											{ m_current = dynamic_cast<const attribute*>(m_current->prev()); return *this; }
+		const_attribute_iterator
+							operator--(int)											{ const_attribute_iterator iter(*this); operator++(); return iter; }
+
+		bool				operator==(const const_attribute_iterator& other) const	{ return m_current == other.m_current; }
+		bool				operator!=(const const_attribute_iterator& other) const	{ return m_current != other.m_current; }
+
+		pointer				base() const											{ return m_current; }
+
+	  private:
+		const attribute*	m_current;
+	};
+
+	const_attribute_iterator	attr_begin() const									{ return const_attribute_iterator(m_attribute); }
+	const_attribute_iterator	attr_end() const									{ return const_attribute_iterator(); }
+
   protected:
 	std::string			m_qname;
 	attribute*			m_attribute;
