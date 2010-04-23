@@ -80,6 +80,13 @@ class writer
 	virtual void	attribute(const std::string& name, const std::string& value);
 	virtual void	content(const std::string& content);
 	
+	void			element(const std::string& name, const std::string& s)
+					{
+						start_element(name);
+						content(s);
+						end_element();
+					}
+	
 	virtual void	comment(const std::string& text);
 
 	virtual void	processing_instruction(const std::string& target,

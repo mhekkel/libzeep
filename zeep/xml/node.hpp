@@ -15,6 +15,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
+#include "zeep/config.hpp"
+
 namespace zeep { namespace xml {
 
 class writer;
@@ -108,6 +110,8 @@ class node
 class container : public node
 {
   public:
+	/// container tries hard to be a stl::container.
+	
 						~container();
 
 	node*				child()										{ return m_child; }
@@ -116,6 +120,80 @@ class container : public node
 	template<typename NODE_TYPE>
 	std::list<NODE_TYPE*>
 						children() const;
+
+	class iterator : public std::iterator<std::bidirectional_iterator_tag, element>
+	{
+	  public:
+						iterator() : m_current(nil)					{}
+						iterator(element* e) : m_current(e)			{}
+						iterator(const iterator& other)
+							: m_current(other.m_current)			{}
+
+		iterator&		operator=(const iterator& other)			{ m_current = other.m_current; return *this; }
+		
+		reference		operator*() const							{ return *m_current; }
+		pointer			operator->() const							{ return m_current; }
+
+		iterator&		operator++();
+		iterator		operator++(int)								{ iterator iter(*this); operator++(); return iter; }
+
+		iterator&		operator--();
+		iterator		operator--(int)								{ iterator iter(*this); operator++(); return iter; }
+
+		bool			operator==(const iterator& other) const		{ return m_current == other.m_current; }
+		bool			operator!=(const iterator& other) const		{ return m_current != other.m_current; }
+
+		pointer			base() const								{ return m_current; }
+
+	  private:
+		element*		m_current;
+	};
+
+	iterator			begin();
+	iterator			end()										{ return iterator(); }
+
+	class const_iterator : public std::iterator<std::bidirectional_iterator_tag, const element>
+	{
+	  public:
+						const_iterator() : m_current(nil)			{}
+						const_iterator(const element* e) : m_current(e)	
+																	{}
+						const_iterator(const const_iterator& other)
+							: m_current(other.m_current)			{}
+						const_iterator(const iterator& other)
+							: m_current(other.base())				{}
+
+		const_iterator&	operator=(const const_iterator& other)		{ m_current = other.m_current; return *this; }
+		
+		reference		operator*() const							{ return *m_current; }
+		pointer			operator->() const							{ return m_current; }
+
+		const_iterator&	operator++();
+		const_iterator	operator++(int)								{ const_iterator iter(*this); operator++(); return iter; }
+
+		const_iterator&	operator--();
+		const_iterator	operator--(int)								{ const_iterator iter(*this); operator++(); return iter; }
+
+		bool			operator==(const const_iterator& other) const
+																	{ return m_current == other.m_current; }
+
+		bool			operator!=(const const_iterator& other) const
+																	{ return m_current != other.m_current; }
+
+		pointer			base() const								{ return m_current; }
+
+	  private:
+		const element*	m_current;
+	};
+
+	const_iterator		begin() const;
+	const_iterator		end() const									{ return const_iterator(); }
+
+	/// 
+	typedef iterator::value_type		value_type;
+	typedef iterator::reference			reference;
+	typedef iterator::pointer			pointer;
+	typedef iterator::difference_type	difference_type;
 
 	virtual void		append(node* node);
 	virtual void		remove(node* node);
@@ -363,6 +441,98 @@ std::list<container*> container::children<container>() const;
 
 template<>
 std::list<element*> container::children<element>() const;
+
+// iterator inlines
+
+inline container::iterator& container::iterator::operator++()
+{
+	if (m_current->next() == nil)
+		m_current = nil;
+	else
+	{
+		for (node* n = m_current->next(); n != nil; n = n->next())
+		{
+			m_current = dynamic_cast<element*>(n);
+			if (m_current != nil)
+				break;
+		}
+	}
+	return *this;
+}
+
+inline container::iterator& container::iterator::operator--()
+{
+	if (m_current->prev() == nil)
+		m_current = nil;
+	else
+	{
+		for (node* n = m_current->prev(); n != nil; n = n->prev())
+		{
+			m_current = dynamic_cast<element*>(n);
+			if (m_current != nil)
+				break;
+		}
+	}
+	return *this;
+}
+
+inline container::const_iterator& container::const_iterator::operator++()
+{ 
+	if (m_current->next() == nil)
+		m_current = nil;
+	else
+	{
+		for (const node* n = m_current->next(); n != nil; n = n->next())
+		{
+			m_current = dynamic_cast<const element*>(n);
+			if (m_current != nil)
+				break;
+		}
+	}
+	return *this;
+}
+
+inline container::const_iterator& container::const_iterator::operator--()
+{
+	if (m_current->prev() == nil)
+		m_current = nil;
+	else
+	{
+		for (const node* n = m_current->prev(); n != nil; n = n->prev())
+		{
+			m_current = dynamic_cast<const element*>(n);
+			if (m_current != nil)
+				break;
+		}
+	}
+	return *this;
+}
+
+inline container::iterator container::begin()
+{
+	element* first = nil;
+	
+	for (node* n = m_child; n != nil; n = n->next())
+	{
+		first = dynamic_cast<element*>(n);
+		if (first != nil)
+			break;
+	}
+	return iterator(first);
+}
+
+inline container::const_iterator container::begin() const
+{
+	const element* first = nil;
+	
+	for (const node* n = m_child; n != nil; n = n->next())
+	{
+		first = dynamic_cast<const element*>(n);
+		if (first != nil)
+			break;
+	}
+	return const_iterator(first);
+}
 
 }
 }

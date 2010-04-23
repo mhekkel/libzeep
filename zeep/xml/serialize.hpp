@@ -463,11 +463,10 @@ deserializer& deserializer::operator&(
 
 	if (serialize_type<value_type>::is_vector)
 	{
-		element_set children = m_node->children<element>();
-		for (element_set::iterator e = children.begin(); e != children.end(); ++e)
+		for (container::iterator e = m_node->begin(); e != m_node->end(); ++e)
 		{
-			if ((*e)->name() == rhs.name())
-				s_type::deserialize(**e, rhs.value());
+			if (e->name() == rhs.name())
+				s_type::deserialize(*e, rhs.value());
 		}
 	}
 	else
