@@ -1,24 +1,41 @@
-This is the second release of libzeep.
+Libzeep was developed to make it easy to create SOAP servers. And since working with SOAP means working with XML and no decent C++ XML library existed on my radar I've created a full XML library as well.
 
-The second release of libzeep introduces a full XML library. You no longer
-need expat to build libzeep. The XML library comes with a full validating
-SAX parser. There's also a complete XPath 1.0 implementation.
+The XML part of libzeep consists of a validating parser, a DOM(-like) node implementation, an XPath search engine and a XML writer/formatter. The validation works based on DOCTYPE definitions, XML schema support will be added in a later release.
 
-The rest of this file describes the SOAP functionality of libzeep.
+The performance of the parser is not optimal yet although it performs very decently. If speed is critical and you really need that few percent saving you can choose to use expat as a parser instead.
 
-It is supposed to become a very easy way to create SOAP server software in
-C++. You use it to export a C++ object's methods as SOAP actions. The library
-can generate a WSDL for the exported actions and it also has a REST style
-interface.
+Please note that libzeep aims to provide a fully compliant XML processor as specified by the W3 organisation (see: http://www.w3.org/TR/xml ). This means it is a strict as the standard requires and it stops processing a file when a validation of the well-formedness is encountered, or when a document appears to be invalid when it is in validating mode. Error reporting is done in this case, although I admit that error reporting should be improved.
 
-libzeep uses several Boost libraries and currently requires at least version
-1.36 of Boost since it uses the new asio library for network I/O. When needed,
-it is possible to make a few changes to the code and use the standalone
-libasio along with Boost 1.35 instead.
+The SOAP server part of libzeep makes it very easy to create a SOAP server software in C++. You use it to export a C++ object's methods as SOAP actions. The library generates a WSDL on-the-fly for the exported actions and it also has a REST style interface.
 
-To test out libzeep, you have to edit the makefile and make sure the names
-of the boost libraries are correct for your installation. After this you
-simply type 'make zeep-test' and a 'zeep-test' executable is build.
+libzeep requires the Boost libraries and currently requires at least version 1.36 of Boost since it uses the new asio library for network I/O. The current version of libzeep has been tested with boost 1.39 and newer only.
+
+To use libzeep, you have to edit the makefile and make sure the paths to your installation of boost libraries are correct. After this you simply type 'make zeep-test' and a 'zeep-test' executable is build. You can also cd into the tests directory and build the two test applications called xpath-test and parser-test. For Windows users there's a VC solution file in the msvc directory.
+
+XML Library -- usage
+
+Using the XML library of libzeep is fairly trivial. The first class you use is the zeep::xml::document class. You can use this class to read XML files and write them out again. Reading and writing is strictly done using stl iostreams. Make sure you open these streams in binary mode, random parsing errors will occur if you don't when running in Windows.
+
+	#include <fstream>
+	#include "zeep/xml/document.hpp"
+	
+	using namespace std;
+	using namespace zeep;
+	
+	...
+	
+	xml::document doc;
+	doc.set_validating(true);			// validation is off by default
+	ifstream file("/...", ios::binary); // avoid CRLF translation
+	file >> doc;
+	
+Now that you have a document, you can walk its content which is organised in nodes. There are several nodes classes, the most interesting for most is xml::element. The elements can have children, some of which are also elements.
+
+
+
+
+
+SOAP Server -- usage
 
 Have a look at the zeep-test.cpp file to see how to create a server. This
 example server is not entirely trivial since it has three exported methods
