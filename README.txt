@@ -29,11 +29,40 @@ Using the XML library of libzeep is fairly trivial. The first class you use is t
 	ifstream file("/...", ios::binary); // avoid CRLF translation
 	file >> doc;
 	
-Now that you have a document, you can walk its content which is organised in nodes. There are several nodes classes, the most interesting for most is xml::element. The elements can have children, some of which are also elements.
+Now that you have a document, you can walk its content which is organised in nodes. There are several nodes classes, the most interesting for most is xml::element. These elements can have children, some of which are also elements.
 
+Internally the nodes are stored as linked lists. However, to conform to STL coding practices, xml::element can used like a container. The iterator of xml::element (which it inherits from its base class xml::container) only returns child xml::element objects skipping over comments and processing instructions.
 
+So, to iterate over all elements directly under the first element of a document, we do something like this:
 
+	xml::element& first = *doc.child();
+	for (xml::document::iterator e = first.begin(); e != first.end(); ++e)
+		cout << e.name() << endl;
 
+Likewise you can iterate over the attributes of an xml::element, like this:
+
+	for (xml::element::attribute_iterator a = e.attr_begin(); a != e.attr_end(); ++a)
+		cout << a->name() << endl;
+
+More often you're interested in a specific element among many others. Now you can recursively iterate the tree until you've found what you're looking for, but it is way easier to use xpaths in that case. Let say you need the element 'book' having an attribute 'title' with value 'Du côté de chez Swann', you could do this:
+
+	xml::element* book = doc.find("//book[@title='Du côté de chez Swann']");
+
+You can access the attributes by name:
+
+	assert(book->get_attribute("author") == "Proust");
+
+And the content, contained in the text nodes of an element:
+	
+	cout << book->content() << endl;
+
+And writing out an XML file again can be done by writing an xml::document:
+
+	cout << doc;
+	
+Or by using xml::writer directly.
+
+libzeep has XML Namespace support. The qname method of the nodes returns a qualified name, that is the namespace prefix, a colon and the localname contatenated. (Something like 'ns:book'). The method name() returns the qname() with its prefix stripped off.
 
 SOAP Server -- usage
 

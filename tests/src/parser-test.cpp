@@ -94,6 +94,15 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	return result;
 }
 
+void dump(xml::element& e, int level = 0)
+{
+	cout << level << "> " << e.qname() << endl;
+	for (xml::element::attribute_iterator a = e.attr_begin(); a != e.attr_end(); ++a)
+		cout << level << " (a)> " << a->qname() << endl;
+	foreach (xml::element& c, e)
+		dump(c, level + 1);
+}
+
 bool run_test(const xml::element& test, fs::path base_dir)
 {
 	bool result = true;
@@ -299,6 +308,7 @@ int main(int argc, char* argv[])
 	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
 	    ("single", po::value<string>(), "Test a single XML file")
+	    ("dump", po::value<string>(), "Dump the structure of a single XML file")
 	    ("print-ids", "Print the ID's of failed tests")
 	;
 	
@@ -332,12 +342,29 @@ int main(int argc, char* argv[])
 		{
 			fs::path path(vm["single"].as<string>());
 
+			fs::ifstream file(path, ios::binary);
+			if (not file.is_open())
+				throw zeep::exception("could not open file");
+
 			fs::path dir(path.branch_path());
 			fs::current_path(dir);
 
-			fs::ifstream file(path, ios::binary);
-
 			run_valid_test(file, dir);
+		}
+		else if (vm.count("dump"))
+		{
+			fs::path path(vm["dump"].as<string>());
+
+			fs::ifstream file(path, ios::binary);
+			if (not file.is_open())
+				throw zeep::exception("could not open file");
+
+			fs::path dir(path.branch_path());
+			fs::current_path(dir);
+
+			xml::document doc;
+			file >> doc;
+			dump(*doc.child());
 		}
 		else
 		{
