@@ -160,7 +160,7 @@ class container : public node
 																	{}
 						const_iterator(const const_iterator& other)
 							: m_current(other.m_current)			{}
-						const_iterator(const iterator& other)
+						const_iterator(const container::iterator& other)
 							: m_current(other.base())				{}
 
 		const_iterator&	operator=(const const_iterator& other)		{ m_current = other.m_current; return *this; }
