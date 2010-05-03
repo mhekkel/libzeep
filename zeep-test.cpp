@@ -5,6 +5,10 @@
 
 #include "zeep/config.hpp"
 
+#if NO_PREFORK
+#undef SOAP_SERVER_HAS_PREFORK
+#endif
+
 #if SOAP_SERVER_HAS_PREFORK
 #include "zeep/http/preforked-server.hpp"
 #include <sys/wait.h>

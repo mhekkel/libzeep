@@ -12,16 +12,22 @@ using namespace std;
 namespace zeep {
 
 envelope::envelope()
-	: m_request(NULL)
+	: m_request(nil)
 {
 }
 
 envelope::envelope(xml::document& data)
+	: m_request(nil)
 {
 	const xml::xpath
 		sRequestPath("/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
 	
-	m_request = sRequestPath.evaluate<xml::element>(*data.root()).front();
+	list<xml::element*> l = sRequestPath.evaluate<xml::element>(*data.root());
+	
+	if (l.empty())
+		throw zeep::exception("Empty or invalid SOAP envelope passed");
+	
+	m_request = l.front();
 }
 
 xml::element* make_envelope(xml::element* data)

@@ -136,16 +136,19 @@ string node::prefix() const
 {
 	string qn = qname();
 	string::size_type s = qn.find(':');
+
+	string p;
+
 	if (s != string::npos)
-		qn.erase(s);
-	return qn;
+		p = qn.substr(0, s);
+
+	return p;
 }
 
 string node::ns() const
 {
 	string result, p = prefix();
-	if (not p.empty())
-		result = namespace_for_prefix(p);
+	result = namespace_for_prefix(p);
 	return result;
 }
 

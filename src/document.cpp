@@ -164,8 +164,6 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 		m_cur->set_attribute(qname, a.m_value, a.m_id);
 	}
 
-	const string name_prefix("xmlns:");
-
 	for (vector<pair<string,string> >::iterator ns = m_namespaces.begin(); ns != m_namespaces.end(); ++ns)
 		m_cur->set_name_space(ns->first, ns->second);
 	

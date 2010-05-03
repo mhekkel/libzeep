@@ -400,6 +400,7 @@ class element : public container
 	void				set_attribute(const std::string& qname, const std::string& value, bool id = false);
 	void				remove_attribute(const std::string& qname);
 
+	// to set the default namespace, pass the empty string as prefix to the next call.
 	void				set_name_space(const std::string& prefix,
 							const std::string& uri);
 //	void				remove_name_space(const std::string& uri);
