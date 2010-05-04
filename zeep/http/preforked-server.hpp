@@ -36,21 +36,28 @@
 ///		zeep::http::preforked_server<my_server> server("0.0.0.0", 10333, 2, "my extra param");
 ///		boost::thread t(
 ///			boost::bind(&zeep::http::preforked_server<my_server>::run, &server));
+///
+///		server.start_listening();
+///
 ///		... // wait for signal to stop
 ///		server.stop();
 ///		t.join();
+///
+///	The start_listening call is needed since we want to postpone opening network ports
+/// until after the child has been forked. For a single server this is obviously no problem
+/// but if you fork more than one child, the latter would inherit all open network connections
+/// from the previous children.
 
 namespace zeep { namespace http {
 
 class preforked_server_base
 {
   public:
-
-
 	virtual					~preforked_server_base();
 
-	virtual void			run();
-	virtual void			stop();
+	virtual void			run();					/// fork child and start listening, should be a separate thread
+	virtual void			start_listening();		/// signal the thread it can continue listening
+	virtual void			stop();					/// stop the running thread
 
   protected:
 
@@ -63,15 +70,7 @@ class preforked_server_base
 	struct server_constructor;
 	
   							preforked_server_base(const std::string& address, short port, int nr_of_threads,
-  								server_constructor_base* constructor)
-							: m_address(address)
-							, m_port(port)
-							, m_nr_of_threads(nr_of_threads)
-							, m_constructor(constructor)
-							, m_acceptor(m_io_service)
-							, m_socket(m_io_service)
-						{
-						}
+  								server_constructor_base* constructor);
 
   private:
 							preforked_server_base(const preforked_server_base&);
@@ -92,6 +91,7 @@ class preforked_server_base
 	boost::asio::ip::tcp::socket	m_socket;
 	int								m_fd;
 	int								m_pid;
+	boost::mutex*					m_start_lock;
 };
 
 template<class Server>
@@ -136,6 +136,28 @@ struct preforked_server_base::server_constructor<void(Server::*)(T0,T1)> : publi
 	value_type_1	m_t1;
 };
 
+template<class Server, typename T0, typename T1, typename T2>
+struct preforked_server_base::server_constructor<void(Server::*)(T0,T1,T2)> : public server_constructor_base
+{
+						server_constructor(T0 t0, T1 t1, T2 t2)
+							: m_t0(t0), m_t1(t1), m_t2(t2) {}
+
+	virtual server*	construct(const std::string& address, short port, int nr_of_threads)
+						{ return new Server(address, port, nr_of_threads, m_t0, m_t1, m_t2); }
+
+  private:
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T0>::type>::type	value_type_0;
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T1>::type>::type	value_type_1;
+	typedef typename boost::remove_const<
+			typename boost::remove_reference<T2>::type>::type	value_type_2;
+
+	value_type_0	m_t0;
+	value_type_1	m_t1;
+	value_type_2	m_t2;
+};
+
 template<class Server>
 class preforked_server : public preforked_server_base
 {
@@ -157,6 +179,12 @@ class preforked_server : public preforked_server_base
 	template<typename T0, typename T1>
 						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0, T1 t1)
 							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0,T1)>(t0, t1))
+						{
+						}
+
+	template<typename T0, typename T1, typename T2>
+						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0, T1 t1, T2 t2)
+							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0,T1,T2)>(t0, t1, t2))
 						{
 						}
 };

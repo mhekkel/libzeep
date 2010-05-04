@@ -20,6 +20,7 @@
         <file>connection.cpp</file>
         <file>http-server.cpp</file>
         <file>reply.cpp</file>
+        <file>preforked-http-server.cpp</file>
         <file>request_parser.cpp</file>
       </group>
       <group name="xml">

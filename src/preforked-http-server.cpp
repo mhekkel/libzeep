@@ -26,10 +26,37 @@ using namespace std;
 
 namespace zeep { namespace http {
 
+preforked_server_base::preforked_server_base(const string& address,
+	short port, int nr_of_threads, server_constructor_base* constructor)
+	: m_address(address)
+	, m_port(port)
+	, m_nr_of_threads(nr_of_threads)
+	, m_constructor(constructor)
+	, m_acceptor(m_io_service)
+	, m_socket(m_io_service)
+	, m_start_lock(new boost::mutex)
+{
+	// we begin by locking the 'start' mutex.
+	// This is done so that we can block the run thread from entering the
+	// listening code until we're ready forking off all children.
+	
+	m_start_lock->lock();
+}
+
 preforked_server_base::~preforked_server_base()
 {
+	if (m_pid > 0)
+	{
+		// wait until child dies to avoid zombies
+		int status;
+		waitpid(m_pid, &status, 0);
+	}
+
 	m_io_service.stop();
 	delete m_constructor;
+	
+	m_start_lock->unlock();
+	delete m_start_lock;
 }
 
 void preforked_server_base::run()
@@ -78,7 +105,7 @@ void preforked_server_base::run()
 			}
 			catch (std::exception& e)
 			{
-				std::cerr << "Exception caught: " << e.what() << std::endl;
+				cerr << "Exception caught: " << e.what() << endl;
 				exit(1);
 			}
 			
@@ -87,6 +114,9 @@ void preforked_server_base::run()
 			
 			exit(0);
 		}
+	
+		// wait for the signal to continue
+		m_start_lock->lock();
 	
 		// bind the address here
 		boost::asio::ip::tcp::resolver resolver(m_io_service);
@@ -112,48 +142,20 @@ void preforked_server_base::run()
 			boost::bind(&boost::asio::io_service::run, &m_io_service));
 	
 		thread.join();
-	
-		if (m_fd >= 0)
+		
+		if (m_fd > 0)
 			close(m_fd);
 	}
 	catch (std::exception& e)
 	{
-		std::cerr << "Exception caught in running server: " << e.what() << std::endl;
+		cerr << "Exception caught in running server: " << e.what() << endl;
 	}
 }
 
-//void preforked_server_base::run_worker(int fd, int nr_of_threads)
-//{
-//	// keep the server at work until we call stop
-//	boost::asio::io_service::work work(m_io_service);
-//	
-//	for (int i = 0; i < nr_of_threads; ++i)
-//	{
-//		m_threads.create_thread(
-//			boost::bind(&boost::asio::io_service::run, &m_io_service));
-//	}
-//
-//	try
-//	{
-//		for (;;)
-//		{
-//			boost::shared_ptr<connection> conn(new connection(m_io_service, *this));
-//			
-//			if (not read_socket_from_parent(fd, conn->get_socket()))
-//				break;
-//			
-//			conn->start();
-//		}
-//	}
-//	catch (std::exception& e)
-//	{
-//		cerr << e.what() << endl;
-//	}
-//	
-//	stop();
-//
-//	m_threads.join_all();
-//}
+void preforked_server_base::start_listening()
+{
+	m_start_lock->unlock();
+}
 
 bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
@@ -210,8 +212,6 @@ bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::
 				}
 			}
 		}
-		else
-			cerr << "No file descriptor was passed" << endl;
 	}
 	
 	return result;
@@ -229,7 +229,6 @@ void preforked_server_base::write_socket_to_worker(int fd_socket, boost::asio::i
 #else
 	  char				control[CMSG_SPACE(sizeof(native_type))];
 #endif
-//		char			control[CMSG_SPACE(sizeof(native_type))];
 	} control_un;
 	
 	msg.msg_control = control_un.control;
@@ -259,14 +258,7 @@ void preforked_server_base::stop()
 {
 	m_io_service.stop();
 	
-	// kill the worker
-	kill(m_pid, SIGTERM);
-	
-	// and wait until it died to avoid zombies
-	int status;
-	waitpid(m_pid, &status, 0);
-	
-	// close the socket to the worker
+	// close the socket to the worker, this will terminate the child
 	close(m_fd);
 	m_fd = -1;
 }

@@ -246,19 +246,23 @@ int main(int argc, const char* argv[])
 		zeep::http::preforked_server<my_server> server("0.0.0.0", 10333, 2, "bla bla");
 		boost::thread t(
 			boost::bind(&zeep::http::preforked_server<my_server>::run, &server));
-	
+
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+	
+		server.start_listening();
 	
 		// Wait for signal indicating time to shut down.
 		sigset_t wait_mask;
 		sigemptyset(&wait_mask);
 		sigaddset(&wait_mask, SIGINT);
+		sigaddset(&wait_mask, SIGHUP);
 		sigaddset(&wait_mask, SIGQUIT);
 		sigaddset(&wait_mask, SIGTERM);
 		sigaddset(&wait_mask, SIGCHLD);
 		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
 		int sig = 0;
 		sigwait(&wait_mask, &sig);
+	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 	
 		server.stop();
 		t.join();
@@ -272,6 +276,9 @@ int main(int argc, const char* argv[])
 				cout << "child " << pid << " terminated by signal " << WTERMSIG(status) << endl;
 			continue;
 		}
+		
+		if (sig == SIGHUP)
+			continue;
 		
 		break;
  	}

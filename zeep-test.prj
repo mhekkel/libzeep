@@ -50,7 +50,6 @@
       <compiler>/usr/bin/c++</compiler>
       <defines>
         <define>DEBUG</define>
-        <define>NO_PREFORK</define>
       </defines>
       <cflags>
         <cflag>-O0</cflag>
