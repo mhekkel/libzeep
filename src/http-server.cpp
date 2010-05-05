@@ -118,8 +118,15 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	detail::s_log.reset(new ostringstream);
 	ptime start = second_clock::local_time();
 	
+	boost::asio::ip::address addr;
+	
 	try
 	{
+		// asking for the remote endpoint address failed
+		// sometimes causing aborting exceptions, so I moved it here.
+		addr = socket.remote_endpoint().address();
+		
+		// do the actual work.
 		handle_request(req, rep);
 	}
 	catch (...)
@@ -127,13 +134,17 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		rep = reply::stock_reply(internal_server_error);
 	}
 
-	// protect the output stream from garbled log messages
-	boost::mutex::scoped_lock lock(detail::s_log_lock);
-	cout << socket.remote_endpoint().address()
-		 << " [" << start << "] "
-		 << second_clock::local_time() - start << ' '
-		 << rep.status << ' '
-		 << detail::s_log->str() << endl;
+	try
+	{
+		// protect the output stream from garbled log messages
+		boost::mutex::scoped_lock lock(detail::s_log_lock);
+		cout << addr
+			 << " [" << start << "] "
+			 << second_clock::local_time() - start << ' '
+			 << rep.status << ' '
+			 << detail::s_log->str() << endl;
+	}
+	catch (...) {}
 }
 
 }
