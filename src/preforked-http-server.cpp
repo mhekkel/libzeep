@@ -45,27 +45,12 @@ preforked_server_base::preforked_server_base(const string& address,
 
 preforked_server_base::~preforked_server_base()
 {
-	if (m_pid > 0)
+	if (m_pid > 0)		// should never happen
 	{
-		// wait until child dies to avoid zombies
-		// and to make sure the client really stops...
-		
-		int count = 5;	// wait five seconds before killing client
-		
-		for (;;)
-		{
-			int status;
-			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED | WNOHANG) == -1)
-				break;
-			
-			if (WIFEXITED(status))
-				break;
-			
-			sleep(1);
+		kill(m_pid, SIGKILL);
 
-			if (count-- <= 0)
-				kill(m_pid, SIGKILL);
-		}
+		int status;
+		waitpid(m_pid, &status, WUNTRACED | WCONTINUED);
 	}
 
 	m_io_service.stop();
@@ -156,11 +141,33 @@ void preforked_server_base::run()
 	
 		boost::thread thread(
 			boost::bind(&boost::asio::io_service::run, &m_io_service));
-	
+
 		thread.join();
+
+		// close the socket to the worker, this should terminate the child
+		close(m_fd);
+		m_fd = -1;
 		
-		if (m_fd > 0)
-			close(m_fd);
+		// however, sometimes it doesn't, so we have to take some serious action
+		// Anyway, we'll wait until child dies to avoid zombies
+		// and to make sure the client really stops...
+		
+		int count = 5;	// wait five seconds before killing client
+		int status;
+
+		while (count-- > 0)
+		{
+			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED | WNOHANG) == -1)
+				break;
+			
+			if (WIFEXITED(status))
+				break;
+			
+			sleep(1);
+		}
+
+		if (not WIFEXITED(status))
+			kill(m_pid, SIGKILL);
 	}
 	catch (std::exception& e)
 	{
@@ -273,10 +280,6 @@ void preforked_server_base::write_socket_to_worker(int fd_socket, boost::asio::i
 void preforked_server_base::stop()
 {
 	m_io_service.stop();
-	
-	// close the socket to the worker, this will terminate the child
-	close(m_fd);
-	m_fd = -1;
 }
 
 void preforked_server_base::handle_accept(const boost::system::error_code& ec)
