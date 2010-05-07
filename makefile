@@ -38,6 +38,7 @@ OBJECTS = \
 	obj/reply.o \
 	obj/connection.o \
 	obj/http-server.o \
+	obj/preforked-http-server.o \
 	obj/soap-server.o \
 	obj/unicode_support.o \
 	obj/xpath.o \

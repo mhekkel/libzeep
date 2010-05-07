@@ -48,8 +48,24 @@ preforked_server_base::~preforked_server_base()
 	if (m_pid > 0)
 	{
 		// wait until child dies to avoid zombies
-		int status;
-		waitpid(m_pid, &status, 0);
+		// and to make sure the client really stops...
+		
+		int count = 5;	// wait five seconds before killing client
+		
+		for (;;)
+		{
+			int status;
+			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED | WNOHANG) == -1)
+				break;
+			
+			if (WIFEXITED(status))
+				break;
+			
+			sleep(1);
+
+			if (count-- <= 0)
+				kill(m_pid, SIGKILL);
+		}
 	}
 
 	m_io_service.stop();
