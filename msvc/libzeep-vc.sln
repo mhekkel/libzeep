@@ -1,22 +1,13 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libzeep-vc", "libzeep-vc.vcproj", "{8DB71094-266D-4B6B-8076-0F58A3944F4B}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libzeep-vc", "libzeep-vc.vcxproj", "{8DB71094-266D-4B6B-8076-0F58A3944F4B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zeep-test", "zeep-test.vcproj", "{4BB39871-71E0-4A9C-8D70-83D44E6A8938}"
-	ProjectSection(ProjectDependencies) = postProject
-		{8DB71094-266D-4B6B-8076-0F58A3944F4B} = {8DB71094-266D-4B6B-8076-0F58A3944F4B}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zeep-test", "zeep-test.vcxproj", "{4BB39871-71E0-4A9C-8D70-83D44E6A8938}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpath-test", "xpath-test.vcproj", "{8E4C0575-1AEC-4525-8812-045949F74793}"
-	ProjectSection(ProjectDependencies) = postProject
-		{8DB71094-266D-4B6B-8076-0F58A3944F4B} = {8DB71094-266D-4B6B-8076-0F58A3944F4B}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpath-test", "xpath-test.vcxproj", "{8E4C0575-1AEC-4525-8812-045949F74793}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parser-test", "parser-test.vcproj", "{BE2CEABE-B50F-4529-AF4B-E0EFEC6A05CB}"
-	ProjectSection(ProjectDependencies) = postProject
-		{8DB71094-266D-4B6B-8076-0F58A3944F4B} = {8DB71094-266D-4B6B-8076-0F58A3944F4B}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parser-test", "parser-test.vcxproj", "{BE2CEABE-B50F-4529-AF4B-E0EFEC6A05CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
