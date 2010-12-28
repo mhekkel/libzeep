@@ -9,8 +9,8 @@
 # makefile to match your current installation.
 
 #BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
-BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
-BOOST_INC_DIR		= $(HOME)/projects/boost/include
+#BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+#BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 DESTDIR				?= /usr/local/
 LIBDIR				= $(DESTDIR)lib
@@ -71,7 +71,6 @@ install: libzeep.a libzeep.so
 	install zeep/xml/node.hpp $(INCDIR)/zeep/xml/node.hpp
 	install zeep/xml/serialize.hpp $(INCDIR)/zeep/xml/serialize.hpp
 	install zeep/xml/parser.hpp $(INCDIR)/zeep/xml/parser.hpp
-	install zeep/xml/iomanip.hpp $(INCDIR)/zeep/xml/iomanip.hpp
 	install zeep/xml/unicode_support.hpp $(INCDIR)/zeep/xml/unicode_support.hpp
 	install zeep/xml/doctype.hpp $(INCDIR)/zeep/xml/doctype.hpp
 	install zeep/xml/xpath.hpp $(INCDIR)/zeep/xml/xpath.hpp
