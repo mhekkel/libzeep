@@ -12,10 +12,11 @@
 #BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
 #BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
-DESTDIR				?= /usr/local/
-LIBDIR				= $(DESTDIR)lib
-INCDIR				= $(DESTDIR)include
-MANDIR				= $(DESTDIR)man/man3
+# the debian package building tools broke my build rules...
+# DESTDIR				?= /usr/local/
+LIBDIR				= $(DESTDIR)/usr/lib
+INCDIR				= $(DESTDIR)/usr/include
+MANDIR				= $(DESTDIR)/usr/man/man3
 
 BOOST_LIBS			= boost_system boost_thread
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
@@ -55,11 +56,14 @@ libzeep.so: $(OBJECTS)
 zeep-test: lib obj/zeep-test.o
 	c++ -o $@ libzeep.a $(LDOPTS) -lboost_filesystem obj/zeep-test.o
 
-install: libzeep.a libzeep.so
-	install -d $(LIBDIR) $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
+install-libs: libzeep.a libzeep.so
+	install -d $(LIBDIR)
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	install ./libzeep.so $(LIBDIR)/libzeep.so.1
-	ln -fs $(LIBDIR)/libzeep.so.1 $(LIBDIR)/libzeep.so
+	cd $(LIBDIR); ln -fs libzeep.so.1 libzeep.so
+
+install-dev:
+	install -d $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
 	install zeep/http/reply.hpp $(INCDIR)/zeep/http/reply.hpp
 	install zeep/http/connection.hpp $(INCDIR)/zeep/http/connection.hpp
 	install zeep/http/request_parser.hpp $(INCDIR)/zeep/http/request_parser.hpp
@@ -80,6 +84,8 @@ install: libzeep.a libzeep.so
 	install zeep/dispatcher.hpp $(INCDIR)/zeep/dispatcher.hpp
 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
+
+install: install-libs install-dev
 
 obj/%.o: %.cpp
 	c++ -MD -c -o $@ $< $(CFLAGS)

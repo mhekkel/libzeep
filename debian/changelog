@@ -1,3 +1,9 @@
+libzeep (2.0-1) unstable; urgency=low
+
+  * Updated version, production ready.
+
+ -- Maarten L. Hekkelman <m.hekkelman@cmbi.ru.nl>  Wed, 28 Dec 2010 11:35:00 +0100
+
 libzeep (1.0-1) unstable; urgency=low
 
   * Initial release
