@@ -4,7 +4,7 @@ Maintainer: Maarten L. Hekkelman <maarten@hekkelman.com>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.3
 Section: libs
-Homepage: http://www.cmbi.ru.nl/~maarten/libzeep/
+Homepage: http://www.cmbi.ru.nl/libzeep/
 
 Package: libzeep-dev
 Section: libdevel
