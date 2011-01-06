@@ -21,10 +21,15 @@ MANDIR				= $(DESTDIR)/usr/man/man3
 BOOST_LIBS			= boost_system boost_thread
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS)
-LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -gdwarf-2 -pthread
+LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
+
+LIB_SO_MAJOR		= 2
+LIB_SO_MINOR		= 0
+LIB_SO_NAME			= libzeep.so.$(LIB_SO_MAJOR)
+LIB_NAME			= $(LIB_SO_NAME).$(LIB_SO_MINOR)
 
 CC					?= c++
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC -O3 -pthread
+CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC -O3 -pthread -shared
 
 VPATH += src
 
@@ -45,16 +50,22 @@ OBJECTS = \
 	obj/xpath.o \
 	obj/writer.o
 
-lib: libzeep.a
+lib: libzeep.a libzeep.so
 
 libzeep.a: $(OBJECTS)
 	ld -r -o $@ $(OBJECTS)
 
-libzeep.so: $(OBJECTS)
-	c++ -shared -o $@ $(LDOPTS) $?
+$(LIB_SO_NAME): $(LIB_NAME);	
+	ln -fs $< $@
+
+$(LIB_NAME): $(OBJECTS)
+	$(CC) -shared -o $@ -Wl,-soname=$(LIB_SO_NAME) $(LDOPTS) $?
+
+libzeep.so:  $(LIB_SO_NAME)
+	ln -fs $< $@
 
 zeep-test: lib obj/zeep-test.o
-	c++ -o $@ libzeep.a $(LDOPTS) -lboost_filesystem obj/zeep-test.o
+	c++ -o $@ $(LDOPTS) -lboost_filesystem -lzeep -L. -Wl,-rpath=. obj/zeep-test.o
 
 install-libs: libzeep.a libzeep.so
 	install -d $(LIBDIR)
