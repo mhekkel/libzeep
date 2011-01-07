@@ -25,6 +25,7 @@ LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR		= 2
 VERSION_MINOR		= 0.0
+DIST_NAME			= libzeep-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
@@ -100,10 +101,17 @@ install-dev:
 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
 	install ./libzeep.a $(LIBDIR)/libzeep.a
-	strip $(LIBDIR)/libzeep.a
+	strip --remove-section=.comment --remove-section=.note $(LIBDIR)/libzeep.a
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 
 install: install-libs install-dev
+
+dist: lib
+	mkdir $(DIST_NAME)
+	find zeep src -name "*.hpp" -o -name "*.cpp" | cpio -pda $(DIST_NAME)/zeep
+	cp zeep-test.cpp $(DIST_NAME)
+	cp makefile $(DIST_NAME)
+	tar czf $(DIST_NAME).tar.gz $(DIST_NAME)
 
 obj/%.o: %.cpp
 	$(CC) -MD -c -o $@ $< $(CFLAGS)
