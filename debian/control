@@ -2,7 +2,7 @@ Source: libzeep
 Priority: extra
 Maintainer: Maarten L. Hekkelman <maarten@hekkelman.com>
 Build-Depends: debhelper (>= 7)
-Standards-Version: 3.8.3
+Standards-Version: 3.9.1
 Section: libs
 Homepage: http://www.cmbi.ru.nl/libzeep/
 
@@ -17,7 +17,6 @@ Description: Library to create SOAP server software in c++ (development files)
  service. Makes heavy use of boost libraries.
 
 Package: libzeep2
-Section: libs
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description:  Library to create SOAP server software in c++
