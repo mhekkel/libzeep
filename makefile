@@ -107,10 +107,9 @@ install-dev:
 install: install-libs install-dev
 
 dist: lib
-	mkdir $(DIST_NAME)
-	find zeep src -name "*.hpp" -o -name "*.cpp" | cpio -pda $(DIST_NAME)/zeep
-	cp zeep-test.cpp $(DIST_NAME)
-	cp makefile $(DIST_NAME)
+	rm -rf $(DIST_NAME)
+	svn export . $(DIST_NAME)
+	rm -rf $(DIST_NAME)/tests $(DIST_NAME)/debian
 	tar czf $(DIST_NAME).tar.gz $(DIST_NAME)
 
 obj/%.o: %.cpp
