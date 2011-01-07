@@ -10,7 +10,7 @@
 #endif
 
 #if SOAP_SERVER_HAS_PREFORK
-#include "zeep/http/preforked-server.hpp"
+#include <zeep/http/preforked-server.hpp>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
