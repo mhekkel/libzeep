@@ -13,23 +13,24 @@
 #BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 # the debian package building tools broke my build rules...
-# DESTDIR				?= /usr/local/
-LIBDIR				= $(DESTDIR)/usr/lib
-INCDIR				= $(DESTDIR)/usr/include
-MANDIR				= $(DESTDIR)/usr/man/man3
+PREFIX				?= /usr/local
+LIBDIR				?= $(PREFIX)/lib
+INCDIR				?= $(PREFIX)/include
+MANDIR				?= $(PREFIX)/man/man3
 
 BOOST_LIBS			= boost_system boost_thread
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS)
 LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-LIB_SO_MAJOR		= 2
-LIB_SO_MINOR		= 0
-LIB_SO_NAME			= libzeep.so.$(LIB_SO_MAJOR)
-LIB_NAME			= $(LIB_SO_NAME).$(LIB_SO_MINOR)
+VERSION_MAJOR		= 2
+VERSION_MINOR		= 0.0
+
+SO_NAME				= libzeep.so.$(VERSION_MAJOR)
+LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -gdwarf-2 -fPIC -O3 -pthread -shared
+CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -g -fPIC -O3 -pthread -shared
 
 VPATH += src
 
@@ -55,23 +56,23 @@ lib: libzeep.a libzeep.so
 libzeep.a: $(OBJECTS)
 	ld -r -o $@ $(OBJECTS)
 
-$(LIB_SO_NAME): $(LIB_NAME);	
+$(SO_NAME): $(LIB_NAME)
 	ln -fs $< $@
 
 $(LIB_NAME): $(OBJECTS)
-	$(CC) -shared -o $@ -Wl,-soname=$(LIB_SO_NAME) $(LDOPTS) $?
+	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDOPTS) $?
 
-libzeep.so:  $(LIB_SO_NAME)
+libzeep.so:  $(LIB_NAME)
 	ln -fs $< $@
 
-zeep-test: lib obj/zeep-test.o
-	c++ -o $@ $(LDOPTS) -lboost_filesystem -lzeep -L. -Wl,-rpath=. obj/zeep-test.o
+zeep-test: libzeep.a obj/zeep-test.o
+	$(CC) -o $@ $(LDOPTS) -lboost_filesystem $?
 
-install-libs: libzeep.a libzeep.so
+install-libs: libzeep.so
 	install -d $(LIBDIR)
-	install ./libzeep.a $(LIBDIR)/libzeep.a
-	install ./libzeep.so $(LIBDIR)/libzeep.so.1
-	cd $(LIBDIR); ln -fs libzeep.so.1 libzeep.so
+	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
+	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
+	strip -X $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
 	install -d $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
@@ -95,15 +96,18 @@ install-dev:
 	install zeep/dispatcher.hpp $(INCDIR)/zeep/dispatcher.hpp
 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
+	install ./libzeep.a $(LIBDIR)/libzeep.a
+	strip $(LIBDIR)/libzeep.a
+	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 
 install: install-libs install-dev
 
 obj/%.o: %.cpp
-	c++ -MD -c -o $@ $< $(CFLAGS)
+	$(CC) -MD -c -o $@ $< $(CFLAGS)
 
 include $(OBJECTS:%.o=%.d)
 
 $(OBJECTS:.o=.d):
 
 clean:
-	rm -rf obj/* libzeep.a libzeep.so zeep-test
+	rm -rf obj/* libzeep.a libzeep.so $(SO_NAME) $(LIB_NAME) zeep-test
