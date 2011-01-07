@@ -45,8 +45,8 @@ binary-arch: install
 	dh_compress
 	dh_fixperms
 	dh_makeshlibs -V
-	dh_installdeb
 	dh_shlibdeps
+	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

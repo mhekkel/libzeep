@@ -18,9 +18,9 @@ LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
 
-BOOST_LIBS			= boost_system boost_thread
+BOOST_LIBS			= boost_system boost_thread boost_filesystem
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
-LIBS				= $(BOOST_LIBS)
+LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR		= 2
@@ -65,8 +65,9 @@ $(LIB_NAME): $(OBJECTS)
 libzeep.so:  $(LIB_NAME)
 	ln -fs $< $@
 
-zeep-test: libzeep.a obj/zeep-test.o
-	$(CC) -o $@ $(LDOPTS) -lboost_filesystem $?
+# assuming zeep-test is build when install was not done already
+zeep-test: zeep-test.cpp libzeep.a
+	$(CC) -o $@ -I. zeep-test.cpp libzeep.a $(LDOPTS)
 
 install-libs: libzeep.so
 	install -d $(LIBDIR)
@@ -75,25 +76,27 @@ install-libs: libzeep.so
 	strip -X $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
-	install -d $(MANDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
-	install zeep/http/reply.hpp $(INCDIR)/zeep/http/reply.hpp
+	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
 	install zeep/http/connection.hpp $(INCDIR)/zeep/http/connection.hpp
-	install zeep/http/request_parser.hpp $(INCDIR)/zeep/http/request_parser.hpp
-	install zeep/http/request_handler.hpp $(INCDIR)/zeep/http/request_handler.hpp
-	install zeep/http/server.hpp $(INCDIR)/zeep/http/server.hpp
 	install zeep/http/header.hpp $(INCDIR)/zeep/http/header.hpp
+	install zeep/http/preforked-server.hpp $(INCDIR)/zeep/http/preforked-server.hpp
+	install zeep/http/reply.hpp $(INCDIR)/zeep/http/reply.hpp
 	install zeep/http/request.hpp $(INCDIR)/zeep/http/request.hpp
+	install zeep/http/request_handler.hpp $(INCDIR)/zeep/http/request_handler.hpp
+	install zeep/http/request_parser.hpp $(INCDIR)/zeep/http/request_parser.hpp
+	install zeep/http/server.hpp $(INCDIR)/zeep/http/server.hpp
+	install zeep/xml/doctype.hpp $(INCDIR)/zeep/xml/doctype.hpp
 	install zeep/xml/document.hpp $(INCDIR)/zeep/xml/document.hpp
 	install zeep/xml/node.hpp $(INCDIR)/zeep/xml/node.hpp
-	install zeep/xml/serialize.hpp $(INCDIR)/zeep/xml/serialize.hpp
 	install zeep/xml/parser.hpp $(INCDIR)/zeep/xml/parser.hpp
+	install zeep/xml/serialize.hpp $(INCDIR)/zeep/xml/serialize.hpp
 	install zeep/xml/unicode_support.hpp $(INCDIR)/zeep/xml/unicode_support.hpp
-	install zeep/xml/doctype.hpp $(INCDIR)/zeep/xml/doctype.hpp
-	install zeep/xml/xpath.hpp $(INCDIR)/zeep/xml/xpath.hpp
 	install zeep/xml/writer.hpp $(INCDIR)/zeep/xml/writer.hpp
+	install zeep/xml/xpath.hpp $(INCDIR)/zeep/xml/xpath.hpp
+	install zeep/config.hpp $(INCDIR)/zeep/config.hpp
+	install zeep/dispatcher.hpp $(INCDIR)/zeep/dispatcher.hpp
 	install zeep/envelope.hpp $(INCDIR)/zeep/envelope.hpp
 	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
-	install zeep/dispatcher.hpp $(INCDIR)/zeep/dispatcher.hpp
 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
 	install ./libzeep.a $(LIBDIR)/libzeep.a
