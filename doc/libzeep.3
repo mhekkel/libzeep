@@ -30,11 +30,19 @@ my_server::my_server(const char* addr, short port)
 .sp
  ...
 .sp
-my_server server("0.0.0.0", 10333);
+int main()
 .br
-boost::thread t(boost::bind(&my_server::run, &server));
+{
 .br
-// and wait for a signal to stop using e.g. sigwait(3)
+  my_server server("0.0.0.0", 10333);
+.br
+  boost::thread t(boost::bind(&my_server::run, &server));
+.br
+  // and wait for a signal to stop using e.g. sigwait(3)
+.br
+  ...
+.br
+}
 .sp
 .SH DESCRIPTION
 Using libzeep you can create a SOAP server by deriving from
