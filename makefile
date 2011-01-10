@@ -25,7 +25,7 @@ LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR		= 2
 VERSION_MINOR		= 0.0
-DIST_NAME			= libzeep-$(VERSION_MAJOR).$(VERSION_MINOR)
+DIST_NAME			= libzeep-2.0
 
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
@@ -110,7 +110,7 @@ dist: lib
 	rm -rf $(DIST_NAME)
 	svn export . $(DIST_NAME)
 	rm -rf $(DIST_NAME)/tests $(DIST_NAME)/debian
-	tar czf $(DIST_NAME).tar.gz $(DIST_NAME)
+	tar czf ../$(DIST_NAME).tar.gz $(DIST_NAME)
 
 obj/%.o: %.cpp
 	$(CC) -MD -c -o $@ $< $(CFLAGS)
@@ -120,4 +120,4 @@ include $(OBJECTS:%.o=%.d)
 $(OBJECTS:.o=.d):
 
 clean:
-	rm -rf obj/* libzeep.a libzeep.so $(SO_NAME) $(LIB_NAME) zeep-test
+	rm -rf obj/* libzeep.a libzeep.so $(SO_NAME) $(LIB_NAME) zeep-test $(DIST_NAME)
