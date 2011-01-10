@@ -4,7 +4,7 @@ The XML part of libzeep consists of a validating parser, a DOM(-like) node imple
 
 The performance of the parser is not optimal yet although it performs very decently. If speed is critical and you really need that few percent saving you can choose to use expat as a parser instead.
 
-Please note that libzeep aims to provide a fully compliant XML processor as specified by the W3 organisation (see: http://www.w3.org/TR/xml ). This means it is a strict as the standard requires and it stops processing a file when a validation of the well-formedness is encountered, or when a document appears to be invalid when it is in validating mode. Error reporting is done in this case, although I admit that error reporting should be improved.
+Please note that libzeep aims to provide a fully compliant XML processor as specified by the W3 organisation (see: http://www.w3.org/TR/xml ). This means it is as strict as the standard requires and it stops processing a file when a validation of the well-formedness is encountered, or when a document appears to be invalid when it is in validating mode. Error reporting is done in this case, although I admit that error reporting should be improved.
 
 The SOAP server part of libzeep makes it very easy to create a SOAP server software in C++. You use it to export a C++ object's methods as SOAP actions. The library generates a WSDL on-the-fly for the exported actions and it also has a REST style interface.
 
