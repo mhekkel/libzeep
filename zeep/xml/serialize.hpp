@@ -10,8 +10,8 @@
 #include <vector>
 #include <map>
 
-#include "zeep/xml/node.hpp"
-#include "zeep/exception.hpp"
+#include <zeep/xml/node.hpp>
+#include <zeep/exception.hpp>
 
 #include <boost/mpl/if.hpp>
 #include <boost/serialization/nvp.hpp>

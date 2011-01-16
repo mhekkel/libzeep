@@ -3,7 +3,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -20,12 +20,12 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "zeep/exception.hpp"
-#include "zeep/xml/node.hpp"
-#include "zeep/xml/xpath.hpp"
-#include "zeep/xml/unicode_support.hpp"
+#include <zeep/exception.hpp>
+#include <zeep/xml/node.hpp>
+#include <zeep/xml/xpath.hpp>
+#include <zeep/xml/unicode_support.hpp>
 
-#include "zeep/xml/writer.hpp"
+#include <zeep/xml/writer.hpp>
 
 extern int VERBOSE;
 

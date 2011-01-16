@@ -7,9 +7,9 @@
 #define SOAP_HTTP_REPLY_HPP
 
 #include <vector>
-#include "zeep/http/header.hpp"
+#include <zeep/http/header.hpp>
 #include <boost/asio/buffer.hpp>
-#include "zeep/xml/node.hpp"
+#include <zeep/xml/node.hpp>
 
 namespace zeep { namespace http {
 

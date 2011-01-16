@@ -19,11 +19,11 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 #include "document-imp.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/xml/parser.hpp"
-#include "zeep/xml/writer.hpp"
+#include <zeep/exception.hpp>
+#include <zeep/xml/parser.hpp>
+#include <zeep/xml/writer.hpp>
 
 #if SOAP_XML_HAS_EXPAT_SUPPORT
 #include "document-expat.hpp"

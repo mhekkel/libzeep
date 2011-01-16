@@ -35,7 +35,7 @@ LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
 CFLAGS				?= $(DBF_CFLAGS)
-CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -iquote ./ -fPIC -pthread -shared
+CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
 LDFLAGS				?= $(DBF_LDFLAGS)
 
 VPATH += src

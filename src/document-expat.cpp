@@ -3,7 +3,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 #if SOAP_XML_HAS_EXPAT_SUPPORT
 
@@ -19,10 +19,10 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include "zeep/xml/unicode_support.hpp"
+#include <zeep/xml/unicode_support.hpp>
 #include "document-expat.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/xml/writer.hpp"
+#include <zeep/exception.hpp>
+#include <zeep/xml/writer.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;

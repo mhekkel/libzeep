@@ -8,7 +8,7 @@
 
 #include <boost/logic/tribool.hpp>
 
-#include "zeep/http/request.hpp"
+#include <zeep/http/request.hpp>
 
 namespace zeep { namespace http {
 

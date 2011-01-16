@@ -3,7 +3,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 #if NO_PREFORK
 #undef SOAP_SERVER_HAS_PREFORK
@@ -15,7 +15,7 @@
 #include <unistd.h>
 #endif
 
-#include "zeep/server.hpp"
+#include <zeep/server.hpp>
 
 #include <iostream>
 

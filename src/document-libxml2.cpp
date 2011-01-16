@@ -19,13 +19,13 @@
 #define foreach BOOST_FOREACH
 
 #include "document-imp.hpp"
-#include "zeep/xml/document-libxml2.hpp"
-#include "zeep/exception.hpp"
+#include <zeep/xml/document-libxml2.hpp>
+#include <zeep/exception.hpp>
 
 #include <libxml/xmlreader.h>
 
-#include "zeep/xml/parser.hpp"
-#include "zeep/xml/writer.hpp"
+#include <zeep/xml/parser.hpp>
+#include <zeep/xml/writer.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;

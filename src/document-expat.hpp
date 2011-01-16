@@ -6,7 +6,7 @@
 #ifndef SOAP_XML_DOCUMENT_EXPAT_H
 #define SOAP_XML_DOCUMENT_EXPAT_H
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 #include "document-imp.hpp"
 #if SOAP_XML_HAS_EXPAT_SUPPORT
 #include <expat.h>

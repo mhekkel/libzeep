@@ -10,8 +10,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 
-#include "zeep/xml/writer.hpp"
-#include "zeep/exception.hpp"
+#include <zeep/xml/writer.hpp>
+#include <zeep/exception.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;

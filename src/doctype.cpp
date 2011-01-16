@@ -14,9 +14,9 @@
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include "zeep/exception.hpp"
-#include "zeep/xml/doctype.hpp"
-#include "zeep/xml/unicode_support.hpp"
+#include <zeep/exception.hpp>
+#include <zeep/xml/doctype.hpp>
+#include <zeep/xml/unicode_support.hpp>
 
 using namespace std;
 using namespace tr1;

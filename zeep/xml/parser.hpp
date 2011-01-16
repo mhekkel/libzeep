@@ -9,7 +9,7 @@
 #include <boost/function.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include "zeep/xml/node.hpp"
+#include <zeep/xml/node.hpp>
 
 namespace zeep { namespace xml {
 

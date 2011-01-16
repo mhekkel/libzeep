@@ -3,9 +3,9 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/exception.hpp"
-#include "zeep/envelope.hpp"
-#include "zeep/xml/xpath.hpp"
+#include <zeep/exception.hpp>
+#include <zeep/envelope.hpp>
+#include <zeep/xml/xpath.hpp>
 
 using namespace std;
 

@@ -9,9 +9,9 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/function.hpp>
 
-#include "zeep/config.hpp"
-#include "zeep/xml/node.hpp"
-#include "zeep/xml/unicode_support.hpp"
+#include <zeep/config.hpp>
+#include <zeep/xml/node.hpp>
+#include <zeep/xml/unicode_support.hpp>
 
 namespace zeep { namespace xml {
 
