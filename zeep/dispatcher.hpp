@@ -131,7 +131,7 @@ struct handler_traits<void(Class::*)(R&)>
 };
 
 // all the other specializations are specified at the bottom of this file
-#define  BOOST_PP_FILENAME_1 "zeep/dispatcher.hpp"
+#define  BOOST_PP_FILENAME_1 <zeep/dispatcher.hpp>
 #define  BOOST_PP_ITERATION_LIMITS (1, 9)
 #include BOOST_PP_ITERATE()
 
