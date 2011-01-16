@@ -6,8 +6,8 @@
 #ifndef SOAP_HTTP_REQUEST_HANDLER_HPP
 #define SOAP_HTTP_REQUEST_HANDLER_HPP
 
-#include "zeep/http/request.hpp"
-#include "zeep/http/reply.hpp"
+#include <zeep/http/request.hpp>
+#include <zeep/http/reply.hpp>
 
 namespace zeep { namespace http {
 

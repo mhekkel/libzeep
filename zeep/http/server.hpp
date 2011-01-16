@@ -13,8 +13,8 @@
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/accumulate.hpp>
 
-#include "zeep/http/request_handler.hpp"
-#include "zeep/http/reply.hpp"
+#include <zeep/http/request_handler.hpp>
+#include <zeep/http/reply.hpp>
 
 namespace f = boost::fusion;
 

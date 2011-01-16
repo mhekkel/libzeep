@@ -13,10 +13,10 @@
 #include <vector>
 #include <typeinfo>
 
-#include "zeep/xml/node.hpp"
-#include "zeep/xml/writer.hpp"
-#include "zeep/xml/xpath.hpp"
-#include "zeep/exception.hpp"
+#include <zeep/xml/node.hpp>
+#include <zeep/xml/writer.hpp>
+#include <zeep/xml/xpath.hpp>
+#include <zeep/exception.hpp>
 
 #define nil NULL
 

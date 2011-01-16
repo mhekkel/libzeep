@@ -6,7 +6,7 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
-#include "zeep/http/connection.hpp"
+#include <zeep/http/connection.hpp>
 
 namespace zeep { namespace http {
 

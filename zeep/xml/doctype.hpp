@@ -6,7 +6,7 @@
 #ifndef ZEEP_XML_DOCTYPE_HPP
 #define ZEEP_XML_DOCTYPE_HPP
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 #include <set>
 

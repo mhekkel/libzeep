@@ -13,10 +13,10 @@
 #define foreach BOOST_FOREACH 
 #include <boost/format.hpp>
 
-#include "zeep/exception.hpp"
-#include "zeep/xml/parser.hpp"
-#include "zeep/xml/doctype.hpp"
-#include "zeep/xml/unicode_support.hpp"
+#include <zeep/exception.hpp>
+#include <zeep/xml/parser.hpp>
+#include <zeep/xml/doctype.hpp>
+#include <zeep/xml/unicode_support.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;

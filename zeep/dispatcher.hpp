@@ -44,9 +44,9 @@
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/accumulate.hpp>
 
-#include "zeep/xml/node.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/xml/serialize.hpp"
+#include <zeep/xml/node.hpp>
+#include <zeep/exception.hpp>
+#include <zeep/xml/serialize.hpp>
 
 namespace zeep {
 

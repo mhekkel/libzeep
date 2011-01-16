@@ -8,8 +8,8 @@
 #ifndef SOAP_ENVELOPE_H
 #define SOAP_ENVELOPE_H
 
-#include "zeep/xml/document.hpp"
-#include "zeep/exception.hpp"
+#include <zeep/xml/document.hpp>
+#include <zeep/exception.hpp>
 
 namespace zeep
 {

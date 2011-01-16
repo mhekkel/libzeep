@@ -6,7 +6,7 @@
 #ifndef ZEEP_XML_UNICODE_SUPPORT_HPP
 #define ZEEP_XML_UNICODE_SUPPORT_HPP
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 #include <string>
 

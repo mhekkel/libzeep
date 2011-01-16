@@ -6,7 +6,7 @@
 #include <string>
 
 #include <boost/static_assert.hpp>
-#include "zeep/xml/node.hpp"
+#include <zeep/xml/node.hpp>
 
 namespace zeep { namespace xml {
 

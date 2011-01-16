@@ -3,7 +3,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 #if SOAP_SERVER_HAS_PREFORK
 
@@ -11,9 +11,9 @@
 #include <sstream>
 #include <locale>
 
-#include "zeep/http/preforked-server.hpp"
-#include "zeep/http/connection.hpp"
-#include "zeep/exception.hpp"
+#include <zeep/http/preforked-server.hpp>
+#include <zeep/http/connection.hpp>
+#include <zeep/exception.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>

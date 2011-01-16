@@ -15,7 +15,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-#include "zeep/config.hpp"
+#include <zeep/config.hpp>
 
 namespace zeep { namespace xml {
 

@@ -6,11 +6,11 @@
 #ifndef SOAP_SERVER_HPP
 #define SOAP_SERVER_HPP
 
-#include "zeep/config.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/dispatcher.hpp"
+#include <zeep/config.hpp>
+#include <zeep/http/server.hpp>
+#include <zeep/http/request.hpp>
+#include <zeep/http/reply.hpp>
+#include <zeep/dispatcher.hpp>
 
 namespace zeep {
 

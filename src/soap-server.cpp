@@ -6,9 +6,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "zeep/server.hpp"
-#include "zeep/envelope.hpp"
-#include "zeep/xml/document.hpp"
+#include <zeep/server.hpp>
+#include <zeep/envelope.hpp>
+#include <zeep/xml/document.hpp>
 
 using namespace std;
 

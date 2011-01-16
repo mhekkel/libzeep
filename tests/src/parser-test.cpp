@@ -8,12 +8,12 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "zeep/xml/document.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/xml/parser.hpp"
-#include "zeep/xml/writer.hpp"
-#include "zeep/xml/xpath.hpp"
-#include "zeep/xml/unicode_support.hpp"
+#include <zeep/xml/document.hpp>
+#include <zeep/exception.hpp>
+#include <zeep/xml/parser.hpp>
+#include <zeep/xml/writer.hpp>
+#include <zeep/xml/xpath.hpp>
+#include <zeep/xml/unicode_support.hpp>
 
 using namespace std;
 using namespace zeep;
