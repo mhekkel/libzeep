@@ -12,7 +12,10 @@
 #BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
 #BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
-# the debian package building tools broke my build rules...
+# debian dpkg-buildflags support
+DBF_CFLAGS			?= -g -O2
+DBF_LDFLAGS			?= 
+
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
@@ -21,7 +24,7 @@ MANDIR				?= $(PREFIX)/man/man3
 BOOST_LIBS			= boost_system boost_thread boost_filesystem
 BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
-LDOPTS				= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
+LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR		= 2
 VERSION_MINOR		= 0.1
@@ -31,7 +34,9 @@ SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ./ -g -fPIC -O3 -pthread -shared
+CFLAGS				?= $(DBF_CFLAGS)
+CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -iquote ./ -fPIC -pthread -shared
+LDFLAGS				?= $(DBF_LDFLAGS)
 
 VPATH += src
 
@@ -61,14 +66,14 @@ $(SO_NAME): $(LIB_NAME)
 	ln -fs $< $@
 
 $(LIB_NAME): $(OBJECTS)
-	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDOPTS) $?
+	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $?
 
 libzeep.so:  $(LIB_NAME)
 	ln -fs $< $@
 
 # assuming zeep-test is build when install was not done already
 zeep-test: zeep-test.cpp libzeep.a
-	$(CC) -o $@ -I. zeep-test.cpp libzeep.a $(LDOPTS)
+	$(CC) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
 
 install-libs: libzeep.so
 	install -d $(LIBDIR)
