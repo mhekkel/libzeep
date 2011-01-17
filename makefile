@@ -68,7 +68,7 @@ $(SO_NAME): $(LIB_NAME)
 $(LIB_NAME): $(OBJECTS)
 	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $?
 
-libzeep.so:  $(SO_NAME)
+libzeep.so: $(SO_NAME)
 	ln -fs $< $@
 
 # assuming zeep-test is build when install was not done already
