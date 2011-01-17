@@ -79,7 +79,7 @@ install-libs: libzeep.so
 	install -d $(LIBDIR)
 	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
-	strip -X $(LIBDIR)/$(LIB_NAME)
+	strip -SX $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
 	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
@@ -106,7 +106,7 @@ install-dev:
 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
 	install ./libzeep.a $(LIBDIR)/libzeep.a
-	strip --remove-section=.comment --remove-section=.note $(LIBDIR)/libzeep.a
+	strip -SX $(LIBDIR)/libzeep.a
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 
 install: install-libs install-dev
