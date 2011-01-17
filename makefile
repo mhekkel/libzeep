@@ -21,8 +21,8 @@ LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
 
-BOOST_LIBS			= boost_system boost_thread boost_filesystem
-BOOST_LIBS			:= $(BOOST_LIBS:%=%$(BOOST_LIB_SUFFIX))
+BOOST_LIBS			= system thread filesystem
+BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
@@ -68,7 +68,7 @@ $(SO_NAME): $(LIB_NAME)
 $(LIB_NAME): $(OBJECTS)
 	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $?
 
-libzeep.so:  $(LIB_NAME)
+libzeep.so:  $(SO_NAME)
 	ln -fs $< $@
 
 # assuming zeep-test is build when install was not done already
@@ -79,7 +79,7 @@ install-libs: libzeep.so
 	install -d $(LIBDIR)
 	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
-	strip -SX $(LIBDIR)/$(LIB_NAME)
+	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
 	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
