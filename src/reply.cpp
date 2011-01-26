@@ -95,11 +95,15 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 
 void reply::set_content(xml::element* data)
 {
-	stringstream s;
-
 	xml::document doc;
 	doc.child(data);
-	
+	set_content(doc);
+}
+
+void reply::set_content(xml::document& doc)
+{
+	stringstream s;
+
 	xml::writer w(s);
 	w.set_wrap(false);
 	w.set_indent(0);

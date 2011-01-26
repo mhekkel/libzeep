@@ -46,7 +46,8 @@ boost::tribool request_parser::parse(request& req,
 	{
 		m_state = 0;
 		m_data.clear();
-		req.version = http_version_1_0;
+		req.http_version_major = 1;
+		req.http_version_minor = 0;
 		req.close = false;
 		m_parser = &request_parser::parse_initial_line;
 	}
@@ -101,7 +102,7 @@ boost::tribool request_parser::parse_initial_line(request& req, char ch)
 			if (ch == '1' or ch == '0')
 			{
 				if (ch == '1')
-					req.version = http_version_1_1;
+					req.http_version_minor = 1;
 				++m_state;
 			}
 			else

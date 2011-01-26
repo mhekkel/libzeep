@@ -37,8 +37,6 @@ class request_parser
 	int					m_state;
 	unsigned int		m_chunk_size;
 	std::string			m_data;
-	http_version		m_version;
-	bool				m_connection_close;
 };
 
 }

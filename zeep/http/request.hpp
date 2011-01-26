@@ -12,11 +12,6 @@
 
 namespace zeep { namespace http {
 
-enum http_version {
-	http_version_1_0,
-	http_version_1_1
-};
-
 struct request
 {
 	std::string		method;
@@ -26,8 +21,6 @@ struct request
 	std::vector<header>
 					headers;
 	std::string		payload;
-	
-	http_version	version;
 	bool			close;
 };
 
