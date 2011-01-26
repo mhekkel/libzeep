@@ -31,6 +31,40 @@ boost::mutex								s_log_lock;
 
 }
 
+// --------------------------------------------------------------------
+// decode_url function
+
+string decode_url(const string& s)
+{
+	string result;
+	
+	for (string::const_iterator c = s.begin(); c != s.end(); ++c)
+	{
+		if (*c == '%')
+		{
+			if (s.end() - c >= 3)
+			{
+				int value;
+				string s2(c + 1, c + 3);
+				istringstream is(s2);
+				if (is >> std::hex >> value)
+				{
+					result += static_cast<char>(value);
+					c += 2;
+				}
+			}
+		}
+		else if (*c == '+')
+			result += ' ';
+		else
+			result += *c;
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+// http::server
+
 server::server(const std::string& address, short port, int nr_of_threads)
 	: m_address(address)
 	, m_port(port)

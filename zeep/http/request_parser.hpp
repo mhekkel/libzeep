@@ -22,7 +22,7 @@ class request_parser
 	void				reset();
 	
 	boost::tribool		parse(request& req, const char* text, unsigned int length);
-
+	
   private:
 	typedef boost::tribool (request_parser::*state_parser)(request& req, char ch);
 	
@@ -37,6 +37,8 @@ class request_parser
 	int					m_state;
 	unsigned int		m_chunk_size;
 	std::string			m_data;
+	http_version		m_version;
+	bool				m_connection_close;
 };
 
 }

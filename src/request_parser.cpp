@@ -33,7 +33,7 @@ request_parser::request_parser()
 	: m_parser(NULL)
 {
 }
-	
+
 void request_parser::reset()
 {
 	m_parser = NULL;
@@ -46,6 +46,8 @@ boost::tribool request_parser::parse(request& req,
 	{
 		m_state = 0;
 		m_data.clear();
+		req.version = http_version_1_0;
+		req.close = false;
 		m_parser = &request_parser::parse_initial_line;
 	}
 
@@ -95,7 +97,16 @@ boost::tribool request_parser::parse_initial_line(request& req, char ch)
 		case 6:	if (ch == '/') ++m_state; else result = false;	break;
 		case 7:	if (ch == '1') ++m_state; else result = false;	break;
 		case 8:	if (ch == '.') ++m_state; else if (ch == '\r') m_state = 11; else result = false;	break;
-		case 9:	if (ch == '1' or ch == '0') ++m_state; else result = false;	break;
+		case 9:
+			if (ch == '1' or ch == '0')
+			{
+				if (ch == '1')
+					req.version = http_version_1_1;
+				++m_state;
+			}
+			else
+				result = false;
+			break;
 		case 10: if (ch == '\r') ++m_state; else result = false;	break;
 		case 11:
 			if (ch == '\n')
@@ -187,7 +198,15 @@ boost::tribool request_parser::parse_header(request& req, char ch)
 		
 		case 4:
 			if (ch == '\n')
+			{
+				if (req.headers.back().name == "Connection" and
+					req.headers.back().value == "close")
+				{
+					req.close = true;
+				}	
+				
 				m_state = 0;
+			}
 			else
 				result = false;
 			break;
