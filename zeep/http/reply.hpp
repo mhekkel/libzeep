@@ -9,7 +9,7 @@
 #include <vector>
 #include <zeep/http/header.hpp>
 #include <boost/asio/buffer.hpp>
-#include <zeep/xml/node.hpp>
+#include <zeep/xml/document.hpp>
 
 namespace zeep { namespace http {
 
@@ -41,6 +41,7 @@ struct reply
 	std::vector<header>	headers;
 	std::string			content;
 
+	void				set_content(xml::document& doc);
 	void				set_content(xml::element* data);
 	
 	void				set_content(const std::string& data,

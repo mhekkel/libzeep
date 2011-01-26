@@ -27,7 +27,7 @@ LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR		= 2.1
-VERSION_MINOR		= 2
+VERSION_MINOR		= 0
 DIST_NAME			= libzeep-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
@@ -66,7 +66,7 @@ $(SO_NAME): $(LIB_NAME)
 	ln -fs $< $@
 
 $(LIB_NAME): $(OBJECTS)
-	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $?
+	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
 
 libzeep.so: $(SO_NAME)
 	ln -fs $< $@

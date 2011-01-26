@@ -62,7 +62,7 @@ void connection::handle_write(const boost::system::error_code& ec)
 	if (not ec)
 	{
 		boost::system::error_code ignored_ec;
-		if (m_request.version == http_version_1_1 and not m_request.close)
+		if (m_request.http_version_minor >= 1 and not m_request.close)
 		{
 			m_request_parser.reset();
 			m_request = request();
