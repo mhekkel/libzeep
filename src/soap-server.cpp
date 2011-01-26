@@ -17,38 +17,6 @@ namespace fs = boost::filesystem;
 
 namespace zeep {
 	
-namespace detail {
-
-string decode(const string& s)
-{
-	string result;
-	
-	for (string::const_iterator c = s.begin(); c != s.end(); ++c)
-	{
-		if (*c == '%')
-		{
-			if (s.end() - c >= 3)
-			{
-				int value;
-				string s2(c + 1, c + 3);
-				istringstream is(s2);
-				if (is >> std::hex >> value)
-				{
-					result += static_cast<char>(value);
-					c += 2;
-				}
-			}
-		}
-		else if (*c == '+')
-			result += ' ';
-		else
-			result += *c;
-	}
-	return result;
-}
-
-}
-
 server::server(const std::string& ns, const std::string& service,
 	const std::string& address, short port, int nr_of_threads)
 	: dispatcher(ns, service)
@@ -112,11 +80,11 @@ void server::handle_request(const http::request& req, http::reply& rep)
 				xml::element* request(new xml::element(action));
 				while (p != path.end())
 				{
-					string name = detail::decode(*p++);
+					string name = decode_url(*p++);
 					if (p == path.end())
 						break;
 					xml::element* param(new xml::element(name));
-					string value = detail::decode(*p++);
+					string value = decode_url(*p++);
 					param->content(value);
 					request->append(param);
 				}

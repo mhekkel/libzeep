@@ -1,5 +1,6 @@
 <project version="2.0">
   <syspaths>
+    <path>.</path>
     <path>../boost/include</path>
     <path>/usr/include</path>
   </syspaths>

@@ -9,18 +9,15 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 
-#include <boost/fusion/include/sequence.hpp>
-#include <boost/fusion/container/vector.hpp>
-#include <boost/fusion/include/accumulate.hpp>
-
 #include <zeep/http/request_handler.hpp>
 #include <zeep/http/reply.hpp>
-
-namespace f = boost::fusion;
 
 namespace zeep { namespace http {
 
 class connection;
+
+// prototype for an often used function: http::decode_url
+std::string decode_url(const std::string& s);
 
 class server : public request_handler
 {

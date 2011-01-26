@@ -62,7 +62,18 @@ void connection::handle_write(const boost::system::error_code& ec)
 	if (not ec)
 	{
 		boost::system::error_code ignored_ec;
-		m_socket.close();
+		if (m_request.version == http_version_1_1 and not m_request.close)
+		{
+			m_request_parser.reset();
+			m_request = request();
+
+			m_socket.async_read_some(boost::asio::buffer(m_buffer),
+				boost::bind(&connection::handle_read, shared_from_this(),
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred));
+		}
+		else
+			m_socket.close();
 	}
 }
 
