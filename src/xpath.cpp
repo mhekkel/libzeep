@@ -963,6 +963,15 @@ object operator_expression<xp_OperatorDiv>::evaluate(expression_context& context
 	return v1.as<double>() / v2.as<double>();
 }
 
+template<>
+object operator_expression<xp_Asterisk>::evaluate(expression_context& context)
+{
+	object v1 = m_lhs->evaluate(context);
+	object v2 = m_rhs->evaluate(context);
+	
+	return v1.as<double>() * v2.as<double>();
+}
+
 // --------------------------------------------------------------------
 
 class negate_expression : public expression
@@ -1865,7 +1874,7 @@ string xpath_imp::describe_token(Token token)
 		case xp_Literal:			result << "literal"; break;
 		case xp_Number:				result << "number"; break;
 		case xp_Variable:			result << "variable"; break;
-		case xp_Asterisk:			result << "asterisk"; break;
+		case xp_Asterisk:			result << "asterisk (or multiply)"; break;
 		case xp_Colon:				result << "colon"; break;
 	}
 
@@ -2507,15 +2516,31 @@ expression_ptr xpath_imp::additive_expr()
 expression_ptr xpath_imp::multiplicative_expr()
 {
 	expression_ptr result(unary_expr());
-	
-	while (m_lookahead == xp_Name and (m_token_string == "mod" or m_token_string == "div"))
+
+	for (;;)
 	{
-		string op = m_token_string;
-		match(m_lookahead);
-		if (op == "mod")
+		if (m_lookahead == xp_Asterisk)
+		{
+			match(m_lookahead);
+			result.reset(new operator_expression<xp_Asterisk>(result, unary_expr()));
+			continue;
+		}
+
+		if (m_lookahead == xp_Name and m_token_string == "mod")
+		{
+			match(m_lookahead);
 			result.reset(new operator_expression<xp_OperatorMod>(result, unary_expr()));
-		else
+			continue;
+		}
+			
+		if (m_lookahead == xp_Name and m_token_string == "div")
+		{
+			match(m_lookahead);
 			result.reset(new operator_expression<xp_OperatorDiv>(result, unary_expr()));
+			continue;
+		}
+
+		break;
 	}
 	
 	return result;

@@ -163,6 +163,9 @@ class container : public node
 	iterator			begin();
 	iterator			end()										{ return iterator(); }
 
+	node_iterator		node_begin();
+	node_iterator		node_end()									{ return node_iterator(); }
+
 	typedef basic_iterator<const element>	const_iterator;
 	typedef basic_iterator<const node>		const_node_iterator;
 
@@ -576,6 +579,11 @@ inline container::iterator container::begin()
 			break;
 	}
 	return iterator(first);
+}
+
+inline container::node_iterator container::node_begin()
+{
+	return node_iterator(m_child);
 }
 
 inline container::const_iterator container::begin() const
