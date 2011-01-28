@@ -1,4 +1,5 @@
 Version 2.1.0
 
 - support for HTTP/1.1
-- 
+- added multiplication in xpath expression language... oops
+
