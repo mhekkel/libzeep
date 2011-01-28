@@ -9,6 +9,7 @@
 #include <iterator>
 #include <string>
 #include <list>
+#include <limits>
 
 #include <boost/tr1/tuple.hpp>
 #include <boost/noncopyable.hpp>
@@ -117,74 +118,53 @@ class container : public node
 	node*				child()										{ return m_child; }
 	const node*			child() const								{ return m_child; }
 
-	template<typename NODE_TYPE>
-	std::list<NODE_TYPE*>
+	template<typename NodeType>
+	std::list<NodeType*>
 						children() const;
 
-	class iterator : public std::iterator<std::bidirectional_iterator_tag, element>
+	template<class NodeType>
+	class basic_iterator : public std::iterator<std::bidirectional_iterator_tag, NodeType>
 	{
 	  public:
-						iterator() : m_current(nil)					{}
-						iterator(element* e) : m_current(e)			{}
-						iterator(const iterator& other)
+		typedef typename std::iterator<std::bidirectional_iterator_tag, NodeType>	base_type;
+		typedef typename base_type::reference										reference;
+		typedef typename base_type::pointer											pointer;
+		
+						basic_iterator() : m_current(nil)			{}
+						basic_iterator(NodeType* e) : m_current(e)	{}
+						basic_iterator(const basic_iterator& other)
 							: m_current(other.m_current)			{}
 
-		iterator&		operator=(const iterator& other)			{ m_current = other.m_current; return *this; }
+		basic_iterator&	operator=(const basic_iterator& other)		{ m_current = other.m_current; return *this; }
 		
 		reference		operator*() const							{ return *m_current; }
 		pointer			operator->() const							{ return m_current; }
 
-		iterator&		operator++();
-		iterator		operator++(int)								{ iterator iter(*this); operator++(); return iter; }
+		basic_iterator&	operator++();
+		basic_iterator	operator++(int)								{ basic_iterator iter(*this); operator++(); return iter; }
 
-		iterator&		operator--();
-		iterator		operator--(int)								{ iterator iter(*this); operator++(); return iter; }
+		basic_iterator&	operator--();
+		basic_iterator	operator--(int)								{ basic_iterator iter(*this); operator++(); return iter; }
 
-		bool			operator==(const iterator& other) const		{ return m_current == other.m_current; }
-		bool			operator!=(const iterator& other) const		{ return m_current != other.m_current; }
-
-		pointer			base() const								{ return m_current; }
-
-	  private:
-		element*		m_current;
-	};
-
-	iterator			begin();
-	iterator			end()										{ return iterator(); }
-
-	class const_iterator : public std::iterator<std::bidirectional_iterator_tag, const element>
-	{
-	  public:
-						const_iterator() : m_current(nil)			{}
-						const_iterator(const element* e) : m_current(e)	
-																	{}
-						const_iterator(const const_iterator& other)
-							: m_current(other.m_current)			{}
-						const_iterator(const container::iterator& other)
-							: m_current(other.base())				{}
-
-		const_iterator&	operator=(const const_iterator& other)		{ m_current = other.m_current; return *this; }
-		
-		reference		operator*() const							{ return *m_current; }
-		pointer			operator->() const							{ return m_current; }
-
-		const_iterator&	operator++();
-		const_iterator	operator++(int)								{ const_iterator iter(*this); operator++(); return iter; }
-
-		const_iterator&	operator--();
-		const_iterator	operator--(int)								{ const_iterator iter(*this); operator++(); return iter; }
-
-		bool			operator==(const const_iterator& other) const
+		bool			operator==(const basic_iterator& other) const
 																	{ return m_current == other.m_current; }
-
-		bool			operator!=(const const_iterator& other) const
+		bool			operator!=(const basic_iterator& other) const
 																	{ return m_current != other.m_current; }
 
 		pointer			base() const								{ return m_current; }
 
 	  private:
-		const element*	m_current;
+		NodeType*		m_current;
 	};
+	
+	typedef basic_iterator<element>	iterator;
+	typedef basic_iterator<node>	node_iterator;
+
+	iterator			begin();
+	iterator			end()										{ return iterator(); }
+
+	typedef basic_iterator<const element>	const_iterator;
+	typedef basic_iterator<const node>		const_node_iterator;
 
 	const_iterator		begin() const;
 	const_iterator		end() const									{ return const_iterator(); }
@@ -194,9 +174,43 @@ class container : public node
 	typedef iterator::reference			reference;
 	typedef iterator::pointer			pointer;
 	typedef iterator::difference_type	difference_type;
+	typedef unsigned long				size_type;
 
-	virtual void		append(node* node);
-	virtual void		remove(node* node);
+//						rbegin
+//						rend
+	// size counts only the direct child nodes (not elements!)
+	size_type			size() const;
+	size_type			max_size() const					{ return std::numeric_limits<size_type>::max(); }
+	bool				empty() const;
+
+	node*				front() const;
+	node*				back() const;
+						
+	template<class NodeType>
+	basic_iterator<NodeType>
+						insert(basic_iterator<NodeType> position, NodeType* n);
+
+	template<class Iterator>
+	void				insert(Iterator position, Iterator first, Iterator last);
+	
+	template<class Iterator>
+	void				erase(Iterator position);
+
+	template<class Iterator>
+	void				erase(Iterator first, Iterator last);
+
+	void				swap(container& cnt);
+
+	void				clear();
+	
+	void				push_front(node* n);
+	void				pop_front();
+	void				push_back(node* n);
+	void				pop_back();
+
+	// deprecated old names
+	virtual void		append(node* n);
+	virtual void		remove(node* n);
 
 	// xpath wrappers
 	element_set			find(const std::string& path) const;
@@ -204,6 +218,9 @@ class container : public node
 
   protected:
 						container();
+
+	void				private_insert(node* position, node* n);
+	void				private_erase(node* n);
 
 	node*				m_child;
 	node*				m_last;
@@ -231,7 +248,7 @@ class root_node : public container
 	virtual std::string	str() const;
 
 	// for adding other nodes, like processing instructions and comments
-	virtual void		append(node* node);
+	virtual void		append(node* n);
 
 	virtual void		write(writer& w) const;
 
@@ -512,11 +529,12 @@ std::list<container*> container::children<container>() const;
 template<>
 std::list<element*> container::children<element>() const;
 
-// iterator inlines
+// iterator inlines, specialised by the two types
 
-inline container::iterator& container::iterator::operator++()
+template<>
+inline container::basic_iterator<element>& container::basic_iterator<element>::operator++()
 {
-	if (m_current->next() == nil)
+	if (m_current == nil or m_current->next() == nil)
 		m_current = nil;
 	else
 	{
@@ -530,47 +548,16 @@ inline container::iterator& container::iterator::operator++()
 	return *this;
 }
 
-inline container::iterator& container::iterator::operator--()
+template<>
+inline container::basic_iterator<element>& container::basic_iterator<element>::operator--()
 {
-	if (m_current->prev() == nil)
+	if (m_current == nil or m_current->prev() == nil)
 		m_current = nil;
 	else
 	{
 		for (node* n = m_current->prev(); n != nil; n = n->prev())
 		{
 			m_current = dynamic_cast<element*>(n);
-			if (m_current != nil)
-				break;
-		}
-	}
-	return *this;
-}
-
-inline container::const_iterator& container::const_iterator::operator++()
-{ 
-	if (m_current->next() == nil)
-		m_current = nil;
-	else
-	{
-		for (const node* n = m_current->next(); n != nil; n = n->next())
-		{
-			m_current = dynamic_cast<const element*>(n);
-			if (m_current != nil)
-				break;
-		}
-	}
-	return *this;
-}
-
-inline container::const_iterator& container::const_iterator::operator--()
-{
-	if (m_current->prev() == nil)
-		m_current = nil;
-	else
-	{
-		for (const node* n = m_current->prev(); n != nil; n = n->prev())
-		{
-			m_current = dynamic_cast<const element*>(n);
 			if (m_current != nil)
 				break;
 		}
@@ -602,6 +589,80 @@ inline container::const_iterator container::begin() const
 			break;
 	}
 	return const_iterator(first);
+}
+
+template<>
+inline container::basic_iterator<node>& container::basic_iterator<node>::operator++()
+{
+	assert(m_current != nil);
+	m_current = m_current->next();
+	return *this;
+}
+
+template<>
+inline container::basic_iterator<node>& container::basic_iterator<node>::operator--()
+{
+	assert(m_current != nil);
+	m_current = m_current->prev();
+	return *this;
+}
+
+//inline container::iterator container::begin()
+//{
+//	element* first = nil;
+//	
+//	for (node* n = m_child; n != nil; n = n->next())
+//	{
+//		first = dynamic_cast<element*>(n);
+//		if (first != nil)
+//			break;
+//	}
+//	return iterator(first);
+//}
+//
+//inline container::const_iterator container::begin() const
+//{
+//	const element* first = nil;
+//	
+//	for (const node* n = m_child; n != nil; n = n->next())
+//	{
+//		first = dynamic_cast<const element*>(n);
+//		if (first != nil)
+//			break;
+//	}
+//	return const_iterator(first);
+//}
+
+template<class NodeType>
+container::basic_iterator<NodeType>
+container::insert(basic_iterator<NodeType> position, NodeType* n)
+{
+	private_insert(position.base(), n);
+	return basic_iterator<NodeType>(n);
+}
+
+template<class Iterator>
+void container::insert(Iterator position, Iterator first, Iterator last)
+{
+	node* p = position.base();
+	for (Iterator i = first; i != last; ++i)
+	{
+		private_insert(p, i.base());
+		p = i.base();
+	}
+}
+
+template<class Iterator>
+void container::erase(Iterator position)
+{
+	private_erase(position.base());
+}
+
+template<class Iterator>
+void container::erase(Iterator first, Iterator last)
+{
+	for (Iterator i = first; i != last; ++i)
+		private_erase(i.base());
 }
 
 }
