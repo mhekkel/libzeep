@@ -245,9 +245,11 @@ void container::remove(node_ptr n)
 	if (n == m_last)
 	{
 		m_last = m_child;
-		while (m_last->m_next != nil)
+		while (m_last != nil)
 			m_last = m_last->m_next;
 	}
+	
+	n->m_parent = n->m_next = n->m_prev = nil;
 }
 
 element_set container::find(const std::string& path) const
@@ -263,6 +265,176 @@ element* container::find_first(const std::string& path) const
 	if (not s.empty())
 		result = s.front();
 	return result;
+}
+
+container::size_type container::size() const
+{
+	size_type result = 0;
+	for (node* n = m_child; n != m_last; n = n->m_next)
+		++result;
+	return result;
+}
+
+bool container::empty() const
+{
+	return m_child == nil;
+}
+
+node* container::front() const
+{
+	return m_child;
+}
+
+node* container::back() const
+{
+	return m_last;
+}
+
+void container::swap(container& cnt)
+{
+	std::swap(m_child, cnt.m_child);
+	std::swap(m_last, cnt.m_last);
+	for (node* n = m_child; n != m_last; n = n->m_next)
+		n->m_parent = this;
+	for (node* n = cnt.m_child; n != cnt.m_last; n = n->m_next)
+		n->m_parent = &cnt;
+}
+
+void container::clear()
+{
+	delete m_child;
+	m_child = m_last = nil;
+}
+
+void container::push_front(node* n)
+{
+	if (n->m_next != nil or n->m_prev != nil)
+		throw exception("attempt to insert a node that has next or prev");
+	if (n->m_parent != nil)
+		throw exception("attempt to insert node that already has a parent");
+
+	n->parent(this);
+	n->m_next = m_child;
+	if (m_child != nil)
+		m_child->m_prev = n;
+
+	m_child = n;
+	if (m_last == nil)
+		m_last = m_child;
+}
+
+void container::pop_front()
+{
+	if (m_child != nil)
+	{
+		node* n = m_child;
+
+		m_child = m_child->m_next;
+		if (m_child != nil)
+			m_child->m_prev = nil;
+		
+		if (n == m_last)
+			m_last = nil;
+		
+		n->m_next = nil;
+		delete n;
+	}
+}
+
+void container::push_back(node* n)
+{
+	if (n->m_next != nil or n->m_prev != nil)
+		throw exception("attempt to insert a node that has next or prev");
+	if (n->m_parent != nil)
+		throw exception("attempt to insert node that already has a parent");
+
+	n->parent(this);
+
+	if (m_child == nil)
+	{
+		m_last = m_child = n;
+		m_child->m_next = m_child->m_prev = nil;
+	}
+	else
+	{
+		m_last->append_sibling(n);
+		m_last = n;
+	}
+}
+
+void container::pop_back()
+{
+	if (m_last != nil)
+	{
+		if (m_last == m_child)
+		{
+			delete m_child;
+			m_child = m_last = nil;
+		}
+		else
+		{
+			node* n = m_last;
+			m_last = m_last->m_prev;
+			m_last->m_next = nil;
+			
+			n->m_prev = nil;
+			delete n;
+		}
+	}
+}
+
+void container::private_insert(node* position, node* n)
+{
+	if (n->m_parent != nil or n->m_next != nil or n->m_prev != nil)
+		throw exception("attempt to insert a node that has parent and/or next/prev");
+	
+	if (position == nil)
+		push_back(n);
+	else
+	{
+		if (position->m_parent != this)
+			throw exception("position is not a child node of this container");
+		
+		n->m_next = position;
+		n->m_prev = position->m_prev;
+		if (n->m_prev != nil)
+			n->m_prev->m_next = n;
+		position->m_prev = n;
+		
+		if (position == m_child)
+			m_child = n;
+		
+		if (m_last == nil)
+			m_last = n;
+	}
+}
+
+void container::private_erase(node* n)
+{
+	if (n == nil)
+		throw exception("attempt to erase nil node");
+	
+	if (n->m_parent != this)
+		throw exception("cannot erase node, invalid parent");
+	
+	if (m_child == n)
+	{
+		m_child = m_child->m_next;
+		if (m_child != nil)
+			m_child->m_prev = nil;
+	}
+	else
+		m_child->remove_sibling(n);
+	
+	if (n == m_last)
+	{
+		m_last = m_child;
+		while (m_last->m_next != nil)
+			m_last = m_last->m_next;
+	}
+	
+	n->m_next = n->m_prev = n->m_parent = nil;
+	delete n;
 }
 
 // --------------------------------------------------------------------
