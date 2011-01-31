@@ -71,6 +71,13 @@ bool node::equals(const node* n) const
 	return result;
 }
 
+node* node::clone() const
+{
+	assert(false);
+	throw zeep::exception("cannot clone this");
+	return nil;
+}
+
 string node::lang() const
 {
 	string result;
@@ -112,7 +119,7 @@ void node::remove_sibling(node* n)
 		throw exception("remove for a node not found in the list");
 }
 
-void node::parent(node* n)
+void node::parent(container* n)
 {
 	assert(m_parent == nil);
 	m_parent = n;
@@ -249,7 +256,7 @@ void container::remove(node_ptr n)
 			m_last = m_last->m_next;
 	}
 	
-	n->m_parent = n->m_next = n->m_prev = nil;
+	n->m_next = n->m_prev = n->m_parent = nil;
 }
 
 element_set container::find(const std::string& path) const
@@ -383,6 +390,12 @@ void container::pop_back()
 	}
 }
 
+container::node_iterator container::insert(node* position, node* n)
+{
+	private_insert(position, n);
+	return node_iterator(n);
+}
+
 void container::private_insert(node* position, node* n)
 {
 	if (n->m_parent != nil or n->m_next != nil or n->m_prev != nil)
@@ -395,6 +408,7 @@ void container::private_insert(node* position, node* n)
 		if (position->m_parent != this)
 			throw exception("position is not a child node of this container");
 		
+		n->parent(this);
 		n->m_next = position;
 		n->m_prev = position->m_prev;
 		if (n->m_prev != nil)
@@ -548,6 +562,11 @@ bool comment::equals(const node* n) const
 		m_text == static_cast<const comment*>(n)->m_text;
 }
 
+node* comment::clone() const
+{
+	return new comment(m_text);
+}
+
 // --------------------------------------------------------------------
 // processing_instruction
 
@@ -564,6 +583,11 @@ bool processing_instruction::equals(const node* n) const
 		m_text == static_cast<const processing_instruction*>(n)->m_text;
 }
 
+node* processing_instruction::clone() const
+{
+	return new processing_instruction(m_target, m_target);
+}
+
 // --------------------------------------------------------------------
 // text
 
@@ -578,6 +602,11 @@ bool text::equals(const node* n) const
 		node::equals(n) and
 		dynamic_cast<const text*>(n) != NULL and
 		m_text == static_cast<const text*>(n)->m_text;
+}
+
+node* text::clone() const
+{
+	return new text(m_text);
 }
 
 // --------------------------------------------------------------------
@@ -601,6 +630,11 @@ bool attribute::equals(const node* n) const
 	return result;
 }
 
+node* attribute::clone() const
+{
+	return new attribute(m_qname, m_value, m_id);
+}
+
 // --------------------------------------------------------------------
 // name_space
 
@@ -618,6 +652,11 @@ bool name_space::equals(const node* n) const
 		result = m_prefix == ns->m_prefix and m_uri == ns->m_uri;
 	}
 	return result;
+}
+
+node* name_space::clone() const
+{
+	return new name_space(m_prefix, m_uri);
 }
 
 // --------------------------------------------------------------------
@@ -854,17 +893,18 @@ void element::set_name_space(const string& prefix, const string& uri)
 	}
 	
 	if (ns == nil)
-	{
-		ns = new name_space(prefix, uri);
+		add_name_space(new name_space(prefix, uri));
+}
 
-		if (m_name_space == nil)
-		{
-			m_name_space = ns;
-			m_name_space->parent(this);
-		}
-		else
-			m_name_space->append_sibling(ns);
+void element::add_name_space(name_space* ns)
+{
+	if (m_name_space == nil)
+	{
+		m_name_space = ns;
+		m_name_space->parent(this);
 	}
+	else
+		m_name_space->append_sibling(ns);
 }
 
 string element::lang() const
@@ -951,6 +991,34 @@ bool element::equals(const node* n) const
 
 	}
 
+	return result;
+}
+
+node* element::clone() const
+{
+	element* result = new element(m_qname);
+	
+	attribute* attr = m_attribute;
+	while (attr != nil)
+	{
+		result->set_attribute(attr->qname(), attr->value(), attr->id());
+		attr = static_cast<attribute*>(attr->next());
+	}
+	
+	name_space* ns = m_name_space;
+	while (ns != nil)
+	{
+		result->add_name_space(static_cast<name_space*>(ns->clone()));
+		ns = static_cast<name_space*>(ns->next());
+	}
+
+	node* child = m_child;
+	while (child != nil)
+	{
+		result->push_back(child->clone());
+		child = child->next();
+	}
+	
 	return result;
 }
 
