@@ -44,8 +44,8 @@ class node
 						root() const;
 	
 	// basic access
-	node*				parent()									{ return m_parent; }
-	const node*			parent() const								{ return m_parent; }
+	container*			parent()									{ return m_parent; }
+	const container*	parent() const								{ return m_parent; }
 
 	node*				next()										{ return m_next; }
 	const node*			next() const								{ return m_next; }
@@ -80,8 +80,11 @@ class node
 	// writing out
 	virtual void		write(writer& w) const = 0;
 
+	// utility routines
 	virtual bool		equals(const node* n) const;
 
+	virtual node*		clone() const;
+	
   protected:
 
 	friend class container;
@@ -93,12 +96,12 @@ class node
 	virtual void		append_sibling(node* n);
 	virtual void		remove_sibling(node* n);
 
-	void				parent(node* p);
+	void				parent(container* p);
 	void				next(node* n);
 	void				prev(node* n);
 
   private:
-	node*				m_parent;
+	container*			m_parent;
 	node*				m_next;
 	node*				m_prev;
 
@@ -193,6 +196,8 @@ class container : public node
 	basic_iterator<NodeType>
 						insert(basic_iterator<NodeType> position, NodeType* n);
 
+	node_iterator		insert(node* before, node* n);
+
 	template<class Iterator>
 	void				insert(Iterator position, Iterator first, Iterator last);
 	
@@ -211,9 +216,9 @@ class container : public node
 	void				push_back(node* n);
 	void				pop_back();
 
-	// deprecated old names
+	// old names
 	virtual void		append(node* n);
-	virtual void		remove(node* n);
+	virtual void		remove(node* n);		// remove does not delete n 
 
 	// xpath wrappers
 	element_set			find(const std::string& path) const;
@@ -278,6 +283,8 @@ class comment : public node
 
 	virtual bool		equals(const node* n) const;
 
+	virtual node*		clone() const;
+
   private:
 	std::string			m_text;
 };
@@ -305,6 +312,8 @@ class processing_instruction : public node
 
 	virtual bool		equals(const node* n) const;
 
+	virtual node*		clone() const;
+
   private:
 	std::string			m_target;
 	std::string			m_text;
@@ -329,6 +338,8 @@ class text : public node
 
 	virtual bool		equals(const node* n) const;
 
+	virtual node*		clone() const;
+
   private:
 	std::string			m_text;
 };
@@ -352,6 +363,8 @@ class attribute : public node
 	virtual void		write(writer& w) const;
 
 	virtual bool		equals(const node* n) const;
+
+	virtual node*		clone() const;
 	
 	virtual bool		id() const									{ return m_id; }
 
@@ -386,6 +399,8 @@ class name_space : public node
 
 	virtual bool		equals(const node* n) const;
 
+	virtual node*		clone() const;
+
   private:
 	std::string			m_prefix, m_uri;
 };
@@ -403,6 +418,8 @@ class element : public container
 	virtual void		write(writer& w) const;
 
 	virtual bool		equals(const node* n) const;
+
+	virtual node*		clone() const;
 
 	virtual std::string	str() const;
 
@@ -511,6 +528,9 @@ class element : public container
 	const_attribute_iterator	attr_end() const									{ return const_attribute_iterator(); }
 
   protected:
+
+	void				add_name_space(name_space* ns);
+
 	std::string			m_qname;
 	attribute*			m_attribute;
 	name_space*			m_name_space;
