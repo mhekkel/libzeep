@@ -407,19 +407,23 @@ void container::private_insert(node* position, node* n)
 	{
 		if (position->m_parent != this)
 			throw exception("position is not a child node of this container");
+
+		node* child = m_child;
+		while (child != nil and child != position)
+			child = child->m_next;
+		if (child == nil)
+			throw zeep::exception("position is not a valid child node");
 		
 		n->parent(this);
 		n->m_next = position;
+		position->m_prev = n;
+
 		n->m_prev = position->m_prev;
 		if (n->m_prev != nil)
 			n->m_prev->m_next = n;
-		position->m_prev = n;
 		
 		if (position == m_child)
 			m_child = n;
-		
-		if (m_last == nil)
-			m_last = n;
 	}
 }
 
