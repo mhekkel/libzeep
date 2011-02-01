@@ -86,16 +86,22 @@ string node::lang() const
 	return result;
 }
 
-void node::append_sibling(node* n)
+void node::insert_sibling(node* n, node* before)
 {
 	node* p = this;
-	while (p->m_next != nil)
+	while (p->m_next != nil and p->m_next != before)
 		p = p->m_next;
 
+	if (p->m_next != before and before != nil)
+		throw zeep::exception("before argument in insert_sibling is not valid");
+	
 	p->m_next = n;
 	n->m_prev = p;
 	n->m_parent = m_parent;
-	n->m_next = nil;
+	n->m_next = before;
+	
+	if (before != nil)
+		before->m_prev = n;
 }
 
 void node::remove_sibling(node* n)
@@ -231,7 +237,7 @@ void container::append(node_ptr n)
 	}
 	else
 	{
-		m_last->append_sibling(n);
+		m_last->insert_sibling(n, nil);
 		m_last = n;
 	}
 }
@@ -364,7 +370,7 @@ void container::push_back(node* n)
 	}
 	else
 	{
-		m_last->append_sibling(n);
+		m_last->insert_sibling(n, nil);
 		m_last = n;
 	}
 }
@@ -392,68 +398,88 @@ void container::pop_back()
 
 container::node_iterator container::insert(node* position, node* n)
 {
-	private_insert(position, n);
+	if (n->m_next != nil or n->m_prev != nil)
+		throw exception("attempt to insert a node that has next or prev");
+	if (n->m_parent != nil)
+		throw exception("attempt to insert node that already has a parent");
+
+	n->parent(this);
+	
+	if (m_child == position)
+	{
+		m_last = m_child = n;
+		m_child->m_next = m_child->m_prev = nil;
+	}
+	else
+	{
+		m_child->insert_sibling(n, position);
+		
+		if (m_last == nil)
+			m_last = m_child;
+	}
+
 	return node_iterator(n);
 }
 
-void container::private_insert(node* position, node* n)
-{
-	if (n->m_parent != nil or n->m_next != nil or n->m_prev != nil)
-		throw exception("attempt to insert a node that has parent and/or next/prev");
-	
-	if (position == nil)
-		push_back(n);
-	else
-	{
-		if (position->m_parent != this)
-			throw exception("position is not a child node of this container");
-
-		node* child = m_child;
-		while (child != nil and child != position)
-			child = child->m_next;
-		if (child == nil)
-			throw zeep::exception("position is not a valid child node");
-		
-		n->parent(this);
-		n->m_next = position;
-		position->m_prev = n;
-
-		n->m_prev = position->m_prev;
-		if (n->m_prev != nil)
-			n->m_prev->m_next = n;
-		
-		if (position == m_child)
-			m_child = n;
-	}
-}
-
-void container::private_erase(node* n)
-{
-	if (n == nil)
-		throw exception("attempt to erase nil node");
-	
-	if (n->m_parent != this)
-		throw exception("cannot erase node, invalid parent");
-	
-	if (m_child == n)
-	{
-		m_child = m_child->m_next;
-		if (m_child != nil)
-			m_child->m_prev = nil;
-	}
-	else
-		m_child->remove_sibling(n);
-	
-	if (n == m_last)
-	{
-		m_last = m_child;
-		while (m_last->m_next != nil)
-			m_last = m_last->m_next;
-	}
-	
-	n->m_next = n->m_prev = n->m_parent = nil;
-	delete n;
-}
+//void container::private_insert(node* position, node* n)
+//{
+//	if (n->m_parent != nil or n->m_next != nil or n->m_prev != nil)
+//		throw exception("attempt to insert a node that has parent and/or next/prev");
+//	
+//	if (position == nil)
+//		push_back(n);
+//	else
+//	{
+//		if (position->m_parent != this)
+//			throw exception("position is not a child node of this container");
+//
+//		node* child = m_child;
+//		while (child != nil and child != position)
+//			child = child->m_next;
+//		if (child == nil)
+//			throw zeep::exception("position is not a valid child node");
+//		
+//		n->parent(this);
+//		n->m_next = position;
+//		position->m_prev = n;
+//
+//		n->m_prev = position->m_prev;
+//		if (n->m_prev != nil)
+//			n->m_prev->m_next = n;
+//		
+//		if (position == m_child)
+//			m_child = n;
+//	}
+//}
+//
+//void container::private_erase(node* n)
+//{
+////	if (n == nil)
+////		throw exception("attempt to erase nil node");
+////	
+////	if (n->m_parent != this)
+////		throw exception("cannot erase node, invalid parent");
+////	
+////	if (m_child == n)
+////	{
+////		m_child = m_child->m_next;
+////		if (m_child != nil)
+////			m_child->m_prev = nil;
+////	}
+////	else
+////		m_child->remove_sibling(n);
+////	
+////	if (n == m_last)
+////	{
+////		m_last = m_child;
+////		while (m_last->m_next != nil)
+////			m_last = m_last->m_next;
+////	}
+////	
+////	n->m_next = n->m_prev = n->m_parent = nil;
+//	remove(n);
+//	delete n;
+//}
 
 // --------------------------------------------------------------------
 // root_node
@@ -823,7 +849,7 @@ void element::set_attribute(const string& qname, const string& value, bool id)
 			m_attribute->parent(this);
 		}
 		else
-			m_attribute->append_sibling(attr);
+			m_attribute->insert_sibling(attr, nil);
 	}
 }
 
@@ -908,7 +934,7 @@ void element::add_name_space(name_space* ns)
 		m_name_space->parent(this);
 	}
 	else
-		m_name_space->append_sibling(ns);
+		m_name_space->insert_sibling(ns, nil);
 }
 
 string element::lang() const

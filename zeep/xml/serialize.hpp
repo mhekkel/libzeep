@@ -13,6 +13,7 @@
 #include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
 
+#include <boost/foreach.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/type_traits/is_arithmetic.hpp>
@@ -463,7 +464,7 @@ deserializer& deserializer::operator&(
 
 	if (serialize_type<value_type>::is_vector)
 	{
-		for (container::iterator e = m_node->begin(); e != m_node->end(); ++e)
+		BOOST_FOREACH (element* e, *m_node)
 		{
 			if (e->name() == rhs.name())
 				s_type::deserialize(*e, rhs.value());
