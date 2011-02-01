@@ -15,6 +15,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/range.hpp>
 
 #include <zeep/config.hpp>
 
@@ -93,7 +94,7 @@ class node
 						node();
 	virtual				~node();
 
-	virtual void		append_sibling(node* n);
+	virtual void		insert_sibling(node* n, node* before);
 	virtual void		remove_sibling(node* n);
 
 	void				parent(container* p);
@@ -114,7 +115,7 @@ class node
 class container : public node
 {
   public:
-	/// container tries hard to be a stl::container.
+	/// container tries hard to be stl::container-like.
 	
 						~container();
 
@@ -126,10 +127,10 @@ class container : public node
 						children() const;
 
 	template<class NodeType>
-	class basic_iterator : public std::iterator<std::bidirectional_iterator_tag, NodeType>
+	class basic_iterator : public std::iterator<std::bidirectional_iterator_tag, NodeType*>
 	{
 	  public:
-		typedef typename std::iterator<std::bidirectional_iterator_tag, NodeType>	base_type;
+		typedef typename std::iterator<std::bidirectional_iterator_tag, NodeType*>	base_type;
 		typedef typename base_type::reference										reference;
 		typedef typename base_type::pointer											pointer;
 		
@@ -139,8 +140,10 @@ class container : public node
 							: m_current(other.m_current)			{}
 
 		basic_iterator&	operator=(const basic_iterator& other)		{ m_current = other.m_current; return *this; }
+		basic_iterator&	operator=(const NodeType* n)				{ m_current = n; return *this; }
 		
-		reference		operator*() const							{ return *m_current; }
+		const reference	operator*() const							{ return m_current; }
+		reference		operator*()									{ return m_current; }
 		pointer			operator->() const							{ return m_current; }
 
 		basic_iterator&	operator++();
@@ -154,7 +157,17 @@ class container : public node
 		bool			operator!=(const basic_iterator& other) const
 																	{ return m_current != other.m_current; }
 
-		pointer			base() const								{ return m_current; }
+		template<class RNodeType>
+		bool			operator==(const RNodeType n) const			{ return m_current == n; }
+
+		template<class RNodeType>
+		bool			operator!=(const RNodeType n) const			{ return m_current != n; }
+		
+						operator const pointer() const				{ return m_current; }
+						operator pointer()							{ return m_current; }
+
+		const pointer	base() const								{ return m_current; }
+		pointer			base()										{ return m_current; }
 
 	  private:
 		NodeType*		m_current;
@@ -168,12 +181,21 @@ class container : public node
 
 	node_iterator		node_begin();
 	node_iterator		node_end()									{ return node_iterator(); }
+	
+	boost::iterator_range<node_iterator>
+						nodes()										{ return boost::iterator_range<node_iterator>(node_begin(), node_end()); }
 
 	typedef basic_iterator<const element>	const_iterator;
 	typedef basic_iterator<const node>		const_node_iterator;
 
 	const_iterator		begin() const;
 	const_iterator		end() const									{ return const_iterator(); }
+
+	const_node_iterator	node_begin() const;
+	const_node_iterator	node_end() const							{ return const_node_iterator(); }
+	
+	boost::iterator_range<const_node_iterator>
+						nodes() const								{ return boost::iterator_range<const_node_iterator>(node_begin(), node_end()); }
 
 	/// 
 	typedef iterator::value_type		value_type;
@@ -223,12 +245,9 @@ class container : public node
 	// xpath wrappers
 	element_set			find(const std::string& path) const;
 	element*			find_first(const std::string& path) const;
-
+	
   protected:
 						container();
-
-	void				private_insert(node* position, node* n);
-	void				private_erase(node* n);
 
 	node*				m_child;
 	node*				m_last;
@@ -683,7 +702,8 @@ void container::insert(Iterator position, Iterator first, Iterator last)
 template<class Iterator>
 void container::erase(Iterator position)
 {
-	private_erase(position.base());
+	remove(position.base());
+	delete position.base();
 }
 
 template<class Iterator>
