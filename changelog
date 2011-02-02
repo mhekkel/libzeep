@@ -2,4 +2,10 @@ Version 2.1.0
 
 - support for HTTP/1.1
 - added multiplication in xpath expression language... oops
-
+- revised interface for container::iterator, now it is possible
+  to use more STL and boost functions on a container directly, like:
+  
+  xml::container cnt = ...;
+  foreach (node* n, cnt) { cout << n->name() << endl; }
+  
+  

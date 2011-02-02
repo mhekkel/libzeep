@@ -63,6 +63,41 @@ string decode_url(const string& s)
 }
 
 // --------------------------------------------------------------------
+// encode_url function
+
+string encode_url(const string& s)
+{
+	const unsigned char kURLAcceptable[96] =
+	{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
+	    0,0,0,0,0,0,0,0,0,0,7,6,0,7,7,4,		/* 2x   !"#$%&'()*+,-./	 */
+	    7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,		/* 3x  0123456789:;<=>?	 */
+	    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 4x  @ABCDEFGHIJKLMNO  */
+	    7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,7,		/* 5X  PQRSTUVWXYZ[\]^_	 */
+	    0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 6x  `abcdefghijklmno	 */
+	    7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0			/* 7X  pqrstuvwxyz{\}~	DEL */
+	};
+
+	const char kHex[] = "0123456789abcdef";
+
+	string result;
+	
+	for (string::const_iterator c = s.begin(); c != s.end(); ++c)
+	{
+		unsigned char a = (unsigned char)*c;
+		if (not (a >= 32 and a < 128 and (kURLAcceptable[a - 32] & 4)))
+		{
+			result += '%';
+			result += kHex[a >> 4];
+			result += kHex[a & 15];
+		}
+		else
+			result += *c;
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
 // http::server
 
 server::server(const std::string& address, short port, int nr_of_threads)
