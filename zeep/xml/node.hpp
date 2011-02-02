@@ -607,6 +607,40 @@ inline container::basic_iterator<element>& container::basic_iterator<element>::o
 	return *this;
 }
 
+template<>
+inline container::basic_iterator<const element>& container::basic_iterator<const element>::operator++()
+{
+	if (m_current == nil or m_current->next() == nil)
+		m_current = nil;
+	else
+	{
+		for (const node* n = m_current->next(); n != nil; n = n->next())
+		{
+			m_current = dynamic_cast<const element*>(n);
+			if (m_current != nil)
+				break;
+		}
+	}
+	return *this;
+}
+
+template<>
+inline container::basic_iterator<const element>& container::basic_iterator<const element>::operator--()
+{
+	if (m_current == nil or m_current->prev() == nil)
+		m_current = nil;
+	else
+	{
+		for (const node* n = m_current->prev(); n != nil; n = n->prev())
+		{
+			m_current = dynamic_cast<const element*>(n);
+			if (m_current != nil)
+				break;
+		}
+	}
+	return *this;
+}
+
 inline container::iterator container::begin()
 {
 	element* first = nil;
@@ -648,6 +682,22 @@ inline container::basic_iterator<node>& container::basic_iterator<node>::operato
 
 template<>
 inline container::basic_iterator<node>& container::basic_iterator<node>::operator--()
+{
+	assert(m_current != nil);
+	m_current = m_current->prev();
+	return *this;
+}
+
+template<>
+inline container::basic_iterator<const node>& container::basic_iterator<const node>::operator++()
+{
+	assert(m_current != nil);
+	m_current = m_current->next();
+	return *this;
+}
+
+template<>
+inline container::basic_iterator<const node>& container::basic_iterator<const node>::operator--()
 {
 	assert(m_current != nil);
 	m_current = m_current->prev();

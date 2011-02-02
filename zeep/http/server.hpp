@@ -16,8 +16,9 @@ namespace zeep { namespace http {
 
 class connection;
 
-// prototype for an often used function: http::decode_url
+// prototype for often used functions: http::decode_url and http::encode_url
 std::string decode_url(const std::string& s);
+std::string encode_url(const std::string& s);
 
 class server : public request_handler
 {
