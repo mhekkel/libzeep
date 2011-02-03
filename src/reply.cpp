@@ -112,12 +112,16 @@ void reply::set_content(xml::document& doc)
 	
 	content = s.str();
 	status = ok;
-	
+
+	string contentType = "application/xml; charset=utf-8";
+	if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
+		contentType = "application/xhtml+xml; charset=utf-8";
+
 	headers.resize(2);
 	headers[0].name = "Content-Length";
 	headers[0].value = boost::lexical_cast<string>(content.length());
 	headers[1].name = "Content-Type";
-	headers[1].value = "text/xml; charset=utf-8";
+	headers[1].value = contentType;
 }
 
 void reply::set_content(const string& data, const string& mimetype)
@@ -177,6 +181,28 @@ reply reply::stock_reply(status_type status)
 	result.headers[0].value = boost::lexical_cast<string>(result.content.length());
 	result.headers[1].name = "Content-Type";
 	result.headers[1].value = "text/html; charset=utf-8";
+	
+	return result;
+}
+
+reply reply::redirect(const std::string& location)
+{
+	reply result;
+
+	result.status = moved_temporarily;
+
+	string text = detail::get_status_text(moved_temporarily);
+	result.content =
+		string("<html><head><title>") + text + "</title></head><body><h1>" +
+ 		boost::lexical_cast<string>(moved_temporarily) + ' ' + text + "</h1></body></html>";
+	
+	result.headers.resize(3);
+	result.headers[0].name = "Location";
+	result.headers[0].value = location;
+	result.headers[1].name = "Content-Length";
+	result.headers[1].value = boost::lexical_cast<string>(result.content.length());
+	result.headers[2].name = "Content-Type";
+	result.headers[2].value = "text/html; charset=utf-8";
 	
 	return result;
 }

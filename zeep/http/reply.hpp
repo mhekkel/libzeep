@@ -53,6 +53,7 @@ struct reply
 	std::string			get_as_text();
 	
 	static reply		stock_reply(status_type inStatus);
+	static reply		redirect(const std::string& location);
 };
 
 }
