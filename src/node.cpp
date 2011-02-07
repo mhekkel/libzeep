@@ -405,10 +405,12 @@ container::node_iterator container::insert(node* position, node* n)
 
 	n->parent(this);
 	
-	if (m_child == position)
+	if (m_child == position)	// n becomes the first in the list
 	{
-		m_last = m_child = n;
-		m_child->m_next = m_child->m_prev = nil;
+		n->m_next = m_child;
+		m_child->m_prev = n;
+		m_child = n;
+		m_child->m_prev = nil;
 	}
 	else
 	{
