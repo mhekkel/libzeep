@@ -85,6 +85,9 @@ class node
 	virtual bool		equals(const node* n) const;
 
 	virtual node*		clone() const;
+
+	// debug routine
+	virtual void		validate();
 	
   protected:
 
@@ -246,6 +249,9 @@ class container : public node
 	element_set			find(const std::string& path) const;
 	element*			find_first(const std::string& path) const;
 	
+	// debug routine
+	virtual void		validate();
+
   protected:
 						container();
 

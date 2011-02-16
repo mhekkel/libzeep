@@ -168,8 +168,6 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 		m_cur->set_name_space(ns->first, ns->second);
 	
 	m_namespaces.clear();
-	
-	n.release();
 }
 
 void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
