@@ -17,6 +17,8 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 using namespace std;
 
@@ -189,6 +191,15 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	
 	boost::asio::ip::address addr;
 	
+	string referer("-"), userAgent("-");
+	foreach (const header& h, req.headers)
+	{
+		if (h.name == "Referer")
+			referer = h.value;
+		else if (h.name == "User-Agent")
+			userAgent = h.value;
+	}
+	
 	try
 	{
 		// asking for the remote endpoint address failed
@@ -210,7 +221,12 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		cout << addr
 			 << " [" << start << "] "
 			 << second_clock::local_time() - start << ' '
+			 << '"' << req.method << ' ' << req.uri << ' '
+			 		<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
 			 << rep.status << ' '
+			 << rep.get_size() << ' '
+			 << '"' << referer << '"' << ' '
+			 << '"' << userAgent << '"' << ' '
 			 << detail::s_log->str() << endl;
 	}
 	catch (...) {}

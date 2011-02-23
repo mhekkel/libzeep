@@ -4,6 +4,9 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <iostream>
 
 #include <zeep/http/reply.hpp>
@@ -93,6 +96,26 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 	return result;
 }
 
+void reply::set_header(const string& name, const string& value)
+{
+	bool updated = false;
+	foreach (header& h, headers)
+	{
+		if (h.name == name)
+		{
+			h.value = value;
+			updated = true;
+			break;
+		}
+	}
+	
+	if (not updated)
+	{
+		header nh = { name, value };
+		headers.push_back(nh);
+	}
+}
+
 void reply::set_content(xml::element* data)
 {
 	xml::document doc;
@@ -165,6 +188,21 @@ string reply::get_as_text()
 	return result;
 }
 
+size_t reply::get_size() const
+{
+//	size_t size = status_line.length();
+	size_t size = strlen("HTTP/1.0 ") + boost::lexical_cast<string>(status).length() + 1 +
+		detail::get_status_text(status).length() + strlen(" \r\n");
+	for (vector<header>::const_iterator h = headers.begin(); h != headers.end(); ++h)
+		size += h->name.length() + 2 + h->value.length() + 2;
+	size += 2 + content.length();
+	
+	size += strlen("\r\n");
+	size += content.length();
+	
+	return size;
+}
+
 reply reply::stock_reply(status_type status)
 {
 	reply result;
@@ -173,7 +211,7 @@ reply reply::stock_reply(status_type status)
 	
 	string text = detail::get_status_text(status);
 	result.content =
-		string("<html><head><title>") + text + "</title></head><body><h1>" +
+		string("<html><body><h1>" +
  		boost::lexical_cast<string>(status) + ' ' + text + "</h1></body></html>";
 
 	result.headers.resize(2);

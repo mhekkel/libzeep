@@ -47,10 +47,15 @@ struct reply
 	void				set_content(const std::string& data,
 							const std::string& mimetype);
 
+	void				set_header(const std::string& name,
+							const std::string& value);
+
 	std::vector<boost::asio::const_buffer>
 						to_buffers();
 
 	std::string			get_as_text();
+
+	std::size_t			get_size() const;
 	
 	static reply		stock_reply(status_type inStatus);
 	static reply		redirect(const std::string& location);
