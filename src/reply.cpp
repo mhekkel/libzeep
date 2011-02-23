@@ -211,7 +211,7 @@ reply reply::stock_reply(status_type status)
 	
 	string text = detail::get_status_text(status);
 	result.content =
-		string("<html><body><h1>" +
+		string("<html><body><h1>") +
  		boost::lexical_cast<string>(status) + ' ' + text + "</h1></body></html>";
 
 	result.headers.resize(2);
