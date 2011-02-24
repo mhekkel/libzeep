@@ -524,9 +524,8 @@ container::node_iterator container::insert(node* position, node* n)
 #if DEBUG
 validate();
 n->validate();
-#endif
-
 	position->validate();
+#endif
 	
 	if (m_child == position)	// n becomes the first in the list
 	{
@@ -552,7 +551,9 @@ n->validate();
 
 void container::validate()
 {
+#if DEBUG
 	node::validate();
+#endif
 	
 	if (m_child or m_last)
 	{
@@ -567,7 +568,9 @@ void container::validate()
 		if (m_last->m_next != nil)
 			throw exception("m_last is not last in list");
 
+#if DEBUG
 		m_child->validate();
+#endif
 	}
 }
 

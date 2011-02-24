@@ -14,6 +14,7 @@
 #include <zeep/exception.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
@@ -218,9 +219,18 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	{
 		// protect the output stream from garbled log messages
 		boost::mutex::scoped_lock lock(detail::s_log_lock);
-		cout << addr
-			 << " [" << start << "] "
-			 << second_clock::local_time() - start << ' '
+		
+		using namespace boost::local_time;
+
+		local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
+		cout.imbue(std::locale(std::cout.getloc(), lf));
+
+		local_date_time start_local(start, time_zone_ptr());
+		
+		cout << addr << ' '
+			 << "-" << ' '
+			 << "-" << ' '
+			 << start_local << ' '
 			 << '"' << req.method << ' ' << req.uri << ' '
 			 		<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
 			 << rep.status << ' '
