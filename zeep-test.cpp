@@ -89,9 +89,6 @@ class my_server : public zeep::server
 {
   public:
 						my_server(
-							const string&				address,
-							short						port,
-							int							nr_of_threads,
 							const string&				my_param);
 
 	void				ListDatabanks(
@@ -118,8 +115,8 @@ class my_server : public zeep::server
 	string				m_param;
 };
 
-my_server::my_server(const string& address, short port, int nr_of_threads, const string& param)
-	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep", address, port, nr_of_threads)
+my_server::my_server(const string& param)
+	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep")
 	, m_param(param)
 {
 	using namespace WSSearchNS;
@@ -243,13 +240,12 @@ int main(int argc, const char* argv[])
 	    sigfillset(&new_mask);
 	    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 	
-		zeep::http::preforked_server<my_server> server("0.0.0.0", 10333, 2, "bla bla");
+		zeep::http::preforked_server<my_server> server("bla bla");
 		boost::thread t(
-			boost::bind(&zeep::http::preforked_server<my_server>::run, &server));
-
+			boost::bind(&zeep::http::preforked_server<my_server>::run, &server, "0.0.0.0", 10333, 2));
+		server.start();
+		
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-	
-		server.start_listening();
 	
 		// Wait for signal indicating time to shut down.
 		sigset_t wait_mask;
@@ -292,8 +288,9 @@ int main(int argc, const char* argv[])
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("0.0.0.0", 10333, 1, "blabla");
-    boost::thread t(boost::bind(&my_server::run, &server));
+	my_server server("blabla");
+	server.bind("0.0.0.0", 10333);
+    boost::thread t(boost::bind(&my_server::run, &server, 2));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 

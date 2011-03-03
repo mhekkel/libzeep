@@ -23,11 +23,13 @@ std::string encode_url(const std::string& s);
 class server : public request_handler
 {
   public:
-						server(const std::string& address, short port, int nr_of_threads);
+						server();
+
+	virtual void		bind(const std::string& address, short port);
 
 	virtual				~server();
 
-	virtual void		run();
+	virtual void		run(int nr_of_threads);
 
 	virtual void		stop();
 
@@ -53,9 +55,6 @@ class server : public request_handler
 	boost::asio::io_service&
 						get_io_service()				{ return m_io_service; }
 
-	std::string						m_address;
-	short							m_port;
-	int								m_nr_of_threads;
 	boost::asio::io_service			m_io_service;
 	boost::shared_ptr<boost::asio::ip::tcp::acceptor>
 									m_acceptor;
