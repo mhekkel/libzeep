@@ -17,16 +17,19 @@ namespace fs = boost::filesystem;
 
 namespace zeep {
 	
-server::server(const std::string& ns, const std::string& service,
-	const std::string& address, short port, int nr_of_threads)
+server::server(const std::string& ns, const std::string& service)
 	: dispatcher(ns, service)
-	, http::server(address, port, nr_of_threads)
 {
+}
+
+void server::bind(const std::string& address, short port)
+{
+	http::server::bind(address, port);
 	if (port != 80)
 		m_location = "http://" + address + ':' +
-			boost::lexical_cast<string>(port) + '/' + service;
+			boost::lexical_cast<string>(port) + '/' + m_service;
 	else
-		m_location = "http://" + address + '/' + service;
+		m_location = "http://" + address + '/' + m_service;
 }
 
 void server::handle_request(const http::request& req, http::reply& rep)

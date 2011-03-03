@@ -29,15 +29,13 @@
 /// Example:
 ///
 ///		class my_server {
-///						my_server(const string& address, short port, int nr_of_threads,
-///							const string& my_param);
+///						my_server(const string& my_param);
 ///		....
 ///
-///		zeep::http::preforked_server<my_server> server("0.0.0.0", 10333, 2, "my extra param");
+///		zeep::http::preforked_server<my_server> server("my extra param");
 ///		boost::thread t(
-///			boost::bind(&zeep::http::preforked_server<my_server>::run, &server));
-///
-///		server.start_listening();
+///			boost::bind(&zeep::http::preforked_server<my_server>::run, &server, 2/*threads*/));
+///		server.bind("0.0.0.0"/*address*/, 10333/*port*/);
 ///
 ///		... // wait for signal to stop
 ///		server.stop();
@@ -55,22 +53,22 @@ class preforked_server_base
   public:
 	virtual					~preforked_server_base();
 
-	virtual void			run();					/// fork child and start listening, should be a separate thread
-	virtual void			start_listening();		/// signal the thread it can continue listening
+								/// forks child and starts listening, should be a separate thread
+	virtual void			run(const std::string& address, short port, int nr_of_threads);
+	virtual void			start();				/// signal the thread it can start listening:
 	virtual void			stop();					/// stop the running thread
 
   protected:
 
 	struct server_constructor_base
 	{
-		virtual server*	construct(const std::string& address, short port, int nr_of_threads) = 0;
+		virtual server*	construct() = 0;
 	};
 
 	template<class Signature>
 	struct server_constructor;
 	
-  							preforked_server_base(const std::string& address, short port, int nr_of_threads,
-  								server_constructor_base* constructor);
+  							preforked_server_base(server_constructor_base* constructor);
 
   private:
 							preforked_server_base(const preforked_server_base&);
@@ -82,23 +80,20 @@ class preforked_server_base
 
 	void					handle_accept(const boost::system::error_code& ec);
 
-	std::string						m_address;
-	short							m_port;
-	int								m_nr_of_threads;
 	server_constructor_base*		m_constructor;
 	boost::asio::io_service			m_io_service;
 	boost::asio::ip::tcp::acceptor	m_acceptor;
 	boost::asio::ip::tcp::socket	m_socket;
 	int								m_fd;
 	int								m_pid;
-	boost::mutex*					m_start_lock;
+	boost::mutex					m_lock;
 };
 
 template<class Server>
 struct preforked_server_base::server_constructor<void(Server::*)()> : public server_constructor_base
 {
-	virtual server*	construct(const std::string& address, short port, int nr_of_threads)
-						{ return new Server(address, port, nr_of_threads); }
+	virtual server*	construct()
+						{ return new Server(); }
 };
 
 template<class Server, typename T0>
@@ -107,8 +102,8 @@ struct preforked_server_base::server_constructor<void(Server::*)(T0)> : public s
 						server_constructor(T0 t0)
 							: m_t0(t0) {}
 
-	virtual server*	construct(const std::string& address, short port, int nr_of_threads)
-						{ return new Server(address, port, nr_of_threads, m_t0); }
+	virtual server*	construct()
+						{ return new Server(m_t0); }
 
   private:
 	typedef typename boost::remove_const<
@@ -123,8 +118,8 @@ struct preforked_server_base::server_constructor<void(Server::*)(T0,T1)> : publi
 						server_constructor(T0 t0, T1 t1)
 							: m_t0(t0), m_t1(t1) {}
 
-	virtual server*	construct(const std::string& address, short port, int nr_of_threads)
-						{ return new Server(address, port, nr_of_threads, m_t0, m_t1); }
+	virtual server*	construct()
+						{ return new Server(m_t0, m_t1); }
 
   private:
 	typedef typename boost::remove_const<
@@ -142,8 +137,8 @@ struct preforked_server_base::server_constructor<void(Server::*)(T0,T1,T2)> : pu
 						server_constructor(T0 t0, T1 t1, T2 t2)
 							: m_t0(t0), m_t1(t1), m_t2(t2) {}
 
-	virtual server*	construct(const std::string& address, short port, int nr_of_threads)
-						{ return new Server(address, port, nr_of_threads, m_t0, m_t1, m_t2); }
+	virtual server*	construct()
+						{ return new Server(m_t0, m_t1, m_t2); }
 
   private:
 	typedef typename boost::remove_const<
@@ -165,26 +160,26 @@ class preforked_server : public preforked_server_base
 
   public:
 
-						preforked_server(const std::string& address, short port, int nr_of_threads)
-							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)()>())
+						preforked_server()
+							: preforked_server_base(new server_constructor<void(Server::*)()>())
 						{
 						}
 
 	template<typename T0>
-						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0)
-							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0)>(t0))
+						preforked_server(T0 t0)
+							: preforked_server_base(new server_constructor<void(Server::*)(T0)>(t0))
 						{
 						}
 
 	template<typename T0, typename T1>
-						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0, T1 t1)
-							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0,T1)>(t0, t1))
+						preforked_server(T0 t0, T1 t1)
+							: preforked_server_base(new server_constructor<void(Server::*)(T0,T1)>(t0, t1))
 						{
 						}
 
 	template<typename T0, typename T1, typename T2>
-						preforked_server(const std::string& address, short port, int nr_of_threads, T0 t0, T1 t1, T2 t2)
-							: preforked_server_base(address, port, nr_of_threads, new server_constructor<void(Server::*)(T0,T1,T2)>(t0, t1, t2))
+						preforked_server(T0 t0, T1 t1, T2 t2)
+							: preforked_server_base(new server_constructor<void(Server::*)(T0,T1,T2)>(t0, t1, t2))
 						{
 						}
 };

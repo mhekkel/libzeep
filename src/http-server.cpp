@@ -103,11 +103,25 @@ string encode_url(const string& s)
 // --------------------------------------------------------------------
 // http::server
 
-server::server(const std::string& address, short port, int nr_of_threads)
-	: m_address(address)
-	, m_port(port)
-	, m_nr_of_threads(nr_of_threads)
+server::server()
 {
+}
+
+void server::bind(const std::string& address, short port)
+{
+	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_service));
+	m_new_connection.reset(new connection(m_io_service, *this));
+
+	boost::asio::ip::tcp::resolver resolver(m_io_service);
+	boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<string>(port));
+	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+
+	m_acceptor->open(endpoint.protocol());
+	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+	m_acceptor->bind(endpoint);
+	m_acceptor->listen();
+	m_acceptor->async_accept(m_new_connection->get_socket(),
+		boost::bind(&server::handle_accept, this, boost::asio::placeholders::error));
 }
 
 server::~server()
@@ -115,42 +129,18 @@ server::~server()
 	stop();
 }
 
-void server::run()
+void server::run(int nr_of_threads)
 {
-	assert(not m_acceptor);
+	// keep the server at work until we call stop
+	boost::asio::io_service::work work(m_io_service);
 
-	if (m_nr_of_threads > 0)
+	for (int i = 0; i < nr_of_threads; ++i)
 	{
-		m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_service));
-		m_new_connection.reset(new connection(m_io_service, *this));
-	
-		boost::asio::ip::tcp::resolver resolver(m_io_service);
-		boost::asio::ip::tcp::resolver::query query(m_address, boost::lexical_cast<string>(m_port));
-		boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
-	
-		m_acceptor->open(endpoint.protocol());
-		m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-		m_acceptor->bind(endpoint);
-		m_acceptor->listen();
-		m_acceptor->async_accept(m_new_connection->get_socket(),
-			boost::bind(&server::handle_accept, this, boost::asio::placeholders::error));
+		m_threads.create_thread(
+			boost::bind(&boost::asio::io_service::run, &m_io_service));
 	}
-	else
-		m_nr_of_threads = -m_nr_of_threads;
 
-	if (m_nr_of_threads > 0)
-	{
-		// keep the server at work until we call stop
-		boost::asio::io_service::work work(m_io_service);
-	
-		for (int i = 0; i < m_nr_of_threads; ++i)
-		{
-			m_threads.create_thread(
-				boost::bind(&boost::asio::io_service::run, &m_io_service));
-		}
-	
-		m_threads.join_all();
-	}
+	m_threads.join_all();
 }
 
 void server::stop()

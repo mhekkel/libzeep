@@ -26,21 +26,12 @@ using namespace std;
 
 namespace zeep { namespace http {
 
-preforked_server_base::preforked_server_base(const string& address,
-	short port, int nr_of_threads, server_constructor_base* constructor)
-	: m_address(address)
-	, m_port(port)
-	, m_nr_of_threads(nr_of_threads)
-	, m_constructor(constructor)
+preforked_server_base::preforked_server_base(server_constructor_base* constructor)
+	: m_constructor(constructor)
 	, m_acceptor(m_io_service)
 	, m_socket(m_io_service)
-	, m_start_lock(new boost::mutex)
 {
-	// we begin by locking the 'start' mutex.
-	// This is done so that we can block the run thread from entering the
-	// listening code until we're ready forking off all children.
-	
-	m_start_lock->lock();
+	m_lock.lock();
 }
 
 preforked_server_base::~preforked_server_base()
@@ -55,12 +46,9 @@ preforked_server_base::~preforked_server_base()
 
 	m_io_service.stop();
 	delete m_constructor;
-	
-	m_start_lock->unlock();
-	delete m_start_lock;
 }
 
-void preforked_server_base::run()
+void preforked_server_base::run(const std::string& address, short port, int nr_of_threads)
 {
 	try
 	{
@@ -74,7 +62,7 @@ void preforked_server_base::run()
 		m_pid = fork();
 		if (m_pid < 0)
 			throw exception("Error forking worker application: %s", strerror(errno));
-	
+
 		if (m_pid == 0)	// child process
 		{
 			close(sockfd[0]);
@@ -85,10 +73,10 @@ void preforked_server_base::run()
 			pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
 	
 			// Time to construct the Server object
-			auto_ptr<server> srvr(m_constructor->construct(m_address, m_port, -m_nr_of_threads));
+			auto_ptr<server> srvr(m_constructor->construct());
 			
 			// run the server as a worker
-			boost::thread t(boost::bind(&server::run, srvr.get()));
+			boost::thread t(boost::bind(&server::run, srvr.get(), nr_of_threads));
 
 			// now start the processing loop passing on file descriptors read
 			// from the parent process
@@ -115,30 +103,32 @@ void preforked_server_base::run()
 			
 			exit(0);
 		}
-	
-		// wait for the signal to continue
-		m_start_lock->lock();
-	
-		// bind the address here
+
+		// first wait until we are allowed to start listening
+		boost::mutex::scoped_lock lock(m_lock);
+
+		// then bind the address here
 		boost::asio::ip::tcp::resolver resolver(m_io_service);
 		boost::asio::ip::tcp::resolver::query
-			query(m_address, boost::lexical_cast<string>(m_port));
+			query(address, boost::lexical_cast<string>(port));
 		boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
 	
 		m_acceptor.open(endpoint.protocol());
 		m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 		m_acceptor.bind(endpoint);
 		m_acceptor.listen();
+	
 		m_acceptor.async_accept(m_socket,
 			boost::bind(&preforked_server_base::handle_accept, this, boost::asio::placeholders::error));
 		
-		// start a thread to listen to the socket
+		// close one end of the pipe, save the other
 		m_fd = sockfd[0];
 		close(sockfd[1]);
 	
 		// keep the server at work until we call stop
 		boost::asio::io_service::work work(m_io_service);
 	
+		// start a thread to listen to the socket
 		boost::thread thread(
 			boost::bind(&boost::asio::io_service::run, &m_io_service));
 
@@ -175,9 +165,9 @@ void preforked_server_base::run()
 	}
 }
 
-void preforked_server_base::start_listening()
+void preforked_server_base::start()
 {
-	m_start_lock->unlock();
+	m_lock.unlock();
 }
 
 bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
