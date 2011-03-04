@@ -22,6 +22,7 @@ struct request
 					headers;
 	std::string		payload;
 	bool			close;
+	std::string		local_endpoint;	// for redirects...
 };
 
 }

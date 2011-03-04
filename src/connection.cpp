@@ -5,8 +5,11 @@
 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <zeep/http/connection.hpp>
+
+using namespace std;
 
 namespace zeep { namespace http {
 
@@ -19,6 +22,10 @@ connection::connection(boost::asio::io_service& service,
 
 void connection::start()
 {
+	m_request.local_endpoint =
+		boost::lexical_cast<string>(m_socket.local_endpoint().address()) + ':' +
+		boost::lexical_cast<string>(m_socket.local_endpoint().port());
+	
 	m_socket.async_read_some(boost::asio::buffer(m_buffer),
 		boost::bind(&connection::handle_read, shared_from_this(),
 			boost::asio::placeholders::error,

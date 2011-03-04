@@ -25,7 +25,8 @@ class server : public request_handler
   public:
 						server();
 
-	virtual void		bind(const std::string& address, short port);
+	virtual void		bind(const std::string& address,
+							unsigned short port);
 
 	virtual				~server();
 
@@ -36,6 +37,9 @@ class server : public request_handler
 	// to extend the log entry for a current request, use this ostream:
 	static std::ostream&
 						log();
+
+	std::string			address() const				{ return m_address; }
+	unsigned short		port() const				{ return m_port; }
 
   protected:
 
@@ -60,6 +64,8 @@ class server : public request_handler
 									m_acceptor;
 	boost::thread_group				m_threads;
 	boost::shared_ptr<connection>	m_new_connection;
+	std::string						m_address;
+	unsigned short					m_port;
 };
 
 }

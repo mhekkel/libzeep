@@ -107,8 +107,11 @@ server::server()
 {
 }
 
-void server::bind(const std::string& address, short port)
+void server::bind(const std::string& address, unsigned short port)
 {
+	m_address = address;
+	m_port = port;
+	
 	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_service));
 	m_new_connection.reset(new connection(m_io_service, *this));
 
