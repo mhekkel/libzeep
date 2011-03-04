@@ -22,8 +22,10 @@ struct request
 					headers;
 	std::string		payload;
 	bool			close;
-	std::string		local_endpoint;	// for redirects...
-};
+
+	// for redirects...
+	std::string		local_address;
+	unsigned short	local_port;};
 
 }
 }

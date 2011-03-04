@@ -22,9 +22,9 @@ connection::connection(boost::asio::io_service& service,
 
 void connection::start()
 {
-	m_request.local_endpoint =
-		boost::lexical_cast<string>(m_socket.local_endpoint().address()) + ':' +
-		boost::lexical_cast<string>(m_socket.local_endpoint().port());
+	m_request.local_address =
+		boost::lexical_cast<string>(m_socket.local_endpoint().address());
+	m_request.local_port = m_socket.local_endpoint().port();
 	
 	m_socket.async_read_some(boost::asio::buffer(m_buffer),
 		boost::bind(&connection::handle_read, shared_from_this(),
