@@ -1878,6 +1878,7 @@ string xpath_imp::describe_token(Token token)
 		case xp_Colon:				result << "colon"; break;
 	}
 
+	result << " {" << m_token_string << '}';
 	return result.str();
 }
 
@@ -2138,8 +2139,8 @@ Token xpath_imp::get_next_token()
 		}
 	}
 
-//	if (VERBOSE)
-//		cout << "get_next_token: " << describe_token(token) << endl;
+	if (VERBOSE)
+		cout << "get_next_token: " << describe_token(token) << endl;
 	
 	return token;
 }
@@ -2436,7 +2437,7 @@ expression_ptr xpath_imp::and_expr()
 	while (m_lookahead == xp_Name and m_token_string == "and")
 	{
 		match(xp_Name);
-		result.reset(new operator_expression<xp_OperatorAnd>(result, relational_expr()));
+		result.reset(new operator_expression<xp_OperatorAnd>(result, equality_expr()));
 	}
 
 	return result;

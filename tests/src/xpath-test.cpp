@@ -143,10 +143,10 @@ int main(int argc, char* argv[])
 {
 	po::options_description desc("Allowed options");
 	desc.add_options()
-	    ("help", "produce help message")
-	    ("verbose", "verbose output")
-	    ("test", "Run SUN test suite")
-	    ("trace", "Trace productions in parser")
+	    ("help,h", "produce help message")
+	    ("verbose,v", "verbose output")
+	    ("test,t", "Run SUN test suite")
+	    ("trace,T", "Trace productions in parser")
 	;
 	
 	po::positional_options_description p;
