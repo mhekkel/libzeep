@@ -25,11 +25,15 @@ server::server(const std::string& ns, const std::string& service)
 void server::bind(const std::string& address, short port)
 {
 	http::server::bind(address, port);
-	if (port != 80)
-		m_location = "http://" + address + ':' +
-			boost::lexical_cast<string>(port) + '/' + m_service;
-	else
-		m_location = "http://" + address + '/' + m_service;
+	
+	if (m_location.empty())
+	{
+		if (port != 80)
+			m_location = "http://" + address + ':' +
+				boost::lexical_cast<string>(port) + '/' + m_service;
+		else
+			m_location = "http://" + address + '/' + m_service;
+	}
 }
 
 void server::handle_request(const http::request& req, http::reply& rep)

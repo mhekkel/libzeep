@@ -2139,8 +2139,8 @@ Token xpath_imp::get_next_token()
 		}
 	}
 
-	if (VERBOSE)
-		cout << "get_next_token: " << describe_token(token) << endl;
+//	if (VERBOSE)
+//		cout << "get_next_token: " << describe_token(token) << endl;
 	
 	return token;
 }
