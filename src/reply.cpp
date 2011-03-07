@@ -136,7 +136,7 @@ void reply::set_content(xml::document& doc)
 	content = s.str();
 	status = ok;
 
-	string contentType = "application/xml; charset=utf-8";
+	string contentType = "text/xml; charset=utf-8";
 	if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
 		contentType = "application/xhtml+xml; charset=utf-8";
 

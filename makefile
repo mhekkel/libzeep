@@ -9,8 +9,8 @@
 # makefile to match your current installation.
 
 #BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
-#BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
-#BOOST_INC_DIR		= $(HOME)/projects/boost/include
+BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 # debian dpkg-buildflags support
 DBF_CFLAGS			?= -g -O2
