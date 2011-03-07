@@ -140,4 +140,10 @@
 	<xpath-test data="data-014.xml" xpath="//BBB[id()='noot']" expected-size="1"
 		test-name="ident" test-attr="noot" />
 
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='noot' or id()='aap']" expected-size="2"
+		 />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='aap' and id()='aap']" expected-size="1"
+		test-name="ident" test-attr="aap" />
+
 </xpath-tests>
