@@ -44,6 +44,10 @@ struct reply
 	void				set_content(xml::document& doc);
 	void				set_content(xml::element* data);
 	
+	std::string			get_content_type() const;
+	void				set_content_type(
+							const std::string& type);
+	
 	void				set_content(const std::string& data,
 							const std::string& mimetype);
 
