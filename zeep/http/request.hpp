@@ -25,7 +25,8 @@ struct request
 
 	// for redirects...
 	std::string		local_address;
-	unsigned short	local_port;};
+	unsigned short	local_port;
+};
 
 }
 }

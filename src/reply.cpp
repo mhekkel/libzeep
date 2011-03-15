@@ -159,6 +159,36 @@ void reply::set_content(const string& data, const string& mimetype)
 	headers[1].value = mimetype;
 }
 
+	
+string reply::get_content_type() const
+{
+	string result;
+	
+	foreach (const header& h, headers)
+	{
+		if (h.name == "Content-Type")
+		{
+			result = h.value;
+			break;
+		}
+	}
+	
+	return result;
+}
+
+void reply::set_content_type(
+	const string& type)
+{
+	foreach (header& h, headers)
+	{
+		if (h.name == "Content-Type")
+		{
+			h.value = type;
+			break;
+		}
+	}
+}
+
 string reply::get_as_text()
 {
 	// for best performance, we pre calculate memory requirements and reserve that first
