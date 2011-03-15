@@ -78,7 +78,7 @@ vector<boost::asio::const_buffer> reply::to_buffers()
 {
 	vector<boost::asio::const_buffer>	result;
 
-	status_line = string("HTTP/1.0 ") + boost::lexical_cast<string>(status) + ' ' +
+	status_line = string("HTTP/1.1 ") + boost::lexical_cast<string>(status) + ' ' +
 		detail::get_status_text(status) + " \r\n";
 	result.push_back(boost::asio::buffer(status_line));
 	
@@ -162,7 +162,7 @@ void reply::set_content(const string& data, const string& mimetype)
 string reply::get_as_text()
 {
 	// for best performance, we pre calculate memory requirements and reserve that first
-	status_line = string("HTTP/1.0 ") + boost::lexical_cast<string>(status) + ' ' +
+	status_line = string("HTTP/1.1 ") + boost::lexical_cast<string>(status) + ' ' +
 		detail::get_status_text(status) + " \r\n";
 	
 	int size = status_line.length();
@@ -191,7 +191,7 @@ string reply::get_as_text()
 size_t reply::get_size() const
 {
 //	size_t size = status_line.length();
-	size_t size = strlen("HTTP/1.0 ") + boost::lexical_cast<string>(status).length() + 1 +
+	size_t size = strlen("HTTP/1.1 ") + boost::lexical_cast<string>(status).length() + 1 +
 		detail::get_status_text(status).length() + strlen(" \r\n");
 	for (vector<header>::const_iterator h = headers.begin(); h != headers.end(); ++h)
 		size += h->name.length() + 2 + h->value.length() + 2;
