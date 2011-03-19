@@ -282,6 +282,7 @@ int main(int argc, const char* argv[])
 
 	my_server server("0.0.0.0", 10333, 1, "blabla");
     boost::thread t(boost::bind(&my_server::run, &server));
+	t.join();
 
 #else
     sigset_t new_mask, old_mask;
