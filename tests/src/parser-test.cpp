@@ -99,8 +99,8 @@ void dump(xml::element& e, int level = 0)
 	cout << level << "> " << e.qname() << endl;
 	for (xml::element::attribute_iterator a = e.attr_begin(); a != e.attr_end(); ++a)
 		cout << level << " (a)> " << a->qname() << endl;
-	foreach (xml::element& c, e)
-		dump(c, level + 1);
+	foreach (xml::element* c, e)
+		dump(*c, level + 1);
 }
 
 bool run_test(const xml::element& test, fs::path base_dir)

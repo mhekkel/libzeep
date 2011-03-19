@@ -280,8 +280,9 @@ int main(int argc, const char* argv[])
  	}
 #elif defined(_MSC_VER)
 
-	my_server server("0.0.0.0", 10333, 1, "blabla");
-    boost::thread t(boost::bind(&my_server::run, &server));
+	my_server server("blabla");
+	server.bind("0.0.0.0", 10333);
+    boost::thread t(boost::bind(&my_server::run, &server, 2));
 	t.join();
 
 #else
