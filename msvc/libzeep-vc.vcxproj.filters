@@ -10,13 +10,13 @@
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
     <Filter Include="Header Files\zeep">
-      <UniqueIdentifier>{7e2d9161-2867-4eef-a208-3dada3bba603}</UniqueIdentifier>
+      <UniqueIdentifier>{2a5a3233-b3ca-456d-bb42-23d65cc35ddb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\zeep\xml">
-      <UniqueIdentifier>{9288ba1f-2bbc-42a7-bf21-cd060d4abeac}</UniqueIdentifier>
+      <UniqueIdentifier>{c193a094-398a-47b1-b3e3-618eab55a924}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\zeep\http">
-      <UniqueIdentifier>{759afa10-ef5d-4a55-a79e-bbea493ed9a3}</UniqueIdentifier>
+      <UniqueIdentifier>{58dd6607-5c22-4f45-aca8-c00d689fe6e1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
