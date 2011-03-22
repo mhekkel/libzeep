@@ -41,6 +41,10 @@ struct reply
 	std::vector<header>	headers;
 	std::string			content;
 
+						reply();
+						reply(const reply&);
+	reply&				operator=(const reply&);
+
 	void				set_content(xml::document& doc);
 	void				set_content(xml::element* data);
 	
@@ -49,7 +53,7 @@ struct reply
 							const std::string& type);
 	
 	void				set_content(const std::string& data,
-							const std::string& mimetype);
+							const std::string& contentType);
 
 	void				set_header(const std::string& name,
 							const std::string& value);

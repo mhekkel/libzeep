@@ -6,6 +6,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
+#include <boost/date_time/local_time/local_time.hpp>
 
 #include <iostream>
 
@@ -32,7 +33,7 @@ struct status_string
 	{ no_content,			"No Content" },
 	{ multiple_choices,		"Multiple Choices" },
 	{ moved_permanently,	"Moved Permanently" },
-	{ moved_temporarily,	"Moved Temporarily" },
+	{ moved_temporarily,	"Found" },
 	{ not_modified,			"Not Modified" },
 	{ bad_request,			"Bad Request" },
 	{ unauthorized,			"Unauthorized" },
@@ -72,6 +73,44 @@ namespace
 const char
 		kNameValueSeparator[] = { ':', ' ' },
 		kCRLF[] = { '\r', '\n' };
+}
+
+reply::reply()
+{
+	using namespace boost::local_time;
+	using namespace boost::posix_time;
+
+	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
+	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
+	
+	stringstream s;
+	s.imbue(std::locale(std::cout.getloc(), lf));
+	
+	s << t;
+
+	set_header("Date", s.str());
+	set_header("Server", "libzeep");
+}
+
+reply::reply(const reply& rhs)
+	: status(rhs.status)
+	, status_line(rhs.status_line)
+	, headers(rhs.headers)
+	, content(rhs.content)
+{
+}
+
+reply& reply::operator=(const reply& rhs)
+{
+	if (this != &rhs)
+	{
+		status = rhs.status;
+		status_line = rhs.status_line;
+		headers = rhs.headers;
+		content = rhs.content;
+	}
+	
+	return *this;
 }
 
 vector<boost::asio::const_buffer> reply::to_buffers()
@@ -133,33 +172,22 @@ void reply::set_content(xml::document& doc)
 //	w.trim(true);
 	doc.write(w);
 	
-	content = s.str();
-	status = ok;
-
 	string contentType = "text/xml; charset=utf-8";
 	if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
 		contentType = "application/xhtml+xml; charset=utf-8";
 
-	headers.resize(2);
-	headers[0].name = "Content-Length";
-	headers[0].value = boost::lexical_cast<string>(content.length());
-	headers[1].name = "Content-Type";
-	headers[1].value = contentType;
+	set_content(s.str(), contentType);
 }
 
-void reply::set_content(const string& data, const string& mimetype)
+void reply::set_content(const string& data, const string& contentType)
 {
 	content = data;
 	status = ok;
-	
-	headers.resize(2);
-	headers[0].name = "Content-Length";
-	headers[0].value = boost::lexical_cast<string>(content.length());
-	headers[1].name = "Content-Type";
-	headers[1].value = mimetype;
+
+	set_header("Content-Length", boost::lexical_cast<string>(content.length()));
+	set_header("Content-Type", contentType);
 }
 
-	
 string reply::get_content_type() const
 {
 	string result;
@@ -244,11 +272,8 @@ reply reply::stock_reply(status_type status)
 		string("<html><body><h1>") +
  		boost::lexical_cast<string>(status) + ' ' + text + "</h1></body></html>";
 
-	result.headers.resize(2);
-	result.headers[0].name = "Content-Length";
-	result.headers[0].value = boost::lexical_cast<string>(result.content.length());
-	result.headers[1].name = "Content-Type";
-	result.headers[1].value = "text/html; charset=utf-8";
+	result.set_header("Content-Length", boost::lexical_cast<string>(result.content.length()));
+	result.set_header("Content-Type", "text/html; charset=utf-8");
 	
 	return result;
 }
@@ -264,13 +289,9 @@ reply reply::redirect(const std::string& location)
 		string("<html><head><title>") + text + "</title></head><body><h1>" +
  		boost::lexical_cast<string>(moved_temporarily) + ' ' + text + "</h1></body></html>";
 	
-	result.headers.resize(3);
-	result.headers[0].name = "Location";
-	result.headers[0].value = location;
-	result.headers[1].name = "Content-Length";
-	result.headers[1].value = boost::lexical_cast<string>(result.content.length());
-	result.headers[2].name = "Content-Type";
-	result.headers[2].value = "text/html; charset=utf-8";
+	result.set_header("Location", location);
+	result.set_header("Content-Length", boost::lexical_cast<string>(result.content.length()));
+	result.set_header("Content-Type", "text/html; charset=utf-8");
 	
 	return result;
 }
