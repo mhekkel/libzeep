@@ -793,6 +793,27 @@ node* text::clone() const
 }
 
 // --------------------------------------------------------------------
+// cdata
+
+void cdata::write(writer& w) const
+{
+	w.cdata(m_text);
+}
+
+bool cdata::equals(const node* n) const
+{
+	return
+		node::equals(n) and
+		dynamic_cast<const cdata*>(n) != NULL and
+		m_text == static_cast<const cdata*>(n)->m_text;
+}
+
+node* cdata::clone() const
+{
+	return new cdata(m_text);
+}
+
+// --------------------------------------------------------------------
 // attribute
 
 void attribute::write(writer& w) const
