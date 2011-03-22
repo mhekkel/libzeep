@@ -912,39 +912,29 @@ void element::content(const string& s)
 {
 	node* child = m_child;
 	
-	// find the first text child node
-	while (child != nil and dynamic_cast<text*>(child) == nil)
-		child = child->next();
-	
-	// if there was none, add it
-	if (child == nil)
-		append(new text(s));
-	else
+	// remove all existing text nodes (including cdata ones)
+	while (child != nil)
 	{
-		// otherwise, replace its content
-		static_cast<text*>(child)->str(s);
+		node* next = child->next();
 		
-		// and remove any other text nodes we might have
-		while (child->next() != nil)
+		if (dynamic_cast<text*>(child) != nil)
 		{
-			node* next = child->next();
-			
-			if (dynamic_cast<text*>(next) != nil)
-			{
-				container::remove(next);
-				delete next;
-			}
-			else
-				child = next;
+			container::remove(child);
+			delete child;
 		}
+
+		child = next;
 	}
+
+	// and add a new text node with the content
+	append(new text(s));
 }
 
 void element::add_text(const std::string& s)
 {
 	text* textNode = dynamic_cast<text*>(m_last);
 	
-	if (textNode != nil)
+	if (textNode != nil and dynamic_cast<cdata*>(textNode) == nil)
 		textNode->append(s);
 	else
 		append(new text(s));

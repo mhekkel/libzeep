@@ -36,6 +36,7 @@ struct document_imp
 	bool			m_no_comment;
 	
 	bool			m_validating;
+	bool			m_preserve_cdata;
 
 	std::istream*	external_entity_ref(const std::string& base,
 						const std::string& pubid, const std::string& sysid);

@@ -371,27 +371,18 @@ class text : public node
 
 // --------------------------------------------------------------------
 
-class cdata : public node
+class cdata : public text
 {
   public:
 						cdata() {}
-						cdata(const std::string& text)
-							: m_text(text) {}
-
-	virtual std::string	str() const									{ return m_text; }
-
-	void				str(const std::string& text)				{ m_text = text; }
-
-	void				append(const std::string& text)				{ m_text.append(text); }
+						cdata(const std::string& s)
+							: text(s) {}
 
 	virtual void		write(writer& w) const;
 
 	virtual bool		equals(const node* n) const;
 
 	virtual node*		clone() const;
-
-  protected:
-	std::string			m_text;
 };
 
 // --------------------------------------------------------------------

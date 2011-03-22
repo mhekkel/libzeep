@@ -341,7 +341,10 @@ void expat_doc_imp::CharacterDataHandler(
 	if (m_cur == nil)
 		throw exception("Empty stack");
 	
-	m_cur->add_text(string(s, len));
+	if (m_cdata != nil)
+		m_cdata->append(data);
+	else
+		m_cur->add_text(string(s, len));
 }
 
 void expat_doc_imp::ProcessingInstructionHandler(
@@ -365,12 +368,19 @@ void expat_doc_imp::CommentHandler(
 
 void expat_doc_imp::StartCdataSectionHandler()
 {
-//	cerr << "start cdata" << endl;
+	if (m_cur == nil)
+		throw exception("empty stack");
+	
+	if (m_cdata != nil)
+		throw exception("Nested CDATA?");
+	
+	m_cdata = new cdata();
+	m_cur->append(m_cdata);
 }
 
 void expat_doc_imp::EndCdataSectionHandler()
 {
-//	cerr << "end cdata" << endl;
+	m_cdata = nil;
 }
 
 void expat_doc_imp::StartNamespaceDeclHandler(

@@ -32,14 +32,14 @@ test: parser-test xpath-test
 	./xpath-test
 
 parser-test: obj/parser-test.o
-	c++ -o $@ $? $(LDOPTS)
+	c++ -o $@ $^ -L.. $(LDOPTS)
 
 xpath-test: obj/xpath-test.o
-	c++ -o $@ $? $(LDOPTS)
+	c++ -o $@ $? -L.. $(LDOPTS)
 
 obj/%.o: %.cpp
 	@ test -d obj || mkdir obj
-	c++ -MD -c -o $@ $< $(CFLAGS)
+	c++ -MD -c -o $@ -I .. $< $(CFLAGS)
 
 include $(OBJECTS:%.o=%.d)
 

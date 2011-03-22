@@ -47,6 +47,7 @@ document_imp::document_imp(document* doc)
 	, m_escape_whitespace(false)
 	, m_no_comment(false)
 	, m_validating(false)
+	, m_preserve_cdata(false)
 	, m_doc(doc)
 	, m_cur(nil)
 	, m_cdata(nil)
@@ -256,8 +257,11 @@ void zeep_document_imp::parse(
 	p.start_element_handler = boost::bind(&zeep_document_imp::StartElementHandler, this, _1, _2, _3);
 	p.end_element_handler = boost::bind(&zeep_document_imp::EndElementHandler, this, _1, _2);
 	p.character_data_handler = boost::bind(&zeep_document_imp::CharacterDataHandler, this, _1);
-	p.start_cdata_section_handler = boost::bind(&zeep_document_imp::StartCdataSectionHandler, this);
-	p.end_cdata_section_handler = boost::bind(&zeep_document_imp::EndCdataSectionHandler, this);
+	if (m_preserve_cdata)
+	{
+		p.start_cdata_section_handler = boost::bind(&zeep_document_imp::StartCdataSectionHandler, this);
+		p.end_cdata_section_handler = boost::bind(&zeep_document_imp::EndCdataSectionHandler, this);
+	}
 	p.start_namespace_decl_handler = boost::bind(&zeep_document_imp::StartNamespaceDeclHandler, this, _1, _2);
 	p.processing_instruction_handler = boost::bind(&zeep_document_imp::ProcessingInstructionHandler, this, _1, _2);
 	p.comment_handler = boost::bind(&zeep_document_imp::CommentHandler, this, _1);
@@ -449,6 +453,11 @@ void document::no_comment(bool no_comment)
 void document::set_validating(bool validate)
 {
 	m_impl->m_validating = validate;
+}
+
+void document::set_preserve_cdata(bool preserve_cdata)
+{
+	m_impl->m_preserve_cdata = preserve_cdata;
 }
 
 bool document::operator==(const document& other) const
