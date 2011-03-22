@@ -49,6 +49,7 @@ document_imp::document_imp(document* doc)
 	, m_validating(false)
 	, m_doc(doc)
 	, m_cur(nil)
+	, m_cdata(nil)
 {
 }
 
@@ -175,6 +176,9 @@ void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
 	if (m_cur == nil)
 		throw exception("Empty stack");
 	
+	if (m_cdata != nil)
+		throw exception("CDATA section not closed");
+	
 	m_cur = dynamic_cast<element*>(m_cur->parent());
 }
 
@@ -183,7 +187,10 @@ void zeep_document_imp::CharacterDataHandler(const string& data)
 	if (m_cur == nil)
 		throw exception("Empty stack");
 	
-	m_cur->add_text(data);
+	if (m_cdata != nil)
+		m_cdata->append(data);
+	else
+		m_cur->add_text(data);
 }
 
 void zeep_document_imp::ProcessingInstructionHandler(const string& target, const string& data)
@@ -204,12 +211,19 @@ void zeep_document_imp::CommentHandler(const string& s)
 
 void zeep_document_imp::StartCdataSectionHandler()
 {
-//	cerr << "start cdata" << endl;
+	if (m_cur == nil)
+		throw exception("empty stack");
+	
+	if (m_cdata != nil)
+		throw exception("Nested CDATA?");
+	
+	m_cdata = new cdata();
+	m_cur->append(m_cdata);
 }
 
 void zeep_document_imp::EndCdataSectionHandler()
 {
-//	cerr << "end cdata" << endl;
+	m_cdata = nil;
 }
 
 void zeep_document_imp::StartNamespaceDeclHandler(const string& prefix, const string& uri)
@@ -242,6 +256,8 @@ void zeep_document_imp::parse(
 	p.start_element_handler = boost::bind(&zeep_document_imp::StartElementHandler, this, _1, _2, _3);
 	p.end_element_handler = boost::bind(&zeep_document_imp::EndElementHandler, this, _1, _2);
 	p.character_data_handler = boost::bind(&zeep_document_imp::CharacterDataHandler, this, _1);
+	p.start_cdata_section_handler = boost::bind(&zeep_document_imp::StartCdataSectionHandler, this);
+	p.end_cdata_section_handler = boost::bind(&zeep_document_imp::EndCdataSectionHandler, this);
 	p.start_namespace_decl_handler = boost::bind(&zeep_document_imp::StartNamespaceDeclHandler, this, _1, _2);
 	p.processing_instruction_handler = boost::bind(&zeep_document_imp::ProcessingInstructionHandler, this, _1, _2);
 	p.comment_handler = boost::bind(&zeep_document_imp::CommentHandler, this, _1);

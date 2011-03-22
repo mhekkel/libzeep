@@ -198,6 +198,26 @@ void writer::end_element()
 	m_wrote_element = true;
 }
 
+void writer::cdata(const string& text)
+{
+	if (m_element_open)
+	{
+		m_os << '>';
+		if (m_wrap)
+			m_os << endl;
+	}
+
+	m_element_open = false;
+
+	for (int i = 0; i < m_indent * m_level; ++i)
+		m_os << ' ';
+
+	m_os << "<![CDATA[" << text << "]]>";
+	
+	if (m_wrap)
+		m_os << endl;
+}
+
 void writer::comment(const string& text)
 {
 	if (not m_no_comment)

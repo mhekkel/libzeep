@@ -87,6 +87,7 @@ class writer
 						end_element();
 					}
 	
+	virtual void	cdata(const std::string& text);
 	virtual void	comment(const std::string& text);
 
 	virtual void	processing_instruction(const std::string& target,
