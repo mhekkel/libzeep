@@ -88,8 +88,12 @@ class document
 	bool				no_comment() const;
 	void				no_comment(bool no_comment);
 
-	// option for parsing
+	// options for parsing
+	// validating uses a DTD if it is defined
 	void				set_validating(bool validate);
+	// preserve cdata, preserves CDATA sections instead of converting them
+	// into text nodes.
+	void				set_preserve_cdata(bool preserve_cdata);
 	
 	// By default, libzeep uses its own parser implementation. But if you prefer
 	// expat you can specify that here.
