@@ -24,6 +24,8 @@ connection::connection(boost::asio::io_service& service,
 
 void connection::start()
 {
+	m_request = request();	// reset
+	
 	m_request.local_address =
 		boost::lexical_cast<string>(m_socket.local_endpoint().address());
 	m_request.local_port = m_socket.local_endpoint().port();

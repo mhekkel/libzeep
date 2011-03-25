@@ -265,15 +265,14 @@ reply reply::stock_reply(status_type status)
 {
 	reply result;
 
-	result.status = status;
-	
-	string text = detail::get_status_text(status);
-	result.content =
-		string("<html><body><h1>") +
- 		boost::lexical_cast<string>(status) + ' ' + text + "</h1></body></html>";
+	if (status != not_modified)
+	{
+		stringstream text;
+		text << "<html><body><h1>" << detail::get_status_text(status) << "</h1></body></html>";
+		result.set_content(text.str(), "text/html; charset=utf-8");
+	}
 
-	result.set_header("Content-Length", boost::lexical_cast<string>(result.content.length()));
-	result.set_header("Content-Type", "text/html; charset=utf-8");
+	result.status = status;
 	
 	return result;
 }

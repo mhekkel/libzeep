@@ -207,12 +207,12 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		// do the actual work.
 		handle_request(req, rep);
 		
-		// work around buggy IE...
-		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
-			not ba::contains(accept, "application/xhtml+xml"))
-		{
-			rep.set_content_type("text/html; charset=utf-8");
-		}
+//		// work around buggy IE...
+//		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
+//			not ba::contains(accept, "application/xhtml+xml"))
+//		{
+//			rep.set_content_type("text/html; charset=utf-8");
+//		}
 	}
 	catch (...)
 	{
