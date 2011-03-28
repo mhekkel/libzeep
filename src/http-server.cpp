@@ -187,10 +187,12 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	
 	boost::asio::ip::address addr;
 	
-	string referer("-"), userAgent("-"), accept;
+	string referer("-"), userAgent("-"), accept, host;
 	foreach (const header& h, req.headers)
 	{
-		if (h.name == "Referer")
+		if (h.name == "Host")
+			host = h.value;
+		else if (h.name == "Referer")
 			referer = h.value;
 		else if (h.name == "User-Agent")
 			userAgent = h.value;
@@ -204,15 +206,21 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		// sometimes causing aborting exceptions, so I moved it here.
 		addr = socket.remote_endpoint().address();
 		
-		// do the actual work.
-		handle_request(req, rep);
+		// some checks (we're a http/1.1 server, right?)
 		
-//		// work around buggy IE...
-//		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
-//			not ba::contains(accept, "application/xhtml+xml"))
-//		{
-//			rep.set_content_type("text/html; charset=utf-8");
-//		}
+		if (host.empty())
+			rep = reply::stock_reply(bad_request);
+		else
+			// do the actual work.
+			handle_request(req, rep);
+		
+		// work around buggy IE...
+		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
+			not ba::contains(accept, "application/xhtml+xml") and
+			ba::contains(userAgent, "MSIE"))
+		{
+			rep.set_content_type("text/html; charset=utf-8");
+		}
 	}
 	catch (...)
 	{
