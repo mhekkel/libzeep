@@ -34,7 +34,7 @@ class server
   private:
 	std::string		m_location;
 };
-	
+
 }
 
 #endif
