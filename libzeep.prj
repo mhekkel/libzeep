@@ -1,14 +1,14 @@
 <project version="2.0">
   <syspaths>
     <path>.</path>
-    <path>/usr/include</path>
+    <path>../boost/include</path>
   </syspaths>
   <userpaths>
     <path>.</path>
     <path>src</path>
   </userpaths>
   <libpaths>
-    <path>/usr/lib</path>
+    <path>../boost/lib</path>
   </libpaths>
   <files>
     <group name="soap">
@@ -21,6 +21,8 @@
         <file>reply.cpp</file>
         <file>preforked-http-server.cpp</file>
         <file>request_parser.cpp</file>
+        <file>webapp.cpp</file>
+        <file>webapp-el.cpp</file>
       </group>
       <group name="xml">
         <file>document.cpp</file>
@@ -38,7 +40,7 @@
     <target kind="Static Library">
       <name>zeep Debug</name>
       <linkTarget>libzeep</linkTarget>
-      <compiler>/usr/bin/c++</compiler>
+      <compiler>/usr/bin/g++-4.5</compiler>
       <defines>
         <define>DEBUG</define>
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
@@ -48,6 +50,7 @@
         <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
         <cflag>-fPIC</cflag>
+        <cflag>-std=c++0x</cflag>
       </cflags>
       <warnings>
         <warning>all</warning>
@@ -57,7 +60,7 @@
     <target kind="Static Library">
       <name>zeep Release</name>
       <linkTarget>libzeep</linkTarget>
-      <compiler>/usr/bin/c++</compiler>
+      <compiler>/usr/bin/g++-4.5</compiler>
       <defines>
         <define>NDEBUG</define>
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
@@ -67,6 +70,7 @@
         <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
         <cflag>-fPIC</cflag>
+        <cflag>-std=c++0x</cflag>
       </cflags>
       <warnings>
         <warning>all</warning>

@@ -337,7 +337,7 @@ const int object::as<int>() const
 {
 	if (m_type != ot_number)
 		throw exception("object is not of type number");
-	return static_cast<int>(round(m_number));
+	return static_cast<int>(tr1::round(m_number));
 }
 
 template<>
@@ -1546,7 +1546,7 @@ template<>
 object core_function_expression<cf_Round>::evaluate(expression_context& context)
 {
 	object v = m_args.front()->evaluate(context);
-	return round(v.as<double>());
+	return tr1::round(v.as<double>());
 }
 
 // --------------------------------------------------------------------
