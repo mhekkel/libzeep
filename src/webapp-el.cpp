@@ -22,6 +22,48 @@ namespace ba = boost::algorithm;
 
 namespace zeep { namespace http { namespace el {
 
+object::object();
+object::object(const object& o);
+
+template<typename T>
+object::object(const T& v);
+
+object::~object();
+
+object& object::operator=(const object& o);
+
+bool object::empty() const;
+
+template<typename T>
+void object::operator=(const T& v);
+
+template<typename T>
+T object::as() const;
+
+const object object::operator[](const std::string& name) const;
+const object object::operator[](const char* name) const;
+const object object::operator[](uint32 ix) const;
+object& object::operator[](const std::string& name);
+object& object::operator[](const char* name);
+object& object::operator[](uint32 ix);
+bool object::operator<(const object& x) const;
+bool object::operator==(const object& x) const;
+object& object::operator+=(const object& x);
+object& object::operator-=(const object& x);
+object& object::operator*=(const object& x);
+object& object::operator/=(const object& x);
+object& object::operator%=(const object& x);
+object& object::operator|=(const object& x);
+object& object::operator&=(const object& x);
+object& object::operator^=(const object& x);
+object& object::operator++();
+object& object::operator--();
+
+std::vector<object>::iterator		range_begin(object& x);
+std::vector<object>::iterator		range_end(object& x);
+std::vector<object>::const_iterator	range_begin(const object& x);
+std::vector<object>::const_iterator	range_end(const object& x);
+
 object::object()
 	: m_type(ot_undef)
 {

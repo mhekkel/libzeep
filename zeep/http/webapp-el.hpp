@@ -8,6 +8,8 @@
 
 #pragma once
 
+//#include <boost/operators.hpp>
+
 typedef int8_t		int8;
 typedef uint8_t		uint8;
 typedef int16_t		int16;
@@ -21,131 +23,190 @@ namespace zeep {
 namespace http {
 namespace el
 {
+
+namespace detail {
+
+class object_impl
+{
+  public:
+
+	void			reference();
+	void			release();
+
+  protected:
+					object_impl();
+
+  private:
+
+	virtual			~object_impl();
+
+	int				m_refcount;
+};
 	
+}
+
 typedef uint32	unicode;
 
 class object
+    : boost::operators<object>
 {
   public:
-					object();
-					object(const object& o);
+				object();
+				object(const object& o);
 
-	explicit		object(const char* s);
-	explicit		object(const std::string& s);
-	explicit		object(double n);
-	explicit		object(int8 n);
-	explicit		object(uint8 n);
-	explicit		object(int16 n);
-	explicit		object(uint16 n);
-	explicit		object(int32 n);
-	explicit		object(uint32 n);
-	explicit		object(int64 n);
-	explicit		object(uint64 n);
-	explicit		object(bool b);
-	explicit		object(const std::vector<object>& a);
+	template<typename T>
+				object(const T& v);
 
-	object&			operator=(const object& rhs);					
-	object&			operator=(const std::string& rhs);
-	object&			operator=(double rhs);
-	object&			operator=(bool rhs);
+	virtual		~object();
 
-	bool			empty() const;
-	bool			undefined() const;
+	object&		operator=(const object& o);
 
-	bool			is_number() const;
+	bool		undefined() const				{ return m_impl == nil; }
+	bool		empty() const;
 
-	bool			is_array() const;
-	uint32			count() const;
+	template<typename T>
+	void		operator=(const T& v);
 
-					operator std::string() const;
-					operator double() const;
-					operator bool() const;
-	
-	const object	operator[](const std::string& name) const;
-	const object	operator[](const char* name) const;
-	const object	operator[](uint32 ix) const;
+	template<typename T>
+	T			as() const;
 
-	object&			operator[](const std::string& name);
-	object&			operator[](const char* name);
-	object&			operator[](uint32 ix);
+	const object operator[](const std::string& name) const;
+	const object operator[](const char* name) const;
+	const object operator[](uint32 ix) const;
 
-	void			sort(const std::string& sort_field, bool descending);
+	object&		operator[](const std::string& name);
+	object&		operator[](const char* name);
+	object&		operator[](uint32 ix);
 
-	friend std::ostream& operator<<(std::ostream& os, const object& o);
-	friend object operator<(const object& a, const object& b);
-	friend object operator<=(const object& a, const object& b);
-	friend object operator>=(const object& a, const object& b);
-	friend object operator>(const object& a, const object& b);
-	friend object operator!=(const object& a, const object& b);
-	friend object operator==(const object& a, const object& b);
-	friend object operator+(const object& a, const object& b);
-	friend object operator-(const object& a, const object& b);
-	friend object operator*(const object& a, const object& b);
-	friend object operator%(const object& a, const object& b);
-	friend object operator/(const object& a, const object& b);
-	friend object operator&&(const object& a, const object& b);
-	friend object operator||(const object& a, const object& b);
-	friend object operator-(const object& a);
-	
-	friend std::vector<object>::iterator range_begin(object& x);
-	friend std::vector<object>::iterator range_end(object& x);
-	friend std::vector<object>::const_iterator range_begin(object const& x);
-	friend std::vector<object>::const_iterator range_end(object const& x);
+    bool		operator<(const object& x) const;
+    bool		operator==(const object& x) const;
+    object&		operator+=(const object& x);
+    object&		operator-=(const object& x);
+    object&		operator*=(const object& x);
+    object&		operator/=(const object& x);
+    object&		operator%=(const object& x);
+    object&		operator|=(const object& x);
+    object&		operator&=(const object& x);
+    object&		operator^=(const object& x);
+    object&		operator++();
+    object&		operator--();
+
+	friend std::vector<object>::iterator		range_begin(object& x);
+	friend std::vector<object>::iterator		range_end(object& x);
+	friend std::vector<object>::const_iterator	range_begin(const object& x);
+	friend std::vector<object>::const_iterator	range_end(const object& x);
 
   private:
-	enum object_type
-	{
-		ot_undef,
-		ot_number,
-		ot_string,
-		ot_struct,
-		ot_array,
-		ot_boolean
-	}				m_type;
-	std::string		m_string;
-	double			m_number;
-	std::map<std::string,object>
-					m_fields;
-	std::vector<object>	m_array;
+	struct detail::object_impl*	m_impl;
 };
 
-// boost foreach support
-inline std::vector<object>::iterator range_begin(object& x)
-{
-    return x.m_array.begin();
-}
-
-inline std::vector<object>::iterator range_end(object& x)
-{
-    return x.m_array.end();
-}
-
-inline std::vector<object>::const_iterator range_begin(object const& x)
-{
-    return x.m_array.begin();
-}
-
-inline std::vector<object>::const_iterator range_end(object const& x)
-{
-    return x.m_array.end();
-}
-
-
-std::ostream& operator<<(std::ostream& os, const object& o);
-object operator<(const object& a, const object& b);
-object operator<=(const object& a, const object& b);
-object operator>=(const object& a, const object& b);
-object operator>(const object& a, const object& b);
-object operator!=(const object& a, const object& b);
-object operator==(const object& a, const object& b);
-object operator+(const object& a, const object& b);
-object operator-(const object& a, const object& b);
-object operator*(const object& a, const object& b);
-object operator%(const object& a, const object& b);
-object operator/(const object& a, const object& b);
-object operator&&(const object& a, const object& b);
-object operator||(const object& a, const object& b);
-object operator-(const object& a);
+//class object
+//{
+//  public:
+//					object();
+//					object(const object& o);
+//
+//	explicit		object(const char* s);
+//	explicit		object(const std::string& s);
+//	explicit		object(double n);
+//	explicit		object(int8 n);
+//	explicit		object(uint8 n);
+//	explicit		object(int16 n);
+//	explicit		object(uint16 n);
+//	explicit		object(int32 n);
+//	explicit		object(uint32 n);
+//	explicit		object(int64 n);
+//	explicit		object(uint64 n);
+//	explicit		object(bool b);
+//	explicit		object(const std::vector<object>& a);
+//
+//	object&			operator=(const object& rhs);					
+//	object&			operator=(const std::string& rhs);
+//	object&			operator=(double rhs);
+//	object&			operator=(bool rhs);
+//
+//	bool			empty() const;
+//	bool			undefined() const;
+//
+//	bool			is_number() const;
+//
+//	bool			is_array() const;
+//	uint32			count() const;
+//
+//					operator std::string() const;
+//					operator double() const;
+//					operator bool() const;
+//	
+//	const object	operator[](const std::string& name) const;
+//	const object	operator[](const char* name) const;
+//	const object	operator[](uint32 ix) const;
+//
+//	object&			operator[](const std::string& name);
+//	object&			operator[](const char* name);
+//	object&			operator[](uint32 ix);
+//
+//	void			sort(const std::string& sort_field, bool descending);
+//
+//	friend std::ostream& operator<<(std::ostream& os, const object& o);
+//	friend object operator<(const object& a, const object& b);
+//	friend object operator<=(const object& a, const object& b);
+//	friend object operator>=(const object& a, const object& b);
+//	friend object operator>(const object& a, const object& b);
+//	friend object operator!=(const object& a, const object& b);
+//	friend object operator==(const object& a, const object& b);
+//	friend object operator+(const object& a, const object& b);
+//	friend object operator-(const object& a, const object& b);
+//	friend object operator*(const object& a, const object& b);
+//	friend object operator%(const object& a, const object& b);
+//	friend object operator/(const object& a, const object& b);
+//	friend object operator&&(const object& a, const object& b);
+//	friend object operator||(const object& a, const object& b);
+//	friend object operator-(const object& a);
+//	
+//	std::string		m_string;
+//	double			m_number;
+//	std::map<std::string,object>
+//					m_fields;
+//	std::vector<object>	m_array;
+//};
+//
+//// boost foreach support
+//inline std::vector<object>::iterator range_begin(object& x)
+//{
+//    return x.m_array.begin();
+//}
+//
+//inline std::vector<object>::iterator range_end(object& x)
+//{
+//    return x.m_array.end();
+//}
+//
+//inline std::vector<object>::const_iterator range_begin(object const& x)
+//{
+//    return x.m_array.begin();
+//}
+//
+//inline std::vector<object>::const_iterator range_end(object const& x)
+//{
+//    return x.m_array.end();
+//}
+//
+//
+//std::ostream& operator<<(std::ostream& os, const object& o);
+//object operator<(const object& a, const object& b);
+//object operator<=(const object& a, const object& b);
+//object operator>=(const object& a, const object& b);
+//object operator>(const object& a, const object& b);
+//object operator!=(const object& a, const object& b);
+//object operator==(const object& a, const object& b);
+//object operator+(const object& a, const object& b);
+//object operator-(const object& a, const object& b);
+//object operator*(const object& a, const object& b);
+//object operator%(const object& a, const object& b);
+//object operator/(const object& a, const object& b);
+//object operator&&(const object& a, const object& b);
+//object operator||(const object& a, const object& b);
+//object operator-(const object& a);
 
 class scope
 {

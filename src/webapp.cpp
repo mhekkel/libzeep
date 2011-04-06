@@ -144,7 +144,7 @@ void webapp::handle_file(
 	using namespace boost::local_time;
 	using namespace boost::posix_time;
 	
-	fs::path file = get_docroot() / (string)scope["baseuri"];
+	fs::path file = get_docroot() / scope["baseuri"].as<string>();
 
 	string ifModifiedSince;
 	foreach (const zeep::http::header& h, request.headers)
@@ -366,27 +366,24 @@ void webapp::process_iterate(
 	if (collection.undefined())
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
-	if (collection.is_array() and not collection.empty())
+	string var = node->get_attribute("var");
+	if (var.empty())
+		throw exception("missing var attribute in mrs:iterate");
+
+	foreach (el::object& o, collection)
 	{
-		string var = node->get_attribute("var");
-		if (var.empty())
-			throw exception("missing var attribute in mrs:iterate");
-	
-		foreach (el::object& o, collection)
+		el::scope s(scope);
+		s.put(var, o);
+		
+		foreach (xml::node* c, node->nodes())
 		{
-			el::scope s(scope);
-			s.put(var, o);
-			
-			foreach (xml::node* c, node->nodes())
-			{
-				xml::node* clone = c->clone();
-	
-				xml::container* parent = node->parent();
-				assert(parent);
-	
-				parent->insert(node, clone);	// insert before processing, to assign namespaces
-				process_xml(clone, s, dir);
-			}
+			xml::node* clone = c->clone();
+
+			xml::container* parent = node->parent();
+			assert(parent);
+
+			parent->insert(node, clone);	// insert before processing, to assign namespaces
+			process_xml(clone, s, dir);
 		}
 	}
 }
@@ -399,17 +396,13 @@ void webapp::process_for(
 	el::object b, e;
 	
 	evaluate_el(scope, node->get_attribute("begin"), b);
-	if (not b.is_number())
-		throw exception("begin is not a number in mrs:for");
 	evaluate_el(scope, node->get_attribute("end"), e);
-	if (not e.is_number())
-		throw exception("end is not a number in mrs:for");
 	
 	string var = node->get_attribute("var");
 	if (var.empty())
 		throw exception("missing var attribute in mrs:iterate");
 
-	for (int32 i = (double)b; i <= (double)e; ++i)
+	for (int32 i = b.as<int32>(); i <= e.as<int32>(); ++i)
 	{
 		el::scope s(scope);
 		s.put(var, el::object(i));
@@ -444,49 +437,42 @@ void webapp::process_number(
 	
 	if (format == "#,##0B")	// bytes, convert to a human readable form
 	{
+		const char kBase[] = { 'B', 'K', 'M', 'G', 'T', 'P', 'E' };		// whatever
+
 		el::object n;
 		evaluate_el(scope, number, n);
-		if (n.is_number())
-		{
-			int base = 0;
-			char kBase[] = { 'B', 'K', 'M', 'G', 'T', 'P', 'E' };		// whatever
 
-			double nr = floor((double)n + 0.5);
-			while (nr > 1024)
-			{
-				nr /= 1024;
-				++base;
-			}
-			
-			locale mylocale(locale(), new with_thousands);
-			
-			ostringstream s;
-			s.imbue(mylocale);
-			s.setf(ios::fixed, ios::floatfield);
-			s.precision(1);
-			s << nr << ' ' << kBase[base];
-			number = s.str();
+		uint64 nr = n.as<uint64>();
+		int base = 0;
+
+		while (nr > 1024)
+		{
+			nr /= 1024;
+			++base;
 		}
-		else
-			number.clear();
+		
+		locale mylocale(locale(), new with_thousands);
+		
+		ostringstream s;
+		s.imbue(mylocale);
+		s.setf(ios::fixed, ios::floatfield);
+		s.precision(1);
+		s << nr << ' ' << kBase[base];
+		number = s.str();
 	}
 	else if (format.empty() or ba::starts_with(format, "#,##0"))
 	{
 		el::object n;
 		evaluate_el(scope, number, n);
-		if (n.is_number())
-		{
-			uint64 nr = floor((double)n + 0.5);
-			
-			locale mylocale(locale(), new with_thousands);
-			
-			ostringstream s;
-			s.imbue(mylocale);
-			s << nr;
-			number = s.str();
-		}
-		else
-			number.clear();
+		
+		uint64 nr = n.as<uint64>();
+		
+		locale mylocale(locale(), new with_thousands);
+		
+		ostringstream s;
+		s.imbue(mylocale);
+		s << nr;
+		number = s.str();
 	}
 
 	zeep::xml::node* replacement = new zeep::xml::text(number);
@@ -504,42 +490,39 @@ void webapp::process_options(
 	if (collection.undefined())
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
-	if (collection.is_array() and not collection.empty())
+	string value = node->get_attribute("value");
+	string label = node->get_attribute("label");
+	
+	string selected = node->get_attribute("selected");
+	if (not selected.empty())
 	{
-		string value = node->get_attribute("value");
-		string label = node->get_attribute("label");
-		
-		string selected = node->get_attribute("selected");
-		if (not selected.empty())
-		{
-			el::object o;
-			evaluate_el(scope, selected, o);
-			selected = (string)o;
-		}
-		
-		foreach (el::object& o, collection)
-		{
-			zeep::xml::element* option = new zeep::xml::element("option");
+		el::object o;
+		evaluate_el(scope, selected, o);
+		selected = o.as<string>();
+	}
 	
-			if (not (value.empty() or label.empty()))
-			{
-				option->set_attribute("value", o[value]);
-				if (selected == (string)o[value])
-					option->set_attribute("selected", "selected");
-				option->add_text(o[label]);
-			}
-			else
-			{
-				option->set_attribute("value", (string)o);
-				if (selected == (string)o)
-					option->set_attribute("selected", "selected");
-				option->add_text((string)o);
-			}
-	
-			zeep::xml::container* parent = node->parent();
-			assert(parent);
-			parent->insert(node, option);
+	foreach (el::object& o, collection)
+	{
+		zeep::xml::element* option = new zeep::xml::element("option");
+
+		if (not (value.empty() or label.empty()))
+		{
+			option->set_attribute("value", o[value].as<string>());
+			if (selected == o[value].as<string>())
+				option->set_attribute("selected", "selected");
+			option->add_text(o[label].as<string>());
 		}
+		else
+		{
+			option->set_attribute("value", o.as<string>());
+			if (selected == o.as<string>())
+				option->set_attribute("selected", "selected");
+			option->add_text(o.as<string>());
+		}
+
+		zeep::xml::container* parent = node->parent();
+		assert(parent);
+		parent->insert(node, option);
 	}
 }
 
@@ -554,7 +537,7 @@ void webapp::process_option(
 	{
 		el::object o;
 		evaluate_el(scope, selected, o);
-		selected = (string)o;
+		selected = o.as<string>();
 	}
 
 	zeep::xml::element* option = new zeep::xml::element("option");
@@ -587,7 +570,7 @@ void webapp::process_checkbox(
 	{
 		el::object o;
 		evaluate_el(scope, node->get_attribute("checked"), o);
-		checked = (bool)o;
+		checked = o.as<bool>();
 	}
 	
 	zeep::xml::element* checkbox = new zeep::xml::element("input");
@@ -632,7 +615,7 @@ void webapp::process_url(
 		}
 	}
 
-	string url = (string)scope["baseuri"];
+	string url = scope["baseuri"].as<string>();
 
 	bool first = true;
 	foreach (auto p, parameters)
@@ -664,7 +647,7 @@ void webapp::process_embed(
 	fs::path			dir)
 {
 	// an embed directive, load xml from attribute and include parsed content
-	string xml = (string)scope[node->get_attribute("var")];
+	string xml = scope[node->get_attribute("var")].as<string>();
 
 	if (xml.empty())
 		throw exception("Missing var attribute in embed tag");
@@ -728,7 +711,7 @@ bool webapp::evaluate_el(
 {
 	el::object result;
 	evaluate_el(scope, text, result);
-	return (bool)result;
+	return result.as<bool>();
 }
 
 void webapp::init_scope(

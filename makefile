@@ -34,7 +34,7 @@ SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
-CFLAGS				?= $(DBF_CFLAGS) -std=c++0x
+CFLAGS				?= $(DBF_CFLAGS) -std=c++0x -DBOOST_FILESYSTEM_VERSION=2
 CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
 LDFLAGS				?= $(DBF_LDFLAGS)
 
@@ -55,9 +55,9 @@ OBJECTS = \
 	obj/soap-server.o \
 	obj/unicode_support.o \
 	obj/xpath.o \
-	obj/webapp.o \
-	obj/webapp-el.o \
 	obj/writer.o
+#	obj/webapp.o \
+#	obj/webapp-el.o \
 
 lib: libzeep.a libzeep.so
 
