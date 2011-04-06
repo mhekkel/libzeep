@@ -1,4 +1,7 @@
-// --------------------------------------------------------------------
+// Copyright Maarten L. Hekkelman, Radboud University 2008-2011.
+//   Distributed under the Boost Software License, Version 1.0.
+//      (See accompanying file LICENSE_1_0.txt or copy at
+//            http://www.boost.org/LICENSE_1_0.txt)
 //
 // webapp::el is a set of classes used to implement an 'expression language'
 // A script language used in the XHTML templates used by the zeep webapp.
@@ -709,7 +712,7 @@ void interpreter::get_next_token()
 
 	token_type token = elt_undef;
 	double fraction = 1.0;
-	unicode quoteChar;
+	unicode quoteChar = 0;
 
 	m_token_string.clear();
 	

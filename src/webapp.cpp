@@ -1,4 +1,7 @@
-// --------------------------------------------------------------------
+// Copyright Maarten L. Hekkelman, Radboud University 2008-2011.
+//   Distributed under the Boost Software License, Version 1.0.
+//      (See accompanying file LICENSE_1_0.txt or copy at
+//            http://www.boost.org/LICENSE_1_0.txt)
 //
 // webapp is a base class used to construct web applications in C++ using libzeep
 //
@@ -8,7 +11,6 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/iostreams/copy.hpp>
 
@@ -31,17 +33,17 @@ webapp::webapp(
 	: m_ns(ns)
 	, m_docroot(docroot)
 {
-	m_processor_table["include"] =	boost::bind(&webapp::process_include, this, _1, _2, _3);
-	m_processor_table["if"] =		boost::bind(&webapp::process_if, this, _1, _2, _3);
-	m_processor_table["iterate"] =	boost::bind(&webapp::process_iterate, this, _1, _2, _3);
-	m_processor_table["for"] =		boost::bind(&webapp::process_for, this, _1, _2, _3);
-	m_processor_table["number"] =	boost::bind(&webapp::process_number, this, _1, _2, _3);
-	m_processor_table["options"] =	boost::bind(&webapp::process_options, this, _1, _2, _3);
-	m_processor_table["option"] =	boost::bind(&webapp::process_option, this, _1, _2, _3);
-	m_processor_table["checkbox"] =	boost::bind(&webapp::process_checkbox, this, _1, _2, _3);
-	m_processor_table["url"] =		boost::bind(&webapp::process_url, this, _1, _2, _3);
-	m_processor_table["param"] =	boost::bind(&webapp::process_param, this, _1, _2, _3);
-	m_processor_table["embed"] =	boost::bind(&webapp::process_embed, this, _1, _2, _3);
+	m_processor_table["include"] =	boost::bind(&webapp::process_include,	this, _1, _2, _3);
+	m_processor_table["if"] =		boost::bind(&webapp::process_if,		this, _1, _2, _3);
+	m_processor_table["iterate"] =	boost::bind(&webapp::process_iterate,	this, _1, _2, _3);
+	m_processor_table["for"] =		boost::bind(&webapp::process_for,		this, _1, _2, _3);
+	m_processor_table["number"] =	boost::bind(&webapp::process_number,	this, _1, _2, _3);
+	m_processor_table["options"] =	boost::bind(&webapp::process_options,	this, _1, _2, _3);
+	m_processor_table["option"] =	boost::bind(&webapp::process_option,	this, _1, _2, _3);
+	m_processor_table["checkbox"] =	boost::bind(&webapp::process_checkbox,	this, _1, _2, _3);
+	m_processor_table["url"] =		boost::bind(&webapp::process_url, 		this, _1, _2, _3);
+	m_processor_table["param"] =	boost::bind(&webapp::process_param,		this, _1, _2, _3);
+	m_processor_table["embed"] =	boost::bind(&webapp::process_embed,		this, _1, _2, _3);
 }
 
 webapp::~webapp()
@@ -170,7 +172,7 @@ void webapp::handle_file(
 		}
 	}
 	
-	fs::ifstream in(file, ios::binary);
+	ifstream in(file.string().c_str(), ios::binary);
 	stringstream out;
 
 	io::copy(in, out);
@@ -205,7 +207,7 @@ void webapp::load_template(
 	const std::string&	file,
 	xml::document&		doc)
 {
-	fs::ifstream data(m_docroot / file);
+	ifstream data((m_docroot / file).string().c_str());
 	if (not data.is_open())
 		throw exception((boost::format("file not found: '%1%'") % (m_docroot / file)).str());
 	doc.read(data);
