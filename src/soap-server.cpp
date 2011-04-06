@@ -36,6 +36,12 @@ void server::bind(const std::string& address, short port)
 	}
 }
 
+#if BOOST_FILESYSTEM_VERSION == 2
+inline string to_string(const string& p) { return p; }
+#else
+inline string to_string(const boost::filesystem::path& p) { return p.string(); }
+#endif
+
 void server::handle_request(const http::request& req, http::reply& rep)
 {
 	string action;
@@ -78,20 +84,20 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			if (p == path.end())
 				throw http::bad_request;
 			
-			string root = (*p++);
+			string root = to_string(*p++);
 			
 			if (root == "rest")
 			{
-				action = (*p++);
+				action = to_string(*p++);
 				
 				xml::element* request(new xml::element(action));
 				while (p != path.end())
 				{
-					string name = http::decode_url((*p++));
+					string name = http::decode_url(to_string(*p++));
 					if (p == path.end())
 						break;
 					xml::element* param(new xml::element(name));
-					string value = http::decode_url((*p++));
+					string value = http::decode_url(to_string(*p++));
 					param->content(value);
 					request->append(param);
 				}
