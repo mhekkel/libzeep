@@ -7,6 +7,9 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/date_time/local_time/local_time.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/format.hpp>
 
 #include <iostream>
 
@@ -15,6 +18,7 @@
 #include <zeep/xml/writer.hpp>
 
 using namespace std;
+namespace io = boost::iostreams;
 
 namespace zeep { namespace http {
 
@@ -75,7 +79,10 @@ const char
 		kCRLF[] = { '\r', '\n' };
 }
 
-reply::reply()
+reply::reply(int version_major, int version_minor)
+	: m_version_major(version_major)
+	, m_version_minor(version_minor)
+	, m_status(internal_server_error)
 {
 	using namespace boost::local_time;
 	using namespace boost::posix_time;
@@ -93,10 +100,12 @@ reply::reply()
 }
 
 reply::reply(const reply& rhs)
-	: status(rhs.status)
-	, status_line(rhs.status_line)
-	, headers(rhs.headers)
-	, content(rhs.content)
+	: m_version_major(rhs.m_version_major)
+	, m_version_minor(rhs.m_version_minor)
+	, m_status(rhs.m_status)
+	, m_status_line(rhs.m_status_line)
+	, m_headers(rhs.m_headers)
+	, m_content(rhs.m_content)
 {
 }
 
@@ -104,41 +113,27 @@ reply& reply::operator=(const reply& rhs)
 {
 	if (this != &rhs)
 	{
-		status = rhs.status;
-		status_line = rhs.status_line;
-		headers = rhs.headers;
-		content = rhs.content;
+		m_version_major = rhs.m_version_major;
+		m_version_minor = rhs.m_version_minor;
+		m_status = rhs.m_status;
+		m_status_line = rhs.m_status_line;
+		m_headers = rhs.m_headers;
+		m_content = rhs.m_content;
 	}
 	
 	return *this;
 }
 
-vector<boost::asio::const_buffer> reply::to_buffers()
+void reply::set_version(int version_major, int version_minor)
 {
-	vector<boost::asio::const_buffer>	result;
-
-	status_line = string("HTTP/1.1 ") + boost::lexical_cast<string>(status) + ' ' +
-		detail::get_status_text(status) + " \r\n";
-	result.push_back(boost::asio::buffer(status_line));
-	
-	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
-	{
-		result.push_back(boost::asio::buffer(h->name));
-		result.push_back(boost::asio::buffer(kNameValueSeparator));
-		result.push_back(boost::asio::buffer(h->value));
-		result.push_back(boost::asio::buffer(kCRLF));
-	}
-
-	result.push_back(boost::asio::buffer(kCRLF));
-	result.push_back(boost::asio::buffer(content));
-
-	return result;
+	m_version_major = version_major;
+	m_version_minor = version_minor;
 }
 
 void reply::set_header(const string& name, const string& value)
 {
 	bool updated = false;
-	foreach (header& h, headers)
+	foreach (header& h, m_headers)
 	{
 		if (h.name == name)
 		{
@@ -151,7 +146,7 @@ void reply::set_header(const string& name, const string& value)
 	if (not updated)
 	{
 		header nh = { name, value };
-		headers.push_back(nh);
+		m_headers.push_back(nh);
 	}
 }
 
@@ -181,18 +176,39 @@ void reply::set_content(xml::document& doc)
 
 void reply::set_content(const string& data, const string& contentType)
 {
-	content = data;
-	status = ok;
+	m_content = data;
+	m_status = ok;
+	m_data.release();
 
-	set_header("Content-Length", boost::lexical_cast<string>(content.length()));
+	set_header("Content-Length", boost::lexical_cast<string>(m_content.length()));
 	set_header("Content-Type", contentType);
+}
+
+void reply::set_content(istream* idata, const string& contentType)
+{
+	m_data.reset(idata);
+	m_content.clear();
+
+	m_status = ok;
+
+	set_header("Content-Type", contentType);
+	
+	// for HTTP/1.0 replies we need to calculate the data length
+	if (m_version_major == 1 and m_version_minor == 0 and m_data)
+	{
+		streamsize pos = m_data->rdbuf()->pubseekoff(0, ios_base::cur);
+		streamsize length = m_data->rdbuf()->pubseekoff(0, ios_base::end) - pos;
+		m_data->rdbuf()->pubseekoff(pos, ios_base::beg);
+		
+		set_header("Content-Length", boost::lexical_cast<string>(length));
+	}
 }
 
 string reply::get_content_type() const
 {
 	string result;
 	
-	foreach (const header& h, headers)
+	foreach (const header& h, m_headers)
 	{
 		if (h.name == "Content-Type")
 		{
@@ -207,7 +223,7 @@ string reply::get_content_type() const
 void reply::set_content_type(
 	const string& type)
 {
-	foreach (header& h, headers)
+	foreach (header& h, m_headers)
 	{
 		if (h.name == "Content-Type")
 		{
@@ -217,46 +233,106 @@ void reply::set_content_type(
 	}
 }
 
+void reply::to_buffers(vector<boost::asio::const_buffer>& buffers)
+{
+	m_status_line = (boost::format("HTTP/%1%.%2% %3% %4%\r\n")
+		% m_version_major % m_version_minor % m_status % detail::get_status_text(m_status)).str();
+	buffers.push_back(boost::asio::buffer(m_status_line));
+	
+	foreach (header& h, m_headers)
+	{
+		buffers.push_back(boost::asio::buffer(h.name));
+		buffers.push_back(boost::asio::buffer(kNameValueSeparator));
+		buffers.push_back(boost::asio::buffer(h.value));
+		buffers.push_back(boost::asio::buffer(kCRLF));
+	}
+
+	buffers.push_back(boost::asio::buffer(kCRLF));
+	buffers.push_back(boost::asio::buffer(m_content));
+}
+
+bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
+{
+	bool result = false;
+	
+	if (m_data)
+	{
+		result = true;
+		
+		const unsigned int kMaxChunkSize = 10240;
+		
+		if (m_buffer.size() < kMaxChunkSize)
+			m_buffer.insert(m_buffer.begin(), kMaxChunkSize, 0);
+		else if (m_buffer.size() > kMaxChunkSize)
+			m_buffer.erase(m_buffer.begin() + kMaxChunkSize, m_buffer.end());
+		
+		streamsize n = m_data->readsome(&m_buffer[0], m_buffer.size());
+		
+		// chunked encoding?
+		if (m_version_major > 1 or m_version_minor >= 1)
+		{
+			if (n == 0)
+			{
+				buffers.push_back(boost::asio::buffer("0"));
+				buffers.push_back(boost::asio::buffer(kCRLF));
+				m_data.release();
+			}
+			else
+			{
+				io::filtering_ostream out(io::back_inserter(m_buffer));
+				out << std::hex << n << '\r' << '\n';
+				out.flush();
+		
+				buffers.push_back(boost::asio::buffer(&m_buffer[kMaxChunkSize], m_buffer.size() - kMaxChunkSize));
+				buffers.push_back(boost::asio::buffer(&m_buffer[0], n));
+				buffers.push_back(boost::asio::buffer(kCRLF));
+			}
+		}
+		else
+		{
+			if (n > 0)
+				buffers.push_back(boost::asio::buffer(&m_buffer[0], n));
+			else
+			{
+				m_data.release();
+				result = false;
+			}
+		}
+	}
+
+	return result;
+}
+
 string reply::get_as_text()
 {
 	// for best performance, we pre calculate memory requirements and reserve that first
-	status_line = string("HTTP/1.1 ") + boost::lexical_cast<string>(status) + ' ' +
-		detail::get_status_text(status) + " \r\n";
-	
-	int size = status_line.length();
-	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
-		size += h->name.length() + 2 + h->value.length() + 2;
-	size += 2 + content.length();
-	
+	m_status_line = (boost::format("HTTP/%1%.%2% %3% %4%\r\n")
+		% m_version_major % m_version_minor % m_status % detail::get_status_text(m_status)).str();
+
 	string result;
-	result.reserve(size);	
+	result.reserve(get_size());
 	
-	result = status_line;
-	for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
+	result = m_status_line;
+	foreach (header& h, m_headers)
 	{
-		result += h->name;
+		result += h.name;
 		result += ": ";
-		result += h->value;
+		result += h.value;
 		result += "\r\n";
 	}
 
 	result += "\r\n";
-	result += content;
+	result += m_content;
 	
 	return result;
 }
 
 size_t reply::get_size() const
 {
-//	size_t size = status_line.length();
-	size_t size = strlen("HTTP/1.1 ") + boost::lexical_cast<string>(status).length() + 1 +
-		detail::get_status_text(status).length() + strlen(" \r\n");
-	for (vector<header>::const_iterator h = headers.begin(); h != headers.end(); ++h)
-		size += h->name.length() + 2 + h->value.length() + 2;
-	size += 2 + content.length();
-	
-	size += strlen("\r\n");
-	size += content.length();
+	int size = m_status_line.length();
+	foreach (const header& h, m_headers)
+		size += h.name.length() + 2 + h.value.length() + 2;
+	size += 2 + m_content.length();
 	
 	return size;
 }
@@ -272,7 +348,7 @@ reply reply::stock_reply(status_type status)
 		result.set_content(text.str(), "text/html; charset=utf-8");
 	}
 
-	result.status = status;
+	result.m_status = status;
 	
 	return result;
 }
@@ -281,15 +357,15 @@ reply reply::redirect(const std::string& location)
 {
 	reply result;
 
-	result.status = moved_temporarily;
+	result.m_status = moved_temporarily;
 
 	string text = detail::get_status_text(moved_temporarily);
-	result.content =
+	result.m_content =
 		string("<html><head><title>") + text + "</title></head><body><h1>" +
  		boost::lexical_cast<string>(moved_temporarily) + ' ' + text + "</h1></body></html>";
 	
 	result.set_header("Location", location);
-	result.set_header("Content-Length", boost::lexical_cast<string>(result.content.length()));
+	result.set_header("Content-Length", boost::lexical_cast<string>(result.m_content.length()));
 	result.set_header("Content-Type", "text/html; charset=utf-8");
 	
 	return result;

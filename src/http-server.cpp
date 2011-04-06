@@ -1,7 +1,7 @@
-//  Copyright Maarten L. Hekkelman, Radboud University 2008.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// Copyright Maarten L. Hekkelman, Radboud University 2008-2011.
+//   Distributed under the Boost Software License, Version 1.0.
+//      (See accompanying file LICENSE_1_0.txt or copy at
+//            http://www.boost.org/LICENSE_1_0.txt)
 
 #include <zeep/config.hpp>
 
@@ -245,7 +245,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 			 << start_local << ' '
 			 << '"' << req.method << ' ' << req.uri << ' '
 			 		<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
-			 << rep.status << ' '
+			 << rep.get_status() << ' '
 			 << rep.get_size() << ' '
 			 << '"' << referer << '"' << ' '
 			 << '"' << userAgent << '"' << ' '

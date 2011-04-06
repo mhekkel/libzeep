@@ -46,15 +46,25 @@ void connection::handle_read(
 		
 		if (result)
 		{
+			m_reply.set_version(m_request.http_version_major, m_request.http_version_minor);
+			
 			m_request_handler.handle_request(m_socket, m_request, m_reply);
-			boost::asio::async_write(m_socket, m_reply.to_buffers(),
+
+			vector<boost::asio::const_buffer> buffers;
+			m_reply.to_buffers(buffers);
+
+			boost::asio::async_write(m_socket, buffers,
 				boost::bind(&connection::handle_write, shared_from_this(),
 					boost::asio::placeholders::error));
 		}
 		else if (not result)
 		{
 			m_reply = reply::stock_reply(bad_request);
-			boost::asio::async_write(m_socket, m_reply.to_buffers(),
+
+			vector<boost::asio::const_buffer> buffers;
+			m_reply.to_buffers(buffers);
+
+			boost::asio::async_write(m_socket, buffers,
 				boost::bind(&connection::handle_write, shared_from_this(),
 					boost::asio::placeholders::error));
 		}
@@ -72,8 +82,15 @@ void connection::handle_write(const boost::system::error_code& ec)
 {
 	if (not ec)
 	{
-		boost::system::error_code ignored_ec;
-		if (m_request.http_version_minor >= 1 and not m_request.close)
+		vector<boost::asio::const_buffer> buffers;
+		
+		if (m_reply.data_to_buffers(buffers))
+		{
+			boost::asio::async_write(m_socket, buffers,
+				boost::bind(&connection::handle_write, shared_from_this(),
+					boost::asio::placeholders::error));
+		}
+		else if (m_request.http_version_minor >= 1 and not m_request.close)
 		{
 			m_request_parser.reset();
 			m_request = request();

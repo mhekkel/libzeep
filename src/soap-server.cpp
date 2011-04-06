@@ -78,20 +78,20 @@ void server::handle_request(const http::request& req, http::reply& rep)
 			if (p == path.end())
 				throw http::bad_request;
 			
-			string root = (*p++).string();
+			string root = (*p++);
 			
 			if (root == "rest")
 			{
-				action = (*p++).string();
+				action = (*p++);
 				
 				xml::element* request(new xml::element(action));
 				while (p != path.end())
 				{
-					string name = http::decode_url((*p++).string());
+					string name = http::decode_url((*p++));
 					if (p == path.end())
 						break;
 					xml::element* param(new xml::element(name));
-					string value = http::decode_url((*p++).string());
+					string value = http::decode_url((*p++));
 					param->content(value);
 					request->append(param);
 				}

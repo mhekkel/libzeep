@@ -34,39 +34,52 @@ enum status_type
     service_unavailable =	503
 };
 
-struct reply
+class reply
 {
-	status_type			status;
-	std::string			status_line;
-	std::vector<header>	headers;
-	std::string			content;
-
-						reply();
+  public:
+						reply(int version_major = 1, int version_minor = 0);
 						reply(const reply&);
 	reply&				operator=(const reply&);
 
-	void				set_content(xml::document& doc);
-	void				set_content(xml::element* data);
-	
-	std::string			get_content_type() const;
-	void				set_content_type(
-							const std::string& type);
-	
-	void				set_content(const std::string& data,
-							const std::string& contentType);
+	void				set_version(int version_major, int version_minor);
 
 	void				set_header(const std::string& name,
 							const std::string& value);
 
-	std::vector<boost::asio::const_buffer>
-						to_buffers();
+	std::string			get_content_type() const;
+	void				set_content_type(
+							const std::string& type);
+	
+	void				set_content(xml::document& doc);
+	void				set_content(xml::element* data);
+	void				set_content(const std::string& data,
+							const std::string& contentType);
+	// to send a stream of data, with unknown size (using chunked transfer):
+	void				set_content(std::istream* data,
+							const std::string& contentType);
+
+	void				to_buffers(std::vector<boost::asio::const_buffer>& buffers);
+	
+	// for istream data, continue to until data_to_buffers returns false
+	bool				data_to_buffers(std::vector<boost::asio::const_buffer>& buffers);
 
 	std::string			get_as_text();
-
 	std::size_t			get_size() const;
 	
 	static reply		stock_reply(status_type inStatus);
 	static reply		redirect(const std::string& location);
+	
+	status_type			get_status() const						{ return m_status; }
+
+  private:
+	int					m_version_major, m_version_minor;
+	status_type			m_status;
+	std::string			m_status_line;
+	std::vector<header>	m_headers;
+	std::string			m_content;
+	std::unique_ptr<std::istream>
+						m_data;
+	std::vector<char>	m_buffer;
 };
 
 }
