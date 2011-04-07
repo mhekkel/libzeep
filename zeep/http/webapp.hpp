@@ -192,20 +192,6 @@ class webapp : public http::server
 						const el::scope&	scope,
 						fs::path			dir);
 
-	// expression language support
-	virtual bool	process_el(
-						const el::scope&	scope,
-						std::string&		text);
-
-	virtual void	evaluate_el(
-						const el::scope&	scope,
-						const std::string&	text,
-						el::object&			result);
-
-	virtual bool	evaluate_el(
-						const el::scope&	scope,
-						const std::string&	text);
-
 	virtual void	init_scope(
 						el::scope&			scope);
 

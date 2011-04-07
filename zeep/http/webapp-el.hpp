@@ -24,22 +24,62 @@ namespace http {
 namespace el
 {
 
+class object;
+
 namespace detail {
+
+class object_impl;
+class object_iterator_impl;
 
 class object_impl
 {
   public:
 
-	void			reference();
-	void			release();
+	void			reference()						{ ++m_refcount; }
+	void			release()						{ if (--m_refcount == 0) delete this; }
+
+	virtual object_iterator_impl*
+					create_iterator(bool begin)		{ return nil; }
+
+	virtual bool	empty() const = 0;
+	virtual void	print(std::ostream& os) const = 0;
+	virtual int		compare(object_impl* rhs) const = 0;
+
+	virtual bool	is_array() const				{ return false; }
+	virtual uint32	count() const					{ return 0; }
+
+	virtual int64	to_int() const					{ throw zeep::exception("cannot convert to requested type"); }
+	virtual double	to_double() const				{ throw zeep::exception("cannot convert to requested type"); }
+	virtual std::string
+					to_str() const					{ throw zeep::exception("cannot convert to requested type"); }
 
   protected:
-					object_impl();
+					object_impl() : m_refcount(1)	{}
+
+	virtual			~object_impl()					{}
 
   private:
+	int				m_refcount;
+};
 
-	virtual			~object_impl();
+class object_iterator_impl
+{
+  public:
 
+	void			reference()						{ ++m_refcount; }
+	void			release()						{ if (--m_refcount == 0) delete this; }
+
+					object_iterator_impl()
+						: m_refcount(1)				{}
+	
+	virtual void	increment() = 0;
+	virtual object&	dereference() = 0;
+	virtual bool	equal(const object_iterator_impl* other) = 0;
+
+  protected:
+	virtual			~object_iterator_impl()			{}
+
+  private:
 	int				m_refcount;
 };
 	
@@ -48,24 +88,53 @@ class object_impl
 typedef uint32	unicode;
 
 class object
-    : boost::operators<object>
 {
   public:
 				object();
 				object(const object& o);
+				
+				// create an array object
+	explicit	object(const std::vector<object>& v);
 
-	template<typename T>
-				object(const T& v);
+				// construct an object directly from some basic types
+	explicit	object(int8 v);
+	explicit	object(uint8 v);
+	explicit	object(int16 v);
+	explicit	object(uint16 v);
+	explicit	object(int32 v);
+	explicit	object(uint32 v);
+	explicit	object(int64 v);
+//	explicit	object(uint64 v);
+	explicit	object(float v);
+	explicit	object(double v);
+	explicit	object(const char* v);
+	explicit	object(const std::string& v);
 
-	virtual		~object();
+				~object();
 
 	object&		operator=(const object& o);
 
-	bool		undefined() const				{ return m_impl == nil; }
-	bool		empty() const;
+				// assign an array object
+	object&		operator=(const std::vector<object>& v);
 
-	template<typename T>
-	void		operator=(const T& v);
+	// and assign some basic types
+	object&		operator=(int8 v);
+	object&		operator=(uint8 v);
+	object&		operator=(int16 v);
+	object&		operator=(uint16 v);
+	object&		operator=(int32 v);
+	object&		operator=(uint32 v);
+	object&		operator=(int64 v);
+//	object&		operator=(uint64 v);
+	object&		operator=(float v);
+	object&		operator=(double v);
+	object&		operator=(const char* v);
+	object&		operator=(const std::string& v);
+
+	bool		undefined() const				{ return m_impl == nil; }
+	bool		empty() const					{ return m_impl == nil or m_impl->empty(); }
+	bool		is_array() const				{ return m_impl != nil and m_impl->is_array(); }
+	uint32		count() const					{ return m_impl->count(); }
 
 	template<typename T>
 	T			as() const;
@@ -78,135 +147,239 @@ class object
 	object&		operator[](const char* name);
 	object&		operator[](uint32 ix);
 
-    bool		operator<(const object& x) const;
-    bool		operator==(const object& x) const;
-    object&		operator+=(const object& x);
-    object&		operator-=(const object& x);
-    object&		operator*=(const object& x);
-    object&		operator/=(const object& x);
-    object&		operator%=(const object& x);
-    object&		operator|=(const object& x);
-    object&		operator&=(const object& x);
-    object&		operator^=(const object& x);
-    object&		operator++();
-    object&		operator--();
+	bool		operator<(const object& rhs) const;
+	bool		operator==(const object& rhs) const;
 
-	friend std::vector<object>::iterator		range_begin(object& x);
-	friend std::vector<object>::iterator		range_end(object& x);
-	friend std::vector<object>::const_iterator	range_begin(const object& x);
-	friend std::vector<object>::const_iterator	range_end(const object& x);
+	template<class ObjectType>
+	class basic_iterator : public std::iterator<std::forward_iterator_tag, ObjectType>
+	{
+	  public:
+		typedef typename std::iterator<std::forward_iterator_tag, ObjectType>	base_type;
+		typedef typename base_type::reference									reference;
+		typedef typename base_type::pointer										pointer;
+
+						basic_iterator();
+						basic_iterator(const basic_iterator& other);
+						basic_iterator(detail::object_impl* a);
+						basic_iterator(detail::object_impl* a, int);
+						basic_iterator(const detail::object_impl* a);
+						basic_iterator(const detail::object_impl* a, int);
+						~basic_iterator();
+		
+		basic_iterator&	operator=(const basic_iterator& other);
+		
+		const reference	operator*() const;
+		reference		operator*();
+		pointer			operator->() const;
+
+		basic_iterator&	operator++();
+		basic_iterator	operator++(int);
+
+		bool			operator==(const basic_iterator& other) const;
+		bool			operator!=(const basic_iterator& other) const;
+
+	  private:
+		detail::object_iterator_impl*
+						m_impl;
+	};
+
+	typedef basic_iterator<object>			iterator;
+	typedef basic_iterator<const object>	const_iterator;
+
+	iterator			begin()											{ return iterator(m_impl); }
+	iterator			end()											{ return iterator(m_impl, -1); }
+
+	const_iterator		begin() const									{ return const_iterator(m_impl); }
+	const_iterator		end() const										{ return const_iterator(m_impl, -1); }
+
+	friend iterator			range_begin(object& x)						{ return x.begin(); }
+	friend iterator			range_end(object& x)						{ return x.end(); }
+	friend const_iterator	range_begin(const object& x)				{ return x.begin(); }
+	friend const_iterator	range_end(const object& x)					{ return x.end(); }
+
+	friend std::ostream& operator<<(std::ostream& lhs, const object& rhs);
 
   private:
+
+	friend object operator+(const object& a, const object& b);
+	friend object operator-(const object& a, const object& b);
+	friend object operator*(const object& a, const object& b);
+	friend object operator%(const object& a, const object& b);
+	friend object operator/(const object& a, const object& b);
+	friend object operator-(const object& a);
+
 	struct detail::object_impl*	m_impl;
 };
 
-//class object
-//{
-//  public:
-//					object();
-//					object(const object& o);
-//
-//	explicit		object(const char* s);
-//	explicit		object(const std::string& s);
-//	explicit		object(double n);
-//	explicit		object(int8 n);
-//	explicit		object(uint8 n);
-//	explicit		object(int16 n);
-//	explicit		object(uint16 n);
-//	explicit		object(int32 n);
-//	explicit		object(uint32 n);
-//	explicit		object(int64 n);
-//	explicit		object(uint64 n);
-//	explicit		object(bool b);
-//	explicit		object(const std::vector<object>& a);
-//
-//	object&			operator=(const object& rhs);					
-//	object&			operator=(const std::string& rhs);
-//	object&			operator=(double rhs);
-//	object&			operator=(bool rhs);
-//
-//	bool			empty() const;
-//	bool			undefined() const;
-//
-//	bool			is_number() const;
-//
-//	bool			is_array() const;
-//	uint32			count() const;
-//
-//					operator std::string() const;
-//					operator double() const;
-//					operator bool() const;
-//	
-//	const object	operator[](const std::string& name) const;
-//	const object	operator[](const char* name) const;
-//	const object	operator[](uint32 ix) const;
-//
-//	object&			operator[](const std::string& name);
-//	object&			operator[](const char* name);
-//	object&			operator[](uint32 ix);
-//
-//	void			sort(const std::string& sort_field, bool descending);
-//
-//	friend std::ostream& operator<<(std::ostream& os, const object& o);
-//	friend object operator<(const object& a, const object& b);
-//	friend object operator<=(const object& a, const object& b);
-//	friend object operator>=(const object& a, const object& b);
-//	friend object operator>(const object& a, const object& b);
-//	friend object operator!=(const object& a, const object& b);
-//	friend object operator==(const object& a, const object& b);
-//	friend object operator+(const object& a, const object& b);
-//	friend object operator-(const object& a, const object& b);
-//	friend object operator*(const object& a, const object& b);
-//	friend object operator%(const object& a, const object& b);
-//	friend object operator/(const object& a, const object& b);
-//	friend object operator&&(const object& a, const object& b);
-//	friend object operator||(const object& a, const object& b);
-//	friend object operator-(const object& a);
-//	
-//	std::string		m_string;
-//	double			m_number;
-//	std::map<std::string,object>
-//					m_fields;
-//	std::vector<object>	m_array;
-//};
-//
-//// boost foreach support
-//inline std::vector<object>::iterator range_begin(object& x)
-//{
-//    return x.m_array.begin();
-//}
-//
-//inline std::vector<object>::iterator range_end(object& x)
-//{
-//    return x.m_array.end();
-//}
-//
-//inline std::vector<object>::const_iterator range_begin(object const& x)
-//{
-//    return x.m_array.begin();
-//}
-//
-//inline std::vector<object>::const_iterator range_end(object const& x)
-//{
-//    return x.m_array.end();
-//}
-//
-//
-//std::ostream& operator<<(std::ostream& os, const object& o);
-//object operator<(const object& a, const object& b);
-//object operator<=(const object& a, const object& b);
-//object operator>=(const object& a, const object& b);
-//object operator>(const object& a, const object& b);
-//object operator!=(const object& a, const object& b);
-//object operator==(const object& a, const object& b);
-//object operator+(const object& a, const object& b);
-//object operator-(const object& a, const object& b);
-//object operator*(const object& a, const object& b);
-//object operator%(const object& a, const object& b);
-//object operator/(const object& a, const object& b);
-//object operator&&(const object& a, const object& b);
-//object operator||(const object& a, const object& b);
-//object operator-(const object& a);
+bool process_el(const scope& scope, std::string& text);
+void evaluate_el(const scope& scope, const std::string& text, object& result);
+bool evaluate_el(const scope& scope, const std::string& text);
+
+// --------------------------------------------------------------------
+
+inline object::object()
+	: m_impl(nil)
+{
+}
+
+inline object::object(const object& o)
+	: m_impl(o.m_impl)
+{
+	if (m_impl != nil)
+		m_impl->reference();
+}
+
+inline object::~object()
+{
+	if (m_impl != nil)
+		m_impl->release();
+}
+
+inline object& object::operator=(const object& o)
+{
+	if (this != &o)
+	{
+		if (m_impl != nil)
+			m_impl->release();
+		m_impl = o.m_impl;
+		if (m_impl != nil)
+			m_impl->reference();
+	}
+	return *this;
+}
+
+// --------------------------------------------------------------------
+
+template<class ObjectType>
+object::basic_iterator<ObjectType>::basic_iterator()
+	: m_impl(nil)
+{
+}
+
+template<class ObjectType>
+object::basic_iterator<ObjectType>::basic_iterator(const basic_iterator& o)
+	: m_impl(o.m_impl)
+{
+	if (m_impl != nil)
+		m_impl->reference();
+}
+		
+template<class ObjectType>
+object::basic_iterator<ObjectType>::basic_iterator(detail::object_impl* a)
+	: m_impl(a ? a->create_iterator(true) : nil)
+{
+}
+		
+template<class ObjectType>
+object::basic_iterator<ObjectType>::basic_iterator(detail::object_impl* a, int)
+	: m_impl(a ? a->create_iterator(false) : nil)
+{
+}
+		
+template<class ObjectType>
+object::basic_iterator<ObjectType>::basic_iterator(const detail::object_impl* a)
+	: m_impl(a ? a->create_iterator(true) : nil)
+{
+}
+		
+template<class ObjectType>
+object::basic_iterator<ObjectType>::basic_iterator(const detail::object_impl* a, int)
+	: m_impl(a ? a->create_iterator(false) : nil)
+{
+}
+		
+template<class ObjectType>
+object::basic_iterator<ObjectType>::~basic_iterator()
+{
+	if (m_impl != nil)
+		m_impl->release();
+}
+		
+template<class ObjectType>
+object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator=(const basic_iterator& o)
+{
+	if (this != &o)
+	{
+		if (m_impl != nil)
+			m_impl->release();
+		m_impl = o.m_impl;
+		if (m_impl != nil)
+			m_impl->reference();
+	}
+	return *this;
+}
+		
+template<class ObjectType>
+const typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*() const
+{
+	if (m_impl == nil)
+		throw exception("dereferencing invalid object iterator");
+	return m_impl->dereference();
+}
+
+template<class ObjectType>
+typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*()
+{
+	if (m_impl == nil)
+		throw exception("dereferencing invalid object iterator");
+	return m_impl->dereference();
+}
+
+template<class ObjectType>
+typename object::basic_iterator<ObjectType>::pointer object::basic_iterator<ObjectType>::operator->() const
+{
+	if (m_impl == nil)
+		throw exception("dereferencing invalid object iterator");
+	return &m_impl->dereference();
+}
+
+template<class ObjectType>
+object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator++()
+{
+	if (m_impl == nil)
+		throw exception("incrementing invalid object iterator");
+	m_impl->increment();
+	return *this;
+}
+
+template<class ObjectType>
+object::basic_iterator<ObjectType> object::basic_iterator<ObjectType>::operator++(int)
+{
+	if (m_impl == nil)
+		throw exception("incrementing invalid object iterator");
+
+	basic_iterator<ObjectType> iter(*this);
+	m_impl->increment();
+	return iter;
+}
+
+template<class ObjectType>
+bool object::basic_iterator<ObjectType>::operator==(const basic_iterator& o) const
+{
+	bool result;
+	if (m_impl == nil and o.m_impl == nil)
+		result = true;
+	else if (m_impl == nil or o.m_impl == nil)
+		throw exception("invalid object iterators");
+	else
+		result = m_impl->equal(o.m_impl);
+	return result;
+}
+
+template<class ObjectType>
+bool object::basic_iterator<ObjectType>::operator!=(const basic_iterator& o) const
+{
+	bool result;
+	if (m_impl == nil and o.m_impl == nil)
+		result = false;
+	else if (m_impl == nil or o.m_impl == nil)
+		throw exception("invalid object iterators");
+	else
+		result = not m_impl->equal(o.m_impl);
+	return result;
+}
+
+// --------------------------------------------------------------------
 
 class scope
 {
@@ -273,60 +446,6 @@ void scope::put(
 	m_data[name] = object(elements);
 }
 
-struct interpreter
-{
-					interpreter(
-						const scope&			scope)
-						: m_scope(scope) {}
-
-	template<class OutputIterator, class Match>
-	OutputIterator	operator()(Match& m, OutputIterator out, boost::regex_constants::match_flag_type);
-
-	object			evaluate(
-						const std::string&	s);
-
-	void			process(
-						std::string&			s);
-	
-	void			match(
-						uint32					t);
-
-	unsigned char	next_byte();
-	unicode			get_next_char();
-	void			retract();
-	void			get_next_token();
-
-	object			parse_expr();					// or_expr ( '?' expr ':' expr )?
-	object			parse_or_expr();				// and_expr ( 'or' and_expr)*
-	object			parse_and_expr();				// equality_expr ( 'and' equality_expr)*
-	object			parse_equality_expr();			// relational_expr ( ('=='|'!=') relational_expr )?
-	object			parse_relational_expr();		// additive_expr ( ('<'|'<='|'>='|'>') additive_expr )*
-	object			parse_additive_expr();			// multiplicative_expr ( ('+'|'-') multiplicative_expr)*
-	object			parse_multiplicative_expr();	// unary_expr (('%'|'/') unary_expr)*
-	object			parse_unary_expr();				// ('-')? primary_expr
-	object			parse_primary_expr();			// '(' expr ')' | number | string
-	
-	const scope&	m_scope;
-	uint32			m_lookahead;
-	std::string		m_token_string;
-	double			m_token_number;
-	std::string::const_iterator
-					m_ptr, m_end;
-};
-
-template<class OutputIterator, class Match>
-inline
-OutputIterator interpreter::operator()(Match& m, OutputIterator out, boost::regex_constants::match_flag_type)
-{
-	std::string s(m[1]);
-
-	process(s);
-	
-	std::copy(s.begin(), s.end(), out);
-
-	return out;
-}
-
 }
 }
 }
@@ -338,12 +457,12 @@ namespace boost
     template<>
     struct range_mutable_iterator<zeep::http::el::object>
     {
-        typedef std::vector<zeep::http::el::object>::iterator type;
+        typedef zeep::http::el::object::iterator type;
     };
 
     template<>
     struct range_const_iterator<zeep::http::el::object>
     {
-        typedef std::vector<zeep::http::el::object>::const_iterator type;
+        typedef zeep::http::el::object::const_iterator type;
     };
 }

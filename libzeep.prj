@@ -44,6 +44,7 @@
       <defines>
         <define>DEBUG</define>
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
+        <define>BOOST_FILESYSTEM_VERSION=2</define>
       </defines>
       <cflags>
         <cflag>-O0</cflag>
@@ -66,7 +67,7 @@
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
       </defines>
       <cflags>
-        <cflag>-O3</cflag>
+        <cflag>-O0</cflag>
         <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
         <cflag>-fPIC</cflag>
