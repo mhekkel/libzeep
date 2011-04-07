@@ -124,6 +124,7 @@ void webapp::handle_request(
 	}
 	catch (std::exception& e)
 	{
+cerr << "exception: " << e.what() << endl;
 		el::scope scope(req);
 		scope.put("errormsg", el::object(e.what()));
 
@@ -238,7 +239,7 @@ void webapp::process_xml(
 	if (text != nil)
 	{
 		string s = text->str();
-		if (process_el(scope, s))
+		if (el::process_el(scope, s))
 			text->str(s);
 		return;
 	}
@@ -264,6 +265,7 @@ void webapp::process_xml(
 		}
 		catch (std::exception& ex)
 		{
+cerr << "exception: " << ex.what() << endl;
 			xml::node* replacement = new xml::text(
 				(boost::format("Error processing directive 'mrs:%1%': %2%") %
 					e->name() % ex.what()).str());
@@ -663,55 +665,6 @@ void webapp::process_embed(
 	parent->insert(node, replacement);
 	
 	process_xml(replacement, scope, dir);
-}
-
-bool webapp::process_el(
-	const el::scope&			scope,
-	string&						text)
-{
-	static const boost::regex re("\\$\\{([^}]+)\\}");
-
-	el::interpreter interpreter(scope);
-	
-	ostringstream os;
-	std::ostream_iterator<char, char> out(os);
-	boost::regex_replace(out, text.begin(), text.end(), re, interpreter,
-		boost::match_default | boost::format_all);
-	
-	bool result = false;
-	if (os.str() != text)
-	{
-//cerr << "processed \"" << text << "\" => \"" << os.str() << '"' << endl;
-		text = os.str();
-		result = true;
-	}
-	
-	return result;
-}
-
-void webapp::evaluate_el(
-	const el::scope&			scope,
-	const string&				text,
-	el::object&					result)
-{
-	static const boost::regex re("^\\$\\{([^}]+)\\}$");
-	
-	boost::smatch m;
-	if (boost::regex_match(text, m, re))
-	{
-		el::interpreter interpreter(scope);
-		result = interpreter.evaluate(m[1]);
-//cerr << "evaluated \"" << text << "\" => \"" << result << '"' << endl;
-	}
-}
-
-bool webapp::evaluate_el(
-	const el::scope&			scope,
-	const string&				text)
-{
-	el::object result;
-	evaluate_el(scope, text, result);
-	return result.as<bool>();
 }
 
 void webapp::init_scope(

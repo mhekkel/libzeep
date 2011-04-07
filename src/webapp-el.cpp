@@ -12,6 +12,7 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
+#include <boost/tr1/cmath.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/http/webapp-el.hpp>
@@ -20,307 +21,553 @@
 using namespace std;
 namespace ba = boost::algorithm;
 
-namespace zeep { namespace http { namespace el {
+namespace zeep { namespace http {
 
-object::object();
-object::object(const object& o);
-
-template<typename T>
-object::object(const T& v);
-
-object::~object();
-
-object& object::operator=(const object& o);
-
-bool object::empty() const;
-
-template<typename T>
-void object::operator=(const T& v);
-
-template<typename T>
-T object::as() const;
-
-const object object::operator[](const std::string& name) const;
-const object object::operator[](const char* name) const;
-const object object::operator[](uint32 ix) const;
-object& object::operator[](const std::string& name);
-object& object::operator[](const char* name);
-object& object::operator[](uint32 ix);
-bool object::operator<(const object& x) const;
-bool object::operator==(const object& x) const;
-object& object::operator+=(const object& x);
-object& object::operator-=(const object& x);
-object& object::operator*=(const object& x);
-object& object::operator/=(const object& x);
-object& object::operator%=(const object& x);
-object& object::operator|=(const object& x);
-object& object::operator&=(const object& x);
-object& object::operator^=(const object& x);
-object& object::operator++();
-object& object::operator--();
-
-std::vector<object>::iterator		range_begin(object& x);
-std::vector<object>::iterator		range_end(object& x);
-std::vector<object>::const_iterator	range_begin(const object& x);
-std::vector<object>::const_iterator	range_end(const object& x);
-
-object::object()
-	: m_type(ot_undef)
+namespace el
 {
-}
 
-object::object(const object& o)
-	: m_type(o.m_type)
+class int_object_impl : public detail::object_impl
 {
-	switch (m_type)
+  public:
+					int_object_impl(int64 v) : m_v(v)	{}
+
+	virtual bool	empty() const						{ return false; }
+	virtual void	print(std::ostream& os) const		{ os << m_v; }
+	virtual int		compare(object_impl* rhs) const;
+
+	virtual int64	to_int() const						{ return m_v; }
+	virtual double	to_double() const					{ return static_cast<double>(m_v); }
+	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
+
+	int64			m_v;
+};
+
+class float_object_impl : public detail::object_impl
+{
+  public:
+					float_object_impl(double v)	: m_v(v) {}
+
+	virtual bool	empty() const						{ return false; }
+	virtual void	print(std::ostream& os) const		{ os << m_v; }
+	virtual int		compare(object_impl* rhs) const;
+
+	virtual int64	to_int() const						{ return static_cast<int64>(tr1::round(m_v)); }
+	virtual double	to_double() const					{ return m_v; }
+	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
+	
+	double			m_v;
+};
+
+class string_object_impl : public detail::object_impl
+{
+  public:
+					string_object_impl(const string& v)	: m_v(v) {}
+
+	virtual bool	empty() const						{ return m_v.empty(); }
+	virtual void	print(std::ostream& os) const		{ os << '"' << m_v << '"'; }
+	virtual int		compare(object_impl* rhs) const;
+
+	virtual int64	to_int() const						{ return boost::lexical_cast<int64>(m_v); }
+	virtual double	to_double() const					{ return boost::lexical_cast<double>(m_v); }
+	virtual string	to_str() const						{ return m_v; }
+	
+	string			m_v;
+};
+
+class array_object_iterator_impl : public detail::object_iterator_impl
+{
+  public:
+
+					array_object_iterator_impl(vector<object>::iterator i)
+						: m_i(i)		{}
+	
+	virtual void	increment()			{ ++m_i; }
+	virtual object&	dereference()		{ return *m_i; }
+	virtual bool	equal(const object_iterator_impl* other)
+					{
+						const array_object_iterator_impl* rhs = dynamic_cast<const array_object_iterator_impl*>(other);
+						if (rhs == nil)
+							throw exception("comparing unequal iterators");
+						return rhs->m_i == m_i;
+					}
+
+  private:
+	vector<object>::iterator
+					m_i;
+};
+
+class array_object_impl : public detail::object_impl
+{
+  public:
+					array_object_impl(const vector<object>& v)	: m_v(v) {}
+
+	virtual bool	empty() const						{ return m_v.empty(); }
+	virtual void	print(std::ostream& os) const
+					{
+						os << '[';
+						bool first = true;
+						foreach (const object& o, m_v)
+						{
+							if (not first)
+								os << ',';
+							first = false;
+							os << o;
+						}
+						os << ']';
+					}
+	virtual int		compare(object_impl* rhs) const;
+	virtual bool	is_array() const				{ return true; }
+	virtual uint32	count() const					{ return m_v.size(); }
+
+	virtual detail::object_iterator_impl*
+					create_iterator(bool begin)
+					{
+						if (begin)
+							return new array_object_iterator_impl(m_v.begin());
+						else
+							return new array_object_iterator_impl(m_v.end());
+					}
+	
+	vector<object>	m_v;
+};
+
+class struct_object_impl : public detail::object_impl
+{
+  public:
+					struct_object_impl() {}
+
+	virtual bool	empty() const		{ return m_v.empty(); }
+
+	virtual void	print(std::ostream& os) const
+					{
+						os << '{';
+						bool first = true;
+						typedef pair<string,object> value_type;
+						foreach (const value_type& o, m_v)
+						{
+							if (not first)
+								os << ',';
+							first = false;
+							os << o.first << ':' << o.second;
+							
+						}
+						os << '}';
+					}
+	virtual int		compare(object_impl* rhs) const;
+	
+	map<string,object>
+					m_v;
+};
+
+// --------------------------------------------------------------------
+// compare methods
+
+int int_object_impl::compare(object_impl* rhs) const
+{
+	int result = 0;
+	
+	if (dynamic_cast<int_object_impl*>(rhs))
 	{
-		case ot_string:		m_string = o.m_string; break;
-		case ot_boolean:
-		case ot_number:		m_number = o.m_number; break;
-		case ot_struct:		m_fields = o.m_fields; break;
-		case ot_array:		m_array = o.m_array;
-		default:			break;
+		if (m_v < static_cast<int_object_impl*>(rhs)->m_v)
+			result = -1;
+		else if (m_v > static_cast<int_object_impl*>(rhs)->m_v)
+			result = 1;
 	}
+	else if (dynamic_cast<float_object_impl*>(rhs))
+	{
+		if (m_v < static_cast<float_object_impl*>(rhs)->m_v)
+			result = -1;
+		else if (m_v > static_cast<float_object_impl*>(rhs)->m_v)
+			result = 1;
+	}
+	else
+		throw exception("incompatible types for compare");
+	
+	return result;
 }
 
-object::object(const char* s)
-	: m_type(ot_string)
-	, m_string(s ? s : "")
+int float_object_impl::compare(object_impl* rhs) const
+{
+	int result = 0;
+	
+	if (dynamic_cast<int_object_impl*>(rhs))
+	{
+		if (m_v < static_cast<int_object_impl*>(rhs)->m_v)
+			result = -1;
+		else if (m_v > static_cast<int_object_impl*>(rhs)->m_v)
+			result = 1;
+	}
+	else if (dynamic_cast<float_object_impl*>(rhs))
+	{
+		if (m_v < static_cast<float_object_impl*>(rhs)->m_v)
+			result = -1;
+		else if (m_v > static_cast<float_object_impl*>(rhs)->m_v)
+			result = 1;
+	}
+	else
+		throw exception("incompatible types for compare");
+	
+	return result;
+}
+
+int string_object_impl::compare(object_impl* rhs) const
+{
+	int result = 0;
+	
+	if (dynamic_cast<string_object_impl*>(rhs))
+		result = m_v.compare(static_cast<string_object_impl*>(rhs)->m_v);
+	else
+		throw exception("incompatible types for compare");
+	
+	return result;
+}
+
+int array_object_impl::compare(object_impl* rhs) const
+{
+	int result = 0;
+	
+	if (dynamic_cast<array_object_impl*>(rhs))
+	{
+		if (m_v < static_cast<array_object_impl*>(rhs)->m_v)
+			result = -1;
+		else if (m_v > static_cast<array_object_impl*>(rhs)->m_v)
+			result = -1;
+	}
+	else
+		throw exception("incompatible types for compare");
+	
+	return result;
+}
+
+int struct_object_impl::compare(object_impl* rhs) const
+{
+	int result = 0;
+	
+	if (dynamic_cast<struct_object_impl*>(rhs))
+	{
+		if (m_v != static_cast<struct_object_impl*>(rhs)->m_v)
+			result = 1;
+	}
+	else
+		throw exception("incompatible types for compare");
+	
+	return result;
+}
+
+// --------------------------------------------------------------------
+// basic object methods
+
+object::object(const std::vector<object>& v)
+	: m_impl(new array_object_impl(v))
 {
 }
 
-object::object(const std::string& s)
-	: m_type(ot_string)
-	, m_string(s)
+object::object(int8 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(double n)
-	: m_type(ot_number)
-	, m_number(n)
+object::object(uint8 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(int8 n)
-	: m_type(ot_number)
-	, m_number(n)
+object::object(int16 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(uint8 n)
-	: m_type(ot_number)
-	, m_number(n)
+object::object(uint16 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(int16 n)
-	: m_type(ot_number)
-	, m_number(n)
+object::object(int32 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(uint16 n)
-	: m_type(ot_number)
-	, m_number(n)
+object::object(uint32 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(int32 n)
-	: m_type(ot_number)
-	, m_number(n)
+object::object(int64 v)
+	: m_impl(new int_object_impl(v))
 {
 }
 
-object::object(uint32 n)
-	: m_type(ot_number)
-	, m_number(n)
-{
-}
-
-object::object(int64 n)
-	: m_type(ot_number)
-	, m_number(n)
-{
-}
-
-object::object(uint64 n)
-	: m_type(ot_number)
-	, m_number(n)
-{
-}
-
-object::object(bool b)
-	: m_type(ot_boolean)
-	, m_number(b)
-{
-}
-
-object::object(const std::vector<object>& a)
-	: m_type(ot_array)
-	, m_array(a)
-{
-}
-
-//object::object(object_type type)
-//	: m_type(type)
+//object::object(uint64 v)
+//	: m_impl(new int_object_impl(v))
 //{
 //}
 
-bool object::empty() const
+object::object(float v)
+	: m_impl(new float_object_impl(v))
+{
+}
+
+object::object(double v)
+	: m_impl(new float_object_impl(v))
+{
+}
+
+object::object(const char* v)
+	: m_impl(nil)
+{
+	if (v != nil)
+		m_impl = new string_object_impl(v);
+}
+
+object::object(const std::string& v)
+	: m_impl(new string_object_impl(v))
+{
+}
+
+object& object::operator=(const std::vector<object>& v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new array_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(int8 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(uint8 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(int16 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(uint16 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(int32 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(uint32 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(int64 v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
+//object& object::operator=(uint64 v)
+//{
+//	if (m_impl != nil)
+//		m_impl->release();
+//	m_impl = new int_object_impl(v);
+//	return *this;
+//}
+
+object& object::operator=(float v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new float_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(double v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new float_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(const char* v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	if (v == nil)
+		m_impl = nil;
+	else
+		m_impl = new string_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(const std::string& v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new string_object_impl(v);
+	return *this;
+}
+
+#define ZEEP_DEFINE_AS_INT(T) \
+template<> T object::as<T>() const					\
+{													\
+	T result = 0;									\
+													\
+	if (m_impl)										\
+		result = static_cast<T>(m_impl->to_int());	\
+													\
+	return result;									\
+}
+
+ZEEP_DEFINE_AS_INT(int8)
+ZEEP_DEFINE_AS_INT(uint8)
+ZEEP_DEFINE_AS_INT(int16)
+ZEEP_DEFINE_AS_INT(uint16)
+ZEEP_DEFINE_AS_INT(int32)
+ZEEP_DEFINE_AS_INT(uint32)
+ZEEP_DEFINE_AS_INT(int64)
+ZEEP_DEFINE_AS_INT(uint64)
+
+//ZEEP_DEFINE_AS_INT(uint64)
+
+template<> bool object::as<bool>() const
 {
 	bool result = false;
-	switch (m_type)
-	{
-		case ot_string:		result = m_string.empty(); break;
-		case ot_array:		result = m_array.empty(); break;
-		case ot_undef:		result = true; break;
-		default:			break;
-	}
+	if (dynamic_cast<int_object_impl*>(m_impl))
+		result = static_cast<int_object_impl*>(m_impl)->m_v != 0;
+	else if (dynamic_cast<float_object_impl*>(m_impl))
+		result = static_cast<float_object_impl*>(m_impl)->m_v != 0;
+	else if (m_impl != nil)
+		result = not m_impl->empty();
+
 	return result;
 }
 
-bool object::undefined() const
+template<> string object::as<string>() const
 {
-	return m_type == ot_undef;
-}
+	string result;
 
-bool object::is_array() const
-{
-	return m_type == ot_array;
-}
+	if (m_impl)
+		result = m_impl->to_str();
 
-uint32 object::count() const
-{
-	return m_type == ot_array ? m_array.size() : 0;
-}
-
-bool object::is_number() const
-{
-	return m_type == ot_number;
-}
-
-object& object::operator=(const object& rhs)
-{
-	m_type = rhs.m_type;
-	switch (m_type)
-	{
-		case ot_string:		m_string = rhs.m_string; break;
-		case ot_boolean:
-		case ot_number:		m_number = rhs.m_number; break;
-		case ot_struct:		m_fields = rhs.m_fields; break;
-		case ot_array:		m_array = rhs.m_array;
-		default:			break;
-	}
-	return *this;
-}
-
-object& object::operator=(const std::string& rhs)
-{
-	try
-	{
-		m_number = boost::lexical_cast<double>(rhs);
-		m_type = ot_number;
-	}
-	catch (...)
-	{
-		m_string = rhs;
-		m_type = ot_string;
-	}
-
-	return *this;
-}
-
-object& object::operator=(double rhs)
-{
-	m_type = ot_number;
-	m_number = rhs;
-	return *this;
-}
-
-object& object::operator=(bool rhs)
-{
-	m_type = ot_boolean;
-	m_number = rhs;
-	return *this;
-}
-
-object::operator std::string() const
-{
-	std::string result;
-	switch (m_type)
-	{
-		case ot_number:		result = boost::lexical_cast<std::string>(m_number); break;
-		case ot_string:		result = m_string; break;
-		case ot_boolean:	result = m_number ? "true" : "false"; break;
-		default:			break;
-	}
 	return result;
 }
 
-object::operator double() const
+template<> double object::as<double>() const
 {
-	double result;
-	switch (m_type)
-	{
-		case ot_boolean:
-		case ot_number:		result = m_number; break;
-		case ot_string:		result = boost::lexical_cast<double>(m_string); break;
-		default:			throw zeep::exception("object is not a number");
-	}
+	double result = 0;
+
+	if (m_impl)
+		result = m_impl->to_double();
+
 	return result;
 }
 
-object::operator bool() const
+const object object::operator[](const std::string& name) const
 {
-	bool result;
-	switch (m_type)
+	object result;
+
+	struct_object_impl* impl = dynamic_cast<struct_object_impl*>(m_impl);
+	if (impl != nil)
 	{
-		case ot_boolean:
-		case ot_number:		result = m_number != 0; break;
-		case ot_string:		result = not m_string.empty(); break;
-		case ot_array:		result = not m_array.empty(); break;
-		case ot_struct:		result = not m_fields.empty(); break;
-		default:			result = false; break;
+		map<string,object>::iterator i = impl->m_v.find(name);
+		if (i != impl->m_v.end())
+			result = i->second;
 	}
+	
 	return result;
 }
 
-const object object::operator[](
-	const std::string& name) const
+const object object::operator[](const char* name) const
 {
-	std::map<std::string,object>::const_iterator i = m_fields.find(name);
-	if (i == m_fields.end())
-		throw zeep::exception((boost::format("field %1% not found") % name).str());
-	return i->second;
-}
-
-const object object::operator[](
-	const char* name) const
-{
-	return operator[](std::string(name));
+	if (name != nil)
+		return operator[](string(name));
+	return object();
 }
 
 const object object::operator[](uint32 ix) const
 {
-	return m_array[ix];
+	object result;
+
+	array_object_impl* impl = dynamic_cast<array_object_impl*>(m_impl);
+	if (impl != nil and ix < impl->m_v.size())
+		result = impl->m_v[ix];
+	
+	return result;
 }
 
-object& object::operator[](
-	const std::string& name)
+object& object::operator[](const std::string& name)
 {
-	m_type = ot_struct;
-	return m_fields[name];
+	struct_object_impl* impl = dynamic_cast<struct_object_impl*>(m_impl);
+	if (impl == nil)
+	{
+		if (m_impl != nil)
+			m_impl->release();
+		m_impl = impl = new struct_object_impl();
+	}
+
+	pair<map<string,object>::iterator,bool> i = impl->m_v.insert(make_pair(name, object()));
+	return i.first->second;
 }
 
-object& object::operator[](
-	const char* name)
+object& object::operator[](const char* name)
 {
-	return operator[](std::string(name));
+	if (name == nil)
+		throw exception("invalid empty name for structure object");
+	return operator[](string(name));
 }
 
 object& object::operator[](uint32 ix)
 {
-	return m_array[ix];
+	array_object_impl* impl = dynamic_cast<array_object_impl*>(m_impl);
+	if (impl == nil or ix >= impl->m_v.size())
+		throw exception("invalid index for array object");
+	
+	return impl->m_v[ix];
+}
+
+bool object::operator<(const object& rhs) const
+{
+	bool result = false;
+	if (m_impl != nil and rhs.m_impl != nil)
+		result = m_impl->compare(rhs.m_impl) < 0;
+	return result;
+}
+
+bool object::operator==(const object& rhs) const
+{
+	bool result = false;
+	if (m_impl != nil and rhs.m_impl != nil)
+		result = m_impl->compare(rhs.m_impl) == 0;
+	return result;
+}
+
+bool operator<=(const object& a, const object& b)
+{
+	return a < b or a == b;
 }
 
 struct compare_object
@@ -337,252 +584,95 @@ struct compare_object
 	bool		m_descending;
 };
 
-void object::sort(const std::string& sort_field, bool descending)
-{
-	if (m_type == ot_array)
-		std::sort(m_array.begin(), m_array.end(), compare_object(sort_field, descending));
-}
+//void object::sort(const std::string& sort_field, bool descending)
+//{
+//	if (m_type == ot_array)
+//		std::sort(m_array.begin(), m_array.end(), compare_object(sort_field, descending));
+//}
 
 ostream& operator<<(ostream& os, const object& o)
 {
-	switch (o.m_type)
-	{
-		case object::ot_undef:		os << "undef"; break;
-		case object::ot_number:		os << "number(" << o.m_number << ")"; break;
-		case object::ot_string:		os << "string(" << o.m_string << ")"; break;
-		case object::ot_struct:
-			os << "struct(";
-			for (std::map<std::string,object>::const_iterator fi = o.m_fields.begin(); fi != o.m_fields.end(); ++fi)
-				os << fi->first << ':' << fi->second << ", ";
-			os << ")";
-			break;
-		case object::ot_array:
-			os << "array[";
-			BOOST_FOREACH (const object& f, o.m_array)
-				os << f << ", ";
-			os << "]";
-			break;
-		case object::ot_boolean:	os << "bool(" << (o.m_number ? "true)" : "false)"); break;
-	}
-	
+	if (o.m_impl != nil)
+		o.m_impl->print(os);
+	else
+		os << "null";
 	return os;
-}
-
-object operator<(const object& a, const object& b)
-{
-//cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool result = false;
-	
-	if (a.m_type != object::ot_undef and b.m_type != object::ot_undef)
-	{
-		try
-		{
-			result = (double)a < (double)b;
-		}
-		catch (boost::bad_lexical_cast&)
-		{
-			result = (string)a < (string)b;
-		}
-	}
-	
-	return el::object(result);
-}
-
-object operator<=(const object& a, const object& b)
-{
-//cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool result = false;
-	
-	if (a.m_type != object::ot_undef and b.m_type != object::ot_undef)
-	{
-		try
-		{
-			result = (double)a <= (double)b;
-		}
-		catch (boost::bad_lexical_cast&)
-		{
-			result = (string)a <= (string)b;
-		}
-	}
-	
-	return el::object(result);
-}
-
-object operator>=(const object& a, const object& b)
-{
-//cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool result = false;
-	
-	if (a.m_type != object::ot_undef and b.m_type != object::ot_undef)
-	{
-		try
-		{
-			result = (double)a >= (double)b;
-		}
-		catch (boost::bad_lexical_cast&)
-		{
-			result = (string)a >= (string)b;
-		}
-	}
-	
-	return el::object(result);
-}
-
-object operator>(const object& a, const object& b)
-{
-//cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool result = false;
-	
-	if (a.m_type != object::ot_undef and b.m_type != object::ot_undef)
-	{
-		try
-		{
-			result = (double)a > (double)b;
-		}
-		catch (boost::bad_lexical_cast&)
-		{
-			result = (string)a > (string)b;
-		}
-	}
-	
-	return el::object(result);
-}
-
-object operator!=(const object& a, const object& b)
-{
-//cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool result = false;
-	
-	if (a.m_type != object::ot_undef and b.m_type != object::ot_undef)
-	{
-		try
-		{
-			result = (double)a != (double)b;
-		}
-		catch (boost::bad_lexical_cast&)
-		{
-			result = (string)a != (string)b;
-		}
-	}
-	
-	return el::object(result);
-
-
-//
-//	if (a.m_type == object::ot_undef or b.m_type == object::ot_undef)
-//		return object(false);
-//	else if (a.m_type == object::ot_number and b.m_type == object::ot_number)
-//		return object(a.m_number != b.m_number);
-//	else if (a.m_type == object::ot_string and b.m_type == object::ot_string)
-//		return object(a.m_string != b.m_string);
-//	else if (a.m_type == object::ot_boolean and b.m_type == object::ot_boolean)
-//		return object((a.m_number == 0) != (b.m_number == 0));
-//	else
-//		throw zeep::exception("incompatible types in compare");
-}
-
-object operator==(const object& a, const object& b)
-{
-//cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool result = false;
-	
-	if (a.m_type != object::ot_undef and b.m_type != object::ot_undef)
-	{
-		try
-		{
-			result = (double)a == (double)b;
-		}
-		catch (boost::bad_lexical_cast&)
-		{
-			result = (string)a == (string)b;
-		}
-	}
-	
-	return el::object(result);
-//
-//	if (a.m_type == object::ot_undef or b.m_type == object::ot_undef)
-//		return object(false);
-//	else if (a.m_type == object::ot_number and b.m_type == object::ot_number)
-//		return object(a.m_number == b.m_number);
-//	else if (a.m_type == object::ot_string and b.m_type == object::ot_string)
-//		return object(a.m_string == b.m_string);
-//	else if (a.m_type == object::ot_boolean and b.m_type == object::ot_boolean)
-//		return object((a.m_number == 0) == (b.m_number == 0));
-//	else
-//		throw zeep::exception("incompatible types in compare");
 }
 
 object operator+(const object& a, const object& b)
 {
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	if (a.m_type == object::ot_string or b.m_type == object::ot_string)
-		return object((string)a + (string)b);
-
-	if (a.m_type != object::ot_number or b.m_type != object::ot_number)
-		throw zeep::exception("incompatible types in compare");
-	return object(a.m_number + b.m_number);
+	object result;
+	
+	if (typeid(*a.m_impl) == typeid(*b.m_impl))
+	{
+		if (dynamic_cast<int_object_impl*>(a.m_impl))
+			result = static_cast<int_object_impl*>(a.m_impl)->m_v + static_cast<int_object_impl*>(b.m_impl)->m_v;
+		else if (dynamic_cast<float_object_impl*>(a.m_impl))
+			result = static_cast<float_object_impl*>(a.m_impl)->m_v + static_cast<float_object_impl*>(b.m_impl)->m_v;
+		else if (dynamic_cast<string_object_impl*>(a.m_impl))
+			result = static_cast<string_object_impl*>(a.m_impl)->m_v + static_cast<string_object_impl*>(b.m_impl)->m_v;
+		else
+			throw exception("incompatible types in add operator");
+	}
+	else if (dynamic_cast<string_object_impl*>(a.m_impl) or dynamic_cast<string_object_impl*>(b.m_impl))
+		result = a.as<string>() + b.as<string>();
+	else if (dynamic_cast<float_object_impl*>(a.m_impl) or dynamic_cast<float_object_impl*>(b.m_impl))
+		result = a.as<double>() + b.as<double>();
+	else
+		result = a.as<int64>() + b.as<int64>();
+	
+	return result;
 }
 
 object operator-(const object& a, const object& b)
 {
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-
-	if (a.m_type != object::ot_number or b.m_type != object::ot_number)
-		throw zeep::exception("incompatible types in compare");
-	return object(a.m_number - b.m_number);
+	object result;
+	
+	if (dynamic_cast<float_object_impl*>(a.m_impl) or dynamic_cast<float_object_impl*>(b.m_impl))
+		result = a.as<double>() + b.as<double>();
+	else
+		result = a.as<int64>() + b.as<int64>();
+	
+	return result;
 }
 
 object operator*(const object& a, const object& b)
 {
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-
-	if (a.m_type != object::ot_number or b.m_type != object::ot_number)
-		throw zeep::exception("incompatible types in compare");
-	return object(a.m_number * b.m_number);
-}
-
-object operator%(const object& a, const object& b)
-{
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-
-	if (a.m_type != object::ot_number or b.m_type != object::ot_number)
-		throw zeep::exception("incompatible types in compare");
-	return object(fmod(a.m_number, b.m_number));
+	object result;
+	
+	if (dynamic_cast<float_object_impl*>(a.m_impl) or dynamic_cast<float_object_impl*>(b.m_impl))
+		result = a.as<double>() * b.as<double>();
+	else
+		result = a.as<int64>() * b.as<int64>();
+	
+	return result;
 }
 
 object operator/(const object& a, const object& b)
 {
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-
-	if (a.m_type != object::ot_number or b.m_type != object::ot_number)
-		throw zeep::exception("incompatible types in compare");
-	return object(a.m_number / b.m_number);
+	return object(a.as<double>() * b.as<double>());
 }
 
-object operator&&(const object& a, const object& b)
+object operator%(const object& a, const object& b)
 {
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-	bool ba = (bool)a;
-	bool bb = (bool)b;
-
-	return object(ba && bb);
-}
-
-object operator||(const object& a, const object& b)
-{
-// cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
-
-	bool ba = (bool)a;
-	bool bb = (bool)b;
-
-	return object(ba || bb);
+	object result;
+	
+	if (dynamic_cast<int_object_impl*>(a.m_impl) or dynamic_cast<int_object_impl*>(b.m_impl))
+		result = a.as<int64>() % b.as<int64>();
+	
+	return result;
 }
 
 object operator-(const object& a)
 {
-	if (a.m_type != object::ot_number)
-		throw zeep::exception("incompatible type in negate");
-	return object(-a.m_number);
+	object result;
+	
+	if (dynamic_cast<float_object_impl*>(a.m_impl))
+		result = - a.as<double>();
+	else
+		result = - a.as<int64>();
+	
+	return result;
 }
 
 bool compare_object::operator()(const object& a, const object& b) const
@@ -592,6 +682,65 @@ bool compare_object::operator()(const object& a, const object& b) const
 	else
 		return a[m_field] < b[m_field];
 }
+
+// --------------------------------------------------------------------
+// interpreter for expression language
+
+struct interpreter
+{
+					interpreter(
+						const scope&			scope)
+						: m_scope(scope) {}
+
+	template<class OutputIterator, class Match>
+	OutputIterator	operator()(Match& m, OutputIterator out, boost::regex_constants::match_flag_type);
+
+	object			evaluate(
+						const std::string&	s);
+
+	void			process(
+						std::string&			s);
+	
+	void			match(
+						uint32					t);
+
+	unsigned char	next_byte();
+	unicode			get_next_char();
+	void			retract();
+	void			get_next_token();
+
+	object			parse_expr();					// or_expr ( '?' expr ':' expr )?
+	object			parse_or_expr();				// and_expr ( 'or' and_expr)*
+	object			parse_and_expr();				// equality_expr ( 'and' equality_expr)*
+	object			parse_equality_expr();			// relational_expr ( ('=='|'!=') relational_expr )?
+	object			parse_relational_expr();		// additive_expr ( ('<'|'<='|'>='|'>') additive_expr )*
+	object			parse_additive_expr();			// multiplicative_expr ( ('+'|'-') multiplicative_expr)*
+	object			parse_multiplicative_expr();	// unary_expr (('%'|'/') unary_expr)*
+	object			parse_unary_expr();				// ('-')? primary_expr
+	object			parse_primary_expr();			// '(' expr ')' | number | string
+	
+	const scope&	m_scope;
+	uint32			m_lookahead;
+	std::string		m_token_string;
+	double			m_token_number;
+	std::string::const_iterator
+					m_ptr, m_end;
+};
+
+template<class OutputIterator, class Match>
+inline
+OutputIterator interpreter::operator()(Match& m, OutputIterator out, boost::regex_constants::match_flag_type)
+{
+	std::string s(m[1]);
+
+	process(s);
+	
+	std::copy(s.begin(), s.end(), out);
+
+	return out;
+}
+
+
 
 enum token_type
 {
@@ -647,7 +796,7 @@ void interpreter::process(
 			result = parse_expr();
 		match(elt_eof);
 		
-		s = (string)result;
+		s = result.as<string>();
 	}
 	catch (exception& e)
 	{
@@ -925,7 +1074,7 @@ object interpreter::parse_expr()
 		object a = parse_expr();
 		match(elt_else);
 		object b = parse_expr();
-		if (result)
+		if (result.as<bool>())
 			result = a;
 		else
 			result = b;
@@ -939,7 +1088,7 @@ object interpreter::parse_or_expr()
 	while (m_lookahead == elt_or)
 	{
 		match(m_lookahead);
-		result = result or parse_and_expr();
+		result = result.as<bool>() or parse_and_expr().as<bool>();
 	}
 	return result;
 }
@@ -950,7 +1099,7 @@ object interpreter::parse_and_expr()
 	while (m_lookahead == elt_and)
 	{
 		match(m_lookahead);
-		result = result and parse_equality_expr();
+		result = result.as<bool>() and parse_equality_expr().as<bool>();
 	}
 	return result;
 }
@@ -966,7 +1115,7 @@ object interpreter::parse_equality_expr()
 	else if (m_lookahead == elt_ne)
 	{
 		match(m_lookahead);
-		result = (result != parse_relational_expr());
+		result = not (result == parse_relational_expr());
 	}
 	return result;
 }
@@ -978,8 +1127,8 @@ object interpreter::parse_relational_expr()
 	{
 		case elt_lt:	match(m_lookahead); result = (result < parse_additive_expr()); break;
 		case elt_le:	match(m_lookahead); result = (result <= parse_additive_expr()); break;
-		case elt_ge:	match(m_lookahead); result = (result >= parse_additive_expr()); break;
-		case elt_gt:	match(m_lookahead); result = (result > parse_additive_expr()); break;
+		case elt_ge:	match(m_lookahead); result = (parse_additive_expr() <= result); break;
+		case elt_gt:	match(m_lookahead); result = (parse_additive_expr() < result); break;
 		default:		break;
 	}
 	return result;
@@ -1039,7 +1188,7 @@ object interpreter::parse_unary_expr()
 	else if (m_lookahead == elt_not)
 	{
 		match(m_lookahead);
-		result = not (bool)parse_primary_expr();
+		result = not parse_primary_expr().as<bool>();
 	}
 	else
 		result = parse_primary_expr();
@@ -1100,6 +1249,63 @@ object interpreter::parse_primary_expr()
 	}
 	return result;
 }
+
+// --------------------------------------------------------------------
+// interpreter calls
+
+bool process_el(
+	const el::scope&			scope,
+	string&						text)
+{
+	static const boost::regex re("\\$\\{([^}]+)\\}");
+
+	el::interpreter interpreter(scope);
+	
+	ostringstream os;
+	std::ostream_iterator<char, char> out(os);
+	boost::regex_replace(out, text.begin(), text.end(), re, interpreter,
+		boost::match_default | boost::format_all);
+	
+	bool result = false;
+	if (os.str() != text)
+	{
+//cerr << "processed \"" << text << "\" => \"" << os.str() << '"' << endl;
+		text = os.str();
+		result = true;
+	}
+	
+	return result;
+}
+
+void evaluate_el(
+	const el::scope&			scope,
+	const string&				text,
+	el::object&					result)
+{
+	static const boost::regex re("^\\$\\{([^}]+)\\}$");
+	
+	boost::smatch m;
+	if (boost::regex_match(text, m, re))
+	{
+		el::interpreter interpreter(scope);
+		result = interpreter.evaluate(m[1]);
+//cerr << "evaluated \"" << text << "\" => \"" << result << '"' << endl;
+	}
+}
+
+bool evaluate_el(
+	const el::scope&			scope,
+	const string&				text)
+{
+	el::object result;
+	evaluate_el(scope, text, result);
+	return result.as<bool>();
+}
+
+// --------------------------------------------------------------------
+// scope
+
+
 
 ostream& operator<<(ostream& lhs, const scope& rhs)
 {
@@ -1177,6 +1383,8 @@ const request& scope::get_request() const
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
 }
+
+
 
 }
 }

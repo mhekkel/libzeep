@@ -23,6 +23,8 @@
         <file>preforked-http-server.cpp</file>
         <file>reply.cpp</file>
         <file>request_parser.cpp</file>
+        <file>webapp.cpp</file>
+        <file>webapp-el.cpp</file>
       </group>
       <group name="xml">
         <file>document.cpp</file>
@@ -50,13 +52,16 @@
     <target kind="Executable">
       <name>zeep-test Debug</name>
       <linkTarget>zeep-test</linkTarget>
-      <compiler>/usr/bin/c++</compiler>
+      <compiler>/usr/bin/g++-4.5</compiler>
       <defines>
         <define>DEBUG</define>
+        <define>BOOST_FILESYSTEM_VERSION=2</define>
       </defines>
       <cflags>
         <cflag>-O0</cflag>
+        <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
+        <cflag>-std=c++0x</cflag>
       </cflags>
       <ldflags>
         <ldflag>-static-libgcc</ldflag>
