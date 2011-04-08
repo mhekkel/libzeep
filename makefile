@@ -54,12 +54,12 @@ OBJECTS = \
 	obj/preforked-http-server.o \
 	obj/soap-server.o \
 	obj/unicode_support.o \
+	obj/webapp.o \
+	obj/webapp-el.o \
 	obj/xpath.o \
 	obj/writer.o
-#	obj/webapp.o \
-#	obj/webapp-el.o \
 
-lib: libzeep.a libzeep.so
+lib: libzeep.a # libzeep.so
 
 libzeep.a: $(OBJECTS)
 	ld -r -o $@ $(OBJECTS)

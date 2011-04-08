@@ -8,6 +8,13 @@
 
 #pragma once
 
+#include <map>
+
+#include <boost/range.hpp>
+
+#include <zeep/http/request.hpp>
+#include <zeep/exception.hpp>
+
 typedef int8_t		int8;
 typedef uint8_t		uint8;
 typedef int16_t		int16;
@@ -27,6 +34,8 @@ namespace detail
 class object_impl;
 class object_iterator_impl;
 };
+
+class scope;
 
 class object
 {
