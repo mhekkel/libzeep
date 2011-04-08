@@ -65,6 +65,7 @@
       <defines>
         <define>NDEBUG</define>
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
+        <define>BOOST_FILESYSTEM_VERSION=2</define>
       </defines>
       <cflags>
         <cflag>-O0</cflag>

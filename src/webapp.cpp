@@ -16,7 +16,7 @@
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/unicode_support.hpp>
-#include <zeep/http/webapp-el.hpp>
+#include <zeep/http/webapp/el.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -124,7 +124,6 @@ void webapp::handle_request(
 	}
 	catch (std::exception& e)
 	{
-cerr << "exception: " << e.what() << endl;
 		el::scope scope(req);
 		scope.put("errormsg", el::object(e.what()));
 
@@ -265,7 +264,6 @@ void webapp::process_xml(
 		}
 		catch (std::exception& ex)
 		{
-cerr << "exception: " << ex.what() << endl;
 			xml::node* replacement = new xml::text(
 				(boost::format("Error processing directive 'mrs:%1%': %2%") %
 					e->name() % ex.what()).str());
@@ -365,7 +363,7 @@ void webapp::process_iterate(
 	fs::path			dir)
 {
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.undefined())
+	if (collection.type() != el::object::array_type)
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
 	string var = node->get_attribute("var");
@@ -489,7 +487,7 @@ void webapp::process_options(
 	fs::path			dir)
 {
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.undefined())
+	if (collection.type() != el::object::array_type)
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
 	string value = node->get_attribute("value");
@@ -612,7 +610,6 @@ void webapp::process_url(
 			string value = e->get_attribute("value");
 
 			process_el(scope, value);
-
 			parameters.add(name, value);
 		}
 	}
@@ -630,7 +627,7 @@ void webapp::process_url(
 
 		url += zeep::http::encode_url(p.first) + '=' + zeep::http::encode_url(p.second.as<string>());
 	}
-	
+
 	el::scope& s(const_cast<el::scope&>(scope));
 	s.put(var, url);
 }
@@ -744,7 +741,7 @@ void parameter_map::add(
 	if (not value.empty())
 		value = decode_url(value);
 	
-	insert(make_pair(name, parameter_value(value, false)));
+	operator[](name) = parameter_value(value, false);
 }
 
 }
