@@ -341,6 +341,11 @@ object::object()
 {
 }
 
+object::object(detail::object_impl* impl)
+	: m_impl(impl)
+{
+}
+
 object::object(const object& o)
 	: m_impl(o.m_impl)
 {

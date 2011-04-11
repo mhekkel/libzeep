@@ -53,6 +53,7 @@ class object
 
 				object();
 				object(const object& o);
+	explicit	object(detail::object_impl* impl);
 				~object();
 				
 				// create an array object
