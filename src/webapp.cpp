@@ -21,6 +21,7 @@
 using namespace std;
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
+namespace fs = boost::filesystem;
 
 namespace zeep { namespace http {
 

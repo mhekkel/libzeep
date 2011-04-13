@@ -197,7 +197,8 @@ void reply::set_content(istream* idata, const string& contentType)
 	if (m_version_major == 1 and m_version_minor == 0 and m_data)
 	{
 		streamsize pos = m_data->rdbuf()->pubseekoff(0, ios_base::cur);
-		streamsize length = m_data->rdbuf()->pubseekoff(0, ios_base::end) - pos;
+		streamsize length = m_data->rdbuf()->pubseekoff(0, ios_base::end);
+		length -= pos;
 		m_data->rdbuf()->pubseekoff(pos, ios_base::beg);
 		
 		set_header("Content-Length", boost::lexical_cast<string>(length));
