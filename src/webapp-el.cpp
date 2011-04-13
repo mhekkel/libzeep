@@ -645,7 +645,10 @@ const object object::operator[](const std::string& name) const
 	object result;
 
 	if (type() == struct_type)
-		result = static_cast<detail::base_struct_object_impl*>(m_impl)->field(name);
+	{
+		const detail::base_struct_object_impl* impl = static_cast<const detail::base_struct_object_impl*>(m_impl);
+		result = impl->field(name);
+	}
 
 	return result;
 }
@@ -1366,9 +1369,9 @@ object interpreter::parse_primary_expr()
 				{
 					match(m_lookahead);
 					if (result.type() == object::array_type and (m_token_string == "count" or m_token_string == "length"))
-						result = el::object(result.count());
+						result = object(result.count());
 					else
-						result = result[m_token_string];
+						result = const_cast<const object&>(result)[m_token_string];
 					match(elt_object);
 					continue;
 				}
@@ -1381,7 +1384,7 @@ object interpreter::parse_primary_expr()
 					match(elt_number);
 					match(elt_rbracket);
 					
-					result = result[index];
+					result = const_cast<object&>(result)[index];
 					continue;
 				}
 

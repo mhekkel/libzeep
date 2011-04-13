@@ -28,8 +28,6 @@
 namespace zeep {
 namespace http {
 
-namespace fs = boost::filesystem;
-
 namespace el { class scope; class object; }
 
 class parameter_value
@@ -81,13 +79,16 @@ class webapp : public http::server
 					// namespace to use in template XHTML files.
 					webapp(
 						const std::string&	ns,
-						const fs::path&		docroot = ".");
+						const boost::filesystem::path&
+											docroot = ".");
 
 	virtual			~webapp();
 
 	virtual void	set_docroot(
-						const fs::path&		docroot);
-	fs::path		get_docroot() const		{ return m_docroot; }
+						const boost::filesystem::path&
+											docroot);
+	boost::filesystem::path
+					get_docroot() const		{ return m_docroot; }
 	
   protected:
 	
@@ -113,7 +114,8 @@ class webapp : public http::server
 						xml::document&		doc);
 
 	void			load_template(
-						const fs::path&		file,
+						const boost::filesystem::path&
+											file,
 						xml::document&		doc)
 					{
 						load_template(file.string(), doc);
@@ -129,9 +131,10 @@ class webapp : public http::server
 	virtual void	process_xml(
 						xml::node*			node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
-	typedef boost::function<void(xml::element* node, const el::scope& scope, fs::path dir)> processor_type;
+	typedef boost::function<void(xml::element* node, const el::scope& scope, boost::filesystem::path dir)> processor_type;
 
 	virtual void	add_processor(
 						const std::string&	name,
@@ -140,57 +143,68 @@ class webapp : public http::server
 	virtual void	process_include(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_if(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_iterate(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_for(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_number(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_options(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_option(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_checkbox(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_url(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_param(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	process_embed(
 						xml::element*		node,
 						const el::scope&	scope,
-						fs::path			dir);
+						boost::filesystem::path
+											dir);
 
 	virtual void	init_scope(
 						el::scope&			scope);
@@ -208,7 +222,8 @@ class webapp : public http::server
 	typedef std::map<std::string,processor_type>	processor_map;
 	
 	std::string		m_ns;
-	fs::path		m_docroot;
+	boost::filesystem::path
+					m_docroot;
 	handler_map		m_dispatch_table;
 	processor_map	m_processor_table;
 };
