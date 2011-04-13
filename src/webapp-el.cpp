@@ -42,6 +42,16 @@ string object_impl::to_str() const
 	throw exception("cannot convert to requested type");
 }
 
+object& base_array_object_impl::at(uint32 ix)
+{
+	throw exception("method 'at' not implemented");
+}
+
+const object base_array_object_impl::at(uint32 ix) const
+{
+	throw exception("method 'at' not implemented");
+}
+
 }
 
 class int_object_impl : public detail::object_impl
@@ -666,7 +676,7 @@ const object object::operator[](uint32 ix) const
 
 	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(m_impl);
 	if (impl != nil and ix < impl->count())
-		result = impl->operator[](ix);
+		result = impl->at(ix);
 	
 	return result;
 }
@@ -694,7 +704,7 @@ object& object::operator[](uint32 ix)
 {
 	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(m_impl);
 	if (impl != nil and ix < impl->count())
-		return impl->operator[](ix);
+		return impl->at(ix);
 	
 	throw exception("index out of bounds or object is not an array");
 	return *this;

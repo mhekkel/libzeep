@@ -302,8 +302,8 @@ class base_array_object_impl : public object_impl
 	virtual object_iterator_impl*
 							create_iterator(bool begin) const = 0;
 
-	virtual object&			operator[](uint32 ix) = 0;
-	virtual const object	operator[](uint32 ix) const = 0;
+	virtual object&			at(uint32 ix);
+	virtual const object	at(uint32 ix) const;
 
   protected:
 							base_array_object_impl()
