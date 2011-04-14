@@ -633,7 +633,7 @@ template<> bool object::as<bool>() const
 	else if (type() == array_type)
 		result = static_cast<detail::base_array_object_impl*>(m_impl)->count() != 0;
 	else if (type() == string_type)
-		result = as<string>() != "false";
+		result = not as<string>().empty() and as<string>() != "false";
 	else if (type() == struct_type)
 		result = true;
 
