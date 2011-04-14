@@ -58,6 +58,7 @@ class object
 				
 				// create an array object
 	explicit	object(const std::vector<object>& v);
+	explicit	object(const std::vector<std::string>& v);
 
 				// construct an object directly from some basic types
 	explicit	object(int8 v);
@@ -77,6 +78,7 @@ class object
 
 				// assign an array object
 	object&		operator=(const std::vector<object>& v);
+	object&		operator=(const std::vector<std::string>& v);
 
 				// and assign some basic types
 	object&		operator=(int8 v);
