@@ -61,7 +61,7 @@ class int_object_impl : public detail::object_impl
 						: detail::object_impl(object::number_type)
 						, m_v(v)	{}
 
-	virtual void	print(std::ostream& os) const		{ os << m_v; }
+	virtual void	print(ostream& os) const		{ os << m_v; }
 	virtual int		compare(object_impl* rhs) const;
 
 	virtual int64	to_int() const						{ return m_v; }
@@ -78,7 +78,7 @@ class float_object_impl : public detail::object_impl
 						: detail::object_impl(object::number_type)
 						, m_v(v) {}
 
-	virtual void	print(std::ostream& os) const		{ os << m_v; }
+	virtual void	print(ostream& os) const		{ os << m_v; }
 	virtual int		compare(object_impl* rhs) const;
 
 	virtual int64	to_int() const						{ return static_cast<int64>(tr1::round(m_v)); }
@@ -95,7 +95,7 @@ class string_object_impl : public detail::object_impl
 						: detail::object_impl(object::string_type)
 						, m_v(v) {}
 
-	virtual void	print(std::ostream& os) const		{ os << '"' << m_v << '"'; }
+	virtual void	print(ostream& os) const		{ os << '"' << m_v << '"'; }
 	virtual int		compare(object_impl* rhs) const;
 
 	virtual int64	to_int() const						{ return boost::lexical_cast<int64>(m_v); }
@@ -133,6 +133,12 @@ class vector_object_impl : public detail::base_array_object_impl
 					vector_object_impl(const vector<object>& v)
 						: m_v(v) {}
 
+					vector_object_impl(const vector<string>& v)
+					{
+						foreach (const string& s, v)
+							m_v.push_back(object(s));
+					}
+
 	virtual object&	operator[](uint32 ix)
 					{
 						return m_v[ix];
@@ -144,7 +150,7 @@ class vector_object_impl : public detail::base_array_object_impl
 						return m_v[ix];
 					}
 
-	virtual void	print(std::ostream& os) const
+	virtual void	print(ostream& os) const
 					{
 						os << '[';
 						bool first = true;
@@ -175,7 +181,7 @@ class vector_object_impl : public detail::base_array_object_impl
 class struct_object_impl : public detail::base_struct_object_impl
 {
   public:
-	virtual void	print(std::ostream& os) const
+	virtual void	print(ostream& os) const
 					{
 						os << '{';
 						bool first = true;
@@ -193,14 +199,14 @@ class struct_object_impl : public detail::base_struct_object_impl
 
 	virtual int		compare(object_impl* rhs) const;
 
-	virtual object&	field(const std::string& name)
+	virtual object&	field(const string& name)
 					{
 						pair<map<string,object>::iterator,bool> i = m_v.insert(make_pair(name, object()));
 						return i.first->second;
 					}
 
 	virtual const object
-					field(const std::string& name) const
+					field(const string& name) const
 					{
 						object result;
 					
@@ -385,7 +391,12 @@ object& object::operator=(const object& o)
 // --------------------------------------------------------------------
 // explicit constructors and assignment
 
-object::object(const std::vector<object>& v)
+object::object(const vector<object>& v)
+	: m_impl(new vector_object_impl(v))
+{
+}
+
+object::object(const vector<string>& v)
 	: m_impl(new vector_object_impl(v))
 {
 }
@@ -447,12 +458,20 @@ object::object(const char* v)
 		m_impl = new string_object_impl(v);
 }
 
-object::object(const std::string& v)
+object::object(const string& v)
 	: m_impl(new string_object_impl(v))
 {
 }
 
-object& object::operator=(const std::vector<object>& v)
+object& object::operator=(const vector<object>& v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new vector_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(const vector<string>& v)
 {
 	if (m_impl != nil)
 		m_impl->release();
@@ -551,7 +570,7 @@ object& object::operator=(const char* v)
 	return *this;
 }
 
-object& object::operator=(const std::string& v)
+object& object::operator=(const string& v)
 {
 	if (m_impl != nil)
 		m_impl->release();
@@ -650,7 +669,7 @@ template<> double object::as<double>() const
 	return result;
 }
 
-const object object::operator[](const std::string& name) const
+const object object::operator[](const string& name) const
 {
 	object result;
 
@@ -681,7 +700,7 @@ const object object::operator[](uint32 ix) const
 	return result;
 }
 
-object& object::operator[](const std::string& name)
+object& object::operator[](const string& name)
 {
 	if (type() != struct_type)
 	{
@@ -733,7 +752,7 @@ bool operator<=(const object& a, const object& b)
 
 struct compare_object
 {
-	compare_object(const std::string& field, bool descending)
+	compare_object(const string& field, bool descending)
 		: m_field(field)
 		, m_descending(descending)
 	{
@@ -741,14 +760,14 @@ struct compare_object
 	
 	bool		operator()(const object& a, const object& b) const;
 
-	std::string		m_field;
+	string		m_field;
 	bool		m_descending;
 };
 
-//void object::sort(const std::string& sort_field, bool descending)
+//void object::sort(const string& sort_field, bool descending)
 //{
 //	if (m_type == ot_array)
-//		std::sort(m_array.begin(), m_array.end(), compare_object(sort_field, descending));
+//		sort(m_array.begin(), m_array.end(), compare_object(sort_field, descending));
 //}
 
 ostream& operator<<(ostream& os, const object& o)
@@ -859,10 +878,10 @@ struct interpreter
 	OutputIterator	operator()(Match& m, OutputIterator out, boost::regex_constants::match_flag_type);
 
 	object			evaluate(
-						const std::string&	s);
+						const string&	s);
 
 	void			process(
-						std::string&			s);
+						string&			s);
 	
 	void			match(
 						uint32					t);
@@ -884,9 +903,9 @@ struct interpreter
 	
 	const scope&	m_scope;
 	uint32			m_lookahead;
-	std::string		m_token_string;
+	string		m_token_string;
 	double			m_token_number;
-	std::string::const_iterator
+	string::const_iterator
 					m_ptr, m_end;
 };
 
@@ -894,11 +913,11 @@ template<class OutputIterator, class Match>
 inline
 OutputIterator interpreter::operator()(Match& m, OutputIterator out, boost::regex_constants::match_flag_type)
 {
-	std::string s(m[1]);
+	string s(m[1]);
 
 	process(s);
 	
-	std::copy(s.begin(), s.end(), out);
+	copy(s.begin(), s.end(), out);
 
 	return out;
 }
@@ -1425,7 +1444,7 @@ bool process_el(
 	el::interpreter interpreter(scope);
 	
 	ostringstream os;
-	std::ostream_iterator<char, char> out(os);
+	ostream_iterator<char, char> out(os);
 	boost::regex_replace(out, text.begin(), text.end(), re, interpreter,
 		boost::match_default | boost::format_all);
 	
@@ -1495,15 +1514,15 @@ scope::scope(const request& req)
 }
 
 object& scope::operator[](
-	const std::string& name)
+	const string& name)
 {
 	return lookup(name);
 }
 
 const object& scope::lookup(
-	const std::string&	name) const
+	const string&	name) const
 {
-	std::map<std::string,object>::const_iterator i = m_data.find(name);
+	map<string,object>::const_iterator i = m_data.find(name);
 	if (i != m_data.end())
 		return i->second;
 	else if (m_next != nil)
@@ -1514,17 +1533,17 @@ const object& scope::lookup(
 }
 
 const object& scope::operator[](
-	const std::string& name) const
+	const string& name) const
 {
 	return lookup(name);
 }
 
 object& scope::lookup(
-	const std::string&	name)
+	const string&	name)
 {
 	object* result = nil;
 
-	std::map<std::string,object>::iterator i = m_data.find(name);
+	map<string,object>::iterator i = m_data.find(name);
 	if (i != m_data.end())
 		result = &i->second;
 	else if (m_next != nil)
