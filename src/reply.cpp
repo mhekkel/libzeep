@@ -203,6 +203,8 @@ void reply::set_content(istream* idata, const string& contentType)
 		
 		set_header("Content-Length", boost::lexical_cast<string>(length));
 	}
+	else
+		set_header("Transfer-Encoding", "chunked");
 }
 
 string reply::get_content_type() const
@@ -268,13 +270,14 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 			m_buffer.erase(m_buffer.begin() + kMaxChunkSize, m_buffer.end());
 		
 		streamsize n = m_data->readsome(&m_buffer[0], m_buffer.size());
-		
+
 		// chunked encoding?
 		if (m_version_major > 1 or m_version_minor >= 1)
 		{
 			if (n == 0)
 			{
 				buffers.push_back(boost::asio::buffer("0"));
+				buffers.push_back(boost::asio::buffer(kCRLF));
 				buffers.push_back(boost::asio::buffer(kCRLF));
 				m_data.release();
 			}
