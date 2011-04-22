@@ -75,6 +75,8 @@ zeep-test: zeep-test.cpp libzeep.a
 install-libs: libzeep.so
 	install -d $(LIBDIR)
 	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
+	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
+	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
@@ -105,7 +107,6 @@ install-dev:
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	strip -SX $(LIBDIR)/libzeep.a
-	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 
 install: install-libs install-dev
 
@@ -125,4 +126,4 @@ include $(OBJECTS:%.o=%.d)
 $(OBJECTS:.o=.d):
 
 clean:
-	rm -rf obj/* libzeep.a libzeep.so $(LIB_NAME) zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
+	rm -rf obj/* libzeep.a libzeep.so* zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
