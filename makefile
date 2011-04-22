@@ -12,10 +12,6 @@ BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
 BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
 BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
-# debian dpkg-buildflags support
-DBF_CFLAGS			?= -g -O2
-DBF_LDFLAGS			?= 
-
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
@@ -26,17 +22,13 @@ BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-VERSION_MAJOR		= 2.5
-VERSION_MINOR		= 0
-DIST_NAME			= libzeep-$(VERSION_MAJOR).$(VERSION_MINOR)
-
-SO_NAME				= libzeep.so.$(VERSION_MAJOR)
-LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
+VERSION				= 2.5.0
+DIST_NAME			= libzeep-$(VERSION)
+LIB_NAME			= libzeep.so.$(VERSION)
 
 CC					?= c++
-CFLAGS				?= $(DBF_CFLAGS) -std=c++0x -DBOOST_FILESYSTEM_VERSION=2
-CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
-LDFLAGS				?= $(DBF_LDFLAGS)
+CFLAGS				+= -std=c++0x -DBOOST_FILESYSTEM_VERSION=2 \
+						$(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
 
 VPATH += src
 
@@ -64,13 +56,10 @@ lib: libzeep.a # libzeep.so
 libzeep.a: $(OBJECTS)
 	ld -r -o $@ $(OBJECTS)
 
-$(SO_NAME): $(LIB_NAME)
-	ln -fs $< $@
-
 $(LIB_NAME): $(OBJECTS)
-	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
+	$(CC) -shared -o $@ -Wl,-soname=$(LIB_NAME) $(LDFLAGS) $(OBJECTS)
 
-libzeep.so: $(SO_NAME)
+libzeep.so: $(LIB_NAME)
 	ln -fs $< $@
 
 # assuming zeep-test is build when install was not done already
@@ -80,7 +69,6 @@ zeep-test: zeep-test.cpp libzeep.a
 install-libs: libzeep.so
 	install -d $(LIBDIR)
 	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
-	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
@@ -121,7 +109,7 @@ dist: lib
 	rm -rf $(DIST_NAME)/tests
 	tar czf $(DIST_NAME).tar.gz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
-	cp $(DIST_NAME).tar.gz ../libzeep_$(VERSION_MAJOR).$(VERSION_MINOR).orig.tar.gz
+	cp $(DIST_NAME).tar.gz ../libzeep_$(VERSION).orig.tar.gz
 
 obj/%.o: %.cpp
 	$(CC) -MD -c -o $@ $< $(CFLAGS)
@@ -131,4 +119,4 @@ include $(OBJECTS:%.o=%.d)
 $(OBJECTS:.o=.d):
 
 clean:
-	rm -rf obj/* libzeep.a libzeep.so $(SO_NAME) $(LIB_NAME) zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
+	rm -rf obj/* libzeep.a libzeep.so $(LIB_NAME) zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
