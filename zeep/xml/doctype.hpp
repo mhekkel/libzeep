@@ -246,7 +246,7 @@ class element : boost::noncopyable
 
 						~element();
 
-	void				add_attribute(std::auto_ptr<attribute> attr);
+	void				add_attribute(attribute* attr);
 	
 	const attribute*	get_attribute(const std::string& name) const;
 
