@@ -84,7 +84,7 @@ install-libs: libzeep.so
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
-	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/el
+	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
 	install zeep/http/connection.hpp $(INCDIR)/zeep/http/connection.hpp
 	install zeep/http/header.hpp $(INCDIR)/zeep/http/header.hpp
 	install zeep/http/preforked-server.hpp $(INCDIR)/zeep/http/preforked-server.hpp
