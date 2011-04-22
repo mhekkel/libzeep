@@ -22,9 +22,12 @@ BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-VERSION				= 2.5.0
+VERSION_MAJOR		= 2.5
+VERSION_MINOR		= 0
+VERSION				= $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME			= libzeep-$(VERSION)
-LIB_NAME			= libzeep.so.$(VERSION)
+SO_NAME				= libzeep.so.$(VERSION_MAJOR)
+LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
 CFLAGS				+= -std=c++0x -DBOOST_FILESYSTEM_VERSION=2 \
@@ -57,10 +60,13 @@ libzeep.a: $(OBJECTS)
 	ld -r -o $@ $(OBJECTS)
 
 $(LIB_NAME): $(OBJECTS)
-	$(CC) -shared -o $@ -Wl,-soname=$(LIB_NAME) $(LDFLAGS) $(OBJECTS)
+	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
 
-libzeep.so: $(LIB_NAME)
-	ln -fs $< $@
+$(SO_NAME): $(LIB_NAME)
+	ln -fs $(LIB_NAME) $@
+
+libzeep.so: $(SO_NAME)
+	ln -fs $(LIB_NAME) $@
 
 # assuming zeep-test is build when install was not done already
 zeep-test: zeep-test.cpp libzeep.a
