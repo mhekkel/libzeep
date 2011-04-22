@@ -177,7 +177,7 @@ class istream_data_source : public data_source
 						guess_encoding();
 					}
 
-					istream_data_source(auto_ptr<istream> data, data_source* next = nil)
+					istream_data_source(istream* data, data_source* next = nil)
 						: data_source(next)
 						, m_data(*data)
 						, m_data_ptr(data)
@@ -208,7 +208,7 @@ class istream_data_source : public data_source
 	unsigned char	next_byte();
 
 	istream&		m_data;
-	auto_ptr<istream>
+	unique_ptr<istream>
 					m_data_ptr;
 	unicode			m_char_buffer;	// used in detecting \r\n algorithm
 
@@ -1535,7 +1535,7 @@ void parser_imp::parse(bool validate)
 	if (m_has_dtd and e == nil and m_validating)
 		not_valid(boost::format("Element '%1%' is not defined in DTD") % m_root_element);
 	
-	auto_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
+	unique_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
 	
 	if (e != nil)
 		valid = doctype::validator(allowed.get());
@@ -1698,7 +1698,7 @@ void parser_imp::doctypedecl()
 	
 	m_root_element = name;
 
-	auto_ptr<data_source> dtd;
+	unique_ptr<data_source> dtd;
 
 	if (m_lookahead == xml_Space)
 	{
@@ -2076,7 +2076,7 @@ void parser_imp::contentspec(doctype::element& element)
 		valid_nesting_validator check(m_data_source);
 		match('(');
 		
-		auto_ptr<doctype::allowed_base> allowed;
+		unique_ptr<doctype::allowed_base> allowed;
 		
 		s();
 		
@@ -2189,7 +2189,7 @@ void parser_imp::contentspec(doctype::element& element)
 
 doctype::allowed_ptr parser_imp::cp()
 {
-	auto_ptr<doctype::allowed_base> result;
+	unique_ptr<doctype::allowed_base> result;
 	
 	if (m_lookahead == '(')
 	{
@@ -2387,7 +2387,7 @@ void parser_imp::attlist_decl()
 		match(xml_Name);
 		s(true);
 		
-		auto_ptr<doctype::attribute> attribute;
+		unique_ptr<doctype::attribute> attribute;
 		
 		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
@@ -2544,7 +2544,7 @@ void parser_imp::attlist_decl()
 		}
 
 		attribute->external(m_in_external_dtd);		
-		dte->add_attribute(attribute);
+		dte->add_attribute(attribute.release());
 	}
 
 	m_allow_parameter_entity_references = true;
@@ -2640,8 +2640,8 @@ data_source* parser_imp::external_id()
 	else
 		not_well_formed("Expected external id starting with either SYSTEM or PUBLIC");
 
-	auto_ptr<istream> is(m_parser.external_entity_ref(m_data_source->base(), pubid, sysid));
-	if (is.get() != nil)
+	istream* is = m_parser.external_entity_ref(m_data_source->base(), pubid, sysid);
+	if (is != nil)
 	{
 		result = new istream_data_source(is);
 		
@@ -2667,7 +2667,7 @@ boost::tuple<string,string> parser_imp::read_external_id()
 	string result;
 	string path;
 
-	auto_ptr<data_source> data(external_id());
+	unique_ptr<data_source> data(external_id());
 
 	parser_state save(this, data.get());
 	
