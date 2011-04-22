@@ -8,7 +8,7 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-#BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
+BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
 BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
 BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
@@ -26,7 +26,7 @@ BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-VERSION_MAJOR		= 2.1
+VERSION_MAJOR		= 2.5
 VERSION_MINOR		= 0
 DIST_NAME			= libzeep-$(VERSION_MAJOR).$(VERSION_MINOR)
 
@@ -84,7 +84,7 @@ install-libs: libzeep.so
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
 
 install-dev:
-	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http
+	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/el
 	install zeep/http/connection.hpp $(INCDIR)/zeep/http/connection.hpp
 	install zeep/http/header.hpp $(INCDIR)/zeep/http/header.hpp
 	install zeep/http/preforked-server.hpp $(INCDIR)/zeep/http/preforked-server.hpp
@@ -93,6 +93,8 @@ install-dev:
 	install zeep/http/request_handler.hpp $(INCDIR)/zeep/http/request_handler.hpp
 	install zeep/http/request_parser.hpp $(INCDIR)/zeep/http/request_parser.hpp
 	install zeep/http/server.hpp $(INCDIR)/zeep/http/server.hpp
+	install zeep/http/webapp.hpp $(INCDIR)/zeep/http/webapp.hpp
+	install zeep/http/webapp/el.hpp $(INCDIR)/zeep/http/webapp/el.hpp
 	install zeep/xml/doctype.hpp $(INCDIR)/zeep/xml/doctype.hpp
 	install zeep/xml/document.hpp $(INCDIR)/zeep/xml/document.hpp
 	install zeep/xml/node.hpp $(INCDIR)/zeep/xml/node.hpp
