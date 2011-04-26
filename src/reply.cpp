@@ -194,7 +194,7 @@ void reply::set_content(istream* idata, const string& contentType)
 	set_header("Content-Type", contentType);
 	
 	// for HTTP/1.0 replies we need to calculate the data length
-	if (m_version_major == 1 and m_version_minor == 0 and m_data)
+	if (m_version_major == 1 and m_version_minor == 0 and m_data.get() != 0)
 	{
 		streamsize pos = m_data->rdbuf()->pubseekoff(0, ios_base::cur);
 		streamsize length = m_data->rdbuf()->pubseekoff(0, ios_base::end);
@@ -258,7 +258,7 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 {
 	bool result = false;
 	
-	if (m_data)
+	if (m_data.get() != 0)
 	{
 		result = true;
 		

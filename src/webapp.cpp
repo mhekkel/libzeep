@@ -618,7 +618,7 @@ void webapp::process_url(
 	string url = scope["baseuri"].as<string>();
 
 	bool first = true;
-	foreach (auto p, parameters)
+	foreach (parameter_map::value_type p, parameters)
 	{
 		if (first)
 			url += '?';

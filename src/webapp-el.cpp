@@ -1494,7 +1494,7 @@ ostream& operator<<(ostream& lhs, const scope& rhs)
 	const scope* s = &rhs;
 	while (s != nil)
 	{
-		foreach (auto e, s->m_data)
+		foreach (scope::data_map::value_type e, s->m_data)
 			lhs << e.first << " = " << e.second << endl;
 		s = s->m_next;
 	}
