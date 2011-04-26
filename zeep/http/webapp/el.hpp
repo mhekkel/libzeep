@@ -206,8 +206,9 @@ class scope
 
 	scope&			operator=(const scope&);
 
-	std::map<std::string,object>
-					m_data;
+	typedef std::map<std::string,object> data_map;
+
+	data_map		m_data;
 	scope*			m_next;
 	const request*	m_req;
 };
