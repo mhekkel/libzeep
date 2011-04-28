@@ -708,10 +708,21 @@ void webapp::get_parameters(
 			ps = req.uri.substr(d + 1);
 	}
 
-	for (ba::split_iterator<string::iterator> i = ba::make_split_iterator(ps, ba::first_finder("&"));
-		i != ba::split_iterator<string::iterator>(); ++i)
+	while (not ps.empty())
 	{
-		parameters.add(string(i->begin(), i->end()));
+		string::size_type e = ps.find('&');
+		string param;
+		
+		if (e != string::npos)
+		{
+			param = ps.substr(0, e);
+			ps.erase(0, e + 1);
+		}
+		else
+			swap(param, ps);
+		
+		if (not param.empty())
+			parameters.add(param);
 	}
 }
 
