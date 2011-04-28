@@ -116,7 +116,7 @@ dist: lib
 	rm -rf $(DIST_NAME)/tests
 	tar czf $(DIST_NAME).tar.gz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
-	cp $(DIST_NAME).tar.gz ../libzeep_$(VERSION).orig.tar.gz
+	cp $(DIST_NAME).tar.gz ../ppa/libzeep_$(VERSION).orig.tar.gz
 
 obj/%.o: %.cpp
 	$(CC) -MD -c -o $@ $< $(CFLAGS)
