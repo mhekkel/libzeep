@@ -188,6 +188,10 @@ void webapp::handle_file(
 		mimetype = "image/png";
 	else if (file.extension() == ".svg")
 		mimetype = "image/svg+xml";
+	else if (file.extension() == ".html" or file.extension() == ".htm")
+		mimetype = "text/html";
+	else if (file.extension() == ".xhtml")
+		mimetype = "application/xhtml+xml";
 
 	reply.set_content(out.str(), mimetype);
 
