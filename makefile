@@ -17,7 +17,7 @@ LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
 
-BOOST_LIBS			= system thread filesystem
+BOOST_LIBS			= system thread filesystem regex
 BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g

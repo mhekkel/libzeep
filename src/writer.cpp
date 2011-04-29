@@ -129,6 +129,7 @@ void writer::attribute(const string& name, const string& value)
 			case '<':	m_os << "&lt;";				last_is_space = false; break;
 			case '>':	m_os << "&gt;";				last_is_space = false; break;
 			case '\"':	m_os << "&quot;";			last_is_space = false; break;
+			case 0:		m_os << "&#0;";				last_is_space = false; break;
 			case '\n':	if (m_escape_whitespace)	m_os << "&#10;"; else m_os << c; last_is_space = true; break;
 			case '\r':	if (m_escape_whitespace)	m_os << "&#13;"; else m_os << c; last_is_space = false; break;
 			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
@@ -273,6 +274,7 @@ void writer::content(const string& text)
 			case '<':	m_os << "&lt;";				last_is_space = false; break;
 			case '>':	m_os << "&gt;";				last_is_space = false; break;
 			case '\"':	m_os << "&quot;";			last_is_space = false; break;
+			case 0:		m_os << "&#0;";				last_is_space = false; break;
 			case '\n':	if (m_escape_whitespace)	m_os << "&#10;"; else m_os << c; last_is_space = true; break;
 			case '\r':	if (m_escape_whitespace)	m_os << "&#13;"; else m_os << c; last_is_space = false; break;
 			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
