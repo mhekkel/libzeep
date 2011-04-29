@@ -8,16 +8,16 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
-BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
-BOOST_INC_DIR		= $(HOME)/projects/boost/include
+#BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
+#BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+#BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
 
-BOOST_LIBS			= system thread filesystem regex
+BOOST_LIBS			= system thread filesystem regex math_c99
 BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
