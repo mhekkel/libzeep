@@ -1,3 +1,7 @@
+Version 2.5.2
+
+- Throw exception when attempting to write null character.
+
 Version 2.5.1
   
 - Removed the use of split_iterator from webapp since it generated
