@@ -1,3 +1,7 @@
+Version 2.6.0
+
+- Changed parameter_map (for webapp) into a multimap
+
 Version 2.5.2
 
 - Throw exception when attempting to write null character.

@@ -757,7 +757,16 @@ void parameter_map::add(
 	if (not value.empty())
 		value = decode_url(value);
 	
-	operator[](name) = parameter_value(value, false);
+	insert(make_pair(name, parameter_value(value, false)));
+}
+
+void parameter_map::replace(
+	string			name,
+	string			value)
+{
+	if (count(name))
+		erase(lower_bound(name), upper_bound(name));
+	add(name, value);
 }
 
 }

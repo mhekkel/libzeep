@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/type_traits/is_arithmetic.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
@@ -51,7 +52,7 @@ class parameter_value
 	bool		m_defaulted;
 };
 
-class parameter_map : public std::map<std::string, parameter_value>
+class parameter_map : public std::multimap<std::string, parameter_value>
 {
   public:
 	
@@ -63,11 +64,16 @@ class parameter_map : public std::map<std::string, parameter_value>
 					std::string			name,
 					std::string			value);
 
+	void		replace(
+					std::string			name,
+					std::string			value);
+
 	template<class T>
 	const parameter_value&
 				get(
 					const std::string&	name,
 					T					defaultValue);
+
 };
 
 extern const std::string kLibZeepWebAppNS;
@@ -232,7 +238,14 @@ template<class T>
 inline
 T parameter_value::as() const
 {
-	return boost::lexical_cast<T>(m_v);
+	T result;
+	
+	if (boost::is_arithmetic<T>::value and m_v.empty())
+		result = 0;
+	else
+		result = boost::lexical_cast<T>(m_v);
+
+	return result;
 }
 
 template<>
@@ -268,9 +281,10 @@ parameter_map::get(
 	const std::string&	name,
 	T					defaultValue)
 {
-	if (count(name) == 0)
-		insert(std::make_pair(name, parameter_value(boost::lexical_cast<std::string>(defaultValue), true)));
-	return operator[](name);
+	iterator i = lower_bound(name);
+	if (i == end() or i->first != name)
+		i = insert(std::make_pair(name, parameter_value(boost::lexical_cast<std::string>(defaultValue), true)));
+	return i->second;
 }
 
 // specialisation for const char*
@@ -284,9 +298,13 @@ parameter_map::get(
 	if (defaultValue == nil)
 		defaultValue = "";
 	
-	if (count(name) == 0 or operator[](name).empty())
-		insert(std::make_pair(name, parameter_value(defaultValue, true)));
-	return operator[](name);
+	iterator i = lower_bound(name);
+	if (i == end() or i->first != name)
+		i = insert(std::make_pair(name, parameter_value(defaultValue, true)));
+	else if (i->second.empty())
+		i->second = parameter_value(defaultValue, true);
+
+	return i->second;
 }
 
 // specialisation for bool (if missing, value is false)
@@ -297,9 +315,13 @@ parameter_map::get(
 	const std::string&	name,
 	bool				defaultValue)
 {
-	if (count(name) == 0 or operator[](name).empty())
-		insert(std::make_pair(name, parameter_value("false", true)));
-	return operator[](name);
+	iterator i = lower_bound(name);
+	if (i == end() or i->first != name)
+		i = insert(std::make_pair(name, parameter_value("false", true)));
+	else if (i->second.empty())
+		i->second = parameter_value("false", true);
+
+	return i->second;
 }
 
 }
