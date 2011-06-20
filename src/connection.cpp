@@ -94,6 +94,7 @@ void connection::handle_write(const boost::system::error_code& ec)
 		{
 			m_request_parser.reset();
 			m_request = request();
+			m_reply = reply();
 
 			m_socket.async_read_some(boost::asio::buffer(m_buffer),
 				boost::bind(&connection::handle_read, shared_from_this(),
