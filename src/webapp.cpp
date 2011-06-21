@@ -615,7 +615,7 @@ void webapp::process_url(
 			string value = e->get_attribute("value");
 
 			process_el(scope, value);
-			parameters.add(name, value);
+			parameters.replace(name, value);
 		}
 	}
 
