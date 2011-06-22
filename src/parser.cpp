@@ -3190,7 +3190,8 @@ void parser_imp::element(doctype::validator& valid)
 			not_valid("invalid value specified for fixed attribute");
 		}
 		
-		if (attr_name == "xmlns" or ba::starts_with(attr_name, "xmlns:"))	// namespace support
+		// had a crash suddenly here deep down in ba::starts_with...
+		if (attr_name == "xmlns" or attr_name.compare(0, 6, "xmlns:", 6) == 0)	// namespace support
 		{
 			if (attr_name.length() == 5)
 			{

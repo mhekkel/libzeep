@@ -30,7 +30,7 @@ SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
-CFLAGS				+= -DBOOST_FILESYSTEM_VERSION=2 \
+CFLAGS				+= -O2 -DBOOST_FILESYSTEM_VERSION=2 \
 						$(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
 
 VPATH += src
