@@ -113,7 +113,10 @@ void webapp::handle_request(
 		
 		init_scope(scope);
 		
-		handler_map::iterator handler = m_dispatch_table.find(action);
+		handler_map::iterator handler = m_dispatch_table.find(uri);
+		if (handler == m_dispatch_table.end())
+			handler = m_dispatch_table.find(action);
+
 		if (handler != m_dispatch_table.end())
 			handler->second(req, scope, rep);
 		else
