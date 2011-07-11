@@ -235,7 +235,19 @@ void writer::comment(const string& text)
 		for (int i = 0; i < m_indent * m_level; ++i)
 			m_os << ' ';
 	
-		m_os << "<!--" << text << "-->";
+//		m_os << "<!--" << text << "-->";
+		m_os << "<!--";
+		
+		bool lastWasHyphen = false;
+		foreach (char ch, text)
+		{
+			if (ch == '-' and lastWasHyphen)
+				m_os << ' ';
+			m_os << ch;
+			lastWasHyphen = ch == '-';
+		}
+		
+		m_os << "-->";
 		
 		if (m_wrap)
 			m_os << endl;
