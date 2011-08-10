@@ -139,6 +139,17 @@ class vector_object_impl : public detail::base_array_object_impl
 							m_v.push_back(object(s));
 					}
 
+	virtual object&	at(uint32 ix)
+					{
+						return m_v[ix];
+					}
+					
+	virtual const object
+					at(uint32 ix) const
+					{
+						return m_v[ix];
+					}
+
 	virtual object&	operator[](uint32 ix)
 					{
 						return m_v[ix];
