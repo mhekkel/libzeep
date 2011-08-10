@@ -62,7 +62,7 @@
     <target kind="Static Library">
       <name>zeep Release</name>
       <linkTarget>libzeep</linkTarget>
-      <compiler>/usr/bin/g++-4.5</compiler>
+      <compiler>/usr/bin/g++</compiler>
       <defines>
         <define>NDEBUG</define>
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
