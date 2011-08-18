@@ -11,18 +11,19 @@
 #include <map>
 
 #include <boost/range.hpp>
+#include <boost/cstdint.hpp>
 
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
 
-typedef int8_t		int8;
-typedef uint8_t		uint8;
-typedef int16_t		int16;
-typedef uint16_t	uint16;
-typedef int32_t		int32;
-typedef uint32_t	uint32;
-typedef int64_t		int64;
-typedef uint64_t	uint64;
+typedef boost::int8_t		int8;
+typedef boost::uint8_t		uint8;
+typedef boost::int16_t		int16;
+typedef boost::uint16_t		uint16;
+typedef boost::int32_t		int32;
+typedef boost::uint32_t		uint32;
+typedef boost::int64_t		int64;
+typedef boost::uint64_t		uint64;
 
 namespace zeep {
 namespace http {
@@ -61,6 +62,7 @@ class object
 	explicit	object(const std::vector<std::string>& v);
 
 				// construct an object directly from some basic types
+	explicit	object(bool v);
 	explicit	object(int8 v);
 	explicit	object(uint8 v);
 	explicit	object(int16 v);
@@ -81,6 +83,7 @@ class object
 	object&		operator=(const std::vector<std::string>& v);
 
 				// and assign some basic types
+	object&		operator=(bool v);
 	object&		operator=(int8 v);
 	object&		operator=(uint8 v);
 	object&		operator=(int16 v);
@@ -171,7 +174,7 @@ class object
 	friend object operator/(const object& a, const object& b);
 	friend object operator-(const object& a);
 
-	struct detail::object_impl*	m_impl;
+	class detail::object_impl*	m_impl;
 };
 
 bool process_el(const scope& scope, std::string& text);

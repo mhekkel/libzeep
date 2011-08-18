@@ -59,4 +59,33 @@
 #define nil NULL
 #endif
 
+/// fixes for cygwin/boost-1.43 combo
+/// source:
+///  https://svn.boost.org/trac/boost/attachment/ticket/4816/boost_asio_bug_cygwin_with_fix.cpp
+#ifdef __CYGWIN__
+//////////////// FIX STARTS HERE
+/// 1st issue
+#include <boost/asio/detail/pipe_select_interrupter.hpp>
+
+/// 2nd issue
+#include <termios.h>
+#ifdef cfgetospeed
+#define __cfgetospeed__impl(tp) cfgetospeed(tp)
+#undef cfgetospeed
+inline speed_t cfgetospeed(const struct termios *tp)
+{
+        //return ((tp)->c_ospeed);
+        return __cfgetospeed__impl(tp);
+}
+#undef __cfgetospeed__impl
+#endif /// cfgetospeed is a macro
+
+/// 3rd issue
+#undef __CYGWIN__
+#include <boost/asio/detail/buffer_sequence_adapter.hpp>
+#define __CYGWIN__
+//////////////// FIX ENDS HERE
+#endif
+
+
 #endif

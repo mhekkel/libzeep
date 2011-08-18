@@ -14,5 +14,7 @@
 #define and &&
 #define or ||
 
+// the next line is to avoid adding dependancies on the c99l version of the math libraries
+#define BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS
 
 // TODO: reference additional headers your program requires here
