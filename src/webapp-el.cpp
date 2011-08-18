@@ -412,6 +412,11 @@ object::object(const vector<string>& v)
 {
 }
 
+object::object(bool v)
+	: m_impl(new int_object_impl(v))
+{
+}
+
 object::object(int8 v)
 	: m_impl(new int_object_impl(v))
 {
@@ -487,6 +492,14 @@ object& object::operator=(const vector<string>& v)
 	if (m_impl != nil)
 		m_impl->release();
 	m_impl = new vector_object_impl(v);
+	return *this;
+}
+
+object& object::operator=(bool v)
+{
+	if (m_impl != nil)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
 	return *this;
 }
 

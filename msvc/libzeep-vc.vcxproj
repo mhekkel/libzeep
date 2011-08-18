@@ -50,25 +50,27 @@
     </BuildLog>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\boost\include\boost-1_43;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\boost\include\boost-1_46_1;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;DEBUG;BOOST_FILESYSTEM_VERSION=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <ForcedIncludeFiles>$(ProjectDir)stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
+    <Lib>
+      <Verbose>true</Verbose>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\boost\include\boost-1_43;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\boost\include\boost-1_46_1;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;BOOST_FILESYSTEM_VERSION=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -81,21 +83,24 @@
   <ItemGroup>
     <ClCompile Include="..\src\connection.cpp" />
     <ClCompile Include="..\src\doctype.cpp" />
-    <ClCompile Include="..\src\document-expat.cpp" />
     <ClCompile Include="..\src\document.cpp" />
     <ClCompile Include="..\src\exception.cpp" />
     <ClCompile Include="..\src\http-server.cpp" />
     <ClCompile Include="..\src\node.cpp" />
     <ClCompile Include="..\src\parser.cpp" />
+    <ClCompile Include="..\src\preforked-http-server.cpp" />
     <ClCompile Include="..\src\reply.cpp" />
     <ClCompile Include="..\src\request_parser.cpp" />
     <ClCompile Include="..\src\soap-envelope.cpp" />
     <ClCompile Include="..\src\soap-server.cpp" />
     <ClCompile Include="..\src\unicode_support.cpp" />
+    <ClCompile Include="..\src\webapp-el.cpp" />
+    <ClCompile Include="..\src\webapp.cpp" />
     <ClCompile Include="..\src\writer.cpp" />
     <ClCompile Include="..\src\xpath.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\document-imp.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="..\zeep\config.hpp" />
