@@ -1,3 +1,11 @@
+Version 2.6.1
+
+- Fix in keep-alive (clear reply object after each served reply)
+- Implemented missing at() virtual method for el::vector
+- Writing comments now validates output
+- check mounted paths instead of only the root for handlers
+- optimization flags in makefile
+
 Version 2.6.0
 
 - Changed parameter_map (for webapp) into a multimap
