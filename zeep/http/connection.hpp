@@ -8,6 +8,7 @@
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/array.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
 #include <zeep/http/request_parser.hpp>
