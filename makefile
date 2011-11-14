@@ -23,7 +23,7 @@ LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR		= 2.6
-VERSION_MINOR		= 1
+VERSION_MINOR		= 2
 VERSION				= $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME			= libzeep-$(VERSION)
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
@@ -114,9 +114,9 @@ dist: lib
 	rm -rf $(DIST_NAME)
 	svn export . $(DIST_NAME)
 	rm -rf $(DIST_NAME)/tests
-	tar czf $(DIST_NAME).tar.gz $(DIST_NAME)
+	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
-	cp $(DIST_NAME).tar.gz ../ppa/libzeep_$(VERSION).orig.tar.gz
+	cp $(DIST_NAME).tgz ../ppa/libzeep_$(VERSION).orig.tar.gz
 
 obj/%.o: %.cpp
 	$(CC) -MD -c -o $@ $< $(CFLAGS)
@@ -126,4 +126,4 @@ include $(OBJECTS:%.o=%.d)
 $(OBJECTS:.o=.d):
 
 clean:
-	rm -rf obj/* libzeep.a libzeep.so* zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
+	rm -rf obj/* libzeep.a libzeep.so* zeep-test $(DIST_NAME) $(DIST_NAME).tgz
