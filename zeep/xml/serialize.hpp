@@ -85,24 +85,30 @@ struct wsdl_creator
 // The actual (de)serializers:
 
 // arithmetic types are ints, doubles, etc... simply use lexical_cast to convert these
-template<typename T> struct arithmetic_wsdl_name { };
+template<typename T, int S = sizeof(T), bool = boost::is_unsigned<T>::value> struct arithmetic_wsdl_name {};
 
-template<> struct arithmetic_wsdl_name<int> {
+template<typename T> struct arithmetic_wsdl_name<T, 1, false> {
+	static const char* type_name() { return "xsd:byte"; } 
+};
+template<typename T> struct arithmetic_wsdl_name<T, 1, true> {
+	static const char* type_name() { return "xsd:unsignedByte"; } 
+};
+template<typename T> struct arithmetic_wsdl_name<T, 2, false> {
+	static const char* type_name() { return "xsd:short"; } 
+};
+template<typename T> struct arithmetic_wsdl_name<T, 2, true> {
+	static const char* type_name() { return "xsd:unsignedShort"; } 
+};
+template<typename T> struct arithmetic_wsdl_name<T, 4, false> {
 	static const char* type_name() { return "xsd:int"; } 
 };
-template<> struct arithmetic_wsdl_name<unsigned int> {
+template<typename T> struct arithmetic_wsdl_name<T, 4, true> {
 	static const char* type_name() { return "xsd:unsignedInt"; } 
 };
-template<> struct arithmetic_wsdl_name<long int> {
-	static const char* type_name() { return "xsd:int"; } 
-};
-template<> struct arithmetic_wsdl_name<long unsigned int> {
-	static const char* type_name() { return "xsd:unsignedInt"; } 
-};
-template<> struct arithmetic_wsdl_name<long long> {
+template<typename T> struct arithmetic_wsdl_name<T, 8, false> {
 	static const char* type_name() { return "xsd:long"; } 
 };
-template<> struct arithmetic_wsdl_name<unsigned long long> {
+template<typename T> struct arithmetic_wsdl_name<T, 8, true> {
 	static const char* type_name() { return "xsd:unsignedLong"; } 
 };
 template<> struct arithmetic_wsdl_name<float> {

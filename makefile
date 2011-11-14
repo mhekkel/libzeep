@@ -9,8 +9,8 @@
 # makefile to match your current installation.
 
 #BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
-#BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
-#BOOST_INC_DIR		= $(HOME)/projects/boost/include
+BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
@@ -70,7 +70,7 @@ libzeep.so: $(SO_NAME)
 
 # assuming zeep-test is build when install was not done already
 zeep-test: zeep-test.cpp libzeep.a
-	$(CC) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
+	$(CC) -I$(BOOST_INC_DIR) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
 
 install-libs: libzeep.so
 	install -d $(LIBDIR)

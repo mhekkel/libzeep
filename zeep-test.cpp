@@ -16,6 +16,7 @@
 #endif
 
 #include <zeep/server.hpp>
+#include <zeep/http/webapp/el.hpp>
 
 #include <iostream>
 
@@ -39,6 +40,19 @@ struct Hit
 	string			id;
 	string			title;
 	float			score;
+	int				v_int;
+	unsigned int	v_uint;
+	long			v_long;
+	unsigned long	v_ulong;
+	long int		v_long2;
+	long unsigned int	v_ulong2;
+	long long		v_longlong;
+	unsigned long long
+					v_ulonglong;
+	int64			v_longlong2;
+	uint64			v_ulonglong2;
+	long int			v_longlong3;
+	unsigned long int	v_ulonglong3;
 
 					Hit() : score(0) {}
 	
@@ -48,6 +62,18 @@ struct Hit
 		ar & BOOST_SERIALIZATION_NVP(db)
 		   & BOOST_SERIALIZATION_NVP(id)
 		   & BOOST_SERIALIZATION_NVP(title)
+		   & BOOST_SERIALIZATION_NVP(v_int)
+		   & BOOST_SERIALIZATION_NVP(v_uint)
+		   & BOOST_SERIALIZATION_NVP(v_long)
+		   & BOOST_SERIALIZATION_NVP(v_ulong)
+		   & BOOST_SERIALIZATION_NVP(v_long2)
+		   & BOOST_SERIALIZATION_NVP(v_ulong2)
+		   & BOOST_SERIALIZATION_NVP(v_longlong)
+		   & BOOST_SERIALIZATION_NVP(v_ulonglong)
+		   & BOOST_SERIALIZATION_NVP(v_longlong2)
+		   & BOOST_SERIALIZATION_NVP(v_ulonglong2)
+		   & BOOST_SERIALIZATION_NVP(v_longlong3)
+		   & BOOST_SERIALIZATION_NVP(v_ulonglong3)
 		   & BOOST_SERIALIZATION_NVP(score);
 	}
 };
