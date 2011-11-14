@@ -1,3 +1,9 @@
+Version 2.6.2
+
+- Apparently the word size has changed on amd64/GNUC targets. I've
+  switched to a more robust template selection algorithm for WSDL
+  generation.
+
 Version 2.6.1
 
 - Fix in keep-alive (clear reply object after each served reply)
