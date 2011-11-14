@@ -21,9 +21,9 @@
 using namespace std;
 namespace ba = boost::algorithm;
 
-#if DEBUG
-extern int VERBOSE;
-#endif
+//#if DEBUG
+//extern int VERBOSE;
+//#endif
 
 namespace zeep { namespace xml {
 
@@ -1169,10 +1169,10 @@ int parser_imp::get_next_token()
 		}
 	}
 	
-#if DEBUG
-	if (VERBOSE)
-		cout << "token: " << describe_token(token) << " (" << m_token << ')' << endl;
-#endif
+//#if DEBUG
+//	if (VERBOSE)
+//		cout << "token: " << describe_token(token) << " (" << m_token << ')' << endl;
+//#endif
 	
 	return token;
 }
@@ -1433,10 +1433,10 @@ int parser_imp::get_next_content()
 		}
 	}
 
-#if DEBUG
-	if (VERBOSE)
-		cout << "content: " << describe_token(token) << " (" << m_token << ')' << endl;
-#endif
+//#if DEBUG
+//	if (VERBOSE)
+//		cout << "content: " << describe_token(token) << " (" << m_token << ')' << endl;
+//#endif
 
 	return token;
 }

@@ -27,7 +27,7 @@
 
 #include <zeep/xml/writer.hpp>
 
-extern int VERBOSE;
+//extern int VERBOSE;
 
 using namespace std;
 using namespace tr1;
