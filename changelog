@@ -1,3 +1,7 @@
+Version 2.6.3
+
+- Fix for stack overflow in delete large XML documents
+
 Version 2.6.2
 
 - Apparently the word size has changed on amd64/GNUC targets. I've
