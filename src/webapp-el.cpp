@@ -1294,7 +1294,9 @@ object interpreter::parse_or_expr()
 	while (m_lookahead == elt_or)
 	{
 		match(m_lookahead);
-		result = result.as<bool>() or parse_and_expr().as<bool>();
+		bool b1 = result.as<bool>();
+		bool b2 = parse_and_expr().as<bool>();
+		result = b1 or b2;
 	}
 	return result;
 }
@@ -1305,7 +1307,9 @@ object interpreter::parse_and_expr()
 	while (m_lookahead == elt_and)
 	{
 		match(m_lookahead);
-		result = result.as<bool>() and parse_equality_expr().as<bool>();
+		bool b1 = result.as<bool>();
+		bool b2 = parse_equality_expr().as<bool>();
+		result = b1 and b2;
 	}
 	return result;
 }
