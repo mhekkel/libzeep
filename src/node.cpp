@@ -36,8 +36,14 @@ node::node()
 
 node::~node()
 {
-	if (m_next)
-		delete m_next;
+	// avoid deep recursion and stack overflows
+	while (m_next != nil)
+	{
+		node* n = m_next;
+		m_next = n->m_next;
+		n->m_next = nil;
+		delete n;
+	}
 }
 
 root_node* node::root()
@@ -88,11 +94,11 @@ string node::lang() const
 
 void node::insert_sibling(node* n, node* before)
 {
-#if DEBUG
-validate();
-n->validate();
-if (before) before->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//if (before) before->validate();
+//#endif
 
 	node* p = this;
 	while (p->m_next != nil and p->m_next != before)
@@ -109,19 +115,19 @@ if (before) before->validate();
 	if (before != nil)
 		before->m_prev = n;
 
-#if DEBUG
-validate();
-n->validate();
-if (before) before->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//if (before) before->validate();
+//#endif
 }
 
 void node::remove_sibling(node* n)
 {
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 
 	assert (this != n);
 	if (this == n)
@@ -141,10 +147,10 @@ n->validate();
 	else
 		throw exception("remove for a node not found in the list");
 
-#if DEBUG
-validate();
-n->validate();
-#endif 
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif 
 }
 
 void node::parent(container* n)
@@ -276,10 +282,10 @@ element_set container::children<element>() const
 
 void container::append(node_ptr n)
 {
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 
 	if (n->m_parent != nil)
 		throw exception("attempt to append node that has already a parent");
@@ -298,18 +304,18 @@ n->validate();
 		m_last = n;
 	}
 
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 }
 
 void container::remove(node_ptr n)
 {
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 	
 	if (n->m_parent != this)
 		throw exception("attempt to remove node whose parent is invalid");
@@ -333,10 +339,10 @@ n->validate();
 		m_child->remove_sibling(n);
 	}
 	
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 }
 
 element_set container::find(const std::string& path) const
@@ -395,10 +401,10 @@ void container::clear()
 
 void container::push_front(node* n)
 {
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 
 	if (n == nil)
 		throw exception("attempt to insert nil node");
@@ -416,17 +422,17 @@ n->validate();
 	if (m_last == nil)
 		m_last = m_child;
 
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 }
 
 void container::pop_front()
 {
-#if DEBUG
-validate();
-#endif
+//#if DEBUG
+//validate();
+//#endif
 
 	if (m_child != nil)
 	{
@@ -443,17 +449,17 @@ validate();
 		delete n;
 	}
 
-#if DEBUG
-validate();
-#endif
+//#if DEBUG
+//validate();
+//#endif
 }
 
 void container::push_back(node* n)
 {
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 
 	if (n == nil)
 		throw exception("attempt to insert nil node");
@@ -475,17 +481,17 @@ n->validate();
 		m_last = n;
 	}
 
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 }
 
 void container::pop_back()
 {
-#if DEBUG
-validate();
-#endif
+//#if DEBUG
+//validate();
+//#endif
 
 	if (m_last != nil)
 	{
@@ -505,9 +511,9 @@ validate();
 		}
 	}
 
-#if DEBUG
-validate();
-#endif
+//#if DEBUG
+//validate();
+//#endif
 }
 
 container::node_iterator container::insert(node* position, node* n)
@@ -521,11 +527,11 @@ container::node_iterator container::insert(node* position, node* n)
 	if (n->m_parent != nil)
 		throw exception("attempt to insert node that already has a parent");
 
-#if DEBUG
-validate();
-n->validate();
-	position->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//	position->validate();
+//#endif
 	
 	if (m_child == position)	// n becomes the first in the list
 	{
@@ -541,19 +547,19 @@ n->validate();
 	if (m_last == nil)
 		m_last = m_child;
 
-#if DEBUG
-validate();
-n->validate();
-#endif
+//#if DEBUG
+//validate();
+//n->validate();
+//#endif
 
 	return node_iterator(n);
 }
 
 void container::validate()
 {
-#if DEBUG
-	node::validate();
-#endif
+//#if DEBUG
+//	node::validate();
+//#endif
 	
 	if (m_child or m_last)
 	{
@@ -568,9 +574,9 @@ void container::validate()
 		if (m_last->m_next != nil)
 			throw exception("m_last is not last in list");
 
-#if DEBUG
-		m_child->validate();
-#endif
+//#if DEBUG
+//		m_child->validate();
+//#endif
 	}
 }
 
