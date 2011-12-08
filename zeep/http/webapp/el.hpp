@@ -376,9 +376,8 @@ object::basic_iterator<ObjectType>::basic_iterator(detail::object_impl* a)
 	: m_impl(nil)
 {
 	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(a);
-	if (impl == nil)
-		throw exception("object is not an array");
-	m_impl = impl->create_iterator(true);
+	if (impl != nil)
+		m_impl = impl->create_iterator(true);
 }
 		
 template<class ObjectType>
@@ -386,9 +385,8 @@ object::basic_iterator<ObjectType>::basic_iterator(detail::object_impl* a, int)
 	: m_impl(nil)
 {
 	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(a);
-	if (impl == nil)
-		throw exception("object is not an array");
-	m_impl = impl->create_iterator(false);
+	if (impl != nil)
+		m_impl = impl->create_iterator(false);
 }
 		
 template<class ObjectType>
@@ -396,9 +394,8 @@ object::basic_iterator<ObjectType>::basic_iterator(const detail::object_impl* a)
 	: m_impl(nil)
 {
 	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(a);
-	if (impl == nil)
-		throw exception("object is not an array");
-	m_impl = impl->create_iterator(true);
+	if (impl != nil)
+		m_impl = impl->create_iterator(true);
 }
 		
 template<class ObjectType>
@@ -406,9 +403,8 @@ object::basic_iterator<ObjectType>::basic_iterator(const detail::object_impl* a,
 	: m_impl(nil)
 {
 	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(a);
-	if (impl == nil)
-		throw exception("object is not an array");
-	m_impl = impl->create_iterator(false);
+	if (impl != nil)
+		m_impl = impl->create_iterator(false);
 }
 		
 template<class ObjectType>
