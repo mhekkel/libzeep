@@ -51,13 +51,13 @@
 #	endif // _MSC_EXTENSIONS
 #endif
 
-/// libzeep code uses nil as NULL, it just looks better on my eyes.
-/// Eventually we'll have to change this to the new C++x0 keyword
-/// nullptr.
-
-#ifndef nil
-#define nil NULL
-#endif
+///// libzeep code uses nullptr as NULL, it just looks better on my eyes.
+///// Eventually we'll have to change this to the new C++x0 keyword
+///// nullptr.
+//
+//#ifndef nullptr
+//#define nullptr NULL
+//#endif
 
 /// fixes for cygwin/boost-1.43 combo
 /// source:

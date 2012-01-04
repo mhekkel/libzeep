@@ -49,8 +49,8 @@ document_imp::document_imp(document* doc)
 	, m_validating(false)
 	, m_preserve_cdata(false)
 	, m_doc(doc)
-	, m_cur(nil)
-	, m_cdata(nil)
+	, m_cur(nullptr)
+	, m_cdata(nullptr)
 {
 }
 
@@ -66,7 +66,7 @@ string document_imp::prefix_for_namespace(const string& ns)
 	string result;
 	if (i != m_namespaces.end())
 		result = i->first;
-	else if (m_cur != nil)
+	else if (m_cur != nullptr)
 		result = m_cur->prefix_for_namespace(ns);
 	else
 		throw exception("namespace not found: %s", ns.c_str());
@@ -76,12 +76,12 @@ string document_imp::prefix_for_namespace(const string& ns)
 
 istream* document_imp::external_entity_ref(const string& base, const string& pubid, const string& sysid)
 {
-	istream* result = nil;
+	istream* result = nullptr;
 	
 	if (m_doc->external_entity_ref_handler)
 		result = m_doc->external_entity_ref_handler(base, pubid, sysid);
 	
-	if (result == nil and not sysid.empty())
+	if (result == nullptr and not sysid.empty())
 	{
 		fs::path path;
 		
@@ -150,7 +150,7 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		m_root.child_element(n.get());
 	else
 		m_cur->append(n.get());
@@ -174,10 +174,10 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 
 void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
 {
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("Empty stack");
 	
-	if (m_cdata != nil)
+	if (m_cdata != nullptr)
 		throw exception("CDATA section not closed");
 	
 	m_cur = dynamic_cast<element*>(m_cur->parent());
@@ -185,10 +185,10 @@ void zeep_document_imp::EndElementHandler(const string& name, const string& uri)
 
 void zeep_document_imp::CharacterDataHandler(const string& data)
 {
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("Empty stack");
 	
-	if (m_cdata != nil)
+	if (m_cdata != nullptr)
 		m_cdata->append(data);
 	else
 		m_cur->add_text(data);
@@ -196,7 +196,7 @@ void zeep_document_imp::CharacterDataHandler(const string& data)
 
 void zeep_document_imp::ProcessingInstructionHandler(const string& target, const string& data)
 {
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -204,7 +204,7 @@ void zeep_document_imp::ProcessingInstructionHandler(const string& target, const
 
 void zeep_document_imp::CommentHandler(const string& s)
 {
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 		m_cur->append(new comment(s));
 	else
 		m_root.append(new comment(s));
@@ -212,10 +212,10 @@ void zeep_document_imp::CommentHandler(const string& s)
 
 void zeep_document_imp::StartCdataSectionHandler()
 {
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("empty stack");
 	
-	if (m_cdata != nil)
+	if (m_cdata != nullptr)
 		throw exception("Nested CDATA?");
 	
 	m_cdata = new cdata();
@@ -224,7 +224,7 @@ void zeep_document_imp::StartCdataSectionHandler()
 
 void zeep_document_imp::EndCdataSectionHandler()
 {
-	m_cdata = nil;
+	m_cdata = nullptr;
 }
 
 void zeep_document_imp::StartNamespaceDeclHandler(const string& prefix, const string& uri)
@@ -354,7 +354,7 @@ void document::write(writer& w) const
 	
 	element* e = m_impl->m_root.child_element();
 	
-	if (e == nil)
+	if (e == nullptr)
 		throw exception("cannot write an empty XML document");
 	
 	w.xml_decl(m_impl->m_standalone);

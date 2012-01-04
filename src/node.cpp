@@ -18,7 +18,7 @@
 #include <zeep/xml/xpath.hpp>
 #include <zeep/exception.hpp>
 
-#define nil NULL
+#define nullptr NULL
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -28,36 +28,36 @@ namespace zeep { namespace xml {
 // --------------------------------------------------------------------
 
 node::node()
-	: m_parent(nil)
-	, m_next(nil)
-	, m_prev(nil)
+	: m_parent(nullptr)
+	, m_next(nullptr)
+	, m_prev(nullptr)
 {
 }
 
 node::~node()
 {
 	// avoid deep recursion and stack overflows
-	while (m_next != nil)
+	while (m_next != nullptr)
 	{
 		node* n = m_next;
 		m_next = n->m_next;
-		n->m_next = nil;
+		n->m_next = nullptr;
 		delete n;
 	}
 }
 
 root_node* node::root()
 {
-	root_node* result = nil;
-	if (m_parent != nil)
+	root_node* result = nullptr;
+	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
 }
 
 const root_node* node::root() const
 {
-	const root_node* result = nil;
-	if (m_parent != nil)
+	const root_node* result = nullptr;
+	if (m_parent != nullptr)
 		result = m_parent->root();
 	return result;
 }
@@ -68,10 +68,10 @@ bool node::equals(const node* n) const
 
 	if (result)
 	{
-		if (m_next != nil and n->m_next != nil)
+		if (m_next != nullptr and n->m_next != nullptr)
 			result = m_next->equals(n->m_next);
 		else
-			result = (m_next == nil and n->m_next == nil);
+			result = (m_next == nullptr and n->m_next == nullptr);
 	}
 	
 	return result;
@@ -81,13 +81,13 @@ node* node::clone() const
 {
 	assert(false);
 	throw zeep::exception("cannot clone this");
-	return nil;
+	return nullptr;
 }
 
 string node::lang() const
 {
 	string result;
-	if (m_parent != nil)
+	if (m_parent != nullptr)
 		result = m_parent->lang();
 	return result;
 }
@@ -101,10 +101,10 @@ void node::insert_sibling(node* n, node* before)
 //#endif
 
 	node* p = this;
-	while (p->m_next != nil and p->m_next != before)
+	while (p->m_next != nullptr and p->m_next != before)
 		p = p->m_next;
 
-	if (p->m_next != before and before != nil)
+	if (p->m_next != before and before != nullptr)
 		throw zeep::exception("before argument in insert_sibling is not valid");
 	
 	p->m_next = n;
@@ -112,7 +112,7 @@ void node::insert_sibling(node* n, node* before)
 	n->m_parent = m_parent;
 	n->m_next = before;
 	
-	if (before != nil)
+	if (before != nullptr)
 		before->m_prev = n;
 
 //#if DEBUG
@@ -134,15 +134,15 @@ void node::remove_sibling(node* n)
 		throw exception("inconsistent node tree");
 
 	node* p = this;
-	while (p != nil and p->m_next != n)
+	while (p != nullptr and p->m_next != n)
 		p = p->m_next;
 
-	if (p != nil and p->m_next == n)
+	if (p != nullptr and p->m_next == n)
 	{
 		p->m_next = n->m_next;
-		if (p->m_next != nil)
+		if (p->m_next != nullptr)
 			p->m_next->m_prev = p;
-		n->m_next = n->m_prev = n->m_parent = nil;
+		n->m_next = n->m_prev = n->m_parent = nullptr;
 	}
 	else
 		throw exception("remove for a node not found in the list");
@@ -155,7 +155,7 @@ void node::remove_sibling(node* n)
 
 void node::parent(container* n)
 {
-	assert(m_parent == nil);
+	assert(m_parent == nullptr);
 	m_parent = n;
 }
 
@@ -196,7 +196,7 @@ string node::ns() const
 string node::namespace_for_prefix(const string& prefix) const
 {
 	string result;
-	if (m_parent != nil)
+	if (m_parent != nullptr)
 		result = m_parent->namespace_for_prefix(prefix);
 	return result;
 }
@@ -204,14 +204,14 @@ string node::namespace_for_prefix(const string& prefix) const
 string node::prefix_for_namespace(const string& uri) const
 {
 	string result;
-	if (m_parent != nil)
+	if (m_parent != nullptr)
 		result = m_parent->prefix_for_namespace(uri);
 	return result;
 }
 
 void node::validate()
 {
-	if (m_parent and dynamic_cast<element*>(this) != nil and
+	if (m_parent and dynamic_cast<element*>(this) != nullptr and
 			(find(m_parent->node_begin(), m_parent->node_end(), this) == m_parent->node_end()))
 		throw exception("validation error: parent does not know node");
 	if (m_next and m_next->m_prev != this)
@@ -220,13 +220,13 @@ void node::validate()
 		throw exception("validation error: m_prev->m_next != this");
 	
 	node* n = this;
-	while (n != nil and n->m_next != this)
+	while (n != nullptr and n->m_next != this)
 		n = n->m_next;
 	if (n == this)
 		throw exception("cycle in node list");
 
 	n = this;
-	while (n != nil and n->m_prev != this)
+	while (n != nullptr and n->m_prev != this)
 		n = n->m_prev;
 	if (n == this)
 		throw exception("cycle in node list");
@@ -239,8 +239,8 @@ void node::validate()
 // container_node
 
 container::container()
-	: m_child(nil)
-	, m_last(nil)
+	: m_child(nullptr)
+	, m_last(nullptr)
 {
 }
 
@@ -255,7 +255,7 @@ node_set container::children<node>() const
 	node_set result;
 	
 	node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
 		result.push_back(child);
 		child = child->next();
@@ -270,7 +270,7 @@ element_set container::children<element>() const
 	element_set result;
 	
 	node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
 		if (typeid(*child) == typeid(element))
 			result.push_back(static_cast<element*>(child));
@@ -287,20 +287,20 @@ void container::append(node_ptr n)
 //n->validate();
 //#endif
 
-	if (n->m_parent != nil)
+	if (n->m_parent != nullptr)
 		throw exception("attempt to append node that has already a parent");
-	if (n == nil)
-		throw exception("attempt to append nil node");
+	if (n == nullptr)
+		throw exception("attempt to append nullptr node");
 	
-	if (m_child == nil)
+	if (m_child == nullptr)
 	{
 		m_last = m_child = n;
-		m_child->m_next = m_child->m_prev = nil;
+		m_child->m_next = m_child->m_prev = nullptr;
 		n->parent(this);
 	}
 	else
 	{
-		m_last->insert_sibling(n, nil);
+		m_last->insert_sibling(n, nullptr);
 		m_last = n;
 	}
 
@@ -319,17 +319,17 @@ void container::remove(node_ptr n)
 	
 	if (n->m_parent != this)
 		throw exception("attempt to remove node whose parent is invalid");
-	if (n == nil)
-		throw exception("attempt to remove nil node");
+	if (n == nullptr)
+		throw exception("attempt to remove nullptr node");
 	
 	if (m_child == n)
 	{
 		m_child = m_child->m_next;
-		if (m_child != nil)
-			m_child->m_prev = nil;
+		if (m_child != nullptr)
+			m_child->m_prev = nullptr;
 		else
-			m_last = nil;
-		n->m_next = n->m_prev = n->m_parent = nil;
+			m_last = nullptr;
+		n->m_next = n->m_prev = n->m_parent = nullptr;
 	}
 	else
 	{
@@ -354,7 +354,7 @@ element* container::find_first(const std::string& path) const
 {
 	element_set s = xpath(path).evaluate<element>(*this);
 	
-	element* result = nil;
+	element* result = nullptr;
 	if (not s.empty())
 		result = s.front();
 	return result;
@@ -370,7 +370,7 @@ container::size_type container::size() const
 
 bool container::empty() const
 {
-	return m_child == nil;
+	return m_child == nullptr;
 }
 
 node* container::front() const
@@ -396,7 +396,7 @@ void container::swap(container& cnt)
 void container::clear()
 {
 	delete m_child;
-	m_child = m_last = nil;
+	m_child = m_last = nullptr;
 }
 
 void container::push_front(node* n)
@@ -406,20 +406,20 @@ void container::push_front(node* n)
 //n->validate();
 //#endif
 
-	if (n == nil)
-		throw exception("attempt to insert nil node");
-	if (n->m_next != nil or n->m_prev != nil)
+	if (n == nullptr)
+		throw exception("attempt to insert nullptr node");
+	if (n->m_next != nullptr or n->m_prev != nullptr)
 		throw exception("attempt to insert a node that has next or prev");
-	if (n->m_parent != nil)
+	if (n->m_parent != nullptr)
 		throw exception("attempt to insert node that already has a parent");
 
 	n->parent(this);
 	n->m_next = m_child;
-	if (m_child != nil)
+	if (m_child != nullptr)
 		m_child->m_prev = n;
 
 	m_child = n;
-	if (m_last == nil)
+	if (m_last == nullptr)
 		m_last = m_child;
 
 //#if DEBUG
@@ -434,18 +434,18 @@ void container::pop_front()
 //validate();
 //#endif
 
-	if (m_child != nil)
+	if (m_child != nullptr)
 	{
 		node* n = m_child;
 
 		m_child = m_child->m_next;
-		if (m_child != nil)
-			m_child->m_prev = nil;
+		if (m_child != nullptr)
+			m_child->m_prev = nullptr;
 		
 		if (n == m_last)
-			m_last = nil;
+			m_last = nullptr;
 		
-		n->m_next = nil;
+		n->m_next = nullptr;
 		delete n;
 	}
 
@@ -461,23 +461,23 @@ void container::push_back(node* n)
 //n->validate();
 //#endif
 
-	if (n == nil)
-		throw exception("attempt to insert nil node");
+	if (n == nullptr)
+		throw exception("attempt to insert nullptr node");
 	
-	if (n->m_next != nil or n->m_prev != nil)
+	if (n->m_next != nullptr or n->m_prev != nullptr)
 		throw exception("attempt to insert a node that has next or prev");
-	if (n->m_parent != nil)
+	if (n->m_parent != nullptr)
 		throw exception("attempt to insert node that already has a parent");
 
-	if (m_child == nil)
+	if (m_child == nullptr)
 	{
 		m_last = m_child = n;
-		m_child->m_next = m_child->m_prev = nil;
+		m_child->m_next = m_child->m_prev = nullptr;
 		n->parent(this);
 	}
 	else
 	{
-		m_last->insert_sibling(n, nil);
+		m_last->insert_sibling(n, nullptr);
 		m_last = n;
 	}
 
@@ -493,20 +493,20 @@ void container::pop_back()
 //validate();
 //#endif
 
-	if (m_last != nil)
+	if (m_last != nullptr)
 	{
 		if (m_last == m_child)
 		{
 			delete m_child;
-			m_child = m_last = nil;
+			m_child = m_last = nullptr;
 		}
 		else
 		{
 			node* n = m_last;
 			m_last = m_last->m_prev;
-			m_last->m_next = nil;
+			m_last->m_next = nullptr;
 			
-			n->m_prev = nil;
+			n->m_prev = nullptr;
 			delete n;
 		}
 	}
@@ -518,13 +518,13 @@ void container::pop_back()
 
 container::node_iterator container::insert(node* position, node* n)
 {
-	if (n == nil)
-		throw exception("attempt to insert nil node");
+	if (n == nullptr)
+		throw exception("attempt to insert nullptr node");
 	if (position and position->m_parent != this)
 		throw exception("position has another parent");
-	if (n->m_next != nil or n->m_prev != nil)
+	if (n->m_next != nullptr or n->m_prev != nullptr)
 		throw exception("attempt to insert a node that has next or prev");
-	if (n->m_parent != nil)
+	if (n->m_parent != nullptr)
 		throw exception("attempt to insert node that already has a parent");
 
 //#if DEBUG
@@ -539,12 +539,12 @@ container::node_iterator container::insert(node* position, node* n)
 		n->m_next = m_child;
 		m_child->m_prev = n;
 		m_child = n;
-		m_child->m_prev = nil;
+		m_child->m_prev = nullptr;
 	}
 	else
 		m_child->insert_sibling(n, position);
 
-	if (m_last == nil)
+	if (m_last == nullptr)
 		m_last = m_child;
 
 //#if DEBUG
@@ -563,15 +563,15 @@ void container::validate()
 	
 	if (m_child or m_last)
 	{
-		if (m_child == nil or m_last == nil)
+		if (m_child == nullptr or m_last == nullptr)
 			throw exception("m_child/m_last error");
 		if (std::find(node_begin(), node_end(), m_child) == node_end())
 			throw exception("cannot find m_child in this");
 		if (std::find(node_begin(), node_end(), m_last) == node_end())
 			throw exception("cannot find m_last in this");
-		if (m_child->m_prev != nil)
+		if (m_child->m_prev != nullptr)
 			throw exception("m_child is not first in list");
-		if (m_last->m_next != nil)
+		if (m_last->m_next != nullptr)
 			throw exception("m_last is not last in list");
 
 //#if DEBUG
@@ -582,10 +582,10 @@ void container::validate()
 
 //void container::private_insert(node* position, node* n)
 //{
-//	if (n->m_parent != nil or n->m_next != nil or n->m_prev != nil)
+//	if (n->m_parent != nullptr or n->m_next != nullptr or n->m_prev != nullptr)
 //		throw exception("attempt to insert a node that has parent and/or next/prev");
 //	
-//	if (position == nil)
+//	if (position == nullptr)
 //		push_back(n);
 //	else
 //	{
@@ -593,9 +593,9 @@ void container::validate()
 //			throw exception("position is not a child node of this container");
 //
 //		node* child = m_child;
-//		while (child != nil and child != position)
+//		while (child != nullptr and child != position)
 //			child = child->m_next;
-//		if (child == nil)
+//		if (child == nullptr)
 //			throw zeep::exception("position is not a valid child node");
 //		
 //		n->parent(this);
@@ -603,7 +603,7 @@ void container::validate()
 //		position->m_prev = n;
 //
 //		n->m_prev = position->m_prev;
-//		if (n->m_prev != nil)
+//		if (n->m_prev != nullptr)
 //			n->m_prev->m_next = n;
 //		
 //		if (position == m_child)
@@ -613,8 +613,8 @@ void container::validate()
 //
 //void container::private_erase(node* n)
 //{
-////	if (n == nil)
-////		throw exception("attempt to erase nil node");
+////	if (n == nullptr)
+////		throw exception("attempt to erase nullptr node");
 ////	
 ////	if (n->m_parent != this)
 ////		throw exception("cannot erase node, invalid parent");
@@ -622,8 +622,8 @@ void container::validate()
 ////	if (m_child == n)
 ////	{
 ////		m_child = m_child->m_next;
-////		if (m_child != nil)
-////			m_child->m_prev = nil;
+////		if (m_child != nullptr)
+////			m_child->m_prev = nullptr;
 ////	}
 ////	else
 ////		m_child->remove_sibling(n);
@@ -631,11 +631,11 @@ void container::validate()
 ////	if (n == m_last)
 ////	{
 ////		m_last = m_child;
-////		while (m_last->m_next != nil)
+////		while (m_last->m_next != nullptr)
 ////			m_last = m_last->m_next;
 ////	}
 ////	
-////	n->m_next = n->m_prev = n->m_parent = nil;
+////	n->m_next = n->m_prev = n->m_parent = nullptr;
 //	remove(n);
 //	delete n;
 //}
@@ -665,17 +665,17 @@ string root_node::str() const
 {
 	string result;
 	element* e = child_element();
-	if (e != nil)
+	if (e != nullptr)
 		result = e->str();
 	return result;
 }
 
 element* root_node::child_element() const
 {
-	element* result = nil;
+	element* result = nullptr;
 
 	node* n = m_child;
-	while (n != nil and result == nil)
+	while (n != nullptr and result == nullptr)
 	{
 		result = dynamic_cast<element*>(n);
 		n = n->next();
@@ -687,7 +687,7 @@ element* root_node::child_element() const
 void root_node::child_element(element* child)
 {
 	element* e = child_element();
-	if (e != nil)
+	if (e != nullptr)
 	{
 		container::remove(e);
 		delete e;
@@ -699,7 +699,7 @@ void root_node::child_element(element* child)
 void root_node::write(writer& w) const
 {
 	node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
 		child->write(w);
 		child = child->next();
@@ -715,10 +715,10 @@ bool root_node::equals(const node* n) const
 		
 		const root_node* e = static_cast<const root_node*>(n);
 		
-		if (m_child != nil and e->m_child != nil)
+		if (m_child != nullptr and e->m_child != nullptr)
 			result = m_child->equals(e->m_child);
 		else
-			result = m_child == nil and e->m_child == nil;
+			result = m_child == nullptr and e->m_child == nullptr;
 	}
 
 	return result;
@@ -726,8 +726,8 @@ bool root_node::equals(const node* n) const
 
 void root_node::append(node* n)
 {
-	if (dynamic_cast<processing_instruction*>(n) == nil and
-		dynamic_cast<comment*>(n) == nil)
+	if (dynamic_cast<processing_instruction*>(n) == nullptr and
+		dynamic_cast<comment*>(n) == nullptr)
 	{
 		throw exception("can only append comment and processing instruction nodes to a root_node");
 	}
@@ -747,7 +747,7 @@ bool comment::equals(const node* n) const
 {
 	return
 		node::equals(n) and
-		dynamic_cast<const comment*>(n) != nil and
+		dynamic_cast<const comment*>(n) != nullptr and
 		m_text == static_cast<const comment*>(n)->m_text;
 }
 
@@ -768,7 +768,7 @@ bool processing_instruction::equals(const node* n) const
 {
 	return
 		node::equals(n) and
-		dynamic_cast<const processing_instruction*>(n) != nil and
+		dynamic_cast<const processing_instruction*>(n) != nullptr and
 		m_text == static_cast<const processing_instruction*>(n)->m_text;
 }
 
@@ -874,8 +874,8 @@ node* name_space::clone() const
 
 element::element(const std::string& qname)
 	: m_qname(qname)
-	, m_attribute(nil)
-	, m_name_space(nil)
+	, m_attribute(nullptr)
+	, m_name_space(nullptr)
 {
 }
 
@@ -890,7 +890,7 @@ string element::str() const
 	string result;
 	
 	const node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
 		result += child->str();
 		child = child->next();
@@ -904,9 +904,9 @@ string element::content() const
 	string result;
 	
 	const node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
-		if (dynamic_cast<const text*>(child) != nil)
+		if (dynamic_cast<const text*>(child) != nullptr)
 			result += child->str();
 		child = child->next();
 	}
@@ -919,11 +919,11 @@ void element::content(const string& s)
 	node* child = m_child;
 	
 	// remove all existing text nodes (including cdata ones)
-	while (child != nil)
+	while (child != nullptr)
 	{
 		node* next = child->next();
 		
-		if (dynamic_cast<text*>(child) != nil)
+		if (dynamic_cast<text*>(child) != nullptr)
 		{
 			container::remove(child);
 			delete child;
@@ -940,7 +940,7 @@ void element::add_text(const std::string& s)
 {
 	text* textNode = dynamic_cast<text*>(m_last);
 	
-	if (textNode != nil and dynamic_cast<cdata*>(textNode) == nil)
+	if (textNode != nullptr and dynamic_cast<cdata*>(textNode) == nullptr)
 		textNode->append(s);
 	else
 		append(new text(s));
@@ -951,7 +951,7 @@ attribute_set element::attributes() const
 	attribute_set result;
 	
 	node* attr = m_attribute;
-	while (attr != nil)
+	while (attr != nullptr)
 	{
 		result.push_back(static_cast<attribute*>(attr));
 		attr = attr->next();
@@ -965,7 +965,7 @@ name_space_list element::name_spaces() const
 	name_space_list result;
 	
 	node* ns = m_name_space;
-	while (ns != nil)
+	while (ns != nullptr)
 	{
 		result.push_back(static_cast<name_space*>(ns));
 		ns = ns->next();
@@ -978,7 +978,7 @@ string element::get_attribute(const string& qname) const
 {
 	string result;
 
-	for (attribute* attr = m_attribute; attr != nil; attr = static_cast<attribute*>(attr->next()))
+	for (attribute* attr = m_attribute; attr != nullptr; attr = static_cast<attribute*>(attr->next()))
 	{
 		if (attr->qname() == qname)
 		{
@@ -994,7 +994,7 @@ attribute* element::get_attribute_node(const string& qname) const
 {
 	attribute* attr = m_attribute;
 
-	while (attr != nil)
+	while (attr != nullptr)
 	{
 		if (attr->qname() == qname)
 			break;
@@ -1007,19 +1007,19 @@ attribute* element::get_attribute_node(const string& qname) const
 void element::set_attribute(const string& qname, const string& value, bool id)
 {
 	attribute* attr = get_attribute_node(qname);
-	if (attr != nil)
+	if (attr != nullptr)
 		attr->value(value);
 	else
 	{
 		attr = new attribute(qname, value, id);
 		
-		if (m_attribute == nil)
+		if (m_attribute == nullptr)
 		{
 			m_attribute = attr;
 			m_attribute->parent(this);
 		}
 		else
-			m_attribute->insert_sibling(attr, nil);
+			m_attribute->insert_sibling(attr, nullptr);
 	}
 }
 
@@ -1027,15 +1027,15 @@ void element::remove_attribute(const string& qname)
 {
 	attribute* n = get_attribute_node(qname);
 	
-	if (n != nil)
+	if (n != nullptr)
 	{
 		assert(n->m_parent == this);
 		
 		if (m_attribute == n)
 		{
 			m_attribute = static_cast<attribute*>(m_attribute->m_next);
-			if (m_attribute != nil)
-				m_attribute->m_prev = nil;
+			if (m_attribute != nullptr)
+				m_attribute->m_prev = nullptr;
 		}
 		else
 			m_attribute->remove_sibling(n);
@@ -1046,7 +1046,7 @@ string element::namespace_for_prefix(const string& prefix) const
 {
 	string result;
 	
-	for (name_space* ns = m_name_space; ns != nil; ns = static_cast<name_space*>(ns->next()))
+	for (name_space* ns = m_name_space; ns != nullptr; ns = static_cast<name_space*>(ns->next()))
 	{
 		if (ns->prefix() == prefix)
 		{
@@ -1055,7 +1055,7 @@ string element::namespace_for_prefix(const string& prefix) const
 		}
 	}
 	
-	if (result.empty() and dynamic_cast<element*>(m_parent) != nil)
+	if (result.empty() and dynamic_cast<element*>(m_parent) != nullptr)
 		result = static_cast<element*>(m_parent)->namespace_for_prefix(prefix);
 	
 	return result;
@@ -1065,7 +1065,7 @@ string element::prefix_for_namespace(const string& uri) const
 {
 	string result;
 	
-	for (name_space* ns = m_name_space; ns != nil; ns = static_cast<name_space*>(ns->next()))
+	for (name_space* ns = m_name_space; ns != nullptr; ns = static_cast<name_space*>(ns->next()))
 	{
 		if (ns->uri() == uri)
 		{
@@ -1074,7 +1074,7 @@ string element::prefix_for_namespace(const string& uri) const
 		}
 	}
 	
-	if (result.empty() and dynamic_cast<element*>(m_parent) != nil)
+	if (result.empty() and dynamic_cast<element*>(m_parent) != nullptr)
 		result = static_cast<element*>(m_parent)->prefix_for_namespace(uri);
 	
 	return result;
@@ -1083,7 +1083,7 @@ string element::prefix_for_namespace(const string& uri) const
 void element::set_name_space(const string& prefix, const string& uri)
 {
 	name_space* ns;
-	for (ns = m_name_space; ns != nil; ns = static_cast<name_space*>(ns->next()))
+	for (ns = m_name_space; ns != nullptr; ns = static_cast<name_space*>(ns->next()))
 	{
 		if (ns->prefix() == prefix)
 		{
@@ -1092,19 +1092,19 @@ void element::set_name_space(const string& prefix, const string& uri)
 		}
 	}
 	
-	if (ns == nil)
+	if (ns == nullptr)
 		add_name_space(new name_space(prefix, uri));
 }
 
 void element::add_name_space(name_space* ns)
 {
-	if (m_name_space == nil)
+	if (m_name_space == nullptr)
 	{
 		m_name_space = ns;
 		m_name_space->parent(this);
 	}
 	else
-		m_name_space->insert_sibling(ns, nil);
+		m_name_space->insert_sibling(ns, nullptr);
 }
 
 string element::lang() const
@@ -1120,7 +1120,7 @@ string element::id() const
 	string result;
 	
 	attribute* attr = m_attribute;
-	while (attr != nil)
+	while (attr != nullptr)
 	{
 		if (attr->id())
 		{
@@ -1138,14 +1138,14 @@ void element::write(writer& w) const
 	w.start_element(m_qname);
 
 	attribute* attr = m_attribute;
-	while (attr != nil)
+	while (attr != nullptr)
 	{
 		w.attribute(attr->qname(), attr->value());
 		attr = static_cast<attribute*>(attr->next());
 	}
 	
 	name_space* ns = m_name_space;
-	while (ns != nil)
+	while (ns != nullptr)
 	{
 		if (ns->prefix().empty())
 			w.attribute("xmlns", ns->uri());
@@ -1155,7 +1155,7 @@ void element::write(writer& w) const
 	}
 
 	node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
 		child->write(w);
 		child = child->next();
@@ -1174,20 +1174,20 @@ bool element::equals(const node* n) const
 		
 		const element* e = static_cast<const element*>(n);
 		
-		if (m_child != nil and e->m_child != nil)
+		if (m_child != nullptr and e->m_child != nullptr)
 			result = m_child->equals(e->m_child);
 		else
-			result = m_child == nil and e->m_child == nil;
+			result = m_child == nullptr and e->m_child == nullptr;
 		
-		if (result and m_attribute != nil and e->m_attribute != nil)
+		if (result and m_attribute != nullptr and e->m_attribute != nullptr)
 			result = m_attribute->equals(e->m_attribute);
 		else
-			result = m_attribute == nil and e->m_attribute == nil;
+			result = m_attribute == nullptr and e->m_attribute == nullptr;
 
-		if (result and m_name_space != nil and e->m_name_space != nil)
+		if (result and m_name_space != nullptr and e->m_name_space != nullptr)
 			result = m_name_space->equals(e->m_name_space);
 		else
-			result = m_name_space == nil and e->m_name_space == nil;
+			result = m_name_space == nullptr and e->m_name_space == nullptr;
 
 	}
 
@@ -1199,21 +1199,21 @@ node* element::clone() const
 	element* result = new element(m_qname);
 	
 	attribute* attr = m_attribute;
-	while (attr != nil)
+	while (attr != nullptr)
 	{
 		result->set_attribute(attr->qname(), attr->value(), attr->id());
 		attr = static_cast<attribute*>(attr->next());
 	}
 	
 	name_space* ns = m_name_space;
-	while (ns != nil)
+	while (ns != nullptr)
 	{
 		result->add_name_space(static_cast<name_space*>(ns->clone()));
 		ns = static_cast<name_space*>(ns->next());
 	}
 
 	node* child = m_child;
-	while (child != nil)
+	while (child != nullptr)
 	{
 		result->push_back(child->clone());
 		child = child->next();

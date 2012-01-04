@@ -242,7 +242,7 @@ class element : boost::noncopyable
 {
   public:
 						element(const std::string& name, bool declared, bool external)
-							: m_name(name), m_allowed(nil), m_declared(declared), m_external(external) {}
+							: m_name(name), m_allowed(nullptr), m_declared(declared), m_external(external) {}
 
 						~element();
 

@@ -12,12 +12,12 @@ using namespace std;
 namespace zeep {
 
 envelope::envelope()
-	: m_request(nil)
+	: m_request(nullptr)
 {
 }
 
 envelope::envelope(xml::document& data)
-	: m_request(nil)
+	: m_request(nullptr)
 {
 	const xml::xpath
 		sRequestPath("/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
