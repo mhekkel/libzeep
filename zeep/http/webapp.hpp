@@ -295,7 +295,7 @@ parameter_map::get(
 	const std::string&	name,
 	const char*			defaultValue)
 {
-	if (defaultValue == nil)
+	if (defaultValue == nullptr)
 		defaultValue = "";
 	
 	iterator i = lower_bound(name);

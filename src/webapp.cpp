@@ -243,7 +243,7 @@ void webapp::process_xml(
 {
 	xml::text* text = dynamic_cast<xml::text*>(node);
 	
-	if (text != nil)
+	if (text != nullptr)
 	{
 		string s = text->str();
 		if (el::process_el(scope, s))
@@ -252,7 +252,7 @@ void webapp::process_xml(
 	}
 	
 	xml::element* e = dynamic_cast<xml::element*>(node);
-	if (e == nil)
+	if (e == nullptr)
 		return;
 	
 	// if node is one of our special nodes, we treat it here
@@ -341,7 +341,7 @@ void webapp::process_include(
 	xml::container* parent = node->parent();
 	parent->insert(node, replacement);
 	
-	process_xml(replacement, scope, (dir / file).branch_path());
+	process_xml(replacement, scope, (dir / file).parent_path());
 }
 
 void webapp::process_if(

@@ -359,7 +359,7 @@ class object_iterator_impl
 
 template<class ObjectType>
 object::basic_iterator<ObjectType>::basic_iterator()
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
 }
 
@@ -367,50 +367,50 @@ template<class ObjectType>
 object::basic_iterator<ObjectType>::basic_iterator(const basic_iterator& o)
 	: m_impl(o.m_impl)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->reference();
 }
 		
 template<class ObjectType>
 object::basic_iterator<ObjectType>::basic_iterator(detail::object_impl* a)
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
 	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(a);
-	if (impl != nil)
+	if (impl != nullptr)
 		m_impl = impl->create_iterator(true);
 }
 		
 template<class ObjectType>
 object::basic_iterator<ObjectType>::basic_iterator(detail::object_impl* a, int)
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
 	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(a);
-	if (impl != nil)
+	if (impl != nullptr)
 		m_impl = impl->create_iterator(false);
 }
 		
 template<class ObjectType>
 object::basic_iterator<ObjectType>::basic_iterator(const detail::object_impl* a)
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
 	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(a);
-	if (impl != nil)
+	if (impl != nullptr)
 		m_impl = impl->create_iterator(true);
 }
 		
 template<class ObjectType>
 object::basic_iterator<ObjectType>::basic_iterator(const detail::object_impl* a, int)
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
 	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(a);
-	if (impl != nil)
+	if (impl != nullptr)
 		m_impl = impl->create_iterator(false);
 }
 		
 template<class ObjectType>
 object::basic_iterator<ObjectType>::~basic_iterator()
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 }
 		
@@ -419,10 +419,10 @@ object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator
 {
 	if (this != &o)
 	{
-		if (m_impl != nil)
+		if (m_impl != nullptr)
 			m_impl->release();
 		m_impl = o.m_impl;
-		if (m_impl != nil)
+		if (m_impl != nullptr)
 			m_impl->reference();
 	}
 	return *this;
@@ -431,7 +431,7 @@ object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator
 template<class ObjectType>
 const typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*() const
 {
-	if (m_impl == nil)
+	if (m_impl == nullptr)
 		throw exception("dereferencing invalid object iterator");
 	return m_impl->dereference();
 }
@@ -439,7 +439,7 @@ const typename object::basic_iterator<ObjectType>::reference object::basic_itera
 template<class ObjectType>
 typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*()
 {
-	if (m_impl == nil)
+	if (m_impl == nullptr)
 		throw exception("dereferencing invalid object iterator");
 	return m_impl->dereference();
 }
@@ -447,7 +447,7 @@ typename object::basic_iterator<ObjectType>::reference object::basic_iterator<Ob
 template<class ObjectType>
 typename object::basic_iterator<ObjectType>::pointer object::basic_iterator<ObjectType>::operator->() const
 {
-	if (m_impl == nil)
+	if (m_impl == nullptr)
 		throw exception("dereferencing invalid object iterator");
 	return &m_impl->dereference();
 }
@@ -455,7 +455,7 @@ typename object::basic_iterator<ObjectType>::pointer object::basic_iterator<Obje
 template<class ObjectType>
 object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator++()
 {
-	if (m_impl == nil)
+	if (m_impl == nullptr)
 		throw exception("incrementing invalid object iterator");
 	m_impl->increment();
 	return *this;
@@ -464,7 +464,7 @@ object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator
 template<class ObjectType>
 object::basic_iterator<ObjectType> object::basic_iterator<ObjectType>::operator++(int)
 {
-	if (m_impl == nil)
+	if (m_impl == nullptr)
 		throw exception("incrementing invalid object iterator");
 
 	basic_iterator<ObjectType> iter(*this);
@@ -476,9 +476,9 @@ template<class ObjectType>
 bool object::basic_iterator<ObjectType>::operator==(const basic_iterator& o) const
 {
 	bool result;
-	if (m_impl == nil and o.m_impl == nil)
+	if (m_impl == nullptr and o.m_impl == nullptr)
 		result = true;
-	else if (m_impl == nil or o.m_impl == nil)
+	else if (m_impl == nullptr or o.m_impl == nullptr)
 		throw exception("invalid object iterators");
 	else
 		result = m_impl->equal(o.m_impl);
@@ -489,9 +489,9 @@ template<class ObjectType>
 bool object::basic_iterator<ObjectType>::operator!=(const basic_iterator& o) const
 {
 	bool result;
-	if (m_impl == nil and o.m_impl == nil)
+	if (m_impl == nullptr and o.m_impl == nullptr)
 		result = false;
-	else if (m_impl == nil or o.m_impl == nil)
+	else if (m_impl == nullptr or o.m_impl == nullptr)
 		throw exception("invalid object iterators");
 	else
 		result = not m_impl->equal(o.m_impl);

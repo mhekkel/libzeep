@@ -81,12 +81,12 @@ void libxml2_doc_imp::StartElementHandler(
 	xmlTextReaderPtr		inReader)
 {
 	const char* qname = (const char*)xmlTextReaderConstName(inReader);
-	if (qname == nil)
-		throw exception("nil qname");
+	if (qname == nullptr)
+		throw exception("nullptr qname");
 	
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		m_root.child_element(n.get());
 	else
 		m_cur->append(n.get());
@@ -118,12 +118,12 @@ void libxml2_doc_imp::StartElementHandler(
 void libxml2_doc_imp::EndElementHandler(
 	xmlTextReaderPtr		inReader)
 {
-//	if (m_cur == nil)
+//	if (m_cur == nullptr)
 //		throw exception("Empty stack");
 //	
 //	m_cur = dynamic_cast<element*>(m_cur->parent());
 //	--m_depth;
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 	{
 		m_cur = dynamic_cast<element*>(m_cur->parent());
 		--m_depth;
@@ -139,7 +139,7 @@ void libxml2_doc_imp::CharacterDataHandler(
 		--m_depth;
 	}
 	
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("Empty stack");
 	
 	m_cur->add_text((const char*)xmlTextReaderConstValue(inReader));
@@ -151,7 +151,7 @@ void libxml2_doc_imp::ProcessingInstructionHandler(
 	const char* target = (const char*)xmlTextReaderConstName(inReader);
 	const char* data = (const char*)xmlTextReaderConstValue(inReader);
 	
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -162,7 +162,7 @@ void libxml2_doc_imp::CommentHandler(
 {
 	const char* data = (const char*)xmlTextReaderConstValue(inReader);
 	
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 		m_cur->append(new comment(data));
 	else
 		m_root.append(new comment(data));
@@ -253,10 +253,10 @@ void libxml2_doc_imp::parse(
 
 	xmlTextReaderPtr reader = xmlReaderForMemory(&buffer[0], length,
 		(fs::current_path().string() + "/").c_str(),
-		nil, 
+		nullptr, 
 		XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_XINCLUDE);
 
-	if (reader != nil)
+	if (reader != nullptr)
 	{
 		xmlTextReaderSetErrorHandler(reader, &libxml2_doc_imp::ErrorHandler, this);
 		try

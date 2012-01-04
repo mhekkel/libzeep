@@ -884,7 +884,7 @@ const attribute* element::get_attribute(const string& name) const
 	attribute_list::const_iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == name);
 	
-	const attribute* result = nil;
+	const attribute* result = nullptr;
 	
 	if (dta != m_attlist.end())
 		result = &(*dta);
@@ -902,12 +902,12 @@ validator element::get_validator() const
 
 bool element::empty() const
 {
-	return dynamic_cast<allowed_empty*>(m_allowed) != nil;
+	return dynamic_cast<allowed_empty*>(m_allowed) != nullptr;
 }
 
 bool element::element_content() const
 {
-	return m_allowed != nil and m_allowed->element_content();
+	return m_allowed != nullptr and m_allowed->element_content();
 }
 
 }

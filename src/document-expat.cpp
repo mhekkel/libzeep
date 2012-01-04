@@ -101,7 +101,7 @@ expat_exception::expat_exception(
 		 
 		int offset = 0, size = 0;
 		const char* context = XML_GetInputContext(parser, &offset, &size);
-		if (context != nil)
+		if (context != nullptr)
 			s << string(context + offset, size) << endl;
 	
 		m_message = s.str();
@@ -205,7 +205,7 @@ int expat_doc_imp::XML_ExternalEntityRefHandler(
 {
 	int result = XML_STATUS_OK;
 	
-	if (base != nil and systemId != nil)
+	if (base != nullptr and systemId != nullptr)
 	{
 		fs::path basedir(base);
 		fs::path file = basedir / systemId;
@@ -295,7 +295,7 @@ void expat_doc_imp::StartElementHandler(
 
 	auto_ptr<element> n(new element(qname));
 
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		m_root.child_element(n.get());
 	else
 		m_cur->append(n.get());
@@ -328,7 +328,7 @@ void expat_doc_imp::StartElementHandler(
 void expat_doc_imp::EndElementHandler(
 	const XML_Char*		name)
 {
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("Empty stack");
 	
 	m_cur = dynamic_cast<element*>(m_cur->parent());
@@ -338,10 +338,10 @@ void expat_doc_imp::CharacterDataHandler(
 	const XML_Char*		s,
 	int					len)
 {
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("Empty stack");
 	
-	if (m_cdata != nil)
+	if (m_cdata != nullptr)
 		m_cdata->append(data);
 	else
 		m_cur->add_text(string(s, len));
@@ -351,7 +351,7 @@ void expat_doc_imp::ProcessingInstructionHandler(
 	const XML_Char*		target,
 	const XML_Char*		data)
 {
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 		m_cur->append(new processing_instruction(target, data));
 	else
 		m_root.append(new processing_instruction(target, data));
@@ -360,7 +360,7 @@ void expat_doc_imp::ProcessingInstructionHandler(
 void expat_doc_imp::CommentHandler(
 	const XML_Char*		data)
 {
-	if (m_cur != nil)
+	if (m_cur != nullptr)
 		m_cur->append(new comment(data));
 	else
 		m_root.append(new comment(data));
@@ -368,10 +368,10 @@ void expat_doc_imp::CommentHandler(
 
 void expat_doc_imp::StartCdataSectionHandler()
 {
-	if (m_cur == nil)
+	if (m_cur == nullptr)
 		throw exception("empty stack");
 	
-	if (m_cdata != nil)
+	if (m_cdata != nullptr)
 		throw exception("Nested CDATA?");
 	
 	m_cdata = new cdata();
@@ -380,14 +380,14 @@ void expat_doc_imp::StartCdataSectionHandler()
 
 void expat_doc_imp::EndCdataSectionHandler()
 {
-	m_cdata = nil;
+	m_cdata = nullptr;
 }
 
 void expat_doc_imp::StartNamespaceDeclHandler(
 	const XML_Char*		prefix,
 	const XML_Char*		uri)
 {
-	if (prefix == nil)
+	if (prefix == nullptr)
 		prefix = "";
 
 	m_namespaces.push_back(make_pair(prefix, uri));
@@ -421,9 +421,9 @@ void expat_doc_imp::NotationDeclHandler(
 void expat_doc_imp::parse(
 	istream&		data)
 {
-	XML_Parser p = XML_ParserCreateNS(nil, '=');
+	XML_Parser p = XML_ParserCreateNS(nullptr, '=');
 	
-	if (p == nil)
+	if (p == nullptr)
 		throw exception("failed to create expat parser object");
 	
 	try

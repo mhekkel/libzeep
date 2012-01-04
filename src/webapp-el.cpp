@@ -117,7 +117,7 @@ class vector_object_iterator_impl : public detail::object_iterator_impl
 	virtual bool	equal(const object_iterator_impl* other)
 					{
 						const vector_object_iterator_impl* rhs = dynamic_cast<const vector_object_iterator_impl*>(other);
-						if (rhs == nil)
+						if (rhs == nullptr)
 							throw exception("comparing unequal iterators");
 						return rhs->m_i == m_i;
 					}
@@ -364,7 +364,7 @@ int struct_object_impl::compare(object_impl* rhs) const
 // basic object methods
 
 object::object()
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
 }
 
@@ -376,13 +376,13 @@ object::object(detail::object_impl* impl)
 object::object(const object& o)
 	: m_impl(o.m_impl)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->reference();
 }
 
 object::~object()
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 }
 
@@ -390,10 +390,10 @@ object& object::operator=(const object& o)
 {
 	if (this != &o)
 	{
-		if (m_impl != nil)
+		if (m_impl != nullptr)
 			m_impl->release();
 		m_impl = o.m_impl;
-		if (m_impl != nil)
+		if (m_impl != nullptr)
 			m_impl->reference();
 	}
 	return *this;
@@ -468,9 +468,9 @@ object::object(double v)
 }
 
 object::object(const char* v)
-	: m_impl(nil)
+	: m_impl(nullptr)
 {
-	if (v != nil)
+	if (v != nullptr)
 		m_impl = new string_object_impl(v);
 }
 
@@ -481,7 +481,7 @@ object::object(const string& v)
 
 object& object::operator=(const vector<object>& v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new vector_object_impl(v);
 	return *this;
@@ -489,7 +489,7 @@ object& object::operator=(const vector<object>& v)
 
 object& object::operator=(const vector<string>& v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new vector_object_impl(v);
 	return *this;
@@ -497,7 +497,7 @@ object& object::operator=(const vector<string>& v)
 
 object& object::operator=(bool v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -505,7 +505,7 @@ object& object::operator=(bool v)
 
 object& object::operator=(int8 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -513,7 +513,7 @@ object& object::operator=(int8 v)
 
 object& object::operator=(uint8 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -521,7 +521,7 @@ object& object::operator=(uint8 v)
 
 object& object::operator=(int16 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -529,7 +529,7 @@ object& object::operator=(int16 v)
 
 object& object::operator=(uint16 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -537,7 +537,7 @@ object& object::operator=(uint16 v)
 
 object& object::operator=(int32 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -545,7 +545,7 @@ object& object::operator=(int32 v)
 
 object& object::operator=(uint32 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -553,7 +553,7 @@ object& object::operator=(uint32 v)
 
 object& object::operator=(int64 v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new int_object_impl(v);
 	return *this;
@@ -561,7 +561,7 @@ object& object::operator=(int64 v)
 
 //object& object::operator=(uint64 v)
 //{
-//	if (m_impl != nil)
+//	if (m_impl != nullptr)
 //		m_impl->release();
 //	m_impl = new int_object_impl(v);
 //	return *this;
@@ -569,7 +569,7 @@ object& object::operator=(int64 v)
 
 object& object::operator=(float v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new float_object_impl(v);
 	return *this;
@@ -577,7 +577,7 @@ object& object::operator=(float v)
 
 object& object::operator=(double v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new float_object_impl(v);
 	return *this;
@@ -585,10 +585,10 @@ object& object::operator=(double v)
 
 object& object::operator=(const char* v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
-	if (v == nil)
-		m_impl = nil;
+	if (v == nullptr)
+		m_impl = nullptr;
 	else
 		m_impl = new string_object_impl(v);
 	return *this;
@@ -596,7 +596,7 @@ object& object::operator=(const char* v)
 
 object& object::operator=(const string& v)
 {
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		m_impl->release();
 	m_impl = new string_object_impl(v);
 	return *this;
@@ -605,7 +605,7 @@ object& object::operator=(const string& v)
 object::object_type object::type() const
 {
 	object_type result = null_type;
-	if (m_impl != nil)
+	if (m_impl != nullptr)
 		result = m_impl->type();
 	return result;
 }
@@ -708,7 +708,7 @@ const object object::operator[](const string& name) const
 
 const object object::operator[](const char* name) const
 {
-	if (name != nil)
+	if (name != nullptr)
 		return operator[](string(name));
 	return object();
 }
@@ -718,7 +718,7 @@ const object object::operator[](uint32 ix) const
 	object result;
 
 	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(m_impl);
-	if (impl != nil and ix < impl->count())
+	if (impl != nullptr and ix < impl->count())
 		result = impl->at(ix);
 	
 	return result;
@@ -728,7 +728,7 @@ object& object::operator[](const string& name)
 {
 	if (type() != struct_type)
 	{
-		if (m_impl != nil)
+		if (m_impl != nullptr)
 			m_impl->release();
 		m_impl = new struct_object_impl();
 	}
@@ -738,7 +738,7 @@ object& object::operator[](const string& name)
 
 object& object::operator[](const char* name)
 {
-	if (name == nil)
+	if (name == nullptr)
 		throw exception("invalid empty name for structure object");
 	return operator[](string(name));
 }
@@ -746,7 +746,7 @@ object& object::operator[](const char* name)
 object& object::operator[](uint32 ix)
 {
 	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(m_impl);
-	if (impl != nil and ix < impl->count())
+	if (impl != nullptr and ix < impl->count())
 		return impl->at(ix);
 	
 	throw exception("index out of bounds or object is not an array");
@@ -756,7 +756,7 @@ object& object::operator[](uint32 ix)
 bool object::operator<(const object& rhs) const
 {
 	bool result = false;
-	if (m_impl != nil and rhs.m_impl != nil)
+	if (m_impl != nullptr and rhs.m_impl != nullptr)
 		result = m_impl->compare(rhs.m_impl) < 0;
 	return result;
 }
@@ -764,7 +764,7 @@ bool object::operator<(const object& rhs) const
 bool object::operator==(const object& rhs) const
 {
 	bool result = false;
-	if (m_impl != nil and rhs.m_impl != nil)
+	if (m_impl != nullptr and rhs.m_impl != nullptr)
 		result = m_impl->compare(rhs.m_impl) == 0;
 	return result;
 }
@@ -796,7 +796,7 @@ struct compare_object
 
 ostream& operator<<(ostream& os, const object& o)
 {
-	if (o.m_impl != nil)
+	if (o.m_impl != nullptr)
 		o.m_impl->print(os);
 	else
 		os << "null";
@@ -1520,7 +1520,7 @@ bool evaluate_el(
 ostream& operator<<(ostream& lhs, const scope& rhs)
 {
 	const scope* s = &rhs;
-	while (s != nil)
+	while (s != nullptr)
 	{
 		foreach (scope::data_map::value_type e, s->m_data)
 			lhs << e.first << " = " << e.second << endl;
@@ -1531,12 +1531,12 @@ ostream& operator<<(ostream& lhs, const scope& rhs)
 
 scope::scope(const scope& next)
 	: m_next(const_cast<scope*>(&next))
-	, m_req(nil)
+	, m_req(nullptr)
 {
 }
 
 scope::scope(const request& req)
-	: m_next(nil)
+	: m_next(nullptr)
 	, m_req(&req)
 {
 }
@@ -1553,7 +1553,7 @@ const object& scope::lookup(
 	map<string,object>::const_iterator i = m_data.find(name);
 	if (i != m_data.end())
 		return i->second;
-	else if (m_next != nil)
+	else if (m_next != nullptr)
 		return m_next->lookup(name);
 	
 	static object s_null;
@@ -1569,12 +1569,12 @@ const object& scope::operator[](
 object& scope::lookup(
 	const string&	name)
 {
-	object* result = nil;
+	object* result = nullptr;
 
 	map<string,object>::iterator i = m_data.find(name);
 	if (i != m_data.end())
 		result = &i->second;
-	else if (m_next != nil)
+	else if (m_next != nullptr)
 		result = &m_next->lookup(name);
 	else
 	{
@@ -1589,7 +1589,7 @@ const request& scope::get_request() const
 {
 	if (m_next)
 		return m_next->get_request();
-	if (m_req == nil)
+	if (m_req == nullptr)
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
 }

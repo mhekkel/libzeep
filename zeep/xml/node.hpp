@@ -137,7 +137,7 @@ class container : public node
 		typedef typename base_type::reference										reference;
 		typedef typename base_type::pointer											pointer;
 		
-						basic_iterator() : m_current(nil)			{}
+						basic_iterator() : m_current(nullptr)			{}
 						basic_iterator(NodeType* e) : m_current(e)	{}
 						basic_iterator(const basic_iterator& other)
 							: m_current(other.m_current)			{}
@@ -503,7 +503,7 @@ class element : public container
 	class attribute_iterator : public std::iterator<std::bidirectional_iterator_tag, attribute>
 	{
 	  public:
-							attribute_iterator() : m_current(nil)				{}
+							attribute_iterator() : m_current(nullptr)				{}
 							attribute_iterator(attribute* e) : m_current(e)		{}
 							attribute_iterator(const attribute_iterator& other)
 								: m_current(other.m_current)					{}
@@ -534,7 +534,7 @@ class element : public container
 	class const_attribute_iterator : public std::iterator<std::bidirectional_iterator_tag, const attribute>
 	{
 	  public:
-							const_attribute_iterator() : m_current(nil)				{}
+							const_attribute_iterator() : m_current(nullptr)				{}
 							const_attribute_iterator(attribute* e) : m_current(e)	{}
 							const_attribute_iterator(const attribute_iterator& other)
 								: m_current(other.base())							{}
@@ -598,14 +598,14 @@ std::list<element*> container::children<element>() const;
 template<>
 inline container::basic_iterator<element>& container::basic_iterator<element>::operator++()
 {
-	if (m_current == nil or m_current->next() == nil)
-		m_current = nil;
+	if (m_current == nullptr or m_current->next() == nullptr)
+		m_current = nullptr;
 	else
 	{
-		for (node* n = m_current->next(); n != nil; n = n->next())
+		for (node* n = m_current->next(); n != nullptr; n = n->next())
 		{
 			m_current = dynamic_cast<element*>(n);
-			if (m_current != nil)
+			if (m_current != nullptr)
 				break;
 		}
 	}
@@ -615,14 +615,14 @@ inline container::basic_iterator<element>& container::basic_iterator<element>::o
 template<>
 inline container::basic_iterator<element>& container::basic_iterator<element>::operator--()
 {
-	if (m_current == nil or m_current->prev() == nil)
-		m_current = nil;
+	if (m_current == nullptr or m_current->prev() == nullptr)
+		m_current = nullptr;
 	else
 	{
-		for (node* n = m_current->prev(); n != nil; n = n->prev())
+		for (node* n = m_current->prev(); n != nullptr; n = n->prev())
 		{
 			m_current = dynamic_cast<element*>(n);
-			if (m_current != nil)
+			if (m_current != nullptr)
 				break;
 		}
 	}
@@ -632,14 +632,14 @@ inline container::basic_iterator<element>& container::basic_iterator<element>::o
 template<>
 inline container::basic_iterator<const element>& container::basic_iterator<const element>::operator++()
 {
-	if (m_current == nil or m_current->next() == nil)
-		m_current = nil;
+	if (m_current == nullptr or m_current->next() == nullptr)
+		m_current = nullptr;
 	else
 	{
-		for (const node* n = m_current->next(); n != nil; n = n->next())
+		for (const node* n = m_current->next(); n != nullptr; n = n->next())
 		{
 			m_current = dynamic_cast<const element*>(n);
-			if (m_current != nil)
+			if (m_current != nullptr)
 				break;
 		}
 	}
@@ -649,14 +649,14 @@ inline container::basic_iterator<const element>& container::basic_iterator<const
 template<>
 inline container::basic_iterator<const element>& container::basic_iterator<const element>::operator--()
 {
-	if (m_current == nil or m_current->prev() == nil)
-		m_current = nil;
+	if (m_current == nullptr or m_current->prev() == nullptr)
+		m_current = nullptr;
 	else
 	{
-		for (const node* n = m_current->prev(); n != nil; n = n->prev())
+		for (const node* n = m_current->prev(); n != nullptr; n = n->prev())
 		{
 			m_current = dynamic_cast<const element*>(n);
-			if (m_current != nil)
+			if (m_current != nullptr)
 				break;
 		}
 	}
@@ -665,12 +665,12 @@ inline container::basic_iterator<const element>& container::basic_iterator<const
 
 inline container::iterator container::begin()
 {
-	element* first = nil;
+	element* first = nullptr;
 	
-	for (node* n = m_child; n != nil; n = n->next())
+	for (node* n = m_child; n != nullptr; n = n->next())
 	{
 		first = dynamic_cast<element*>(n);
-		if (first != nil)
+		if (first != nullptr)
 			break;
 	}
 	return iterator(first);
@@ -683,12 +683,12 @@ inline container::node_iterator container::node_begin()
 
 inline container::const_iterator container::begin() const
 {
-	const element* first = nil;
+	const element* first = nullptr;
 	
-	for (const node* n = m_child; n != nil; n = n->next())
+	for (const node* n = m_child; n != nullptr; n = n->next())
 	{
 		first = dynamic_cast<const element*>(n);
-		if (first != nil)
+		if (first != nullptr)
 			break;
 	}
 	return const_iterator(first);
@@ -697,7 +697,7 @@ inline container::const_iterator container::begin() const
 template<>
 inline container::basic_iterator<node>& container::basic_iterator<node>::operator++()
 {
-	assert(m_current != nil);
+	assert(m_current != nullptr);
 	m_current = m_current->next();
 	return *this;
 }
@@ -705,7 +705,7 @@ inline container::basic_iterator<node>& container::basic_iterator<node>::operato
 template<>
 inline container::basic_iterator<node>& container::basic_iterator<node>::operator--()
 {
-	assert(m_current != nil);
+	assert(m_current != nullptr);
 	m_current = m_current->prev();
 	return *this;
 }
@@ -713,7 +713,7 @@ inline container::basic_iterator<node>& container::basic_iterator<node>::operato
 template<>
 inline container::basic_iterator<const node>& container::basic_iterator<const node>::operator++()
 {
-	assert(m_current != nil);
+	assert(m_current != nullptr);
 	m_current = m_current->next();
 	return *this;
 }
@@ -721,19 +721,19 @@ inline container::basic_iterator<const node>& container::basic_iterator<const no
 template<>
 inline container::basic_iterator<const node>& container::basic_iterator<const node>::operator--()
 {
-	assert(m_current != nil);
+	assert(m_current != nullptr);
 	m_current = m_current->prev();
 	return *this;
 }
 
 //inline container::iterator container::begin()
 //{
-//	element* first = nil;
+//	element* first = nullptr;
 //	
-//	for (node* n = m_child; n != nil; n = n->next())
+//	for (node* n = m_child; n != nullptr; n = n->next())
 //	{
 //		first = dynamic_cast<element*>(n);
-//		if (first != nil)
+//		if (first != nullptr)
 //			break;
 //	}
 //	return iterator(first);
@@ -741,12 +741,12 @@ inline container::basic_iterator<const node>& container::basic_iterator<const no
 //
 //inline container::const_iterator container::begin() const
 //{
-//	const element* first = nil;
+//	const element* first = nullptr;
 //	
-//	for (const node* n = m_child; n != nil; n = n->next())
+//	for (const node* n = m_child; n != nullptr; n = n->next())
 //	{
 //		first = dynamic_cast<const element*>(n);
-//		if (first != nil)
+//		if (first != nullptr)
 //			break;
 //	}
 //	return const_iterator(first);

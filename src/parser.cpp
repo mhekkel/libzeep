@@ -136,7 +136,7 @@ class data_source
 	virtual bool	is_entity_on_stack(const string& name)
 					{
 						bool result = false;
-						if (m_next != nil)
+						if (m_next != nullptr)
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
@@ -168,7 +168,7 @@ class data_source
 class istream_data_source : public data_source
 {
   public:
-					istream_data_source(istream& data, data_source* next = nil)
+					istream_data_source(istream& data, data_source* next = nullptr)
 						: data_source(next)
 						, m_data(data)
 						, m_char_buffer(0)
@@ -177,7 +177,7 @@ class istream_data_source : public data_source
 						guess_encoding();
 					}
 
-					istream_data_source(istream* data, data_source* next = nil)
+					istream_data_source(istream* data, data_source* next = nullptr)
 						: data_source(next)
 						, m_data(*data)
 						, m_data_ptr(data)
@@ -376,7 +376,7 @@ unicode istream_data_source::get_next_char()
 class string_data_source : public data_source
 {
   public:
-						string_data_source(const string& data, data_source* next = nil)
+						string_data_source(const string& data, data_source* next = nullptr)
 							: data_source(next)
 							, m_data(data)
 							, m_ptr(m_data.begin())
@@ -434,7 +434,7 @@ class entity_data_source : public string_data_source
 {
   public:
 					entity_data_source(const string& entity_name, const string& entity_path,
-							const string& text, data_source* next = nil)
+							const string& text, data_source* next = nullptr)
 						: string_data_source(text, next)
 						, m_entity_name(entity_name)
 					{
@@ -444,7 +444,7 @@ class entity_data_source : public string_data_source
 	virtual bool	is_entity_on_stack(const string& name)
 					{
 						bool result = m_entity_name == name;
-						if (result == false and m_next != nil)
+						if (result == false and m_next != nullptr)
 							result = m_next->is_entity_on_stack(name);
 						return result;
 					}
@@ -458,13 +458,13 @@ class entity_data_source : public string_data_source
 class parameter_entity_data_source : public string_data_source
 {
   public:
-					parameter_entity_data_source(const string& data, const string& base_dir, data_source* next = nil)
+					parameter_entity_data_source(const string& data, const string& base_dir, data_source* next = nullptr)
 						: string_data_source(string(" ") + data + " ", next)
 					{
 						base(base_dir);
 					}
 
-	virtual bool	auto_discard() const							{ return m_next != nil; }
+	virtual bool	auto_discard() const							{ return m_next != nullptr; }
 };
 
 // --------------------------------------------------------------------
@@ -634,7 +634,7 @@ struct parser_imp
 						{
 							swap_state();
 							
-							if (m_data_source != nil and m_data_source->auto_discard())
+							if (m_data_source != nullptr and m_data_source->auto_discard())
 								delete m_data_source;
 						}
 		
@@ -686,7 +686,7 @@ struct parser_imp
 		string		default_ns()
 					{
 						string result = m_default_ns;
-						if (result.empty() and m_next != nil)
+						if (result.empty() and m_next != nullptr)
 							result = m_next->default_ns();
 						return result;
 					}
@@ -697,7 +697,7 @@ struct parser_imp
 						
 						if (m_known.find(prefix) != m_known.end())
 							result = m_known[prefix];
-						else if (m_next != nil)
+						else if (m_next != nullptr)
 							result = m_next->ns_for_prefix(prefix);
 						
 						return result;
@@ -761,11 +761,11 @@ parser_imp::parser_imp(
 	: m_validating(true)
 	, m_has_dtd(false)
 	, m_lookahead(xml_Eof)
-	, m_data_source(new istream_data_source(data, nil))
+	, m_data_source(new istream_data_source(data, nullptr))
 	, m_version(1.0f)
 	, m_standalone(false)
 	, m_parser(parser)
-	, m_ns(nil)
+	, m_ns(nullptr)
 	, m_in_doctype(false)
 	, m_external_subset(false)
 	, m_in_element(false)
@@ -832,7 +832,7 @@ const doctype::entity& parser_imp::get_parameter_entity(const string& name) cons
 
 const doctype::element* parser_imp::get_element(const string& name) const
 {
-	const doctype::element* result = nil;
+	const doctype::element* result = nullptr;
 	
 	doctype::element_list::const_iterator e = find_if(m_doctype.begin(), m_doctype.end(),
 		boost::bind(&doctype::element::name, _1) == name);
@@ -871,7 +871,7 @@ unicode parser_imp::get_next_char()
 				delete m_data_source;
 				m_data_source = next;
 				
-				if (m_data_source != nil)
+				if (m_data_source != nullptr)
 					continue;
 			}
 
@@ -1532,12 +1532,12 @@ void parser_imp::parse(bool validate)
 	
 	const doctype::element* e = get_element(m_root_element);
 	
-	if (m_has_dtd and e == nil and m_validating)
+	if (m_has_dtd and e == nullptr and m_validating)
 		not_valid(boost::format("Element '%1%' is not defined in DTD") % m_root_element);
 	
 	auto_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
 	
-	if (e != nil)
+	if (e != nullptr)
 		valid = doctype::validator(allowed.get());
 	
 	element(valid);
@@ -1724,7 +1724,7 @@ void parser_imp::doctypedecl()
 
 	// internal subset takes precedence over external subset, so
 	// if the external subset is defined, include it here.
-	if (dtd.get() != nil)
+	if (dtd.get() != nullptr)
 	{
 		// save the parser state
 		parser_state save(this, dtd.get());
@@ -2609,7 +2609,7 @@ void parser_imp::notation_decl()
 
 data_source* parser_imp::external_id()
 {
-	data_source* result = nil;
+	data_source* result = nullptr;
 	string pubid, sysid;
 	
 	if (m_token == "SYSTEM")
@@ -2641,7 +2641,7 @@ data_source* parser_imp::external_id()
 		not_well_formed("Expected external id starting with either SYSTEM or PUBLIC");
 
 	istream* is = m_parser.external_entity_ref(m_data_source->base(), pubid, sysid);
-	if (is != nil)
+	if (is != nullptr)
 	{
 		result = new istream_data_source(is);
 		
@@ -3141,11 +3141,11 @@ void parser_imp::element(doctype::validator& valid)
 
 	const doctype::element* dte = get_element(name);
 
-	if (m_has_dtd and dte == nil and m_validating)
+	if (m_has_dtd and dte == nullptr and m_validating)
 		not_valid(boost::format("Element '%1%' is not defined in DTD") % name);
 
 	doctype::validator sub_valid;
-	if (dte != nil)
+	if (dte != nullptr)
 		sub_valid = dte->get_validator();
 
 	list<detail::attr> attrs;
@@ -3175,15 +3175,15 @@ void parser_imp::element(doctype::validator& valid)
 		string attr_value = normalize_attribute_value(m_token);
 		match(xml_String);
 
-		const doctype::attribute* dta = nil;
-		if (dte != nil)
+		const doctype::attribute* dta = nullptr;
+		if (dte != nullptr)
 			dta = dte->get_attribute(attr_name);
 
-		if (dta == nil and m_validating)
+		if (dta == nullptr and m_validating)
 			not_valid(boost::format("undeclared attribute '%1%'") % attr_name);
 
 		if (m_validating and
-			dta != nil and
+			dta != nullptr and
 			dta->get_default_type() == doctype::attDefFixed and
 			attr_value != boost::get<1>(dta->get_default()))
 		{
@@ -3209,7 +3209,7 @@ void parser_imp::element(doctype::validator& valid)
 		{
 			bool id = (attr_name == "xml:id");
 			
-			if (dta != nil)
+			if (dta != nullptr)
 			{
 				string v(attr_value);
 				
@@ -3277,7 +3277,7 @@ void parser_imp::element(doctype::validator& valid)
 			attr.m_value = attr_value;
 			attr.m_id = id;
 			
-			if (m_ns != nil)
+			if (m_ns != nullptr)
 			{
 				string::size_type d = attr_name.find(':');
 				if (d != string::npos)
@@ -3297,7 +3297,7 @@ void parser_imp::element(doctype::validator& valid)
 	}
 	
 	// add missing attributes
-	if (dte != nil)
+	if (dte != nullptr)
 	{
 		foreach (const doctype::attribute& dta, dte->attributes())
 		{
@@ -3327,7 +3327,7 @@ void parser_imp::element(doctype::validator& valid)
 				attr.m_value = normalize_attribute_value(defValue);
 				attr.m_id = false;
 				
-				if (m_ns != nil)
+				if (m_ns != nullptr)
 				{
 					string::size_type d = attr_name.find(':');
 					if (d != string::npos)
@@ -3396,7 +3396,7 @@ void parser_imp::element(doctype::validator& valid)
 	m_in_content = in_content.m_value;
 	match('>');
 	
-	if (m_validating and dte != nil and not sub_valid.done())
+	if (m_validating and dte != nullptr and not sub_valid.done())
 		not_valid(boost::format("missing child elements for element '%1%'") % dte->name());
 	
 	s();
@@ -3634,7 +3634,7 @@ void parser_imp::pi()
 
 parser::parser(istream& data)
 	: m_impl(new parser_imp(data, *this))
-	, m_istream(nil)
+	, m_istream(nullptr)
 {
 }
 
@@ -3719,7 +3719,7 @@ void parser::notation_decl(const string& name, const string& systemId, const str
 
 istream* parser::external_entity_ref(const string& base, const string& pubid, const string& uri)
 {
-	istream* result = nil;
+	istream* result = nullptr;
 	if (external_entity_ref_handler)
 		result = external_entity_ref_handler(base, pubid, uri);
 	return result;

@@ -191,7 +191,7 @@ bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::
 
 	msg.msg_control = control_un.control;
 	msg.msg_controllen = sizeof(control_un.control);
-	msg.msg_name = nil;
+	msg.msg_name = nullptr;
 	msg.msg_namelen = 0;
 
 	boost::asio::ip::tcp::socket::endpoint_type peer_endpoint;
@@ -209,7 +209,7 @@ bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::
 		peer_endpoint.resize(n);
 	
 		struct cmsghdr* cmptr CMSG_FIRSTHDR(&msg);
-		if (cmptr != nil and cmptr->cmsg_len == CMSG_LEN(sizeof(int)))
+		if (cmptr != nullptr and cmptr->cmsg_len == CMSG_LEN(sizeof(int)))
 		{
 			if (cmptr->cmsg_level != SOL_SOCKET)
 			 	cerr << "control level != SOL_SOCKET" << endl;
@@ -253,7 +253,7 @@ void preforked_server_base::write_socket_to_worker(int fd_socket, boost::asio::i
 	cmptr->cmsg_type = SCM_RIGHTS;
 	*(reinterpret_cast<native_type*>(CMSG_DATA(cmptr))) = socket.native();
 	
-	msg.msg_name = nil;
+	msg.msg_name = nullptr;
 	msg.msg_namelen = 0;
 	
 	struct iovec iov[1];
