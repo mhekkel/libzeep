@@ -3260,7 +3260,7 @@ void parser_imp::element(doctype::validator& valid)
 								m_unresolved_ids.insert(id);
 						}
 						b = e + 1;
-						e = attr_value.find(b, ' ');
+						e = attr_value.find(' ', b);
 					}
 					
 					if (b != string::npos and b < attr_value.length())

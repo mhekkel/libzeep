@@ -40,7 +40,7 @@ void request_parser::reset()
 }
 
 boost::tribool request_parser::parse(request& req,
-	const char* text, unsigned int length)
+	const char* text, size_t length)
 {
 	if (m_parser == NULL)
 	{

@@ -49,6 +49,12 @@
 #		define xor		^
 #		define xor_eq	^=
 #	endif // _MSC_EXTENSIONS
+
+#pragma warning (disable : 4355)	// this is used in Base Initializer list
+#pragma warning (disable : 4996)	// unsafe function or variable
+#pragma warning (disable : 4068)	// unknown pragma
+#pragma warning (disable : 4996)	// stl copy()
+#pragma warning (disable : 4800)	// BOOL conversion
 #endif
 
 ///// libzeep code uses nullptr as NULL, it just looks better on my eyes.

@@ -69,6 +69,7 @@ class object
 	explicit	object(uint16 v);
 	explicit	object(int32 v);
 	explicit	object(uint32 v);
+	explicit	object(size_t v);
 	explicit	object(int64 v);
 //	explicit	object(uint64 v);
 	explicit	object(float v);
@@ -91,6 +92,7 @@ class object
 	object&		operator=(int32 v);
 	object&		operator=(uint32 v);
 	object&		operator=(int64 v);
+	object&		operator=(size_t v);
 //	object&		operator=(uint64 v);
 	object&		operator=(float v);
 	object&		operator=(double v);
@@ -110,7 +112,7 @@ class object
 	object&		operator[](const char* name);
 	object&		operator[](uint32 ix);
 	
-	uint32		count() const;
+	size_t		count() const;
 	bool		empty() const;
 
 	bool		operator<(const object& rhs) const;
@@ -303,7 +305,7 @@ class base_array_object_impl : public object_impl
 {
   public:
 
-	virtual uint32			count() const = 0;
+	virtual size_t			count() const = 0;
 
 	virtual object_iterator_impl*
 							create_iterator(bool begin) const = 0;
