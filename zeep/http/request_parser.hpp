@@ -21,7 +21,7 @@ class request_parser
 	
 	void				reset();
 	
-	boost::tribool		parse(request& req, const char* text, unsigned int length);
+	boost::tribool		parse(request& req, const char* text, size_t length);
 	
   private:
 	typedef boost::tribool (request_parser::*state_parser)(request& req, char ch);

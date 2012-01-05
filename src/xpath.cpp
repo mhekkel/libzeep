@@ -580,17 +580,17 @@ struct expression_context : public context_imp
 
 	void				dump();
 	
-	int					position() const;
-	int					last() const;
+	size_t				position() const;
+	size_t				last() const;
 	
 	context_imp&		m_next;
 	node*				m_node;
 	const node_set&		m_node_set;
 };
 
-int expression_context::position() const
+size_t expression_context::position() const
 {
-	int result = 0;
+	size_t result = 0;
 	foreach (const node* n, m_node_set)
 	{
 		++result;
@@ -604,7 +604,7 @@ int expression_context::position() const
 	return result;
 }
 
-int expression_context::last() const
+size_t expression_context::last() const
 {
 	return m_node_set.size();
 }
@@ -1190,7 +1190,7 @@ template<>
 object core_function_expression<cf_Count>::evaluate(expression_context& context)
 {
 	object v = m_args.front()->evaluate(context);
-	int result = v.as<const node_set&>().size();
+	size_t result = v.as<const node_set&>().size();
 
 	return object(double(result));
 }

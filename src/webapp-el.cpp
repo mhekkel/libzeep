@@ -175,7 +175,7 @@ class vector_object_impl : public detail::base_array_object_impl
 						os << ']';
 					}
 	virtual int		compare(object_impl* rhs) const;
-	virtual uint32	count() const					{ return m_v.size(); }
+	virtual size_t	count() const					{ return m_v.size(); }
 
 	virtual detail::object_iterator_impl*
 					create_iterator(bool begin) const
@@ -447,6 +447,11 @@ object::object(uint32 v)
 {
 }
 
+object::object(size_t v)
+	: m_impl(new int_object_impl(v))
+{
+}
+
 object::object(int64 v)
 	: m_impl(new int_object_impl(v))
 {
@@ -551,6 +556,14 @@ object& object::operator=(uint32 v)
 	return *this;
 }
 
+object& object::operator=(size_t v)
+{
+	if (m_impl != nullptr)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
+
 object& object::operator=(int64 v)
 {
 	if (m_impl != nullptr)
@@ -610,7 +623,7 @@ object::object_type object::type() const
 	return result;
 }
 
-uint32 object::count() const
+size_t object::count() const
 {
 	if (type() != array_type)
 		throw exception("count/length is only defined for array types");
@@ -978,7 +991,7 @@ object interpreter::evaluate(
 			result = parse_expr();
 		match(elt_eof);
 	}
-	catch (exception& e)
+	catch (exception& /* e */)
 	{
 //		if (VERBOSE)
 //			cerr << e.what() << endl;
@@ -1437,7 +1450,7 @@ object interpreter::parse_primary_expr()
 				{
 					match(m_lookahead);
 					
-					uint32 index = m_token_number;
+					uint32 index = static_cast<uint32>(m_token_number);
 					match(elt_number);
 					match(elt_rbracket);
 					

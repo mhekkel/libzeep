@@ -333,7 +333,7 @@ string reply::get_as_text()
 
 size_t reply::get_size() const
 {
-	int size = m_status_line.length();
+	size_t size = m_status_line.length();
 	foreach (const header& h, m_headers)
 		size += h.name.length() + 2 + h.value.length() + 2;
 	size += 2 + m_content.length();
