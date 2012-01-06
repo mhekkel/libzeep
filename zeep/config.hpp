@@ -57,13 +57,21 @@
 #pragma warning (disable : 4800)	// BOOL conversion
 #endif
 
-///// libzeep code uses nullptr as NULL, it just looks better on my eyes.
-///// Eventually we'll have to change this to the new C++x0 keyword
-///// nullptr.
-//
-//#ifndef nullptr
-//#define nullptr NULL
-//#endif
+// GCC 4.4 and before do not know nullptr
+#if defined (__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ <= 5)))
+const                        // this is a const object...
+class {
+public:
+  template<class T>          // convertible to any type
+    operator T*() const      // of null non-member
+    { return 0; }            // pointer...
+  template<class C, class T> // or any type of null
+    operator T C::*() const  // member pointer...
+    { return 0; }
+private:
+  void operator&() const;    // whose address can't be taken
+} nullptr = {};              // and whose name is nullptr
+#endif
 
 /// fixes for cygwin/boost-1.43 combo
 /// source:
