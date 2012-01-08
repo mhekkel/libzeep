@@ -17,21 +17,20 @@ LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
 
-BOOST_LIBS			= system thread filesystem regex math_c99
+BOOST_LIBS			= system thread filesystem regex math_c99 math_c99f
 BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-VERSION_MAJOR		= 2.6
-VERSION_MINOR		= 3
+VERSION_MAJOR		= 2.7
+VERSION_MINOR		= 0
 VERSION				= $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME			= libzeep-$(VERSION)
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
-CFLAGS				+= -O2 -DBOOST_FILESYSTEM_VERSION=2 \
-						$(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
+CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared
 
 VPATH += src
 
