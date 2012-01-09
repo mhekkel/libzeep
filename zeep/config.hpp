@@ -1,7 +1,7 @@
-//  Copyright Maarten L. Hekkelman, Radboud University 2008-2011.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// Copyright Maarten L. Hekkelman, Radboud University 2008-2012.
+//  Distributed under the Boost Software License, Version 1.0.
+//     (See accompanying file LICENSE_1_0.txt or copy at
+//           http://www.boost.org/LICENSE_1_0.txt)
 
 #ifndef SOAP_CONFIG_H
 #define SOAP_CONFIG_H
@@ -50,11 +50,11 @@
 #		define xor_eq	^=
 #	endif // _MSC_EXTENSIONS
 
-#pragma warning (disable : 4355)	// this is used in Base Initializer list
-#pragma warning (disable : 4996)	// unsafe function or variable
-#pragma warning (disable : 4068)	// unknown pragma
-#pragma warning (disable : 4996)	// stl copy()
-#pragma warning (disable : 4800)	// BOOL conversion
+#	pragma warning (disable : 4355)	// this is used in Base Initializer list
+#	pragma warning (disable : 4996)	// unsafe function or variable
+#	pragma warning (disable : 4068)	// unknown pragma
+#	pragma warning (disable : 4996)	// stl copy()
+#	pragma warning (disable : 4800)	// BOOL conversion
 #endif
 
 // GCC 4.4 and before do not know nullptr
