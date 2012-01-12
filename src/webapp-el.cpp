@@ -447,20 +447,15 @@ object::object(uint32 v)
 {
 }
 
-object::object(size_t v)
-	: m_impl(new int_object_impl(v))
-{
-}
-
 object::object(int64 v)
 	: m_impl(new int_object_impl(v))
 {
 }
 
-//object::object(uint64 v)
-//	: m_impl(new int_object_impl(v))
-//{
-//}
+object::object(uint64 v)
+	: m_impl(new int_object_impl(v))
+{
+}
 
 object::object(float v)
 	: m_impl(new float_object_impl(v))
@@ -556,14 +551,6 @@ object& object::operator=(uint32 v)
 	return *this;
 }
 
-object& object::operator=(size_t v)
-{
-	if (m_impl != nullptr)
-		m_impl->release();
-	m_impl = new int_object_impl(v);
-	return *this;
-}
-
 object& object::operator=(int64 v)
 {
 	if (m_impl != nullptr)
@@ -572,13 +559,13 @@ object& object::operator=(int64 v)
 	return *this;
 }
 
-//object& object::operator=(uint64 v)
-//{
-//	if (m_impl != nullptr)
-//		m_impl->release();
-//	m_impl = new int_object_impl(v);
-//	return *this;
-//}
+object& object::operator=(uint64 v)
+{
+	if (m_impl != nullptr)
+		m_impl->release();
+	m_impl = new int_object_impl(v);
+	return *this;
+}
 
 object& object::operator=(float v)
 {
