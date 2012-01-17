@@ -134,8 +134,7 @@ class object
 		
 		basic_iterator&	operator=(const basic_iterator& other);
 		
-		const reference	operator*() const;
-		reference		operator*();
+		reference		operator*() const;
 		pointer			operator->() const;
 
 		basic_iterator&	operator++();
@@ -429,15 +428,7 @@ object::basic_iterator<ObjectType>& object::basic_iterator<ObjectType>::operator
 }
 		
 template<class ObjectType>
-const typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*() const
-{
-	if (m_impl == nullptr)
-		throw exception("dereferencing invalid object iterator");
-	return m_impl->dereference();
-}
-
-template<class ObjectType>
-typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*()
+typename object::basic_iterator<ObjectType>::reference object::basic_iterator<ObjectType>::operator*() const
 {
 	if (m_impl == nullptr)
 		throw exception("dereferencing invalid object iterator");

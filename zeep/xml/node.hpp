@@ -11,10 +11,6 @@
 #include <list>
 #include <limits>
 
-#include <boost/tr1/tuple.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/range.hpp>
 
 #include <zeep/config.hpp>
@@ -145,7 +141,6 @@ class container : public node
 		basic_iterator&	operator=(const basic_iterator& other)		{ m_current = other.m_current; return *this; }
 		basic_iterator&	operator=(const NodeType* n)				{ m_current = n; return *this; }
 		
-		const reference	operator*() const							{ return m_current; }
 		reference		operator*()									{ return m_current; }
 		pointer			operator->() const							{ return m_current; }
 

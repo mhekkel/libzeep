@@ -68,7 +68,11 @@ exception::exception(
 	
 	va_list vl;
 	va_start(vl, message);
+#if defined(_MSC_VER)
+	vsnprintf_s(msg_buffer, sizeof(msg_buffer), _TRUNCATE, message, vl);
+#else
 	vsnprintf(msg_buffer, sizeof(msg_buffer), message, vl);
+#endif
 	va_end(vl);
 
 	m_message = msg_buffer;
