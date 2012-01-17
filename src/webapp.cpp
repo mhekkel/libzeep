@@ -13,6 +13,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/iostreams/copy.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/unicode_support.hpp>
@@ -176,7 +177,7 @@ void webapp::handle_file(
 		}
 	}
 	
-	ifstream in(file.string().c_str(), ios::binary);
+	fs::ifstream in(file, ios::binary);
 	stringstream out;
 
 	io::copy(in, out);
@@ -215,7 +216,7 @@ void webapp::load_template(
 	const std::string&	file,
 	xml::document&		doc)
 {
-	ifstream data((m_docroot / file).string().c_str());
+	fs::ifstream data(m_docroot / file, ios::binary);
 	if (not data.is_open())
 		throw exception((boost::format("file not found: '%1%'") % (m_docroot / file)).str());
 	doc.read(data);
