@@ -25,6 +25,8 @@ namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
 
+const char kWhiteSpaceChar[] = " ";
+
 // --------------------------------------------------------------------
 
 node::node()
@@ -207,6 +209,11 @@ string node::prefix_for_namespace(const string& uri) const
 	if (m_parent != nullptr)
 		result = m_parent->prefix_for_namespace(uri);
 	return result;
+}
+
+void node::write_content(ostream& os, const char* sep) const
+{
+	// do nothing
 }
 
 void node::validate()
@@ -1131,6 +1138,19 @@ string element::id() const
 	}
 	
 	return result;
+}
+
+void element::write_content(ostream& os, const char* sep) const
+{
+	node* child = m_child;
+	while (child != nullptr)
+	{
+		child->write_content(os, sep);
+		child = child->next();
+		
+		if (child != nullptr and sep != nullptr)
+			os << sep;
+	}
 }
 
 void element::write(writer& w) const
