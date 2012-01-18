@@ -1148,7 +1148,7 @@ void element::write_content(ostream& os, const char* sep) const
 		child->write_content(os, sep);
 		child = child->next();
 		
-		if (child != nullptr and sep != nullptr)
+		if (sep != nullptr)
 			os << sep;
 	}
 }
