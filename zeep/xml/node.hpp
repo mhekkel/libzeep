@@ -30,6 +30,8 @@ typedef std::list<element_ptr>	element_set;
 class root_node;
 class container;
 
+extern const char kWhiteSpaceChar[];	// a static const char array containing a single space
+
 // --------------------------------------------------------------------
 
 class node
@@ -73,6 +75,9 @@ class node
 	
 	// return all content concatenated, including that of children.
 	virtual std::string	str() const = 0;
+	
+	// write out the concatenated content to a stream, separated by sep.
+	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const;
 
 	// writing out
 	virtual void		write(writer& w) const = 0;
@@ -352,6 +357,9 @@ class text : public node
 
 	void				str(const std::string& text)				{ m_text = text; }
 
+	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const
+																	{ os << m_text; }
+
 	void				append(const std::string& text)				{ m_text.append(text); }
 
 	virtual void		write(writer& w) const;
@@ -458,6 +466,8 @@ class element : public container
 	virtual node*		clone() const;
 
 	virtual std::string	str() const;
+
+	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const;
 
 	std::string			qname() const								{ return m_qname; }
 	
