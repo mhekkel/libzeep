@@ -208,7 +208,7 @@ class istream_data_source : public data_source
 	unsigned char	next_byte();
 
 	istream&		m_data;
-	auto_ptr<istream>
+	unique_ptr<istream>
 					m_data_ptr;
 	unicode			m_char_buffer;	// used in detecting \r\n algorithm
 
@@ -900,31 +900,31 @@ unicode parser_imp::get_next_char()
 //	append(m_token, result);	
 	// somehow, append refuses to inline, so we have to do it ourselves
 	if (result < 0x080)
-		m_token += (static_cast<const char> (result));
+		m_token += (static_cast<char> (result));
 	else if (result < 0x0800)
 	{
 		char ch[2] = {
-			static_cast<const char> (0x0c0 | (result >> 6)),
-			static_cast<const char> (0x080 | (result & 0x3f))
+			static_cast<char> (0x0c0 | (result >> 6)),
+			static_cast<char> (0x080 | (result & 0x3f))
 		};
 		m_token.append(ch, 2);
 	}
 	else if (result < 0x00010000)
 	{
 		char ch[3] = {
-			static_cast<const char> (0x0e0 | (result >> 12)),
-			static_cast<const char> (0x080 | ((result >> 6) & 0x3f)),
-			static_cast<const char> (0x080 | (result & 0x3f))
+			static_cast<char> (0x0e0 | (result >> 12)),
+			static_cast<char> (0x080 | ((result >> 6) & 0x3f)),
+			static_cast<char> (0x080 | (result & 0x3f))
 		};
 		m_token.append(ch, 3);
 	}
 	else
 	{
 		char ch[4] = {
-			static_cast<const char> (0x0f0 | (result >> 18)),
-			static_cast<const char> (0x080 | ((result >> 12) & 0x3f)),
-			static_cast<const char> (0x080 | ((result >> 6) & 0x3f)),
-			static_cast<const char> (0x080 | (result & 0x3f))
+			static_cast<char> (0x0f0 | (result >> 18)),
+			static_cast<char> (0x080 | ((result >> 12) & 0x3f)),
+			static_cast<char> (0x080 | ((result >> 6) & 0x3f)),
+			static_cast<char> (0x080 | (result & 0x3f))
 		};
 		m_token.append(ch, 4);
 	}
@@ -1535,7 +1535,7 @@ void parser_imp::parse(bool validate)
 	if (m_has_dtd and e == nullptr and m_validating)
 		not_valid(boost::format("Element '%1%' is not defined in DTD") % m_root_element);
 	
-	auto_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
+	unique_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
 	
 	if (e != nullptr)
 		valid = doctype::validator(allowed.get());
@@ -1698,7 +1698,7 @@ void parser_imp::doctypedecl()
 	
 	m_root_element = name;
 
-	auto_ptr<data_source> dtd;
+	unique_ptr<data_source> dtd;
 
 	if (m_lookahead == xml_Space)
 	{
@@ -2076,7 +2076,7 @@ void parser_imp::contentspec(doctype::element& element)
 		valid_nesting_validator check(m_data_source);
 		match('(');
 		
-		auto_ptr<doctype::allowed_base> allowed;
+		unique_ptr<doctype::allowed_base> allowed;
 		
 		s();
 		
@@ -2189,7 +2189,7 @@ void parser_imp::contentspec(doctype::element& element)
 
 doctype::allowed_ptr parser_imp::cp()
 {
-	auto_ptr<doctype::allowed_base> result;
+	unique_ptr<doctype::allowed_base> result;
 	
 	if (m_lookahead == '(')
 	{
@@ -2387,7 +2387,7 @@ void parser_imp::attlist_decl()
 		match(xml_Name);
 		s(true);
 		
-		auto_ptr<doctype::attribute> attribute;
+		unique_ptr<doctype::attribute> attribute;
 		
 		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
@@ -2667,7 +2667,7 @@ boost::tuple<string,string> parser_imp::read_external_id()
 	string result;
 	string path;
 
-	auto_ptr<data_source> data(external_id());
+	unique_ptr<data_source> data(external_id());
 
 	parser_state save(this, data.get());
 	

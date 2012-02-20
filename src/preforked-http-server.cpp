@@ -73,7 +73,7 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 			pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
 	
 			// Time to construct the Server object
-			auto_ptr<server> srvr(m_constructor->construct());
+			unique_ptr<server> srvr(m_constructor->construct());
 			
 			// run the server as a worker
 			boost::thread t(boost::bind(&server::run, srvr.get(), nr_of_threads));

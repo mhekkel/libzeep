@@ -9,8 +9,8 @@
 # makefile to match your current installation.
 
 #BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
-#BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
-#BOOST_INC_DIR		= $(HOME)/projects/boost/include
+BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+BOOST_INC_DIR		= $(HOME)/projects/boost/include
 
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
@@ -29,7 +29,7 @@ DIST_NAME			= libzeep-$(VERSION)
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
-CC					?= c++
+CC					?= icpc
 CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared -std=c++0x
 
 VPATH += src

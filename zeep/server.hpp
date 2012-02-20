@@ -21,7 +21,7 @@ class server
   public:
 					server(const std::string& ns, const std::string& service);
 
-	virtual void	bind(const std::string& address, short port);
+	virtual void	bind(const std::string& address, unsigned short port);
 
 					// if the default is not correct (reverse proxy e.g.)
 	void			set_location(const std::string& location)

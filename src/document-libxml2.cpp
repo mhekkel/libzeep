@@ -84,7 +84,7 @@ void libxml2_doc_imp::StartElementHandler(
 	if (qname == nullptr)
 		throw exception("nullptr qname");
 	
-	auto_ptr<element> n(new element(qname));
+	unique_ptr<element> n(new element(qname));
 
 	if (m_cur == nullptr)
 		m_root.child_element(n.get());
