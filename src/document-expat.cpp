@@ -293,7 +293,7 @@ void expat_doc_imp::StartElementHandler(
 	if (not prefix.empty())
 		qname = prefix + ':' + qname;
 
-	unique_ptr<element> n(new element(qname));
+	auto_ptr<element> n(new element(qname));
 
 	if (m_cur == nullptr)
 		m_root.child_element(n.get());
