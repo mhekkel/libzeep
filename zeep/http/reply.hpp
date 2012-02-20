@@ -77,7 +77,7 @@ class reply
 	std::string			m_status_line;
 	std::vector<header>	m_headers;
 	std::string			m_content;
-	std::unique_ptr<std::istream>
+	std::auto_ptr<std::istream>
 						m_data;
 	std::vector<char>	m_buffer;
 };

@@ -208,7 +208,7 @@ class istream_data_source : public data_source
 	unsigned char	next_byte();
 
 	istream&		m_data;
-	unique_ptr<istream>
+	auto_ptr<istream>
 					m_data_ptr;
 	unicode			m_char_buffer;	// used in detecting \r\n algorithm
 
@@ -1535,7 +1535,7 @@ void parser_imp::parse(bool validate)
 	if (m_has_dtd and e == nullptr and m_validating)
 		not_valid(boost::format("Element '%1%' is not defined in DTD") % m_root_element);
 	
-	unique_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
+	auto_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
 	
 	if (e != nullptr)
 		valid = doctype::validator(allowed.get());
@@ -1698,7 +1698,7 @@ void parser_imp::doctypedecl()
 	
 	m_root_element = name;
 
-	unique_ptr<data_source> dtd;
+	auto_ptr<data_source> dtd;
 
 	if (m_lookahead == xml_Space)
 	{
@@ -2076,7 +2076,7 @@ void parser_imp::contentspec(doctype::element& element)
 		valid_nesting_validator check(m_data_source);
 		match('(');
 		
-		unique_ptr<doctype::allowed_base> allowed;
+		auto_ptr<doctype::allowed_base> allowed;
 		
 		s();
 		
@@ -2189,7 +2189,7 @@ void parser_imp::contentspec(doctype::element& element)
 
 doctype::allowed_ptr parser_imp::cp()
 {
-	unique_ptr<doctype::allowed_base> result;
+	auto_ptr<doctype::allowed_base> result;
 	
 	if (m_lookahead == '(')
 	{
@@ -2387,7 +2387,7 @@ void parser_imp::attlist_decl()
 		match(xml_Name);
 		s(true);
 		
-		unique_ptr<doctype::attribute> attribute;
+		auto_ptr<doctype::attribute> attribute;
 		
 		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
@@ -2667,7 +2667,7 @@ boost::tuple<string,string> parser_imp::read_external_id()
 	string result;
 	string path;
 
-	unique_ptr<data_source> data(external_id());
+	auto_ptr<data_source> data(external_id());
 
 	parser_state save(this, data.get());
 	

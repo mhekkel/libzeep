@@ -876,7 +876,7 @@ void element::set_allowed(allowed_ptr allowed)
 
 void element::add_attribute(attribute* attrib)
 {
-	unique_ptr<attribute> attr(attrib);
+	auto_ptr<attribute> attr(attrib);
 	if (find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == attr->name()) == m_attlist.end())
 		m_attlist.push_back(attr.release());
 }

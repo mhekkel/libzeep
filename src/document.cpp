@@ -148,7 +148,7 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 			qname = prefix + ':' + name;
 	}
 
-	unique_ptr<element> n(new element(qname));
+	auto_ptr<element> n(new element(qname));
 
 	if (m_cur == nullptr)
 		m_root.child_element(n.get());
