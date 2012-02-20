@@ -22,7 +22,7 @@ server::server(const std::string& ns, const std::string& service)
 {
 }
 
-void server::bind(const std::string& address, short port)
+void server::bind(const std::string& address, unsigned short port)
 {
 	http::server::bind(address, port);
 	

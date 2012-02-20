@@ -58,7 +58,7 @@
 #endif
 
 // GCC 4.4 and before do not know nullptr
-#if defined (__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ <= 5)))
+#if !defined(__ICC) && defined (__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ <= 5)))
 const                        // this is a const object...
 class {
 public:

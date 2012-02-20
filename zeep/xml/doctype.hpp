@@ -185,7 +185,7 @@ enum AttributeDefault
 	attDefDefault
 };
 
-class attribute : public boost::noncopyable
+class attribute
 {
   public:
 						attribute(const std::string& name, AttributeType type)
