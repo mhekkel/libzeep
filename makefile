@@ -29,9 +29,10 @@ DIST_NAME			= libzeep-$(VERSION)
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
-CC					?= icpc -g -Wall
-#CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
-CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
+CC					?= c++
+CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
+#CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
+CFLAGS				+= -Wall
 
 VPATH += src
 
