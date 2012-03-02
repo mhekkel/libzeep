@@ -853,7 +853,7 @@ bool attribute::is_unparsed_entity(const string& s, const entity_list& l) const
 	
 	entity_list::const_iterator i = find_if(l.begin(), l.end(), boost::bind(&entity::name, _1) == s);
 	if (i != l.end())
-		result = i->parsed() == false;
+		result = (*i)->parsed() == false;
 	
 	return result;
 }
@@ -862,6 +862,8 @@ bool attribute::is_unparsed_entity(const string& s, const entity_list& l) const
 
 element::~element()
 {
+	foreach (attribute* attr, m_attlist)
+		delete attr;
 	delete m_allowed;
 }
 
@@ -889,7 +891,7 @@ const attribute* element::get_attribute(const string& name) const
 	const attribute* result = nullptr;
 	
 	if (dta != m_attlist.end())
-		result = &(*dta);
+		result = *dta;
 	
 	return result;
 }

@@ -5,6 +5,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 

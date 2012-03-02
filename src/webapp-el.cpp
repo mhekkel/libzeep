@@ -212,8 +212,17 @@ class struct_object_impl : public detail::base_struct_object_impl
 
 	virtual object&	field(const string& name)
 					{
-						pair<map<string,object>::iterator,bool> i = m_v.insert(make_pair(name, object()));
-						return i.first->second;
+//						icpc creates crashing code on this line:
+//						pair<map<string,object>::iterator,bool> i = m_v.insert(make_pair(name, object()));
+
+						map<string,object>::iterator i = m_v.find(name);
+						if (i == m_v.end())
+						{
+							m_v[name] = object();
+							i = m_v.find(name);
+						}
+						
+						return i->second;
 					}
 
 	virtual const object
@@ -726,14 +735,16 @@ const object object::operator[](uint32 ix) const
 
 object& object::operator[](const string& name)
 {
-	if (type() != struct_type)
+	struct_object_impl* impl = dynamic_cast<struct_object_impl*>(m_impl);
+	
+	if (impl == nullptr)
 	{
 		if (m_impl != nullptr)
 			m_impl->release();
-		m_impl = new struct_object_impl();
+		m_impl = impl = new struct_object_impl();
 	}
 
-	return static_cast<detail::base_struct_object_impl*>(m_impl)->field(name);
+	return impl->field(name);
 }
 
 object& object::operator[](const char* name)

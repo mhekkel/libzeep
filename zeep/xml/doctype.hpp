@@ -9,9 +9,9 @@
 #include <zeep/config.hpp>
 
 #include <set>
+#include <vector>
+#include <list>
 
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/ptr_container/ptr_list.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/filesystem/operations.hpp>
 
@@ -25,9 +25,9 @@ class attlist;
 class entity;
 class attribute;
 
-typedef boost::ptr_vector<entity>		entity_list;
-typedef boost::ptr_vector<element>		element_list;
-typedef boost::ptr_vector<attribute>	attribute_list;
+typedef std::vector<entity*>	entity_list;
+typedef std::vector<element*>	element_list;
+typedef std::vector<attribute*>	attribute_list;
 
 // --------------------------------------------------------------------
 // validation of elements is done by the validator classes

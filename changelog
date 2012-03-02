@@ -1,3 +1,14 @@
+Version 2.8.1
+
+- removed boost::ptr_vector/ptr_list.
+- work around a crashing bug in el::object[string] when compiling with icpc
+
+Version 2.8.0
+
+- write_content added.
+- nullptr instead of nil, added a stub for old compilers.
+- fix in el::object (mixing up uint64 and size_t)
+
 Version 2.6.3
 
 - Fix for stack overflow in delete large XML documents

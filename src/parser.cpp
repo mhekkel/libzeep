@@ -796,6 +796,15 @@ parser_imp::~parser_imp()
 		m_data_source = next;
 	}
 	
+	foreach (doctype::entity* e, m_parameter_entities)
+		delete e;
+
+	foreach (doctype::entity* e, m_general_entities)
+		delete e;
+
+	foreach (doctype::element* e, m_doctype)
+		delete e;
+	
 	delete m_data_source;
 }
 
@@ -807,7 +816,7 @@ const doctype::entity& parser_imp::get_general_entity(const string& name) const
 	if (e == m_general_entities.end())
 		not_well_formed(boost::format("undefined entity reference '%1%'") % name);
 	
-	return *e;
+	return **e;
 }
 
 const doctype::entity& parser_imp::get_parameter_entity(const string& name) const
@@ -827,7 +836,7 @@ const doctype::entity& parser_imp::get_parameter_entity(const string& name) cons
 		throw zeep::exception(msg.str());
 	}
 	
-	return *e;
+	return **e;
 }
 
 const doctype::element* parser_imp::get_element(const string& name) const
@@ -838,7 +847,7 @@ const doctype::element* parser_imp::get_element(const string& name) const
 		boost::bind(&doctype::element::name, _1) == name);
 
 	if (e != m_doctype.end())
-		result = &(*e);
+		result = *e;
 	
 	return result;
 }
@@ -1747,21 +1756,21 @@ void parser_imp::doctypedecl()
 	
 	// test if all ndata references can be resolved
 	
-	foreach (const doctype::entity& e, m_general_entities)
+	foreach (const doctype::entity* e, m_general_entities)
 	{
-		if (e.parsed() == false and m_notations.count(e.ndata()) == 0)
-			not_valid(boost::format("Undefined NOTATION '%1%'") % e.ndata());
+		if (e->parsed() == false and m_notations.count(e->ndata()) == 0)
+			not_valid(boost::format("Undefined NOTATION '%1%'") % e->ndata());
 	}
 	
 	// and the notations in the doctype attlists
-	foreach (const doctype::element& element, m_doctype)
+	foreach (const doctype::element* element, m_doctype)
 	{
-		foreach (const doctype::attribute& attr, element.attributes())
+		foreach (const doctype::attribute* attr, element->attributes())
 		{
-			if (attr.get_type() != doctype::attTypeNotation)
+			if (attr->get_type() != doctype::attTypeNotation)
 				continue;
 			
-			foreach (const string& n, attr.get_enums())
+			foreach (const string& n, attr->get_enums())
 			{
 				if (m_notations.count(n) == 0)
 					not_valid(boost::format("Undefined NOTATION '%1%'") % n);
@@ -2042,15 +2051,15 @@ void parser_imp::element_decl()
 
 	if (e == m_doctype.end())
 		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_in_external_dtd));
-	else if (e->declared())
+	else if ((*e)->declared())
 		not_valid(boost::format("duplicate element declaration for element '%1%'") % name);
 	else
-		e->external(m_in_external_dtd);
+		(*e)->external(m_in_external_dtd);
 
 	match(xml_Name);
 	s(true);
 	
-	contentspec(*e);
+	contentspec(**e);
 	s();
 	
 	m_allow_parameter_entity_references = true;
@@ -2355,10 +2364,10 @@ void parser_imp::general_entity_decl()
 		m_general_entities.push_back(new doctype::general_entity(name, value, external, parsed));
 		
 		if (not parsed)
-			m_general_entities.back().ndata(ndata);
+			m_general_entities.back()->ndata(ndata);
 		
 		if (m_in_external_dtd)
-			m_general_entities.back().externally_defined(true);
+			m_general_entities.back()->externally_defined(true);
 	}
 }
 
@@ -2538,13 +2547,13 @@ void parser_imp::attlist_decl()
 		
 		if (attribute->get_type() == doctype::attTypeTokenizedID)
 		{
-			const doctype::attribute_list& atts = dte->attributes();
+			const doctype::attribute_list& atts = (*dte)->attributes();
 			if (find_if(atts.begin(), atts.end(), boost::bind(&doctype::attribute::get_type, _1) == doctype::attTypeTokenizedID) != atts.end())
 				not_valid("only one attribute per element can have the ID type");
 		}
 
 		attribute->external(m_in_external_dtd);		
-		dte->add_attribute(attribute.release());
+		(*dte)->add_attribute(attribute.release());
 	}
 
 	m_allow_parameter_entity_references = true;
@@ -3299,9 +3308,9 @@ void parser_imp::element(doctype::validator& valid)
 	// add missing attributes
 	if (dte != nullptr)
 	{
-		foreach (const doctype::attribute& dta, dte->attributes())
+		foreach (const doctype::attribute* dta, dte->attributes())
 		{
-			string attr_name = dta.name();
+			string attr_name = dta->name();
 			
 			list<detail::attr>::iterator attr = find_if(attrs.begin(), attrs.end(),
 				boost::bind(&detail::attr::m_name, _1) == attr_name);
@@ -3309,7 +3318,7 @@ void parser_imp::element(doctype::validator& valid)
 			doctype::AttributeDefault defType;
 			string defValue;
 			
-			boost::tie(defType, defValue) = dta.get_default();
+			boost::tie(defType, defValue) = dta->get_default();
 			
 			if (defType == doctype::attDefRequired)
 			{
@@ -3319,7 +3328,7 @@ void parser_imp::element(doctype::validator& valid)
 			}
 			else if (not defValue.empty() and attr == attrs.end())
 			{
-				if (m_validating and m_standalone and dta.external())
+				if (m_validating and m_standalone and dta->external())
 					not_valid("default value for attribute defined in external declaration which is not allowed in a standalone document");
 
 				detail::attr attr;

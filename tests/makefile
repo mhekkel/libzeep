@@ -19,11 +19,10 @@ MANDIR				= $(DESTDIR)man/man3
 BOOST_LIBS			= system filesystem thread regex program_options math_c99
 BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS)
-LDOPTS				= ../libzeep.a $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -gdwarf-2 -pthread
+LDOPTS				= ../libzeep.a $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g -pthread
 
 CC					?= c++
-CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ../ -gdwarf-2 -fPIC -pthread -std=c++0x
-CFLAGS				+= -DBOOST_FILESYSTEM_VERSION=2
+CFLAGS				= $(BOOST_INC_DIR:%=-I%) -iquote ../ -g -fPIC -pthread -std=c++0x
 
 VPATH += src
 
@@ -33,14 +32,14 @@ test: parser-test xpath-test
 	./xpath-test
 
 parser-test: obj/parser-test.o
-	c++ -o $@ $^ -L.. $(LDOPTS)
+	$(CC) -o $@ $^ -L.. $(LDOPTS)
 
 xpath-test: obj/xpath-test.o
-	c++ -o $@ $? -L.. $(LDOPTS)
+	$(CC) -o $@ $? -L.. $(LDOPTS)
 
 obj/%.o: %.cpp
 	@ test -d obj || mkdir obj
-	c++ -MD -c -o $@ -I .. $< $(CFLAGS)
+	$(CC) -MD -c -o $@ -I .. $< $(CFLAGS)
 
 include $(OBJECTS:%.o=%.d)
 
