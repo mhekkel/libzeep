@@ -38,7 +38,6 @@
 #include <boost/serialization/nvp.hpp>
 #include <boost/array.hpp>
 #include <boost/bind.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/fusion/include/sequence.hpp>
 #include <boost/fusion/container/vector.hpp>
@@ -293,11 +292,17 @@ struct handler : public handler_base
 class dispatcher
 {
   public:
-	typedef boost::ptr_vector<detail::handler_base>	handler_list;
+	typedef std::vector<detail::handler_base*>	handler_list;
 
 						dispatcher(const std::string& ns, const std::string& service)
 							: m_ns(ns)
 							, m_service(service) {}
+		
+	virtual 			~dispatcher()
+						{
+							for (handler_list::iterator cb = m_handlers.begin(); cb != m_handlers.end(); ++cb)
+								delete *cb;
+						}
 		
 	template<
 		class Class,
@@ -321,7 +326,7 @@ class dispatcher
 							if (cb == m_handlers.end())
 								throw exception("Action %s is not defined", action.c_str());
 
-							xml::element* result = cb->call(in);
+							xml::element* result = (*cb)->call(in);
 							result->set_name_space("", m_ns);
 							return result;
 						}
@@ -367,7 +372,7 @@ class dispatcher
 							detail::message_map messageMap;
 							
 							for (handler_list::iterator cb = m_handlers.begin(); cb != m_handlers.end(); ++cb)
-								cb->collect(typeMap, messageMap, portType, binding);
+								(*cb)->collect(typeMap, messageMap, portType, binding);
 							
 							for (detail::message_map::iterator m = messageMap.begin(); m != messageMap.end(); ++m)
 								wsdl->append(m->second);
@@ -404,7 +409,7 @@ class dispatcher
 							if (cb == m_handlers.end())
 								throw exception("Action %s is not defined", action.c_str());
 							
-							cb->set_response_name(name);
+							(*cb)->set_response_name(name);
 						}
 
 	std::string			m_ns;
