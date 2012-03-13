@@ -123,6 +123,10 @@ void webapp::handle_request(
 		else
 			throw not_found;
 	}
+	catch (unauthorized_exception& e)
+	{
+		create_unauth_reply(e.m_stale, rep);
+	}
 	catch (status_type& s)
 	{
 		rep = reply::stock_reply(s);
@@ -134,6 +138,11 @@ void webapp::handle_request(
 
 		create_reply_from_template("error.html", scope, rep);
 	}
+}
+
+void webapp::create_unauth_reply(bool stale, reply& rep)
+{
+	rep = reply::stock_reply(unauthorized);
 }
 
 void webapp::mount(const std::string& path, handler_type handler)
