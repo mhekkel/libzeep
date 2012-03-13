@@ -29,6 +29,13 @@
 namespace zeep {
 namespace http {
 
+struct unauthorized_exception : public std::exception
+{
+				unauthorized_exception(bool stale)
+					: m_stale(stale) {}
+	bool		m_stale;
+};
+
 namespace el { class scope; class object; }
 
 class parameter_value
@@ -100,6 +107,10 @@ class webapp : public http::server
 	
 	virtual void	handle_request(
 						const request&		req,
+						reply&				rep);
+
+	virtual void	create_unauth_reply(
+						bool				stale,
 						reply&				rep);
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI

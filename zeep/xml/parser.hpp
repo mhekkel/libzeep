@@ -10,6 +10,7 @@
 #include <boost/filesystem/path.hpp>
 
 #include <zeep/xml/node.hpp>
+#include <zeep/exception.hpp>
 
 namespace zeep { namespace xml {
 
