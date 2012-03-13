@@ -51,7 +51,7 @@ bool is_name_char(unicode uc)
 bool is_valid_system_literal_char(unicode uc)
 {
 	return
-		not uc <= 0x1f and
+		uc > 0x1f and
 		uc != ' ' and
 		uc != '<' and
 		uc != '>' and
