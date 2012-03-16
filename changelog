@@ -1,3 +1,8 @@
+Version 2.8.2
+
+- Fix in unicode support code
+- Preliminary support for handling authentication
+
 Version 2.8.1
 
 - removed boost::ptr_vector/ptr_list.
