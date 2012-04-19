@@ -119,8 +119,11 @@ dist: lib
 	rm -rf $(DIST_NAME)
 	cp $(DIST_NAME).tgz ../ppa/libzeep_$(VERSION).orig.tar.gz
 
-obj/%.o: %.cpp
+obj/%.o: %.cpp | obj
 	$(CC) -MD -c -o $@ $< $(CFLAGS)
+
+obj:
+	mkdir -p obj
 
 include $(OBJECTS:%.o=%.d)
 
