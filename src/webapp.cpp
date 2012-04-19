@@ -173,9 +173,11 @@ void webapp::handle_file(
 			ss.imbue(std::locale(std::locale::classic(), lif1));
 			ss.str(h.value);
 			ss >> modifiedSince;
-			
+
 			local_date_time fileDate(from_time_t(fs::last_write_time(file)), time_zone_ptr());
-			
+
+			cerr << file << endl << modifiedSince << endl << fileDate << endl << endl;
+
 			if (fileDate <= modifiedSince)
 			{
 				reply = zeep::http::reply::stock_reply(zeep::http::not_modified);
@@ -219,6 +221,9 @@ void webapp::handle_file(
 	s << t2;
 
 	reply.set_header("Last-Modified", s.str());
+
+
+cerr << s.str() << endl << endl;
 }
 
 void webapp::load_template(
