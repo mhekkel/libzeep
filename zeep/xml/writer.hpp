@@ -28,6 +28,7 @@ class writer
   public:
 					//! The constructor takes a std::ostream as argument
 					writer(std::ostream& os);
+					writer(std::ostream& os, bool write_decl, bool standalone = false);
 					
 	virtual			~writer();
 
@@ -65,6 +66,7 @@ class writer
 	virtual void	empty_doctype(const std::string& root, const std::string& dtd);
 
 	//! This opens a DOCTYPE declaration. The root parameter is the name of the base element.
+	virtual void	doctype(const std::string& root, const std::string& pubid, const std::string& dtd);
 	virtual void	start_doctype(const std::string& root, const std::string& dtd);
 
 	//! To write a NOTATION declaration

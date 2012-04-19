@@ -37,6 +37,25 @@ writer::writer(std::ostream& os)
 {
 }
 				
+writer::writer(std::ostream& os, bool write_decl, bool standalone)
+	: m_os(os)
+	, m_encoding(enc_UTF8)
+	, m_version(1.0f)
+	, m_write_xml_decl(write_decl)
+	, m_wrap(true)
+	, m_collapse_empty(true)
+	, m_escape_whitespace(false)
+	, m_trim(false)
+	, m_no_comment(false)
+	, m_indent(2)
+	, m_level(0)
+	, m_element_open(false)
+	, m_wrote_element(false)
+{
+	if (m_write_xml_decl)
+		xml_decl(standalone);
+}
+				
 writer::~writer()
 {
 }
@@ -64,6 +83,19 @@ void writer::xml_decl(bool standalone)
 		if (m_wrap)
 			m_os << endl;
 	}
+}
+
+void writer::doctype(const string& root, const string& pubid, const string& dtd)
+{
+	m_os << "<!DOCTYPE " << root;
+	
+	if (not pubid.empty())
+		m_os << " PUBLIC \"" << pubid << "\"";
+	
+	m_os << " \"" << dtd << "\">";
+
+	if (m_wrap)
+		m_os << endl;
 }
 
 void writer::start_doctype(const string& root, const string& dtd)
