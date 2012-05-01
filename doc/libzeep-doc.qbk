@@ -24,16 +24,11 @@ This documentation makes use of the following naming and formatting conventions.
   that is, it is uppercase in code font and its name is followed by `()` to   indicate that it is a function-like macro. Object-like macros appear without the   trailing `()`.
 * Names that refer to /concepts/ in the generic programming sense are  specified in CamelCase.
 
-[note In addition, notes such as this one specify non-essential information that provides additional background or rationale.]
-
-Finally, you can mentally add the following to any code fragments in this document:
-
-    // Include all of Pool files
-    #include <boost/pool.hpp>
-
 [endsect] [/section:conventions Documentation Naming and Formatting Conventions]
 
 [section:xml XML Parser]
+
+The basic building block for libzeep is the XML parser. It parses XML into a DOM tree that can be traversed, searched, manipulated and written out again.
 
 [endsect]
 
@@ -48,5 +43,7 @@ Finally, you can mentally add the following to any code fragments in this docume
 [endsect]
 
 [section:reference Reference]
+
+
 
 [endsect]
