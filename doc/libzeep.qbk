@@ -1,0 +1,52 @@
+[article libzeep
+	[quickbook 1.5]
+	[version 1.0]
+	[copyright 2012 Maarten L. Hekkelman]
+	[license
+		Distributed under the Boost Software License, Version 1.0.
+		(See accompanying file LICENSE_1_0.txt or copy at
+		[@http://www.boost.org/LICENSE_1_0.txt])
+	]
+	[authors [Hekkelman, Maarten L.]]
+]
+
+[section:intro Introduction]
+
+[section:conventions Documentation Naming and Formatting Conventions]
+
+This documentation makes use of the following naming and formatting conventions.
+
+* Code is in `fixed width font` and is syntax-highlighted in color.
+* Replaceable text that you will need to supply is in [~italics].
+* Free functions are rendered in the `code font` followed by `()`, as in `free_function()`.
+* If a name refers to a class template, it is specified like this:   `class_template<>`; that is, it is in code font and its name is followed by `<>`   to indicate that it is a class template.
+* If a name refers to a function-like macro, it is specified like this: `MACRO()`;
+  that is, it is uppercase in code font and its name is followed by `()` to   indicate that it is a function-like macro. Object-like macros appear without the   trailing `()`.
+* Names that refer to /concepts/ in the generic programming sense are  specified in CamelCase.
+
+[note In addition, notes such as this one specify non-essential information that provides additional background or rationale.]
+
+Finally, you can mentally add the following to any code fragments in this document:
+
+    // Include all of Pool files
+    #include <boost/pool.hpp>
+
+[endsect] [/section:conventions Documentation Naming and Formatting Conventions]
+
+[section:xml XML Parser]
+
+[endsect]
+
+[section:http HTTP Server]
+
+[endsect]
+
+[section:soap SOAP Server]
+
+[endsect]
+
+[endsect]
+
+[section:reference Reference]
+
+[endsect]
