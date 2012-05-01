@@ -1,0 +1,8 @@
+using quickbook ;
+
+
+boostbook libzeep
+	:
+	libzeep.qbk
+	:
+	;
