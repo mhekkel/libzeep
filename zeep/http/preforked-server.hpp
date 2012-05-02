@@ -32,10 +32,10 @@
 ///						my_server(const string& my_param);
 ///		....
 ///
-///		zeep::http::preforked_server<my_server> server("my extra param");
+///		zeep::http::preforked_server\<my_server\> server("my extra param");
 ///		boost::thread t(
-///			boost::bind(&zeep::http::preforked_server<my_server>::run, &server, 2/*threads*/));
-///		server.bind("0.0.0.0"/*address*/, 10333/*port*/);
+///			boost::bind(&zeep::http::preforked_server\<my_server\>::run, &server, 2));
+///		server.bind("0.0.0.0", 10333);
 ///
 ///		... // wait for signal to stop
 ///		server.stop();
@@ -51,12 +51,14 @@ namespace zeep { namespace http {
 class preforked_server_base
 {
   public:
-	virtual					~preforked_server_base();
-
-								/// forks child and starts listening, should be a separate thread
+									/// forks child and starts listening, should be a separate thread
 	virtual void			run(const std::string& address, short port, int nr_of_threads);
-	virtual void			start();				/// signal the thread it can start listening:
-	virtual void			stop();					/// stop the running thread
+	virtual void			start();				///< signal the thread it can start listening:
+	virtual void			stop();					///< stop the running thread
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
+
+	virtual					~preforked_server_base();
 
   protected:
 
@@ -87,6 +89,8 @@ class preforked_server_base
 	int								m_fd;
 	int								m_pid;
 	boost::mutex					m_lock;
+
+#endif
 };
 
 template<class Server>
@@ -159,6 +163,8 @@ class preforked_server : public preforked_server_base
 	typedef	Server									server_type;
 
   public:
+
+	/// Four constructors, one without and three with parameters.
 
 						preforked_server()
 							: preforked_server_base(new server_constructor<void(Server::*)()>())

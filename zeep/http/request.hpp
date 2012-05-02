@@ -12,20 +12,23 @@
 
 namespace zeep { namespace http {
 
+/// request contains the parsed original HTTP request as received
+/// by the server.
+
 struct request
 {
-	std::string		method;
-	std::string		uri;
-	int				http_version_major;
-	int				http_version_minor;
+	std::string		method;					///< POST or GET
+	std::string		uri;					///< The uri as requested
+	int				http_version_major;		///< HTTP major number (usually 1)
+	int				http_version_minor;		///< HTTP major number (0 or 1)
 	std::vector<header>
-					headers;
-	std::string		payload;
-	bool			close;
+					headers;				///< A list with zeep::http::header values
+	std::string		payload;				///< For POST requests
+	bool			close;					///< Whether 'Connection: close' was specified
 
 	// for redirects...
-	std::string		local_address;
-	unsigned short	local_port;
+	std::string		local_address;			///< The address the request was received upon
+	unsigned short	local_port;				///< The port number the request was received upon
 };
 
 }

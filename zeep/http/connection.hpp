@@ -16,6 +16,9 @@
 
 namespace zeep { namespace http {
 
+/// The HTTP server implementation of libzeep is inspired by the example code
+/// as provided by boost::asio. These objects are not to be used directly.
+
 class connection
 	: public boost::enable_shared_from_this<connection>
 	, public boost::noncopyable

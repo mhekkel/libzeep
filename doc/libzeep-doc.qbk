@@ -14,7 +14,7 @@
 [def __element__ [link libzeep.xml.node.element `zeep::xml::element`]]
 [def __attribute__ [link libzeep.xml.node.attribute `zeep::xml::attribute`]]
 [def __container__ [link libzeep.xml.node.container `zeep::xml::container`]]
-[def __document__ [link libzeep.xml.document.document `zeep::xml::document`]]
+[def __document__ [link libzeep.xml.document `zeep::xml::document`]]
 [def __serialize__ [link libzeep.xml.serialize.serialize `zeep::xml::serialize`]]
 [def __deserialize__ [link libzeep.xml.serialize.deserialize `zeep::xml::deserialize`]]
 
@@ -116,6 +116,9 @@ An alternative way to read/write XML files is using serialization. To do this, w
 		
 		// the variable name person must be the same as the name of the XML element person
 		ds & BOOST_SERIALIZATION_NVP(person);
+		
+		// alternative is to use which allows another variable name:
+		// ds & boost::serialization::make_nvp("person", person);
 	}
 
 To find out more about serialization, look at the reference for __serialize__
@@ -161,7 +164,52 @@ Of course you will have to fill in the `handle_request` part...
 
 [section:soap SOAP Server]
 
+Setting up a SOAP server is very easy. Let's continue with our test file and serve it as a SOAP/REST server. We already created the Person struct. The most simple server we can create is one that lists all persons in the test file:
 
+	#include <zeep/server.hpp>
+	#include <fstream>
+	
+	using namespace std;
+	
+	... // define the Person struct as above
+	
+	class my_server : public zeep::server
+	{
+	  public:
+		my_server();
+	
+		// The method we want to export
+		void ListPersons(vector<Person>& result);
+	};
+	
+	void my_server::ListPersons(vector<Person>& result)
+	{
+		std::ifstream file("test.xml");
+		zeep::xml::document doc(file);
+		
+		zeep::xml::deserializer ds(doc.child());
+		ds & boost::serialization::make_nvp("person", result);
+	}
+	
+	my_server::my_server() : zeep::server("http://www.example.org/soaptest", "soaptest")
+	{
+		// assign a name to the Person struct (will appear in the WSDL e.g.)
+		zeep::xml::serialize_struct<Person>::set_struct_name("person");
+		
+		// assign names to the parameters of the exported method, in this case there's only
+		// one return value to name
+		const char* kListPersonsParameterNames[] = { "response" };
+		register_action("ListPersons", this, &my_server::ListPersons, kListPersonsParameterNames);
+	}
+	
+	int main()
+	{
+		my_server server;
+		server.bind("192.168.0.1", 8083);
+		server.run(1);	// keep our server single threaded
+	}
+
+After building this server and running it, you can access the REST version of this routine at [@http://192.168.0.1:8083/rest/ListPersons] and there's a WSDL at [@http://192.168.0.1:8083/wsdl]
 
 [endsect]
 
@@ -169,70 +217,7 @@ Of course you will have to fill in the `handle_request` part...
 
 [section:xml XML Reference]
 
-[section:node Header <zeep/xml/node.hpp>]
-
-[section:node `zeep::xml::node`]
-
-The node class.
 
 [endsect]
 
-[section:element `zeep::xml::element`]
-
-The element class.
-
-[endsect]
-
-[section:attribute `zeep::xml::attribute`]
-
-The attribute class.
-
-[endsect]
-
-[section:container `zeep::xml::container`]
-
-The container class.
-
-[endsect]
-
-[endsect]
-
-[section:document Header <zeep/xml/document.hpp>]
-
-[section:document `zeep::xml::document`]
-
-The document class.
-
-[endsect]
-
-[endsect]
-
-[section:serialize Header <zeep/xml/serialize.hpp>]
-
-[section:serialize `zeep::xml::serialize`]
-
-The serialization class.
-
-[endsect]
-
-[endsect]
-
-[endsect]
-
-[section:http HTTP/SOAP/REST Reference]
-
-[section:server Header <zeep/server.hpp>]
-
-[section:server `zeep::http::server`]
-
-The `zeep::http::server` class.
-
-[endsect]
-
-[endsect]
-
-[section:http_server Header <zeep/http/server.hpp>]
-
-[endsect]
-
-[endsect]
+[xinclude autodoc.xml]

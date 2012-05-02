@@ -11,9 +11,12 @@
 
 namespace zeep {
 
+/// zeep::exception is a class used to throw zeep exception.
+
 class exception : public std::exception
 {
   public:
+	/// \brief Create an exception with vsprintf like parameters
 				exception(const char* message, ...);
 
 				exception(const std::string& message)

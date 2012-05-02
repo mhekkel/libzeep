@@ -29,7 +29,7 @@
 
 #ifndef SOAP_DISPATCHER_H
 
-#if not defined(BOOST_PP_IS_ITERATING)
+#if LIBZEEP_DOXYGEN_INVOKED || ! defined(BOOST_PP_IS_ITERATING)
 
 #include <boost/version.hpp>
 #include <boost/preprocessor/repetition/enum.hpp>
@@ -129,10 +129,12 @@ struct handler_traits<void(Class::*)(R&)>
 				}
 };
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 // all the other specializations are specified at the bottom of this file
 #define  BOOST_PP_FILENAME_1 <zeep/dispatcher.hpp>
 #define  BOOST_PP_ITERATION_LIMITS (1, 9)
 #include BOOST_PP_ITERATE()
+#endif
 
 // messages can be used by more than one action, so we need a way to avoid duplicates
 typedef std::map<std::string,element*>	message_map;
@@ -314,6 +316,7 @@ class dispatcher
 							m_handlers.push_back(new detail::handler<Class,Function>(action, server, call, arg));
 						}
 
+	/// \brief Dispatch a SOAP message and return the result
 	xml::element*		dispatch(const std::string& action, xml::element* in)
 						{
 //							if (in->ns() != m_ns)
@@ -331,6 +334,7 @@ class dispatcher
 							return result;
 						}
 
+	/// \brief Create a WSDL based on the registered actions
 	xml::element*		make_wsdl(const std::string& address)
 						{
 							// start by making the root node: wsdl:definitions
@@ -419,7 +423,9 @@ class dispatcher
 
 }
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 #define SOAP_DISPATCHER_H
+#endif
 
 #else // BOOST_PP_IS_ITERATING
 //

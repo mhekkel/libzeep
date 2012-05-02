@@ -33,21 +33,19 @@ struct unauthorized_exception : public std::exception
 {
 				unauthorized_exception(bool stale)
 					: m_stale(stale) {}
-	bool		m_stale;
+	bool		m_stale;			///< Is true when the authorization information is valid but stale (too old)
 };
 
+#ifndef BOOST_XPRESSIVE_DOXYGEN_INVOKED
 namespace el { class scope; class object; }
+#endif
 
 class parameter_value
 {
   public:
-				parameter_value()
-					: m_defaulted(false) {}
-				parameter_value(
-					const std::string&	v,
-					bool				defaulted)
-					: m_v(v)
-					, m_defaulted(defaulted) {}
+				parameter_value() : m_defaulted(false) {}
+				parameter_value(const std::string& v, bool defaulted)
+					: m_v(v), m_defaulted(defaulted) {}
 
 	template<class T>
 	T			as() const;
@@ -59,27 +57,21 @@ class parameter_value
 	bool		m_defaulted;
 };
 
+/// parameter_map is used to pass parameters from forms. The parameters can have 'any' type.
+/// Works a bit like the program_options code in boost.
+
 class parameter_map : public std::multimap<std::string, parameter_value>
 {
   public:
 	
-	// add a name/value pair as a string formatted as 'name=value'
-	void		add(
-					const std::string&	param);
-
-	void		add(
-					std::string			name,
-					std::string			value);
-
-	void		replace(
-					std::string			name,
-					std::string			value);
+	/// add a name/value pair as a string formatted as 'name=value'
+	void		add(const std::string& param);
+	void		add(std::string name, std::string value);
+	void		replace(std::string name, std::string value);
 
 	template<class T>
 	const parameter_value&
-				get(
-					const std::string&	name,
-					T					defaultValue);
+				get(const std::string& name, T defaultValue);
 
 };
 
@@ -88,151 +80,98 @@ extern const std::string kLibZeepWebAppNS;
 class webapp : public http::server
 {
   public:
-					// first parameter to constructor is the
-					// namespace to use in template XHTML files.
-					webapp(
-						const std::string&	ns,
-						const boost::filesystem::path&
-											docroot = ".");
+					/// first parameter to constructor is the
+					/// namespace to use in template XHTML files.
+					webapp(const std::string& ns, const boost::filesystem::path& docroot = ".");
 
 	virtual			~webapp();
 
-	virtual void	set_docroot(
-						const boost::filesystem::path&
-											docroot);
+	virtual void	set_docroot(const boost::filesystem::path& docroot);
 	boost::filesystem::path
 					get_docroot() const		{ return m_docroot; }
 	
   protected:
 	
-	virtual void	handle_request(
-						const request&		req,
-						reply&				rep);
-
-	virtual void	create_unauth_reply(
-						bool				stale,
-						reply&				rep);
+	virtual void	handle_request(const request& req, reply& rep);
+	virtual void	create_unauth_reply(bool stale, reply& rep);
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 	
 	typedef boost::function<void(const request& request, const el::scope& scope, reply& reply)> handler_type;
 
+	/// assign a handler function to a path in the server's namespace
+	/// Usually called like this:
+	///
+	///   mount("page", boost::bind(&page_handler, this, _1, _2, _3));
+	///
+	/// Where page_handler is defined as:
+	///
+	/// void my_server::page_handler(const request& request, const el::scope& scope, reply& reply);
+	///
 	void			mount(const std::string& path, handler_type handler);
 
-	// only one handler defined here
-	virtual void	handle_file(
-						const request&		request,
-						const el::scope&	scope,
-						reply&				reply);
+	/// Default handler for serving files out of our doc root
+	virtual void	handle_file(const request& request, const el::scope& scope, reply& reply);
 
-	// Use load_template to fetch the XHTML template file
-	virtual void	load_template(
-						const std::string&	file,
-						xml::document&		doc);
-
-	void			load_template(
-						const boost::filesystem::path&
-											file,
-						xml::document&		doc)
+	/// Use load_template to fetch the XHTML template file
+	virtual void	load_template(const std::string& file, xml::document& doc);
+	void			load_template(const boost::filesystem::path& file, xml::document& doc)
 					{
 						load_template(file.string(), doc);
 					}
 
-	// create a reply based on a template
-	virtual void	create_reply_from_template(
-						const std::string&	file,
-						const el::scope&	scope,
-						reply&				reply);
+	/// create a reply based on a template
+	virtual void	create_reply_from_template(const std::string& file, const el::scope& scope, reply& reply);
 	
-	// process xml parses the XHTML and fills in the special tags and evaluates the el constructs
-	virtual void	process_xml(
-						xml::node*			node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// process xml parses the XHTML and fills in the special tags and evaluates the el constructs
+	virtual void	process_xml(xml::node* node, const el::scope& scope, boost::filesystem::path dir);
 
 	typedef boost::function<void(xml::element* node, const el::scope& scope, boost::filesystem::path dir)> processor_type;
 
-	virtual void	add_processor(
-						const std::string&	name,
-						processor_type		processor);
+	/// To add additional processors
+	virtual void	add_processor(const std::string& name, processor_type processor);
 
-	virtual void	process_include(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:include tags
+	virtual void	process_include(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_if(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:if tags
+	virtual void	process_if(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_iterate(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:iterate tags
+	virtual void	process_iterate(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_for(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:for tags
+	virtual void	process_for(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_number(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:number tags
+	virtual void	process_number(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_options(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:options tags
+	virtual void	process_options(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_option(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:option tags
+	virtual void	process_option(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_checkbox(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:checkbox tags
+	virtual void	process_checkbox(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_url(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:url tags
+	virtual void	process_url(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_param(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:param tags
+	virtual void	process_param(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	process_embed(
-						xml::element*		node,
-						const el::scope&	scope,
-						boost::filesystem::path
-											dir);
+	/// default handler for mrs:embed tags
+	virtual void	process_embed(xml::element* node, const el::scope& scope, boost::filesystem::path dir);
 
-	virtual void	init_scope(
-						el::scope&			scope);
+	/// Initialize the el::scope object
+	virtual void	init_scope(el::scope& scope);
 
-	virtual void	get_cookies(
-						const el::scope&	scope,
-						parameter_map&		cookies);
+	/// Return a parameter_map containing the cookies as found in the current request
+	virtual void	get_cookies(const el::scope& scope, parameter_map& cookies);
 
-	virtual void	get_parameters(
-						const el::scope&	scope,
-						parameter_map&		parameters);
+	/// Return the original parameters as found in the current request
+	virtual void	get_parameters(const el::scope&	scope, parameter_map& parameters);
 
   private:
 	typedef std::map<std::string,handler_type>		handler_map;
