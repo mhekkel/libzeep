@@ -1,6 +1,6 @@
 [article libzeep
 	[quickbook 1.5]
-	[version 1.0]
+	[version 2.9]
 	[copyright 2012 Maarten L. Hekkelman]
 	[license
 		Distributed under the Boost Software License, Version 1.0.
@@ -10,40 +10,229 @@
 	[authors [Hekkelman, Maarten L.]]
 ]
 
+[def __node__ [link libzeep.xml.node `zeep::xml::node`]]
+[def __element__ [link libzeep.xml.node.element `zeep::xml::element`]]
+[def __attribute__ [link libzeep.xml.node.attribute `zeep::xml::attribute`]]
+[def __container__ [link libzeep.xml.node.container `zeep::xml::container`]]
+[def __document__ [link libzeep.xml.document.document `zeep::xml::document`]]
+[def __serialize__ [link libzeep.xml.serialize.serialize `zeep::xml::serialize`]]
+[def __deserialize__ [link libzeep.xml.serialize.deserialize `zeep::xml::deserialize`]]
+
+[section:overview Overview]
+
+Libzeep is packaged as one library, but actually contains two different libraries. The first part of libzeep consists of code to read, manipulate and write XML. It contains a validating XML parser, an XPath implementation to query a DOM tree, code to serialize objects into and out of XML and finally it contains an XML writing module.
+
+The second part of libzeep is targeted to writing SOAP and REST servers as well as full web applications using C++. There is a simple HTTP server implementation, code to create SOAP (and REST) servers out of existing C++ objects and there is code to create complete web applications that work a bit like popular Java web application frameworks. The libzeep web application framework turns page templates consisting of XHTML with custom tags and a custom script language into HTML.
+
+[endsect]
+
 [section:intro Introduction]
-
-[section:conventions Documentation Naming and Formatting Conventions]
-
-This documentation makes use of the following naming and formatting conventions.
-
-* Code is in `fixed width font` and is syntax-highlighted in color.
-* Replaceable text that you will need to supply is in [~italics].
-* Free functions are rendered in the `code font` followed by `()`, as in `free_function()`.
-* If a name refers to a class template, it is specified like this:   `class_template<>`; that is, it is in code font and its name is followed by `<>`   to indicate that it is a class template.
-* If a name refers to a function-like macro, it is specified like this: `MACRO()`;
-  that is, it is uppercase in code font and its name is followed by `()` to   indicate that it is a function-like macro. Object-like macros appear without the   trailing `()`.
-* Names that refer to /concepts/ in the generic programming sense are  specified in CamelCase.
-
-[endsect] [/section:conventions Documentation Naming and Formatting Conventions]
 
 [section:xml XML Parser]
 
-The basic building block for libzeep is the XML parser. It parses XML into a DOM tree that can be traversed, searched, manipulated and written out again.
+Libzeep comes with a validating XML parser. Using this parser is as simple as writing:
+
+	#include <zeep/xml/document.hpp>
+	#include <fstream>
+	
+	int main()
+	{
+		std::ifstream file("test.xml");
+		zeep::xml::document doc(file);
+		...
+	}
+
+This will parse the file =text.xml= and create an object `doc` containing the DOM tree. To traverse this tree you can use the various member functions of doc which derives from the generic __container__ class. Siblings in the DOM tree are stored as linked lists and some elements can have children. To make life easier, you can iterate over elements using STL iterators.
+
+Suppose our =test.xml= file contains the following XML:
+
+	<persons>
+		<person>
+			<firstname>John</firstname>
+			<lastname>Doe</lastname>
+		</person>
+		<person>
+			<firstname>Jane</firstname>
+			<lastname>Jones</lastname>
+		</person>
+	</persons>
+
+You could print out the file like this:
+
+	// a document contains at most one child node
+	zeep::xml::element* persons = doc.child();
+
+	// begin/end will return iterators to elements
+	for (zeep::xml::container::iterator person = persons->begin(); person != persons->end(); ++person)
+	{
+		for (zeep::xml::container::iterator name = (*person)->begin(); name != (*person)->end(); ++name)
+			std::cout << (*name)->name() << " = " << (*name)->content() << std::endl;
+	}
+
+Of course, using the new for loop construct, this code would be much more readable:
+
+	for (auto person : *persons)
+	{
+		for (auto name : *person)
+			std::cout << name->name() << " = " << name->content() << std::endl;
+	}
+		
+But if your compiler does not support that syntax, you can always use `boost::range` instead:
+
+	BOOST_FOREACH (zeep::xml::element* person, *persons)
+	{
+		BOOST_FOREACH (zeep::xml::element* name, *person)
+			std::cout << name->name() << " = " << name->content() << std::endl;
+	}
+
+Accessing attributes is done using the member function `element::get_attribute()`.
+
+An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
+
+	#include <zeep/xml/document.hpp>
+	#include <zeep/xml/serialize.hpp>
+	#include <vector>
+	#include <fstream>
+	
+	struct Person
+	{
+		std::string firstname;
+		std::string lastname;
+	
+		template<class Archive>
+		void serialize(Archive& ar, const unsigned int version)
+		{
+			ar & BOOST_SERIALIZATION_NVP(firstname) & BOOST_SERIALIZATION_NVP(lastname);
+		}
+	};
+	
+	int main()
+	{
+		std::ifstream file("test.xml");
+		zeep::xml::document doc(file);
+		
+		zeep::xml::deserializer ds(doc.child());
+		std::vector<Person> person;
+		
+		// the variable name person must be the same as the name of the XML element person
+		ds & BOOST_SERIALIZATION_NVP(person);
+	}
+
+To find out more about serialization, look at the reference for __serialize__
+
+[endsect]
+
+[section:xpath XPath 1.0]
+
+Libzeep comes with a [@http://www.w3.org/TR/xpath/ XPath 1.0] implementation. You can use this to locate elements in a DOM tree easily. For a complete description of the XPath specification you should read the documentation at e.g. [@http://www.w3.org/TR/xpath/] or [@http://www.w3schools.com/xpath/default.asp].
+
+The way it works in libzeep is that you can call `find()` on an `zeep::xml::element` object and it will return a `zeep::xml::element_set` object which is actually a `std::list` of `zeep::xml::element` pointers of the elements that conform to the specification in XPath passed as parameter to `find()`. An alternative method `find_first()` can be used to return only the first element.
+
+An example where we look for the first person in our test file with the lastname Jones:
+
+	zeep::xml::element* jones = doc.child()->find_first("//person[lastname='Jones']");
 
 [endsect]
 
 [section:http HTTP Server]
 
+Creating a HTTP server with libzeep is as simple as:
+
+	#include <zeep/http/server.hpp>
+	
+	class my_server : public zeep::http::server
+	{
+		virtual void handle_request(const zeep::http::request& req, zeep::http::reply& rep)
+		{
+			...	// do something useful
+		}
+	};
+	
+	int main()
+	{
+		my_server server;
+		server.bind("0.0.0.0", 80);
+		server.run(1);
+	}
+
+Of course you will have to fill in the `handle_request` part...
+
 [endsect]
 
 [section:soap SOAP Server]
 
+
+
 [endsect]
 
 [endsect]
 
-[section:reference Reference]
+[section:xml XML Reference]
 
+[section:node Header <zeep/xml/node.hpp>]
 
+[section:node `zeep::xml::node`]
+
+The node class.
+
+[endsect]
+
+[section:element `zeep::xml::element`]
+
+The element class.
+
+[endsect]
+
+[section:attribute `zeep::xml::attribute`]
+
+The attribute class.
+
+[endsect]
+
+[section:container `zeep::xml::container`]
+
+The container class.
+
+[endsect]
+
+[endsect]
+
+[section:document Header <zeep/xml/document.hpp>]
+
+[section:document `zeep::xml::document`]
+
+The document class.
+
+[endsect]
+
+[endsect]
+
+[section:serialize Header <zeep/xml/serialize.hpp>]
+
+[section:serialize `zeep::xml::serialize`]
+
+The serialization class.
+
+[endsect]
+
+[endsect]
+
+[endsect]
+
+[section:http HTTP/SOAP/REST Reference]
+
+[section:server Header <zeep/server.hpp>]
+
+[section:server `zeep::http::server`]
+
+The `zeep::http::server` class.
+
+[endsect]
+
+[endsect]
+
+[section:http_server Header <zeep/http/server.hpp>]
+
+[endsect]
 
 [endsect]
