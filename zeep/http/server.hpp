@@ -14,10 +14,18 @@
 
 namespace zeep { namespace http {
 
+/// The libzeep HTTP server implementation. Based on code found in boost::asio.
+
 class connection;
 
-// prototype for often used functions: http::decode_url and http::encode_url
+/// Decode a URL using the RFC rules
+/// \param s  The URL that needs to be decoded
+/// \return	  The decoded URL
 std::string decode_url(const std::string& s);
+
+/// Encode a URL using the RFC rules
+/// \param s  The URL that needs to be encoded
+/// \return	  The encoded URL
 std::string encode_url(const std::string& s);
 
 class server : public request_handler
@@ -25,6 +33,7 @@ class server : public request_handler
   public:
 						server();
 
+	/// Bind the server to \a address and \a port
 	virtual void		bind(const std::string& address,
 							unsigned short port);
 
@@ -34,7 +43,7 @@ class server : public request_handler
 
 	virtual void		stop();
 
-	// to extend the log entry for a current request, use this ostream:
+	/// to extend the log entry for a current request, use this ostream:
 	static std::ostream&
 						log();
 

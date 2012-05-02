@@ -12,7 +12,7 @@
 
 namespace zeep { namespace http {
 
-// An HTTP request parser with support for Transfer-Encoding: Chunked
+/// An HTTP request parser with support for Transfer-Encoding: Chunked
 
 class request_parser
 {

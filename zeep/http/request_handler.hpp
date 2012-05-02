@@ -11,6 +11,8 @@
 
 namespace zeep { namespace http {
 
+/// Simply an interface
+
 class request_handler
 {
   public:

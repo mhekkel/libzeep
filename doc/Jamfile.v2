@@ -1,8 +1,30 @@
+import doxygen ;
 using quickbook ;
 
+doxygen autodoc
+    :
+        [ glob ../zeep/*.hpp ]
+        [ glob ../zeep/xml/*.hpp ]
+        [ glob ../zeep/http/*.hpp ]
+        [ glob ../zeep/http/el/*.hpp ]
+    :
+        <doxygen:param>EXTRACT_ALL=YES
+        <doxygen:param>"PREDEFINED=\"LIBZEEP_DOXYGEN_INVOKED\" \\
+                                   \"BOOST_DEDUCED_TYPENAME=typename\" \\
+                                   \"BOOST_STATIC_CONSTANT(x,y)=static x const y\" \\
+                                   \"BOOST_XPR_NONDEDUCED_TYPE_(X)=X\""
+        <doxygen:param>HIDE_UNDOC_MEMBERS=NO
+        <doxygen:param>EXTRACT_PRIVATE=NO
+        <doxygen:param>ENABLE_PREPROCESSING=YES
+        <doxygen:param>MACRO_EXPANSION=YES
+        <doxygen:param>EXPAND_ONLY_PREDEF=YES
+        <doxygen:param>SEARCH_INCLUDES=YES
+        <doxygen:param>INCLUDE_PATH=$(BOOST_ROOT)
+    ;
 
 boostbook libzeep-doc
 	:
-	libzeep-doc.qbk
+		libzeep-doc.qbk
 	:
+		<dependency>autodoc
 	;

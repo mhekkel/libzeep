@@ -15,13 +15,13 @@
 #define SOAP_XML_HAS_EXPAT_SUPPORT 0
 #endif
 
-// The http server implementation in libzeep can use a
-// preforked mode. That means the main process listens to
-// a network port and passes the socket to a client process
-// for doing the actual handling. The advantages for a setup
-// like this is that if the client fails, the server can detect
-// this and restart the client thereby guaranteeing a better
-// uptime.
+/// The http server implementation in libzeep can use a
+/// preforked mode. That means the main process listens to
+/// a network port and passes the socket to a client process
+/// for doing the actual handling. The advantages for a setup
+/// like this is that if the client fails, the server can detect
+/// this and restart the client thereby guaranteeing a better
+/// uptime.
 
 #ifndef SOAP_SERVER_HAS_PREFORK
 #if defined(_MSC_VER)
@@ -31,9 +31,10 @@
 #endif
 #endif
 
-/// see if we're using Visual C++, if so we have to include
-/// some VC specific include files to make the standard C++
-/// keywords work.
+#ifndef LIBZEEP_DOXYGEN_INVOKED
+// see if we're using Visual C++, if so we have to include
+// some VC specific include files to make the standard C++
+// keywords work.
 
 #if defined(_MSC_VER) && !defined(__MWERKS__)
 #	if defined(_MSC_EXTENSIONS)		// why is it an extension to leave out something?
@@ -100,6 +101,6 @@ inline speed_t cfgetospeed(const struct termios *tp)
 #define __CYGWIN__
 //////////////// FIX ENDS HERE
 #endif
-
+#endif
 
 #endif
