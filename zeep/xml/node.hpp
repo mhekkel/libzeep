@@ -30,66 +30,87 @@ typedef std::list<element_ptr>	element_set;
 class root_node;
 class container;
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 extern const char kWhiteSpaceChar[];	// a static const char array containing a single space
+#endif
 
 // --------------------------------------------------------------------
+
+/// Node is the abstract base class for all data contained in zeep XML documents.
+/// The DOM tree consists of nodes that are linked to each other, each
+/// node can have a parent and siblings pointed to by the next and
+/// previous members. All nodes in a DOM tree share a common root node.
+///
+/// Nodes can have a name, and the XPath specification requires that a node can
+/// have a so-called expanded-name. This name consists of a local-name and a
+/// namespace which is a URI. And we can have a QName which is a concatenation of
+/// a prefix (that points to a namespace URI) and a local-name separated by a colon.
+///
+/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
+/// the convenience functions name() and prefix() parse the qname(). ns() returns
+/// the namespace URI for the node, if it can be resolved.
+///
+/// Nodes inherit the namespace of their parent unless they override it which means
+/// resolving prefixes and namespaces is done hierarchically
 
 class node
 {
   public:
 	// All nodes should be part of a single root node
-	virtual root_node*	root();
+	virtual root_node*	root();					///< The root node for this node
 	virtual const root_node*
-						root() const;
+						root() const;			///< The root node for this node
 	
 	// basic access
-	container*			parent()									{ return m_parent; }
-	const container*	parent() const								{ return m_parent; }
+	container*			parent()				{ return m_parent; }	///< The root node for this node
+	const container*	parent() const			{ return m_parent; }	///< The root node for this node
 
-	node*				next()										{ return m_next; }
-	const node*			next() const								{ return m_next; }
+	node*				next()					{ return m_next; }		///< The next sibling
+	const node*			next() const			{ return m_next; }		///< The next sibling
 	
-	node*				prev()										{ return m_prev; }
-	const node*			prev() const								{ return m_prev; }
+	node*				prev()					{ return m_prev; }		///< The previous sibling
+	const node*			prev() const			{ return m_prev; }		///< The previous sibling
 
-	// content of a xml:lang attribute of this element, or its nearest ancestor
+	/// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
 
-	// Nodes can have a name, and the XPath specification requires that a node can
-	// have a so-called expanded-name. This name consists of a local-name and a
-	// namespace which is a URI. And we can have a QName which is a concatenation of
-	// a prefix (that points to a namespace URI) and a local-name separated by a colon.
-	//
-	// To reduce storage requirements, names are stored in nodes as qnames, if at all.
+	/// Nodes can have a name, and the XPath specification requires that a node can
+	/// have a so-called expanded-name. This name consists of a local-name and a
+	/// namespace which is a URI. And we can have a QName which is a concatenation of
+	/// a prefix (that points to a namespace URI) and a local-name separated by a colon.
+	///
+	/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
 	virtual std::string	qname() const;
 
-	// the convenience functions name() and prefix() parse the qname(). ns() returns
-	// the namespace URI for the node, if it can be resolved.
-	virtual std::string	name() const;
-	virtual std::string	prefix() const;
-	virtual std::string	ns() const;
+	virtual std::string	name() const;		///< The name for the node as parsed from the qname.
+	virtual std::string	prefix() const;		///< The prefix for the node as parsed from the qname.
+	virtual std::string	ns() const;			///< Returns the namespace URI for the node, if it can be resolved.
 
-	// resolving prefixes and namespaces is done hierarchically
 	virtual std::string	namespace_for_prefix(const std::string& prefix) const;
+											///< Return the namespace URI for a prefix
+											
 	virtual std::string	prefix_for_namespace(const std::string& uri) const;
+											///< Return the prefix for a namespace URI
 	
-	// return all content concatenated, including that of children.
+	/// return all content concatenated, including that of children.
 	virtual std::string	str() const = 0;
 	
-	// write out the concatenated content to a stream, separated by sep.
+	/// write out the concatenated content to a stream, separated by sep.
 	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const;
 
-	// writing out
+	/// writing out
 	virtual void		write(writer& w) const = 0;
 
-	// utility routines
+	/// Compare the node with \a n
 	virtual bool		equals(const node* n) const;
 
+	/// Deep clone the node
 	virtual node*		clone() const;
 
-	// debug routine
+	/// debug routine
 	virtual void		validate();
-	
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED	
   protected:
 
 	friend class container;
@@ -112,9 +133,18 @@ class node
 
 						node(const node&);
 	node&				operator=(const node&);
+#endif
 };
 
 // --------------------------------------------------------------------
+
+/// Container is an abstract base class for nodes that can have multiple children.
+/// It provides iterators to iterate over children. Most often, you're only interested
+/// in iteration zeep::xml::element children, that's why zeep::xml::container::iterator
+/// iterates over only zeep::xml::element nodes, skipping all other nodes. If you want
+/// to iterate all nodes, use zeep::xml::container::node_iterator instead.
+///
+/// An attempt has been made to make container conform to the STL container interface.
 
 class container : public node
 {
@@ -261,6 +291,9 @@ class container : public node
 
 // --------------------------------------------------------------------
 
+/// All zeep::xml::document objects have exactly one zeep::xml::root_node member.
+/// root_node is a container with only one child element.
+
 class root_node : public container
 {
   public:
@@ -290,6 +323,8 @@ class root_node : public container
 
 // --------------------------------------------------------------------
 
+/// A node containing a XML comment
+
 class comment : public node
 {
   public:
@@ -315,6 +350,8 @@ class comment : public node
 };
 
 // --------------------------------------------------------------------
+
+/// A node containing a XML processing instruction (like e.g. \<?php ?\>)
 
 class processing_instruction : public node
 {
@@ -346,6 +383,8 @@ class processing_instruction : public node
 
 // --------------------------------------------------------------------
 
+/// A node containing text.
+
 class text : public node
 {
   public:
@@ -374,6 +413,10 @@ class text : public node
 
 // --------------------------------------------------------------------
 
+/// A node containing the contents of a CDATA section. Normally, these nodes are
+/// converted to text nodes but you can specify to preserve them when parsing a
+/// document.
+
 class cdata : public text
 {
   public:
@@ -389,7 +432,7 @@ class cdata : public text
 };
 
 // --------------------------------------------------------------------
-// an attribute is a node, has an element as parent, but is not a child of this parent (!)
+/// An attribute is a node, has an element as parent, but is not a child of this parent (!)
 
 class attribute : public node
 {
@@ -420,7 +463,7 @@ class attribute : public node
 typedef std::list<attribute*> attribute_set;
 
 // --------------------------------------------------------------------
-// just like an attribute, a name_space node is not a child of an element
+/// Just like an attribute, a name_space node is not a child of an element
 
 class name_space : public node
 {
@@ -453,6 +496,10 @@ typedef std::list<name_space*>	name_space_list;
 
 // --------------------------------------------------------------------
 
+/// element is the most important zeep::xml::node object. It encapsulates a
+/// XML element as found in the XML document. It has a qname, can have children,
+/// attributes and a namespace.
+
 class element : public container
 {
   public:
@@ -479,32 +526,33 @@ class element : public container
 
 	std::string			get_attribute(const std::string& qname) const;
 	attribute*			get_attribute_node(const std::string& qname) const;
-						// the DOCTYPE can specify some attributes as ID						
+						/// the DOCTYPE can specify some attributes as ID
 	void				set_attribute(const std::string& qname, const std::string& value, bool id = false);
 	void				remove_attribute(const std::string& qname);
 
-	// to set the default namespace, pass the empty string as prefix to the next call.
+	/// to set the default namespace, pass an empty string as prefix
 	void				set_name_space(const std::string& prefix,
 							const std::string& uri);
 //	void				remove_name_space(const std::string& uri);
 	
-	// The add_text method checks if the last added child is a text node,
-	// and if so, it appends the string to this node's value. Otherwise,
-	// it adds a new text node child with the new text.
+	/// The add_text method checks if the last added child is a text node,
+	/// and if so, it appends the string to this node's value. Otherwise,
+	/// it adds a new text node child with the new text.
 	void				add_text(const std::string& s);
 
-	// to iterate over the attribute and namespace nodes
+	/// to iterate over the attribute nodes
 	attribute_set		attributes() const;
+	/// to iterate over the namespace nodes
 	name_space_list		name_spaces() const;
 
-	// content of a xml:lang attribute of this element, or its nearest ancestor
+	/// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string	lang() const;
 	
-	// content of the xml:id attribute, or the attribute that was defined to be
-	// of type ID by the DOCTYPE.
+	/// content of the xml:id attribute, or the attribute that was defined to be
+	/// of type ID by the DOCTYPE.
 	std::string			id() const;
 
-	// as a service to the user, we define an attribute iterator here
+	/// as a service to the user, we define an attribute iterator here
 	class attribute_iterator : public std::iterator<std::bidirectional_iterator_tag, attribute>
 	{
 	  public:
@@ -573,6 +621,7 @@ class element : public container
 	const_attribute_iterator	attr_begin() const									{ return const_attribute_iterator(m_attribute); }
 	const_attribute_iterator	attr_end() const									{ return const_attribute_iterator(); }
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
 
 	void				add_name_space(name_space* ns);
@@ -580,14 +629,16 @@ class element : public container
 	std::string			m_qname;
 	attribute*			m_attribute;
 	name_space*			m_name_space;
+#endif
 };
 
+/// This is probably only useful for debugging purposes
 std::ostream& operator<<(std::ostream& lhs, const node& rhs);
 
 bool operator==(const node& lhs, const node& rhs);
 
-// very often, we want to iterate over child elements of an element
-// therefore we have a templated version of children.
+/// very often, we want to iterate over child elements of an element
+/// therefore we have a templated version of children.
 
 template<>
 std::list<node*> container::children<node>() const;

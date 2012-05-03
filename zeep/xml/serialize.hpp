@@ -32,17 +32,53 @@
 //	The interface for the code below is compatible with the 'serialize' member
 //	function required to use boost::serialization. 
 
+/// \def SOAP_XML_ADD_ENUM(e,v)
+/// \brief A macro to add the name of an enum value to the serializer
+///
+/// To be able to correctly use enum values in a WSDL file or when serializing,
+/// you have to specify the enum values.
+///
+/// E.g., if you have a struct name Algorithm with values 'vector', 'dice' and 'jaccard'
+/// you would write:
+///
+///>	enum Algorithm { vector, dice, jaccard };
+///>	SOAP_XML_ADD_ENUM(Algorithm, vector);
+///>	SOAP_XML_ADD_ENUM(Algorithm, dice);
+///>	SOAP_XML_ADD_ENUM(Algorithm, jaccard);
+///
+/// An alternative (better?) way to do this is:
+///
+///>	zeep::xml::enum_map<Algorithm>::instance("Algorithm").add_enum()
+///>		("vector", vector)
+///>		("dice", dice)
+///>		("jaccard", jaccard);
+
+/// \def SOAP_XML_SET_STRUCT_NAME(s)
+/// \brief A macro to assign a name to a struct used in serialization.
+///
+/// By default, libzeep uses the typeid(s).name() as the name for an element.
+/// That's often not what is intented. Calling this macro will make sure
+/// the type name you used in your code will be used instead.
+///
+/// E.g., struct FindResult { ... } might end up with a fancy name in the
+/// WSDL. To use FindResult instead, call SOAP_XML_SET_STRUCT_NAME(FindResult);
+///
+/// An alternative it to call, which allows different WSDL and struct names:
+/// zeep::xml::serialize_struct<FindResult>::set_struct_name("FindResult");
+
 namespace zeep { namespace xml {
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 const std::string kPrefix = "ns";
+#endif
 
-//	All serializers and deserializers work on an object that contains
-//	a pointer to the node just above the actual node holding their data. If any.
-//
-//	This means for the serializer that it has to create a new node, set the content
-//	and add it to the passed in node.
-//	For deserializers this means looking up the first child matching the name
-//	in the passed-in node to fetch the data from.
+///	All serializers and deserializers work on an object that contains
+///	a pointer to the node just above the actual node holding their data. If any.
+///
+///	This means for the serializer that it has to create a new node, set the content
+///	and add it to the passed in node.
+///	For deserializers this means looking up the first child matching the name
+///	in the passed-in node to fetch the data from.
 
 struct serializer
 {
@@ -67,7 +103,11 @@ struct deserializer
 	container*		m_node;
 };
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 typedef std::map<std::string,element*> type_map;
+#endif
+
+/// wsdl_creator is used by zeep::dispatcher to create WSDL files.
 
 struct wsdl_creator
 {
@@ -81,6 +121,8 @@ struct wsdl_creator
 	type_map&		m_types;
 	bool			m_make_node;
 };
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 // The actual (de)serializers:
 
@@ -286,7 +328,11 @@ struct serialize_struct
 template<typename T>
 std::string serialize_struct<T>::s_struct_name = typeid(T).name();
 
+#endif
+
 #define SOAP_XML_SET_STRUCT_NAME(s)	zeep::xml::serialize_struct<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template<typename T>
 struct serialize_vector
@@ -341,7 +387,11 @@ struct enum_map
 					}
 };
 
+#endif
+
 #define SOAP_XML_ADD_ENUM(e,v)	zeep::xml::enum_map<e>::instance(BOOST_PP_STRINGIZE(e)).m_name_mapping[v] = BOOST_PP_STRINGIZE(v);
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template<typename T>
 struct serialize_enum
@@ -537,6 +587,8 @@ element* serialize_vector<T>::to_wsdl(type_map& types,
 		
 	return result;
 }
+
+#endif
 
 }
 }

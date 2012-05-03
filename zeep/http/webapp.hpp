@@ -75,14 +75,16 @@ class parameter_map : public std::multimap<std::string, parameter_value>
 
 };
 
-extern const std::string kLibZeepWebAppNS;
+/// webapp is a specialization of zeep::http::server, it is used to create
+/// interactive web applications.
 
 class webapp : public http::server
 {
   public:
 					/// first parameter to constructor is the
 					/// namespace to use in template XHTML files.
-					webapp(const std::string& ns, const boost::filesystem::path& docroot = ".");
+					webapp(const std::string& ns = "http://www.cmbi.ru.nl/libzeep/ml",
+						const boost::filesystem::path& docroot = ".");
 
 	virtual			~webapp();
 

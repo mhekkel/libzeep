@@ -316,6 +316,12 @@ document::document(std::istream& is)
 	read(is);
 }
 
+document::document(std::istream& is, const boost::filesystem::path& base_dir)
+	: m_impl(create_imp(this))
+{
+	read(is, base_dir);
+}
+
 document::document(document_imp* impl)
 	: m_impl(impl)
 {
@@ -339,6 +345,7 @@ void document::read(istream& is)
 
 void document::read(istream& is, const boost::filesystem::path& base_dir)
 {
+	set_validating(true);
 	m_impl->m_dtd_dir = base_dir;
 	m_impl->parse(is);
 }

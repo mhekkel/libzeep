@@ -11,7 +11,9 @@
 
 namespace zeep { namespace xml {
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 extern std::string k_empty_string;
+#endif
 
 //! Use xml::writer to write XML documents to a stream
 
@@ -113,9 +115,11 @@ class writer
 					m_stack;
 	bool			m_wrote_element;
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
 					writer(const writer&);
 	writer&			operator=(const writer&);
+#endif
 };
 
 }

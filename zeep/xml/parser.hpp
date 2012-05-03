@@ -26,12 +26,24 @@ struct attr
 
 }
 
+/// If an invalid_exception is thrown, it means the XML document is not valid: it does
+/// not conform the DTD specified in the XML document.
+/// This is only thrown when validation is enabled.
+///
+/// The what() member of the exception object will contain an explanation.
+
 class invalid_exception : public zeep::exception
 {
   public:
 	invalid_exception(const std::string& msg) : exception(msg) {}
 	~invalid_exception() throw () {}
 };
+
+/// If an not_wf_exception is thrown, it means the XML document is not well formed.
+/// Often this means syntax errors, missing \< or \> characters, non matching open
+/// and close tags, etc.
+///
+/// The what() member of the exception object will contain an explanation.
 
 class not_wf_exception : public zeep::exception
 {
@@ -40,12 +52,16 @@ class not_wf_exception : public zeep::exception
 	~not_wf_exception() throw () {}
 };
 
+/// zeep::xml::parser is a SAX parser. After construction, you should assign
+/// call back handlers for the SAX events and then call parse().
+
 class parser
 {
   public:
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 	typedef detail::attr								attr_type;
 	typedef std::list<detail::attr>						attr_list_type;
-	
+#endif	
 	
 						parser(std::istream& is);
 						parser(const std::string& s);
@@ -85,6 +101,7 @@ class parser
 
 	void					parse(bool validate);
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
 	friend struct parser_imp;
 
@@ -118,6 +135,7 @@ class parser
 
 	struct parser_imp*	m_impl;
 	std::istream*		m_istream;
+#endif
 };
 
 }

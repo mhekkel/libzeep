@@ -10,13 +10,23 @@
 	[authors [Hekkelman, Maarten L.]]
 ]
 
-[def __node__ [link libzeep.xml.node `zeep::xml::node`]]
-[def __element__ [link libzeep.xml.node.element `zeep::xml::element`]]
-[def __attribute__ [link libzeep.xml.node.attribute `zeep::xml::attribute`]]
-[def __container__ [link libzeep.xml.node.container `zeep::xml::container`]]
-[def __document__ [link libzeep.xml.document `zeep::xml::document`]]
-[def __serialize__ [link libzeep.xml.serialize.serialize `zeep::xml::serialize`]]
-[def __deserialize__ [link libzeep.xml.serialize.deserialize `zeep::xml::deserialize`]]
+[def __node__ [classref zeep::xml::node `zeep::xml::node`]]
+[def __element__ [classref zeep::xml::element `zeep::xml::element`]]
+[def __attribute__ [classref zeep::xml::attribute `zeep::xml::attribute`]]
+[def __container__ [classref zeep::xml::container `zeep::xml::container`]]
+[def __document__ [classref zeep::xml::document `zeep::xml::document`]]
+[def __serialize__ [classref zeep::xml::serialize `zeep::xml::serialize`]]
+[def __deserialize__ [classref zeep::xml::deserialize `zeep::xml::deserialize`]]
+[def __deserializer__ [classref zeep::xml::deserializer `zeep::xml::deserializer`]]
+[def __http_server__ [classref zeep::http::server `zeep::http::server`]]
+[def __http_request__ [classref zeep::http::request `zeep::http::request`]]
+[def __http_reply__ [classref zeep::http::reply `zeep::http::reply`]]
+[def __soap_server__ [classref zeep::server `zeep::server`]]
+[def __webapp__ [classref zeep::http::webapp `zeep::http::webapp`]]
+[def __el_scope__ [classref zeep::http::el::scope `zeep::http::el::scope`]]
+[def __el_object__ [classref zeep::http::el::object `zeep::http::el::object`]]
+
+
 
 [section:overview Overview]
 
@@ -38,13 +48,13 @@ Libzeep comes with a validating XML parser. Using this parser is as simple as wr
 	int main()
 	{
 		std::ifstream file("test.xml");
-		zeep::xml::document doc(file);
+		__document__ doc(file);
 		...
 	}
 
 This will parse the file =text.xml= and create an object `doc` containing the DOM tree. To traverse this tree you can use the various member functions of doc which derives from the generic __container__ class. Siblings in the DOM tree are stored as linked lists and some elements can have children. To make life easier, you can iterate over elements using STL iterators.
 
-Suppose our =test.xml= file contains the following XML:
+Suppose our =test.xml= file contains the following XML:[teletype]
 
 	<persons>
 		<person>
@@ -57,15 +67,15 @@ Suppose our =test.xml= file contains the following XML:
 		</person>
 	</persons>
 
-You could print out the file like this:
+You could print out the file like this:[c++]
 
 	// a document contains at most one child node
-	zeep::xml::element* persons = doc.child();
+	__element__* persons = doc.child();
 
 	// begin/end will return iterators to elements
-	for (zeep::xml::container::iterator person = persons->begin(); person != persons->end(); ++person)
+	for (__container__::iterator person = persons->begin(); person != persons->end(); ++person)
 	{
-		for (zeep::xml::container::iterator name = (*person)->begin(); name != (*person)->end(); ++name)
+		for (__container__::iterator name = (*person)->begin(); name != (*person)->end(); ++name)
 			std::cout << (*name)->name() << " = " << (*name)->content() << std::endl;
 	}
 
@@ -79,9 +89,9 @@ Of course, using the new for loop construct, this code would be much more readab
 		
 But if your compiler does not support that syntax, you can always use `boost::range` instead:
 
-	BOOST_FOREACH (zeep::xml::element* person, *persons)
+	BOOST_FOREACH (__element__* person, *persons)
 	{
-		BOOST_FOREACH (zeep::xml::element* name, *person)
+		BOOST_FOREACH (__element__* name, *person)
 			std::cout << name->name() << " = " << name->content() << std::endl;
 	}
 
@@ -109,9 +119,9 @@ An alternative way to read/write XML files is using serialization. To do this, w
 	int main()
 	{
 		std::ifstream file("test.xml");
-		zeep::xml::document doc(file);
+		__document__ doc(file);
 		
-		zeep::xml::deserializer ds(doc.child());
+		__deserializer__ ds(doc.child());
 		std::vector<Person> person;
 		
 		// the variable name person must be the same as the name of the XML element person
@@ -129,11 +139,11 @@ To find out more about serialization, look at the reference for __serialize__
 
 Libzeep comes with a [@http://www.w3.org/TR/xpath/ XPath 1.0] implementation. You can use this to locate elements in a DOM tree easily. For a complete description of the XPath specification you should read the documentation at e.g. [@http://www.w3.org/TR/xpath/] or [@http://www.w3schools.com/xpath/default.asp].
 
-The way it works in libzeep is that you can call `find()` on an `zeep::xml::element` object and it will return a `zeep::xml::element_set` object which is actually a `std::list` of `zeep::xml::element` pointers of the elements that conform to the specification in XPath passed as parameter to `find()`. An alternative method `find_first()` can be used to return only the first element.
+The way it works in libzeep is that you can call `find()` on an __element__ object and it will return a zeep::xml::element_set object which is actually a `std::list` of __element__ pointers of the elements that conform to the specification in XPath passed as parameter to `find()`. An alternative method `find_first()` can be used to return only the first element.
 
 An example where we look for the first person in our test file with the lastname Jones:
 
-	zeep::xml::element* jones = doc.child()->find_first("//person[lastname='Jones']");
+	__element__* jones = doc.child()->find_first("//person[lastname='Jones']");
 
 [endsect]
 
@@ -143,9 +153,9 @@ Creating a HTTP server with libzeep is as simple as:
 
 	#include <zeep/http/server.hpp>
 	
-	class my_server : public zeep::http::server
+	class my_server : public __http_server__
 	{
-		virtual void handle_request(const zeep::http::request& req, zeep::http::reply& rep)
+		virtual void handle_request(const __http_request__& req, __http_reply__& rep)
 		{
 			...	// do something useful
 		}
@@ -173,7 +183,7 @@ Setting up a SOAP server is very easy. Let's continue with our test file and ser
 	
 	... // define the Person struct as above
 	
-	class my_server : public zeep::server
+	class my_server : public __soap_server__
 	{
 	  public:
 		my_server();
@@ -185,13 +195,13 @@ Setting up a SOAP server is very easy. Let's continue with our test file and ser
 	void my_server::ListPersons(vector<Person>& result)
 	{
 		std::ifstream file("test.xml");
-		zeep::xml::document doc(file);
+		__document__ doc(file);
 		
-		zeep::xml::deserializer ds(doc.child());
+		__deserializer__ ds(doc.child());
 		ds & boost::serialization::make_nvp("person", result);
 	}
 	
-	my_server::my_server() : zeep::server("http://www.example.org/soaptest", "soaptest")
+	my_server::my_server() : __soap_server__("http://www.example.org/soaptest", "soaptest")
 	{
 		// assign a name to the Person struct (will appear in the WSDL e.g.)
 		zeep::xml::serialize_struct<Person>::set_struct_name("person");
@@ -215,8 +225,359 @@ After building this server and running it, you can access the REST version of th
 
 [endsect]
 
-[section:xml XML Reference]
+[section:soap Creating a SOAP and REST server]
 
+[section:intro Introduction]
+
+SOAP and REST are two ways to export functionality over the web. Both have their strongness and weakness. SOAP
+enforces a strict type checking on input and output parameters. It works with a formal description file called WSDL
+that specifies all the exposed functionality and how to invoke this. Many tools exist that can read WSDL files and
+create client code that uses the exposed functions.
+
+REST on the other hand, is much easier to use ad hoc. It passes the arguments to the invoked functions in the
+URL and uses standard GET, POST and PUT methods of the HTTP protocol.
+
+libzeep is mainly focussed to using SOAP, but allows to access the exported functionality in a REST like way. Not
+all functions can be accessed this way, if the input parameters are some complex type, you're out of luck. This
+documentation will focus on SOAP, but if the function is simple, you can test it using REST from a browser.
+
+[endsect]
+
+[section:basics A real world example]
+
+Creating a SOAP server using libzeep is very easy. The bulk of the work is done by libzeep, you only have
+to specify what methods to expose and optionally what datatypes.
+
+To demonstrate this, we will create a simple SOAP server that allows the client to search for documents in a
+databank. Lets start with the initial code, the declaration of our server object.
+
+	#include <zeep/server.hpp>
+	
+	using namespace std;
+	
+	class MyServer : public __soap_server__
+	{
+	  public:
+
+	    struct MyHit
+	    {
+	      long   id;
+	      float  score;
+	      string title;
+	      
+	      template<class Archive>
+	      void serialize(Archive& ar, const unsigned int version)
+	      {
+	        ar & BOOST_SERIALIZATION_NVP(id) & BOOST_SERIALIZATION_NVP(score) & BOOST_SERIALIZATION_NVP(title);
+	      }
+	    };
+	    
+	    enum MyAlgorithm
+	    {
+	      algVector, algDice, algJaccard
+	    };
+
+	    MyServer();
+	
+	    void CountDocuments(long& outCount);
+	    void GetDocument(long inID, string& outDocument);
+	    void FindDocument(const vector<string>& inTerms, MyAlgorithm inAlgorithm,
+	    vector<MyHit>& outResponse);
+	};
+
+Nothing special so far. Apart from inheriting from __soap_server__, this code could have been
+code you already had lying around. The addition of the `serialize` method to `MyHit` may also
+have been new to the code. The implementation of the actual server methods are also straightforward:
+
+	void MyServer::CountDocuments(long& outCount)
+	{
+	  long count = 1; 	// real code should return something more sensible of course
+	  outCount = count;
+	}
+	
+	void MyServer::GetDocument(long inID, string& outDocument)
+	{
+	  if (inID == 1)
+	    outDocument = "The first document!";
+	  else
+	    throw zeep::exception("document %ld not found", inID);
+	}
+	
+	void MyServer::FindDocument(const vector<string>& inTerms,
+	  MyAlgorithm inAlgorithm, vector<MyHit>& outResponse)
+	{
+	  if (inTerms.size() == 1 and inAlgorithm == algVector)
+	  {
+	    MyHit hit = { 1, 1.0f, "The first hit" };
+	    outResponse.push_back(hit);
+	  }
+	}
+
+Not very useful code, but it gives you an idea how simple it is to create a server. You
+don't have to do anything special, it's still code you could have written for some other
+purpose. Note that the GetDocument method throws an exception. The result in a SOAP server
+will be a SOAP Fault being returned containing the text 'document x not found'.
+
+Unfortunately, this is not all that needs to be done, we still have to tell libzeep what
+methods and what datatypes to expose. That's what we do in the constructor for `MyServer`.
+
+	MyServer::MyServer()
+	  : __soap_server__("http://www.example.org/MyServer", "searchMyServer")
+	{
+	  // first export the data types, start with MyHit
+	  zeep::xml::serialize_struct<MyHit>::set_struct_name("hit");
+	  
+	  // and then the MyAlgorithm enum
+	  zeep::xml::enum_map<MyAlgorithm>::instance("algorithm").add_enum()
+	    ("vector", algVector)
+	    ("dice", algDice)
+	    ("jaccard", algJaccard);
+	  
+	  // Now export the methods, start with CountDocuments
+	  const char* kCountDocumentsParamNames[] = { "response" };
+	  register_action("CountDocuments", this, &MyServer::CountDocuments, kCountDocumentsParamNames);
+	  
+	  // then GetDocument
+	  const char* kGetDocumentParamNames[] = { "id", "response" };
+	  register_action("GetDocument", this, &MyServer::GetDocument, kGetDocumentParamNames);
+
+	  const char* kFindDocumentParamNames[] = { "terms", "algorithm", "response" };
+	  register_action("FindDocument", this, &MyServer::FindDocument, kFindDocumentParamNames);
+	}
+
+We start the constructor by calling the constructor of our base class, __soap_server__. We then
+continue by exporting the data types. Our MyHit datatype is exported under the name 'hit' and
+MyAlgorithm is exported as 'algorithm'. The various values of MyAlgorithm are exported under
+a new name as well.
+
+After exporting the datatypes, we export the methods. We do this by calling `register_action`
+specifying the parameters for the exported method name, the callback to make and the names
+for the parameters. And that's all. All that's left is to write a `main`.
+
+	int main()
+	{
+	  MyServer server;
+	  server.bind("0.0.0.0", 80);
+	  server.run(1);
+	}
+
+And that will run our code in a single threaded server. If you run this code on your local machine
+you can test the REST versions of the code by visiting the following URL's with a web browser:
+
+[@http://localhost/rest/CountDocuments]	Will return a SOAP envelope containing *1* in a response element
+
+[@http://localhost/rest/GetDocument/id/1]
+
+[@http://localhost/rest/GetDocument/id/2]	Will return a SOAP Fault
+
+[@http://localhost/rest/FindDocument/terms/bla/algorithm/vector]
+
+
+[endsect]
+
+[endsect]
+
+[section:webapp Creating a Web Application]
+
+[section:intro Introduction]
+
+This section will guide you through all the code you have to write to create an interactive web
+application using libzeep. The way this works in libzeep looks a lot like popular frameworks
+found for Java. If you're familiar with JSP and e.g. Struts, you'll notice the similarities.
+
+[endsect]
+
+[section:basics The building blocks]
+
+It is very inconvenient to write HTML code in C++ directly using string concatenations and streams.
+Therefore, a separation has been made. All HTML is put into XHTML template files. These template
+files can use special tags to generate HTML tags based on data provided by the server application.
+A script language that looks a lot like JSP 'Expression Language' (or =el= in short) is used to
+program conditional constructs. Communication between this =el= script and the server application
+is done via =el::object= data objects.
+
+[endsect]
+
+[section:hello Hello world!]
+
+Let's start with a simple hello world example. We first create a template file, save
+this file as =hello.xhtml=.[teletype]
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE xhtml PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/1999/xhtml">
+	<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+	  <title>Hello</title>
+	</head>
+	<body>
+	  <p>Hello, world!</p>
+	</body>
+	</html>
+
+This is a very simple, strict XHTML 1.1 file. We will serve it with our server:[c++]
+
+	#include <zeep/http/webapp.hpp>
+	#include <boost/bind.hpp>
+	
+	using namespace std;
+	
+	class MyWebApp : public __webapp__
+	{
+	  public:
+	    MyWebApp();
+	    
+	    void handle_welcome(const __http_request__& request,
+	           const __el_scope__& scope, __http_reply__& reply);
+	};
+	
+	MyWebApp::MyWebApp()
+	{
+	  mount("",      boost::bind(&MyWebApp::handle_welcome, this, _1, _2, _3));
+	}
+	
+	void MyWebApp::handle_welcome(const __http_request__& request,
+	           const __el_scope__& scope, __http_reply__& reply)
+	{
+	  create_reply_from_template("hello.xhtml", scope, reply);
+	}
+	
+	int main()
+	{
+	  MyWebApp server;
+	  server.bind("0.0.0.0", 80);
+	  server.run(1);
+	}
+	
+By calling `mount` with the empty string, we tell libzeep to redirect
+all access to the base URL to handle_welcome. This means that visiting
+the URL [@http://localhost/] should now return a page containing the string
+'Hello, world!'.
+
+[endsect]
+
+[section:forms Using forms]
+
+Now lets create a form to pass some data from the browser to the server
+and back. Save the following file as =form.xhtml=.[teletype]
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE xhtml PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/1999/xhtml">
+	<html xmlns="http://www.w3.org/1999/xhtml" xmlns:zeep="http://www.cmbi.ru.nl/libzeep/ml">
+	<head>
+	  <title>Form example</title>
+	</head>
+	<body>
+	  <zeep:if test="${name}">
+	    <p>Hello ${name}!</p>
+	  </zeep:if>
+	  <p>Please enter your name and press the Submit button</p>
+	  <form id="myForm" action="salute" method="get">
+	    <label>Name: <input id="name" type="text" name="name" value="${name}"/></label>
+	    <input type="submit" value="Submit" />
+	  </form>
+	</body>
+	</html>
+
+We add the zeep prefix to our html tag, it has the value ="http://www.cmbi.ru.nl/libzeep/ml"=
+which is the same as the default value for the `ns` parameter in the __webapp__ constructor.
+Note that the input tag has an attribute with value '${data}'. This is a piece of
+expression language script. This will be explained below:[c++]
+
+	#include <zeep/http/webapp.hpp>
+	#include <zeep/http/webapp/el.hpp>
+	#include <boost/bind.hpp>
+	
+	using namespace std;
+	
+	class MyWebApp : public __webapp__
+	{
+	  public:
+	    MyWebApp();
+	    
+	    void handle_welcome(const __http_request__& request,
+	           const __el_scope__& scope, __http_reply__& reply);
+	    void handle_salute(const __http_request__& request,
+	           const __el_scope__& scope, __http_reply__& reply);
+	};
+	
+	MyWebApp::MyWebApp()
+	{
+	  mount("",       boost::bind(&MyWebApp::handle_welcome, this, _1, _2, _3));
+	  mount("salute", boost::bind(&MyWebApp::handle_salute, this, _1, _2, _3));
+	}
+	
+	void MyWebApp::handle_welcome(const __http_request__& request,
+	           const __el_scope__& scope, __http_reply__& reply)
+	{
+	  create_reply_from_template("form.xhtml", scope, reply);
+	}
+	
+	void MyWebApp::handle_salute(const __http_request__& request,
+	           const __el_scope__& scope, __http_reply__& reply)
+	{
+	  zeep::http::parameter_map params;
+	  get_parameters(scope, params);
+	
+	  string name = params.get("name", "").as<string>();
+	
+	  __el_scope__ sub(scope);
+	  sub.put("name", name);
+	
+	  create_reply_from_template("form.xhtml", sub, reply);
+	}
+	
+	int main()
+	{
+	  MyWebApp server;
+	  server.bind("0.0.0.0", 80);
+	  server.run(1);
+	}
+	
+This time, we add a new handler for the 'salute' page. The form has an action that
+points to this salute page. As can be seen in the `handle_salute` method, we first
+collect the parameters passed in. Parameters are accessed by name. We then create a
+sub scope of the scope passed in. In this sub scope we put the value of the parameter
+so that the XHTML processor can access it. And then we return a reply based on the
+contents of the =form.xhtml= template and the contents of the sub scope we created.
+
+[endsect]
+
+[section:el Using `el` script]
+
+`el` means /Expression Language/. It is a script language that tries to be like
+[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. The objects can be
+created in the C++ server code using the __el_object__ class. Object created this
+way are then stored in an __el_scope__ object and passed along to the XHTML processing
+code.
+
+__el_object__ objects can contain simple data and arrays. E.g., to create an array
+you could write:
+
+	using namespace zeep::http;
+	
+	vector<el::object> ints;
+	for (int i = 0; i < 10; ++i)
+	{
+		el::object int_object;
+		int_object["value"] = i;
+		ints.push_back(int_object);
+	}
+	
+	scope.put("ints", el::object(ints));
+
+And then you can access this in the XHTML:[teletype]
+
+	1: ${ints[1].value}, 2: ${ints[2].value}
+
+[c++]Which should output "1: 1, 2: 2"
+
+[endsect]
+
+[section:processing_tags Processing Tags]
+
+
+
+[endsect]
 
 [endsect]
 
