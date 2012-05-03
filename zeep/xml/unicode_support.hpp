@@ -7,23 +7,27 @@
 #define ZEEP_XML_UNICODE_SUPPORT_HPP
 
 #include <zeep/config.hpp>
+#include <boost/cstdint.hpp>
 
 #include <string>
 
 namespace zeep { namespace xml {
 
-typedef unsigned long unicode;
+/// We use our own unicode type since wchar_t might be too small.
+/// This type should be able to contain a UCS4 encoded character.
+typedef uint32_t unicode;
 
-// the supported encodings. Perhaps we should extend this list a bit?
+/// the supported encodings. Perhaps we should extend this list a bit?
 enum encoding_type
 {
-	enc_UTF8,
-	enc_UTF16BE,
-	enc_UTF16LE,
+	enc_UTF8,			///< UTF-8
+	enc_UTF16BE,		///< UTF-16 Big Endian
+	enc_UTF16LE,		///< UTF 16 Little Endian
 //	enc_ISO88591
 };
 
-// some character classification routines
+/// some character classification routines
+
 bool is_name_start_char(unicode uc);
 bool is_name_char(unicode uc);
 bool is_char(unicode uc);
@@ -32,9 +36,10 @@ bool is_valid_system_literal(const std::string& s);
 bool is_valid_public_id_char(unicode uc);
 bool is_valid_public_id(const std::string& s);
 
-// Convert a string from UCS4 to UTF-8
+/// Convert a string from UCS4 to UTF-8
 std::string wstring_to_string(const std::wstring& s);
 
+/// manipulate UTF-8 encoded strings
 void append(std::string& s, unicode ch);
 unicode pop_last_char(std::string& s);
 

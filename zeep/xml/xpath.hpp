@@ -13,16 +13,18 @@ namespace zeep { namespace xml {
 class document;
 
 // --------------------------------------------------------------------
-// XPath's can contain variables. And variables can contain all kinds of data
-// like strings, numbers and even node_sets. If you want to use variables,
-// you can define a context, add your variables to it and then pass it on
-// in the xpath::evaluate method.
+/// XPath's can contain variables. And variables can contain all kinds of data
+/// like strings, numbers and even node_sets. If you want to use variables,
+/// you can define a context, add your variables to it and then pass it on
+/// in the xpath::evaluate method.
 
 class context
 {
   public:
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 							context();
 	virtual					~context();
+#endif
 
 	template<typename T>
 	void					set(const std::string& name, const T& value);
@@ -30,6 +32,7 @@ class context
 	template<typename T>
 	T						get(const std::string& name);
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
 
 							context(const context&);
@@ -38,30 +41,37 @@ class context
 	friend class xpath;
 
 	struct context_imp*		m_impl;
+#endif
 };
 
 // --------------------------------------------------------------------
-// The actual xpath implementation. It expects an xpath in the constructor and
-// this path _should_ be UTF-8 encoded.
+/// The actual xpath implementation. It expects an xpath in the constructor and
+/// this path _must_ be UTF-8 encoded.
 
 class xpath
 {
   public:
 							xpath(const std::string& path);
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 	virtual					~xpath();
+#endif
 
-	// evaluate returns a node_set. If you're only interested in xml::element
-	// results, you should call the evaluate<element>() instantiation.
+	/// evaluate returns a node_set. If you're only interested in zeep::xml::element
+	/// results, you should call the evaluate<element>() instantiation.
 	template<typename NODE_TYPE>
 	std::list<NODE_TYPE*>	evaluate(const node& root) const;
 
-	// The second evaluate method is used for xpaths that contain variables.
+	/// The second evaluate method is used for xpaths that contain variables.
 	template<typename NODE_TYPE>
 	std::list<NODE_TYPE*>	evaluate(const node& root, context& ctxt) const;
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
 	struct xpath_imp*		m_impl;
+#endif
 };
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 // --------------------------------------------------------------------
 // template specialisations. 
@@ -105,6 +115,8 @@ node_set xpath::evaluate<node>(const node& root, context& ctxt) const;
 
 template<>
 element_set xpath::evaluate<element>(const node& root, context& ctxt) const;
+
+#endif
 	
 }
 }
