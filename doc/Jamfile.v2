@@ -6,7 +6,7 @@ doxygen autodoc
         [ glob ../zeep/*.hpp ]
         [ glob ../zeep/xml/*.hpp ]
         [ glob ../zeep/http/*.hpp ]
-        [ glob ../zeep/http/el/*.hpp ]
+        [ glob ../zeep/http/webapp/*.hpp ]
     :
         <doxygen:param>EXTRACT_ALL=YES
         <doxygen:param>"PREDEFINED=\"LIBZEEP_DOXYGEN_INVOKED\" \\
