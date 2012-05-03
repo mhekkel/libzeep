@@ -16,6 +16,7 @@
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 typedef boost::int8_t		int8;
 typedef boost::uint8_t		uint8;
 typedef boost::int16_t		int16;
@@ -24,6 +25,7 @@ typedef boost::int32_t		int32;
 typedef boost::uint32_t		uint32;
 typedef boost::int64_t		int64;
 typedef boost::uint64_t		uint64;
+#endif
 
 namespace zeep {
 namespace http {
@@ -38,11 +40,13 @@ class object_iterator_impl;
 
 class scope;
 
+/// This zeep::http::el::object class is a bridge to the `el` expression language.
+
 class object
 {
   public:
 
-	// object can have one of these basic types:
+	/// object can have one of these basic types:
 	enum object_type
 	{
 		null_type,
@@ -57,11 +61,11 @@ class object
 	explicit	object(detail::object_impl* impl);
 				~object();
 				
-				// create an array object
+				/// create an array object
 	explicit	object(const std::vector<object>& v);
 	explicit	object(const std::vector<std::string>& v);
 
-				// construct an object directly from some basic types
+				/// construct an object directly from some basic types
 	explicit	object(bool v);
 	explicit	object(int8 v);
 	explicit	object(uint8 v);
@@ -78,11 +82,11 @@ class object
 
 	object&		operator=(const object& o);
 
-				// assign an array object
+				/// assign an array object
 	object&		operator=(const std::vector<object>& v);
 	object&		operator=(const std::vector<std::string>& v);
 
-				// and assign some basic types
+				/// and assign some basic types
 	object&		operator=(bool v);
 	object&		operator=(int8 v);
 	object&		operator=(uint8 v);
@@ -176,8 +180,32 @@ class object
 	class detail::object_impl*	m_impl;
 };
 
+/// \brief Process the text in \a text and return `true` if the result is
+///        not empty, zero or false.
+///
+///	The expression in \a text is processed and if the result of this
+/// expression is empty, false or zero then `false` is returned.
+/// \param scope  The scope for this el script
+/// \param text   The el script
+/// \return       The result of the script
 bool process_el(const scope& scope, std::string& text);
+
+/// \brief Process the text in \a text. The result is put in \a result
+///
+///	The expression in \a text is processed and the result is returned
+/// in \a result.
+/// \param scope  The scope for this el script
+/// \param text   The el script
+/// \return       The result of the script
 void evaluate_el(const scope& scope, const std::string& text, object& result);
+
+/// \brief Process the text in \a text and replace it with the result
+///
+///	The expressions found in \a text are processed and the output of
+/// 				the processing is used as a replacement value for the expressions.
+/// \param scope  The scope for the el scripts
+/// \param text   The text optionally containing el scripts.
+/// \return       Returns true if \a text was changed.
 bool evaluate_el(const scope& scope, const std::string& text);
 
 // --------------------------------------------------------------------
@@ -215,6 +243,7 @@ class scope
 	const request*	m_req;
 };
 
+/// for debugging purposes
 std::ostream& operator<<(std::ostream& lhs, const scope& rhs);
 
 template<typename T>
@@ -494,6 +523,7 @@ bool object::basic_iterator<ObjectType>::operator!=(const basic_iterator& o) con
 }
 }
 
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 // enable foreach (.., array object)
 namespace boost
 {
@@ -510,3 +540,4 @@ namespace boost
         typedef zeep::http::el::object::const_iterator type;
     };
 }
+#endif
