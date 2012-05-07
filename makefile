@@ -18,7 +18,7 @@ INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
 DOCDIR				?= $(PREFIX)/share/libzeep
 
-BOOST_LIBS			= system thread filesystem regex math_c99 math_c99f
+BOOST_LIBS			= system thread filesystem regex math_c99
 BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
