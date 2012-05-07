@@ -9,13 +9,14 @@
 # makefile to match your current installation.
 
 #BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
-BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
-BOOST_INC_DIR		= $(HOME)/projects/boost/include
+BOOST_LIB_DIR		= $(HOME)/projects/boost-1.48/lib
+BOOST_INC_DIR		= $(HOME)/projects/boost-1.48/include
 
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
 INCDIR				?= $(PREFIX)/include
 MANDIR				?= $(PREFIX)/man/man3
+DOCDIR				?= $(PREFIX)/share/libzeep
 
 BOOST_LIBS			= system thread filesystem regex math_c99 math_c99f
 BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
@@ -31,7 +32,7 @@ LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
 CC					?= c++
 CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
-#CFLAGS				+= $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
+#CFLAGS				+= -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
 CFLAGS				+= -Wall
 
 VPATH += src
@@ -105,6 +106,9 @@ install-dev:
 	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
 	install doc/libzeep.3 $(MANDIR)/libzeep.3
+	for d in . images libzeep zeep zeep/http zeep/http/preforked_server_base zeep/http/el \
+		zeep/http/el/object zeep/xml zeep/xml/doctype zeep/xml/container zeep/xml/element \
+		index; do install -d $(DOCDIR)/$$d; install doc/html/$$d/*.* $(DOCDIR)/$$d; done;
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	strip -SX $(LIBDIR)/libzeep.a
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
@@ -114,6 +118,7 @@ install: install-libs install-dev
 dist: lib
 	rm -rf $(DIST_NAME)
 	svn export . $(DIST_NAME)
+	find doc/html | grep -v '.svn' | cpio -pvd $(DIST_NAME)
 	rm -rf $(DIST_NAME)/tests
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)

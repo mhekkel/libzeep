@@ -1,6 +1,6 @@
-.TH libzeep 3 "12-jan-2009" "version 2.0" "subroutine"
+.TH libzeep 3 "12-jan-2009" "version 2.9" "subroutine"
 .SH NAME
-libzeep \- A C++ library to create SOAP servers
+libzeep \- A C++ library for XML parsing, XPath, SOAP servers and web apps
 .SH SYNOPSIS
 .B #include <zeep/server.hpp>
 .sp
@@ -44,6 +44,9 @@ int main()
 .br
 }
 .sp
+.SH NOTE
+See HTML pages for more up-to-date documentation. E.g. at
+http://www.cmbi.ru.nl/libzeep/doc
 .SH DESCRIPTION
 Using libzeep you can create a SOAP server by deriving from
 .BR "zeep::server" .
@@ -155,6 +158,10 @@ in the
 file.
 .sp
 .SH BUGS
+This documentation is seriously out of date. Look at the HTML
+version for more up-to-date documentation, you can find it at
+/usr/share/doc/libzeep-dev/html or at
+http://www.cmbi.ru.nl/libzeep/
 Undoubtedly libzeep will contain bugs. One of the more obvious one is
 the missing support for signatures using STL containers other than
 std::vector.
