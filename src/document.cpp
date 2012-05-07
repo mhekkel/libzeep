@@ -273,7 +273,9 @@ void zeep_document_imp::parse(
 
 // --------------------------------------------------------------------
 
+#if SOAP_XML_HAS_EXPAT_SUPPORT
 parser_type document::s_parser_type = parser_zeep;
+#endif
 
 document_imp* document::create_imp(document* doc)
 {
@@ -293,10 +295,12 @@ document_imp* document::create_imp(document* doc)
 	return impl;
 }
 
+#if SOAP_XML_HAS_EXPAT_SUPPORT
 void document::set_parser_type(parser_type type)
 {
 	s_parser_type = type;
 }
+#endif
 
 document::document()
 	: m_impl(create_imp(this))
