@@ -69,7 +69,7 @@ class parser
 	virtual				~parser();
 	
 	boost::function<void(const std::string& name, const std::string& uri,
-				const attr_list_type& atts)>		start_element_handler;
+				const attr_list_type& atts)>				start_element_handler;
 
 	boost::function<void(const std::string& name, const std::string& uri)>
 															end_element_handler;
