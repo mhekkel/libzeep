@@ -40,8 +40,11 @@ preforked_server_base::~preforked_server_base()
 	{
 		kill(m_pid, SIGKILL);
 
-		int status;
-		waitpid(m_pid, &status, WUNTRACED | WCONTINUED);
+		int status, flags = WUNTRACED;
+#ifdef WCONTINUED
+		flags |= WCONTINUED;
+#endif
+		waitpid(m_pid, &status, flags);
 	}
 
 	m_io_service.stop();
@@ -147,7 +150,12 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 
 		while (count-- > 0)
 		{
-			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED | WNOHANG) == -1)
+			int flags = WUNTRACED | WNOHANG;
+#ifdef WCONTINUED
+			flags |= WCONTINUED;
+#endif
+			
+			if (waitpid(m_pid, &status, flags) == -1)
 				break;
 			
 			if (WIFEXITED(status))
