@@ -114,7 +114,7 @@ class object
 	object&		operator[](const char* name);
 	object&		operator[](uint32 ix);
 	
-	size_t		count() const;
+	uint64		count() const;
 	bool		empty() const;
 
 	bool		operator<(const object& rhs) const;
@@ -331,7 +331,7 @@ class base_array_object_impl : public object_impl
 {
   public:
 
-	virtual size_t			count() const = 0;
+	virtual uint64			count() const = 0;
 
 	virtual object_iterator_impl*
 							create_iterator(bool begin) const = 0;
