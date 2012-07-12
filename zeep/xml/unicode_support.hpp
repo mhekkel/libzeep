@@ -15,7 +15,7 @@ namespace zeep { namespace xml {
 
 /// We use our own unicode type since wchar_t might be too small.
 /// This type should be able to contain a UCS4 encoded character.
-typedef uint32_t unicode;
+typedef boost::uint32_t unicode;
 
 /// the supported encodings. Perhaps we should extend this list a bit?
 enum encoding_type

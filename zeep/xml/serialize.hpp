@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <vector>
+#include <list>
 #include <map>
 
 #include <zeep/xml/node.hpp>
@@ -334,16 +335,16 @@ std::string serialize_struct<T>::s_struct_name = typeid(T).name();
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
-template<typename T>
-struct serialize_vector
+template<typename T, typename C = std::vector<T>>
+struct serialize_container
 {
-	static void	serialize(element* parent, const std::string& name, std::vector<T>& v, bool);
+	static void	serialize(element* parent, const std::string& name, C& v, bool);
 
-	static void	deserialize(element& n, std::vector<T>& v);
+	static void	deserialize(element& n, C& v);
 
 	static element*
 				to_wsdl(type_map& types, element* parent,
-					const std::string& name, std::vector<T>& v, bool);
+					const std::string& name, C& v, bool);
 };
 
 template<typename T>
@@ -471,7 +472,7 @@ struct serialize_type
 			>::type
 		>::type					type;
 
-	enum { is_vector = false };
+	enum { is_container = false };
 };
 
 template<>
@@ -479,7 +480,7 @@ struct serialize_type<bool>
 {
 	typedef serialize_bool		type;
 
-	enum { is_vector = false };
+	enum { is_container = false };
 };
 
 template<>
@@ -487,15 +488,23 @@ struct serialize_type<std::string>
 {
 	typedef serialize_string	type;
 
-	enum { is_vector = false };
+	enum { is_container = false };
 };
 
 template<typename T>
 struct serialize_type<std::vector<T> >
 {
-	typedef serialize_vector<T>	type;
+	typedef serialize_container<T, std::vector<T>>	type;
 
-	enum { is_vector = true };
+	enum { is_container = true };
+};
+
+template<typename T>
+struct serialize_type<std::list<T> >
+{
+	typedef serialize_container<T, std::list<T>>	type;
+
+	enum { is_container = true };
 };
 
 // and the wrappers for serializing
@@ -518,7 +527,7 @@ deserializer& deserializer::operator&(
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serialize_type<value_type>::type	s_type;
 
-	if (serialize_type<value_type>::is_vector)
+	if (serialize_type<value_type>::is_container)
 	{
 		BOOST_FOREACH (element* e, *m_node)
 		{
@@ -546,20 +555,20 @@ wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
 	return *this;
 }
 
-// and some deferred implementations for the vector type
+// and some deferred implementations for the container types
 
-template<typename T>
-void serialize_vector<T>::serialize(
-	element* parent, const std::string& name, std::vector<T>& v, bool)
+template<typename T, typename C>
+void serialize_container<T,C>::serialize(
+	element* parent, const std::string& name, C& v, bool)
 {
 	typedef typename serialize_type<T>::type		s_type;
 	
-	for (typename std::vector<T>::iterator i = v.begin(); i != v.end(); ++i)
+	for (typename C::iterator i = v.begin(); i != v.end(); ++i)
 		s_type::serialize(parent, name, *i, true);
 }
 
-template<typename T>
-void serialize_vector<T>::deserialize(element& n, std::vector<T>& v)
+template<typename T, typename C>
+void serialize_container<T,C>::deserialize(element& n, C& v)
 {
 	typedef typename serialize_type<T>::type		s_type;
 	
@@ -568,9 +577,9 @@ void serialize_vector<T>::deserialize(element& n, std::vector<T>& v)
 	v.push_back(e);
 }
 
-template<typename T>
-element* serialize_vector<T>::to_wsdl(type_map& types,
-	element* parent, const std::string& name, std::vector<T>& v, bool)
+template<typename T, typename C>
+element* serialize_container<T,C>::to_wsdl(type_map& types,
+	element* parent, const std::string& name, C& v, bool)
 {
 	typedef typename serialize_type<T>::type		s_type;
 	

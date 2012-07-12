@@ -105,7 +105,7 @@ void server::handle_request(const http::request& req, http::reply& rep)
 				log() << action << ' ';
 				response = make_envelope(dispatch(action, request));
 			}
-			else if (root == "wsdl")
+			else if (root == "wsdl" or root == "?wsdl")
 			{
 				log() << "wsdl";
 				response = make_wsdl(m_location);
