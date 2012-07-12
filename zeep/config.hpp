@@ -3,8 +3,7 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_CONFIG_H
-#define SOAP_CONFIG_H
+#pragma once
 
 /// Libzeep comes with its own XML parser implementation. If you prefer
 /// you can use expat instead. To do so you have to define the 
@@ -36,7 +35,7 @@
 // some VC specific include files to make the standard C++
 // keywords work.
 
-#if defined(_MSC_VER) && !defined(__MWERKS__)
+#if defined(_MSC_VER)
 #	if defined(_MSC_EXTENSIONS)		// why is it an extension to leave out something?
 #		define and		&&
 #		define and_eq	&=
@@ -101,6 +100,4 @@ inline speed_t cfgetospeed(const struct termios *tp)
 #define __CYGWIN__
 //////////////// FIX ENDS HERE
 #endif
-#endif
-
 #endif
