@@ -335,7 +335,7 @@ std::string serialize_struct<T>::s_struct_name = typeid(T).name();
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
-template<typename T, typename C = std::vector<T>>
+template<typename T, typename C = std::vector<T> >
 struct serialize_container
 {
 	static void	serialize(element* parent, const std::string& name, C& v, bool);
@@ -494,7 +494,7 @@ struct serialize_type<std::string>
 template<typename T>
 struct serialize_type<std::vector<T> >
 {
-	typedef serialize_container<T, std::vector<T>>	type;
+	typedef serialize_container<T, std::vector<T> > type;
 
 	enum { is_container = true };
 };
@@ -502,7 +502,7 @@ struct serialize_type<std::vector<T> >
 template<typename T>
 struct serialize_type<std::list<T> >
 {
-	typedef serialize_container<T, std::list<T>>	type;
+	typedef serialize_container<T, std::list<T> >	 type;
 
 	enum { is_container = true };
 };
