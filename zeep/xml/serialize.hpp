@@ -10,6 +10,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <cassert>
 
 #include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
@@ -168,11 +169,21 @@ struct serialize_arithmetic
 			typename boost::remove_reference<T>::type >::type	value_type;
 	typedef arithmetic_wsdl_name<value_type>					wsdl_name;
 	
+	static void	serialize(element* node, const std::string& name, T& v)
+				{
+					node->set_attribute(name, boost::lexical_cast<std::string>(v));
+				}
+
 	static void	serialize(element* parent, const std::string& name, T& v, bool)
 				{
 					element* n(new element(name));
 					n->content(boost::lexical_cast<std::string>(v));
 					parent->append(n);
+				}
+
+	static void	deserialize(const std::string& s, T& v)
+				{
+					v = boost::lexical_cast<T>(s);
 				}
 
 	static void	deserialize(element& n, T& v)
@@ -198,11 +209,21 @@ struct serialize_arithmetic
 
 struct serialize_string
 {
-	static void	serialize(element* parent, const std::string& name, std::string& v, bool)
+	static void	serialize(element* node, const std::string& name, const std::string& v)
+				{
+					node->set_attribute(name, v);
+				}
+
+	static void	serialize(element* parent, const std::string& name, const std::string& v, bool)
 				{
 					element* n(new element(name));
 					n->content(v);
 					parent->append(n);
+				}
+
+	static void	deserialize(const std::string& s, std::string& v)
+				{
+					v = s;
 				}
 
 	static void	deserialize(element& n, std::string& v)
@@ -228,6 +249,11 @@ struct serialize_string
 
 struct serialize_bool
 {
+	static void	serialize(element* node, const std::string& name, bool v)
+				{
+					node->set_attribute(name, v ? "true" : "false");
+				}
+
 	static void	serialize(element* parent, const std::string& name, bool v, bool)
 				{
 					element* n(new element(name));
@@ -235,9 +261,14 @@ struct serialize_bool
 					parent->append(n);
 				}
 
+	static void	deserialize(const std::string& s, bool& v)
+				{
+					v = s == "true" or s == "1";
+				}
+
 	static void	deserialize(element& n, bool& v)
 				{
-					v = n.content() == "true" or n.content() == "1";
+					deserialize(n.content(), v);
 				}
 
 	static element*
@@ -261,6 +292,11 @@ struct serialize_struct
 {
 	static std::string	s_struct_name;
 	
+	static void	serialize(element* parent, const std::string& name, T& v)
+				{
+					throw std::runtime_error("invalid serialization request");
+				}
+
 	static void	serialize(element* parent, const std::string& name, T& v, bool make_node)
 				{
 					if (make_node)
@@ -275,6 +311,11 @@ struct serialize_struct
 						serializer sr(parent);
 						v.serialize(sr, 0);
 					}
+				}
+
+	static void	deserialize(const std::string& s, T& v)
+				{
+					throw std::runtime_error("invalid deserialization request");
 				}
 
 	static void	deserialize(element& n, T& v)
@@ -338,7 +379,16 @@ std::string serialize_struct<T>::s_struct_name = typeid(T).name();
 template<typename T, typename C = std::vector<T> >
 struct serialize_container
 {
+	static void	serialize(element* parent, const std::string& name, C& v)
+				{
+					throw std::runtime_error("invalid serialization request");
+				}
 	static void	serialize(element* parent, const std::string& name, C& v, bool);
+
+	static void	deserialize(const std::string& s, C& v)
+				{
+					throw std::runtime_error("invalid deserialization request");
+				}
 
 	static void	deserialize(element& n, C& v);
 
@@ -400,6 +450,11 @@ struct serialize_enum
 	typedef enum_map<T>					t_enum_map;
 	typedef std::map<T,std::string>		t_map;
 	
+	static void	serialize(element* node, const std::string& name, T& v)
+				{
+					node->set_attribute(name, t_enum_map::instance().m_name_mapping[v]);
+				}
+
 	static void	serialize(element* parent, const std::string& name, T& v, bool)
 				{
 					element* n(new element(name));
@@ -407,17 +462,22 @@ struct serialize_enum
 					parent->append(n);
 				}
 
-	static void	deserialize(element& n, T& v)
+	static void	deserialize(const std::string& s, T& v)
 				{
 					t_map& m = t_enum_map::instance().m_name_mapping;
 					for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
 					{
-						if (e->second == n.content())
+						if (e->second == s)
 						{
 							v = e->first;
 							break;
 						}
 					}
+				}
+
+	static void	deserialize(element& n, T& v)
+				{
+					deserialize(n.content(), v);
 				}
 
 	static element*
@@ -515,7 +575,10 @@ serializer& serializer::operator&(
 {
 	typedef typename serialize_type<T>::type	s_type;
 
-	s_type::serialize(m_node, rhs.name(), rhs.value(), m_make_node);
+	if (rhs.name()[0] == '@')
+		s_type::serialize(m_node, rhs.name() + 1, rhs.value());
+	else
+		s_type::serialize(m_node, rhs.name(), rhs.value(), m_make_node);
 
 	return *this;
 }
@@ -535,6 +598,8 @@ deserializer& deserializer::operator&(
 				s_type::deserialize(*e, rhs.value());
 		}
 	}
+	else if (rhs.name()[0] == '@' and dynamic_cast<element*>(m_node) != nullptr)
+		s_type::deserialize(static_cast<element*>(m_node)->get_attribute(rhs.name() + 1), rhs.value());
 	else
 	{
 		element* n = m_node->find_first(rhs.name());
