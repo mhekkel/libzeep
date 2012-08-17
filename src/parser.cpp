@@ -254,8 +254,9 @@ void istream_data_source::guess_encoding()
 	else if (ch1 == char(0xef))
 	{
 		char ch2 = m_data.rdbuf()->snextc();
+		char ch3 = m_data.rdbuf()->snextc();
 		
-		if (ch2 == char(0xbb) and m_data.rdbuf()->sgetc() == char(0xbf))
+		if (ch2 == char(0xbb) and ch3 == char(0xbf))
 		{
 			m_data.rdbuf()->snextc();
 			m_encoding = enc_UTF8;
