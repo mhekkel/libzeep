@@ -167,6 +167,8 @@ class object
 	friend const_iterator	range_end(const object& x)		{ return x.end(); }
 
 	friend std::ostream& operator<<(std::ostream& lhs, const object& rhs);
+	
+	std::string			toJSON() const;
 
   private:
 
@@ -304,6 +306,7 @@ class object_impl
 	virtual int64			to_int() const;
 	virtual double			to_double() const;
 	virtual std::string		to_str() const;
+	virtual std::string		to_JSON() const;
 
 	friend class object;
 
