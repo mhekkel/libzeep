@@ -9,6 +9,8 @@
 
 #include <zeep/config.hpp>
 
+#include <iomanip>
+
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
@@ -42,6 +44,11 @@ string object_impl::to_str() const
 	throw exception("cannot convert to requested type");
 }
 
+string object_impl::to_JSON() const
+{
+	throw exception("cannot convert to JSON string");
+}
+
 object& base_array_object_impl::at(uint32 ix)
 {
 	throw exception("method 'at' not implemented");
@@ -61,14 +68,26 @@ class int_object_impl : public detail::object_impl
 						: detail::object_impl(object::number_type)
 						, m_v(v)	{}
 
-	virtual void	print(ostream& os) const		{ os << m_v; }
+	virtual void	print(ostream& os) const			{ os << m_v; }
 	virtual int		compare(object_impl* rhs) const;
 
 	virtual int64	to_int() const						{ return m_v; }
 	virtual double	to_double() const					{ return static_cast<double>(m_v); }
 	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
+	virtual string	to_JSON() const						{ return boost::lexical_cast<string>(m_v); }
 
 	int64			m_v;
+};
+
+class bool_object_impl : public int_object_impl
+{
+  public:
+					bool_object_impl(bool v)
+						: int_object_impl(object::number_type) {}
+
+	virtual void	print(ostream& os) const			{ os << (m_v ? "true" : "false"); }
+	virtual string	to_str() const						{ return m_v ? "true" : "false"; }
+	virtual string	to_JSON() const						{ return m_v ? "true" : "false"; }
 };
 
 class float_object_impl : public detail::object_impl
@@ -84,6 +103,7 @@ class float_object_impl : public detail::object_impl
 	virtual int64	to_int() const						{ return static_cast<int64>(tr1::round(m_v)); }
 	virtual double	to_double() const					{ return m_v; }
 	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
+	virtual string	to_JSON() const						{ return boost::lexical_cast<string>(m_v); }
 	
 	double			m_v;
 };
@@ -101,6 +121,34 @@ class string_object_impl : public detail::object_impl
 	virtual int64	to_int() const						{ return boost::lexical_cast<int64>(m_v); }
 	virtual double	to_double() const					{ return boost::lexical_cast<double>(m_v); }
 	virtual string	to_str() const						{ return m_v; }
+	virtual string	to_JSON() const
+					{
+						stringstream s;
+						s << '"';
+						foreach (char ch, m_v)
+						{
+							switch (ch)
+							{
+								case '"':	s << "\\n"; break;
+								case '\\':	s << "\\\\"; break;
+								case '/':	s << "\\/"; break;
+								case 010:	s << "\\b"; break;
+								case 011:	s << "\\n"; break;
+								case 012:	s << "\\t"; break;
+								case 014:	s << "\\f"; break;
+								case 015:	s << "\\r"; break;
+								default:
+								{
+									if ((unsigned int)(ch) < 040)
+										s << "\\u" << hex << setfill('0') << setw(4) << int(ch);
+									else
+										s << ch;
+								}
+							}
+						}
+						s << '"';
+						return s.str();
+					}
 	
 	string			m_v;
 };
@@ -186,6 +234,20 @@ class vector_object_impl : public detail::base_array_object_impl
 							return new vector_object_iterator_impl(m_v.end());
 					}
 	
+	virtual string	to_JSON() const
+					{
+						stringstream s;
+						s << '[';
+						for (uint32 ix = 0; ix < m_v.size(); ++ix)
+						{
+							if (ix > 0)
+								s << ',';
+							s << m_v[ix].toJSON();
+						}
+						s << ']';
+						return s.str();
+					}
+
 	vector<object>	m_v;
 };
 
@@ -235,6 +297,22 @@ class struct_object_impl : public detail::base_struct_object_impl
 							result = i->second;
 						
 						return result;
+					}
+
+	
+	virtual string	to_JSON() const
+					{
+						stringstream s;
+						s << '{';
+						bool first = false;
+						for (map<string,object>::const_iterator o = m_v.begin(); o != m_v.end(); ++o)
+						{
+							if (not first)
+								s << ',';
+							s << o->first << ':' << o->second.toJSON();
+						}
+						s << '}';
+						return s.str();
 					}
 
   private:
@@ -422,7 +500,7 @@ object::object(const vector<string>& v)
 }
 
 object::object(bool v)
-	: m_impl(new int_object_impl(v))
+	: m_impl(new bool_object_impl(v))
 {
 }
 
@@ -508,7 +586,7 @@ object& object::operator=(bool v)
 {
 	if (m_impl != nullptr)
 		m_impl->release();
-	m_impl = new int_object_impl(v);
+	m_impl = new bool_object_impl(v);
 	return *this;
 }
 
@@ -812,6 +890,14 @@ ostream& operator<<(ostream& os, const object& o)
 	else
 		os << "null";
 	return os;
+}
+
+string object::toJSON() const
+{
+	string result;
+	if (m_impl != nullptr)
+		result = m_impl->to_JSON();
+	return result;
 }
 
 object operator+(const object& a, const object& b)
@@ -1604,8 +1690,6 @@ const request& scope::get_request() const
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
 }
-
-
 
 }
 }
