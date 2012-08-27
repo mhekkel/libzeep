@@ -129,7 +129,7 @@ class string_object_impl : public detail::object_impl
 						{
 							switch (ch)
 							{
-								case '"':	s << "\\n"; break;
+								case '"':	s << "\\\""; break;
 								case '\\':	s << "\\\\"; break;
 								case '/':	s << "\\/"; break;
 								case 010:	s << "\\b"; break;
@@ -304,12 +304,11 @@ class struct_object_impl : public detail::base_struct_object_impl
 					{
 						stringstream s;
 						s << '{';
-						bool first = false;
 						for (map<string,object>::const_iterator o = m_v.begin(); o != m_v.end(); ++o)
 						{
-							if (not first)
+							if (o != m_v.begin())
 								s << ',';
-							s << o->first << ':' << o->second.toJSON();
+							s << '"' << o->first << '"' << ':' << o->second.toJSON();
 						}
 						s << '}';
 						return s.str();
