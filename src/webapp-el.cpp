@@ -499,7 +499,8 @@ object::object(const vector<string>& v)
 }
 
 object::object(bool v)
-	: m_impl(new bool_object_impl(v))
+//	: m_impl(new bool_object_impl(v))
+	: m_impl(new int_object_impl(v))
 {
 }
 
@@ -585,7 +586,8 @@ object& object::operator=(bool v)
 {
 	if (m_impl != nullptr)
 		m_impl->release();
-	m_impl = new bool_object_impl(v);
+//	m_impl = new bool_object_impl(v);
+	m_impl = new int_object_impl(v);
 	return *this;
 }
 
