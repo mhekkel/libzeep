@@ -133,10 +133,10 @@ class string_object_impl : public detail::object_impl
 								case '\\':	s << "\\\\"; break;
 								case '/':	s << "\\/"; break;
 								case 010:	s << "\\b"; break;
-								case 011:	s << "\\n"; break;
-								case 012:	s << "\\t"; break;
+								case '\t':	s << "\\t"; break;
+								case '\n':	s << "\\n"; break;
 								case 014:	s << "\\f"; break;
-								case 015:	s << "\\r"; break;
+								case '\r':	s << "\\r"; break;
 								default:
 								{
 									if ((unsigned int)(ch) < 040)
