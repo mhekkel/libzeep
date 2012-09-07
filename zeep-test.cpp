@@ -86,8 +86,9 @@ enum Algorithm
 namespace zeep {
 namespace xml {
 
+template<>
 template<class Archive>
-void serialize(Archive& ar, WSSearchNS::Hit& hit, const unsigned int)
+void serialize_struct<WSSearchNS::Hit>::serialize(Archive& ar, WSSearchNS::Hit& hit)
 {
 	ar & BOOST_SERIALIZATION_NVP(hit.db)
 		& BOOST_SERIALIZATION_NVP(hit.id)
