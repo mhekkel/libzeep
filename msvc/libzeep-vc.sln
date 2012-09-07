@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C++ Express 2010
+# Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libzeep-vc", "libzeep-vc.vcxproj", "{8DB71094-266D-4B6B-8076-0F58A3944F4B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zeep-test", "zeep-test.vcxproj", "{4BB39871-71E0-4A9C-8D70-83D44E6A8938}"
@@ -24,11 +24,9 @@ Global
 		{4BB39871-71E0-4A9C-8D70-83D44E6A8938}.Release|Win32.ActiveCfg = Release|Win32
 		{4BB39871-71E0-4A9C-8D70-83D44E6A8938}.Release|Win32.Build.0 = Release|Win32
 		{8E4C0575-1AEC-4525-8812-045949F74793}.Debug|Win32.ActiveCfg = Debug|Win32
-		{8E4C0575-1AEC-4525-8812-045949F74793}.Debug|Win32.Build.0 = Debug|Win32
 		{8E4C0575-1AEC-4525-8812-045949F74793}.Release|Win32.ActiveCfg = Release|Win32
 		{8E4C0575-1AEC-4525-8812-045949F74793}.Release|Win32.Build.0 = Release|Win32
 		{BE2CEABE-B50F-4529-AF4B-E0EFEC6A05CB}.Debug|Win32.ActiveCfg = Debug|Win32
-		{BE2CEABE-B50F-4529-AF4B-E0EFEC6A05CB}.Debug|Win32.Build.0 = Debug|Win32
 		{BE2CEABE-B50F-4529-AF4B-E0EFEC6A05CB}.Release|Win32.ActiveCfg = Release|Win32
 		{BE2CEABE-B50F-4529-AF4B-E0EFEC6A05CB}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
