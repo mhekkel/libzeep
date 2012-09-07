@@ -287,12 +287,6 @@ struct serialize_bool
 				}
 };
 
-template<class Stream, class Struct>
-inline void serialize(Stream& stream, Struct& data, const unsigned int)
-{
-	data.serialize(stream, 0U);
-}
-
 template<typename T>
 struct serialize_struct
 {
@@ -303,19 +297,25 @@ struct serialize_struct
 					throw std::runtime_error("invalid serialization request");
 				}
 
+	template<class Stream>
+	static void	serialize(Stream& stream, T& data)
+				{
+					data.serialize(stream, 0U);
+				}
+
 	static void	serialize(element* parent, const std::string& name, T& v, bool make_node)
 				{
 					if (make_node)
 					{
 						element* n(new element(name));
 						serializer sr(n);
-						zeep::xml::serialize(sr, v, 0U);
+						serialize(sr, v);
 						parent->append(n);
 					}
 					else
 					{
 						serializer sr(parent);
-						zeep::xml::serialize(sr, v, 0U);
+						serialize(sr, v);
 					}
 				}
 
@@ -327,7 +327,7 @@ struct serialize_struct
 	static void	deserialize(element& n, T& v)
 				{
 					deserializer ds(&n);
-					zeep::xml::serialize(ds, v, 0U);
+					serialize(ds, v);
 				}
 
 	static element*
@@ -355,14 +355,14 @@ struct serialize_struct
 						n->append(sequence);
 						
 						wsdl_creator wsdl(types, sequence);
-						zeep::xml::serialize(wsdl, v, 0U);
+						serialize(wsdl, v);
 						
 						return result;
 					}
 					else
 					{
 						wsdl_creator wc(types, parent);
-						zeep::xml::serialize(wc, v, 0U);
+						serialize(wc, v);
 						return parent;
 					}
 				}
