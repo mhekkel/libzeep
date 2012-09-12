@@ -1,6 +1,10 @@
 Version 2.9.0
 
 - Added some calls to xml::writer to write e.g. xml-decl and doctypes
+- Support for non-intrusive serialization. The call to serialize is now
+  done by the templated struct zeep::xml::struct_serializer. You can
+  create a specialization for this struct to do something else than
+  calling MyClass::serialize.
 
 Version 2.8.2
 
