@@ -300,9 +300,9 @@ template<typename T>
 struct serialize_struct
 {
 	static std::string	s_struct_name;
-	typedef typename struct_serializer<serializer,T>		s_serializer;
-	typedef typename struct_serializer<deserializer,T>		s_deserializer;
-	typedef typename struct_serializer<wsdl_creator,T>		s_wsdl_creator;
+	typedef struct_serializer<serializer,T>		s_serializer;
+	typedef struct_serializer<deserializer,T>	s_deserializer;
+	typedef struct_serializer<wsdl_creator,T>	s_wsdl_creator;
 	
 	static void	serialize(element* parent, const std::string& name, T& v)
 				{
