@@ -85,6 +85,16 @@ struct struct_serializer<Archive,WSSearchNS::Hit>
 				}
 };
 
+template <typename Archive, typename T, typename U>
+struct struct_serializer<Archive,std::pair<T, U>>
+{
+    static void serialize(Archive& ar, std::pair<T, U>& pair)
+    {
+        ar & BOOST_SERIALIZATION_NVP(pair.first);
+        ar & BOOST_SERIALIZATION_NVP(pair.second);
+    }
+};
+
 }
 }
 
@@ -116,6 +126,8 @@ class my_server : public zeep::server
 							int							resultoffset,
 							int							maxresultcount,
 							WSSearchNS::FindResult&		out);
+
+	void				Test(const string& in, pair<int,int>& out);
 
 	void				ForceStop(string&				out);
 
@@ -171,6 +183,12 @@ my_server::my_server(const string& param)
 	};
 	
 	register_action("ForceStop", this, &my_server::ForceStop, kForceStopParameterNames);
+
+	const char* kTestParameterNames[] = {
+		"in", "out"
+	};
+
+	register_action("Test", this, &my_server::Test, kTestParameterNames);
 }
 
 void my_server::ListDatabanks(
@@ -229,6 +247,11 @@ void my_server::Find(
 	h.title = m_param;
 	
 	out.hits.push_back(h);
+}
+
+void my_server::Test(const string& in, pair<int,int>& out)
+{
+	out.first = out.second = 1;
 }
 
 void my_server::ForceStop(
