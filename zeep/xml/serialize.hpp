@@ -287,20 +287,26 @@ struct serialize_bool
 				}
 };
 
+template<typename S, typename T>
+struct struct_serializer
+{
+	static void serialize(S& stream, T& data)
+	{
+		data.serialize(stream, 0U);
+	}
+};
+
 template<typename T>
 struct serialize_struct
 {
 	static std::string	s_struct_name;
+	typedef typename struct_serializer<serializer,T>		s_serializer;
+	typedef typename struct_serializer<deserializer,T>		s_deserializer;
+	typedef typename struct_serializer<wsdl_creator,T>		s_wsdl_creator;
 	
 	static void	serialize(element* parent, const std::string& name, T& v)
 				{
 					throw std::runtime_error("invalid serialization request");
-				}
-
-	template<class Stream>
-	static void	serialize(Stream& stream, T& data)
-				{
-					data.serialize(stream, 0U);
 				}
 
 	static void	serialize(element* parent, const std::string& name, T& v, bool make_node)
@@ -309,13 +315,13 @@ struct serialize_struct
 					{
 						element* n(new element(name));
 						serializer sr(n);
-						serialize(sr, v);
+						s_serializer::serialize(sr, v);
 						parent->append(n);
 					}
 					else
 					{
 						serializer sr(parent);
-						serialize(sr, v);
+						s_serializer::serialize(sr, v);
 					}
 				}
 
@@ -327,7 +333,7 @@ struct serialize_struct
 	static void	deserialize(element& n, T& v)
 				{
 					deserializer ds(&n);
-					serialize(ds, v);
+					s_deserializer::serialize(ds, v);
 				}
 
 	static element*
@@ -355,14 +361,14 @@ struct serialize_struct
 						n->append(sequence);
 						
 						wsdl_creator wsdl(types, sequence);
-						serialize(wsdl, v);
+						s_wsdl_creator::serialize(wsdl, v);
 						
 						return result;
 					}
 					else
 					{
 						wsdl_creator wc(types, parent);
-						serialize(wc, v);
+						s_wsdl_creator::serialize(wc, v);
 						return parent;
 					}
 				}
