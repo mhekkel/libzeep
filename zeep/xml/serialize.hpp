@@ -193,7 +193,7 @@ struct serialize_arithmetic
 
 	static element*
 				 to_wsdl(type_map& types, element* parent,
-					const std::string& name, T& v, bool)
+					const std::string& name, const T& v, bool)
 				{
 					element* n(new element("xsd:element"));
 					n->set_attribute("name", name);
@@ -233,7 +233,7 @@ struct serialize_string
 
 	static element*
 				to_wsdl(type_map& types, element* parent,
-					const std::string& name, std::string& v, bool)
+					const std::string& name, const std::string& v, bool)
 				{
 					element* n(new element("xsd:element"));
 					n->set_attribute("name", name);
@@ -406,7 +406,7 @@ struct serialize_container
 
 	static element*
 				to_wsdl(type_map& types, element* parent,
-					const std::string& name, C& v, bool);
+					const std::string& name, const C& v, bool);
 };
 
 template<typename T>
@@ -493,7 +493,7 @@ struct serialize_enum
 				}
 
 	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, T& v, bool)
+				to_wsdl(type_map& types, element* parent, const std::string& name, const T& v, bool)
 				{
 					std::string type_name = t_enum_map::instance().m_name;
 					
@@ -585,7 +585,8 @@ template<typename T>
 serializer& serializer::operator&(
 	const boost::serialization::nvp<T>&	rhs)
 {
-	typedef typename serialize_type<T>::type	s_type;
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serialize_type<value_type>::type	s_type;
 
 	if (rhs.name()[0] == '@')
 		s_type::serialize(m_node, rhs.name() + 1, rhs.value());
@@ -625,7 +626,8 @@ deserializer& deserializer::operator&(
 template<typename T>
 wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
 {
-	typedef typename serialize_type<T>::type	s_type;
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serialize_type<value_type>::type	s_type;
 
 	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value(), m_make_node);
 
@@ -638,7 +640,8 @@ template<typename T, typename C>
 void serialize_container<T,C>::serialize(
 	element* parent, const std::string& name, C& v, bool)
 {
-	typedef typename serialize_type<T>::type		s_type;
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serialize_type<value_type>::type	s_type;
 	
 	for (typename C::iterator i = v.begin(); i != v.end(); ++i)
 		s_type::serialize(parent, name, *i, true);
@@ -647,20 +650,22 @@ void serialize_container<T,C>::serialize(
 template<typename T, typename C>
 void serialize_container<T,C>::deserialize(element& n, C& v)
 {
-	typedef typename serialize_type<T>::type		s_type;
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serialize_type<value_type>::type	s_type;
 	
-	T e;
+	value_type e;
 	s_type::deserialize(n, e);
 	v.push_back(e);
 }
 
 template<typename T, typename C>
 element* serialize_container<T,C>::to_wsdl(type_map& types,
-	element* parent, const std::string& name, C& v, bool)
+	element* parent, const std::string& name, const C& v, bool)
 {
-	typedef typename serialize_type<T>::type		s_type;
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serialize_type<value_type>::type	s_type;
 	
-	T e;
+	value_type e;
 	element* result = s_type::to_wsdl(types, parent, name, e, true);
 
 	result->remove_attribute("minOccurs");

@@ -36,9 +36,14 @@ namespace WSSearchNS
 
 struct Hit
 {
+					Hit() {}
+
+					Hit(string db, string id, string title, float score)
+						: db(db), id(id), title(title), score(score) {}
+
 	string			db;
 	string			id;
-	string			title;
+	const string	title;
 	float			score;
 };
 
@@ -226,27 +231,11 @@ void my_server::Find(
 	// mock up some fake answer...
 	out.count = 2;
 
-	WSSearchNS::Hit h = {};
-	h.db = "sprot";
-	h.id = "104k_thepa";
-	h.score = 1.0f;
-	h.title = "bla bla bla";
-	
-	out.hits.push_back(h);
+	WSSearchNS::Hit h1("sprot", "104k_thepa", "bla bla bla",  1.0f);
+	out.hits.push_back(h1);
 
-	h.db = "sprot";
-	h.id = "108_lyces";
-	h.score = 0.8f;
-	h.title = "aap <&> noot mies";
-	
-	out.hits.push_back(h);
-
-	h.db = "param";
-	h.id = "param-id";
-	h.score = 0.6f;
-	h.title = m_param;
-	
-	out.hits.push_back(h);
+	WSSearchNS::Hit h2("sprot", "108_lyces", "aap <&> noot mies", 0.8f);
+	out.hits.push_back(h2);
 }
 
 void my_server::Test(const string& in, pair<int,int>& out)
