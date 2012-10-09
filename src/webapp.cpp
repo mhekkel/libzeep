@@ -205,6 +205,8 @@ void webapp::handle_file(
 		mimetype = "image/svg+xml";
 	else if (file.extension() == ".html" or file.extension() == ".htm")
 		mimetype = "text/html";
+	else if (file.extension() == ".xml" or file.extension() == ".xslt")
+		mimetype = "text/xml";
 	else if (file.extension() == ".xhtml")
 		mimetype = "application/xhtml+xml";
 
@@ -732,7 +734,7 @@ void webapp::get_parameters(
 
 	while (not ps.empty())
 	{
-		string::size_type e = ps.find('&');
+		string::size_type e = ps.find_first_of("&;");
 		string param;
 		
 		if (e != string::npos)
