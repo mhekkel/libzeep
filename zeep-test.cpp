@@ -91,7 +91,7 @@ struct struct_serializer<Archive,WSSearchNS::Hit>
 };
 
 template <typename Archive, typename T, typename U>
-struct struct_serializer<Archive,std::pair<T, U>>
+struct struct_serializer<Archive,std::pair<T, U> >
 {
     static void serialize(Archive& ar, std::pair<T, U>& pair)
     {
