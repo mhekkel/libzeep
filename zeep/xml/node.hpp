@@ -29,6 +29,7 @@ typedef std::list<element_ptr>	element_set;
 
 class root_node;
 class container;
+class xpath;
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 extern const char kWhiteSpaceChar[];	// a static const char array containing a single space
@@ -276,6 +277,9 @@ class container : public node
 	virtual void		remove(node* n);		// remove does not delete n 
 
 	// xpath wrappers
+	element_set			find(const xpath& path) const;
+	element*			find_first(const xpath& path) const;
+
 	element_set			find(const std::string& path) const;
 	element*			find_first(const std::string& path) const;
 	

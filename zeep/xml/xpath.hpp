@@ -52,6 +52,9 @@ class xpath
 {
   public:
 							xpath(const std::string& path);
+							xpath(const xpath& rhs);
+	xpath&					operator=(const xpath&);
+
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 	virtual					~xpath();
 #endif

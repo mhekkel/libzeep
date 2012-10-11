@@ -84,9 +84,12 @@ class document
 	void				child(element* e);
 	
 	// helper functions
-	element_set			find(const std::string& path);	///< Return all zeep::xml::elements that match the XPath query \a path
-	element*			find_first(const std::string& path);
-														///< Return the first zeep::xml::element that matches the XPath query \a path
+	element_set			find(const std::string& path) const;	///< Return all zeep::xml::elements that match the XPath query \a path
+	element*			find_first(const std::string& path) const;
+																///< Return the first zeep::xml::element that matches the XPath query \a path
+
+	element_set			find(const xpath& path) const;			///< Return all zeep::xml::elements that match the XPath query \a path
+	element*			find_first(const xpath& path) const;	///< Return the first zeep::xml::element that matches the XPath query \a path
 
 	/// Compare two xml documents
 	bool				operator==(const document& doc) const;
