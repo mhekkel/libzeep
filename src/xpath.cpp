@@ -1593,7 +1593,9 @@ object union_expression::evaluate(expression_context& context)
 struct xpath_imp
 {
 						xpath_imp();
-						~xpath_imp();
+
+	void				reference();
+	void				release();
 	
 	node_set			evaluate(node& root, context_imp& context);
 
@@ -1644,17 +1646,34 @@ struct xpath_imp
 
 	// the generated expression
 	expression_ptr		m_expr;
+
+  private:
+						~xpath_imp();
+
+	long				m_refcount;
 };
 
 // --------------------------------------------------------------------
 
 xpath_imp::xpath_imp()
+	: m_refcount(1)
 {
 }
 
 xpath_imp::~xpath_imp()
 {
-}	
+}
+
+void xpath_imp::reference()
+{
+	++m_refcount;
+}
+
+void xpath_imp::release()
+{
+	if (--m_refcount <= 0)
+		delete this;
+}
 
 void xpath_imp::parse(const string& path)
 {
@@ -2616,9 +2635,27 @@ xpath::xpath(const string& path)
 	m_impl->parse(path);
 }
 
+xpath::xpath(const xpath& rhs)
+	: m_impl(rhs.m_impl)
+{
+	m_impl->reference();
+}
+
+xpath& xpath::operator=(const xpath& rhs)
+{
+	if (this != &rhs)
+	{
+		m_impl->release();
+		m_impl = rhs.m_impl;
+		m_impl->reference();
+	}
+	
+	return *this;
+}
+
 xpath::~xpath()
 {
-	delete m_impl;
+	m_impl->release();
 }
 
 template<>

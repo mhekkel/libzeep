@@ -398,12 +398,22 @@ void document::child(element* e)
 	return m_impl->m_root.child_element(e);
 }
 
-element_set document::find(const std::string& path)
+element_set document::find(const std::string& path) const
 {
 	return m_impl->m_root.find(path);
 }
 
-element* document::find_first(const std::string& path)
+element* document::find_first(const std::string& path) const
+{
+	return m_impl->m_root.find_first(path);
+}
+
+element_set document::find(const xpath& path) const
+{
+	return m_impl->m_root.find(path);
+}
+
+element* document::find_first(const xpath& path) const
 {
 	return m_impl->m_root.find_first(path);
 }

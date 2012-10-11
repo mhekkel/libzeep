@@ -352,6 +352,21 @@ void container::remove(node_ptr n)
 //#endif
 }
 
+element_set container::find(const xpath& path) const
+{
+	return path.evaluate<element>(*this);
+}
+
+element* container::find_first(const xpath& path) const
+{
+	element_set s = path.evaluate<element>(*this);
+	
+	element* result = nullptr;
+	if (not s.empty())
+		result = s.front();
+	return result;
+}
+
 element_set container::find(const std::string& path) const
 {
 	return xpath(path).evaluate<element>(*this);
