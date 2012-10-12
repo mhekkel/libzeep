@@ -68,6 +68,9 @@ class xpath
 	template<typename NODE_TYPE>
 	std::list<NODE_TYPE*>	evaluate(const node& root, context& ctxt) const;
 
+	/// Returns true if the \a n node matches the XPath
+	bool					matches(const node* n) const;
+
 #ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
 	struct xpath_imp*		m_impl;

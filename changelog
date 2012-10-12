@@ -5,6 +5,10 @@ Version 2.9.0
   done by the templated struct zeep::xml::struct_serializer. You can
   create a specialization for this struct to do something else than
   calling MyClass::serialize.
+- A streaming input added, process_document_elements calls the callback
+  for all elements that match a given xpath.
+- ISO8859-1 support (finally)
+- some xpath additions (matches e.g.)
 
 Version 2.8.2
 
