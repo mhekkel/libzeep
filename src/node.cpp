@@ -715,7 +715,8 @@ void root_node::child_element(element* child)
 		delete e;
 	}
 	
-	container::append(child);
+	if (child != nullptr)
+		container::append(child);
 }
 
 void root_node::write(writer& w) const

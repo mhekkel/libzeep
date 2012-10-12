@@ -274,7 +274,7 @@ void istream_data_source::guess_encoding()
 		case enc_UTF8:		m_next = &istream_data_source::next_utf8_char; break;
 		case enc_UTF16LE:	m_next = &istream_data_source::next_utf16le_char; break;
 		case enc_UTF16BE:	m_next = &istream_data_source::next_utf16be_char; break;
-//		case enc_ISO88591:	m_next = &istream_data_source::next_iso88591_char; break;
+		case enc_ISO88591:	m_next = &istream_data_source::next_iso88591_char; break;
 	}
 }
 
@@ -348,8 +348,7 @@ unicode istream_data_source::next_utf16be_char()
 
 unicode istream_data_source::next_iso88591_char()
 {
-	throw source_exception("to be implemented");
-	return 0;
+	return (unicode)next_byte();
 }
 
 unicode istream_data_source::get_next_char()
@@ -1612,8 +1611,8 @@ void parser_imp::xml_decl()
 //						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
 					m_encoding = enc_UTF16BE;
 				}
-//				else if (m_token == "ISO-8859-1")
-//					m_encoding = enc_ISO88591;
+				else if (m_token == "ISO-8859-1")
+					m_encoding = enc_ISO88591;
 				else
 					not_well_formed(boost::format("Unsupported encoding value '%1%'") % m_token);
 				match(xml_String);

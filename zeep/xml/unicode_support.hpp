@@ -23,7 +23,7 @@ enum encoding_type
 	enc_UTF8,			///< UTF-8
 	enc_UTF16BE,		///< UTF-16 Big Endian
 	enc_UTF16LE,		///< UTF 16 Little Endian
-//	enc_ISO88591
+	enc_ISO88591
 };
 
 /// some character classification routines

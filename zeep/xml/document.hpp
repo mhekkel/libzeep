@@ -142,6 +142,9 @@ class document
   protected:
 						document(struct document_imp* impl);
 
+	friend void process_document_elements(std::istream& data, const std::string& element_xpath,
+										boost::function<bool(node* doc_root, element* e)> cb);
+
 #if SOAP_XML_HAS_EXPAT_SUPPORT
 	static parser_type	s_parser_type;
 #endif
@@ -160,6 +163,12 @@ std::istream& operator>>(std::istream& lhs, document& rhs);
 
 /// Using operator<< is an alternative for calling writer w(lhs); rhs.write(w);
 std::ostream& operator<<(std::ostream& lhs, const document& rhs);
+
+/// \brief To read a document and process elements on the go, use this streaming input function.
+/// If the \a proc callback retuns false, processing is terminated. The \a doc_root parameter of
+/// the callback is the leading xml up to the first element.
+void process_document_elements(std::istream& data, const std::string& element_xpath,
+	boost::function<bool(node* doc_root, element* e)> cb);
 
 }
 }

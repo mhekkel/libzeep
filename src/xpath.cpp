@@ -2694,5 +2694,27 @@ element_set xpath::evaluate<element>(const node& root, context& ctxt) const
 	return result;
 }
 
+bool xpath::matches(const node* n) const
+{
+	bool result = false;
+	if (n != nullptr)
+	{
+		const node* root = n->root();
+	
+		context ctxt;
+		object s(m_impl->evaluate(const_cast<node&>(*root), *ctxt.m_impl));
+		foreach (node* e, s.as<const node_set&>())
+		{
+			if (e == n)
+			{
+				result = true;
+				break;
+			}
+		}
+	}
+	
+	return result;
+}
+
 }
 }

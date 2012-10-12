@@ -24,6 +24,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/writer.hpp>
+#include <zeep/xml/xpath.hpp>
 
 #if SOAP_XML_HAS_EXPAT_SUPPORT
 #include "document-expat.hpp"
@@ -106,26 +107,26 @@ struct zeep_document_imp : public document_imp
 {
 					zeep_document_imp(document* doc);
 
-	void			StartElementHandler(const string& name, const string& uri,
+	virtual void	StartElementHandler(const string& name, const string& uri,
 						const parser::attr_list_type& atts);
 
-	void			EndElementHandler(const string& name, const string& uri);
+	virtual void	EndElementHandler(const string& name, const string& uri);
 
-	void			CharacterDataHandler(const string& data);
+	virtual void	CharacterDataHandler(const string& data);
 
-	void			ProcessingInstructionHandler(const string& target, const string& data);
+	virtual void	ProcessingInstructionHandler(const string& target, const string& data);
 
-	void			CommentHandler(const string& comment);
+	virtual void	CommentHandler(const string& comment);
 
-	void			StartCdataSectionHandler();
+	virtual void	StartCdataSectionHandler();
 
-	void			EndCdataSectionHandler();
+	virtual void	EndCdataSectionHandler();
 
-	void			StartNamespaceDeclHandler(const string& prefix, const string& uri);
+	virtual void	StartNamespaceDeclHandler(const string& prefix, const string& uri);
 
-	void			EndNamespaceDeclHandler(const string& prefix);
+	virtual void	EndNamespaceDeclHandler(const string& prefix);
 	
-	void			NotationDeclHandler(const string& name, const string& sysid, const string& pubid);
+	virtual void	NotationDeclHandler(const string& name, const string& sysid, const string& pubid);
 
 	virtual void	parse(istream& data);
 };
@@ -500,6 +501,68 @@ ostream& operator<<(ostream& lhs, const document& rhs)
 	
 	rhs.write(w);
 	return lhs;
+}
+
+// --------------------------------------------------------------------
+//
+//	A visitor for elements that match the element_xpath.
+//	
+
+struct visitor_imp : public zeep_document_imp
+{
+					visitor_imp(document* doc, const string& element_xpath,
+						boost::function<bool(node* doc_root, element* e)> cb);
+
+	void			EndElementHandler(const string& name, const string& uri);
+
+	xpath			mElementXPath;
+	boost::function<bool(node* doc_root, element* e)>
+					mCallback;
+};
+
+// --------------------------------------------------------------------
+
+visitor_imp::visitor_imp(document* doc, const string& element_xpath,
+		boost::function<bool(node* doc_root, element* e)> cb)
+	: zeep_document_imp(doc), mElementXPath(element_xpath), mCallback(cb)
+{
+}
+
+void visitor_imp::EndElementHandler(const string& name, const string& uri)
+{
+	if (m_cur == nullptr)
+		throw exception("Empty stack");
+	
+	if (m_cdata != nullptr)
+		throw exception("CDATA section not closed");
+	
+	// see if we need to process this one
+	if (mElementXPath.matches(m_cur))
+	{
+		if (not mCallback(m_root.child(), m_cur))
+			; // TODO stop processing, how?
+
+		element* e = m_cur;
+		m_cur = dynamic_cast<element*>(m_cur->parent());
+		if (m_cur == nullptr)
+			m_root.child_element(nullptr);
+		else
+		{
+			m_cur->remove(e);
+			delete e;
+		}
+	}
+	else
+		m_cur = dynamic_cast<element*>(m_cur->parent());
+}
+
+void process_document_elements(istream& data, const string& element_xpath,
+	boost::function<bool(node* doc_root, element* e)> cb)
+{
+	document doc(new visitor_imp(nullptr, element_xpath, cb));
+	doc.m_impl->m_doc = &doc;
+	
+	doc.m_impl->parse(data);
 }
 
 } // xml
