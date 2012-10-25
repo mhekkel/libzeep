@@ -176,8 +176,6 @@ void webapp::handle_file(
 
 			local_date_time fileDate(from_time_t(fs::last_write_time(file)), time_zone_ptr());
 
-			cerr << file << endl << modifiedSince << endl << fileDate << endl << endl;
-
 			if (fileDate <= modifiedSince)
 			{
 				reply = zeep::http::reply::stock_reply(zeep::http::not_modified);
@@ -205,7 +203,7 @@ void webapp::handle_file(
 		mimetype = "image/svg+xml";
 	else if (file.extension() == ".html" or file.extension() == ".htm")
 		mimetype = "text/html";
-	else if (file.extension() == ".xml" or file.extension() == ".xslt")
+	else if (file.extension() == ".xml" or file.extension() == ".xsl" or file.extension() == ".xslt")
 		mimetype = "text/xml";
 	else if (file.extension() == ".xhtml")
 		mimetype = "application/xhtml+xml";
@@ -223,9 +221,6 @@ void webapp::handle_file(
 	s << t2;
 
 	reply.set_header("Last-Modified", s.str());
-
-
-cerr << s.str() << endl << endl;
 }
 
 void webapp::load_template(
