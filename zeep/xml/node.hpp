@@ -277,11 +277,16 @@ class container : public node
 	virtual void		remove(node* n);		// remove does not delete n 
 
 	// xpath wrappers
-	element_set			find(const xpath& path) const;
-	element*			find_first(const xpath& path) const;
+	element_set			find(const std::string& path) const				{ return find(path.c_str()); }
+	element*			find_first(const std::string& path) const		{ return find_first(path.c_str()); }
 
-	element_set			find(const std::string& path) const;
-	element*			find_first(const std::string& path) const;
+	element_set			find(const char* path) const;
+	element*			find_first(const char* path) const;
+
+	// xpath wrappers that can return attributes as well as elements:
+	void				find(const char* path, node_set& nodes) const;
+	void				find(const char* path, element_set& elements) const;
+	node*				find_first_node(const char* path) const;
 	
 	// debug routine
 	virtual void		validate();

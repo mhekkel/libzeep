@@ -31,9 +31,10 @@ namespace http {
 
 struct unauthorized_exception : public std::exception
 {
-				unauthorized_exception(bool stale)
-					: m_stale(stale) {}
+				unauthorized_exception(bool stale, const std::string& realm)
+					: m_stale(stale), m_realm(realm) {}
 	bool		m_stale;			///< Is true when the authorization information is valid but stale (too old)
+	std::string	m_realm;			///< Realm for which the authorization failed
 };
 
 #ifndef BOOST_XPRESSIVE_DOXYGEN_INVOKED
@@ -95,7 +96,7 @@ class webapp : public http::server
   protected:
 	
 	virtual void	handle_request(const request& req, reply& rep);
-	virtual void	create_unauth_reply(bool stale, reply& rep);
+	virtual void	create_unauth_reply(bool stale, const std::string& realm, reply& rep);
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 	

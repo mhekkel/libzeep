@@ -26,6 +26,7 @@ writer::writer(std::ostream& os)
 	, m_version(1.0f)
 	, m_write_xml_decl(false)
 	, m_wrap(true)
+	, m_wrap_prolog(true)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
@@ -34,6 +35,7 @@ writer::writer(std::ostream& os)
 	, m_level(0)
 	, m_element_open(false)
 	, m_wrote_element(false)
+	, m_prolog(true)
 {
 }
 				
@@ -43,6 +45,7 @@ writer::writer(std::ostream& os, bool write_decl, bool standalone)
 	, m_version(1.0f)
 	, m_write_xml_decl(write_decl)
 	, m_wrap(true)
+	, m_wrap_prolog(true)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
@@ -51,6 +54,7 @@ writer::writer(std::ostream& os, bool write_decl, bool standalone)
 	, m_level(0)
 	, m_element_open(false)
 	, m_wrote_element(false)
+	, m_prolog(true)
 {
 	if (m_write_xml_decl)
 		xml_decl(standalone);
@@ -80,7 +84,7 @@ void writer::xml_decl(bool standalone)
 		
 		m_os << "?>";
 		
-		if (m_wrap)
+		if (m_wrap_prolog)
 			m_os << endl;
 	}
 }
@@ -94,7 +98,7 @@ void writer::doctype(const string& root, const string& pubid, const string& dtd)
 	
 	m_os << " \"" << dtd << "\">";
 
-	if (m_wrap)
+	if (m_wrap_prolog)
 		m_os << endl;
 }
 
@@ -105,14 +109,14 @@ void writer::start_doctype(const string& root, const string& dtd)
 		m_os << " \"" << dtd << '"';
 	m_os << " [";
 
-	if (m_wrap)
+	if (m_wrap_prolog)
 		m_os << endl;
 }
 
 void writer::end_doctype()
 {
 	m_os << "]>";
-	if (m_wrap)
+	if (m_wrap_prolog)
 		m_os << endl;
 }
 
@@ -123,7 +127,7 @@ void writer::empty_doctype(const string& root, const string& dtd)
 		m_os << " \"" << dtd << '"';
 	m_os << "]>";
 
-	if (m_wrap)
+	if (m_wrap_prolog)
 		m_os << endl;
 }
 
@@ -140,7 +144,7 @@ void writer::notation(const string& name,
 	else
 		m_os << " SYSTEM \'" << sysid << '\'';
 	m_os << '>';
-	if (m_wrap)
+	if (m_wrap_prolog)
 		m_os << endl;
 }
 
@@ -197,6 +201,7 @@ void writer::start_element(const string& qname)
 	m_stack.push(qname);
 	m_element_open = true;
 	m_wrote_element = false;
+	m_prolog = false;
 }
 
 void writer::end_element()
@@ -286,7 +291,7 @@ void writer::comment(const string& text)
 		
 		m_os << "-->";
 		
-		if (m_wrap)
+		if ((m_prolog and m_wrap_prolog) or (not m_prolog and m_wrap))
 			m_os << endl;
 	}
 }
@@ -303,7 +308,7 @@ void writer::processing_instruction(const string& target,
 
 	m_os << "<?" << target << ' ' << text << "?>";
 
-	if (m_wrap)
+	if ((m_prolog and m_wrap_prolog) or (not m_prolog and m_wrap))
 		m_os << endl;
 }
 

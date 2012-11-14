@@ -399,24 +399,29 @@ void document::child(element* e)
 	return m_impl->m_root.child_element(e);
 }
 
-element_set document::find(const std::string& path) const
+element_set document::find(const char* path) const
 {
 	return m_impl->m_root.find(path);
 }
 
-element* document::find_first(const std::string& path) const
+element* document::find_first(const char* path) const
 {
 	return m_impl->m_root.find_first(path);
 }
 
-element_set document::find(const xpath& path) const
+void document::find(const char* path, node_set& nodes) const
 {
-	return m_impl->m_root.find(path);
+	m_impl->m_root.find(path, nodes);
 }
 
-element* document::find_first(const xpath& path) const
+void document::find(const char* path, element_set& elements) const
 {
-	return m_impl->m_root.find_first(path);
+	m_impl->m_root.find(path, elements);
+}
+
+node* document::find_first_node(const char* path) const
+{
+	return m_impl->m_root.find_first_node(path);
 }
 
 void document::base_dir(const fs::path& path)

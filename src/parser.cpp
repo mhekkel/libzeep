@@ -3368,8 +3368,8 @@ void parser_imp::element(doctype::validator& valid)
 	else
 		uri = ns.default_ns();
 
-	// sort the attributes
-	attrs.sort(boost::bind(&detail::attr::m_name, _1) < boost::bind(&detail::attr::m_name, _2));
+	// sort the attributes (why? disabled to allow similar output)
+//	attrs.sort(boost::bind(&detail::attr::m_name, _1) < boost::bind(&detail::attr::m_name, _2));
 
 	if (m_lookahead == '/')
 	{
