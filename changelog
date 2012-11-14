@@ -9,6 +9,10 @@ Version 2.9.0
   for all elements that match a given xpath.
 - ISO8859-1 support (finally)
 - some xpath additions (matches e.g.)
+- changed signature of various find routines to work with const char*
+- changed authentication mechanism in webapp to allow multiple realms
+- some small changes in writing out XML documents/xml::writer
+- attributes are no longer sorted when parsing a document
 
 Version 2.8.2
 

@@ -352,14 +352,29 @@ void container::remove(node_ptr n)
 //#endif
 }
 
-element_set container::find(const xpath& path) const
+//element_set container::find(const xpath& path) const
+//{
+//	return path.evaluate<element>(*this);
+//}
+//
+//element* container::find_first(const xpath& path) const
+//{
+//	element_set s = path.evaluate<element>(*this);
+//	
+//	element* result = nullptr;
+//	if (not s.empty())
+//		result = s.front();
+//	return result;
+//}
+
+element_set container::find(const char* path) const
 {
-	return path.evaluate<element>(*this);
+	return xpath(path).evaluate<element>(*this);
 }
 
-element* container::find_first(const xpath& path) const
+element* container::find_first(const char* path) const
 {
-	element_set s = path.evaluate<element>(*this);
+	element_set s = xpath(path).evaluate<element>(*this);
 	
 	element* result = nullptr;
 	if (not s.empty())
@@ -367,16 +382,21 @@ element* container::find_first(const xpath& path) const
 	return result;
 }
 
-element_set container::find(const std::string& path) const
+void container::find(const char* path, node_set& nodes) const
 {
-	return xpath(path).evaluate<element>(*this);
+	nodes = xpath(path).evaluate<node>(*this);
 }
 
-element* container::find_first(const std::string& path) const
+void container::find(const char* path, element_set& elements) const
 {
-	element_set s = xpath(path).evaluate<element>(*this);
+	elements = xpath(path).evaluate<element>(*this);
+}
+
+node* container::find_first_node(const char* path) const
+{
+	node_set s = xpath(path).evaluate<node>(*this);
 	
-	element* result = nullptr;
+	node* result = nullptr;
 	if (not s.empty())
 		result = s.front();
 	return result;

@@ -125,7 +125,7 @@ void webapp::handle_request(
 	}
 	catch (unauthorized_exception& e)
 	{
-		create_unauth_reply(e.m_stale, rep);
+		create_unauth_reply(e.m_stale, e.m_realm, rep);
 	}
 	catch (status_type& s)
 	{
@@ -140,7 +140,7 @@ void webapp::handle_request(
 	}
 }
 
-void webapp::create_unauth_reply(bool stale, reply& rep)
+void webapp::create_unauth_reply(bool stale, const string& realm, reply& rep)
 {
 	rep = reply::stock_reply(unauthorized);
 }

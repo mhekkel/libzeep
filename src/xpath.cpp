@@ -2635,6 +2635,16 @@ xpath::xpath(const string& path)
 	m_impl->parse(path);
 }
 
+xpath::xpath(const char* path)
+	: m_impl(new xpath_imp())
+{
+	string p;
+	if (path != nullptr)
+		p = path;
+	
+	m_impl->parse(p);
+}
+
 xpath::xpath(const xpath& rhs)
 	: m_impl(rhs.m_impl)
 {

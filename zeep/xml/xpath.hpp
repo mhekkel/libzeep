@@ -52,6 +52,7 @@ class xpath
 {
   public:
 							xpath(const std::string& path);
+							xpath(const char* path);
 							xpath(const xpath& rhs);
 	xpath&					operator=(const xpath&);
 

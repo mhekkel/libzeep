@@ -84,12 +84,17 @@ class document
 	void				child(element* e);
 	
 	// helper functions
-	element_set			find(const std::string& path) const;	///< Return all zeep::xml::elements that match the XPath query \a path
-	element*			find_first(const std::string& path) const;
-																///< Return the first zeep::xml::element that matches the XPath query \a path
+	element_set			find(const std::string& path) const			///< Return all zeep::xml::elements that match the XPath query \a path
+																	{ return find(path.c_str()); }
+	element*			find_first(const std::string& path) const	///< Return the first zeep::xml::element that matches the XPath query \a path
+																	{ return find_first(path.c_str()); }
 
-	element_set			find(const xpath& path) const;			///< Return all zeep::xml::elements that match the XPath query \a path
-	element*			find_first(const xpath& path) const;	///< Return the first zeep::xml::element that matches the XPath query \a path
+	element_set			find(const char* path) const;				///< Return all zeep::xml::elements that match the XPath query \a path
+	element*			find_first(const char* path) const;			///< Return the first zeep::xml::element that matches the XPath query \a path
+
+	void				find(const char* path, node_set& nodes) const;	///< Return all zeep::xml::nodes (attributes or elements) that match the XPath query \a path
+	void				find(const char* path, element_set& elements) const;	///< Return all zeep::xml::elements that match the XPath query \a path
+	node*				find_first_node(const char* path) const;		///< Return the first zeep::xml::node (attribute or element) that matches the XPath query \a path
 
 	/// Compare two xml documents
 	bool				operator==(const document& doc) const;

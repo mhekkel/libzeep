@@ -47,6 +47,9 @@ class writer
 	//! default is to wrap XML files
 	void			set_wrap(bool flag)								{ m_wrap = flag; }
 
+	//! default is to wrap XML files
+	void			set_wrap_prolog(bool flag)						{ m_wrap_prolog = flag; }
+
 	//! if the trim flag is set, all whitespace will be trimmed to one space exactly
 	void			set_trim(bool flag)								{ m_trim = flag; }
 
@@ -104,6 +107,7 @@ class writer
 	float			m_version;
 	bool			m_write_xml_decl;
 	bool			m_wrap;
+	bool			m_wrap_prolog;
 	bool			m_collapse_empty;
 	bool			m_escape_whitespace;
 	bool			m_trim;
@@ -114,6 +118,7 @@ class writer
 	std::stack<std::string>
 					m_stack;
 	bool			m_wrote_element;
+	bool			m_prolog;
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
