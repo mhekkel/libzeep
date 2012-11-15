@@ -317,6 +317,12 @@ class dispatcher
 						}
 
 	/// \brief Dispatch a SOAP message and return the result
+	xml::element*		dispatch(xml::element* in)
+						{
+							return dispatch(in->name(), in);
+						}
+
+	/// \brief Dispatch a SOAP message and return the result
 	xml::element*		dispatch(const std::string& action, xml::element* in)
 						{
 //							if (in->ns() != m_ns)
