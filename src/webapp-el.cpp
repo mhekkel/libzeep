@@ -26,6 +26,27 @@ namespace ba = boost::algorithm;
 namespace zeep { namespace http {
 namespace el
 {
+	
+#define ZEEP_DEFINE_AS_INT(T) \
+template<> T object::as<T>() const					\
+{													\
+	T result = 0;									\
+													\
+	if (m_impl)										\
+		result = static_cast<T>(m_impl->to_int());	\
+													\
+	return result;									\
+}
+
+ZEEP_DEFINE_AS_INT(int8)
+ZEEP_DEFINE_AS_INT(uint8)
+ZEEP_DEFINE_AS_INT(int16)
+ZEEP_DEFINE_AS_INT(uint16)
+ZEEP_DEFINE_AS_INT(int32)
+ZEEP_DEFINE_AS_INT(uint32)
+ZEEP_DEFINE_AS_INT(int64)
+ZEEP_DEFINE_AS_INT(uint64)	
+	
 namespace detail
 {
 
@@ -198,15 +219,15 @@ class vector_object_impl : public detail::base_array_object_impl
 						return m_v[ix];
 					}
 
-	virtual object&	operator[](uint32 ix)
+	virtual object&	operator[](const object& index)
 					{
-						return m_v[ix];
+						return m_v[index.as<uint32>()];
 					}
 
 	virtual const object
-					operator[](uint32 ix) const
+					operator[](const object& index) const
 					{
-						return m_v[ix];
+						return m_v[index.as<uint32>()];
 					}
 
 	virtual void	print(ostream& os) const
@@ -721,28 +742,6 @@ bool object::empty() const
 	return result;
 }
 
-#define ZEEP_DEFINE_AS_INT(T) \
-template<> T object::as<T>() const					\
-{													\
-	T result = 0;									\
-													\
-	if (m_impl)										\
-		result = static_cast<T>(m_impl->to_int());	\
-													\
-	return result;									\
-}
-
-ZEEP_DEFINE_AS_INT(int8)
-ZEEP_DEFINE_AS_INT(uint8)
-ZEEP_DEFINE_AS_INT(int16)
-ZEEP_DEFINE_AS_INT(uint16)
-ZEEP_DEFINE_AS_INT(int32)
-ZEEP_DEFINE_AS_INT(uint32)
-ZEEP_DEFINE_AS_INT(int64)
-ZEEP_DEFINE_AS_INT(uint64)
-
-//ZEEP_DEFINE_AS_INT(uint64)
-
 template<> string object::as<string>() const
 {
 	string result;
@@ -801,46 +800,67 @@ const object object::operator[](const char* name) const
 	return object();
 }
 
-const object object::operator[](uint32 ix) const
+const object object::operator[](const object& index) const
 {
 	object result;
 
-	const detail::base_array_object_impl* impl = dynamic_cast<const detail::base_array_object_impl*>(m_impl);
-	if (impl != nullptr and ix < impl->count())
-		result = impl->at(ix);
+	switch (type())
+	{
+		case array_type:
+		{
+			const detail::base_array_object_impl* impl = static_cast<const detail::base_array_object_impl*>(m_impl);
+			if (impl != nullptr and index.as<uint32>() < impl->count())
+				result = impl->at(index.as<uint32>());
+			break;
+		}
+		
+		case struct_type:
+		{
+			const detail::base_struct_object_impl* impl = static_cast<const detail::base_struct_object_impl*>(m_impl);
+			result = impl->field(index.as<string>());
+			break;
+		}
+	}
 	
 	return result;
 }
 
 object& object::operator[](const string& name)
 {
-	struct_object_impl* impl = dynamic_cast<struct_object_impl*>(m_impl);
-	
-	if (impl == nullptr)
-	{
-		if (m_impl != nullptr)
-			m_impl->release();
-		m_impl = impl = new struct_object_impl();
-	}
-
-	return impl->field(name);
+	if (name.empty())
+		throw exception("invalid empty name for structure object");
+	return operator[](object(name));
 }
 
 object& object::operator[](const char* name)
 {
 	if (name == nullptr)
 		throw exception("invalid empty name for structure object");
-	return operator[](string(name));
+	return operator[](object(name));
 }
 
-object& object::operator[](uint32 ix)
+object& object::operator[](const object& index)
 {
-	detail::base_array_object_impl* impl = dynamic_cast<detail::base_array_object_impl*>(m_impl);
-	if (impl != nullptr and ix < impl->count())
-		return impl->at(ix);
-	
-	throw exception("index out of bounds or object is not an array");
-	return *this;
+	if (type() == array_type)
+	{
+		vector_object_impl* impl = static_cast<vector_object_impl*>(m_impl);
+		return impl->at(index.as<uint32>());
+	}
+	else if (type() == struct_type)
+	{
+		struct_object_impl* impl = static_cast<struct_object_impl*>(m_impl);
+		return impl->field(index.as<string>());
+	}
+	else
+	{
+		if (m_impl != nullptr)
+			m_impl->release();
+
+		struct_object_impl* impl;
+		m_impl = impl = new struct_object_impl();
+
+		return impl->field(index.as<string>());	
+	}
 }
 
 bool object::operator<(const object& rhs) const
@@ -1535,11 +1555,13 @@ object interpreter::parse_primary_expr()
 				{
 					match(m_lookahead);
 					
-					uint32 index = static_cast<uint32>(m_token_number);
-					match(elt_number);
+					object index = parse_expr();
 					match(elt_rbracket);
 					
-					result = const_cast<object&>(result)[index];
+					if (index.empty() or (result.type() != object::array_type and result.type() != object::struct_type))
+						result = object();
+					else
+						result = const_cast<object&>(result)[index];
 					continue;
 				}
 
