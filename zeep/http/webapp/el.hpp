@@ -108,11 +108,11 @@ class object
 
 	const object operator[](const std::string& name) const;
 	const object operator[](const char* name) const;
-	const object operator[](uint32 ix) const;
+	const object operator[](const object& index) const;
 
 	object&		operator[](const std::string& name);
 	object&		operator[](const char* name);
-	object&		operator[](uint32 ix);
+	object&		operator[](const object& index);
 	
 	size_t		count() const;
 	bool		empty() const;
