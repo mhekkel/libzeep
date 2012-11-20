@@ -221,8 +221,8 @@ class scope
 	template<typename T>
 	void			put(const std::string& name, const T& value);
 
-	template<typename T>
-	void			put(const std::string& name, T* begin, T* end);
+	template<typename ForwardIterator>
+	void			put(const std::string& name, ForwardIterator begin, ForwardIterator end);
 
 	const object&	lookup(const std::string& name) const;
 	const object&	operator[](const std::string& name) const;
@@ -266,12 +266,12 @@ void scope::put(
 	m_data[name] = value;
 }
 
-template<typename T>
+template<typename ForwardIterator>
 inline
 void scope::put(
 	const std::string&	name,
-	T*				begin,
-	T*				end)
+	ForwardIterator	begin,
+	ForwardIterator	end)
 {
 	std::vector<object> elements;
 	while (begin != end)

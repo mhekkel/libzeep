@@ -552,6 +552,13 @@ void webapp::process_option(
 	fs::path			dir)
 {
 	string value = node->get_attribute("value");
+	if (not value.empty())
+	{
+		el::object o;
+		evaluate_el(scope, value, o);
+		value = o.as<string>();
+	}
+
 	string selected = node->get_attribute("selected");
 	if (not selected.empty())
 	{

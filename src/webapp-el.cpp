@@ -1599,6 +1599,8 @@ void evaluate_el(
 		result = interpreter.evaluate(m[1]);
 //cerr << "evaluated \"" << text << "\" => \"" << result << '"' << endl;
 	}
+	else
+		result = text;
 }
 
 bool evaluate_el(

@@ -121,7 +121,7 @@ class data_source
 {
   public:
 					data_source(data_source* next)
-						: m_next(next), m_base("."), m_encoding(enc_UTF8)
+						: m_next(next), m_base("."), m_encoding(enc_UTF8), m_line_nr(1)
 					{
 						static int sNextID = 0;
 						m_id = sNextID++;
@@ -151,6 +151,8 @@ class data_source
 	encoding_type	encoding() const								{ return m_encoding; }
 
 	int				id() const										{ return m_id; }
+	
+	int				get_line_nr() const								{ return m_line_nr; }
 
   protected:
 					data_source(const data_source&);
@@ -160,6 +162,7 @@ class data_source
 	string			m_base;
 	encoding_type	m_encoding;
 	int				m_id;			// for nesting checks
+	int				m_line_nr;		// for reporting errors
 };
 
 // --------------------------------------------------------------------
@@ -368,6 +371,9 @@ unicode istream_data_source::get_next_char()
 		ch = '\n';
 	}
 	
+	if (ch == '\n')
+		++m_line_nr;
+	
 	return ch;
 }
 
@@ -424,6 +430,9 @@ unicode	string_data_source::get_next_char()
 			}
 		}
 	}
+
+	if (result == '\n')
+		++m_line_nr;
 
 	return result;
 }
@@ -972,7 +981,7 @@ void parser_imp::match(int token)
 void parser_imp::not_well_formed(const string& msg) const
 {
 	stringstream s;
-	s << "Document not well-formed: " << msg;
+	s << "Document (line: " << m_data_source->get_line_nr() << ") not well-formed: " << msg;
 	throw not_wf_exception(s.str());
 }
 
@@ -981,7 +990,7 @@ void parser_imp::not_valid(const string& msg) const
 	if (m_validating)
 	{
 		stringstream s;
-		s << "Document invalid: " << msg;
+		s << "Document (line: " << m_data_source->get_line_nr() << ") invalid: " << msg;
 		throw invalid_exception(s.str());
 	}
 	else
