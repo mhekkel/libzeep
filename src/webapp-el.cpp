@@ -925,7 +925,7 @@ object operator+(const object& a, const object& b)
 {
 	object result;
 	
-	if (typeid(*a.m_impl) == typeid(*b.m_impl))
+	if (a.m_impl != nullptr and b.m_impl != nullptr and typeid(*a.m_impl) == typeid(*b.m_impl))
 	{
 		if (dynamic_cast<int_object_impl*>(a.m_impl))
 			result = static_cast<int_object_impl*>(a.m_impl)->m_v + static_cast<int_object_impl*>(b.m_impl)->m_v;

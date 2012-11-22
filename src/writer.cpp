@@ -86,6 +86,8 @@ void writer::xml_decl(bool standalone)
 		
 		if (m_wrap_prolog)
 			m_os << endl;
+		
+		m_write_xml_decl = false;
 	}
 }
 
@@ -95,6 +97,8 @@ void writer::doctype(const string& root, const string& pubid, const string& dtd)
 	
 	if (not pubid.empty())
 		m_os << " PUBLIC \"" << pubid << "\"";
+	else
+		m_os << " SYSTEM";
 	
 	m_os << " \"" << dtd << "\">";
 
@@ -125,7 +129,7 @@ void writer::empty_doctype(const string& root, const string& dtd)
 	m_os << "<!DOCTYPE " << root;
 	if (not dtd.empty())
 		m_os << " \"" << dtd << '"';
-	m_os << "]>";
+	m_os << ">";
 
 	if (m_wrap_prolog)
 		m_os << endl;
