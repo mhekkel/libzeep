@@ -294,21 +294,24 @@ void container::append(node_ptr n)
 //n->validate();
 //#endif
 
-	if (n->m_parent != nullptr)
-		throw exception("attempt to append node that has already a parent");
-	if (n == nullptr)
-		throw exception("attempt to append nullptr node");
-	
-	if (m_child == nullptr)
+	if (n != nullptr)
 	{
-		m_last = m_child = n;
-		m_child->m_next = m_child->m_prev = nullptr;
-		n->parent(this);
-	}
-	else
-	{
-		m_last->insert_sibling(n, nullptr);
-		m_last = n;
+		if (n->m_parent != nullptr)
+			throw exception("attempt to append node that has already a parent");
+		if (n == nullptr)
+			throw exception("attempt to append nullptr node");
+		
+		if (m_child == nullptr)
+		{
+			m_last = m_child = n;
+			m_child->m_next = m_child->m_prev = nullptr;
+			n->parent(this);
+		}
+		else
+		{
+			m_last->insert_sibling(n, nullptr);
+			m_last = n;
+		}
 	}
 
 //#if DEBUG
@@ -324,26 +327,29 @@ void container::remove(node_ptr n)
 //n->validate();
 //#endif
 	
-	if (n->m_parent != this)
-		throw exception("attempt to remove node whose parent is invalid");
-	if (n == nullptr)
-		throw exception("attempt to remove nullptr node");
-	
-	if (m_child == n)
+	if (n != nullptr)
 	{
-		m_child = m_child->m_next;
-		if (m_child != nullptr)
-			m_child->m_prev = nullptr;
+		if (n->m_parent != this)
+			throw exception("attempt to remove node whose parent is invalid");
+		if (n == nullptr)
+			throw exception("attempt to remove nullptr node");
+		
+		if (m_child == n)
+		{
+			m_child = m_child->m_next;
+			if (m_child != nullptr)
+				m_child->m_prev = nullptr;
+			else
+				m_last = nullptr;
+			n->m_next = n->m_prev = n->m_parent = nullptr;
+		}
 		else
-			m_last = nullptr;
-		n->m_next = n->m_prev = n->m_parent = nullptr;
-	}
-	else
-	{
-		if (m_last == n)
-			m_last = n->m_prev;
-
-		m_child->remove_sibling(n);
+		{
+			if (m_last == n)
+				m_last = n->m_prev;
+	
+			m_child->remove_sibling(n);
+		}
 	}
 	
 //#if DEBUG
