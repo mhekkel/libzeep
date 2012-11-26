@@ -331,8 +331,6 @@ void container::remove(node_ptr n)
 	{
 		if (n->m_parent != this)
 			throw exception("attempt to remove node whose parent is invalid");
-		if (n == nullptr)
-			throw exception("attempt to remove nullptr node");
 		
 		if (m_child == n)
 		{
@@ -627,66 +625,6 @@ void container::validate()
 //#endif
 	}
 }
-
-//void container::private_insert(node* position, node* n)
-//{
-//	if (n->m_parent != nullptr or n->m_next != nullptr or n->m_prev != nullptr)
-//		throw exception("attempt to insert a node that has parent and/or next/prev");
-//	
-//	if (position == nullptr)
-//		push_back(n);
-//	else
-//	{
-//		if (position->m_parent != this)
-//			throw exception("position is not a child node of this container");
-//
-//		node* child = m_child;
-//		while (child != nullptr and child != position)
-//			child = child->m_next;
-//		if (child == nullptr)
-//			throw zeep::exception("position is not a valid child node");
-//		
-//		n->parent(this);
-//		n->m_next = position;
-//		position->m_prev = n;
-//
-//		n->m_prev = position->m_prev;
-//		if (n->m_prev != nullptr)
-//			n->m_prev->m_next = n;
-//		
-//		if (position == m_child)
-//			m_child = n;
-//	}
-//}
-//
-//void container::private_erase(node* n)
-//{
-////	if (n == nullptr)
-////		throw exception("attempt to erase nullptr node");
-////	
-////	if (n->m_parent != this)
-////		throw exception("cannot erase node, invalid parent");
-////	
-////	if (m_child == n)
-////	{
-////		m_child = m_child->m_next;
-////		if (m_child != nullptr)
-////			m_child->m_prev = nullptr;
-////	}
-////	else
-////		m_child->remove_sibling(n);
-////	
-////	if (n == m_last)
-////	{
-////		m_last = m_child;
-////		while (m_last->m_next != nullptr)
-////			m_last = m_last->m_next;
-////	}
-////	
-////	n->m_next = n->m_prev = n->m_parent = nullptr;
-//	remove(n);
-//	delete n;
-//}
 
 // --------------------------------------------------------------------
 // root_node

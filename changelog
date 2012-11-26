@@ -17,6 +17,8 @@ Version 2.9.0
 - process value tag of mrs:option tag
 - el processing returns original string if it does not contain an expression
 - in expression language, support var1[var2] constructs
+- fix in writing doctype declaration
+- insert/erase implementations of zeep::xml::node...
 
 Version 2.8.2
 
