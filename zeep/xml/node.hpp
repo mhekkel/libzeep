@@ -200,9 +200,6 @@ class container : public node
 						operator const pointer() const				{ return m_current; }
 						operator pointer()							{ return m_current; }
 
-		const pointer	base() const								{ return m_current; }
-		pointer			base()										{ return m_current; }
-
 	  private:
 		NodeType*		m_current;
 	};
@@ -821,33 +818,39 @@ template<class NodeType>
 container::basic_iterator<NodeType>
 container::insert(basic_iterator<NodeType> position, NodeType* n)
 {
-	private_insert(position.base(), n);
+	insert(*position, n);
 	return basic_iterator<NodeType>(n);
 }
 
 template<class Iterator>
 void container::insert(Iterator position, Iterator first, Iterator last)
 {
-	node* p = position.base();
+	node* p = *position;
 	for (Iterator i = first; i != last; ++i)
 	{
-		private_insert(p, i.base());
-		p = i.base();
+		insert(p, *i);
+		p = *i;
 	}
 }
 
 template<class Iterator>
 void container::erase(Iterator position)
 {
-	remove(position.base());
-	delete position.base();
+	node* n = *position;
+
+	remove(n);
+	delete n;
 }
 
 template<class Iterator>
 void container::erase(Iterator first, Iterator last)
 {
-	for (Iterator i = first; i != last; ++i)
-		private_erase(i.base());
+	while (first != last)
+	{
+		node* n = *first++;
+		remove(n);
+		delete n;
+	}
 }
 
 }
