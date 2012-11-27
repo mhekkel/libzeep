@@ -579,7 +579,14 @@ container::node_iterator container::insert(node* position, node* n)
 //	position->validate();
 //#endif
 	
-	if (m_child == position)	// n becomes the first in the list
+	if (m_child == nullptr)
+	{
+		if (position != nullptr) throw exception("invalid position for empty container");
+		m_child = n;
+		m_child->m_next = m_child->m_prev = nullptr;
+		n->parent(this);
+	}
+	else if (m_child == position)	// n becomes the first in the list
 	{
 		n->parent(this);
 		n->m_next = m_child;
