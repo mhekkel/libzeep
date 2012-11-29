@@ -65,7 +65,8 @@ void webapp::handle_request(
 	string uri = req.uri;
 
 	// shortcut, only handle GET, POST and PUT
-	if (req.method != "GET" and req.method != "POST" and req.method != "PUT")
+	if (req.method != "GET" and req.method != "POST" and req.method != "PUT" and
+		req.method != "OPTIONS" and req.method != "HEAD")
 	{
 		rep = reply::stock_reply(bad_request);
 		return;
@@ -112,14 +113,27 @@ void webapp::handle_request(
 			uri.erase(s, string::npos);
 		scope.put("baseuri", uri);
 		
-		init_scope(scope);
-		
 		handler_map::iterator handler = m_dispatch_table.find(uri);
 		if (handler == m_dispatch_table.end())
 			handler = m_dispatch_table.find(action);
 
 		if (handler != m_dispatch_table.end())
-			handler->second(req, scope, rep);
+		{
+			if (req.method == "OPTIONS")
+			{
+				rep = reply::stock_reply(ok);
+				rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");
+				rep.set_content("", "text/plain");
+			}
+			else
+			{
+				init_scope(scope);
+				handler->second(req, scope, rep);
+				
+				if (req.method == "HEAD")
+					rep.set_content("", rep.get_content_type());
+			}
+		}
 		else
 			throw not_found;
 	}

@@ -29,6 +29,8 @@ struct request
 	// for redirects...
 	std::string		local_address;			///< The address the request was received upon
 	unsigned short	local_port;				///< The port number the request was received upon
+
+	float			accept(const char* type) const;	///< Return the value in the Accept header for type
 };
 
 }

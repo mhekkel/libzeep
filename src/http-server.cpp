@@ -209,10 +209,10 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		// some checks (we're a http/1.1 server, right?)
 		
 		if (host.empty())
-			rep = reply::stock_reply(bad_request);
-		else
-			// do the actual work.
-			handle_request(req, rep);
+			host = boost::lexical_cast<string>(addr);
+
+		// do the actual work.
+		handle_request(req, rep);
 		
 		// work around buggy IE...
 		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
