@@ -610,6 +610,12 @@ void webapp::process_checkbox(
 	fs::path			dir)
 {
 	string name = node->get_attribute("name");
+	if (not name.empty())
+	{
+		el::object o;
+		evaluate_el(scope, name, o);
+		name = o.as<string>();
+	}
 
 	bool checked = false;
 	if (not node->get_attribute("checked").empty())

@@ -32,9 +32,16 @@ namespace http {
 struct unauthorized_exception : public std::exception
 {
 				unauthorized_exception(bool stale, const std::string& realm)
-					: m_stale(stale), m_realm(realm) {}
+					: m_stale(stale)
+				{
+					std::string::size_type n = realm.length();
+					if (n >= sizeof(m_realm))
+						n = sizeof(m_realm) - 1;
+					realm.copy(m_realm, n);
+					m_realm[n] = 0;
+				}
 	bool		m_stale;			///< Is true when the authorization information is valid but stale (too old)
-	std::string	m_realm;			///< Realm for which the authorization failed
+	char		m_realm[256];			///< Realm for which the authorization failed
 };
 
 #ifndef BOOST_XPRESSIVE_DOXYGEN_INVOKED
