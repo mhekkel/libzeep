@@ -50,6 +50,10 @@ class server : public request_handler
 	std::string			address() const				{ return m_address; }
 	unsigned short		port() const				{ return m_port; }
 
+	/// get_io_service has to be public since we need it to call notify_fork from child code
+	boost::asio::io_service&
+						get_io_service()				{ return m_io_service; }
+
   protected:
 
 	virtual void		handle_request(const request& req, reply& rep);
@@ -64,9 +68,6 @@ class server : public request_handler
 							const request& req, reply& rep);
 
 	void				handle_accept(const boost::system::error_code& ec);
-
-	boost::asio::io_service&
-						get_io_service()				{ return m_io_service; }
 
 	boost::asio::io_service			m_io_service;
 	boost::shared_ptr<boost::asio::ip::tcp::acceptor>
