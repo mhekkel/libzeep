@@ -243,7 +243,12 @@ void webapp::load_template(
 {
 	fs::ifstream data(m_docroot / file, ios::binary);
 	if (not data.is_open())
-		throw exception((boost::format("file not found: '%1%'") % (m_docroot / file)).str());
+	{
+		if (not fs::exists(m_docroot))
+			throw exception((boost::format("configuration error, docroot not found: '%1%'") % m_docroot).str());
+		else
+			throw exception((boost::format("file not found: '%1%'") % (m_docroot / file)).str());
+	}
 	doc.read(data);
 }
 
