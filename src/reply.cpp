@@ -91,8 +91,8 @@ reply::reply(int version_major, int version_minor)
 	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
 	
 	stringstream s;
-	s.imbue(std::locale(std::cout.getloc(), lf));
-	
+	s.imbue(std::locale(std::locale(), lf));
+
 	s << t;
 
 	set_header("Date", s.str());
