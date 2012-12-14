@@ -736,7 +736,8 @@ bool object::empty() const
 		case null_type:		result = true; break;
 		case string_type:	result = m_impl->to_str().empty(); break;
 		case array_type:	result = static_cast<detail::base_array_object_impl*>(m_impl)->count() == 0; break;
-		default:			result = true; break;
+		case number_type:	result = false; break;
+		case struct_type:	result = false; break;
 	}
 	
 	return result;
@@ -972,7 +973,7 @@ object operator*(const object& a, const object& b)
 
 object operator/(const object& a, const object& b)
 {
-	return object(a.as<double>() * b.as<double>());
+	return object(a.as<double>() / b.as<double>());
 }
 
 object operator%(const object& a, const object& b)

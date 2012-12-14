@@ -19,6 +19,7 @@ Version 2.9.0
 - in expression language, support var1[var2] constructs
 - fix in writing doctype declaration
 - insert/erase implementations of zeep::xml::node...
+- fixed bug in el implementation (dividing numbers)
 
 Version 2.8.2
 
