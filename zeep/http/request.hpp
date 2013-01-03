@@ -31,6 +31,7 @@ struct request
 	unsigned short	local_port;				///< The port number the request was received upon
 
 	float			accept(const char* type) const;	///< Return the value in the Accept header for type
+	bool			is_mobile() const;		///< Check HTTP_USER_AGENT to see if it is a mobile client
 };
 
 }
