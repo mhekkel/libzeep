@@ -9,8 +9,9 @@
 # makefile to match your current installation.
 
 #BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
-#BOOST_LIB_DIR		= $(HOME)/projects/boost-1.48/lib
-#BOOST_INC_DIR		= $(HOME)/projects/boost-1.48/include
+BOOST				= $(HOME)/projects/boost
+BOOST_LIB_DIR		= $(BOOST)/lib
+BOOST_INC_DIR		= $(BOOST)/include
 
 PREFIX				?= /usr/local
 LIBDIR				?= $(PREFIX)/lib
@@ -30,7 +31,7 @@ DIST_NAME			= libzeep-$(VERSION)
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
-CC					?= c++
+CXX					?= c++
 CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared -std=c++0x
 #CFLAGS				+= -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
 CFLAGS				+= -Wall
@@ -45,6 +46,7 @@ OBJECTS = \
 	obj/node.o \
 	obj/soap-envelope.o \
 	obj/parser.o \
+	obj/request.o \
 	obj/request_parser.o \
 	obj/reply.o \
 	obj/connection.o \
@@ -63,7 +65,7 @@ libzeep.a: $(OBJECTS)
 	ld -r -o $@ $(OBJECTS)
 
 $(LIB_NAME): $(OBJECTS)
-	$(CC) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
+	$(CXX) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
 
 $(SO_NAME): $(LIB_NAME)
 	ln -fs $(LIB_NAME) $@
@@ -73,7 +75,7 @@ libzeep.so: $(SO_NAME)
 
 # assuming zeep-test is build when install was not done already
 zeep-test: zeep-test.cpp libzeep.a
-	$(CC) $(BOOST_INC_DIR:%=-I%) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
+	$(CXX) $(BOOST_INC_DIR:%=-I%) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
 
 install-libs: libzeep.so
 	install -d $(LIBDIR)
@@ -126,7 +128,7 @@ dist: lib
 	cp $(DIST_NAME).tgz ../ppa/libzeep_$(VERSION).orig.tar.gz
 
 obj/%.o: %.cpp | obj
-	$(CC) -MD -c -o $@ $< $(CFLAGS)
+	$(CXX) -MD -c -o $@ $< $(CFLAGS)
 
 obj:
 	mkdir -p obj
