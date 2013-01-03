@@ -112,7 +112,8 @@ void webapp::handle_request(
 		if (s != string::npos)
 			uri.erase(s, string::npos);
 		scope.put("baseuri", uri);
-		
+		scope.put("mobile", req.is_mobile());
+
 		handler_map::iterator handler = m_dispatch_table.find(uri);
 		if (handler == m_dispatch_table.end())
 			handler = m_dispatch_table.find(action);
@@ -128,6 +129,7 @@ void webapp::handle_request(
 			else
 			{
 				init_scope(scope);
+				
 				handler->second(req, scope, rep);
 				
 				if (req.method == "HEAD")
