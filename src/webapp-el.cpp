@@ -821,6 +821,9 @@ const object object::operator[](const object& index) const
 			result = impl->field(index.as<string>());
 			break;
 		}
+		
+		default:
+			; // return null
 	}
 	
 	return result;
@@ -1223,8 +1226,7 @@ void interpreter::get_next_token()
 		els_NumberFraction,
 		els_Name,
 		els_Literal
-	} start, state;
-	start = state = els_Start;
+	} state = els_Start;
 
 	token_type token = elt_undef;
 	double fraction = 1.0;

@@ -249,7 +249,35 @@ void webapp::load_template(
 		if (not fs::exists(m_docroot))
 			throw exception((boost::format("configuration error, docroot not found: '%1%'") % m_docroot).str());
 		else
-			throw exception((boost::format("file not found: '%1%'") % (m_docroot / file)).str());
+		{
+#if defined(_MSC_VER)
+			char msg[1024] = "";
+
+		    DWORD dw = ::GetLastError();
+			if (dw != NO_ERROR)
+			{
+			    char* lpMsgBuf;
+				int m = ::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+					NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
+			
+				if (lpMsgBuf != nullptr)
+				{
+					// strip off the trailing whitespace characters
+					while (m > 0 and isspace(lpMsgBuf[m - 1]))
+						--m;
+					lpMsgBuf[m] = 0;
+
+					strncpy(msg, lpMsgBuf, sizeof(msg));
+		
+					::LocalFree(lpMsgBuf);
+				}
+			}
+
+			throw exception((boost::format("error opening: %1% (%2%)") % (m_docroot / file) % msg).str());
+#else
+			throw exception((boost::format("error opening: %1% (%2%)") % (m_docroot / file) % strerror(errno)).str());
+#endif
+		}
 	}
 	doc.read(data);
 }
