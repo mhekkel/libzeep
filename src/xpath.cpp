@@ -1916,13 +1916,12 @@ Token xpath_imp::get_next_token()
 		xps_QName,
 		xps_QName2,
 		xps_Literal
-	} start, state;
-	start = state = xps_Start;
+	} state = xps_Start;
 
 	Token token = xp_Undef;
 	bool variable = false;
 	double fraction = 1.0;
-	unicode quoteChar;
+	unicode quoteChar = 0;
 
 	m_token_string.clear();
 	
