@@ -144,6 +144,7 @@ struct handler_base
 						handler_base(const std::string&	action)
 							: m_action(action)
 							, m_response(action + "Response") {}
+	virtual					~handler_base() {}
 
 	virtual element*	call(element* in) = 0;
 
