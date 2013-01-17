@@ -64,6 +64,7 @@ class preforked_server_base
 
 	struct server_constructor_base
 	{
+		virtual		~server_constructor_base() {}
 		virtual server*	construct() = 0;
 	};
 
