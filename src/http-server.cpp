@@ -192,7 +192,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		if (h.name == "X-Forwarded-For")
 		{
 			client = h.value;
-			string::size_type comma = client.find(", ");
+			string::size_type comma = client.find(',');
 			if (comma != string::npos)
 				client.erase(comma, string::npos);
 		}
