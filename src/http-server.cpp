@@ -185,13 +185,17 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	detail::s_log.reset(new ostringstream);
 	ptime start = second_clock::local_time();
 	
-	boost::asio::ip::address addr;
+	string referer("-"), userAgent("-"), accept, client;
 	
-	string referer("-"), userAgent("-"), accept, host;
 	foreach (const header& h, req.headers)
 	{
-		if (h.name == "Host")
-			host = h.value;
+		if (h.name == "X-Forwarded-For")
+		{
+			client = h.value;
+			string::size_type comma = client.find(", ");
+			if (comma != string::npos)
+				client.erase(comma, string::npos);
+		}
 		else if (h.name == "Referer")
 			referer = h.value;
 		else if (h.name == "User-Agent")
@@ -200,16 +204,14 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 			accept = h.value;
 	}
 	
-	try
+	try		// asking for the remote endpoint address failed
+			// sometimes causing aborting exceptions, so I moved it here.
 	{
-		// asking for the remote endpoint address failed
-		// sometimes causing aborting exceptions, so I moved it here.
-		addr = socket.remote_endpoint().address();
-		
-		// some checks (we're a http/1.1 server, right?)
-		
-		if (host.empty())
-			host = boost::lexical_cast<string>(addr);
+		if (client.empty())
+		{
+			boost::asio::ip::address addr = socket.remote_endpoint().address();
+			client = boost::lexical_cast<string>(addr);
+		}
 
 		// do the actual work.
 		handle_request(req, rep);
@@ -239,7 +241,11 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 
 		local_date_time start_local(start, time_zone_ptr());
 		
-		cout << addr << ' '
+		string extra = detail::s_log->str();
+		if (extra.empty())
+			extra = "-";
+		
+		cout << client << ' '
 			 << "-" << ' '
 			 << "-" << ' '
 			 << start_local << ' '
@@ -249,7 +255,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 			 << rep.get_size() << ' '
 			 << '"' << referer << '"' << ' '
 			 << '"' << userAgent << '"' << ' '
-			 << detail::s_log->str() << endl;
+			 << extra << endl;
 	}
 	catch (...) {}
 }
