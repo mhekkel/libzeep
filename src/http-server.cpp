@@ -192,9 +192,13 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		if (h.name == "X-Forwarded-For")
 		{
 			client = h.value;
-			string::size_type comma = client.find(',');
+			string::size_type comma = client.rfind(',');
 			if (comma != string::npos)
-				client.erase(comma, string::npos);
+			{
+				if (comma < client.length() - 1 and client[comma + 1] == ' ')
+					++comma;
+				client = client.substr(comma + 1, string::npos);
+			}
 		}
 		else if (h.name == "Referer")
 			referer = h.value;
@@ -216,7 +220,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 		// do the actual work.
 		handle_request(req, rep);
 		
-		// work around buggy IE...
+		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
 			not ba::contains(accept, "application/xhtml+xml") and
 			ba::contains(userAgent, "MSIE"))
