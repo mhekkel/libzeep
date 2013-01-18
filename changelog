@@ -20,6 +20,9 @@ Version 2.9.0
 - fix in writing doctype declaration
 - insert/erase implementations of zeep::xml::node...
 - fixed bug in el implementation (dividing numbers)
+- extended log format of HTTP server to allow better awstat logs (using the
+  extra fields for SOAP calls). Also writes the X-Forwarded-For client if any.
+ 
 
 Version 2.8.2
 
