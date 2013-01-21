@@ -106,6 +106,7 @@ string encode_url(const string& s)
 // http::server
 
 server::server()
+	: m_log_forwarded(false)
 {
 }
 
@@ -189,7 +190,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	
 	foreach (const header& h, req.headers)
 	{
-		if (h.name == "X-Forwarded-For")
+		if (m_log_forwarded and h.name == "X-Forwarded-For")
 		{
 			client = h.value;
 			string::size_type comma = client.rfind(',');
@@ -208,8 +209,8 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 			accept = h.value;
 	}
 	
-	try		// asking for the remote endpoint address failed
-			// sometimes causing aborting exceptions, so I moved it here.
+	try		// asking for the remote endpoint address failed sometimes
+			// causing aborting exceptions, so I moved it here.
 	{
 		if (client.empty())
 		{
