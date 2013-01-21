@@ -47,12 +47,15 @@ class server : public request_handler
 	static std::ostream&
 						log();
 
+	/// log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
+	void				log_forwarded(bool v)		{ m_log_forwarded = v; }
+
 	std::string			address() const				{ return m_address; }
 	unsigned short		port() const				{ return m_port; }
 
 	/// get_io_service has to be public since we need it to call notify_fork from child code
 	boost::asio::io_service&
-						get_io_service()				{ return m_io_service; }
+						get_io_service()			{ return m_io_service; }
 
   protected:
 
@@ -76,6 +79,7 @@ class server : public request_handler
 	boost::shared_ptr<connection>	m_new_connection;
 	std::string						m_address;
 	unsigned short					m_port;
+	bool							m_log_forwarded;
 };
 
 }
