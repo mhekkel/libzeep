@@ -41,6 +41,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	w.set_xml_decl(false);
 	w.set_indent(0);
 	w.set_wrap(false);
+	w.set_wrap_prolog(false);
 	w.set_collapse_empty_elements(false);
 	w.set_escape_whitespace(true);
 	w.set_no_comment(true);
