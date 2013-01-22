@@ -137,5 +137,8 @@ include $(OBJECTS:%.o=%.d)
 
 $(OBJECTS:.o=.d):
 
+test: libzeep.a
+	make -C tests
+
 clean:
 	rm -rf obj/* libzeep.a libzeep.so* zeep-test $(DIST_NAME) $(DIST_NAME).tgz

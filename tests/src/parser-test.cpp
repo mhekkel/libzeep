@@ -219,17 +219,50 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	{
 		cout << "-----------------------------------------------" << endl
 			 << "ID:      " << test.get_attribute("ID") << endl
-			 << "TYPE:    " << test.get_attribute("TYPE") << endl
 			 << "FILE:    " << fs::system_complete(input) << endl
-			 << "SECTION: " << test.get_attribute("SECTIONS") << endl
 			 << "TYPE:    " << test.get_attribute("TYPE") << endl
-			 << test.content() << endl
-			 << endl;
+			 << "SECTION: " << test.get_attribute("SECTIONS") << endl;
+		
+		istringstream s(test.content());
+		for (;;)
+		{
+			string line;
+			getline(s, line);
+			
+			ba::trim(line);
+			
+			if (line.empty())
+			{
+				if (s.eof())
+					break;
+				continue;
+			}
+			
+			cout << "DESCR:   " << line << endl;
+		}
+		
+		cout << endl;
 
 		if (result == false)
 		{
-			cout << "exception: " << error << endl
-				 << endl;
+			istringstream s(error);
+			for (;;)
+			{
+				string line;
+				getline(s, line);
+				
+				ba::trim(line);
+				
+				if (line.empty() and s.eof())
+					break;
+				
+				cout << "  " << line << endl;
+			}
+			
+			cout << endl;
+			
+			
+//			cout << "exception: " << error << endl;
 		}
 	}
 	
