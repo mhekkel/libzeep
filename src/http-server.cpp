@@ -229,29 +229,38 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 
 	try
 	{
-		// protect the output stream from garbled log messages
-		boost::mutex::scoped_lock lock(detail::s_log_lock);
-		
-		using namespace boost::local_time;
-
-		local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
-		cout.imbue(std::locale(std::cout.getloc(), lf));
-
-		local_date_time start_local(start, time_zone_ptr());
-		
-		cout << addr << ' '
-			 << "-" << ' '
-			 << "-" << ' '
-			 << start_local << ' '
-			 << '"' << req.method << ' ' << req.uri << ' '
-			 		<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
-			 << rep.get_status() << ' '
-			 << rep.get_size() << ' '
-			 << '"' << referer << '"' << ' '
-			 << '"' << userAgent << '"' << ' '
-			 << detail::s_log->str() << endl;
+		log_request(addr, req, rep, start, referer, userAgent, detail::s_log->str());
 	}
 	catch (...) {}
+}
+
+void server::log_request(const boost::asio::ip::address& addr,
+	const request& req, const reply& rep,
+	const boost::posix_time::ptime& start,
+	const std::string& referer, const std::string& userAgent,
+	const std::string& entry)
+{
+	using namespace boost::local_time;
+
+	local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
+	cout.imbue(std::locale(std::cout.getloc(), lf));
+
+	local_date_time start_local(start, time_zone_ptr());
+
+	// protect the output stream from garbled log messages
+	boost::mutex::scoped_lock lock(detail::s_log_lock);
+
+	cout << addr << ' '
+		 << "-" << ' '
+		 << "-" << ' '
+		 << start_local << ' '
+		 << '"' << req.method << ' ' << req.uri << ' '
+				<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
+		 << rep.get_status() << ' '
+		 << rep.get_size() << ' '
+		 << '"' << referer << '"' << ' '
+		 << '"' << userAgent << '"' << ' '
+		 << entry << endl;
 }
 
 }

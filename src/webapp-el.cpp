@@ -1117,6 +1117,7 @@ void interpreter::get_next_token()
 		els_Literal
 	} start, state;
 	start = state = els_Start;
+	(void)start;
 
 	token_type token = elt_undef;
 	double fraction = 1.0;

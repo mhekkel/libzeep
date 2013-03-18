@@ -223,7 +223,7 @@ void webapp::handle_file(
 	reply.set_header("Last-Modified", s.str());
 
 
-cerr << s.str() << endl << endl;
+//cerr << s.str() << endl << endl;
 }
 
 void webapp::load_template(

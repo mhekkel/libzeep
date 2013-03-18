@@ -5,7 +5,7 @@
 
 #include <zeep/config.hpp>
 
-#if NO_PREFORK
+#ifdef NO_PREFORK
 #undef SOAP_SERVER_HAS_PREFORK
 #endif
 
@@ -21,6 +21,8 @@
 #include <iostream>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/date_time.hpp>
+#include <boost/optional.hpp>
 
 using namespace std;
 
@@ -53,6 +55,8 @@ struct Hit
 	uint64			v_ulonglong2;
 	long int			v_longlong3;
 	unsigned long int	v_ulonglong3;
+	boost::posix_time::ptime v_ptime;
+	boost::optional<string>  opt_text;
 
 					Hit() : score(0) {}
 	
@@ -74,7 +78,10 @@ struct Hit
 		   & BOOST_SERIALIZATION_NVP(v_ulonglong2)
 		   & BOOST_SERIALIZATION_NVP(v_longlong3)
 		   & BOOST_SERIALIZATION_NVP(v_ulonglong3)
-		   & BOOST_SERIALIZATION_NVP(score);
+		   & BOOST_SERIALIZATION_NVP(v_ptime)
+		   & BOOST_SERIALIZATION_NVP(score)
+		   & BOOST_SERIALIZATION_NVP(opt_text)
+		;
 	}
 };
 
@@ -135,7 +142,24 @@ class my_server : public zeep::server
 							int							maxresultcount,
 							WSSearchNS::FindResult&		out);
 
+	void				DateTimeTest(
+							const boost::posix_time::ptime&
+														in,
+							boost::posix_time::ptime&	out);
+
 	void				ForceStop(string&				out);
+
+  protected:
+	/* Uncomment to have your custom http logger
+	virtual void		log_request(const boost::asio::ip::address& addr,
+							const zeep::http::request& req, const zeep::http::reply& rep,
+							const boost::posix_time::ptime& start,
+							const std::string& referer, const std::string& userAgent,
+							const std::string& entry)
+	{
+		cout << "Not logging :) ..." << endl;
+	}
+	*/
 
   private:
 	string				m_param;
@@ -184,6 +208,12 @@ my_server::my_server(const string& param)
 	
 	register_action("Find", this, &my_server::Find, kFindParameterNames);
 
+	const char* kDateTimeTestParameterNames[] = {
+	 "in", "out"
+	};
+
+	register_action("DateTimeTest", this, &my_server::DateTimeTest, kDateTimeTestParameterNames);
+
 	const char* kForceStopParameterNames[] = {
 		"out"
 	};
@@ -224,13 +254,14 @@ void my_server::Find(
 	log() << db;
 
 	// mock up some fake answer...
-	out.count = 2;
+	out.count = 3;
 
 	WSSearchNS::Hit h;
 	h.db = "sprot";
 	h.id = "104k_thepa";
 	h.score = 1.0f;
 	h.title = "bla bla bla";
+	h.v_ptime = boost::posix_time::microsec_clock::universal_time();
 	
 	out.hits.push_back(h);
 
@@ -238,6 +269,7 @@ void my_server::Find(
 	h.id = "108_lyces";
 	h.score = 0.8f;
 	h.title = "aap <&> noot mies";
+	h.opt_text = "Hallóóów";
 	
 	out.hits.push_back(h);
 
@@ -245,8 +277,18 @@ void my_server::Find(
 	h.id = "param-id";
 	h.score = 0.6f;
 	h.title = m_param;
+	h.opt_text.reset();
 	
 	out.hits.push_back(h);
+}
+
+void my_server::DateTimeTest(
+	const boost::posix_time::ptime&
+								in,
+	boost::posix_time::ptime&	out)
+{
+	log() << in;
+	out = in;
 }
 
 void my_server::ForceStop(
@@ -312,28 +354,38 @@ int main(int argc, const char* argv[])
 	t.join();
 
 #else
-    sigset_t new_mask, old_mask;
-    sigfillset(&new_mask);
-    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
+	for (;;) {
+		sigset_t new_mask, old_mask;
+		sigfillset(&new_mask);
+		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("blabla");
-	server.bind("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server, 2));
+		my_server server("blabla");
+		server.bind("0.0.0.0", 10333);
+		boost::thread t(boost::bind(&my_server::run, &server, 2));
 
-    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
-	// Wait for signal indicating time to shut down.
-	sigset_t wait_mask;
-	sigemptyset(&wait_mask);
-	sigaddset(&wait_mask, SIGINT);
-	sigaddset(&wait_mask, SIGQUIT);
-	sigaddset(&wait_mask, SIGTERM);
-	pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-	int sig = 0;
-	sigwait(&wait_mask, &sig);
+		// Wait for signal indicating time to shut down.
+		sigset_t wait_mask;
+		sigemptyset(&wait_mask);
+		sigaddset(&wait_mask, SIGINT);
+		sigaddset(&wait_mask, SIGQUIT);
+		sigaddset(&wait_mask, SIGTERM);
+		sigaddset(&wait_mask, SIGHUP);
+		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+		int sig = 0;
+		sigwait(&wait_mask, &sig);
 	
-	server.stop();
-	t.join();
+		server.stop();
+		t.join();
+
+		if (sig == SIGHUP) {
+			cout << "restarting server" << endl;
+			continue;
+		}
+
+		break;
+	}
 #endif
 	return 0;
 }

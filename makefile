@@ -72,7 +72,7 @@ libzeep.so: $(SO_NAME)
 
 # assuming zeep-test is build when install was not done already
 zeep-test: zeep-test.cpp libzeep.a
-	$(CC) -I$(BOOST_INC_DIR) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
+	$(CC) -I$(BOOST_INC_DIR) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS) -lboost_date_time -lboost_regex
 
 install-libs: libzeep.so
 	install -d $(LIBDIR)

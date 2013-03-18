@@ -1899,11 +1899,12 @@ Token xpath_imp::get_next_token()
 		xps_Literal
 	} start, state;
 	start = state = xps_Start;
+	(void)start;
 
 	Token token = xp_Undef;
 	bool variable = false;
 	double fraction = 1.0;
-	unicode quoteChar;
+	unicode quoteChar = 0;
 
 	m_token_string.clear();
 	

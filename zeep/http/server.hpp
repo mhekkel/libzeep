@@ -54,6 +54,13 @@ class server : public request_handler
 
 	virtual void		handle_request(const request& req, reply& rep);
 
+	/// the default entry logger
+	virtual void		log_request(const boost::asio::ip::address& addr,
+							const request& req, const reply& rep,
+							const boost::posix_time::ptime& start,
+							const std::string& referer, const std::string& userAgent,
+							const std::string& entry);
+
   private:
 	friend class preforked_server_base;
 
