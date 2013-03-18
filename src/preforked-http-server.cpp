@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <locale>
+#include <cstdlib>
 
 #include <zeep/http/preforked-server.hpp>
 #include <zeep/http/connection.hpp>
@@ -217,7 +218,11 @@ bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::
 				cerr << "control type != SCM_RIGHTS";
 			else
 			{
+				/* Produces warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
 				int fd = *(reinterpret_cast<native_type*>(CMSG_DATA(cmptr)));
+				*/
+				native_type *fdptr = reinterpret_cast<native_type*>(CMSG_DATA(cmptr));
+				int fd = *fdptr;
 				if (fd >= 0)
 				{
 					socket.assign(peer_endpoint.protocol(), fd);
@@ -251,7 +256,11 @@ void preforked_server_base::write_socket_to_worker(int fd_socket, boost::asio::i
 	cmptr->cmsg_len = CMSG_LEN(sizeof(int));
 	cmptr->cmsg_level = SOL_SOCKET;
 	cmptr->cmsg_type = SCM_RIGHTS;
+	/* Procudes warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
 	*(reinterpret_cast<native_type*>(CMSG_DATA(cmptr))) = socket.native();
+	*/
+	native_type *fdptr = reinterpret_cast<native_type*>(CMSG_DATA(cmptr));
+	*fdptr = socket.native();
 	
 	msg.msg_name = nullptr;
 	msg.msg_namelen = 0;

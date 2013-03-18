@@ -52,7 +52,7 @@ string decode_url(const string& s)
 				int value;
 				string s2(c + 1, c + 3);
 				istringstream is(s2);
-				if (is >> std::hex >> value)
+				if (is >> hex >> value)
 				{
 					result += static_cast<char>(value);
 					c += 2;
@@ -110,7 +110,7 @@ server::server()
 {
 }
 
-void server::bind(const std::string& address, unsigned short port)
+void server::bind(const string& address, unsigned short port)
 {
 	m_address = address;
 	m_port = port;
@@ -236,33 +236,42 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 
 	try
 	{
-		// protect the output stream from garbled log messages
-		boost::mutex::scoped_lock lock(detail::s_log_lock);
-		
-		using namespace boost::local_time;
-
-		local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
-		cout.imbue(std::locale(std::cout.getloc(), lf));
-
-		local_date_time start_local(start, time_zone_ptr());
-		
-		string extra = detail::s_log->str();
-		if (extra.empty())
-			extra = "-";
-		
-		cout << client << ' '
-			 << "-" << ' '
-			 << "-" << ' '
-			 << start_local << ' '
-			 << '"' << req.method << ' ' << req.uri << ' '
-			 		<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
-			 << rep.get_status() << ' '
-			 << rep.get_size() << ' '
-			 << '"' << referer << '"' << ' '
-			 << '"' << userAgent << '"' << ' '
-			 << extra << endl;
+		log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
 	}
 	catch (...) {}
+}
+
+void server::log_request(const string& client,
+	const request& req, const reply& rep,
+	const boost::posix_time::ptime& start,
+	const string& referer, const string& userAgent,
+	const string& entry)
+{
+	using namespace boost::local_time;
+
+	local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
+	cout.imbue(locale(cout.getloc(), lf));
+
+	local_date_time start_local(start, time_zone_ptr());
+
+	// protect the output stream from garbled log messages
+	boost::mutex::scoped_lock lock(detail::s_log_lock);
+
+	cout << client << ' '
+		 << "-" << ' '
+		 << "-" << ' '
+		 << start_local << ' '
+		 << '"' << req.method << ' ' << req.uri << ' '
+				<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
+		 << rep.get_status() << ' '
+		 << rep.get_size() << ' '
+		 << '"' << referer << '"' << ' '
+		 << '"' << userAgent << '"' << ' ';
+	
+	if (entry.empty())
+		cout << '-' << endl;
+	else
+		cout << '"' << entry << '"' << endl;
 }
 
 }

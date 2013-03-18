@@ -5,7 +5,7 @@
 
 #include <zeep/config.hpp>
 
-#if NO_PREFORK
+#ifdef NO_PREFORK
 #undef SOAP_SERVER_HAS_PREFORK
 #endif
 
@@ -21,6 +21,8 @@
 #include <iostream>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/date_time.hpp>
+#include <boost/optional.hpp>
 
 using namespace std;
 
@@ -36,15 +38,49 @@ namespace WSSearchNS
 
 struct Hit
 {
-					Hit() {}
-
-					Hit(string db, string id, string title, float score)
-						: db(db), id(id), title(title), score(score) {}
-
 	string			db;
 	string			id;
-	const string	title;
+	string			title;
 	float			score;
+	int				v_int;
+	unsigned int	v_uint;
+	long			v_long;
+	unsigned long	v_ulong;
+	long int		v_long2;
+	long unsigned int	v_ulong2;
+	long long		v_longlong;
+	unsigned long long
+					v_ulonglong;
+	int64			v_longlong2;
+	uint64			v_ulonglong2;
+	long int			v_longlong3;
+	unsigned long int	v_ulonglong3;
+	boost::posix_time::ptime v_ptime;
+	boost::optional<string>  opt_text;
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar & BOOST_SERIALIZATION_NVP(db)
+		   & BOOST_SERIALIZATION_NVP(id)
+		   & BOOST_SERIALIZATION_NVP(title)
+		   & BOOST_SERIALIZATION_NVP(v_int)
+		   & BOOST_SERIALIZATION_NVP(v_uint)
+		   & BOOST_SERIALIZATION_NVP(v_long)
+		   & BOOST_SERIALIZATION_NVP(v_ulong)
+		   & BOOST_SERIALIZATION_NVP(v_long2)
+		   & BOOST_SERIALIZATION_NVP(v_ulong2)
+		   & BOOST_SERIALIZATION_NVP(v_longlong)
+		   & BOOST_SERIALIZATION_NVP(v_ulonglong)
+		   & BOOST_SERIALIZATION_NVP(v_longlong2)
+		   & BOOST_SERIALIZATION_NVP(v_ulonglong2)
+		   & BOOST_SERIALIZATION_NVP(v_longlong3)
+		   & BOOST_SERIALIZATION_NVP(v_ulonglong3)
+		   & BOOST_SERIALIZATION_NVP(v_ptime)
+		   & BOOST_SERIALIZATION_NVP(score)
+		   & BOOST_SERIALIZATION_NVP(opt_text)
+		;
+	}
 };
 
 // and the FindResult type.
@@ -83,10 +119,11 @@ struct struct_serializer<Archive,WSSearchNS::Hit>
 {
 	static void serialize(Archive& ar, WSSearchNS::Hit& hit)
 				{
-					ar & BOOST_SERIALIZATION_NVP(hit.db)
-						& BOOST_SERIALIZATION_NVP(hit.id)
-						& BOOST_SERIALIZATION_NVP(hit.title)
-						& BOOST_SERIALIZATION_NVP(hit.score);
+//					ar & BOOST_SERIALIZATION_NVP(hit.db)
+//						& BOOST_SERIALIZATION_NVP(hit.id)
+//						& BOOST_SERIALIZATION_NVP(hit.title)
+//						& BOOST_SERIALIZATION_NVP(hit.score);
+					hit.serialize(ar, 0);
 				}
 };
 
@@ -132,9 +169,26 @@ class my_server : public zeep::server
 							int							maxresultcount,
 							WSSearchNS::FindResult&		out);
 
-	void				Test(const string& in, pair<int,int>& out);
+	void				PairTest(const string& in, pair<int,int>& out);
+
+	void				DateTimeTest(
+							const boost::posix_time::ptime&
+														in,
+							boost::posix_time::ptime&	out);
 
 	void				ForceStop(string&				out);
+
+  protected:
+	/* Uncomment to have your custom http logger
+	virtual void		log_request(const boost::asio::ip::address& addr,
+							const zeep::http::request& req, const zeep::http::reply& rep,
+							const boost::posix_time::ptime& start,
+							const std::string& referer, const std::string& userAgent,
+							const std::string& entry)
+	{
+		cout << "Not logging :) ..." << endl;
+	}
+	*/
 
   private:
 	string				m_param;
@@ -183,17 +237,23 @@ my_server::my_server(const string& param)
 	
 	register_action("Find", this, &my_server::Find, kFindParameterNames);
 
+	const char* kDateTimeTestParameterNames[] = {
+	 "in", "out"
+	};
+
+	register_action("DateTimeTest", this, &my_server::DateTimeTest, kDateTimeTestParameterNames);
+
 	const char* kForceStopParameterNames[] = {
 		"out"
 	};
 	
 	register_action("ForceStop", this, &my_server::ForceStop, kForceStopParameterNames);
 
-	const char* kTestParameterNames[] = {
+	const char* kPairTestParameterNames[] = {
 		"in", "out"
 	};
 
-	register_action("Test", this, &my_server::Test, kTestParameterNames);
+	register_action("PairTest", this, &my_server::PairTest, kPairTestParameterNames);
 }
 
 void my_server::ListDatabanks(
@@ -229,18 +289,47 @@ void my_server::Find(
 	log() << db;
 
 	// mock up some fake answer...
-	out.count = 2;
+	out.count = 3;
 
-	WSSearchNS::Hit h1("sprot", "104k_thepa", "bla bla bla",  1.0f);
-	out.hits.push_back(h1);
+	WSSearchNS::Hit h = {};
 
-	WSSearchNS::Hit h2("sprot", "108_lyces", "aap <&> noot mies", 0.8f);
-	out.hits.push_back(h2);
+	h.db = "sprot";
+	h.id = "104k_thepa";
+	h.title = "bla bla bla";
+	h.score = 1.0f;
+	h.v_ptime = boost::posix_time::microsec_clock::universal_time();
+	
+	out.hits.push_back(h);
+
+	h.db = "sprot";
+	h.id = "108_lyces";
+	h.title = "aap <&> noot mies";
+	h.score = 0.8f;
+	h.opt_text = "Hallóóów";
+	
+	out.hits.push_back(h);
+
+	h.db = "param";
+	h.id = "param-id";
+	h.title = m_param;
+	h.score = 0.6f;
+	h.opt_text.reset();
+	
+	out.hits.push_back(h);
 }
 
-void my_server::Test(const string& in, pair<int,int>& out)
+void my_server::PairTest(const string& in, pair<int,int>& out)
 {
 	out.first = out.second = 1;
+}
+
+void my_server::DateTimeTest(
+	const boost::posix_time::ptime&
+								in,
+	boost::posix_time::ptime&	out)
+{
+	log() << in;
+	out = in;
 }
 
 void my_server::ForceStop(
@@ -306,28 +395,38 @@ int main(int argc, const char* argv[])
 	t.join();
 
 #else
-    sigset_t new_mask, old_mask;
-    sigfillset(&new_mask);
-    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
+	for (;;) {
+		sigset_t new_mask, old_mask;
+		sigfillset(&new_mask);
+		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("blabla");
-	server.bind("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server, 2));
+		my_server server("blabla");
+		server.bind("0.0.0.0", 10333);
+		boost::thread t(boost::bind(&my_server::run, &server, 2));
 
-    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
-	// Wait for signal indicating time to shut down.
-	sigset_t wait_mask;
-	sigemptyset(&wait_mask);
-	sigaddset(&wait_mask, SIGINT);
-	sigaddset(&wait_mask, SIGQUIT);
-	sigaddset(&wait_mask, SIGTERM);
-	pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-	int sig = 0;
-	sigwait(&wait_mask, &sig);
+		// Wait for signal indicating time to shut down.
+		sigset_t wait_mask;
+		sigemptyset(&wait_mask);
+		sigaddset(&wait_mask, SIGINT);
+		sigaddset(&wait_mask, SIGQUIT);
+		sigaddset(&wait_mask, SIGTERM);
+		sigaddset(&wait_mask, SIGHUP);
+		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+		int sig = 0;
+		sigwait(&wait_mask, &sig);
 	
-	server.stop();
-	t.join();
+		server.stop();
+		t.join();
+
+		if (sig == SIGHUP) {
+			cout << "restarting server" << endl;
+			continue;
+		}
+
+		break;
+	}
 #endif
 	return 0;
 }
