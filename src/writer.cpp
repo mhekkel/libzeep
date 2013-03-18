@@ -113,14 +113,14 @@ void writer::start_doctype(const string& root, const string& dtd)
 		m_os << " \"" << dtd << '"';
 	m_os << " [";
 
-	if (m_wrap_prolog)
+//	if (m_wrap_prolog)
 		m_os << endl;
 }
 
 void writer::end_doctype()
 {
 	m_os << "]>";
-	if (m_wrap_prolog)
+//	if (m_wrap_prolog)
 		m_os << endl;
 }
 
@@ -131,7 +131,7 @@ void writer::empty_doctype(const string& root, const string& dtd)
 		m_os << " \"" << dtd << '"';
 	m_os << ">";
 
-	if (m_wrap_prolog)
+//	if (m_wrap_prolog)
 		m_os << endl;
 }
 
@@ -148,7 +148,7 @@ void writer::notation(const string& name,
 	else
 		m_os << " SYSTEM \'" << sysid << '\'';
 	m_os << '>';
-	if (m_wrap_prolog)
+//	if (m_wrap_prolog)
 		m_os << endl;
 }
 
