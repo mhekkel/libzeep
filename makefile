@@ -1,6 +1,6 @@
 # Makefile for libzeep and a test/sample application using libzeep.
 #
-#  Copyright Maarten L. Hekkelman, Radboud University 2008-2010.
+# Copyright Maarten L. Hekkelman, UMC St. Radboud 2008-2013.
 # Distributed under the Boost Software License, Version 1.0.
 #    (See accompanying file LICENSE_1_0.txt or copy at
 #          http://www.boost.org/LICENSE_1_0.txt)
@@ -8,7 +8,7 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-#BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
+#BOOST_LIB_SUFFIX	= # e.g. '-mt'
 #BOOST				= $(HOME)/projects/boost
 BOOST_LIB_DIR		= $(BOOST:%=%/lib)
 BOOST_INC_DIR		= $(BOOST:%=%/include)
@@ -24,7 +24,7 @@ BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS				= $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-VERSION_MAJOR		= 2.9
+VERSION_MAJOR		= 3.0
 VERSION_MINOR		= 0
 VERSION				= $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME			= libzeep-$(VERSION)
