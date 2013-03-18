@@ -96,7 +96,7 @@ struct FindResult
 	void serialize(Archive& ar, const unsigned int version)
 	{
 		ar & BOOST_SERIALIZATION_NVP(count)
-		   & BOOST_SERIALIZATION_NVP(hits);
+		   & boost::serialization::make_nvp("hit", hits);
 	}
 };
 
