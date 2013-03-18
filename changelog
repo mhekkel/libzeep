@@ -1,6 +1,5 @@
-Version 2.9.0
+Version 3.0
 
-- Added some calls to xml::writer to write e.g. xml-decl and doctypes
 - Support for non-intrusive serialization. The call to serialize is now
   done by the templated struct zeep::xml::struct_serializer. You can
   create a specialization for this struct to do something else than
@@ -8,11 +7,10 @@ Version 2.9.0
 - A streaming input added, process_document_elements calls the callback
   for all elements that match a given xpath.
 - ISO8859-1 support (finally)
-- some xpath additions (matches e.g.)
-- changed signature of various find routines to work with const char*
+- some xpath additions (matches e.g.)
+- changed signature of various find routines to work with const char*
 - changed authentication mechanism in webapp to allow multiple realms
 - some small changes in writing out XML documents/xml::writer
-- attributes are no longer sorted when parsing a document
 - added line number to validation error messages
 - process value tag of mrs:option tag
 - el processing returns original string if it does not contain an expression
@@ -22,8 +20,16 @@ Version 2.9.0
 - fixed bug in el implementation (dividing numbers)
 - extended log format of HTTP server to allow better awstat logs (using the
   extra fields for SOAP calls). Also writes the X-Forwarded-For client if any.
- 
+- Patches provided by Patrick Rotsaert: serializer for xsd:time and
+  optional data types based on boost::optional.
+- Split out log_request as a virtual method in http::server
+- Added quick and dirty test for requests from mobile clients
+- Added virtual destructors to all base classes.
+- OPTIONS and HEAD support in web server
 
+Version 2.9.0
+
+- Added some calls to xml::writer to write e.g. xml-decl and doctypes
 Version 2.8.2
 
 - Fix in unicode support code
