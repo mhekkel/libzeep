@@ -1,5 +1,10 @@
 #include <iostream>
 
+#if defined(_MSC_VER)
+#include <conio.h>
+#include <ctype.h>
+#endif
+
 #include <string>
 #include <list>
 
@@ -62,7 +67,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 		while (not out.eof())
 		{
 			getline(out, line);
-			s2 += line;
+			s2 += line + "\n";
 		}
 		ba::trim(s2);
 
@@ -446,6 +451,11 @@ int main(int argc, char* argv[])
 	}
 	
 	fs::current_path(savedwd);
-	
+
+#if defined(_MSC_VER)
+	cout << "press any key to continue...";
+	char ch = _getch();
+#endif
+
 	return 0;
 }

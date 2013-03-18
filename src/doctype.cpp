@@ -782,12 +782,12 @@ bool attribute::is_nmtokens(string& s) const
 		result = false;
 		do
 		{
-			if (not isspace(*c))
+			if (not isspace((unsigned char)*c))
 				break;
 			result = true;
 			++c;
 		}
-		while (c != s.end() and isspace(*c));
+		while (c != s.end() and isspace((unsigned char)*c));
 		
 		t += ' ';
 	}
