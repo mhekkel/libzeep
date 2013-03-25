@@ -108,6 +108,10 @@ string encode_url(const string& s)
 server::server()
 	: m_log_forwarded(false)
 {
+	using namespace boost::local_time;
+
+	local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
+	cout.imbue(locale(cout.getloc(), lf));
 }
 
 void server::bind(const string& address, unsigned short port)
@@ -251,9 +255,6 @@ void server::log_request(const string& client,
 	boost::mutex::scoped_lock lock(detail::s_log_lock);
 
 	using namespace boost::local_time;
-
-	local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
-	cout.imbue(locale(cout.getloc(), lf));
 
 	local_date_time start_local(start, time_zone_ptr());
 
