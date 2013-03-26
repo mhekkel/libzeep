@@ -97,6 +97,8 @@ But if your compiler does not support that syntax, you can always use `boost::ra
 
 Accessing attributes is done using the member function `element::get_attribute()`.
 
+[section:xml XML Serialization]
+
 An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
 
 	#include <zeep/xml/document.hpp>
