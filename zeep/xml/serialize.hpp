@@ -316,6 +316,12 @@ struct struct_serializer
 struct serialize_boost_posix_time_ptime
 {
 	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
+	static void	serialize(element* node, const std::string& name, const boost::posix_time::ptime& v)
+	{
+		node->set_attribute(name, boost::posix_time::to_iso_extended_string(v).append("Z"));
+	}
+
+	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
 	static void	serialize(container* parent, const std::string& name, const boost::posix_time::ptime& v, bool)
 	{
 		element* n(new element(name));
@@ -466,6 +472,12 @@ struct serialize_boost_posix_time_ptime
 struct serialize_boost_gregorian_date
 {
 	/// Serialize the boost::gregorian::date as YYYY-MM-DD
+	static void	serialize(element* node, const std::string& name, const boost::gregorian::date& v)
+	{
+		node->set_attribute(name, boost::gregorian::to_iso_extended_string(v));
+	}
+
+	/// Serialize the boost::gregorian::date as YYYY-MM-DD
 	static void	serialize(container* parent, const std::string& name, const boost::gregorian::date& v, bool)
 	{
 		element* n(new element(name));
@@ -522,7 +534,7 @@ struct serialize_boost_gregorian_date
 
 	static element*
 	to_wsdl(type_map& types, element* parent,
-	const std::string& name, const boost::posix_time::ptime& v, bool)
+		const std::string& name, const boost::gregorian::date& v, bool)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -538,6 +550,12 @@ struct serialize_boost_gregorian_date
 /// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
 struct serialize_boost_posix_time_time_duration
 {
+	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
+	static void	serialize(element* node, const std::string& name, const boost::posix_time::time_duration& v)
+	{
+		node->set_attribute(name, boost::posix_time::to_simple_string(v));
+	}
+
 	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
 	static void	serialize(container* parent, const std::string& name, const boost::posix_time::time_duration& v, bool)
 	{
