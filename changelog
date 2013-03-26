@@ -4,6 +4,7 @@ Version 3.0
   done by the templated struct zeep::xml::struct_serializer. You can
   create a specialization for this struct to do something else than
   calling MyClass::serialize.
+- xml::document now has serialize and deserialize members.
 - A streaming input added, process_document_elements calls the callback
   for all elements that match a given xpath.
 - ISO8859-1 support (finally)

@@ -12,6 +12,7 @@
 #include <zeep/config.hpp>
 #include <zeep/xml/node.hpp>
 #include <zeep/xml/unicode_support.hpp>
+#include <zeep/xml/serialize.hpp>
 
 namespace zeep { namespace xml {
 
@@ -75,6 +76,13 @@ class document
 														///< Replace the content of the document with the parsed XML in \a is and use validation based on DTD's found in \a base_dir
 
 	virtual void		write(writer& w) const;			///< Write the contents of the document as XML using zeep::xml::writer object \a w
+
+	/// Serialization support
+	template<typename T>
+	void				serialize(const char* name, const T& data);		///< Serialize \a data into a document containing \a name as root node
+	
+	template<typename T>
+	void				deserialize(const char* name, T& data);			///< Deserialize root node with name \a name into \a data.
 
 	/// A valid xml document contains exactly one zeep::xml::root_node element
 	root_node*			root() const;
@@ -174,6 +182,24 @@ std::ostream& operator<<(std::ostream& lhs, const document& rhs);
 /// the callback is the leading xml up to the first element.
 void process_document_elements(std::istream& data, const std::string& element_xpath,
 	boost::function<bool(node* doc_root, element* e)> cb);
+
+#ifndef LIBZEEP_DOXYGEN_INVOKED
+
+template<typename T>
+void document::serialize(const char* name, const T& data)
+{
+	serializer sr(root(), true);
+	sr.serialize(name, const_cast<T&>(data));
+}
+
+template<typename T>
+void document::deserialize(const char* name, T& data)
+{
+	deserializer sr(root());
+	sr.deserialize(name, data);
+}
+
+#endif
 
 }
 }
