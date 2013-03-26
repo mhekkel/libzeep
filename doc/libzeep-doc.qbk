@@ -1,6 +1,6 @@
 [article libzeep
 	[quickbook 1.5]
-	[version 2.9]
+	[version 3.0]
 	[copyright 2012 Maarten L. Hekkelman]
 	[license
 		Distributed under the Boost Software License, Version 1.0.
@@ -130,6 +130,27 @@ An alternative way to read/write XML files is using serialization. To do this, w
 		// alternative is to use which allows another variable name:
 		// ds & boost::serialization::make_nvp("person", person);
 	}
+
+Since libzeep 3.0 we can reduce the code required.
+
+	int main()
+	{
+		std::ifstream file("test.xml");
+		__document__ doc(file);
+		
+		std::vector<Person> persons;
+		
+		// New way of deserializing persons
+		doc.deserialize("persons", persons);
+	}
+
+And to write out the persons, we do something similar.
+
+	__document__ doc;
+	doc.serialize("persons", persons);
+	
+	std::ofstream file("test-out.xml");
+	file << doc;
 
 To find out more about serialization, look at the reference for __serializer__
 

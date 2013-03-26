@@ -720,13 +720,15 @@ bool root_node::equals(const node* n) const
 
 void root_node::append(node* n)
 {
-	if (dynamic_cast<processing_instruction*>(n) == nullptr and
+	if (dynamic_cast<element*>(n) != nullptr)
+		child_element(static_cast<element*>(n));
+	else if (dynamic_cast<processing_instruction*>(n) == nullptr and
 		dynamic_cast<comment*>(n) == nullptr)
 	{
 		throw exception("can only append comment and processing instruction nodes to a root_node");
 	}
-	
-	container::append(n);
+	else
+		container::append(n);
 }
 
 // --------------------------------------------------------------------
