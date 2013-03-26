@@ -99,7 +99,7 @@ Accessing attributes is done using the member function `element::get_attribute()
 
 [endsect]
 
-[section:xml XML Serialization]
+[section:xml_serialization XML Serialization]
 
 An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
 
