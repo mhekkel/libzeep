@@ -402,7 +402,7 @@ struct serialize_boost_posix_time_ptime
 
 		if (m.length(f_have_frac)) {
 			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
-			t += boost::posix_time::microseconds((frac + .5) * 1e6);
+			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
 		}
 
 		v = boost::posix_time::ptime(d, t);
@@ -591,7 +591,7 @@ struct serialize_boost_posix_time_time_duration
 
 		if (m.length(f_have_frac)) {
 			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
-			v += boost::posix_time::microseconds((frac + .5) * 1e6);
+			v += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
 		}
 	}
 
