@@ -90,19 +90,18 @@ const std::string kPrefix = "ns";
 
 struct serializer
 {
-					serializer(container* node, bool make_node = true)
-						: m_node(node)
-						, m_make_node(make_node) {}
+					serializer(container* node) : m_node(node) {}
 
 	template<typename T>
 	serializer&		operator&(const boost::serialization::nvp<T>& rhs);
 	
 	template<typename T>
 	serializer&		serialize(const char* name, const T& data)
-						{ return operator&(boost::serialization::nvp<T>(name, const_cast<T&>(data))); }
+					{
+						return operator&(boost::serialization::nvp<T>(name, const_cast<T&>(data)));
+					}
 
 	container*		m_node;
-	bool			m_make_node;
 };
 
 struct deserializer
@@ -114,8 +113,9 @@ struct deserializer
 
 	template<typename T>
 	deserializer&	deserialize(const char* name, T& data)
-						{ return operator&(boost::serialization::nvp<T>(name, data)); }
-
+					{
+						return operator&(boost::serialization::nvp<T>(name, data));
+					}
 
 	container*		m_node;
 };
@@ -141,7 +141,33 @@ struct wsdl_creator
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
-// The actual (de)serializers:
+// The actual (de)serializers
+//
+//	The serialize objects should all have three methods:
+//		static void	serialize(container* parent, const std::string& name, const T& v);
+//		static void	deserialize(const std::string& s, T& v);
+//		static void	to_wsdl(type_map& types, element* parent, const std::string& name, const T& v);
+//
+//	the serialize method can use the convenience routine make_node to create the correct node type
+//	(this can be an attribute node, or a regular element node based on the name).
+
+inline
+void create_node(container* parent, const std::string& name, const std::string& value)
+{
+	if (name[0] == '@')
+	{
+		if (dynamic_cast<element*>(parent) != nullptr)		// create an attribute node
+			static_cast<element*>(parent)->set_attribute(name.substr(1), value);
+		else
+			throw exception("invalid node name for parent");
+	}
+	else
+	{
+		element* n(new element(name));
+		n->content(boost::lexical_cast<std::string>(value));
+		parent->append(n);
+	}
+}
 
 // arithmetic types are ints, doubles, etc... simply use lexical_cast to convert these
 template<typename T, int S = sizeof(T), bool = boost::is_unsigned<T>::value> struct arithmetic_wsdl_name {};
@@ -184,16 +210,9 @@ struct serialize_arithmetic
 			typename boost::remove_reference<T>::type >::type	value_type;
 	typedef arithmetic_wsdl_name<value_type>					wsdl_name;
 	
-	static void	serialize(element* node, const std::string& name, T& v)
+	static void	serialize(container* parent, const std::string& name, T& v)
 				{
-					node->set_attribute(name, boost::lexical_cast<std::string>(v));
-				}
-
-	static void	serialize(container* parent, const std::string& name, T& v, bool)
-				{
-					element* n(new element(name));
-					n->content(boost::lexical_cast<std::string>(v));
-					parent->append(n);
+					create_node(parent, name, boost::lexical_cast<std::string>(v));
 				}
 
 	static void	deserialize(const std::string& s, T& v)
@@ -201,14 +220,8 @@ struct serialize_arithmetic
 					v = boost::lexical_cast<T>(s);
 				}
 
-	static void	deserialize(element& n, T& v)
-				{
-					v = boost::lexical_cast<T>(n.content());
-				}
-
 	static element*
-				 to_wsdl(type_map& types, element* parent,
-					const std::string& name, const T& v, bool)
+				to_wsdl(type_map& types, element* parent, const std::string& name, const T& v)
 				{
 					element* n(new element("xsd:element"));
 					n->set_attribute("name", name);
@@ -224,16 +237,9 @@ struct serialize_arithmetic
 
 struct serialize_string
 {
-	static void	serialize(element* node, const std::string& name, const std::string& v)
+	static void	serialize(container* parent, const std::string& name, const std::string& v)
 				{
-					node->set_attribute(name, v);
-				}
-
-	static void	serialize(container* parent, const std::string& name, const std::string& v, bool)
-				{
-					element* n(new element(name));
-					n->content(v);
-					parent->append(n);
+					create_node(parent, name, v);
 				}
 
 	static void	deserialize(const std::string& s, std::string& v)
@@ -241,14 +247,8 @@ struct serialize_string
 					v = s;
 				}
 
-	static void	deserialize(element& n, std::string& v)
-				{
-					v = n.content();
-				}
-
 	static element*
-				to_wsdl(type_map& types, element* parent,
-					const std::string& name, const std::string& v, bool)
+				to_wsdl(type_map& types, element* parent, const std::string& name, const std::string& v)
 				{
 					element* n(new element("xsd:element"));
 					n->set_attribute("name", name);
@@ -264,31 +264,18 @@ struct serialize_string
 
 struct serialize_bool
 {
-	static void	serialize(element* node, const std::string& name, bool v)
+	static void	serialize(container* parent, const std::string& name, bool v)
 				{
-					node->set_attribute(name, v ? "true" : "false");
-				}
-
-	static void	serialize(container* parent, const std::string& name, bool v, bool)
-				{
-					element* n(new element(name));
-					n->content(v ? "true" : "false");
-					parent->append(n);
+					create_node(parent, name, v ? "true" : "false");
 				}
 
 	static void	deserialize(const std::string& s, bool& v)
 				{
-					v = s == "true" or s == "1";
-				}
-
-	static void	deserialize(element& n, bool& v)
-				{
-					deserialize(n.content(), v);
+					v = (s == "true" or s == "1");
 				}
 
 	static element*
-				to_wsdl(type_map& types, element* parent,
-					const std::string& name, bool v, bool)
+				to_wsdl(type_map& types, element* parent, const std::string& name, bool v)
 				{
 					element* n(new element("xsd:element"));
 					n->set_attribute("name", name);
@@ -316,17 +303,9 @@ struct struct_serializer
 struct serialize_boost_posix_time_ptime
 {
 	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
-	static void	serialize(element* node, const std::string& name, const boost::posix_time::ptime& v)
+	static void	serialize(container* parent, const std::string& name, const boost::posix_time::ptime& v)
 	{
-		node->set_attribute(name, boost::posix_time::to_iso_extended_string(v).append("Z"));
-	}
-
-	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
-	static void	serialize(container* parent, const std::string& name, const boost::posix_time::ptime& v, bool)
-	{
-		element* n(new element(name));
-		n->content( boost::posix_time::to_iso_extended_string(v).append("Z") );
-		parent->append(n);
+		create_node(parent, name, boost::posix_time::to_iso_extended_string(v).append("Z"));
 	}
 
 	/// Deserialize according to ISO8601 rules.
@@ -448,14 +427,8 @@ struct serialize_boost_posix_time_ptime
 		}
 	}
 
-	static void	deserialize(element& n, boost::posix_time::ptime& v)
-	{
-		deserialize(n.content(), v);
-	}
-
 	static element*
-	to_wsdl(type_map& types, element* parent,
-	const std::string& name, const boost::posix_time::ptime& v, bool)
+	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -472,17 +445,9 @@ struct serialize_boost_posix_time_ptime
 struct serialize_boost_gregorian_date
 {
 	/// Serialize the boost::gregorian::date as YYYY-MM-DD
-	static void	serialize(element* node, const std::string& name, const boost::gregorian::date& v)
+	static void	serialize(container* parent, const std::string& name, const boost::gregorian::date& v)
 	{
-		node->set_attribute(name, boost::gregorian::to_iso_extended_string(v));
-	}
-
-	/// Serialize the boost::gregorian::date as YYYY-MM-DD
-	static void	serialize(container* parent, const std::string& name, const boost::gregorian::date& v, bool)
-	{
-		element* n(new element(name));
-		n->content( boost::gregorian::to_iso_extended_string(v) );
-		parent->append(n);
+		create_node(parent, name, boost::gregorian::to_iso_extended_string(v));
 	}
 
 	/// Deserialize boost::gregorian::date according to ISO8601 rules, but without timezone.
@@ -527,14 +492,8 @@ struct serialize_boost_gregorian_date
 		);
 	}
 
-	static void	deserialize(element& n, boost::gregorian::date& v)
-	{
-		deserialize(n.content(), v);
-	}
-
 	static element*
-	to_wsdl(type_map& types, element* parent,
-		const std::string& name, const boost::gregorian::date& v, bool)
+	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::gregorian::date& v)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -551,17 +510,9 @@ struct serialize_boost_gregorian_date
 struct serialize_boost_posix_time_time_duration
 {
 	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
-	static void	serialize(element* node, const std::string& name, const boost::posix_time::time_duration& v)
+	static void	serialize(container* parent, const std::string& name, const boost::posix_time::time_duration& v)
 	{
-		node->set_attribute(name, boost::posix_time::to_simple_string(v));
-	}
-
-	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
-	static void	serialize(container* parent, const std::string& name, const boost::posix_time::time_duration& v, bool)
-	{
-		element* n(new element(name));
-		n->content( boost::posix_time::to_simple_string(v) );
-		parent->append(n);
+		create_node(parent, name, boost::posix_time::to_simple_string(v));
 	}
 
 	/// Deserialize boost::posix_time::time_duration according to ISO8601 rules, but without timezone.
@@ -622,14 +573,8 @@ struct serialize_boost_posix_time_time_duration
 		}
 	}
 
-	static void	deserialize(element& n, boost::posix_time::time_duration& v)
-	{
-		deserialize(n.content(), v);
-	}
-
 	static element*
-	to_wsdl(type_map& types, element* parent,
-	const std::string& name, const boost::posix_time::ptime& v, bool)
+	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -644,78 +589,50 @@ struct serialize_boost_posix_time_time_duration
 template<typename T>
 struct serialize_struct
 {
-	static std::string	s_struct_name;
+	static std::string							s_struct_name;
 	typedef struct_serializer<serializer,T>		s_serializer;
 	typedef struct_serializer<deserializer,T>	s_deserializer;
 	typedef struct_serializer<wsdl_creator,T>	s_wsdl_creator;
 	
-	static void	serialize(element* node, const std::string& name, T& v)
+	static void	serialize(container* parent, const std::string& name, T& v)
 				{
-					throw std::runtime_error("invalid serialization request");
+					element* n(new element(name));
+					serializer sr(n);
+					s_serializer::serialize(sr, v);
+					parent->append(n);
 				}
 
-	static void	serialize(container* parent, const std::string& name, T& v, bool make_node)
-				{
-					if (make_node)
-					{
-						element* n(new element(name));
-						serializer sr(n);
-						s_serializer::serialize(sr, v);
-						parent->append(n);
-					}
-					else
-					{
-						serializer sr(parent);
-						s_serializer::serialize(sr, v);
-					}
-				}
-
-	static void	deserialize(const std::string& s, T& v)
-				{
-					throw std::runtime_error("invalid deserialization request");
-				}
-
-	static void	deserialize(element& n, T& v)
+	static void	deserialize(element& n, const std::string& name, T& v)
 				{
 					deserializer ds(&n);
 					s_deserializer::serialize(ds, v);
 				}
 
 	static element*
-				 to_wsdl(type_map& types, element* parent,
-					const std::string& name, T& v, bool make_node)
+				to_wsdl(type_map& types, element* parent, const std::string& name, T& v)
 				{
-					if (make_node)
-					{
-						element* result(new element("xsd:element"));
-						result->set_attribute("name", name);
-						result->set_attribute("type", kPrefix + ':' + s_struct_name);
-						result->set_attribute("minOccurs", "1");
-						result->set_attribute("maxOccurs", "1");
-						parent->append(result);
-	
-						// we might be known already
-						if (types.find(s_struct_name) != types.end())
-							return result;
-	
-						element* n(new element("xsd:complexType"));
-						n->set_attribute("name", s_struct_name);
-						types[s_struct_name] = n;
-						
-						element* sequence(new element("xsd:sequence"));
-						n->append(sequence);
-						
-						wsdl_creator wsdl(types, sequence);
-						s_wsdl_creator::serialize(wsdl, v);
-						
+					element* result(new element("xsd:element"));
+					result->set_attribute("name", name);
+					result->set_attribute("type", kPrefix + ':' + s_struct_name);
+					result->set_attribute("minOccurs", "1");
+					result->set_attribute("maxOccurs", "1");
+					parent->append(result);
+
+					// we might be known already
+					if (types.find(s_struct_name) != types.end())
 						return result;
-					}
-					else
-					{
-						wsdl_creator wc(types, parent);
-						s_wsdl_creator::serialize(wc, v);
-						return parent;
-					}
+
+					element* n(new element("xsd:complexType"));
+					n->set_attribute("name", s_struct_name);
+					types[s_struct_name] = n;
+					
+					element* sequence(new element("xsd:sequence"));
+					n->append(sequence);
+					
+					wsdl_creator wsdl(types, sequence);
+					s_wsdl_creator::serialize(wsdl, v);
+					
+					return result;
 				}
 	
 	static void	set_struct_name(const std::string& name)
@@ -736,33 +653,20 @@ std::string serialize_struct<T>::s_struct_name = typeid(T).name();
 template<typename T, typename C = std::vector<T> >
 struct serialize_container
 {
-	static void	serialize(element* node, const std::string& name, C& v)
-				{
-					throw std::runtime_error("invalid serialization request");
-				}
-	static void	serialize(container* parent, const std::string& name, C& v, bool);
-
-	static void	deserialize(const std::string& s, C& v)
-				{
-					throw std::runtime_error("invalid deserialization request");
-				}
-
-	static void	deserialize(element& n, C& v);
+	static void	serialize(container* parent, const std::string& name, C& v);
+	static void	deserialize(element& n, const std::string& name, C& v);
 
 	static element*
-				to_wsdl(type_map& types, element* parent,
-					const std::string& name, const C& v, bool);
+				to_wsdl(type_map& types, element* parent, const std::string& name, const C& v);
 };
 
 template<typename T>
 struct serialize_boost_optional
 {
-	static void	serialize(container* parent, const std::string& name, boost::optional<T>& v, bool);
-
+	static void	serialize(container* parent, const std::string& name, boost::optional<T>& v);
 	static void	deserialize(const std::string& s, boost::optional<T>& v);
-	static void	deserialize(element& n, boost::optional<T>& v);
 
-	static element*	to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>& v, bool);
+	static element*	to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>& v);
 };
 
 template<typename T>
@@ -818,16 +722,9 @@ struct serialize_enum
 	typedef enum_map<T>					t_enum_map;
 	typedef std::map<T,std::string>		t_map;
 	
-	static void	serialize(element* node, const std::string& name, T& v)
+	static void	serialize(container* parent, const std::string& name, T& v)
 				{
-					node->set_attribute(name, t_enum_map::instance().m_name_mapping[v]);
-				}
-
-	static void	serialize(container* parent, const std::string& name, T& v, bool)
-				{
-					element* n(new element(name));
-					n->content(t_enum_map::instance().m_name_mapping[v]);
-					parent->append(n);
+					create_node(parent, name, t_enum_map::instance().m_name_mapping[v]);
 				}
 
 	static void	deserialize(const std::string& s, T& v)
@@ -843,13 +740,8 @@ struct serialize_enum
 					}
 				}
 
-	static void	deserialize(element& n, T& v)
-				{
-					deserialize(n.content(), v);
-				}
-
 	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, const T& v, bool)
+				to_wsdl(type_map& types, element* parent, const std::string& name, const T& v)
 				{
 					std::string type_name = t_enum_map::instance().m_name;
 					
@@ -900,6 +792,16 @@ struct serialize_type
 			>::type
 		>::type					type;
 
+	typedef typename boost::mpl::if_c<
+			boost::is_arithmetic<T>::value,
+			std::string,
+			typename boost::mpl::if_c<
+				boost::is_enum<T>::value,
+				std::string,
+				element
+			>::type
+		>::type					param_type;
+
 	enum { is_container = false };
 };
 
@@ -907,6 +809,7 @@ template<>
 struct serialize_type<bool>
 {
 	typedef serialize_bool		type;
+	typedef std::string			param_type;
 
 	enum { is_container = false };
 };
@@ -915,6 +818,7 @@ template<>
 struct serialize_type<std::string>
 {
 	typedef serialize_string	type;
+	typedef std::string			param_type;
 
 	enum { is_container = false };
 };
@@ -923,6 +827,7 @@ template<>
 struct serialize_type<boost::posix_time::ptime>
 {
 	typedef serialize_boost_posix_time_ptime	type;
+	typedef std::string							param_type;
 
 	enum { is_container = false };
 };
@@ -931,6 +836,7 @@ template<>
 struct serialize_type<boost::gregorian::date>
 {
 	typedef serialize_boost_gregorian_date	type;
+	typedef std::string						param_type;
 
 	enum { is_container = false };
 };
@@ -939,6 +845,7 @@ template<>
 struct serialize_type<boost::posix_time::time_duration>
 {
 	typedef serialize_boost_posix_time_time_duration	type;
+	typedef std::string									param_type;
 
 	enum { is_container = false };
 };
@@ -947,6 +854,7 @@ template<typename T>
 struct serialize_type<std::vector<T> >
 {
 	typedef serialize_container<T, std::vector<T> > type;
+	typedef element									param_type;
 
 	enum { is_container = true };
 };
@@ -954,7 +862,8 @@ struct serialize_type<std::vector<T> >
 template<typename T>
 struct serialize_type<std::list<T> >
 {
-	typedef serialize_container<T, std::list<T> >	 type;
+	typedef serialize_container<T, std::list<T> >	type;
+	typedef element									param_type;
 
 	enum { is_container = true };
 };
@@ -963,6 +872,7 @@ template<typename T>
 struct serialize_type<boost::optional<T> >
 {
 	typedef serialize_boost_optional<T>	type;
+	typedef std::string					param_type;
 
 	enum { is_container = false };
 };
@@ -975,36 +885,53 @@ serializer& serializer::operator&(const boost::serialization::nvp<T>& rhs)
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serialize_type<value_type>::type	s_type;
 
-	if (rhs.name()[0] == '@')
-		s_type::serialize(m_node, rhs.name() + 1, rhs.value(), m_make_node);
-	else
-		s_type::serialize(m_node, rhs.name(), rhs.value(), m_make_node);
+	s_type::serialize(m_node, rhs.name(), rhs.value());
 
 	return *this;
 }
 
+// and deserializing, which is a tad more complex, alas
+
+template<typename T1, typename T2> struct deserialize_helper;
+
+template<typename T>
+struct deserialize_helper<T, std::string>
+{
+	typedef typename serialize_type<T>::type	s_type;
+	
+	static void deserialize(container* parent, const std::string& name, T& v)
+	{
+		if (name[0] == '@' and dynamic_cast<const element*>(parent) != nullptr)
+			s_type::deserialize(static_cast<const element*>(parent)->get_attribute(name.substr(1)), v);
+		else
+		{
+			element* n = parent->find_first(name);
+			if (n)
+				s_type::deserialize(n->content(), v);
+		}
+	}
+};
+
+template<typename T>
+struct deserialize_helper<T, element>
+{
+	typedef typename serialize_type<T>::type	s_type;
+	
+	static void deserialize(container* parent, const std::string& name, T& v)
+	{
+		if (dynamic_cast<element*>(parent) != nullptr)
+			s_type::deserialize(*static_cast<element*>(parent), name, v);
+	}
+};
+
 template<typename T>
 deserializer& deserializer::operator&(const boost::serialization::nvp<T>& rhs)
 {
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type	s_type;
-
-	if (serialize_type<value_type>::is_container)
-	{
-		BOOST_FOREACH (element* e, *m_node)
-		{
-			if (e->name() == rhs.name())
-				s_type::deserialize(*e, rhs.value());
-		}
-	}
-	else if (rhs.name()[0] == '@' and dynamic_cast<element*>(m_node) != nullptr)
-		s_type::deserialize(static_cast<element*>(m_node)->get_attribute(rhs.name() + 1), rhs.value());
-	else
-	{
-		element* n = m_node->find_first(rhs.name());
-		if (n)
-			s_type::deserialize(*n, rhs.value());
-	}
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type		value_type;
+	typedef typename serialize_type<value_type>::param_type										param_type;
+	typedef typename deserialize_helper<T,param_type>											helper_type;
+	
+	helper_type::deserialize(m_node, rhs.name(), rhs.value());
 
 	return *this;
 }
@@ -1015,7 +942,7 @@ wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serialize_type<value_type>::type	s_type;
 
-	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value(), m_make_node);
+	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value());
 
 	return *this;
 }
@@ -1023,35 +950,42 @@ wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
 // and some deferred implementations for the container types
 
 template<typename T, typename C>
-void serialize_container<T,C>::serialize(container* parent, const std::string& name, C& v, bool)
+void serialize_container<T,C>::serialize(container* parent, const std::string& name, C& v)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serialize_type<value_type>::type	s_type;
 	
 	for (typename C::iterator i = v.begin(); i != v.end(); ++i)
-		s_type::serialize(parent, name, *i, true);
+		s_type::serialize(parent, name, *i);
 }
 
 template<typename T, typename C>
-void serialize_container<T,C>::deserialize(element& n, C& v)
+void serialize_container<T,C>::deserialize(element& n, const std::string& name, C& v)
+{
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type		value_type;
+	
+	BOOST_FOREACH (element* e, n)
+	{
+		if (e->name() == name)
+		{
+			value_type ev;
+			
+			deserializer ds(e);
+			ds.deserialize(name.c_str(), ev);
+
+			v.push_back(ev);
+		}
+	}
+}
+
+template<typename T, typename C>
+element* serialize_container<T,C>::to_wsdl(type_map& types, element* parent, const std::string& name, const C& v)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serialize_type<value_type>::type	s_type;
 	
 	value_type e;
-	s_type::deserialize(n, e);
-	v.push_back(e);
-}
-
-template<typename T, typename C>
-element* serialize_container<T,C>::to_wsdl(type_map& types,
-	element* parent, const std::string& name, const C& v, bool)
-{
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type	s_type;
-	
-	value_type e;
-	element* result = s_type::to_wsdl(types, parent, name, e, true);
+	element* result = s_type::to_wsdl(types, parent, name, e);
 
 	result->remove_attribute("minOccurs");
 	result->set_attribute("minOccurs", "0");
@@ -1067,12 +1001,12 @@ element* serialize_container<T,C>::to_wsdl(type_map& types,
 // and some deferred implementations for the boost::optional type
 
 template<typename T>
-void serialize_boost_optional<T>::serialize(container* parent, const std::string& name, boost::optional<T>& rhs, bool)
+void serialize_boost_optional<T>::serialize(container* parent, const std::string& name, boost::optional<T>& rhs)
 {
 	typedef typename serialize_type<T>::type		s_type;
 
 	if (rhs.is_initialized()) {
-		s_type::serialize(parent, name, rhs.get(), true);
+		s_type::serialize(parent, name, rhs.get());
 	}
 }
 
@@ -1087,22 +1021,12 @@ void serialize_boost_optional<T>::deserialize(const std::string& s, boost::optio
 }
 
 template<typename T>
-void serialize_boost_optional<T>::deserialize(element& n, boost::optional<T>& rhs)
+element* serialize_boost_optional<T>::to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>&)
 {
 	typedef typename serialize_type<T>::type		s_type;
 
 	T e;
-	s_type::deserialize(n, e);
-	rhs = e;
-}
-
-template<typename T>
-element* serialize_boost_optional<T>::to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>&, bool)
-{
-	typedef typename serialize_type<T>::type		s_type;
-
-	T e;
-	element* result = s_type::to_wsdl(types, parent, name, e, true);
+	element* result = s_type::to_wsdl(types, parent, name, e);
 
 	result->remove_attribute("minOccurs");
 	result->set_attribute("minOccurs", "0");
