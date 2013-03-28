@@ -192,8 +192,8 @@ struct handler : public handler_base
 							
 							// and serialize the result back into XML
 							element* result(new element(get_response_name()));
-							serializer sr(result, false);
-							sr & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
+							serializer sr(result);
+							sr.serialize(m_names[name_count - 1].c_str(), response);
 
 							// that's all, we're done
 							return result;
