@@ -26,6 +26,7 @@
 #include <boost/type_traits/remove_pointer.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/type_traits/remove_const.hpp>
+#include <boost/type_traits/integral_promotion.hpp> 
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -72,7 +73,7 @@
 /// WSDL. To use FindResult instead, call SOAP_XML_SET_STRUCT_NAME(FindResult);
 ///
 /// An alternative it to call, which allows different WSDL and struct names:
-/// zeep::xml::serialize_struct<FindResult>::set_struct_name("FindResult");
+/// zeep::xml::struct_serializer<FindResult>::set_struct_name("FindResult");
 
 namespace zeep { namespace xml {
 
@@ -87,37 +88,106 @@ const std::string kPrefix = "ns";
 ///	and add it to the passed in node.
 ///	For deserializers this means looking up the first child matching the name
 ///	in the passed-in node to fetch the data from.
+///
+/// Older versions of libzeep used to use boost::serialization::nvp as type to
+/// specify name/value pairs. This will continue to work, but to use attributes
+/// we come up with a special version of name/value pairs specific for libzeep.
+
+struct serializer;
+struct deserializer;
+
+template<typename T>
+struct element_nvp : public boost::serialization::nvp<T>
+{
+	explicit element_nvp(const char* name, T& v) : nvp(name, v) {}
+	element_nvp(const element_nvp& rhs) : nvp(rhs) {}
+};
+
+template<typename T>
+struct attribute_nvp : public boost::serialization::nvp<T>
+{
+	explicit attribute_nvp(const char* name, T& v) : nvp(name, v) {}
+	attribute_nvp(const attribute_nvp& rhs) : nvp(rhs) {}
+};
+
+template<typename T>
+inline element_nvp<T> make_element_nvp(const char* name, T& v)
+{
+	return element_nvp<T>(name, v);
+}
+	
+template<typename T>
+inline attribute_nvp<T> make_attribute_nvp(const char* name, T& v)
+{
+	return attribute_nvp<T>(name, v);
+}
+
+#define ZEEP_ELEMENT_NAME_VALUE(name) \
+	zeep::xml::make_element_nvp(BOOST_PP_STRINGIZE(name), name)
+
+#define ZEEP_ATTRIBUTE_NAME_VALUE(name) \
+	zeep::xml::make_attribute_nvp(BOOST_PP_STRINGIZE(name), name)
 
 struct serializer
 {
 					serializer(container* node) : m_node(node) {}
 
 	template<typename T>
-	serializer&		operator&(const boost::serialization::nvp<T>& rhs);
+	serializer&		operator&(const boost::serialization::nvp<T>& rhs)
+					{
+						return serialize_element(rhs.name(), rhs.value());
+					}
 	
 	template<typename T>
-	serializer&		serialize(const char* name, const T& data)
+	serializer&		operator&(const element_nvp<T>& rhs)
 					{
-						return operator&(boost::serialization::nvp<T>(name, const_cast<T&>(data)));
+						return serialize_element(rhs.name(), rhs.value());
 					}
+	
+	template<typename T>
+	serializer&		operator&(const attribute_nvp<T>& rhs)
+					{
+						return serialize_attribute(rhs.name(), rhs.value());
+					}
+	
+	template<typename T>
+	serializer&		serialize_element(const char* name, const T& data);
+
+	template<typename T>
+	serializer&		serialize_attribute(const char* name, const T& data);
 
 	container*		m_node;
 };
 
 struct deserializer
 {
-					deserializer(container* node) : m_node(node) {}
+					deserializer(const container* node) : m_node(node) {}
 
 	template<typename T>
-	deserializer&	operator&(const boost::serialization::nvp<T>& rhs);
-
-	template<typename T>
-	deserializer&	deserialize(const char* name, T& data)
+	deserializer&	operator&(const boost::serialization::nvp<T>& rhs)
 					{
-						return operator&(boost::serialization::nvp<T>(name, data));
+						return deserialize_element(rhs.name(), rhs.value());
 					}
 
-	container*		m_node;
+	template<typename T>
+	deserializer&	operator&(const element_nvp<T>& rhs)
+					{
+						return deserialize_element(rhs.name(), rhs.value());
+					}
+	
+	template<typename T>
+	deserializer&	operator&(const attribute_nvp<T>& rhs)
+					{
+						return deserialize_attribute(rhs.name(), rhs.value());
+					}
+	
+	template<typename T>
+	deserializer&	deserialize_element(const char* name, T& data);
+
+	template<typename T>
+	deserializer&	deserialize_attribute(const char* name, T& data);
+
+	const container* m_node;
 };
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
@@ -132,7 +202,28 @@ struct wsdl_creator
 						: m_node(node), m_types(types), m_make_node(make_node) {}
 	
 	template<typename T>
-	wsdl_creator&	operator&(const boost::serialization::nvp<T>& rhs);	
+	wsdl_creator&	operator&(const boost::serialization::nvp<T>& rhs)
+					{
+						return add_element(rhs.name(), rhs.value());
+					}
+
+	template<typename T>
+	wsdl_creator&	operator&(const element_nvp<T>& rhs)
+					{
+						return add_element(rhs.name(), rhs.value());
+					}
+	
+	template<typename T>
+	wsdl_creator&	operator&(const attribute_nvp<T>& rhs)
+					{
+						return add_attribute(rhs.name(), rhs.value());
+					}
+
+	template<typename T>
+	wsdl_creator&	add_element(const char* name, const T& value);
+
+	template<typename T>
+	wsdl_creator&	add_attribute(const char* name, const T& value);
 
 	element*		m_node;
 	type_map&		m_types;
@@ -144,153 +235,426 @@ struct wsdl_creator
 // The actual (de)serializers
 //
 //	The serialize objects should all have three methods:
-//		static void	serialize(container* parent, const std::string& name, const T& v);
-//		static void	deserialize(const std::string& s, T& v);
-//		static void	to_wsdl(type_map& types, element* parent, const std::string& name, const T& v);
+//		static void	serialize(container* n, const T& v);
+//		static void	deserialize(const container* n, T& v);
+//		static void	wsdl(type_map& types, const std::string& name, const T& v);
 //
 //	the serialize method can use the convenience routine make_node to create the correct node type
 //	(this can be an attribute node, or a regular element node based on the name).
 
-inline
-void create_node(container* parent, const std::string& name, const std::string& value)
+template<typename Derived, typename Value>
+struct basic_type_serializer
 {
-	if (name[0] == '@')
+	enum {
+		min_occurs		= 1,
+		max_occurs		= 1,
+	};
+	
+	typedef Derived		xsd_type;
+	typedef Value		value_type;
+	
+	static void serialize(container* n, const value_type& value)
 	{
-		if (dynamic_cast<element*>(parent) != nullptr)		// create an attribute node
-			static_cast<element*>(parent)->set_attribute(name.substr(1), value);
-		else
-			throw exception("invalid node name for parent");
+		n->str(Derived::serialize_value(value));
 	}
-	else
+	
+	static void deserialize(const container* n, value_type& value)
 	{
-		element* n(new element(name));
-		n->content(boost::lexical_cast<std::string>(value));
-		parent->append(n);
+		value = Derived::deserialize_value(n->str());
 	}
-}
+	
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* n(new element("xsd:element"));
+
+		n->set_attribute("name", name);
+		n->set_attribute("type", Derived::type_name());
+		n->set_attribute("minOccurs", Derived::min_occurs);
+		n->set_attribute("maxOccurs", Derived::max_occurs);
+		
+		return n;
+	}
+};
 
 // arithmetic types are ints, doubles, etc... simply use lexical_cast to convert these
 template<typename T, int S = sizeof(T), bool = boost::is_unsigned<T>::value> struct arithmetic_wsdl_name {};
 
 template<typename T> struct arithmetic_wsdl_name<T, 1, false> {
-	static const char* type_name() { return "xsd:byte"; } 
+	static const char* type_name() { return "xsd:byte"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 1, true> {
-	static const char* type_name() { return "xsd:unsignedByte"; } 
+	static const char* type_name() { return "xsd:unsignedByte"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 2, false> {
-	static const char* type_name() { return "xsd:short"; } 
+	static const char* type_name() { return "xsd:short"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 2, true> {
-	static const char* type_name() { return "xsd:unsignedShort"; } 
+	static const char* type_name() { return "xsd:unsignedShort"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 4, false> {
-	static const char* type_name() { return "xsd:int"; } 
+	static const char* type_name() { return "xsd:int"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 4, true> {
-	static const char* type_name() { return "xsd:unsignedInt"; } 
+	static const char* type_name() { return "xsd:unsignedInt"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 8, false> {
-	static const char* type_name() { return "xsd:long"; } 
+	static const char* type_name() { return "xsd:long"; }
 };
 template<typename T> struct arithmetic_wsdl_name<T, 8, true> {
-	static const char* type_name() { return "xsd:unsignedLong"; } 
+	static const char* type_name() { return "xsd:unsignedLong"; }
 };
 template<> struct arithmetic_wsdl_name<float> {
-	static const char* type_name() { return "xsd:float"; } 
+	static const char* type_name() { return "xsd:float"; }
 };
 template<> struct arithmetic_wsdl_name<double> {
-	static const char* type_name() { return "xsd:double"; } 
+	static const char* type_name() { return "xsd:double"; }
 };
 
 template<typename T>
-struct serialize_arithmetic
+struct arithmetic_serializer : public basic_type_serializer<arithmetic_serializer<T>,
+										typedef typename boost::remove_const<
+											typename boost::remove_reference<T>::type
+										>::type>
+							 , public arithmetic_wsdl_name<T>
 {
-	typedef typename boost::remove_const<
-			typename boost::remove_reference<T>::type >::type	value_type;
-	typedef arithmetic_wsdl_name<value_type>					wsdl_name;
+	// use promoted type to force writing out char as an integer
+	typedef typename boost::integral_promotion<T>::type		promoted_type;
+
+	static std::string serialize_value(const value_type& value)
+	{
+		return boost::lexical_cast<std::string>(static_cast<promoted_type>(value));
+	}
 	
-	static void	serialize(container* parent, const std::string& name, T& v)
-				{
-					create_node(parent, name, boost::lexical_cast<std::string>(v));
-				}
-
-	static void	deserialize(const std::string& s, T& v)
-				{
-					v = boost::lexical_cast<T>(s);
-				}
-
-	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, const T& v)
-				{
-					element* n(new element("xsd:element"));
-					n->set_attribute("name", name);
-					n->set_attribute("type", wsdl_name::type_name());
-					n->set_attribute("minOccurs", "1");
-					n->set_attribute("maxOccurs", "1");
-//					n->set_attribute("default", boost::lexical_cast<std::string>(v));
-					parent->append(n);
-					
-					return n;
-				}
+	static value_type deserialize_value(const std::string& value)
+	{
+		return static_cast<value_type>(boost::lexical_cast<promoted_type>(value));
+	}
 };
 
-struct serialize_string
+struct string_serializer : public basic_type_serializer<string_serializer, std::string>
 {
-	static void	serialize(container* parent, const std::string& name, const std::string& v)
-				{
-					create_node(parent, name, v);
-				}
+	typedef std::string value_type;
+	
+	static const char* type_name() { return "xsd:string"; }
 
-	static void	deserialize(const std::string& s, std::string& v)
-				{
-					v = s;
-				}
+	static std::string serialize_value(const std::string& value)
+	{
+		return value;
+	}
 
-	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, const std::string& v)
-				{
-					element* n(new element("xsd:element"));
-					n->set_attribute("name", name);
-					n->set_attribute("type", "xsd:string");
-					n->set_attribute("minOccurs", "1");
-					n->set_attribute("maxOccurs", "1");
-//					n->set_attribute("default", v);
-					parent->append(n);
-					
-					return n;
-				}
+	static std::string deserialize_value(const std::string& value)
+	{
+		return value;
+	}
 };
 
-struct serialize_bool
+struct bool_serializer : public basic_type_serializer<bool_serializer, bool>
 {
-	static void	serialize(container* parent, const std::string& name, bool v)
-				{
-					create_node(parent, name, v ? "true" : "false");
-				}
+	typedef bool value_type;
 
-	static void	deserialize(const std::string& s, bool& v)
-				{
-					v = (s == "true" or s == "1");
-				}
+	static const char* type_name() { return "xsd:boolean"; }
+	
+	static std::string serialize_value(bool value)
+	{
+		return value ? "true" : "false";
+	}
 
-	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, bool v)
-				{
-					element* n(new element("xsd:element"));
-					n->set_attribute("name", name);
-					n->set_attribute("type", "xsd:boolean");
-					n->set_attribute("minOccurs", "1");
-					n->set_attribute("maxOccurs", "1");
-//					n->set_attribute("default", v ? "true" : "false");
-					parent->append(n);
-					
-					return n;
-				}
+	static bool deserialize_value(const std::string& value)
+	{
+		return (value == "true" or value == "1");
+	}
 };
+
+///// \brief serializer/deserializer for boost::posix_time::ptime
+///// boost::posix_time::ptime values are always assumed to be UTC
+//struct serialize_boost_posix_time_ptime
+//{
+//	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
+//	static void	serialize(container* parent, const std::string& name, const boost::posix_time::ptime& v)
+//	{
+//		create_node(parent, name, boost::posix_time::to_iso_extended_string(v).append("Z"));
+//	}
+//
+//	/// Deserialize according to ISO8601 rules.
+//	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
+//	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
+//	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
+//	static void	deserialize(const std::string& s, boost::posix_time::ptime& v)
+//	{
+//		// We accept 3 general formats:
+//		//  1: date fields separated with dashes, time fields separated with colons, eg. 2013-02-17T15:25:20,502104+01:00
+//		//  2: date fields not separated, time fields separated with colons, eg. 20130217T15:25:20,502104+01:00
+//		//  3: date fields not separated, time fields not separated, eg. 20130217T152520,502104+01:00
+//
+//		// Apart from the separators, the 3 regexes are basically the same, i.e. they have the same fields
+//		// Note: boost::regex is threadsafe, so we can declare these statically
+//
+//		// Format 1:
+//		// ^(-?\d{4})-(\d{2})-(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
+//		//  ^         ^       ^       ^      ^ ^      ^ ^      ^    ^          ^^   ^     ^      ^ ^
+//		//  |         |       |       |      | |      | |      |    |          ||   |     |      | |
+//		//  |         |       |       |      | |      | |      |    |          ||   |     |      | [16] UTC minutes offset
+//		//  |         |       |       |      | |      | |      |    |          ||   |     |      [15] have UTC minutes offset?
+//		//  |         |       |       |      | |      | |      |    |          ||   |     [14] UTC hour offset
+//		//  |         |       |       |      | |      | |      |    |          ||   [13] UTC offset sign
+//		//  |         |       |       |      | |      | |      |    |          |[12] Zulu time
+//		//  |         |       |       |      | |      | |      |    |          [11] have time zone?
+//		//  |         |       |       |      | |      | |      |    [10] fractional seconds
+//		//  |         |       |       |      | |      | |      [9] have fractional seconds
+//		//  |         |       |       |      | |      | [8] seconds
+//		//  |         |       |       |      | |      [7] have seconds?
+//		//  |         |       |       |      | [6] minutes
+//		//  |         |       |       |      [5] have minutes?
+//		//  |         |       |       [4] hours
+//		//  |         |       [3] day
+//		//  |         [2] month
+//		//  [1] year
+//		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
+//
+//		// Format 2:
+//		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
+//		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
+//
+//		// Format 3:
+//		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})((\d{2})((\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
+//		static boost::regex re3("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})((\\d{2})((\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
+//
+//		static const int f_year              =  1;
+//		static const int f_month             =  2;
+//		static const int f_day               =  3;
+//		static const int f_hours             =  4;
+//		static const int f_have_minutes      =  5;
+//		static const int f_minutes           =  6;
+//		static const int f_have_seconds      =  7;
+//		static const int f_seconds           =  8;
+//		static const int f_have_frac         =  9;
+//		static const int f_frac              = 10;
+//		static const int f_have_tz           = 11;
+//		static const int f_zulu              = 12;
+//		static const int f_offs_sign         = 13;
+//		static const int f_offs_hours        = 14;
+//		static const int f_have_offs_minutes = 15;
+//		static const int f_offs_minutes      = 16;
+//
+//		boost::smatch m;
+//		if (!boost::regex_match(s, m, re1)) {
+//			if (!boost::regex_match(s, m, re2)) {
+//				if (!boost::regex_match(s, m, re3)) {
+//					throw exception("Bad dateTime format");
+//				}
+//			}
+//		}
+//
+//		boost::gregorian::date d(
+//		  boost::lexical_cast<int>(m[f_year])
+//		, boost::lexical_cast<int>(m[f_month])
+//		, boost::lexical_cast<int>(m[f_day])
+//		);
+//
+//		int hours = boost::lexical_cast<int>(m[f_hours]);
+//		int minutes = 0, seconds = 0;
+//		if (m.length(f_have_minutes)) {
+//			minutes = boost::lexical_cast<int>(m[f_minutes]);
+//			if (m.length(f_have_seconds)) {
+//				seconds = boost::lexical_cast<int>(m[f_seconds]);
+//			}
+//		}
+//		boost::posix_time::time_duration t(hours, minutes, seconds);
+//
+//		if (m.length(f_have_frac)) {
+//			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
+//			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
+//		}
+//
+//		v = boost::posix_time::ptime(d, t);
+//
+//		if (m.length(f_have_tz)) {
+//			if (!m.length(f_zulu)) {
+//				std::string sign = m[f_offs_sign];
+//				int hours = boost::lexical_cast<int>(m[f_offs_hours]);
+//				int minutes = 0;
+//				if (m.length(f_have_offs_minutes)) {
+//					minutes = boost::lexical_cast<int>(m[f_offs_minutes]);
+//				}
+//				boost::posix_time::time_duration offs(hours, minutes, 0);
+//				if (sign == "+") {
+//					v -= offs;
+//				} else {
+//					v += offs;
+//				}
+//			}
+//		} else {
+//			// Boost has no clear way of instantiating the *current* timezone, so
+//			// it's not possible to convert from local to UTC, using boost::local_time classes
+//			// For now, settle on using mktime...
+//			std::tm tm = boost::posix_time::to_tm(v);
+//			tm.tm_isdst = -1;
+//			std::time_t t = mktime(&tm);
+//			v = boost::posix_time::from_time_t(t);
+//		}
+//	}
+//
+//	static element*
+//	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
+//	{
+//		element* n(new element("xsd:element"));
+//		n->set_attribute("name", name);
+//		n->set_attribute("type", "xsd:dateTime");
+//		n->set_attribute("minOccurs", "1");
+//		n->set_attribute("maxOccurs", "1");
+//		parent->append(n);
+//		return n;
+//	}
+//};
+//
+///// \brief serializer/deserializer for boost::gregorian::date
+///// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
+//struct serialize_boost_gregorian_date
+//{
+//	/// Serialize the boost::gregorian::date as YYYY-MM-DD
+//	static void	serialize(container* parent, const std::string& name, const boost::gregorian::date& v)
+//	{
+//		create_node(parent, name, boost::gregorian::to_iso_extended_string(v));
+//	}
+//
+//	/// Deserialize boost::gregorian::date according to ISO8601 rules, but without timezone.
+//	static void	deserialize(const std::string& s, boost::gregorian::date& v)
+//	{
+//		// We accept 2 general formats:
+//		//  1: date fields separated with dashes, eg. 2013-02-17
+//		//  2: date fields not separated, eg. 20130217
+//
+//		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
+//		// Note: boost::regex is threadsafe, so we can declare these statically
+//
+//		// Format 1:
+//		// ^(-?\d{4})-(\d{2})-(\d{2})$
+//		//  ^         ^       ^
+//		//  |         |       |
+//		//  |         |       |
+//		//  |         |       [3] day
+//		//  |         [2] month
+//		//  [1] year
+//		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})$");
+//
+//		// Format 2:
+//		// ^(-?\d{4})(\d{2})(\d{2})$
+//		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})$");
+//
+//		static const int f_year              =  1;
+//		static const int f_month             =  2;
+//		static const int f_day               =  3;
+//
+//		boost::smatch m;
+//		if (!boost::regex_match(s, m, re1)) {
+//			if (!boost::regex_match(s, m, re2)) {
+//				throw exception("Bad date format");
+//			}
+//		}
+//
+//		v = boost::gregorian::date(
+//		  boost::lexical_cast<int>(m[f_year])
+//		, boost::lexical_cast<int>(m[f_month])
+//		, boost::lexical_cast<int>(m[f_day])
+//		);
+//	}
+//
+//	static element*
+//	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::gregorian::date& v)
+//	{
+//		element* n(new element("xsd:element"));
+//		n->set_attribute("name", name);
+//		n->set_attribute("type", "xsd:date");
+//		n->set_attribute("minOccurs", "1");
+//		n->set_attribute("maxOccurs", "1");
+//		parent->append(n);
+//		return n;
+//	}
+//};
+//
+///// \brief serializer/deserializer for boost::posix_time::time_duration
+///// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
+//struct serialize_boost_posix_time_time_duration
+//{
+//	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
+//	static void	serialize(container* parent, const std::string& name, const boost::posix_time::time_duration& v)
+//	{
+//		create_node(parent, name, boost::posix_time::to_simple_string(v));
+//	}
+//
+//	/// Deserialize boost::posix_time::time_duration according to ISO8601 rules, but without timezone.
+//	static void	deserialize(const std::string& s, boost::posix_time::time_duration& v)
+//	{
+//		// We accept 2 general formats:
+//		//  1: time fields separated with colons, eg. 15:25:20,502104
+//		//  2: time fields not separated, eg. 152520,502104
+//
+//		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
+//		// Note: boost::regex is threadsafe, so we can declare these statically
+//
+//		// Format 1:
+//		// ^(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?$
+//		//  ^      ^ ^      ^ ^      ^    ^
+//		//  |      | |      | |      |    |
+//		//  |      | |      | |      |    [7] fractional seconds
+//		//  |      | |      | |      [6] have fractional seconds
+//		//  |      | |      | [5] seconds
+//		//  |      | |      [4] have seconds?
+//		//  |      | [3] minutes
+//		//  |      [2] have minutes?
+//		//  [1] hours
+//		static boost::regex re1("^(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?$");
+//
+//		// Format 2:
+//		// ^(\d{2})((\d{2})((\d{2})([.,](\d+))?)?)?$
+//		static boost::regex re2("^(\\d{2})((\\d{2})((\\d{2})([.,](\\d+))?)?)?$");
+//
+//		static const int f_hours             =  1;
+//		static const int f_have_minutes      =  2;
+//		static const int f_minutes           =  3;
+//		static const int f_have_seconds      =  4;
+//		static const int f_seconds           =  5;
+//		static const int f_have_frac         =  6;
+//		static const int f_frac              =  7;
+//
+//		boost::smatch m;
+//		if (!boost::regex_match(s, m, re1)) {
+//			if (!boost::regex_match(s, m, re2)) {
+//				throw exception("Bad time format");
+//			}
+//		}
+//
+//		int hours = boost::lexical_cast<int>(m[f_hours]);
+//		int minutes = 0, seconds = 0;
+//		if (m.length(f_have_minutes)) {
+//			minutes = boost::lexical_cast<int>(m[f_minutes]);
+//			if (m.length(f_have_seconds)) {
+//				seconds = boost::lexical_cast<int>(m[f_seconds]);
+//			}
+//		}
+//		v = boost::posix_time::time_duration(hours, minutes, seconds);
+//
+//		if (m.length(f_have_frac)) {
+//			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
+//			v += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
+//		}
+//	}
+//
+//	static element*
+//	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
+//	{
+//		element* n(new element("xsd:element"));
+//		n->set_attribute("name", name);
+//		n->set_attribute("type", "xsd:time");
+//		n->set_attribute("minOccurs", "1");
+//		n->set_attribute("maxOccurs", "1");
+//		parent->append(n);
+//		return n;
+//	}
+//};
 
 template<typename S, typename T>
-struct struct_serializer
+struct struct_serializer_archive
 {
 	static void serialize(S& stream, T& data)
 	{
@@ -298,376 +662,84 @@ struct struct_serializer
 	}
 };
 
-/// \brief serializer/deserializer for boost::posix_time::ptime
-/// boost::posix_time::ptime values are always assumed to be UTC
-struct serialize_boost_posix_time_ptime
+template<typename Derived, typename Struct>
+struct struct_serializer_base
 {
-	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
-	static void	serialize(container* parent, const std::string& name, const boost::posix_time::ptime& v)
-	{
-		create_node(parent, name, boost::posix_time::to_iso_extended_string(v).append("Z"));
-	}
-
-	/// Deserialize according to ISO8601 rules.
-	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
-	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
-	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
-	static void	deserialize(const std::string& s, boost::posix_time::ptime& v)
-	{
-		// We accept 3 general formats:
-		//  1: date fields separated with dashes, time fields separated with colons, eg. 2013-02-17T15:25:20,502104+01:00
-		//  2: date fields not separated, time fields separated with colons, eg. 20130217T15:25:20,502104+01:00
-		//  3: date fields not separated, time fields not separated, eg. 20130217T152520,502104+01:00
-
-		// Apart from the separators, the 3 regexes are basically the same, i.e. they have the same fields
-		// Note: boost::regex is threadsafe, so we can declare these statically
-
-		// Format 1:
-		// ^(-?\d{4})-(\d{2})-(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-		//  ^         ^       ^       ^      ^ ^      ^ ^      ^    ^          ^^   ^     ^      ^ ^
-		//  |         |       |       |      | |      | |      |    |          ||   |     |      | |
-		//  |         |       |       |      | |      | |      |    |          ||   |     |      | [16] UTC minutes offset
-		//  |         |       |       |      | |      | |      |    |          ||   |     |      [15] have UTC minutes offset?
-		//  |         |       |       |      | |      | |      |    |          ||   |     [14] UTC hour offset
-		//  |         |       |       |      | |      | |      |    |          ||   [13] UTC offset sign
-		//  |         |       |       |      | |      | |      |    |          |[12] Zulu time
-		//  |         |       |       |      | |      | |      |    |          [11] have time zone?
-		//  |         |       |       |      | |      | |      |    [10] fractional seconds
-		//  |         |       |       |      | |      | |      [9] have fractional seconds
-		//  |         |       |       |      | |      | [8] seconds
-		//  |         |       |       |      | |      [7] have seconds?
-		//  |         |       |       |      | [6] minutes
-		//  |         |       |       |      [5] have minutes?
-		//  |         |       |       [4] hours
-		//  |         |       [3] day
-		//  |         [2] month
-		//  [1] year
-		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-
-		// Format 2:
-		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-
-		// Format 3:
-		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})((\d{2})((\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-		static boost::regex re3("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})((\\d{2})((\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-
-		static const int f_year              =  1;
-		static const int f_month             =  2;
-		static const int f_day               =  3;
-		static const int f_hours             =  4;
-		static const int f_have_minutes      =  5;
-		static const int f_minutes           =  6;
-		static const int f_have_seconds      =  7;
-		static const int f_seconds           =  8;
-		static const int f_have_frac         =  9;
-		static const int f_frac              = 10;
-		static const int f_have_tz           = 11;
-		static const int f_zulu              = 12;
-		static const int f_offs_sign         = 13;
-		static const int f_offs_hours        = 14;
-		static const int f_have_offs_minutes = 15;
-		static const int f_offs_minutes      = 16;
-
-		boost::smatch m;
-		if (!boost::regex_match(s, m, re1)) {
-			if (!boost::regex_match(s, m, re2)) {
-				if (!boost::regex_match(s, m, re3)) {
-					throw exception("Bad dateTime format");
-				}
-			}
-		}
-
-		boost::gregorian::date d(
-		  boost::lexical_cast<int>(m[f_year])
-		, boost::lexical_cast<int>(m[f_month])
-		, boost::lexical_cast<int>(m[f_day])
-		);
-
-		int hours = boost::lexical_cast<int>(m[f_hours]);
-		int minutes = 0, seconds = 0;
-		if (m.length(f_have_minutes)) {
-			minutes = boost::lexical_cast<int>(m[f_minutes]);
-			if (m.length(f_have_seconds)) {
-				seconds = boost::lexical_cast<int>(m[f_seconds]);
-			}
-		}
-		boost::posix_time::time_duration t(hours, minutes, seconds);
-
-		if (m.length(f_have_frac)) {
-			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
-			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
-		}
-
-		v = boost::posix_time::ptime(d, t);
-
-		if (m.length(f_have_tz)) {
-			if (!m.length(f_zulu)) {
-				std::string sign = m[f_offs_sign];
-				int hours = boost::lexical_cast<int>(m[f_offs_hours]);
-				int minutes = 0;
-				if (m.length(f_have_offs_minutes)) {
-					minutes = boost::lexical_cast<int>(m[f_offs_minutes]);
-				}
-				boost::posix_time::time_duration offs(hours, minutes, 0);
-				if (sign == "+") {
-					v -= offs;
-				} else {
-					v += offs;
-				}
-			}
-		} else {
-			// Boost has no clear way of instantiating the *current* timezone, so
-			// it's not possible to convert from local to UTC, using boost::local_time classes
-			// For now, settle on using mktime...
-			std::tm tm = boost::posix_time::to_tm(v);
-			tm.tm_isdst = -1;
-			std::time_t t = mktime(&tm);
-			v = boost::posix_time::from_time_t(t);
-		}
-	}
-
-	static element*
-	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
-	{
-		element* n(new element("xsd:element"));
-		n->set_attribute("name", name);
-		n->set_attribute("type", "xsd:dateTime");
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		parent->append(n);
-		return n;
-	}
-};
-
-/// \brief serializer/deserializer for boost::gregorian::date
-/// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
-struct serialize_boost_gregorian_date
-{
-	/// Serialize the boost::gregorian::date as YYYY-MM-DD
-	static void	serialize(container* parent, const std::string& name, const boost::gregorian::date& v)
-	{
-		create_node(parent, name, boost::gregorian::to_iso_extended_string(v));
-	}
-
-	/// Deserialize boost::gregorian::date according to ISO8601 rules, but without timezone.
-	static void	deserialize(const std::string& s, boost::gregorian::date& v)
-	{
-		// We accept 2 general formats:
-		//  1: date fields separated with dashes, eg. 2013-02-17
-		//  2: date fields not separated, eg. 20130217
-
-		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
-		// Note: boost::regex is threadsafe, so we can declare these statically
-
-		// Format 1:
-		// ^(-?\d{4})-(\d{2})-(\d{2})$
-		//  ^         ^       ^
-		//  |         |       |
-		//  |         |       |
-		//  |         |       [3] day
-		//  |         [2] month
-		//  [1] year
-		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})$");
-
-		// Format 2:
-		// ^(-?\d{4})(\d{2})(\d{2})$
-		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})$");
-
-		static const int f_year              =  1;
-		static const int f_month             =  2;
-		static const int f_day               =  3;
-
-		boost::smatch m;
-		if (!boost::regex_match(s, m, re1)) {
-			if (!boost::regex_match(s, m, re2)) {
-				throw exception("Bad date format");
-			}
-		}
-
-		v = boost::gregorian::date(
-		  boost::lexical_cast<int>(m[f_year])
-		, boost::lexical_cast<int>(m[f_month])
-		, boost::lexical_cast<int>(m[f_day])
-		);
-	}
-
-	static element*
-	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::gregorian::date& v)
-	{
-		element* n(new element("xsd:element"));
-		n->set_attribute("name", name);
-		n->set_attribute("type", "xsd:date");
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		parent->append(n);
-		return n;
-	}
-};
-
-/// \brief serializer/deserializer for boost::posix_time::time_duration
-/// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
-struct serialize_boost_posix_time_time_duration
-{
-	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
-	static void	serialize(container* parent, const std::string& name, const boost::posix_time::time_duration& v)
-	{
-		create_node(parent, name, boost::posix_time::to_simple_string(v));
-	}
-
-	/// Deserialize boost::posix_time::time_duration according to ISO8601 rules, but without timezone.
-	static void	deserialize(const std::string& s, boost::posix_time::time_duration& v)
-	{
-		// We accept 2 general formats:
-		//  1: time fields separated with colons, eg. 15:25:20,502104
-		//  2: time fields not separated, eg. 152520,502104
-
-		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
-		// Note: boost::regex is threadsafe, so we can declare these statically
-
-		// Format 1:
-		// ^(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?$
-		//  ^      ^ ^      ^ ^      ^    ^
-		//  |      | |      | |      |    |
-		//  |      | |      | |      |    [7] fractional seconds
-		//  |      | |      | |      [6] have fractional seconds
-		//  |      | |      | [5] seconds
-		//  |      | |      [4] have seconds?
-		//  |      | [3] minutes
-		//  |      [2] have minutes?
-		//  [1] hours
-		static boost::regex re1("^(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?$");
-
-		// Format 2:
-		// ^(\d{2})((\d{2})((\d{2})([.,](\d+))?)?)?$
-		static boost::regex re2("^(\\d{2})((\\d{2})((\\d{2})([.,](\\d+))?)?)?$");
-
-		static const int f_hours             =  1;
-		static const int f_have_minutes      =  2;
-		static const int f_minutes           =  3;
-		static const int f_have_seconds      =  4;
-		static const int f_seconds           =  5;
-		static const int f_have_frac         =  6;
-		static const int f_frac              =  7;
-
-		boost::smatch m;
-		if (!boost::regex_match(s, m, re1)) {
-			if (!boost::regex_match(s, m, re2)) {
-				throw exception("Bad time format");
-			}
-		}
-
-		int hours = boost::lexical_cast<int>(m[f_hours]);
-		int minutes = 0, seconds = 0;
-		if (m.length(f_have_minutes)) {
-			minutes = boost::lexical_cast<int>(m[f_minutes]);
-			if (m.length(f_have_seconds)) {
-				seconds = boost::lexical_cast<int>(m[f_seconds]);
-			}
-		}
-		v = boost::posix_time::time_duration(hours, minutes, seconds);
-
-		if (m.length(f_have_frac)) {
-			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
-			v += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
-		}
-	}
-
-	static element*
-	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
-	{
-		element* n(new element("xsd:element"));
-		n->set_attribute("name", name);
-		n->set_attribute("type", "xsd:time");
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		parent->append(n);
-		return n;
-	}
-};
-
-template<typename T>
-struct serialize_struct
-{
-	static std::string							s_struct_name;
-	typedef struct_serializer<serializer,T>		s_serializer;
-	typedef struct_serializer<deserializer,T>	s_deserializer;
-	typedef struct_serializer<wsdl_creator,T>	s_wsdl_creator;
+	typedef typename Struct		value_type;
+	static std::string			s_struct_name;
 	
-	static void	serialize(container* parent, const std::string& name, T& v)
-				{
-					element* n(new element(name));
-					serializer sr(n);
-					s_serializer::serialize(sr, v);
-					parent->append(n);
-				}
+	static void serialize(container* n, const value_type& value)
+	{
+		typedef typename struct_serializer_archive<serializer,value_type> archive;
+		
+		serializer sr(n);
+		archive::serialize(sr, const_cast<value_type&>(value));
+	}
 
-	static void	deserialize(element& n, const std::string& name, T& v)
-				{
-					deserializer ds(&n);
-					s_deserializer::serialize(ds, v);
-				}
+	static void	deserialize(const container* n, value_type& v)
+	{
+		typedef typename struct_serializer_archive<deserializer,value_type>	archive;
 
-	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, T& v)
-				{
-					element* result(new element("xsd:element"));
-					result->set_attribute("name", name);
-					result->set_attribute("type", kPrefix + ':' + s_struct_name);
-					result->set_attribute("minOccurs", "1");
-					result->set_attribute("maxOccurs", "1");
-					parent->append(result);
-
-					// we might be known already
-					if (types.find(s_struct_name) != types.end())
-						return result;
-
-					element* n(new element("xsd:complexType"));
-					n->set_attribute("name", s_struct_name);
-					types[s_struct_name] = n;
-					
-					element* sequence(new element("xsd:sequence"));
-					n->append(sequence);
-					
-					wsdl_creator wsdl(types, sequence);
-					s_wsdl_creator::serialize(wsdl, v);
-					
-					return result;
-				}
+		deserializer ds(n);
+		archive::serialize(ds, v);
+	}
 	
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* result(new element("xsd:element"));
+		result->set_attribute("name", name);
+		result->set_attribute("type", kPrefix + ':' + s_struct_name);
+		result->set_attribute("minOccurs", "1");
+		result->set_attribute("maxOccurs", "1");
+
+		// we might be known already
+		if (types.find(s_struct_name) == types.end())
+		{
+			element* n(new element("xsd:complexType"));
+			n->set_attribute("name", s_struct_name);
+			types[s_struct_name] = n;
+			
+			element* sequence(new element("xsd:sequence"));
+			n->append(sequence);
+
+			typedef typename struct_serializer_archive<deserializer,value_type>	archive;
+		
+			wsdl_creator wsdl(types, sequence);
+			archive::serialize(wsdl, v);
+		}
+		
+		return result;
+	}
+};
+
+template<typename Struct>
+struct struct_serializer_impl : public struct_serializer_base<struct_serializer_impl<Struct>, Struct>
+{
+	static std::string s_struct_name;
+
 	static void	set_struct_name(const std::string& name)
-				{
-					s_struct_name = name;
-				}
+	{
+		s_struct_name = name;
+	}
 };
 
-template<typename T>
-std::string serialize_struct<T>::s_struct_name = typeid(T).name();
+template<typename Struct>
+std::string struct_serializer_impl<Struct>::s_struct_name = typeid(Archive).name();
 
 #endif
 
-#define SOAP_XML_SET_STRUCT_NAME(s)	zeep::xml::serialize_struct<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
+#define SOAP_XML_SET_STRUCT_NAME(s)	zeep::xml::struct_serializer_impl<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
-template<typename T, typename C = std::vector<T> >
-struct serialize_container
-{
-	static void	serialize(container* parent, const std::string& name, C& v);
-	static void	deserialize(element& n, const std::string& name, C& v);
-
-	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, const C& v);
-};
-
-template<typename T>
-struct serialize_boost_optional
-{
-	static void	serialize(container* parent, const std::string& name, boost::optional<T>& v);
-	static void	deserialize(const std::string& s, boost::optional<T>& v);
-
-	static element*	to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>& v);
-};
+//template<typename T>
+//struct serialize_boost_optional
+//{
+//	static void	serialize(container* parent, const std::string& name, boost::optional<T>& v);
+//	static void	deserialize(const std::string& s, boost::optional<T>& v);
+//
+//	static element*	to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>& v);
+//};
 
 template<typename T>
 struct enum_map
@@ -717,321 +789,296 @@ struct enum_map
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template<typename T>
-struct serialize_enum
+struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 {
 	typedef enum_map<T>					t_enum_map;
 	typedef std::map<T,std::string>		t_map;
 	
-	static void	serialize(container* parent, const std::string& name, T& v)
-				{
-					create_node(parent, name, t_enum_map::instance().m_name_mapping[v]);
-				}
+	static std::string serialize_value(const T& value)
+	{
+		return t_enum_map::instance().m_name_mapping[value];
+	}
 
-	static void	deserialize(const std::string& s, T& v)
-				{
-					t_map& m = t_enum_map::instance().m_name_mapping;
-					for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
-					{
-						if (e->second == s)
-						{
-							v = e->first;
-							break;
-						}
-					}
-				}
+	static T deserialize_value(const std::string& value)
+	{
+		T result = T();
+		
+		t_map& m = t_enum_map::instance().m_name_mapping;
+		for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
+		{
+			if (e->second == value)
+			{
+				result = e->first;
+				break;
+			}
+		}
+		
+		return result;
+	}
 
-	static element*
-				to_wsdl(type_map& types, element* parent, const std::string& name, const T& v)
-				{
-					std::string type_name = t_enum_map::instance().m_name;
-					
-					element* result(new element("xsd:element"));
-					result->set_attribute("name", name);
-					result->set_attribute("type", kPrefix + ':' + type_name);
-					result->set_attribute("minOccurs", "1");
-					result->set_attribute("maxOccurs", "1");
-//					result->set_attribute("default", t_enum_map::instance().m_name_mapping[v]);
-					parent->append(result);
-					
-					// we might be known already
-					if (types.find(type_name) != types.end())
-						return result;
-										
-					element* n(new element("xsd:simpleType"));
-					n->set_attribute("name", type_name);
-					types[type_name] = n;
-					
-					element* restriction(new element("xsd:restriction"));
-					restriction->set_attribute("base", "xsd:string");
-					n->append(restriction);
-					
-					t_map& m = t_enum_map::instance().m_name_mapping;
-					for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
-					{
-						element* en(new element("xsd:enumeration"));
-						en->set_attribute("value", e->second);
-						restriction->append(en);
-					}
-					
-					return result;
-				}
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		std::string type_name = t_enum_map::instance().m_name;
+		
+		element* result(new element("xsd:element"));
+		result->set_attribute("name", name);
+		result->set_attribute("type", kPrefix + ':' + type_name);
+		result->set_attribute("minOccurs", "1");
+		result->set_attribute("maxOccurs", "1");
+		
+		// we might be known already
+		if (types.find(type_name) == types.end())
+		{
+			element* n(new element("xsd:simpleType"));
+			n->set_attribute("name", type_name);
+			types[type_name] = n;
+			
+			element* restriction(new element("xsd:restriction"));
+			restriction->set_attribute("base", "xsd:string");
+			n->append(restriction);
+			
+			t_map& m = t_enum_map::instance().m_name_mapping;
+			for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
+			{
+				element* en(new element("xsd:enumeration"));
+				en->set_attribute("value", e->second);
+				restriction->append(en);
+			}
+		}
+		
+		return result;
+	}
 };
 
 // now create a type factory for these serializers
 
-template<typename T>
-struct serialize_type
+template<typename T, typename S = typename boost::mpl::if_c<
+									boost::is_arithmetic<T>::value,
+									arithmetic_serializer<T>,
+									typename boost::mpl::if_c<
+										boost::is_enum<T>::value,
+										enum_serializer<T>,
+										struct_serializer_impl<T>
+									>::type
+								>::type>
+struct serializer_basic_type
 {
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef S type_serializer_type;
+
+	static void serialize_type(container* n, const char* name, const value_type& value)
+	{
+		element* e = new element(name);
+		type_serializer_type::serialize(e, value);
+		n->append(e);
+	}
+
+	static void deserialize_type(const container* n, const char* name, value_type& value)
+	{
+		element* e = n->find_first(name);
+		if (e != nullptr)
+			type_serializer_type::deserialize(e, value);
+	}
+};
+
+template<typename T>
+struct serializer_type : public serializer_basic_type<T>
+{
+};
+
+template<>
+struct serializer_type<bool> : public serializer_basic_type<bool, bool_serializer>
+{
+};
+
+template<>
+struct serializer_type<std::string> : public serializer_basic_type<std::string, string_serializer>
+{
+};
+
+template<>
+struct serializer_type<boost::posix_time::ptime>
+	: public serializer_basic_type<boost::posix_time::ptime, serialize_boost_posix_time_ptime>
+{
+};
+
+template<>
+struct serializer_type<boost::gregorian::date>
+	: public serializer_basic_type<boost::gregorian::date, serialize_boost_gregorian_date>
+{
+};
+
+template<>
+struct serializer_type<boost::posix_time::time_duration>
+	: public serializer_basic_type<boost::posix_time::time_duration, serialize_boost_posix_time_time_duration>
+{
+};
+
+template<typename C>
+struct serialize_container_type
+{
+	typedef C container_type;
+	typedef typename container_type::value_type value_type;
 	typedef typename boost::mpl::if_c<
-			boost::is_arithmetic<T>::value,
-			serialize_arithmetic<T>,
-			typename boost::mpl::if_c<
-				boost::is_enum<T>::value,
-				serialize_enum<T>,
-				serialize_struct<T>
-			>::type
-		>::type					type;
+						boost::is_arithmetic<value_type>::value,
+						arithmetic_serializer<value_type>,
+						typename boost::mpl::if_c<
+							boost::is_enum<value_type>::value,
+							enum_serializer<value_type>,
+							struct_serializer_impl<value_type>
+						>::type
+					>::type base_serializer_type;
+	
+	static void serialize_type(container* n, const char* name, const container_type& value)
+	{
+		BOOST_FOREACH (const value_type& v, value)
+		{
+			element* e = new element(name);
+			base_serializer_type::serialize(e, v);
+			n->append(e);
+		}
+	}
 
-	typedef typename boost::mpl::if_c<
-			boost::is_arithmetic<T>::value,
-			std::string,
-			typename boost::mpl::if_c<
-				boost::is_enum<T>::value,
-				std::string,
-				element
-			>::type
-		>::type					param_type;
+	static void deserialize_type(const container* n, const char* name, container_type& value)
+	{
+		BOOST_FOREACH (const element* e, *n)
+		{
+			if (e->name() != name)
+				continue;
+			
+			value_type v;
+			base_serializer_type::deserialize(e, v);
+			value.push_back(v);
+		}
+	}
 
-	enum { is_container = false };
-};
-
-template<>
-struct serialize_type<bool>
-{
-	typedef serialize_bool		type;
-	typedef std::string			param_type;
-
-	enum { is_container = false };
-};
-
-template<>
-struct serialize_type<std::string>
-{
-	typedef serialize_string	type;
-	typedef std::string			param_type;
-
-	enum { is_container = false };
-};
-
-template<>
-struct serialize_type<boost::posix_time::ptime>
-{
-	typedef serialize_boost_posix_time_ptime	type;
-	typedef std::string							param_type;
-
-	enum { is_container = false };
-};
-
-template<>
-struct serialize_type<boost::gregorian::date>
-{
-	typedef serialize_boost_gregorian_date	type;
-	typedef std::string						param_type;
-
-	enum { is_container = false };
-};
-
-template<>
-struct serialize_type<boost::posix_time::time_duration>
-{
-	typedef serialize_boost_posix_time_time_duration	type;
-	typedef std::string									param_type;
-
-	enum { is_container = false };
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* result = base_serializer_type::wsdl(types, name);
+	
+		result->remove_attribute("minOccurs");
+		result->set_attribute("minOccurs", "0");
+		
+		result->remove_attribute("maxOccurs");
+		result->set_attribute("maxOccurs", "unbounded");
+	
+		return result;
+	}
 };
 
 template<typename T>
-struct serialize_type<std::vector<T> >
+struct serializer_type<std::vector<T>> : public serialize_container_type<std::vector<T>>
 {
-	typedef serialize_container<T, std::vector<T> > type;
-	typedef element									param_type;
-
-	enum { is_container = true };
 };
 
 template<typename T>
-struct serialize_type<std::list<T> >
+struct serializer_type<std::list<T>> : public serialize_container_type<std::list<T>>
 {
-	typedef serialize_container<T, std::list<T> >	type;
-	typedef element									param_type;
-
-	enum { is_container = true };
 };
 
 template<typename T>
-struct serialize_type<boost::optional<T> >
+struct serializer_type<boost::optional<T>>
 {
-	typedef serialize_boost_optional<T>	type;
-	typedef std::string					param_type;
+	typedef T							value_type;
+	typedef serializer_type<value_type>	base_serializer_type;
+	
+	static void serialize_type(container* n, const char* name, const boost::optional<value_type>& value)
+	{
+		if (value.is_initialized())
+			base_serializer_type::serialize_type(n, name, value.get());
+	}
 
-	enum { is_container = false };
+	static void deserialize_type(const container* n, const char* name, boost::optional<value_type>& value)
+	{
+		element* e = n->find_first(name);
+		if (e != nullptr)
+		{
+			value_type v;
+			base_serializer_type::deserialize_type(n, name, v);
+			value = v;
+		}
+	}
+
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* result = base_serializer_type::wsdl(types, name);
+	
+		result->remove_attribute("minOccurs");
+		result->set_attribute("minOccurs", "0");
+		
+		result->remove_attribute("maxOccurs");
+		result->set_attribute("maxOccurs", "1");
+	
+		return result;
+	}
 };
 
 // and the wrappers for serializing
 
 template<typename T>
-serializer& serializer::operator&(const boost::serialization::nvp<T>& rhs)
+serializer& serializer::serialize_element(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type	s_type;
+	typedef typename serializer_type<value_type>											type_serializer;
 
-	s_type::serialize(m_node, rhs.name(), rhs.value());
-
-	return *this;
-}
-
-// and deserializing, which is a tad more complex, alas
-
-template<typename T1, typename T2> struct deserialize_helper;
-
-template<typename T>
-struct deserialize_helper<T, std::string>
-{
-	typedef typename serialize_type<T>::type	s_type;
-	
-	static void deserialize(container* parent, const std::string& name, T& v)
-	{
-		if (name[0] == '@' and dynamic_cast<const element*>(parent) != nullptr)
-			s_type::deserialize(static_cast<const element*>(parent)->get_attribute(name.substr(1)), v);
-		else
-		{
-			element* n = parent->find_first(name);
-			if (n)
-				s_type::deserialize(n->content(), v);
-		}
-	}
-};
-
-template<typename T>
-struct deserialize_helper<T, element>
-{
-	typedef typename serialize_type<T>::type	s_type;
-	
-	static void deserialize(container* parent, const std::string& name, T& v)
-	{
-		if (dynamic_cast<element*>(parent) != nullptr)
-			s_type::deserialize(*static_cast<element*>(parent), name, v);
-	}
-};
-
-template<typename T>
-deserializer& deserializer::operator&(const boost::serialization::nvp<T>& rhs)
-{
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type		value_type;
-	typedef typename serialize_type<value_type>::param_type										param_type;
-	typedef typename deserialize_helper<T,param_type>											helper_type;
-	
-	helper_type::deserialize(m_node, rhs.name(), rhs.value());
+	type_serializer::serialize_type(m_node, name, value);
 
 	return *this;
 }
 
 template<typename T>
-wsdl_creator& wsdl_creator::operator&(const boost::serialization::nvp<T>& rhs)
+serializer& serializer::serialize_attribute(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type	s_type;
+	typedef typename serializer_type<value_type>::type_serializer_type						type_serializer;
 
-	s_type::to_wsdl(m_types, m_node, rhs.name(), rhs.value());
+	element* e = dynamic_cast<element*>(m_node);
+	if (e == nullptr)
+		throw exception("can only create attributes for elements");
+	e->set_attribute(name, type_serializer::serialize_value(value));
 
 	return *this;
 }
 
-// and some deferred implementations for the container types
-
-template<typename T, typename C>
-void serialize_container<T,C>::serialize(container* parent, const std::string& name, C& v)
+template<typename T>
+deserializer& deserializer::deserialize_element(const char* name, T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type	s_type;
+	typedef typename serializer_type<value_type>											type_serializer;
 	
-	for (typename C::iterator i = v.begin(); i != v.end(); ++i)
-		s_type::serialize(parent, name, *i);
+	type_serializer::deserialize_type(m_node, name, value);
+
+	return *this;
 }
 
-template<typename T, typename C>
-void serialize_container<T,C>::deserialize(element& n, const std::string& name, C& v)
+template<typename T>
+deserializer& deserializer::deserialize_attribute(const char* name, T& value)
 {
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type		value_type;
-	
-	BOOST_FOREACH (element* e, n)
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serializer_type<value_type>::type_serializer_type						type_serializer;
+
+	const element* e = dynamic_cast<const element*>(m_node);
+	if (e == nullptr)
+		throw exception("can only deserialize attributes for elements");
+	else
 	{
-		if (e->name() == name)
-		{
-			value_type ev;
-			
-			deserializer ds(e);
-			ds.deserialize(name.c_str(), ev);
-
-			v.push_back(ev);
-		}
+		std::string attr = e->get_attribute(name);
+		if (not attr.empty())
+			value = type_serializer::deserialize_value(attr);
 	}
+
+	return *this;
 }
 
-template<typename T, typename C>
-element* serialize_container<T,C>::to_wsdl(type_map& types, element* parent, const std::string& name, const C& v)
+template<typename T>
+wsdl_creator& wsdl_creator::add_element(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serialize_type<value_type>::type	s_type;
+	typedef typename serializer_type<value_type>											type_serializer;
 	
-	value_type e;
-	element* result = s_type::to_wsdl(types, parent, name, e);
+	m_node->append(type_serializer::wsdl(m_node, name));
 
-	result->remove_attribute("minOccurs");
-	result->set_attribute("minOccurs", "0");
-	
-	result->remove_attribute("maxOccurs");
-	result->set_attribute("maxOccurs", "unbounded");
-	
-	result->remove_attribute("default");
-
-	return result;
-}
-
-// and some deferred implementations for the boost::optional type
-
-template<typename T>
-void serialize_boost_optional<T>::serialize(container* parent, const std::string& name, boost::optional<T>& rhs)
-{
-	typedef typename serialize_type<T>::type		s_type;
-
-	if (rhs.is_initialized()) {
-		s_type::serialize(parent, name, rhs.get());
-	}
-}
-
-template<typename T>
-void serialize_boost_optional<T>::deserialize(const std::string& s, boost::optional<T>& rhs)
-{
-	typedef typename serialize_type<T>::type		s_type;
-
-	T e;
-	s_type::deserialize(s, e);
-	rhs = e;
-}
-
-template<typename T>
-element* serialize_boost_optional<T>::to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>&)
-{
-	typedef typename serialize_type<T>::type		s_type;
-
-	T e;
-	element* result = s_type::to_wsdl(types, parent, name, e);
-
-	result->remove_attribute("minOccurs");
-	result->set_attribute("minOccurs", "0");
-		
-	return result;
+	return *this;
 }
 
 #endif

@@ -96,6 +96,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\serializer-test.cpp" />
     <ClCompile Include="..\zeep-test.cpp" />
   </ItemGroup>
   <ItemGroup>

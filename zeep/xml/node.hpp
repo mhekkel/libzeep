@@ -14,6 +14,7 @@
 #include <boost/range.hpp>
 
 #include <zeep/config.hpp>
+#include <zeep/exception.hpp>
 
 namespace zeep { namespace xml {
 
@@ -95,6 +96,9 @@ class node
 	
 	/// return all content concatenated, including that of children.
 	virtual std::string	str() const = 0;
+	
+	/// both attribute and element implement str(const string&), others will throw
+	virtual void		str(const std::string& value) { throw exception("cannot set str for this node"); }
 	
 	/// write out the concatenated content to a stream, separated by sep.
 	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const;
@@ -400,7 +404,7 @@ class text : public node
 
 	virtual std::string	str() const									{ return m_text; }
 
-	void				str(const std::string& text)				{ m_text = text; }
+	virtual void		str(const std::string& text)				{ m_text = text; }
 
 	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const
 																	{ os << m_text; }
@@ -451,7 +455,8 @@ class attribute : public node
 	std::string			value() const								{ return m_value; }
 	void				value(const std::string& v)					{ m_value = v; }
 
-	virtual std::string	str() const									{ return value(); }
+	virtual std::string	str() const									{ return m_value; }
+	virtual void		str(const std::string& value)				{ m_value = value; }
 
 	virtual void		write(writer& w) const;
 
@@ -519,6 +524,7 @@ class element : public container
 	virtual node*		clone() const;
 
 	virtual std::string	str() const;
+	virtual void		str(const std::string& value)				{ content(value); }
 
 	virtual void		write_content(std::ostream& os, const char* sep = kWhiteSpaceChar) const;
 
