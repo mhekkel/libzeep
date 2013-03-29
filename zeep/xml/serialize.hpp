@@ -250,7 +250,6 @@ struct basic_type_serializer
 		max_occurs		= 1,
 	};
 	
-	typedef Derived		xsd_type;
 	typedef Value		value_type;
 	
 	static void serialize(container* n, const value_type& value)
@@ -269,8 +268,8 @@ struct basic_type_serializer
 
 		n->set_attribute("name", name);
 		n->set_attribute("type", Derived::type_name());
-		n->set_attribute("minOccurs", Derived::min_occurs);
-		n->set_attribute("maxOccurs", Derived::max_occurs);
+		n->set_attribute("minOccurs", boost::lexical_cast<string>(Derived::min_occurs));
+		n->set_attribute("maxOccurs", boost::lexical_cast<string>(Derived::max_occurs));
 		
 		return n;
 	}
@@ -365,293 +364,298 @@ struct bool_serializer : public basic_type_serializer<bool_serializer, bool>
 	}
 };
 
-///// \brief serializer/deserializer for boost::posix_time::ptime
-///// boost::posix_time::ptime values are always assumed to be UTC
-//struct serialize_boost_posix_time_ptime
-//{
-//	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
-//	static void	serialize(container* parent, const std::string& name, const boost::posix_time::ptime& v)
-//	{
-//		create_node(parent, name, boost::posix_time::to_iso_extended_string(v).append("Z"));
-//	}
-//
-//	/// Deserialize according to ISO8601 rules.
-//	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
-//	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
-//	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
-//	static void	deserialize(const std::string& s, boost::posix_time::ptime& v)
-//	{
-//		// We accept 3 general formats:
-//		//  1: date fields separated with dashes, time fields separated with colons, eg. 2013-02-17T15:25:20,502104+01:00
-//		//  2: date fields not separated, time fields separated with colons, eg. 20130217T15:25:20,502104+01:00
-//		//  3: date fields not separated, time fields not separated, eg. 20130217T152520,502104+01:00
-//
-//		// Apart from the separators, the 3 regexes are basically the same, i.e. they have the same fields
-//		// Note: boost::regex is threadsafe, so we can declare these statically
-//
-//		// Format 1:
-//		// ^(-?\d{4})-(\d{2})-(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-//		//  ^         ^       ^       ^      ^ ^      ^ ^      ^    ^          ^^   ^     ^      ^ ^
-//		//  |         |       |       |      | |      | |      |    |          ||   |     |      | |
-//		//  |         |       |       |      | |      | |      |    |          ||   |     |      | [16] UTC minutes offset
-//		//  |         |       |       |      | |      | |      |    |          ||   |     |      [15] have UTC minutes offset?
-//		//  |         |       |       |      | |      | |      |    |          ||   |     [14] UTC hour offset
-//		//  |         |       |       |      | |      | |      |    |          ||   [13] UTC offset sign
-//		//  |         |       |       |      | |      | |      |    |          |[12] Zulu time
-//		//  |         |       |       |      | |      | |      |    |          [11] have time zone?
-//		//  |         |       |       |      | |      | |      |    [10] fractional seconds
-//		//  |         |       |       |      | |      | |      [9] have fractional seconds
-//		//  |         |       |       |      | |      | [8] seconds
-//		//  |         |       |       |      | |      [7] have seconds?
-//		//  |         |       |       |      | [6] minutes
-//		//  |         |       |       |      [5] have minutes?
-//		//  |         |       |       [4] hours
-//		//  |         |       [3] day
-//		//  |         [2] month
-//		//  [1] year
-//		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-//
-//		// Format 2:
-//		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-//		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-//
-//		// Format 3:
-//		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})((\d{2})((\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-//		static boost::regex re3("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})((\\d{2})((\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-//
-//		static const int f_year              =  1;
-//		static const int f_month             =  2;
-//		static const int f_day               =  3;
-//		static const int f_hours             =  4;
-//		static const int f_have_minutes      =  5;
-//		static const int f_minutes           =  6;
-//		static const int f_have_seconds      =  7;
-//		static const int f_seconds           =  8;
-//		static const int f_have_frac         =  9;
-//		static const int f_frac              = 10;
-//		static const int f_have_tz           = 11;
-//		static const int f_zulu              = 12;
-//		static const int f_offs_sign         = 13;
-//		static const int f_offs_hours        = 14;
-//		static const int f_have_offs_minutes = 15;
-//		static const int f_offs_minutes      = 16;
-//
-//		boost::smatch m;
-//		if (!boost::regex_match(s, m, re1)) {
-//			if (!boost::regex_match(s, m, re2)) {
-//				if (!boost::regex_match(s, m, re3)) {
-//					throw exception("Bad dateTime format");
-//				}
-//			}
-//		}
-//
-//		boost::gregorian::date d(
-//		  boost::lexical_cast<int>(m[f_year])
-//		, boost::lexical_cast<int>(m[f_month])
-//		, boost::lexical_cast<int>(m[f_day])
-//		);
-//
-//		int hours = boost::lexical_cast<int>(m[f_hours]);
-//		int minutes = 0, seconds = 0;
-//		if (m.length(f_have_minutes)) {
-//			minutes = boost::lexical_cast<int>(m[f_minutes]);
-//			if (m.length(f_have_seconds)) {
-//				seconds = boost::lexical_cast<int>(m[f_seconds]);
-//			}
-//		}
-//		boost::posix_time::time_duration t(hours, minutes, seconds);
-//
-//		if (m.length(f_have_frac)) {
-//			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
-//			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
-//		}
-//
-//		v = boost::posix_time::ptime(d, t);
-//
-//		if (m.length(f_have_tz)) {
-//			if (!m.length(f_zulu)) {
-//				std::string sign = m[f_offs_sign];
-//				int hours = boost::lexical_cast<int>(m[f_offs_hours]);
-//				int minutes = 0;
-//				if (m.length(f_have_offs_minutes)) {
-//					minutes = boost::lexical_cast<int>(m[f_offs_minutes]);
-//				}
-//				boost::posix_time::time_duration offs(hours, minutes, 0);
-//				if (sign == "+") {
-//					v -= offs;
-//				} else {
-//					v += offs;
-//				}
-//			}
-//		} else {
-//			// Boost has no clear way of instantiating the *current* timezone, so
-//			// it's not possible to convert from local to UTC, using boost::local_time classes
-//			// For now, settle on using mktime...
-//			std::tm tm = boost::posix_time::to_tm(v);
-//			tm.tm_isdst = -1;
-//			std::time_t t = mktime(&tm);
-//			v = boost::posix_time::from_time_t(t);
-//		}
-//	}
-//
-//	static element*
-//	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
-//	{
-//		element* n(new element("xsd:element"));
-//		n->set_attribute("name", name);
-//		n->set_attribute("type", "xsd:dateTime");
-//		n->set_attribute("minOccurs", "1");
-//		n->set_attribute("maxOccurs", "1");
-//		parent->append(n);
-//		return n;
-//	}
-//};
-//
-///// \brief serializer/deserializer for boost::gregorian::date
-///// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
-//struct serialize_boost_gregorian_date
-//{
-//	/// Serialize the boost::gregorian::date as YYYY-MM-DD
-//	static void	serialize(container* parent, const std::string& name, const boost::gregorian::date& v)
-//	{
-//		create_node(parent, name, boost::gregorian::to_iso_extended_string(v));
-//	}
-//
-//	/// Deserialize boost::gregorian::date according to ISO8601 rules, but without timezone.
-//	static void	deserialize(const std::string& s, boost::gregorian::date& v)
-//	{
-//		// We accept 2 general formats:
-//		//  1: date fields separated with dashes, eg. 2013-02-17
-//		//  2: date fields not separated, eg. 20130217
-//
-//		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
-//		// Note: boost::regex is threadsafe, so we can declare these statically
-//
-//		// Format 1:
-//		// ^(-?\d{4})-(\d{2})-(\d{2})$
-//		//  ^         ^       ^
-//		//  |         |       |
-//		//  |         |       |
-//		//  |         |       [3] day
-//		//  |         [2] month
-//		//  [1] year
-//		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})$");
-//
-//		// Format 2:
-//		// ^(-?\d{4})(\d{2})(\d{2})$
-//		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})$");
-//
-//		static const int f_year              =  1;
-//		static const int f_month             =  2;
-//		static const int f_day               =  3;
-//
-//		boost::smatch m;
-//		if (!boost::regex_match(s, m, re1)) {
-//			if (!boost::regex_match(s, m, re2)) {
-//				throw exception("Bad date format");
-//			}
-//		}
-//
-//		v = boost::gregorian::date(
-//		  boost::lexical_cast<int>(m[f_year])
-//		, boost::lexical_cast<int>(m[f_month])
-//		, boost::lexical_cast<int>(m[f_day])
-//		);
-//	}
-//
-//	static element*
-//	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::gregorian::date& v)
-//	{
-//		element* n(new element("xsd:element"));
-//		n->set_attribute("name", name);
-//		n->set_attribute("type", "xsd:date");
-//		n->set_attribute("minOccurs", "1");
-//		n->set_attribute("maxOccurs", "1");
-//		parent->append(n);
-//		return n;
-//	}
-//};
-//
-///// \brief serializer/deserializer for boost::posix_time::time_duration
-///// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
-//struct serialize_boost_posix_time_time_duration
-//{
-//	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
-//	static void	serialize(container* parent, const std::string& name, const boost::posix_time::time_duration& v)
-//	{
-//		create_node(parent, name, boost::posix_time::to_simple_string(v));
-//	}
-//
-//	/// Deserialize boost::posix_time::time_duration according to ISO8601 rules, but without timezone.
-//	static void	deserialize(const std::string& s, boost::posix_time::time_duration& v)
-//	{
-//		// We accept 2 general formats:
-//		//  1: time fields separated with colons, eg. 15:25:20,502104
-//		//  2: time fields not separated, eg. 152520,502104
-//
-//		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
-//		// Note: boost::regex is threadsafe, so we can declare these statically
-//
-//		// Format 1:
-//		// ^(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?$
-//		//  ^      ^ ^      ^ ^      ^    ^
-//		//  |      | |      | |      |    |
-//		//  |      | |      | |      |    [7] fractional seconds
-//		//  |      | |      | |      [6] have fractional seconds
-//		//  |      | |      | [5] seconds
-//		//  |      | |      [4] have seconds?
-//		//  |      | [3] minutes
-//		//  |      [2] have minutes?
-//		//  [1] hours
-//		static boost::regex re1("^(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?$");
-//
-//		// Format 2:
-//		// ^(\d{2})((\d{2})((\d{2})([.,](\d+))?)?)?$
-//		static boost::regex re2("^(\\d{2})((\\d{2})((\\d{2})([.,](\\d+))?)?)?$");
-//
-//		static const int f_hours             =  1;
-//		static const int f_have_minutes      =  2;
-//		static const int f_minutes           =  3;
-//		static const int f_have_seconds      =  4;
-//		static const int f_seconds           =  5;
-//		static const int f_have_frac         =  6;
-//		static const int f_frac              =  7;
-//
-//		boost::smatch m;
-//		if (!boost::regex_match(s, m, re1)) {
-//			if (!boost::regex_match(s, m, re2)) {
-//				throw exception("Bad time format");
-//			}
-//		}
-//
-//		int hours = boost::lexical_cast<int>(m[f_hours]);
-//		int minutes = 0, seconds = 0;
-//		if (m.length(f_have_minutes)) {
-//			minutes = boost::lexical_cast<int>(m[f_minutes]);
-//			if (m.length(f_have_seconds)) {
-//				seconds = boost::lexical_cast<int>(m[f_seconds]);
-//			}
-//		}
-//		v = boost::posix_time::time_duration(hours, minutes, seconds);
-//
-//		if (m.length(f_have_frac)) {
-//			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
-//			v += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
-//		}
-//	}
-//
-//	static element*
-//	to_wsdl(type_map& types, element* parent, const std::string& name, const boost::posix_time::ptime& v)
-//	{
-//		element* n(new element("xsd:element"));
-//		n->set_attribute("name", name);
-//		n->set_attribute("type", "xsd:time");
-//		n->set_attribute("minOccurs", "1");
-//		n->set_attribute("maxOccurs", "1");
-//		parent->append(n);
-//		return n;
-//	}
-//};
+/// \brief serializer/deserializer for boost::posix_time::ptime
+/// boost::posix_time::ptime values are always assumed to be UTC
+struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_posix_time_ptime_serializer, boost::posix_time::ptime>
+{
+	static const char* type_name() { return "xsd:dateTime"; }
+	
+	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
+	static std::string serialize_value(const boost::posix_time::ptime& v)
+	{
+		return boost::posix_time::to_iso_extended_string(v).append("Z");
+	}
+
+	/// Deserialize according to ISO8601 rules.
+	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
+	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
+	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
+	static boost::posix_time::ptime deserialize_value(const std::string& s)
+	{
+		// We accept 3 general formats:
+		//  1: date fields separated with dashes, time fields separated with colons, eg. 2013-02-17T15:25:20,502104+01:00
+		//  2: date fields not separated, time fields separated with colons, eg. 20130217T15:25:20,502104+01:00
+		//  3: date fields not separated, time fields not separated, eg. 20130217T152520,502104+01:00
+
+		// Apart from the separators, the 3 regexes are basically the same, i.e. they have the same fields
+		// Note: boost::regex is threadsafe, so we can declare these statically
+
+		// Format 1:
+		// ^(-?\d{4})-(\d{2})-(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
+		//  ^         ^       ^       ^      ^ ^      ^ ^      ^    ^          ^^   ^     ^      ^ ^
+		//  |         |       |       |      | |      | |      |    |          ||   |     |      | |
+		//  |         |       |       |      | |      | |      |    |          ||   |     |      | [16] UTC minutes offset
+		//  |         |       |       |      | |      | |      |    |          ||   |     |      [15] have UTC minutes offset?
+		//  |         |       |       |      | |      | |      |    |          ||   |     [14] UTC hour offset
+		//  |         |       |       |      | |      | |      |    |          ||   [13] UTC offset sign
+		//  |         |       |       |      | |      | |      |    |          |[12] Zulu time
+		//  |         |       |       |      | |      | |      |    |          [11] have time zone?
+		//  |         |       |       |      | |      | |      |    [10] fractional seconds
+		//  |         |       |       |      | |      | |      [9] have fractional seconds
+		//  |         |       |       |      | |      | [8] seconds
+		//  |         |       |       |      | |      [7] have seconds?
+		//  |         |       |       |      | [6] minutes
+		//  |         |       |       |      [5] have minutes?
+		//  |         |       |       [4] hours
+		//  |         |       [3] day
+		//  |         [2] month
+		//  [1] year
+		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
+
+		// Format 2:
+		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
+		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
+
+		// Format 3:
+		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})((\d{2})((\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
+		static boost::regex re3("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})((\\d{2})((\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
+
+		static const int f_year              =  1;
+		static const int f_month             =  2;
+		static const int f_day               =  3;
+		static const int f_hours             =  4;
+		static const int f_have_minutes      =  5;
+		static const int f_minutes           =  6;
+		static const int f_have_seconds      =  7;
+		static const int f_seconds           =  8;
+		static const int f_have_frac         =  9;
+		static const int f_frac              = 10;
+		static const int f_have_tz           = 11;
+		static const int f_zulu              = 12;
+		static const int f_offs_sign         = 13;
+		static const int f_offs_hours        = 14;
+		static const int f_have_offs_minutes = 15;
+		static const int f_offs_minutes      = 16;
+
+		boost::smatch m;
+		if (!boost::regex_match(s, m, re1)) {
+			if (!boost::regex_match(s, m, re2)) {
+				if (!boost::regex_match(s, m, re3)) {
+					throw exception("Bad dateTime format");
+				}
+			}
+		}
+
+		boost::gregorian::date d(
+		  boost::lexical_cast<int>(m[f_year])
+		, boost::lexical_cast<int>(m[f_month])
+		, boost::lexical_cast<int>(m[f_day])
+		);
+
+		int hours = boost::lexical_cast<int>(m[f_hours]);
+		int minutes = 0, seconds = 0;
+		if (m.length(f_have_minutes)) {
+			minutes = boost::lexical_cast<int>(m[f_minutes]);
+			if (m.length(f_have_seconds)) {
+				seconds = boost::lexical_cast<int>(m[f_seconds]);
+			}
+		}
+		boost::posix_time::time_duration t(hours, minutes, seconds);
+
+		if (m.length(f_have_frac)) {
+			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
+			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
+		}
+
+		boost::posix_time::ptime result = boost::posix_time::ptime(d, t);
+
+		if (m.length(f_have_tz)) {
+			if (!m.length(f_zulu)) {
+				std::string sign = m[f_offs_sign];
+				int hours = boost::lexical_cast<int>(m[f_offs_hours]);
+				int minutes = 0;
+				if (m.length(f_have_offs_minutes)) {
+					minutes = boost::lexical_cast<int>(m[f_offs_minutes]);
+				}
+				boost::posix_time::time_duration offs(hours, minutes, 0);
+				if (sign == "+") {
+					result -= offs;
+				} else {
+					result += offs;
+				}
+			}
+		} else {
+			// Boost has no clear way of instantiating the *current* timezone, so
+			// it's not possible to convert from local to UTC, using boost::local_time classes
+			// For now, settle on using mktime...
+			std::tm tm = boost::posix_time::to_tm(result);
+			tm.tm_isdst = -1;
+			std::time_t t = mktime(&tm);
+			result = boost::posix_time::from_time_t(t);
+		}
+
+		return result;
+	}
+
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* n(new element("xsd:element"));
+		n->set_attribute("name", name);
+		n->set_attribute("type", "xsd:dateTime");
+		n->set_attribute("minOccurs", "1");
+		n->set_attribute("maxOccurs", "1");
+		return n;
+	}
+};
+
+/// \brief serializer/deserializer for boost::gregorian::date
+/// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
+struct boost_gregorian_date_serializer : public basic_type_serializer<boost_gregorian_date_serializer, boost::gregorian::date>
+{
+	static const char* type_name() { return "xsd:date"; }
+
+	/// Serialize the boost::gregorian::date as YYYY-MM-DD
+	static std::string serialize_value(container* parent, const std::string& name, const boost::gregorian::date& v)
+	{
+		return boost::gregorian::to_iso_extended_string(v);
+	}
+
+	/// Deserialize boost::gregorian::date according to ISO8601 rules, but without timezone.
+	static boost::gregorian::date deserialize_value(const std::string& s)
+	{
+		// We accept 2 general formats:
+		//  1: date fields separated with dashes, eg. 2013-02-17
+		//  2: date fields not separated, eg. 20130217
+
+		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
+		// Note: boost::regex is threadsafe, so we can declare these statically
+
+		// Format 1:
+		// ^(-?\d{4})-(\d{2})-(\d{2})$
+		//  ^         ^       ^
+		//  |         |       |
+		//  |         |       |
+		//  |         |       [3] day
+		//  |         [2] month
+		//  [1] year
+		static boost::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})$");
+
+		// Format 2:
+		// ^(-?\d{4})(\d{2})(\d{2})$
+		static boost::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})$");
+
+		static const int f_year              =  1;
+		static const int f_month             =  2;
+		static const int f_day               =  3;
+
+		boost::smatch m;
+		if (!boost::regex_match(s, m, re1)) {
+			if (!boost::regex_match(s, m, re2)) {
+				throw exception("Bad date format");
+			}
+		}
+
+		return boost::gregorian::date(
+				  boost::lexical_cast<int>(m[f_year])
+				, boost::lexical_cast<int>(m[f_month])
+				, boost::lexical_cast<int>(m[f_day])
+				);
+	}
+
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* n(new element("xsd:element"));
+		n->set_attribute("name", name);
+		n->set_attribute("type", "xsd:date");
+		n->set_attribute("minOccurs", "1");
+		n->set_attribute("maxOccurs", "1");
+		return n;
+	}
+};
+
+/// \brief serializer/deserializer for boost::posix_time::time_duration
+/// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
+struct boost_posix_time_time_duration_serializer : public basic_type_serializer<boost_posix_time_time_duration_serializer, boost::posix_time::time_duration>
+{
+	static const char* type_name() { return "xsd:time"; }
+
+	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
+	static std::string serialize_value(const boost::posix_time::time_duration& v)
+	{
+		return boost::posix_time::to_simple_string(v);
+	}
+
+	/// Deserialize boost::posix_time::time_duration according to ISO8601 rules, but without timezone.
+	static boost::posix_time::time_duration deserialize_value(const std::string& s)
+	{
+		// We accept 2 general formats:
+		//  1: time fields separated with colons, eg. 15:25:20,502104
+		//  2: time fields not separated, eg. 152520,502104
+
+		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
+		// Note: boost::regex is threadsafe, so we can declare these statically
+
+		// Format 1:
+		// ^(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?$
+		//  ^      ^ ^      ^ ^      ^    ^
+		//  |      | |      | |      |    |
+		//  |      | |      | |      |    [7] fractional seconds
+		//  |      | |      | |      [6] have fractional seconds
+		//  |      | |      | [5] seconds
+		//  |      | |      [4] have seconds?
+		//  |      | [3] minutes
+		//  |      [2] have minutes?
+		//  [1] hours
+		static boost::regex re1("^(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?$");
+
+		// Format 2:
+		// ^(\d{2})((\d{2})((\d{2})([.,](\d+))?)?)?$
+		static boost::regex re2("^(\\d{2})((\\d{2})((\\d{2})([.,](\\d+))?)?)?$");
+
+		static const int f_hours             =  1;
+		static const int f_have_minutes      =  2;
+		static const int f_minutes           =  3;
+		static const int f_have_seconds      =  4;
+		static const int f_seconds           =  5;
+		static const int f_have_frac         =  6;
+		static const int f_frac              =  7;
+
+		boost::smatch m;
+		if (!boost::regex_match(s, m, re1)) {
+			if (!boost::regex_match(s, m, re2)) {
+				throw exception("Bad time format");
+			}
+		}
+
+		int hours = boost::lexical_cast<int>(m[f_hours]);
+		int minutes = 0, seconds = 0;
+		if (m.length(f_have_minutes)) {
+			minutes = boost::lexical_cast<int>(m[f_minutes]);
+			if (m.length(f_have_seconds)) {
+				seconds = boost::lexical_cast<int>(m[f_seconds]);
+			}
+		}
+
+		boost::posix_time::time_duration result = boost::posix_time::time_duration(hours, minutes, seconds);
+
+		if (m.length(f_have_frac)) {
+			double frac = boost::lexical_cast<double>(std::string(".").append(std::string(m[f_frac])));
+			result += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
+		}
+		
+		return result;
+	}
+
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		element* n(new element("xsd:element"));
+		n->set_attribute("name", name);
+		n->set_attribute("type", "xsd:time");
+		n->set_attribute("minOccurs", "1");
+		n->set_attribute("maxOccurs", "1");
+		return n;
+	}
+};
 
 template<typename S, typename T>
 struct struct_serializer_archive
@@ -702,9 +706,11 @@ struct struct_serializer_base
 			element* sequence(new element("xsd:sequence"));
 			n->append(sequence);
 
-			typedef typename struct_serializer_archive<deserializer,value_type>	archive;
+			typedef typename struct_serializer_archive<wsdl_creator,value_type>	archive;
 		
 			wsdl_creator wsdl(types, sequence);
+
+			value_type v;
 			archive::serialize(wsdl, v);
 		}
 		
@@ -715,16 +721,14 @@ struct struct_serializer_base
 template<typename Struct>
 struct struct_serializer_impl : public struct_serializer_base<struct_serializer_impl<Struct>, Struct>
 {
-	static std::string s_struct_name;
-
 	static void	set_struct_name(const std::string& name)
 	{
 		s_struct_name = name;
 	}
 };
 
-template<typename Struct>
-std::string struct_serializer_impl<Struct>::s_struct_name = typeid(Archive).name();
+template<typename Derived, typename Struct>
+std::string struct_serializer_base<Derived,Struct>::s_struct_name = typeid(Struct).name();
 
 #endif
 
@@ -866,6 +870,8 @@ struct serializer_basic_type
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef S type_serializer_type;
 
+	static const char* type_name() { return type_serializer_type::type_name(); }
+
 	static void serialize_type(container* n, const char* name, const value_type& value)
 	{
 		element* e = new element(name);
@@ -878,6 +884,11 @@ struct serializer_basic_type
 		element* e = n->find_first(name);
 		if (e != nullptr)
 			type_serializer_type::deserialize(e, value);
+	}
+	
+	static element* wsdl(type_map& types, const std::string& name)
+	{
+		return type_serializer_type::wsdl(types, name);
 	}
 };
 
@@ -898,19 +909,19 @@ struct serializer_type<std::string> : public serializer_basic_type<std::string, 
 
 template<>
 struct serializer_type<boost::posix_time::ptime>
-	: public serializer_basic_type<boost::posix_time::ptime, serialize_boost_posix_time_ptime>
+	: public serializer_basic_type<boost::posix_time::ptime, boost_posix_time_ptime_serializer>
 {
 };
 
 template<>
 struct serializer_type<boost::gregorian::date>
-	: public serializer_basic_type<boost::gregorian::date, serialize_boost_gregorian_date>
+	: public serializer_basic_type<boost::gregorian::date, boost_gregorian_date_serializer>
 {
 };
 
 template<>
 struct serializer_type<boost::posix_time::time_duration>
-	: public serializer_basic_type<boost::posix_time::time_duration, serialize_boost_posix_time_time_duration>
+	: public serializer_basic_type<boost::posix_time::time_duration, boost_posix_time_time_duration_serializer>
 {
 };
 
@@ -919,22 +930,14 @@ struct serialize_container_type
 {
 	typedef C container_type;
 	typedef typename container_type::value_type value_type;
-	typedef typename boost::mpl::if_c<
-						boost::is_arithmetic<value_type>::value,
-						arithmetic_serializer<value_type>,
-						typename boost::mpl::if_c<
-							boost::is_enum<value_type>::value,
-							enum_serializer<value_type>,
-							struct_serializer_impl<value_type>
-						>::type
-					>::type base_serializer_type;
+	typedef serializer_type<value_type> base_serializer_type;
 	
 	static void serialize_type(container* n, const char* name, const container_type& value)
 	{
 		BOOST_FOREACH (const value_type& v, value)
 		{
 			element* e = new element(name);
-			base_serializer_type::serialize(e, v);
+			base_serializer_type::serialize_type(e, name, v);
 			n->append(e);
 		}
 	}
@@ -947,7 +950,7 @@ struct serialize_container_type
 				continue;
 			
 			value_type v;
-			base_serializer_type::deserialize(e, v);
+			base_serializer_type::deserialize_type(e, name, v);
 			value.push_back(v);
 		}
 	}
@@ -1076,7 +1079,23 @@ wsdl_creator& wsdl_creator::add_element(const char* name, const T& value)
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serializer_type<value_type>											type_serializer;
 	
-	m_node->append(type_serializer::wsdl(m_node, name));
+	m_node->append(type_serializer::wsdl(m_types, name));
+
+	return *this;
+}
+
+template<typename T>
+wsdl_creator& wsdl_creator::add_attribute(const char* name, const T& value)
+{
+	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
+	typedef typename serializer_type<value_type>											type_serializer;
+	
+	element* n(new element("xsd:attribute"));
+
+	n->set_attribute("name", name);
+	n->set_attribute("type", type_serializer::type_name());
+
+	m_node->append(n);
 
 	return *this;
 }
