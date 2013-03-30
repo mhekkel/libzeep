@@ -7,8 +7,11 @@
 #define SOAP_HTTP_REPLY_HPP
 
 #include <vector>
-#include <zeep/http/header.hpp>
+
+#include <boost/tr1/memory.hpp>
 #include <boost/asio/buffer.hpp>
+
+#include <zeep/http/header.hpp>
 #include <zeep/xml/document.hpp>
 
 namespace zeep { namespace http {
@@ -93,7 +96,7 @@ class reply
 	std::string			m_status_line;
 	std::vector<header>	m_headers;
 	std::string			m_content;
-	std::auto_ptr<std::istream>
+	std::unique_ptr<std::istream>
 						m_data;
 	std::vector<char>	m_buffer;
 };

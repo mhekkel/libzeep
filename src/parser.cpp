@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 
+#include <boost/tr1/memory.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
@@ -211,7 +212,7 @@ class istream_data_source : public data_source
 	unsigned char	next_byte();
 
 	istream&		m_data;
-	auto_ptr<istream>
+	unique_ptr<istream>
 					m_data_ptr;
 	unicode			m_char_buffer;	// used in detecting \r\n algorithm
 
@@ -1553,7 +1554,7 @@ void parser_imp::parse(bool validate)
 	if (m_has_dtd and e == nullptr and m_validating)
 		not_valid(boost::format("Element '%1%' is not defined in DTD") % m_root_element);
 	
-	auto_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
+	unique_ptr<doctype::allowed_element> allowed(new doctype::allowed_element(m_root_element));
 	
 	if (e != nullptr)
 		valid = doctype::validator(allowed.get());
@@ -1716,7 +1717,7 @@ void parser_imp::doctypedecl()
 	
 	m_root_element = name;
 
-	auto_ptr<data_source> dtd;
+	unique_ptr<data_source> dtd;
 
 	if (m_lookahead == xml_Space)
 	{
@@ -2094,7 +2095,7 @@ void parser_imp::contentspec(doctype::element& element)
 		valid_nesting_validator check(m_data_source);
 		match('(');
 		
-		auto_ptr<doctype::allowed_base> allowed;
+		unique_ptr<doctype::allowed_base> allowed;
 		
 		s();
 		
@@ -2207,7 +2208,7 @@ void parser_imp::contentspec(doctype::element& element)
 
 doctype::allowed_ptr parser_imp::cp()
 {
-	auto_ptr<doctype::allowed_base> result;
+	unique_ptr<doctype::allowed_base> result;
 	
 	if (m_lookahead == '(')
 	{
@@ -2405,7 +2406,7 @@ void parser_imp::attlist_decl()
 		match(xml_Name);
 		s(true);
 		
-		auto_ptr<doctype::attribute> attribute;
+		unique_ptr<doctype::attribute> attribute;
 		
 		// att type: several possibilities:
 		if (m_lookahead == '(')	// enumeration
@@ -2685,7 +2686,7 @@ boost::tuple<string,string> parser_imp::read_external_id()
 	string result;
 	string path;
 
-	auto_ptr<data_source> data(external_id());
+	unique_ptr<data_source> data(external_id());
 
 	parser_state save(this, data.get());
 	

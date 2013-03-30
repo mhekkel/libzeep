@@ -10,6 +10,7 @@
 #include <numeric>
 
 #include <boost/tr1/tuple.hpp>
+#include <boost/tr1/memory.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -878,7 +879,7 @@ void element::set_allowed(allowed_ptr allowed)
 
 void element::add_attribute(attribute* attrib)
 {
-	auto_ptr<attribute> attr(attrib);
+	unique_ptr<attribute> attr(attrib);
 	if (find_if(m_attlist.begin(), m_attlist.end(), boost::bind(&attribute::name, _1) == attr->name()) == m_attlist.end())
 		m_attlist.push_back(attr.release());
 }
