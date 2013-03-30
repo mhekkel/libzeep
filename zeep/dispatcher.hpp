@@ -228,7 +228,7 @@ struct handler : public handler_base
 							sequence = new element("xsd:sequence");
 							complexType->append(sequence);
 							
-							wsdl_creator wc(types, sequence, false);
+							wsdl_creator wc(types, sequence);
 
 							response_type response;
 							wc & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
