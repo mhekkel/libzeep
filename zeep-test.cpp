@@ -36,8 +36,14 @@ namespace WSSearchNS
 
 // the hit information
 
+enum HitType
+{
+	HitTypeOne, HitTypeTwo
+};
+
 struct Hit
 {
+	HitType			type;
 	string			db;
 	string			id;
 	string			title;
@@ -61,7 +67,8 @@ struct Hit
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)
 	{
-		ar & ZEEP_ATTRIBUTE_NAME_VALUE(db)
+		ar & ZEEP_ATTRIBUTE_NAME_VALUE(type)
+		   & ZEEP_ATTRIBUTE_NAME_VALUE(db)
 		   & ZEEP_ATTRIBUTE_NAME_VALUE(id)
 		   & ZEEP_ELEMENT_NAME_VALUE(title)
 		   & ZEEP_ELEMENT_NAME_VALUE(v_int)
@@ -114,28 +121,28 @@ enum Algorithm
 namespace zeep {
 namespace xml {
 
-//template<class Archive>
-//struct struct_serializer<Archive,WSSearchNS::Hit>
-//{
-//	static void serialize(Archive& ar, WSSearchNS::Hit& hit)
-//				{
-////					ar & BOOST_SERIALIZATION_NVP(hit.db)
-////						& BOOST_SERIALIZATION_NVP(hit.id)
-////						& BOOST_SERIALIZATION_NVP(hit.title)
-////						& BOOST_SERIALIZATION_NVP(hit.score);
-//					hit.serialize(ar, 0);
-//				}
-//};
-//
-//template <typename Archive, typename T, typename U>
-//struct struct_serializer<Archive,std::pair<T, U> >
-//{
-//    static void serialize(Archive& ar, std::pair<T, U>& pair)
-//    {
-//        ar & BOOST_SERIALIZATION_NVP(pair.first);
-//        ar & BOOST_SERIALIZATION_NVP(pair.second);
-//    }
-//};
+template<class Archive>
+struct struct_serializer<Archive,WSSearchNS::Hit>
+{
+	static void serialize(Archive& ar, WSSearchNS::Hit& hit)
+	{
+//		ar & BOOST_SERIALIZATION_NVP(hit.db)
+//			& BOOST_SERIALIZATION_NVP(hit.id)
+//			& BOOST_SERIALIZATION_NVP(hit.title)
+//			& BOOST_SERIALIZATION_NVP(hit.score);
+		hit.serialize(ar, 0);
+	}
+};
+
+template <typename Archive, typename T, typename U>
+struct struct_serializer<Archive,std::pair<T, U> >
+{
+    static void serialize(Archive& ar, std::pair<T, U>& pair)
+    {
+        ar & BOOST_SERIALIZATION_NVP(pair.first);
+        ar & BOOST_SERIALIZATION_NVP(pair.second);
+    }
+};
 
 }
 }
@@ -200,6 +207,11 @@ my_server::my_server(const string& param)
 {
 	using namespace WSSearchNS;
 
+	zeep::xml::enum_map<HitType>::instance("HitType").add_enum()
+		( "HitTypeOne", HitTypeOne )
+		( "HitTypeTwo", HitTypeTwo )
+		;
+
 	zeep::xml::struct_serializer_impl<Hit>::set_struct_name("Hit");
 	
 	// The next call is needed since FindResult is defined in another namespace
@@ -249,11 +261,11 @@ my_server::my_server(const string& param)
 	
 	register_action("ForceStop", this, &my_server::ForceStop, kForceStopParameterNames);
 
-	//const char* kPairTestParameterNames[] = {
-	//	"in", "out"
-	//};
-
-	//register_action("PairTest", this, &my_server::PairTest, kPairTestParameterNames);
+	const char* kPairTestParameterNames[] = {
+		"in", "out"
+	};
+	
+	register_action("PairTest", this, &my_server::PairTest, kPairTestParameterNames);
 }
 
 void my_server::ListDatabanks(

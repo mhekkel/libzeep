@@ -69,10 +69,10 @@
 /// That's often not what is intented. Calling this macro will make sure
 /// the type name you used in your code will be used instead.
 ///
-/// E.g., struct FindResult { ... } might end up with a fancy name in the
+/// E.g., struct FindResult { ... } might end up with a mangled name in the
 /// WSDL. To use FindResult instead, call SOAP_XML_SET_STRUCT_NAME(FindResult);
 ///
-/// An alternative it to call, which allows different WSDL and struct names:
+/// An alternative is to call, which allows different WSDL and struct names:
 /// zeep::xml::struct_serializer<FindResult>::set_struct_name("FindResult");
 
 namespace zeep { namespace xml {
@@ -81,14 +81,6 @@ namespace zeep { namespace xml {
 const std::string kPrefix = "ns";
 #endif
 
-///	All serializers and deserializers work on an object that contains
-///	a pointer to the node just above the actual node holding their data. If any.
-///
-///	This means for the serializer that it has to create a new node, set the content
-///	and add it to the passed in node.
-///	For deserializers this means looking up the first child matching the name
-///	in the passed-in node to fetch the data from.
-///
 /// Older versions of libzeep used to use boost::serialization::nvp as type to
 /// specify name/value pairs. This will continue to work, but to use attributes
 /// we come up with a special version of name/value pairs specific for libzeep.
@@ -99,15 +91,15 @@ struct deserializer;
 template<typename T>
 struct element_nvp : public boost::serialization::nvp<T>
 {
-	explicit element_nvp(const char* name, T& v) : nvp(name, v) {}
-	element_nvp(const element_nvp& rhs) : nvp(rhs) {}
+	explicit element_nvp(const char* name, T& v) : boost::serialization::nvp<T>(name, v) {}
+	element_nvp(const element_nvp& rhs) : boost::serialization::nvp<T>(rhs) {}
 };
 
 template<typename T>
 struct attribute_nvp : public boost::serialization::nvp<T>
 {
-	explicit attribute_nvp(const char* name, T& v) : nvp(name, v) {}
-	attribute_nvp(const attribute_nvp& rhs) : nvp(rhs) {}
+	explicit attribute_nvp(const char* name, T& v) : boost::serialization::nvp<T>(name, v) {}
+	attribute_nvp(const attribute_nvp& rhs) : boost::serialization::nvp<T>(rhs) {}
 };
 
 template<typename T>
@@ -127,65 +119,74 @@ inline attribute_nvp<T> make_attribute_nvp(const char* name, T& v)
 
 #define ZEEP_ATTRIBUTE_NAME_VALUE(name) \
 	zeep::xml::make_attribute_nvp(BOOST_PP_STRINGIZE(name), name)
+	
+/// serializer, deserializer and wsdl_creator are classes that can be used
+/// to initiate the serialization. They are the Archive classes that are
+/// the first parameter to the templated function 'serialize' in the classes
+/// that can be serialized. (See boost::serialization for more info).
+
+/// serializer is the class that initiates the serialization process.
 
 struct serializer
 {
-					serializer(container* node) : m_node(node) {}
+	serializer(container* node) : m_node(node) {}
 
 	template<typename T>
-	serializer&		operator&(const boost::serialization::nvp<T>& rhs)
-					{
-						return serialize_element(rhs.name(), rhs.value());
-					}
+	serializer& operator&(const boost::serialization::nvp<T>& rhs)
+	{
+		return serialize_element(rhs.name(), rhs.value());
+	}
 	
 	template<typename T>
-	serializer&		operator&(const element_nvp<T>& rhs)
-					{
-						return serialize_element(rhs.name(), rhs.value());
-					}
+	serializer& operator&(const element_nvp<T>& rhs)
+	{
+		return serialize_element(rhs.name(), rhs.value());
+	}
 	
 	template<typename T>
-	serializer&		operator&(const attribute_nvp<T>& rhs)
-					{
-						return serialize_attribute(rhs.name(), rhs.value());
-					}
+	serializer& operator&(const attribute_nvp<T>& rhs)
+	{
+		return serialize_attribute(rhs.name(), rhs.value());
+	}
 	
 	template<typename T>
-	serializer&		serialize_element(const char* name, const T& data);
+	serializer& serialize_element(const char* name, const T& data);
 
 	template<typename T>
-	serializer&		serialize_attribute(const char* name, const T& data);
+	serializer& serialize_attribute(const char* name, const T& data);
 
-	container*		m_node;
+	container* m_node;
 };
+
+/// deserializer is the class that initiates the deserialization process.
 
 struct deserializer
 {
-					deserializer(const container* node) : m_node(node) {}
+	deserializer(const container* node) : m_node(node) {}
 
 	template<typename T>
-	deserializer&	operator&(const boost::serialization::nvp<T>& rhs)
-					{
-						return deserialize_element(rhs.name(), rhs.value());
-					}
+	deserializer& operator&(const boost::serialization::nvp<T>& rhs)
+	{
+		return deserialize_element(rhs.name(), rhs.value());
+	}
 
 	template<typename T>
-	deserializer&	operator&(const element_nvp<T>& rhs)
-					{
-						return deserialize_element(rhs.name(), rhs.value());
-					}
+	deserializer& operator&(const element_nvp<T>& rhs)
+	{
+		return deserialize_element(rhs.name(), rhs.value());
+	}
 	
 	template<typename T>
-	deserializer&	operator&(const attribute_nvp<T>& rhs)
-					{
-						return deserialize_attribute(rhs.name(), rhs.value());
-					}
+	deserializer& operator&(const attribute_nvp<T>& rhs)
+	{
+		return deserialize_attribute(rhs.name(), rhs.value());
+	}
 	
 	template<typename T>
-	deserializer&	deserialize_element(const char* name, T& data);
+	deserializer& deserialize_element(const char* name, T& data);
 
 	template<typename T>
-	deserializer&	deserialize_attribute(const char* name, T& data);
+	deserializer& deserialize_attribute(const char* name, T& data);
 
 	const container* m_node;
 };
@@ -198,49 +199,68 @@ typedef std::map<std::string,element*> type_map;
 
 struct wsdl_creator
 {
-					wsdl_creator(type_map& types, element* node, bool make_node = true)
-						: m_node(node), m_types(types), m_make_node(make_node) {}
+	wsdl_creator(type_map& types, element* node)
+		: m_node(node), m_types(types) {}
 	
 	template<typename T>
-	wsdl_creator&	operator&(const boost::serialization::nvp<T>& rhs)
-					{
-						return add_element(rhs.name(), rhs.value());
-					}
+	wsdl_creator& operator&(const boost::serialization::nvp<T>& rhs)
+	{
+		return add_element(rhs.name(), rhs.value());
+	}
 
 	template<typename T>
-	wsdl_creator&	operator&(const element_nvp<T>& rhs)
-					{
-						return add_element(rhs.name(), rhs.value());
-					}
+	wsdl_creator& operator&(const element_nvp<T>& rhs)
+	{
+		return add_element(rhs.name(), rhs.value());
+	}
 	
 	template<typename T>
-	wsdl_creator&	operator&(const attribute_nvp<T>& rhs)
-					{
-						return add_attribute(rhs.name(), rhs.value());
-					}
+	wsdl_creator& operator&(const attribute_nvp<T>& rhs)
+	{
+		return add_attribute(rhs.name(), rhs.value());
+	}
 
 	template<typename T>
-	wsdl_creator&	add_element(const char* name, const T& value);
+	wsdl_creator& add_element(const char* name, const T& value);
 
 	template<typename T>
-	wsdl_creator&	add_attribute(const char* name, const T& value);
+	wsdl_creator& add_attribute(const char* name, const T& value);
 
-	element*		m_node;
-	type_map&		m_types;
-	bool			m_make_node;
+	element* m_node;
+	type_map& m_types;
 };
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
-// The actual (de)serializers
+//	The actual (de)serializers
 //
-//	The serialize objects should all have three methods:
+//	We have two kinds of serializers, basic type serializers can read and write
+//	their values from/to strings. They also have a type_name that is used in
+//	WSDL's, this should be the XSD standard name. These basic serializers are
+//	used to write either XML element content or attribute values.
+//	All basic serializers are derived of basic_type_serializer using the CRTP
+//	(curiously recurring template pattern)
+//
+//	The basic serializers should implement the following functions:
+//
+//		static std::string serialize_value(const value_type& value);
+//		static value_type deserialize_value(const std::string& value);
+//		static const char* type_name();
+//
+//	The serializers are accessed through another templated class:
+//	serializer_type. The plain version of this serializer_type derives
+//	from basic_type_serializer. Other specializations may do so, but
+//	don't have to.
+//
+//	All versions of serializer_type<> should implement the following
+//	functions:
+//	
 //		static void	serialize(container* n, const T& v);
 //		static void	deserialize(const container* n, T& v);
-//		static void	wsdl(type_map& types, const std::string& name, const T& v);
+//		static void	wsdl(type_map& types, const std::string& name);
 //
-//	the serialize method can use the convenience routine make_node to create the correct node type
-//	(this can be an attribute node, or a regular element node based on the name).
+//	Examples of specializations of serializer_type are serialize_container_type
+//	and serialize_boost_optional.
 
 template<typename Derived, typename Value>
 struct basic_type_serializer
@@ -262,16 +282,20 @@ struct basic_type_serializer
 		value = Derived::deserialize_value(n->str());
 	}
 	
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 
 		n->set_attribute("name", name);
 		n->set_attribute("type", Derived::type_name());
-		n->set_attribute("minOccurs", boost::lexical_cast<string>(Derived::min_occurs));
-		n->set_attribute("maxOccurs", boost::lexical_cast<string>(Derived::max_occurs));
+		n->set_attribute("minOccurs", boost::lexical_cast<std::string>(Derived::min_occurs));
+		n->set_attribute("maxOccurs", boost::lexical_cast<std::string>(Derived::max_occurs));
 		
 		return n;
+	}
+
+	static void register_type(type_map& types)
+	{
 	}
 };
 
@@ -438,9 +462,9 @@ struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_po
 		static const int f_offs_minutes      = 16;
 
 		boost::smatch m;
-		if (!boost::regex_match(s, m, re1)) {
-			if (!boost::regex_match(s, m, re2)) {
-				if (!boost::regex_match(s, m, re3)) {
+		if (not boost::regex_match(s, m, re1)) {
+			if (not boost::regex_match(s, m, re2)) {
+				if (not boost::regex_match(s, m, re3)) {
 					throw exception("Bad dateTime format");
 				}
 			}
@@ -470,7 +494,7 @@ struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_po
 		boost::posix_time::ptime result = boost::posix_time::ptime(d, t);
 
 		if (m.length(f_have_tz)) {
-			if (!m.length(f_zulu)) {
+			if (not m.length(f_zulu)) {
 				std::string sign = m[f_offs_sign];
 				int hours = boost::lexical_cast<int>(m[f_offs_hours]);
 				int minutes = 0;
@@ -497,7 +521,7 @@ struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_po
 		return result;
 	}
 
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -549,8 +573,8 @@ struct boost_gregorian_date_serializer : public basic_type_serializer<boost_greg
 		static const int f_day               =  3;
 
 		boost::smatch m;
-		if (!boost::regex_match(s, m, re1)) {
-			if (!boost::regex_match(s, m, re2)) {
+		if (not boost::regex_match(s, m, re1)) {
+			if (not boost::regex_match(s, m, re2)) {
 				throw exception("Bad date format");
 			}
 		}
@@ -562,7 +586,7 @@ struct boost_gregorian_date_serializer : public basic_type_serializer<boost_greg
 				);
 	}
 
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -621,8 +645,8 @@ struct boost_posix_time_time_duration_serializer : public basic_type_serializer<
 		static const int f_frac              =  7;
 
 		boost::smatch m;
-		if (!boost::regex_match(s, m, re1)) {
-			if (!boost::regex_match(s, m, re2)) {
+		if (not boost::regex_match(s, m, re1)) {
+			if (not boost::regex_match(s, m, re2)) {
 				throw exception("Bad time format");
 			}
 		}
@@ -646,7 +670,7 @@ struct boost_posix_time_time_duration_serializer : public basic_type_serializer<
 		return result;
 	}
 
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -657,10 +681,13 @@ struct boost_posix_time_time_duration_serializer : public basic_type_serializer<
 	}
 };
 
-template<typename S, typename T>
-struct struct_serializer_archive
+// code to serialize structs.
+// struct_serializer_archive is a helper class to be used as Archive 
+
+template<typename Archive, typename T>
+struct struct_serializer
 {
-	static void serialize(S& stream, T& data)
+	static void serialize(Archive& stream, T& data)
 	{
 		data.serialize(stream, 0U);
 	}
@@ -674,7 +701,7 @@ struct struct_serializer_base
 	
 	static void serialize(container* n, const value_type& value)
 	{
-		typedef typename struct_serializer_archive<serializer,value_type> archive;
+		typedef typename struct_serializer<serializer,value_type> archive;
 		
 		serializer sr(n);
 		archive::serialize(sr, const_cast<value_type&>(value));
@@ -682,13 +709,13 @@ struct struct_serializer_base
 
 	static void	deserialize(const container* n, value_type& v)
 	{
-		typedef typename struct_serializer_archive<deserializer,value_type>	archive;
+		typedef typename struct_serializer<deserializer,value_type>	archive;
 
 		deserializer ds(n);
 		archive::serialize(ds, v);
 	}
 	
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
 		element* result(new element("xsd:element"));
 		result->set_attribute("name", name);
@@ -696,6 +723,11 @@ struct struct_serializer_base
 		result->set_attribute("minOccurs", "1");
 		result->set_attribute("maxOccurs", "1");
 
+		return result;
+	}
+
+	static void register_type(type_map& types)
+	{
 		// we might be known already
 		if (types.find(s_struct_name) == types.end())
 		{
@@ -706,15 +738,13 @@ struct struct_serializer_base
 			element* sequence(new element("xsd:sequence"));
 			n->append(sequence);
 
-			typedef typename struct_serializer_archive<wsdl_creator,value_type>	archive;
+			typedef typename struct_serializer<wsdl_creator,value_type>	archive;
 		
 			wsdl_creator wsdl(types, sequence);
 
 			value_type v;
 			archive::serialize(wsdl, v);
 		}
-		
-		return result;
 	}
 };
 
@@ -734,16 +764,9 @@ std::string struct_serializer_base<Derived,Struct>::s_struct_name = typeid(Struc
 
 #define SOAP_XML_SET_STRUCT_NAME(s)	zeep::xml::struct_serializer_impl<s>::s_struct_name = BOOST_PP_STRINGIZE(s);
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
+// code to serialize enums.
 
-//template<typename T>
-//struct serialize_boost_optional
-//{
-//	static void	serialize(container* parent, const std::string& name, boost::optional<T>& v);
-//	static void	deserialize(const std::string& s, boost::optional<T>& v);
-//
-//	static element*	to_wsdl(type_map& types, element* parent, const std::string& name, boost::optional<T>& v);
-//};
+#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template<typename T>
 struct enum_map
@@ -753,37 +776,34 @@ struct enum_map
 	name_mapping_type							m_name_mapping;
 	std::string									m_name;
 	
-	static enum_map&
-				instance(const char* name = NULL)
-				{
-					static enum_map s_instance;
-					if (name and s_instance.m_name.empty())
-						s_instance.m_name = name;
-					return s_instance;
-				}
+	static enum_map& instance(const char* name = NULL)
+	{
+		static enum_map s_instance;
+		if (name and s_instance.m_name.empty())
+			s_instance.m_name = name;
+		return s_instance;
+	}
 
 	class add_enum_helper
 	{
 		friend struct enum_map;
-					add_enum_helper(name_mapping_type& mapping)
-						: m_mapping(mapping) {}
+		add_enum_helper(name_mapping_type& mapping)
+			: m_mapping(mapping) {}
 		
-		name_mapping_type&
-					m_mapping;
+		name_mapping_type& m_mapping;
 
 	  public:
-		add_enum_helper&
-					operator()(const std::string& name, T value)
-					{
-						m_mapping[value] = name;
-						return *this;
-					}
+		add_enum_helper& operator()(const std::string& name, T value)
+		{
+			m_mapping[value] = name;
+			return *this;
+		}
 	};
 	
 	add_enum_helper	add_enum()
-					{
-						return add_enum_helper(m_name_mapping);
-					}
+	{
+		return add_enum_helper(m_name_mapping);
+	}
 };
 
 #endif
@@ -797,6 +817,12 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 {
 	typedef enum_map<T>					t_enum_map;
 	typedef std::map<T,std::string>		t_map;
+	
+	static const char* type_name()
+	{
+		static std::string s_type_name = kPrefix + ':' + t_enum_map::instance().m_name;
+		return s_type_name.c_str();
+	}
 	
 	static std::string serialize_value(const T& value)
 	{
@@ -820,22 +846,27 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 		return result;
 	}
 
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
-		std::string type_name = t_enum_map::instance().m_name;
-		
+		std::string my_type_name = type_name();
+
 		element* result(new element("xsd:element"));
 		result->set_attribute("name", name);
-		result->set_attribute("type", kPrefix + ':' + type_name);
+		result->set_attribute("type", my_type_name);
 		result->set_attribute("minOccurs", "1");
 		result->set_attribute("maxOccurs", "1");
 		
+		return result;
+	}
+	
+	static void register_type(type_map& types)
+	{
 		// we might be known already
-		if (types.find(type_name) == types.end())
+		if (types.find(type_name()) == types.end())
 		{
 			element* n(new element("xsd:simpleType"));
-			n->set_attribute("name", type_name);
-			types[type_name] = n;
+			n->set_attribute("name", type_name());
+			types[type_name()] = n;
 			
 			element* restriction(new element("xsd:restriction"));
 			restriction->set_attribute("base", "xsd:string");
@@ -849,8 +880,6 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 				restriction->append(en);
 			}
 		}
-		
-		return result;
 	}
 };
 
@@ -865,7 +894,7 @@ template<typename T, typename S = typename boost::mpl::if_c<
 										struct_serializer_impl<T>
 									>::type
 								>::type>
-struct serializer_basic_type
+struct wrap_basic_type_serializer
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef S type_serializer_type;
@@ -886,44 +915,51 @@ struct serializer_basic_type
 			type_serializer_type::deserialize(e, value);
 	}
 	
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
-		return type_serializer_type::wsdl(types, name);
+		return type_serializer_type::wsdl(name);
+	}
+
+	static void register_type(type_map& types)
+	{
+		type_serializer_type::register_type(types);
 	}
 };
 
 template<typename T>
-struct serializer_type : public serializer_basic_type<T>
+struct serializer_type : public wrap_basic_type_serializer<T>
 {
 };
 
 template<>
-struct serializer_type<bool> : public serializer_basic_type<bool, bool_serializer>
+struct serializer_type<bool> : public wrap_basic_type_serializer<bool, bool_serializer>
 {
 };
 
 template<>
-struct serializer_type<std::string> : public serializer_basic_type<std::string, string_serializer>
+struct serializer_type<std::string> : public wrap_basic_type_serializer<std::string, string_serializer>
 {
 };
 
 template<>
 struct serializer_type<boost::posix_time::ptime>
-	: public serializer_basic_type<boost::posix_time::ptime, boost_posix_time_ptime_serializer>
+	: public wrap_basic_type_serializer<boost::posix_time::ptime, boost_posix_time_ptime_serializer>
 {
 };
 
 template<>
 struct serializer_type<boost::gregorian::date>
-	: public serializer_basic_type<boost::gregorian::date, boost_gregorian_date_serializer>
+	: public wrap_basic_type_serializer<boost::gregorian::date, boost_gregorian_date_serializer>
 {
 };
 
 template<>
 struct serializer_type<boost::posix_time::time_duration>
-	: public serializer_basic_type<boost::posix_time::time_duration, boost_posix_time_time_duration_serializer>
+	: public wrap_basic_type_serializer<boost::posix_time::time_duration, boost_posix_time_time_duration_serializer>
 {
 };
+
+// serializer for STL container types
 
 template<typename C>
 struct serialize_container_type
@@ -955,9 +991,9 @@ struct serialize_container_type
 		}
 	}
 
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
-		element* result = base_serializer_type::wsdl(types, name);
+		element* result = base_serializer_type::wsdl(name);
 	
 		result->remove_attribute("minOccurs");
 		result->set_attribute("minOccurs", "0");
@@ -966,6 +1002,11 @@ struct serialize_container_type
 		result->set_attribute("maxOccurs", "unbounded");
 	
 		return result;
+	}
+
+	static void register_type(type_map& types)
+	{
+		base_serializer_type::register_type(types);
 	}
 };
 
@@ -1002,9 +1043,9 @@ struct serializer_type<boost::optional<T>>
 		}
 	}
 
-	static element* wsdl(type_map& types, const std::string& name)
+	static element* wsdl(const std::string& name)
 	{
-		element* result = base_serializer_type::wsdl(types, name);
+		element* result = base_serializer_type::wsdl(name);
 	
 		result->remove_attribute("minOccurs");
 		result->set_attribute("minOccurs", "0");
@@ -1014,9 +1055,14 @@ struct serializer_type<boost::optional<T>>
 	
 		return result;
 	}
+
+	static void register_type(type_map& types)
+	{
+		base_serializer_type::register_type(types);
+	}
 };
 
-// and the wrappers for serializing
+// And finally, the implementation of serializer, deserializer and wsdl_creator.
 
 template<typename T>
 serializer& serializer::serialize_element(const char* name, const T& value)
@@ -1079,7 +1125,9 @@ wsdl_creator& wsdl_creator::add_element(const char* name, const T& value)
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef typename serializer_type<value_type>											type_serializer;
 	
-	m_node->append(type_serializer::wsdl(m_types, name));
+	m_node->append(type_serializer::wsdl(name));
+
+	type_serializer::register_type(m_types);
 
 	return *this;
 }
@@ -1092,8 +1140,13 @@ wsdl_creator& wsdl_creator::add_attribute(const char* name, const T& value)
 	
 	element* n(new element("xsd:attribute"));
 
+	std::string type_name = type_serializer::type_name();
+
 	n->set_attribute("name", name);
-	n->set_attribute("type", type_serializer::type_name());
+	n->set_attribute("type", type_name);
+
+	if (m_types.find(type_name) == m_types.end())
+		type_serializer::register_type(m_types);
 
 	m_node->append(n);
 
