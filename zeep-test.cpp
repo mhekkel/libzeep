@@ -205,6 +205,8 @@ my_server::my_server(const string& param)
 	: zeep::server("http://mrs.cmbi.ru.nl/mrsws/search", "zeep")
 	, m_param(param)
 {
+	set_location("http://131.174.88.174:10333");
+
 	using namespace WSSearchNS;
 
 	zeep::xml::enum_map<HitType>::instance("HitType").add_enum()
@@ -363,7 +365,7 @@ int main(int argc, const char* argv[])
 	
 		zeep::http::preforked_server<my_server> server("bla bla");
 		boost::thread t(
-			boost::bind(&zeep::http::preforked_server<my_server>::run, &server, "0.0.0.0", 10333, 2));
+			boost::bind(&zeep::http::preforked_server<my_server>::run, &server, "131.174.88.174", 10333, 2));
 		server.start();
 		
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);

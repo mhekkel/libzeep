@@ -262,7 +262,7 @@ struct wsdl_creator
 //	Examples of specializations of serializer_type are serialize_container_type
 //	and serialize_boost_optional.
 
-template<typename Derived, typename ValueType = Derived::value_type>
+template<typename Derived, typename ValueType>
 struct basic_type_serializer
 {
 	typedef ValueType value_type;
@@ -329,7 +329,7 @@ template<> struct arithmetic_wsdl_name<double> {
 };
 
 template<typename T>
-struct arithmetic_serializer : public basic_type_serializer<typename arithmetic_serializer<T>, T>
+struct arithmetic_serializer : public basic_type_serializer<arithmetic_serializer<T>, T>
 							 , public arithmetic_wsdl_name<T>
 {
 	typedef T value_type;
@@ -344,7 +344,7 @@ struct arithmetic_serializer : public basic_type_serializer<typename arithmetic_
 	
 	static value_type deserialize_value(const std::string& value)
 	{
-		return static_cast<value_type>(boost::lexical_cast<promoted_type>(value));
+		return value.empty() ? 0 : static_cast<value_type>(boost::lexical_cast<promoted_type>(value));
 	}
 };
 
@@ -815,7 +815,7 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 	
 	static const char* type_name()
 	{
-		static std::string s_type_name = kPrefix + ':' + t_enum_map::instance().m_name;
+		static std::string s_type_name = t_enum_map::instance().m_name;
 		return s_type_name.c_str();
 	}
 	
@@ -847,7 +847,7 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 
 		element* result(new element("xsd:element"));
 		result->set_attribute("name", name);
-		result->set_attribute("type", my_type_name);
+		result->set_attribute("type", kPrefix + ':' + my_type_name);
 		result->set_attribute("minOccurs", "1");
 		result->set_attribute("maxOccurs", "1");
 		
