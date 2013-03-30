@@ -254,13 +254,25 @@ struct handler : public handler_base
 							element* operation(new element("wsdl:operation"));
 							operation->set_attribute("name", get_action_name());
 							
+							// soap operation
+							element* soapOperation(new element("soap:operation"));
+							soapOperation->set_attribute("soapAction", "");
+							soapOperation->set_attribute("style", "document");
+							operation->append(soapOperation);
+							
 							element* input(new element("wsdl:input"));
 							input->set_attribute("message", kPrefix + ':' + get_action_name() + "RequestMessage");
 							operation->append(input);
+							element* soapBody(new element("soap:body"));
+							soapBody->set_attribute("use", "literal");
+							input->append(soapBody);
 
 							element* output(new element("wsdl:output"));
 							output->set_attribute("message", kPrefix + ':' + get_response_name() + "Message");
 							operation->append(output);
+							soapBody = new element("soap:body");
+							soapBody->set_attribute("use", "literal");
+							output->append(soapBody);
 							
 							portType->append(operation);
 							
