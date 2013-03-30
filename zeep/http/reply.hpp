@@ -46,6 +46,7 @@ class reply
 
 						reply(int version_major = 1, int version_minor = 0);
 						reply(const reply&);
+						~reply();
 	reply&				operator=(const reply&);
 
 	void				set_version(int version_major, int version_minor);
@@ -96,8 +97,7 @@ class reply
 	std::string			m_status_line;
 	std::vector<header>	m_headers;
 	std::string			m_content;
-	std::unique_ptr<std::istream>
-						m_data;
+	std::istream*		m_data;
 	std::vector<char>	m_buffer;
 };
 
