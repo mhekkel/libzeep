@@ -83,6 +83,7 @@ reply::reply(int version_major, int version_minor)
 	: m_version_major(version_major)
 	, m_version_minor(version_minor)
 	, m_status(internal_server_error)
+	, m_data(nullptr)
 {
 	using namespace boost::local_time;
 	using namespace boost::posix_time;
@@ -106,7 +107,13 @@ reply::reply(const reply& rhs)
 	, m_status_line(rhs.m_status_line)
 	, m_headers(rhs.m_headers)
 	, m_content(rhs.m_content)
+	, m_data(nullptr)
 {
+}
+
+reply::~reply()
+{
+	delete m_data;
 }
 
 reply& reply::operator=(const reply& rhs)
@@ -178,7 +185,9 @@ void reply::set_content(const string& data, const string& contentType)
 {
 	m_content = data;
 	m_status = ok;
-	m_data.release();
+
+	delete m_data;
+	m_data = nullptr;
 
 	set_header("Content-Length", boost::lexical_cast<string>(m_content.length()));
 	set_header("Content-Type", contentType);
@@ -186,7 +195,8 @@ void reply::set_content(const string& data, const string& contentType)
 
 void reply::set_content(istream* idata, const string& contentType)
 {
-	m_data.reset(idata);
+	delete m_data;
+	m_data = idata;
 	m_content.clear();
 
 	m_status = ok;
@@ -194,7 +204,7 @@ void reply::set_content(istream* idata, const string& contentType)
 	set_header("Content-Type", contentType);
 	
 	// for HTTP/1.0 replies we need to calculate the data length
-	if (m_version_major == 1 and m_version_minor == 0 and m_data.get() != 0)
+	if (m_version_major == 1 and m_version_minor == 0 and m_data != nullptr)
 	{
 		streamsize pos = m_data->rdbuf()->pubseekoff(0, ios_base::cur);
 		streamsize length = m_data->rdbuf()->pubseekoff(0, ios_base::end);
@@ -258,7 +268,7 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 {
 	bool result = false;
 	
-	if (m_data.get() != 0)
+	if (m_data != nullptr)
 	{
 		result = true;
 		
@@ -279,7 +289,8 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 				buffers.push_back(boost::asio::buffer("0"));
 				buffers.push_back(boost::asio::buffer(kCRLF));
 				buffers.push_back(boost::asio::buffer(kCRLF));
-				m_data.release();
+				delete m_data;
+				m_data = nullptr;
 			}
 			else
 			{
@@ -298,7 +309,8 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 				buffers.push_back(boost::asio::buffer(&m_buffer[0], n));
 			else
 			{
-				m_data.release();
+				delete m_data;
+				m_data = nullptr;
 				result = false;
 			}
 		}
