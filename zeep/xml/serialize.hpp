@@ -335,11 +335,14 @@ template<> struct arithmetic_wsdl_name<double> {
 
 template<typename T>
 struct arithmetic_serializer : public basic_type_serializer<arithmetic_serializer<T>,
-										typedef typename boost::remove_const<
-											typename boost::remove_reference<T>::type
-										>::type>
+//										typedef typename boost::remove_const<
+//											typename boost::remove_reference<T>::type
+//										>::type>
+								T>
 							 , public arithmetic_wsdl_name<T>
 {
+	typedef T value_type;
+
 	// use promoted type to force writing out char as an integer
 	typedef typename boost::integral_promotion<T>::type		promoted_type;
 
@@ -696,12 +699,12 @@ struct struct_serializer
 template<typename Derived, typename Struct>
 struct struct_serializer_base
 {
-	typedef typename Struct		value_type;
+	typedef Struct				value_type;
 	static std::string			s_struct_name;
 	
 	static void serialize(container* n, const value_type& value)
 	{
-		typedef typename struct_serializer<serializer,value_type> archive;
+		typedef struct_serializer<serializer,value_type> archive;
 		
 		serializer sr(n);
 		archive::serialize(sr, const_cast<value_type&>(value));
@@ -709,7 +712,7 @@ struct struct_serializer_base
 
 	static void	deserialize(const container* n, value_type& v)
 	{
-		typedef typename struct_serializer<deserializer,value_type>	archive;
+		typedef struct_serializer<deserializer,value_type>	archive;
 
 		deserializer ds(n);
 		archive::serialize(ds, v);
@@ -738,7 +741,7 @@ struct struct_serializer_base
 			element* sequence(new element("xsd:sequence"));
 			n->append(sequence);
 
-			typedef typename struct_serializer<wsdl_creator,value_type>	archive;
+			typedef struct_serializer<wsdl_creator,value_type>	archive;
 		
 			wsdl_creator wsdl(types, sequence);
 
@@ -746,15 +749,16 @@ struct struct_serializer_base
 			archive::serialize(wsdl, v);
 		}
 	}
+
+	static void	set_struct_name(const std::string& name)
+	{
+		s_struct_name = name;
+	}
 };
 
 template<typename Struct>
 struct struct_serializer_impl : public struct_serializer_base<struct_serializer_impl<Struct>, Struct>
 {
-	static void	set_struct_name(const std::string& name)
-	{
-		s_struct_name = name;
-	}
 };
 
 template<typename Derived, typename Struct>
@@ -1011,17 +1015,17 @@ struct serialize_container_type
 };
 
 template<typename T>
-struct serializer_type<std::vector<T>> : public serialize_container_type<std::vector<T>>
+struct serializer_type<std::vector<T> > : public serialize_container_type<std::vector<T> >
 {
 };
 
 template<typename T>
-struct serializer_type<std::list<T>> : public serialize_container_type<std::list<T>>
+struct serializer_type<std::list<T> > : public serialize_container_type<std::list<T> >
 {
 };
 
 template<typename T>
-struct serializer_type<boost::optional<T>>
+struct serializer_type<boost::optional<T> >
 {
 	typedef T							value_type;
 	typedef serializer_type<value_type>	base_serializer_type;
@@ -1068,7 +1072,7 @@ template<typename T>
 serializer& serializer::serialize_element(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serializer_type<value_type>											type_serializer;
+	typedef serializer_type<value_type>											type_serializer;
 
 	type_serializer::serialize_type(m_node, name, value);
 
@@ -1093,7 +1097,7 @@ template<typename T>
 deserializer& deserializer::deserialize_element(const char* name, T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serializer_type<value_type>											type_serializer;
+	typedef serializer_type<value_type>											type_serializer;
 	
 	type_serializer::deserialize_type(m_node, name, value);
 
@@ -1123,7 +1127,7 @@ template<typename T>
 wsdl_creator& wsdl_creator::add_element(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serializer_type<value_type>											type_serializer;
+	typedef serializer_type<value_type>											type_serializer;
 	
 	m_node->append(type_serializer::wsdl(name));
 
@@ -1136,7 +1140,7 @@ template<typename T>
 wsdl_creator& wsdl_creator::add_attribute(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef typename serializer_type<value_type>											type_serializer;
+	typedef serializer_type<value_type>											type_serializer;
 	
 	element* n(new element("xsd:attribute"));
 
