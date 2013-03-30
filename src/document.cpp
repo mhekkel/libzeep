@@ -10,6 +10,7 @@
 #include <deque>
 #include <map>
 
+#include <boost/tr1/memory.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -149,7 +150,7 @@ void zeep_document_imp::StartElementHandler(const string& name, const string& ur
 			qname = prefix + ':' + name;
 	}
 
-	auto_ptr<element> n(new element(qname));
+	unique_ptr<element> n(new element(qname));
 
 	if (m_cur == nullptr)
 		m_root.child_element(n.get());
