@@ -201,7 +201,7 @@ struct wsdl_creator
 {
 	wsdl_creator(type_map& types, element* node)
 		: m_node(node), m_types(types) {}
-	
+		
 	template<typename T>
 	wsdl_creator& operator&(const boost::serialization::nvp<T>& rhs)
 	{
@@ -262,15 +262,10 @@ struct wsdl_creator
 //	Examples of specializations of serializer_type are serialize_container_type
 //	and serialize_boost_optional.
 
-template<typename Derived, typename Value>
+template<typename Derived, typename ValueType = Derived::value_type>
 struct basic_type_serializer
 {
-	enum {
-		min_occurs		= 1,
-		max_occurs		= 1,
-	};
-	
-	typedef Value		value_type;
+	typedef ValueType value_type;
 	
 	static void serialize(container* n, const value_type& value)
 	{
@@ -288,8 +283,8 @@ struct basic_type_serializer
 
 		n->set_attribute("name", name);
 		n->set_attribute("type", Derived::type_name());
-		n->set_attribute("minOccurs", boost::lexical_cast<std::string>(Derived::min_occurs));
-		n->set_attribute("maxOccurs", boost::lexical_cast<std::string>(Derived::max_occurs));
+		n->set_attribute("minOccurs", "1");
+		n->set_attribute("maxOccurs", "1");
 		
 		return n;
 	}
@@ -334,11 +329,7 @@ template<> struct arithmetic_wsdl_name<double> {
 };
 
 template<typename T>
-struct arithmetic_serializer : public basic_type_serializer<arithmetic_serializer<T>,
-//										typedef typename boost::remove_const<
-//											typename boost::remove_reference<T>::type
-//										>::type>
-								T>
+struct arithmetic_serializer : public basic_type_serializer<typename arithmetic_serializer<T>, T>
 							 , public arithmetic_wsdl_name<T>
 {
 	typedef T value_type;
@@ -1152,7 +1143,9 @@ wsdl_creator& wsdl_creator::add_attribute(const char* name, const T& value)
 	if (m_types.find(type_name) == m_types.end())
 		type_serializer::register_type(m_types);
 
-	m_node->append(n);
+	assert(m_node->parent() != nullptr);
+	if (m_node->parent() != nullptr)
+		m_node->parent()->append(n);
 
 	return *this;
 }
