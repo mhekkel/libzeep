@@ -69,7 +69,7 @@ struct parameter_deserializer
 	Iterator	operator()(Iterator i, T& t) const
 				{
 					xml::deserializer d(m_node);
-					d & boost::serialization::make_nvp(i->c_str(), t);
+					d.deserialize_element(i->c_str(), t);
 					return ++i;
 				}
 
@@ -77,7 +77,7 @@ struct parameter_deserializer
 	Iterator	operator()(T& t, Iterator i) const
 				{
 					xml::deserializer d(m_node);
-					d & boost::serialization::make_nvp(i->c_str(), t);
+					d.deserialize_element(i->c_str(), t);
 					return ++i;
 				}
 };
@@ -97,7 +97,7 @@ struct parameter_types
 	Iterator	operator()(Iterator i, T& t) const
 				{
 					xml::wsdl_creator d(m_types, m_node);
-					d & boost::serialization::make_nvp(i->c_str(), t);
+					d.add_element(i->c_str(), t);
 					return ++i;
 				}
 
@@ -105,7 +105,7 @@ struct parameter_types
 	Iterator	operator()(T& t, Iterator i) const
 				{
 					xml::wsdl_creator d(m_types, m_node);
-					d & boost::serialization::make_nvp(i->c_str(), t);
+					d.add_element(i->c_str(), t);
 					return ++i;
 				}
 };
@@ -231,7 +231,7 @@ struct handler : public handler_base
 							wsdl_creator wc(types, sequence);
 
 							response_type response;
-							wc & boost::serialization::make_nvp(m_names[name_count - 1].c_str(), response);
+							wc.add_element(m_names[name_count - 1].c_str(), response);
 							
 							// now the wsdl operations
 							element* message = new element("wsdl:message");
@@ -268,7 +268,6 @@ struct handler : public handler_base
 							operation = new element("wsdl:operation");
 							operation->set_attribute("name", get_action_name());
 							binding->append(operation);
-							// soap operation
 							element* soapOperation(new element("soap:operation"));
 							soapOperation->set_attribute("soapAction", "");
 							soapOperation->set_attribute("style", "document");
@@ -276,16 +275,10 @@ struct handler : public handler_base
 							
 							input = new element("wsdl:input");
 							operation->append(input);
-							element* soapBody(new element("soap:body"));
-							soapBody->set_attribute("use", "literal");
-							input->append(soapBody);
-							
+
 							output = new element("wsdl:output");
 							operation->append(output);
-							soapBody = new element("soap:body");
-							soapBody->set_attribute("use", "literal");
-							output->append(soapBody);
-							
+
 							element* body(new element("soap:body"));
 							body->set_attribute("use", "literal");
 							input->append(body);
