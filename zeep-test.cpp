@@ -266,6 +266,8 @@ my_server::my_server(const string& param)
 	const char* kPairTestParameterNames[] = {
 		"in", "out"
 	};
+
+	zeep::xml::struct_serializer_impl<pair<int,int> >::set_struct_name("pair_of_ints");
 	
 	register_action("PairTest", this, &my_server::PairTest, kPairTestParameterNames);
 }
