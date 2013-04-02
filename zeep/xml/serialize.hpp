@@ -634,6 +634,8 @@ struct struct_serializer_impl
 {
 	typedef Struct				value_type;
 	static std::string			s_struct_name;
+
+	static const char* type_name() { return s_struct_name.c_str(); }
 	
 	static void serialize(container* n, const value_type& value)
 	{
@@ -828,12 +830,12 @@ struct wrapped_serializer : public Serializer
 	
 	static void serialize(container* n, const value_type& value)
 	{
-		n->str(serialize_value(value));
+		n->str(Serializer::serialize_value(value));
 	}
 	
 	static void deserialize(const container* n, value_type& value)
 	{
-		value = deserialize_value(n->str());
+		value = Serializer::deserialize_value(n->str());
 	}
 	
 	static element* schema(const std::string& name)
@@ -841,7 +843,7 @@ struct wrapped_serializer : public Serializer
 		element* n(new element("xsd:element"));
 
 		n->set_attribute("name", name);
-		n->set_attribute("type", type_name());
+		n->set_attribute("type", Serializer::type_name());
 		n->set_attribute("minOccurs", "1");
 		n->set_attribute("maxOccurs", "1");
 		
@@ -928,6 +930,8 @@ struct serialize_container_type
 	typedef C container_type;
 	typedef typename container_type::value_type value_type;
 	typedef serializer_type<value_type> base_serializer_type;
+
+	static const char* type_name() { return base_serializer_type::type_name(); }
 	
 	static void serialize_child(container* n, const char* name, const container_type& value)
 	{
@@ -993,6 +997,8 @@ struct serializer_type<boost::optional<T> >
 	typedef T							value_type;
 	typedef serializer_type<value_type>	base_serializer_type;
 	
+	static const char* type_name() { return base_serializer_type::type_name(); }
+
 	static void serialize_child(container* n, const char* name, const boost::optional<value_type>& value)
 	{
 		if (value.is_initialized())
