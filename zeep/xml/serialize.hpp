@@ -22,7 +22,6 @@
 #include <boost/serialization/nvp.hpp>
 #include <boost/type_traits/is_arithmetic.hpp>
 #include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/is_class.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/type_traits/remove_const.hpp>
@@ -238,61 +237,29 @@ struct schema_creator
 //	their values from/to strings. They also have a type_name that is used in
 //	schema's, this should be the XSD standard name. These basic serializers are
 //	used to write either XML element content or attribute values.
-//	All basic serializers are derived of basic_type_serializer using the CRTP
-//	(curiously recurring template pattern)
 //
-//	The basic serializers should implement the following functions:
+//	The basic serializers should typedef a type value_type and also implement
+//	the following functions:
 //
 //		static std::string serialize_value(const value_type& value);
 //		static value_type deserialize_value(const std::string& value);
 //		static const char* type_name();
 //
-//	The serializers are accessed through another templated class:
-//	serializer_type. The plain version of this serializer_type derives
-//	from basic_type_serializer. Other specializations may do so, but
-//	don't have to.
+//	The basic serializers are accessed through another templated class,
+//	serializer_type.
 //
 //	All versions of serializer_type<> should implement the following
 //	functions:
 //	
-//		static void	serialize(container* n, const T& v);
-//		static void	deserialize(const container* n, T& v);
-//		static void	schema(type_map& types, const std::string& name);
+//		static void	serialize(element* n, const T& v);
+//		static void	serialize_child(container* n, const char* name, const T& v);
+//		static void	deserialize(const element* n, T& v);
+//		static void	deserialize_child(const container* n, const char* name, T& v);
+//		static element*	schema(const std::string& name);
+//		static void register_type(type_map& types);
 //
 //	Examples of specializations of serializer_type are serialize_container_type
 //	and serialize_boost_optional.
-
-template<typename Derived, typename ValueType>
-struct basic_type_serializer
-{
-	typedef ValueType value_type;
-	
-	static void serialize(container* n, const value_type& value)
-	{
-		n->str(Derived::serialize_value(value));
-	}
-	
-	static void deserialize(const container* n, value_type& value)
-	{
-		value = Derived::deserialize_value(n->str());
-	}
-	
-	static element* schema(const std::string& name)
-	{
-		element* n(new element("xsd:element"));
-
-		n->set_attribute("name", name);
-		n->set_attribute("type", Derived::type_name());
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		
-		return n;
-	}
-
-	static void register_type(type_map& types)
-	{
-	}
-};
 
 // arithmetic types are ints, doubles, etc... simply use lexical_cast to convert these
 template<typename T, int S = sizeof(T), bool = boost::is_unsigned<T>::value> struct arithmetic_schema_name {};
@@ -329,8 +296,7 @@ template<> struct arithmetic_schema_name<double> {
 };
 
 template<typename T>
-struct arithmetic_serializer : public basic_type_serializer<arithmetic_serializer<T>, T>
-							 , public arithmetic_schema_name<T>
+struct arithmetic_serializer : public arithmetic_schema_name<T>
 {
 	typedef T value_type;
 
@@ -348,7 +314,7 @@ struct arithmetic_serializer : public basic_type_serializer<arithmetic_serialize
 	}
 };
 
-struct string_serializer : public basic_type_serializer<string_serializer, std::string>
+struct string_serializer
 {
 	typedef std::string value_type;
 	
@@ -365,7 +331,7 @@ struct string_serializer : public basic_type_serializer<string_serializer, std::
 	}
 };
 
-struct bool_serializer : public basic_type_serializer<bool_serializer, bool>
+struct bool_serializer
 {
 	typedef bool value_type;
 
@@ -384,8 +350,10 @@ struct bool_serializer : public basic_type_serializer<bool_serializer, bool>
 
 /// \brief serializer/deserializer for boost::posix_time::ptime
 /// boost::posix_time::ptime values are always assumed to be UTC
-struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_posix_time_ptime_serializer, boost::posix_time::ptime>
+struct boost_posix_time_ptime_serializer
 {
+	typedef boost::posix_time::ptime value_type;
+
 	static const char* type_name() { return "xsd:dateTime"; }
 	
 	/// Serialize the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
@@ -514,22 +482,14 @@ struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_po
 
 		return result;
 	}
-
-	static element* schema(const std::string& name)
-	{
-		element* n(new element("xsd:element"));
-		n->set_attribute("name", name);
-		n->set_attribute("type", "xsd:dateTime");
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		return n;
-	}
 };
 
 /// \brief serializer/deserializer for boost::gregorian::date
 /// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
-struct boost_gregorian_date_serializer : public basic_type_serializer<boost_gregorian_date_serializer, boost::gregorian::date>
+struct boost_gregorian_date_serializer
 {
+	typedef boost::gregorian::date value_type;
+	
 	static const char* type_name() { return "xsd:date"; }
 
 	/// Serialize the boost::gregorian::date as YYYY-MM-DD
@@ -579,22 +539,14 @@ struct boost_gregorian_date_serializer : public basic_type_serializer<boost_greg
 				, boost::lexical_cast<int>(m[f_day])
 				);
 	}
-
-	static element* schema(const std::string& name)
-	{
-		element* n(new element("xsd:element"));
-		n->set_attribute("name", name);
-		n->set_attribute("type", "xsd:date");
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		return n;
-	}
 };
 
 /// \brief serializer/deserializer for boost::posix_time::time_duration
 /// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
-struct boost_posix_time_time_duration_serializer : public basic_type_serializer<boost_posix_time_time_duration_serializer, boost::posix_time::time_duration>
+struct boost_posix_time_time_duration_serializer
 {
+	typedef boost::posix_time::time_duration value_type;
+	
 	static const char* type_name() { return "xsd:time"; }
 
 	/// Serialize the boost::posix_time::time_duration as hh:mm:ss,ffffff
@@ -663,16 +615,6 @@ struct boost_posix_time_time_duration_serializer : public basic_type_serializer<
 		
 		return result;
 	}
-
-	static element* schema(const std::string& name)
-	{
-		element* n(new element("xsd:element"));
-		n->set_attribute("name", name);
-		n->set_attribute("type", "xsd:time");
-		n->set_attribute("minOccurs", "1");
-		n->set_attribute("maxOccurs", "1");
-		return n;
-	}
 };
 
 // code to serialize structs.
@@ -687,8 +629,8 @@ struct struct_serializer
 	}
 };
 
-template<typename Derived, typename Struct>
-struct struct_serializer_base
+template<typename Struct>
+struct struct_serializer_impl
 {
 	typedef Struct				value_type;
 	static std::string			s_struct_name;
@@ -722,23 +664,19 @@ struct struct_serializer_base
 
 	static void register_type(type_map& types)
 	{
-		// we might be known already
-		if (types.find(s_struct_name) == types.end())
-		{
-			element* n(new element("xsd:complexType"));
-			n->set_attribute("name", s_struct_name);
-			types[s_struct_name] = n;
-			
-			element* sequence(new element("xsd:sequence"));
-			n->append(sequence);
-
-			typedef struct_serializer<schema_creator,value_type>	archive;
+		element* n(new element("xsd:complexType"));
+		n->set_attribute("name", s_struct_name);
+		types[s_struct_name] = n;
 		
-			schema_creator schema(types, sequence);
+		element* sequence(new element("xsd:sequence"));
+		n->append(sequence);
 
-			value_type v;
-			archive::serialize(schema, v);
-		}
+		typedef struct_serializer<schema_creator,value_type>	archive;
+	
+		schema_creator schema(types, sequence);
+
+		value_type v;
+		archive::serialize(schema, v);
 	}
 
 	static void	set_struct_name(const std::string& name)
@@ -748,12 +686,7 @@ struct struct_serializer_base
 };
 
 template<typename Struct>
-struct struct_serializer_impl : public struct_serializer_base<struct_serializer_impl<Struct>, Struct>
-{
-};
-
-template<typename Derived, typename Struct>
-std::string struct_serializer_base<Derived,Struct>::s_struct_name = typeid(Struct).name();
+std::string struct_serializer_impl<Struct>::s_struct_name = typeid(Struct).name();
 
 #endif
 
@@ -808,8 +741,10 @@ struct enum_map
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template<typename T>
-struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
+struct enum_serializer
 {
+	typedef T							value_type;
+	
 	typedef enum_map<T>					t_enum_map;
 	typedef std::map<T,std::string>		t_map;
 	
@@ -824,6 +759,11 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 		return t_enum_map::instance().m_name_mapping[value];
 	}
 
+	static void serialize(container* n, const value_type& value)
+	{
+		n->str(serialize_value(value));
+	}
+	
 	static T deserialize_value(const std::string& value)
 	{
 		T result = T();
@@ -841,6 +781,11 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 		return result;
 	}
 
+	static void deserialize(const container* n, value_type& value)
+	{
+		value = deserialize_value(n->str());
+	}
+	
 	static element* schema(const std::string& name)
 	{
 		std::string my_type_name = type_name();
@@ -856,64 +801,74 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 	
 	static void register_type(type_map& types)
 	{
-		// we might be known already
-		if (types.find(type_name()) == types.end())
+		element* n(new element("xsd:simpleType"));
+		n->set_attribute("name", type_name());
+		types[type_name()] = n;
+		
+		element* restriction(new element("xsd:restriction"));
+		restriction->set_attribute("base", "xsd:string");
+		n->append(restriction);
+		
+		t_map& m = t_enum_map::instance().m_name_mapping;
+		for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
 		{
-			element* n(new element("xsd:simpleType"));
-			n->set_attribute("name", type_name());
-			types[type_name()] = n;
-			
-			element* restriction(new element("xsd:restriction"));
-			restriction->set_attribute("base", "xsd:string");
-			n->append(restriction);
-			
-			t_map& m = t_enum_map::instance().m_name_mapping;
-			for (typename t_map::iterator e = m.begin(); e != m.end(); ++e)
-			{
-				element* en(new element("xsd:enumeration"));
-				en->set_attribute("value", e->second);
-				restriction->append(en);
-			}
+			element* en(new element("xsd:enumeration"));
+			en->set_attribute("value", e->second);
+			restriction->append(en);
 		}
 	}
 };
 
-// now create a type factory for these serializers
+// a wrapper type for basic type serializers
 
-template<typename T, typename S = typename boost::mpl::if_c<
-									boost::is_arithmetic<T>::value,
-									arithmetic_serializer<T>,
-									typename boost::mpl::if_c<
-										boost::is_enum<T>::value,
-										enum_serializer<T>,
-										struct_serializer_impl<T>
-									>::type
-								>::type>
-struct wrap_basic_type_serializer
+template<class Serializer>
+struct wrapped_serializer : public Serializer
 {
-	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
-	typedef S type_serializer_type;
-
-	static const char* type_name() { return type_serializer_type::type_name(); }
-
-	static void serialize(element* e, const value_type& value)
+	typedef typename Serializer::value_type value_type;
+	
+	static void serialize(container* n, const value_type& value)
 	{
-		type_serializer_type::serialize(e, value);
+		n->str(serialize_value(value));
+	}
+	
+	static void deserialize(const container* n, value_type& value)
+	{
+		value = deserialize_value(n->str());
+	}
+	
+	static element* schema(const std::string& name)
+	{
+		element* n(new element("xsd:element"));
+
+		n->set_attribute("name", name);
+		n->set_attribute("type", type_name());
+		n->set_attribute("minOccurs", "1");
+		n->set_attribute("maxOccurs", "1");
+		
+		return n;
 	}
 
-	static void serialize_type(container* n, const char* name, const value_type& value)
+	static void register_type(type_map& types)
+	{
+	}
+};
+
+// a common base class for many serializer_type classes
+
+template<typename Serializer>
+struct basic_serializer_type : public Serializer
+{
+	typedef typename Serializer::value_type	value_type;
+	typedef Serializer						type_serializer_type;
+
+	static void serialize_child(container* n, const char* name, const value_type& value)
 	{
 		element* e = new element(name);
 		serialize(e, value);
 		n->append(e);
 	}
 
-	static void deserialize(const element* e, value_type& value)
-	{
-		type_serializer_type::deserialize(e, value);
-	}
-
-	static void deserialize_type(const container* n, const char* name, value_type& value)
+	static void deserialize_child(const container* n, const char* name, value_type& value)
 	{
 		element* e = n->find_first(name);
 		if (e != nullptr)
@@ -921,48 +876,47 @@ struct wrap_basic_type_serializer
 		else
 			value = value_type();
 	}
-	
-	static element* schema(const std::string& name)
-	{
-		return type_serializer_type::schema(name);
-	}
-
-	static void register_type(type_map& types)
-	{
-		type_serializer_type::register_type(types);
-	}
 };
 
 template<typename T>
-struct serializer_type : public wrap_basic_type_serializer<T>
+struct serializer_type : public basic_serializer_type<
+			typename boost::mpl::if_c<
+					boost::is_arithmetic<T>::value,
+					wrapped_serializer<arithmetic_serializer<T> >,
+					typename boost::mpl::if_c<
+						boost::is_enum<T>::value,
+						enum_serializer<T>,
+						struct_serializer_impl<T>
+					>::type
+				>::type>
 {
 };
 
 template<>
-struct serializer_type<bool> : public wrap_basic_type_serializer<bool, bool_serializer>
+struct serializer_type<bool> : public basic_serializer_type<wrapped_serializer<bool_serializer> >
 {
 };
 
 template<>
-struct serializer_type<std::string> : public wrap_basic_type_serializer<std::string, string_serializer>
+struct serializer_type<std::string> : public basic_serializer_type<wrapped_serializer<string_serializer> >
 {
 };
 
 template<>
 struct serializer_type<boost::posix_time::ptime>
-	: public wrap_basic_type_serializer<boost::posix_time::ptime, boost_posix_time_ptime_serializer>
+	: public basic_serializer_type<wrapped_serializer<boost_posix_time_ptime_serializer> >
 {
 };
 
 template<>
 struct serializer_type<boost::gregorian::date>
-	: public wrap_basic_type_serializer<boost::gregorian::date, boost_gregorian_date_serializer>
+	: public basic_serializer_type<wrapped_serializer<boost_gregorian_date_serializer> >
 {
 };
 
 template<>
 struct serializer_type<boost::posix_time::time_duration>
-	: public wrap_basic_type_serializer<boost::posix_time::time_duration, boost_posix_time_time_duration_serializer>
+	: public basic_serializer_type<wrapped_serializer<boost_posix_time_time_duration_serializer> >
 {
 };
 
@@ -975,15 +929,15 @@ struct serialize_container_type
 	typedef typename container_type::value_type value_type;
 	typedef serializer_type<value_type> base_serializer_type;
 	
-	static void serialize_type(container* n, const char* name, const container_type& value)
+	static void serialize_child(container* n, const char* name, const container_type& value)
 	{
 		BOOST_FOREACH (const value_type& v, value)
 		{
-			base_serializer_type::serialize_type(n, name, v);
+			base_serializer_type::serialize_child(n, name, v);
 		}
 	}
 
-	static void deserialize_type(const container* n, const char* name, container_type& value)
+	static void deserialize_child(const container* n, const char* name, container_type& value)
 	{
 		// clear the value first
 		value.clear();
@@ -1029,18 +983,23 @@ struct serializer_type<std::list<T> > : public serialize_container_type<std::lis
 };
 
 template<typename T>
+struct serializer_type<std::deque<T> > : public serialize_container_type<std::deque<T> >
+{
+};
+
+template<typename T>
 struct serializer_type<boost::optional<T> >
 {
 	typedef T							value_type;
 	typedef serializer_type<value_type>	base_serializer_type;
 	
-	static void serialize_type(container* n, const char* name, const boost::optional<value_type>& value)
+	static void serialize_child(container* n, const char* name, const boost::optional<value_type>& value)
 	{
 		if (value.is_initialized())
-			base_serializer_type::serialize_type(n, name, value.get());
+			base_serializer_type::serialize_child(n, name, value.get());
 	}
 
-	static void deserialize_type(const container* n, const char* name, boost::optional<value_type>& value)
+	static void deserialize_child(const container* n, const char* name, boost::optional<value_type>& value)
 	{
 		// clear value first
 		value.reset();
@@ -1049,7 +1008,7 @@ struct serializer_type<boost::optional<T> >
 		if (e != nullptr)
 		{
 			value_type v;
-			base_serializer_type::deserialize_type(n, name, v);
+			base_serializer_type::deserialize_child(n, name, v);
 			value = v;
 		}
 	}
@@ -1081,7 +1040,7 @@ serializer& serializer::serialize_element(const char* name, const T& value)
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef serializer_type<value_type>											type_serializer;
 
-	type_serializer::serialize_type(m_node, name, value);
+	type_serializer::serialize_child(m_node, name, value);
 
 	return *this;
 }
@@ -1106,7 +1065,7 @@ deserializer& deserializer::deserialize_element(const char* name, T& value)
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef serializer_type<value_type>											type_serializer;
 	
-	type_serializer::deserialize_type(m_node, name, value);
+	type_serializer::deserialize_child(m_node, name, value);
 
 	return *this;
 }
@@ -1138,7 +1097,11 @@ schema_creator& schema_creator::add_element(const char* name, const T& value)
 	
 	m_node->append(type_serializer::schema(name));
 
-	type_serializer::register_type(m_types);
+	std::string type_name = type_serializer::type_name();
+
+	// we might be known already
+	if (m_types.find(type_name) == m_types.end())
+		type_serializer::register_type(m_types);
 
 	return *this;
 }

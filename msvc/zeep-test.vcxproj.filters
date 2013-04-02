@@ -13,5 +13,8 @@
     <ClCompile Include="..\tests\src\unit-test-serializer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\zeep-test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
