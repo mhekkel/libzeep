@@ -11,7 +11,7 @@
 /// member called m_handlers which is a list of available methods bound
 /// to a SOAP action. You can add functions to this list by calling
 /// register_action. This function takes four arguments:
-/// - The name of the action as it is included in the WSDL.
+/// - The name of the action as it is included in the schema.
 /// - A pointer to the owning object of the function.
 /// - The actual function/method.
 /// - A list of argument names. The number of names in this list
@@ -25,7 +25,7 @@
 /// the SOAP message and passes these using fusion calls to the 
 /// registered method.
 /// The second method of the handler class is collect which is used
-/// to collect all the information required to create a complete WSDL.
+/// to collect all the information required to create a complete schema.
 
 #ifndef SOAP_DISPATCHER_H
 
@@ -96,7 +96,7 @@ struct parameter_types
 	template<typename T>
 	Iterator	operator()(Iterator i, T& t) const
 				{
-					xml::wsdl_creator d(m_types, m_node);
+					xml::schema_creator d(m_types, m_node);
 					d.add_element(i->c_str(), t);
 					return ++i;
 				}
@@ -104,7 +104,7 @@ struct parameter_types
 	template<typename T>
 	Iterator	operator()(T& t, Iterator i) const
 				{
-					xml::wsdl_creator d(m_types, m_node);
+					xml::schema_creator d(m_types, m_node);
 					d.add_element(i->c_str(), t);
 					return ++i;
 				}
@@ -228,7 +228,7 @@ struct handler : public handler_base
 							sequence = new element("xsd:sequence");
 							complexType->append(sequence);
 							
-							wsdl_creator wc(types, sequence);
+							schema_creator wc(types, sequence);
 
 							response_type response;
 							wc.add_element(m_names[name_count - 1].c_str(), response);

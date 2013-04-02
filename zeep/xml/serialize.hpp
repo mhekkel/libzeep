@@ -44,7 +44,7 @@
 /// \def SOAP_XML_ADD_ENUM(e,v)
 /// \brief A macro to add the name of an enum value to the serializer
 ///
-/// To be able to correctly use enum values in a WSDL file or when serializing,
+/// To be able to correctly use enum values in a schema file or when serializing,
 /// you have to specify the enum values.
 ///
 /// E.g., if you have a struct name Algorithm with values 'vector', 'dice' and 'jaccard'
@@ -70,9 +70,9 @@
 /// the type name you used in your code will be used instead.
 ///
 /// E.g., struct FindResult { ... } might end up with a mangled name in the
-/// WSDL. To use FindResult instead, call SOAP_XML_SET_STRUCT_NAME(FindResult);
+/// schema. To use FindResult instead, call SOAP_XML_SET_STRUCT_NAME(FindResult);
 ///
-/// An alternative is to call, which allows different WSDL and struct names:
+/// An alternative is to call, which allows different schema and struct names:
 /// zeep::xml::struct_serializer<FindResult>::set_struct_name("FindResult");
 
 namespace zeep { namespace xml {
@@ -120,7 +120,7 @@ inline attribute_nvp<T> make_attribute_nvp(const char* name, T& v)
 #define ZEEP_ATTRIBUTE_NAME_VALUE(name) \
 	zeep::xml::make_attribute_nvp(BOOST_PP_STRINGIZE(name), name)
 	
-/// serializer, deserializer and wsdl_creator are classes that can be used
+/// serializer, deserializer and schema_creator are classes that can be used
 /// to initiate the serialization. They are the Archive classes that are
 /// the first parameter to the templated function 'serialize' in the classes
 /// that can be serialized. (See boost::serialization for more info).
@@ -195,36 +195,36 @@ struct deserializer
 typedef std::map<std::string,element*> type_map;
 #endif
 
-/// wsdl_creator is used by zeep::dispatcher to create WSDL files.
+/// schema_creator is used by zeep::dispatcher to create schema files.
 
-struct wsdl_creator
+struct schema_creator
 {
-	wsdl_creator(type_map& types, element* node)
+	schema_creator(type_map& types, element* node)
 		: m_node(node), m_types(types) {}
 		
 	template<typename T>
-	wsdl_creator& operator&(const boost::serialization::nvp<T>& rhs)
+	schema_creator& operator&(const boost::serialization::nvp<T>& rhs)
 	{
 		return add_element(rhs.name(), rhs.value());
 	}
 
 	template<typename T>
-	wsdl_creator& operator&(const element_nvp<T>& rhs)
+	schema_creator& operator&(const element_nvp<T>& rhs)
 	{
 		return add_element(rhs.name(), rhs.value());
 	}
 	
 	template<typename T>
-	wsdl_creator& operator&(const attribute_nvp<T>& rhs)
+	schema_creator& operator&(const attribute_nvp<T>& rhs)
 	{
 		return add_attribute(rhs.name(), rhs.value());
 	}
 
 	template<typename T>
-	wsdl_creator& add_element(const char* name, const T& value);
+	schema_creator& add_element(const char* name, const T& value);
 
 	template<typename T>
-	wsdl_creator& add_attribute(const char* name, const T& value);
+	schema_creator& add_attribute(const char* name, const T& value);
 
 	element* m_node;
 	type_map& m_types;
@@ -236,7 +236,7 @@ struct wsdl_creator
 //
 //	We have two kinds of serializers, basic type serializers can read and write
 //	their values from/to strings. They also have a type_name that is used in
-//	WSDL's, this should be the XSD standard name. These basic serializers are
+//	schema's, this should be the XSD standard name. These basic serializers are
 //	used to write either XML element content or attribute values.
 //	All basic serializers are derived of basic_type_serializer using the CRTP
 //	(curiously recurring template pattern)
@@ -257,7 +257,7 @@ struct wsdl_creator
 //	
 //		static void	serialize(container* n, const T& v);
 //		static void	deserialize(const container* n, T& v);
-//		static void	wsdl(type_map& types, const std::string& name);
+//		static void	schema(type_map& types, const std::string& name);
 //
 //	Examples of specializations of serializer_type are serialize_container_type
 //	and serialize_boost_optional.
@@ -277,7 +277,7 @@ struct basic_type_serializer
 		value = Derived::deserialize_value(n->str());
 	}
 	
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 
@@ -295,42 +295,42 @@ struct basic_type_serializer
 };
 
 // arithmetic types are ints, doubles, etc... simply use lexical_cast to convert these
-template<typename T, int S = sizeof(T), bool = boost::is_unsigned<T>::value> struct arithmetic_wsdl_name {};
+template<typename T, int S = sizeof(T), bool = boost::is_unsigned<T>::value> struct arithmetic_schema_name {};
 
-template<typename T> struct arithmetic_wsdl_name<T, 1, false> {
+template<typename T> struct arithmetic_schema_name<T, 1, false> {
 	static const char* type_name() { return "xsd:byte"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 1, true> {
+template<typename T> struct arithmetic_schema_name<T, 1, true> {
 	static const char* type_name() { return "xsd:unsignedByte"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 2, false> {
+template<typename T> struct arithmetic_schema_name<T, 2, false> {
 	static const char* type_name() { return "xsd:short"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 2, true> {
+template<typename T> struct arithmetic_schema_name<T, 2, true> {
 	static const char* type_name() { return "xsd:unsignedShort"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 4, false> {
+template<typename T> struct arithmetic_schema_name<T, 4, false> {
 	static const char* type_name() { return "xsd:int"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 4, true> {
+template<typename T> struct arithmetic_schema_name<T, 4, true> {
 	static const char* type_name() { return "xsd:unsignedInt"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 8, false> {
+template<typename T> struct arithmetic_schema_name<T, 8, false> {
 	static const char* type_name() { return "xsd:long"; }
 };
-template<typename T> struct arithmetic_wsdl_name<T, 8, true> {
+template<typename T> struct arithmetic_schema_name<T, 8, true> {
 	static const char* type_name() { return "xsd:unsignedLong"; }
 };
-template<> struct arithmetic_wsdl_name<float> {
+template<> struct arithmetic_schema_name<float> {
 	static const char* type_name() { return "xsd:float"; }
 };
-template<> struct arithmetic_wsdl_name<double> {
+template<> struct arithmetic_schema_name<double> {
 	static const char* type_name() { return "xsd:double"; }
 };
 
 template<typename T>
 struct arithmetic_serializer : public basic_type_serializer<arithmetic_serializer<T>, T>
-							 , public arithmetic_wsdl_name<T>
+							 , public arithmetic_schema_name<T>
 {
 	typedef T value_type;
 
@@ -515,7 +515,7 @@ struct boost_posix_time_ptime_serializer : public basic_type_serializer<boost_po
 		return result;
 	}
 
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -580,7 +580,7 @@ struct boost_gregorian_date_serializer : public basic_type_serializer<boost_greg
 				);
 	}
 
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -664,7 +664,7 @@ struct boost_posix_time_time_duration_serializer : public basic_type_serializer<
 		return result;
 	}
 
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
 		element* n(new element("xsd:element"));
 		n->set_attribute("name", name);
@@ -709,7 +709,7 @@ struct struct_serializer_base
 		archive::serialize(ds, v);
 	}
 	
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
 		element* result(new element("xsd:element"));
 		result->set_attribute("name", name);
@@ -732,12 +732,12 @@ struct struct_serializer_base
 			element* sequence(new element("xsd:sequence"));
 			n->append(sequence);
 
-			typedef struct_serializer<wsdl_creator,value_type>	archive;
+			typedef struct_serializer<schema_creator,value_type>	archive;
 		
-			wsdl_creator wsdl(types, sequence);
+			schema_creator schema(types, sequence);
 
 			value_type v;
-			archive::serialize(wsdl, v);
+			archive::serialize(schema, v);
 		}
 	}
 
@@ -841,7 +841,7 @@ struct enum_serializer : public basic_type_serializer<enum_serializer<T>, T>
 		return result;
 	}
 
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
 		std::string my_type_name = type_name();
 
@@ -922,9 +922,9 @@ struct wrap_basic_type_serializer
 			value = value_type();
 	}
 	
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
-		return type_serializer_type::wsdl(name);
+		return type_serializer_type::schema(name);
 	}
 
 	static void register_type(type_map& types)
@@ -999,9 +999,9 @@ struct serialize_container_type
 		}
 	}
 
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
-		element* result = base_serializer_type::wsdl(name);
+		element* result = base_serializer_type::schema(name);
 	
 		result->remove_attribute("minOccurs");
 		result->set_attribute("minOccurs", "0");
@@ -1054,9 +1054,9 @@ struct serializer_type<boost::optional<T> >
 		}
 	}
 
-	static element* wsdl(const std::string& name)
+	static element* schema(const std::string& name)
 	{
-		element* result = base_serializer_type::wsdl(name);
+		element* result = base_serializer_type::schema(name);
 	
 		result->remove_attribute("minOccurs");
 		result->set_attribute("minOccurs", "0");
@@ -1073,7 +1073,7 @@ struct serializer_type<boost::optional<T> >
 	}
 };
 
-// And finally, the implementation of serializer, deserializer and wsdl_creator.
+// And finally, the implementation of serializer, deserializer and schema_creator.
 
 template<typename T>
 serializer& serializer::serialize_element(const char* name, const T& value)
@@ -1131,12 +1131,12 @@ deserializer& deserializer::deserialize_attribute(const char* name, T& value)
 }
 
 template<typename T>
-wsdl_creator& wsdl_creator::add_element(const char* name, const T& value)
+schema_creator& schema_creator::add_element(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef serializer_type<value_type>											type_serializer;
 	
-	m_node->append(type_serializer::wsdl(name));
+	m_node->append(type_serializer::schema(name));
 
 	type_serializer::register_type(m_types);
 
@@ -1144,7 +1144,7 @@ wsdl_creator& wsdl_creator::add_element(const char* name, const T& value)
 }
 
 template<typename T>
-wsdl_creator& wsdl_creator::add_attribute(const char* name, const T& value)
+schema_creator& schema_creator::add_attribute(const char* name, const T& value)
 {
 	typedef typename boost::remove_const<typename boost::remove_reference<T>::type>::type	value_type;
 	typedef serializer_type<value_type>											type_serializer;
