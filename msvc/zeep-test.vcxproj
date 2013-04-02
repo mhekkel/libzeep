@@ -96,7 +96,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\zeep-test.cpp" />
+    <ClCompile Include="..\tests\src\unit-test-main.cpp" />
+    <ClCompile Include="..\tests\src\unit-test-serializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libzeep-vc.vcxproj">

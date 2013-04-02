@@ -720,7 +720,7 @@ bool root_node::equals(const node* n) const
 
 void root_node::append(node* n)
 {
-	if (dynamic_cast<element*>(n) != nullptr)
+	if (dynamic_cast<element*>(n) != nullptr and child_element() == nullptr)
 		child_element(static_cast<element*>(n));
 	else if (dynamic_cast<processing_instruction*>(n) == nullptr and
 		dynamic_cast<comment*>(n) == nullptr)
