@@ -896,18 +896,30 @@ struct wrap_basic_type_serializer
 
 	static const char* type_name() { return type_serializer_type::type_name(); }
 
+	static void serialize(element* e, const value_type& value)
+	{
+		type_serializer_type::serialize(e, value);
+	}
+
 	static void serialize_type(container* n, const char* name, const value_type& value)
 	{
 		element* e = new element(name);
-		type_serializer_type::serialize(e, value);
+		serialize(e, value);
 		n->append(e);
+	}
+
+	static void deserialize(const element* e, value_type& value)
+	{
+		type_serializer_type::deserialize(e, value);
 	}
 
 	static void deserialize_type(const container* n, const char* name, value_type& value)
 	{
 		element* e = n->find_first(name);
 		if (e != nullptr)
-			type_serializer_type::deserialize(e, value);
+			deserialize(e, value);
+		else
+			value = value_type();
 	}
 	
 	static element* wsdl(const std::string& name)
@@ -967,21 +979,22 @@ struct serialize_container_type
 	{
 		BOOST_FOREACH (const value_type& v, value)
 		{
-			element* e = new element(name);
-			base_serializer_type::serialize_type(e, name, v);
-			n->append(e);
+			base_serializer_type::serialize_type(n, name, v);
 		}
 	}
 
 	static void deserialize_type(const container* n, const char* name, container_type& value)
 	{
+		// clear the value first
+		value.clear();
+		
 		BOOST_FOREACH (const element* e, *n)
 		{
 			if (e->name() != name)
 				continue;
 			
 			value_type v;
-			base_serializer_type::deserialize_type(e, name, v);
+			base_serializer_type::deserialize(e, v);
 			value.push_back(v);
 		}
 	}
@@ -1029,6 +1042,9 @@ struct serializer_type<boost::optional<T> >
 
 	static void deserialize_type(const container* n, const char* name, boost::optional<value_type>& value)
 	{
+		// clear value first
+		value.reset();
+		
 		element* e = n->find_first(name);
 		if (e != nullptr)
 		{

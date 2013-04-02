@@ -189,12 +189,18 @@ template<typename T>
 void document::serialize(const char* name, const T& data)
 {
 	serializer sr(root());
-	sr.serialize_element(name, const_cast<T&>(data));
+	sr.serialize_element(name, data);
 }
 
 template<typename T>
 void document::deserialize(const char* name, T& data)
 {
+	if (child() == nullptr)
+		throw zeep::exception("empty document");
+
+	if (child()->name() != name)
+		throw zeep::exception("root mismatch");
+
 	deserializer sr(root());
 	sr.deserialize_element(name, data);
 }
