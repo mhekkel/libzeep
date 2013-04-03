@@ -880,17 +880,21 @@ struct basic_serializer_type : public Serializer
 	}
 };
 
+// serializer_type, the final interface for doing the actual work, is
+// a templated class with a default implementation that derives from
+// basic_serializer_type and a couple of specializations.
+
 template<typename T>
 struct serializer_type : public basic_serializer_type<
-			typename boost::mpl::if_c<
-					boost::is_arithmetic<T>::value,
-					wrapped_serializer<arithmetic_serializer<T> >,
-					typename boost::mpl::if_c<
-						boost::is_enum<T>::value,
-						enum_serializer<T>,
-						struct_serializer_impl<T>
-					>::type
-				>::type>
+									typename boost::mpl::if_c<
+											boost::is_arithmetic<T>::value,
+											wrapped_serializer<arithmetic_serializer<T> >,
+											typename boost::mpl::if_c<
+												boost::is_enum<T>::value,
+												enum_serializer<T>,
+												struct_serializer_impl<T>
+											>::type
+										>::type>
 {
 };
 
