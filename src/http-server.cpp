@@ -155,6 +155,9 @@ void server::run(int nr_of_threads)
 
 void server::stop()
 {
+	if (m_acceptor and m_acceptor->is_open())
+		m_acceptor->close();
+
 	m_io_service.stop();
 }
 
