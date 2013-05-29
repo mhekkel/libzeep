@@ -244,7 +244,7 @@ class vector_object_impl : public detail::base_array_object_impl
 						os << ']';
 					}
 	virtual int		compare(object_impl* rhs) const;
-	virtual size_t	count() const					{ return m_v.size(); }
+	virtual uint64	count() const					{ return m_v.size(); }
 
 	virtual detail::object_iterator_impl*
 					create_iterator(bool begin) const
@@ -719,7 +719,7 @@ object::object_type object::type() const
 	return result;
 }
 
-size_t object::count() const
+uint64 object::count() const
 {
 	if (type() != array_type)
 		throw exception("count/length is only defined for array types");
