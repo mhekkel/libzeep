@@ -1547,7 +1547,7 @@ object interpreter::parse_primary_expr()
 				{
 					match(m_lookahead);
 					if (result.type() == object::array_type and (m_token_string == "count" or m_token_string == "length"))
-						result = object(result.count());
+						result = object((uint32)result.count());
 					else
 						result = const_cast<const object&>(result)[m_token_string];
 					match(elt_object);
