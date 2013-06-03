@@ -31,12 +31,12 @@ DIST_NAME			= libzeep-$(VERSION)
 SO_NAME				= libzeep.so.$(VERSION_MAJOR)
 LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
 
-CXX					?= c++
+CXX                 ?= c++
 CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared -std=c++0x
 #CFLAGS				+= -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
 CFLAGS				+= -Wall
 CFLAGS				+= -g
-LD					?= ld
+LD                  ?= ld
 
 VPATH += src
 
