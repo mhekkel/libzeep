@@ -1,4 +1,4 @@
-Version 3.0.0a
+Version 3.0.1
 
 - added cast to uint32 in webapp-el to allow compilation on s390
 
