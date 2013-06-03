@@ -8,34 +8,34 @@
 # You may have to edit the first three defines on top of this
 # makefile to match your current installation.
 
-#BOOST_LIB_SUFFIX	= # e.g. '-mt'
-#BOOST				= $(HOME)/projects/boost
-BOOST_LIB_DIR		= $(BOOST:%=%/lib)
-BOOST_INC_DIR		= $(BOOST:%=%/include)
+#BOOST_LIB_SUFFIX   = # e.g. '-mt'
+#BOOST              = $(HOME)/projects/boost
+BOOST_LIB_DIR       = $(BOOST:%=%/lib)
+BOOST_INC_DIR       = $(BOOST:%=%/include)
 
-PREFIX				?= /usr/local
-LIBDIR				?= $(PREFIX)/lib
-INCDIR				?= $(PREFIX)/include
-MANDIR				?= $(PREFIX)/man/man3
-DOCDIR				?= $(PREFIX)/share/libzeep
+PREFIX              ?= /usr/local
+LIBDIR              ?= $(PREFIX)/lib
+INCDIR              ?= $(PREFIX)/include
+MANDIR              ?= $(PREFIX)/man/man3
+DOCDIR              ?= $(PREFIX)/share/libzeep
 
-BOOST_LIBS			= system thread filesystem regex math_c99
-BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
-LIBS				= $(BOOST_LIBS) stdc++ m pthread
-LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
+BOOST_LIBS          = system thread filesystem regex math_c99
+BOOST_LIBS          := $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
+LIBS                = $(BOOST_LIBS) stdc++ m pthread
+LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
-VERSION_MAJOR		= 3.0
-VERSION_MINOR		= 1
-VERSION				= $(VERSION_MAJOR).$(VERSION_MINOR)
-DIST_NAME			= libzeep-$(VERSION)
-SO_NAME				= libzeep.so.$(VERSION_MAJOR)
-LIB_NAME			= $(SO_NAME).$(VERSION_MINOR)
+VERSION_MAJOR       = 3.0
+VERSION_MINOR       = 1
+VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
+DIST_NAME           = libzeep-$(VERSION)
+SO_NAME             = libzeep.so.$(VERSION_MAJOR)
+LIB_NAME            = $(SO_NAME).$(VERSION_MINOR)
 
 CXX                 ?= c++
-CFLAGS				+= -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared -std=c++0x
-#CFLAGS				+= -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
-CFLAGS				+= -Wall
-CFLAGS				+= -g
+CFLAGS              += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared -std=c++0x
+#CFLAGS             += -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
+CFLAGS              += -Wall
+CFLAGS              += -g
 LD                  ?= ld
 
 VPATH += src
