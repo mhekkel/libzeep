@@ -1,4 +1,8 @@
-Version 3.0
+Version 3.0.0a
+
+- added cast to uint32 in webapp-el to allow compilation on s390
+
+Version 3.0
 
 - Support for non-intrusive serialization. The call to serialize is now
   done by the templated struct zeep::xml::struct_serializer. You can
