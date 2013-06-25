@@ -1,3 +1,7 @@
+Version 3.0.2
+
+- Change in zeep/xml/serialize.hpp for gcc 4.7 compiler
+
 Version 3.0.1
 
 - added cast to uint32 in webapp-el to allow compilation on s390

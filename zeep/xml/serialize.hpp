@@ -866,7 +866,7 @@ struct basic_serializer_type : public Serializer
 	static void serialize_child(container* n, const char* name, const value_type& value)
 	{
 		element* e = new element(name);
-		serialize(e, value);
+		basic_serializer_type::serialize(e, value);
 		n->append(e);
 	}
 
@@ -874,7 +874,7 @@ struct basic_serializer_type : public Serializer
 	{
 		element* e = n->find_first(name);
 		if (e != nullptr)
-			deserialize(e, value);
+			basic_serializer_type::deserialize(e, value);
 		else
 			value = value_type();
 	}
