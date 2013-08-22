@@ -11,10 +11,11 @@
 
 #include <iomanip>
 
+#include <tr1/cmath>
+
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
-#include <boost/tr1/cmath.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/http/webapp/el.hpp>

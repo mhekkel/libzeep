@@ -12,7 +12,8 @@
 #include <cmath>
 #include <map>
 
-#include <boost/tr1/cmath.hpp>
+#include <tr1/cmath>
+
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
