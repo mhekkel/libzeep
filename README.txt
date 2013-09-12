@@ -148,6 +148,6 @@ out log entries by using the inherited log() member function.
 That's it.
 
 This is a first release, please send all the problems and/or bugs you encounter
-to: m.hekkelman@cmbi.ru.nl
+to: maarten@hekkelman.com
 
 -maarten hekkelman
