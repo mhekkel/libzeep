@@ -80,10 +80,10 @@ class server : public request_handler
 	void				handle_accept(const boost::system::error_code& ec);
 
 	boost::asio::io_service			m_io_service;
-	boost::shared_ptr<boost::asio::ip::tcp::acceptor>
+	std::shared_ptr<boost::asio::ip::tcp::acceptor>
 									m_acceptor;
 	boost::thread_group				m_threads;
-	boost::shared_ptr<connection>	m_new_connection;
+	std::shared_ptr<connection>		m_new_connection;
 	std::string						m_address;
 	unsigned short					m_port;
 	bool							m_log_forwarded;

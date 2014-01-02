@@ -16,7 +16,7 @@
 #include <zeep/http/connection.hpp>
 #include <zeep/exception.hpp>
 
-#include <boost/tr1/memory.hpp>
+//#include <boost/tr1/memory.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -86,7 +86,7 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 			{
 				for (;;)
 				{
-					boost::shared_ptr<connection> conn(new connection(srvr->get_io_service(), *srvr));
+					std::shared_ptr<connection> conn(new connection(srvr->get_io_service(), *srvr));
 					
 					if (not read_socket_from_parent(sockfd[1], conn->get_socket()))
 						break;

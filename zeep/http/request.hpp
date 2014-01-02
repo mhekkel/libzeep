@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include <boost/asio/buffer.hpp>
 #include <zeep/http/header.hpp>
 
 namespace zeep { namespace http {
@@ -32,7 +33,17 @@ struct request
 
 	float			accept(const char* type) const;	///< Return the value in the Accept header for type
 	bool			is_mobile() const;		///< Check HTTP_USER_AGENT to see if it is a mobile client
+
+	std::string		get_header(const char* name) const; ///< Return the named header
+
+	/// Can be used in code that sends HTTP requests
+	void			to_buffers(std::vector<boost::asio::const_buffer>& buffers);
+	
+  private:
+	std::string		m_request_line;
 };
+
+std::iostream& operator<<(std::iostream& io, request& req);
 
 }
 }

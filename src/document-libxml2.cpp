@@ -10,7 +10,7 @@
 #include <deque>
 #include <map>
 
-#include <boost/tr1/memory.hpp>
+//#include <boost/tr1/memory.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>

@@ -12,7 +12,11 @@
 #include <cmath>
 #include <map>
 
+#if _MSC_VER <= 1600
+#include <boost/tr1/cmath.hpp>
+#else
 #include <tr1/cmath>
+#endif
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -642,7 +646,7 @@ class expression
 	virtual void		print(int level) = 0;
 };
 
-typedef boost::shared_ptr<expression>	expression_ptr;
+typedef std::shared_ptr<expression>		expression_ptr;
 typedef list<expression_ptr>			expression_list;
 
 // --------------------------------------------------------------------
