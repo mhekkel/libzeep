@@ -11,7 +11,11 @@
 
 #include <iomanip>
 
+#if _MSC_VER <= 1600
+#include <boost/tr1/cmath.hpp>
+#else
 #include <tr1/cmath>
+#endif
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH

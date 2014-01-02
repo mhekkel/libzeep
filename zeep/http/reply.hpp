@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include <boost/tr1/memory.hpp>
+//#include <boost/tr1/memory.hpp>
 #include <boost/asio/buffer.hpp>
 
 #include <zeep/http/header.hpp>
@@ -92,6 +92,8 @@ class reply
 	status_type			get_status() const						{ return m_status; }
 
   private:
+	friend class reply_parser;
+
 	int					m_version_major, m_version_minor;
 	status_type			m_status;
 	std::string			m_status_line;

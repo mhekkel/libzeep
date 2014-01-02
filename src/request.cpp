@@ -11,6 +11,7 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/regex.hpp>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <zeep/http/request.hpp>
@@ -116,6 +117,60 @@ bool request::is_mobile() const
     }
     
     return result;
+}
+
+string request::get_header(const char* name) const
+{
+	string result;
+
+	foreach (const header& h, headers)
+	{
+		if (h.name != name)
+			continue;
+		
+		result = h.value;
+		break;
+    }
+
+	return result;
+}
+
+namespace
+{
+const char
+		kNameValueSeparator[] = { ':', ' ' },
+		kCRLF[] = { '\r', '\n' };
+}
+
+void request::to_buffers(vector<boost::asio::const_buffer>& buffers)
+{
+	m_request_line = (boost::format("%1% %2% HTTP/%3%.%4%\r\n")
+		% method % uri
+		% http_version_major % http_version_minor).str();
+	buffers.push_back(boost::asio::buffer(m_request_line));
+	
+	foreach (header& h, headers)
+	{
+		buffers.push_back(boost::asio::buffer(h.name));
+		buffers.push_back(boost::asio::buffer(kNameValueSeparator));
+		buffers.push_back(boost::asio::buffer(h.value));
+		buffers.push_back(boost::asio::buffer(kCRLF));
+	}
+
+	buffers.push_back(boost::asio::buffer(kCRLF));
+	buffers.push_back(boost::asio::buffer(payload));
+}
+
+iostream& operator<<(iostream& io, request& req)
+{
+	vector<boost::asio::const_buffer> buffers;
+
+	req.to_buffers(buffers);
+
+	foreach (auto& b, buffers)
+		io.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
+
+	return io;
 }
 
 } // http

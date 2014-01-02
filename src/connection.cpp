@@ -43,9 +43,14 @@ void connection::handle_read(
 {
 	if (not ec)
 	{
-		boost::tribool result = m_request_parser.parse(
+		boost::tribool result;
+		size_t used;
+
+		tr1::tie(result, used) = m_request_parser.parse(
 			m_request, m_buffer.data(), bytes_transferred);
-		
+
+#pragma message("Need to fix this, check for used == 0")
+
 		if (result)
 		{
 			m_reply.set_version(m_request.http_version_major, m_request.http_version_minor);

@@ -6,12 +6,12 @@
 #ifndef SOAP_HTTP_CONNECTION_HPP
 #define SOAP_HTTP_CONNECTION_HPP
 
-#include <boost/enable_shared_from_this.hpp>
+//#include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
-#include <zeep/http/request_parser.hpp>
+#include <zeep/http/message_parser.hpp>
 #include <zeep/http/request_handler.hpp>
 
 namespace zeep { namespace http {
@@ -20,7 +20,7 @@ namespace zeep { namespace http {
 /// as provided by boost::asio. These objects are not to be used directly.
 
 class connection
-	: public boost::enable_shared_from_this<connection>
+	: public std::tr1::enable_shared_from_this<connection>
 	, public boost::noncopyable
 {
   public:

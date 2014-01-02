@@ -10,12 +10,12 @@
 #include <numeric>
 
 #include <boost/tr1/tuple.hpp>
-#include <boost/tr1/memory.hpp>
+//#include <boost/tr1/memory.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/bind.hpp>
-#include <boost/enable_shared_from_this.hpp>
+//#include <boost/enable_shared_from_this.hpp>
 
 #include <zeep/exception.hpp>
 #include <zeep/xml/doctype.hpp>
@@ -31,7 +31,7 @@ namespace zeep { namespace xml { namespace doctype {
 // validator code
 
 // a refcounted state base class
-struct state_base : boost::enable_shared_from_this<state_base>
+struct state_base : enable_shared_from_this<state_base>
 {
 								state_base() : m_ref_count(1) {}
 
