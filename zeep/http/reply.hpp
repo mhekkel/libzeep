@@ -8,7 +8,7 @@
 
 #include <vector>
 
-//#include <boost/tr1/memory.hpp>
+#include <boost/tr1/memory.hpp>
 #include <boost/asio/buffer.hpp>
 
 #include <zeep/http/header.hpp>

@@ -6,7 +6,9 @@
 #ifndef SOAP_HTTP_CONNECTION_HPP
 #define SOAP_HTTP_CONNECTION_HPP
 
-//#include <boost/enable_shared_from_this.hpp>
+//#include <tr1/memory>
+#include <boost/tr1/memory.hpp>
+
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
