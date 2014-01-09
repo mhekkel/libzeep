@@ -47,9 +47,9 @@ OBJECTS = \
 	obj/node.o \
 	obj/soap-envelope.o \
 	obj/parser.o \
-	obj/request.o \
-	obj/request_parser.o \
 	obj/reply.o \
+	obj/request.o \
+	obj/message_parser.o \
 	obj/connection.o \
 	obj/http-server.o \
 	obj/preforked-http-server.o \

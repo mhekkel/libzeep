@@ -17,6 +17,7 @@
 #else
 #include <tr1/cmath>
 #endif
+#include <boost/tr1/memory.hpp>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -24,7 +25,6 @@
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <zeep/exception.hpp>
 #include <zeep/xml/node.hpp>
@@ -646,8 +646,8 @@ class expression
 	virtual void		print(int level) = 0;
 };
 
-typedef std::shared_ptr<expression>		expression_ptr;
-typedef list<expression_ptr>			expression_list;
+typedef std::tr1::shared_ptr<expression>	expression_ptr;
+typedef list<expression_ptr>				expression_list;
 
 // --------------------------------------------------------------------
 
