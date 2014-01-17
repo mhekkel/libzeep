@@ -32,13 +32,29 @@ bool is_tspecial(int c)
 } // detail
 
 parser::parser()
-	: m_parser(NULL)
 {
+	m_parser = NULL;
+	m_state = 0;
+	m_chunk_size = 0;
+	m_data.clear();
+	m_uri.clear();
+	m_method.clear();
+	m_close = true;
+	m_http_version_major = 1;
+	m_http_version_minor = 0;
 }
 
 void parser::reset()
 {
 	m_parser = NULL;
+	m_state = 0;
+	m_chunk_size = 0;
+	m_data.clear();
+	m_uri.clear();
+	m_method.clear();
+	m_close = true;
+	m_http_version_major = 1;
+	m_http_version_minor = 0;
 }
 
 boost::tribool parser::parse_header(vector<header>& headers, string& payload, char ch)
@@ -239,6 +255,17 @@ boost::tribool parser::parse_chunk(vector<header>& headers, string& payload, cha
 			break;
 	}
 	
+	// clean up in case we're done
+	if (result)
+	{
+		// remove the Transfer-Encoding header
+		headers.erase(remove_if(headers.begin(), headers.end(), [](header& h) -> bool { return h.name == "Transfer-Encoding"; }), headers.end());
+
+		// Set the length
+		header contentLength = { "Content-Length", boost::lexical_cast<string>(payload.length()) };
+		headers.push_back(contentLength);
+	}
+
 	return result;
 }
 
@@ -274,11 +301,8 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 {
 	if (m_parser == NULL)
 	{
-		m_state = 0;
-		m_data.clear();
-		req.http_version_major = 1;
-		req.http_version_minor = 0;
-		m_close = false;
+		// clear the request
+		req.clear();
 		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
 	}
 
@@ -293,6 +317,8 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 		req.close = m_close;
 		req.uri = m_uri;
 		req.method = m_method;
+		req.http_version_major = m_http_version_major;
+		req.http_version_minor = m_http_version_minor;
 	}
 
 	return tr1::tie(result, used);
@@ -368,14 +394,19 @@ reply_parser::reply_parser()
 {
 }
 
+void reply_parser::reset()
+{
+	parser::reset();
+	m_status = 0;
+	m_status_line.clear();
+}
+
 parser::result_type reply_parser::parse(reply& rep, const char* text, size_t length)
 {
 	if (m_parser == NULL)
 	{
-		m_state = 0;
-		m_data.clear();
-		m_http_version_major = 1;
-		m_http_version_minor = 0;
+		// clear the reply
+		rep.clear();
 		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
 	}
 
@@ -424,9 +455,11 @@ boost::tribool reply_parser::parse_initial_line(vector<header>& headers, string&
 			else
 				result = false;
 			break;
+		
+		case 8: if (isspace(ch)) ++m_state; else result = false; break;
 
 		// we're parsing the result code here (three digits)
-		case 8:
+		case 9:
 			if (isdigit(ch))
 			{
 				m_status = 100 * (ch - '0');
@@ -436,35 +469,37 @@ boost::tribool reply_parser::parse_initial_line(vector<header>& headers, string&
 				result = false;
 			break;
 
-		case 9:
-			if (isdigit(ch))
-			{
-				m_status = 10 * (ch - '0');
-				++m_state;
-			}
-			else
-				result = false;
-			break;
-
 		case 10:
 			if (isdigit(ch))
 			{
-				m_status = 1 * (ch - '0');
+				m_status += 10 * (ch - '0');
 				++m_state;
 			}
 			else
 				result = false;
 			break;
 
-		// we're parsing the status message here
 		case 11:
+			if (isdigit(ch))
+			{
+				m_status += 1 * (ch - '0');
+				++m_state;
+			}
+			else
+				result = false;
+			break;
+
+		case 12: if (isspace(ch)) ++m_state; else result = false; break;
+
+		// we're parsing the status message here
+		case 13:
 			if (ch == '\r')
 				++m_state;
 			else
 				m_status_line += ch;
 			break;
 
-		case 12:
+		case 14:
 			if (ch == '\n')
 			{
 				m_state = 0;

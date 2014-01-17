@@ -31,6 +31,8 @@ struct request
 	std::string		local_address;			///< The address the request was received upon
 	unsigned short	local_port;				///< The port number the request was received upon
 
+	void			clear();
+
 	float			accept(const char* type) const;	///< Return the value in the Accept header for type
 	bool			is_mobile() const;		///< Check HTTP_USER_AGENT to see if it is a mobile client
 
@@ -38,6 +40,8 @@ struct request
 
 	/// Can be used in code that sends HTTP requests
 	void			to_buffers(std::vector<boost::asio::const_buffer>& buffers);
+
+	void			debug(std::ostream& os) const;
 	
   private:
 	std::string		m_request_line;

@@ -48,6 +48,8 @@ class reply
 						reply(const reply&);
 						~reply();
 	reply&				operator=(const reply&);
+	
+	void				clear();
 
 	void				set_version(int version_major, int version_minor);
 
@@ -89,7 +91,10 @@ class reply
 	/// Create a standard redirect reply with the specified \a location
 	static reply		redirect(const std::string& location);
 	
+	void				set_status(status_type status)			{ m_status = status; }
 	status_type			get_status() const						{ return m_status; }
+
+	void				debug(std::ostream& os) const;
 
   private:
 	friend class reply_parser;

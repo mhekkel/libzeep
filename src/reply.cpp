@@ -116,6 +116,18 @@ reply::~reply()
 	delete m_data;
 }
 
+void reply::clear()
+{
+	delete m_data;
+	m_data = nullptr;
+	
+	m_status = ok;
+	m_status_line = "OK";
+	m_headers.clear();
+	m_buffer.clear();
+	m_content.clear();
+}
+
 reply& reply::operator=(const reply& rhs)
 {
 	if (this != &rhs)
@@ -385,6 +397,14 @@ reply reply::redirect(const std::string& location)
 	result.set_header("Content-Type", "text/html; charset=utf-8");
 	
 	return result;
+}
+
+void reply::debug(ostream& os) const
+{
+	os << (boost::format("HTTP/%1%.%2% %3% %4%")
+		% m_version_major % m_version_minor % m_status % detail::get_status_text(m_status)) << endl;
+	foreach (const header& h, m_headers)
+		os << h.name << ": " << h.value << endl;
 }
 
 }

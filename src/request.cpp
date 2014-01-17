@@ -19,6 +19,21 @@
 using namespace std;
 
 namespace zeep { namespace http {
+	
+void request::clear()
+{
+	m_request_line.clear();
+
+	method.clear();
+	uri.clear();
+	http_version_major = 1;
+	http_version_minor = 0;
+	headers.clear();
+	payload.clear();
+	close = true;
+	local_address.clear();
+	local_port = 0;
+}
 
 float request::accept(const char* type) const
 {
@@ -171,6 +186,15 @@ iostream& operator<<(iostream& io, request& req)
 		io.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
 
 	return io;
+}
+
+void request::debug(ostream& os) const
+{
+	os << (boost::format("%1% %2% HTTP/%3%.%4%")
+		% method % uri
+		% http_version_major % http_version_minor) << endl;
+	foreach (const header& h, headers)
+		os << h.name << ": " << h.value << endl;
 }
 
 } // http
