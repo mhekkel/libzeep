@@ -23,7 +23,7 @@ class parser
 
 	virtual				~parser() {}
 	
-	void				reset();
+	virtual void		reset();
 
   protected:
 						parser();
@@ -61,6 +61,8 @@ class reply_parser : public parser
   public:
 						reply_parser();
 	result_type			parse(reply& req, const char* text, size_t length);
+
+	virtual void		reset();
 
   private:
 	boost::tribool		parse_initial_line(std::vector<header>& headers, std::string& payload, char ch);
