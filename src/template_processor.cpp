@@ -558,8 +558,7 @@ void template_processor::get_parameters(const el::scope& scope, parameter_map& p
 //
 
 // add a name/value pair as a string formatted as 'name=value'
-void parameter_map::add(
-	const string&		param)
+void parameter_map::add(const string& param)
 {
 	string name, value;
 	
@@ -573,9 +572,7 @@ void parameter_map::add(
 	add(name, value);
 }
 
-void parameter_map::add(
-	string		name,
-	string		value)
+void parameter_map::add(string name, string value)
 {
 	name = decode_url(name);
 	if (not value.empty())
@@ -584,9 +581,7 @@ void parameter_map::add(
 	insert(make_pair(name, parameter_value(value, false)));
 }
 
-void parameter_map::replace(
-	string			name,
-	string			value)
+void parameter_map::replace(string name, string value)
 {
 	if (count(name))
 		erase(lower_bound(name), upper_bound(name));
