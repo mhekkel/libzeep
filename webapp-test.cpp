@@ -33,9 +33,11 @@ class my_webapp : public zh::webapp
 my_webapp::my_webapp()
 	: webapp("http://www.hekkelman.com/libzeep/ml", fs::current_path() / "docroot")
 {
-	mount("", "test", boost::bind(&my_webapp::welcome, this, _1, _2, _3));
-	mount("status", "test", boost::bind(&my_webapp::status, this, _1, _2, _3));
-	mount("style.css", "test", boost::bind(&my_webapp::handle_file, this, _1, _2, _3));
+	string realm = "test-realm";
+	
+	mount("", realm, boost::bind(&my_webapp::welcome, this, _1, _2, _3));
+	mount("status", realm, boost::bind(&my_webapp::status, this, _1, _2, _3));
+	mount("style.css", realm, boost::bind(&my_webapp::handle_file, this, _1, _2, _3));
 }
 	
 string my_webapp::get_hashed_password(const string& username, const string& realm)
