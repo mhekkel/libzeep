@@ -1,0 +1,95 @@
+* {
+	font-family: sans-serif;
+	font-size: small;
+}
+
+html, body {
+/*
+	padding: 0px;
+	margin: 0px;
+*/
+	background: #fff;
+}
+
+/*
+#main {
+	padding: 4px;
+	margin: 0;
+	font-size: small;
+}
+
+@media all and (min-width: 800px)
+{
+	#main { padding: 8px; }
+}
+*/
+
+/* lists */
+table.list {
+	padding: 0px;
+	margin: 0px;
+	vertical-align: top;
+}
+
+@media all and (min-width: 800px)
+{
+	table.list {
+		min-width: 450px;
+	}
+}
+
+.list caption {
+	background-color: #449d9d;
+	color: white;
+	font-weight: bold;
+	text-align: left;
+	padding: 3px 5px 3px 5px;
+}
+
+.list th {
+	background-color: #c6e0e1;
+	color: #2f6c6c;
+	border-bottom: solid 1px #449d9d;
+	font-weight: bold;
+	text-align: left;
+	text-decoration: none;
+	padding: 2px 5px 2px 5px;
+}
+
+.list th + th {
+	border-left: 1px solid #449d9d;
+}
+
+.list th a {
+	text-decoration: underline;
+}
+
+.list td {
+	padding: 2px;
+	padding-left: 4px;
+	margin: 0px;
+	vertical-align: top;
+	border-top: solid 1px #ebe7e0;
+}
+
+table.list tr:first-child td {
+	border-top-width: 0px;
+}
+
+.list .row-title {
+	display: block;
+}
+
+td.right {
+	text-align: right;
+}
+
+.list td.nr {
+	font-weight: bold;
+	text-align: right;
+}
+
+.list a img {
+	border: none 0px;
+}
+

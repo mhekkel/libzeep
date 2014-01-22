@@ -31,41 +31,6 @@
 namespace zeep {
 namespace http {
 
-class parameter_value
-{
-  public:
-				parameter_value() : m_defaulted(false) {}
-				parameter_value(const std::string& v, bool defaulted)
-					: m_v(v), m_defaulted(defaulted) {}
-
-	template<class T>
-	T			as() const;
-	bool		empty() const								{ return m_v.empty(); }
-	bool		defaulted() const							{ return m_defaulted; }
-
-  private:
-	std::string	m_v;
-	bool		m_defaulted;
-};
-
-/// parameter_map is used to pass parameters from forms. The parameters can have 'any' type.
-/// Works a bit like the program_options code in boost.
-
-class parameter_map : public std::multimap<std::string, parameter_value>
-{
-  public:
-	
-	/// add a name/value pair as a string formatted as 'name=value'
-	void		add(const std::string& param);
-	void		add(std::string name, std::string value);
-	void		replace(std::string name, std::string value);
-
-	template<class T>
-	const parameter_value&
-				get(const std::string& name, T defaultValue);
-
-};
-
 /// template_processor is used to create XHTML web pages based on the contents of a
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.

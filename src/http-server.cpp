@@ -261,9 +261,13 @@ void server::log_request(const string& client,
 
 	local_date_time start_local(start, time_zone_ptr());
 
+	string username = req.username;
+	if (username.empty())
+		username = "-";
+
 	cout << client << ' '
 		 << "-" << ' '
-		 << "-" << ' '
+		 << username << ' '
 		 << start_local << ' '
 		 << '"' << req.method << ' ' << req.uri << ' '
 				<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
