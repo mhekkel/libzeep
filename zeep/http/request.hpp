@@ -26,6 +26,7 @@ struct request
 					headers;				///< A list with zeep::http::header values
 	std::string		payload;				///< For POST requests
 	bool			close;					///< Whether 'Connection: close' was specified
+	std::string		username;				///< The authenticated user for this request (filled in by webapp::validate_authentication)
 
 	// for redirects...
 	std::string		local_address;			///< The address the request was received upon
