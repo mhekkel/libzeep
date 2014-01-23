@@ -31,7 +31,6 @@ struct status_string
 } kStatusStrings[] = {
 	{ cont,					"Continue" },
 	{ ok,					"OK" },
-	{ not_found,			"Not Found" },
 	{ created,				"Created" },
 	{ accepted,				"Accepted" },
 	{ no_content,			"No Content" },
@@ -47,20 +46,36 @@ struct status_string
 	{ not_implemented,		"Not Implemented" },
 	{ bad_gateway,			"Bad Gateway" },
 	{ service_unavailable,	"Service Unavailable" }
+}, kStatusDescriptions[] = {
+	{ moved_permanently,	"The document requested was moved permanently to a new location" },
+	{ moved_temporarily,	"The document requested was moved temporarily to a new location" },
+	{ not_modified,			"The requested document was not modified" },
+	{ bad_request,			"There was an error in the request, e.g. an incorrect method or a malformed URI" },
+	{ unauthorized,			"You are not authorized to access this location" },
+	{ forbidden,			"Access to this location is forbidden" },
+	{ not_found,			"The requested web page was not found on this server." },
+	{ internal_server_error,"An internal error prevented the server from processing your request" },
+	{ not_implemented,		"Your request could not be handled since the required code is not implemented" },
+	{ service_unavailable,	"The service is unavailable at this moment, try again later" }
 };
 
 const int
 	kStatusStringCount = sizeof(kStatusStrings) / sizeof(status_string);
+
+const int
+	kStatusDescriptionCount = sizeof(kStatusDescriptions) / sizeof(status_string);
 	
+}
+
 string get_status_text(status_type status)
 {
 	string result = "Internal Service Error";
 	
-	for (int i = 0; i < kStatusStringCount; ++i)
+	for (int i = 0; i < detail::kStatusStringCount; ++i)
 	{
-		if (kStatusStrings[i].code == status)
+		if (detail::kStatusStrings[i].code == status)
 		{
-			result = kStatusStrings[i].text;
+			result = detail::kStatusStrings[i].text;
 			break;
 		}
 	}
@@ -68,8 +83,22 @@ string get_status_text(status_type status)
 	return result;
 }
 	
+string get_status_description(status_type status)
+{
+	string result = "An internal error prevented the server from processing your request";
+	
+	for (int i = 0; i < detail::kStatusDescriptionCount; ++i)
+	{
+		if (detail::kStatusDescriptions[i].code == status)
+		{
+			result = detail::kStatusDescriptions[i].text;
+			break;
+		}
+	}
+	
+	return result;
 }
-
+	
 // ----------------------------------------------------------------------------
 
 namespace
@@ -261,7 +290,7 @@ void reply::set_content_type(
 void reply::to_buffers(vector<boost::asio::const_buffer>& buffers)
 {
 	m_status_line = (boost::format("HTTP/%1%.%2% %3% %4%\r\n")
-		% m_version_major % m_version_minor % m_status % detail::get_status_text(m_status)).str();
+		% m_version_major % m_version_minor % m_status % get_status_text(m_status)).str();
 	buffers.push_back(boost::asio::buffer(m_status_line));
 	
 	foreach (header& h, m_headers)
@@ -335,7 +364,7 @@ string reply::get_as_text()
 {
 	// for best performance, we pre calculate memory requirements and reserve that first
 	m_status_line = (boost::format("HTTP/%1%.%2% %3% %4%\r\n")
-		% m_version_major % m_version_minor % m_status % detail::get_status_text(m_status)).str();
+		% m_version_major % m_version_minor % m_status % get_status_text(m_status)).str();
 
 	string result;
 	result.reserve(get_size());
@@ -372,7 +401,7 @@ reply reply::stock_reply(status_type status)
 	if (status != not_modified)
 	{
 		stringstream text;
-		text << "<html><body><h1>" << detail::get_status_text(status) << "</h1></body></html>";
+		text << "<html><body><h1>" << get_status_text(status) << "</h1></body></html>";
 		result.set_content(text.str(), "text/html; charset=utf-8");
 	}
 
@@ -387,7 +416,7 @@ reply reply::redirect(const std::string& location)
 
 	result.m_status = moved_temporarily;
 
-	string text = detail::get_status_text(moved_temporarily);
+	string text = get_status_text(moved_temporarily);
 	result.m_content =
 		string("<html><head><title>") + text + "</title></head><body><h1>" +
  		boost::lexical_cast<string>(moved_temporarily) + ' ' + text + "</h1></body></html>";
@@ -402,7 +431,7 @@ reply reply::redirect(const std::string& location)
 void reply::debug(ostream& os) const
 {
 	os << (boost::format("HTTP/%1%.%2% %3% %4%")
-		% m_version_major % m_version_minor % m_status % detail::get_status_text(m_status)) << endl;
+		% m_version_major % m_version_minor % m_status % get_status_text(m_status)) << endl;
 	foreach (const header& h, m_headers)
 		os << h.name << ": " << h.value << endl;
 }

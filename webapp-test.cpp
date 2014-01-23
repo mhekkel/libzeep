@@ -27,6 +27,7 @@ class my_webapp : public zh::webapp
 	virtual string get_hashed_password(const string& username, const string& realm);
 	void welcome(const zh::request& request, const el::scope& scope, zh::reply& reply);
 	void status(const zh::request& request, const el::scope& scope, zh::reply& reply);
+	void error(const zh::request& request, const el::scope& scope, zh::reply& reply);
 	void handle_file(const zh::request& request, const el::scope& scope, zh::reply& reply);
 };
 
@@ -35,9 +36,10 @@ my_webapp::my_webapp()
 {
 	string realm = "test-realm";
 	
-	mount("", realm, boost::bind(&my_webapp::welcome, this, _1, _2, _3));
+	mount("", boost::bind(&my_webapp::welcome, this, _1, _2, _3));
 	mount("status", realm, boost::bind(&my_webapp::status, this, _1, _2, _3));
-	mount("style.css", realm, boost::bind(&my_webapp::handle_file, this, _1, _2, _3));
+	mount("error", boost::bind(&my_webapp::error, this, _1, _2, _3));
+	mount("style.css", boost::bind(&my_webapp::handle_file, this, _1, _2, _3));
 }
 	
 string my_webapp::get_hashed_password(const string& username, const string& realm)
@@ -70,6 +72,23 @@ void my_webapp::status(const zh::request& request, const el::scope& scope, zh::r
 	sub.put("headers", headers);
 	
 	create_reply_from_template("status.html", sub, reply);
+}
+
+void my_webapp::error(const zh::request& request, const el::scope& scope, zh::reply& reply)
+{
+	zh::parameter_map params;
+	get_parameters(scope, params);
+
+	el::scope sub(scope);
+	
+	el::object error;
+	error["nr"] = params.get("err", 0).as<int>();
+	error["head"] = "Test of error page";
+	error["message"] = "A test of the error page is being looked at";
+
+	sub.put("error", error);
+	
+	create_reply_from_template("error.html", sub, reply);
 }
 
 void my_webapp::handle_file(const zh::request& request, const el::scope& scope, zh::reply& reply)

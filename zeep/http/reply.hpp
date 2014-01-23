@@ -39,6 +39,12 @@ enum status_type
     service_unavailable =   503
 };
 
+/// Return the error string for the status_type
+std::string get_status_text(status_type status);
+
+/// Return the string describing the status_type in more detail
+std::string get_status_description(status_type status);
+
 class reply
 {
   public:
@@ -87,7 +93,7 @@ class reply
 
 	/// Create a standard reply based on a HTTP status code	
 	static reply		stock_reply(status_type inStatus);
-
+	
 	/// Create a standard redirect reply with the specified \a location
 	static reply		redirect(const std::string& location);
 	

@@ -165,7 +165,7 @@ void basic_webapp::handle_request(
 	if (req.method != "GET" and req.method != "POST" and req.method != "PUT" and
 		req.method != "OPTIONS" and req.method != "HEAD")
 	{
-		rep = reply::stock_reply(bad_request);
+		create_error_reply(req, bad_request, rep);
 		return;
 	}
 
@@ -254,26 +254,23 @@ void basic_webapp::handle_request(
 	}
 	catch (unauthorized_exception& e)
 	{
-		create_unauth_reply(e.m_stale, e.m_realm, rep);
+		create_unauth_reply(req, e.m_stale, e.m_realm, rep);
 	}
 	catch (status_type& s)
 	{
-		rep = reply::stock_reply(s);
+		create_error_reply(req, s, rep);
 	}
 	catch (std::exception& e)
 	{
-		el::scope scope(req);
-		scope.put("errormsg", el::object(e.what()));
-
-		create_reply_from_template("error.html", scope, rep);
+		create_error_reply(req, internal_server_error, e.what(), rep);
 	}
 }
 
-void basic_webapp::create_unauth_reply(bool stale, const string& realm, const string& authenticate, reply& rep)
+void basic_webapp::create_unauth_reply(const request& req, bool stale, const string& realm, const string& authenticate, reply& rep)
 {
 	boost::mutex::scoped_lock lock(m_auth_mutex);
 	
-	rep = reply::stock_reply(unauthorized);
+	create_error_reply(req, unauthorized, get_status_text(unauthorized), rep);
 	
 	m_auth_info.push_back(auth_info(realm));
 
@@ -282,6 +279,40 @@ void basic_webapp::create_unauth_reply(bool stale, const string& realm, const st
 		challenge += ", stale=\"true\"";
 
 	rep.set_header(authenticate, challenge);
+}
+
+void basic_webapp::create_error_reply(const request& req, status_type status, reply& rep)
+{
+	create_error_reply(req, status, "", rep);
+}
+
+void basic_webapp::create_error_reply(const request& req, status_type status, const string& message, reply& rep)
+{
+	el::scope scope(req);
+	
+	el::object error;
+	error["nr"] = static_cast<int>(status);
+	error["head"] = get_status_text(status);
+	error["description"] = get_status_description(status);
+	
+	if (not message.empty())
+		error["message"] = message;
+	
+	el::object request;
+	request["method"] = req.method;
+	request["uri"] = req.uri;
+	request["username"] = req.username;
+	error["request"] = request;
+	
+	scope.put("error", error);
+
+	create_reply_from_template("error.html", scope, rep);
+	rep.set_status(status);
+}
+
+void basic_webapp::mount(const std::string& path, handler_type handler)
+{
+	mount(path, "", handler);
 }
 
 void basic_webapp::mount(const std::string& path, const std::string& realm, handler_type handler)

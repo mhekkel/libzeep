@@ -123,14 +123,20 @@ class basic_webapp
   protected:
 
 	virtual void handle_request(const request& req, reply& rep);
-	virtual void create_unauth_reply(bool stale, const std::string& realm,
+	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
 		reply& rep)
 	{
-		create_unauth_reply(stale, realm, "WWW-Authenticate", rep);
+		create_unauth_reply(req, stale, realm, "WWW-Authenticate", rep);
 	}
 	
-	virtual void create_unauth_reply(bool stale, const std::string& realm,
+	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
 		const std::string& authentication, reply& rep);
+
+	/// Create an error reply for the error
+	virtual void create_error_reply(const request& req, status_type status, reply& rep);
+
+	/// Create an error reply for the error with an additional message for the user
+	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 	

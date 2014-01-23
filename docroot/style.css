@@ -4,14 +4,11 @@
 }
 
 html, body {
-/*
 	padding: 0px;
 	margin: 0px;
-*/
 	background: #fff;
 }
 
-/*
 #main {
 	padding: 4px;
 	margin: 0;
@@ -22,7 +19,30 @@ html, body {
 {
 	#main { padding: 8px; }
 }
-*/
+
+#footer {
+	position: absolute;
+	bottom: 0px;
+	height: 1em;
+	left: 0px;
+	right: 0px;
+	overflow: hidden;
+	padding: 4px;
+	margin: 0;
+	font-size: x-small;
+	background: #f0f0f0;
+}
+
+#footer * {
+	font-size: x-small;
+}
+
+@media all and (min-width: 800px)
+{
+	#footer { padding: 8px; }
+}
+
+
 
 /* lists */
 table.list {
@@ -93,3 +113,27 @@ td.right {
 	border: none 0px;
 }
 
+.head {
+	display: block;
+	height: 5em;
+	line-height: 5em;
+	background-color: #6f1919;
+	color: white;
+	font-size: normal;
+	font-weight: bold;
+}
+
+.head span {
+	display: inline-block;
+	vertical-align: middle;
+	line-height: normal;
+}
+
+.head .error-nr {
+	font-size: xx-large;
+	padding: 0 0.5em 0 0.5em;
+}
+
+.error-head-text {
+	font-size: large;
+}
