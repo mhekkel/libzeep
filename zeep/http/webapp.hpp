@@ -120,15 +120,7 @@ class basic_webapp
 	/// result should be the MD5 hash of the string username + ':' + realm + ':' + password
 	virtual std::string get_hashed_password(const std::string& username, const std::string& realm);
 
-  protected:
-
-	virtual void handle_request(const request& req, reply& rep);
-	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
-		reply& rep)
-	{
-		create_unauth_reply(req, stale, realm, "WWW-Authenticate", rep);
-	}
-	
+	/// Create an error reply for the error containing a validation header
 	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
 		const std::string& authentication, reply& rep);
 
@@ -138,6 +130,15 @@ class basic_webapp
 	/// Create an error reply for the error with an additional message for the user
 	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
 
+  protected:
+
+	virtual void handle_request(const request& req, reply& rep);
+	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
+		reply& rep)
+	{
+		create_unauth_reply(req, stale, realm, "WWW-Authenticate", rep);
+	}
+	
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 	
 	typedef boost::function<void(const request& request, const el::scope& scope, reply& reply)> handler_type;

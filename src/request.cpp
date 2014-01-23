@@ -150,6 +150,13 @@ string request::get_header(const char* name) const
 	return result;
 }
 
+string request::get_request_line() const
+{
+	return (boost::format("%1% %2% HTTP/%3%.%4%")
+				% method % uri
+				% http_version_major % http_version_minor).str();
+}
+
 namespace
 {
 const char
@@ -159,10 +166,9 @@ const char
 
 void request::to_buffers(vector<boost::asio::const_buffer>& buffers)
 {
-	m_request_line = (boost::format("%1% %2% HTTP/%3%.%4%\r\n")
-		% method % uri
-		% http_version_major % http_version_minor).str();
+	m_request_line = get_request_line();
 	buffers.push_back(boost::asio::buffer(m_request_line));
+	buffers.push_back(boost::asio::buffer(kCRLF));
 	
 	foreach (header& h, headers)
 	{
@@ -190,9 +196,7 @@ iostream& operator<<(iostream& io, request& req)
 
 void request::debug(ostream& os) const
 {
-	os << (boost::format("%1% %2% HTTP/%3%.%4%")
-		% method % uri
-		% http_version_major % http_version_minor) << endl;
+	os << get_request_line() << endl;
 	foreach (const header& h, headers)
 		os << h.name << ": " << h.value << endl;
 }

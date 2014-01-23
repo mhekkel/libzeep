@@ -38,6 +38,7 @@ struct request
 	bool			is_mobile() const;		///< Check HTTP_USER_AGENT to see if it is a mobile client
 
 	std::string		get_header(const char* name) const; ///< Return the named header
+	std::string		get_request_line() const; ///< Return the (reconstructed) request line
 
 	/// Can be used in code that sends HTTP requests
 	void			to_buffers(std::vector<boost::asio::const_buffer>& buffers);
