@@ -299,8 +299,10 @@ void basic_webapp::create_error_reply(const request& req, status_type status, co
 		error["message"] = message;
 	
 	el::object request;
-	request["method"] = req.method;
-	request["uri"] = req.uri;
+	request["line"] = 
+		ba::starts_with(req.uri, "http://") ? 
+			(boost::format("%1% %2% HTTP%3%/%4%") % req.method % req.uri % req.http_version_major % req.http_version_minor).str() :
+			(boost::format("%1% http://%2%%3% HTTP%4%/%5%") % req.method % req.get_header("Host") % req.uri % req.http_version_major % req.http_version_minor).str();
 	request["username"] = req.username;
 	error["request"] = request;
 	
