@@ -150,6 +150,14 @@ string request::get_header(const char* name) const
 	return result;
 }
 
+void request::remove_header(const char* name)
+{
+	headers.erase(
+		remove_if(headers.begin(), headers.end(),
+			[name](const header& h) -> bool { return h.name == name; }),
+		headers.end());
+}
+
 string request::get_request_line() const
 {
 	return (boost::format("%1% %2% HTTP/%3%.%4%")
