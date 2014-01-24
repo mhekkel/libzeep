@@ -9,6 +9,7 @@
 #include <zeep/config.hpp>
 
 #include <map>
+#include <set>
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -79,12 +80,12 @@ struct auth_info
 	bool stale() const;
 	
 	string m_nonce, m_realm;
-	uint32 m_last_NC;
+	set<uint32> m_replay_check;
 	pt::ptime m_created;
 };
 
 auth_info::auth_info(const string& realm)
-	: m_realm(realm), m_last_NC(0)
+	: m_realm(realm)
 {
 	using namespace boost::gregorian;
 
@@ -113,7 +114,7 @@ bool auth_info::validate(const string& method, const string& uri, const string& 
 	bool valid = false;
 	
 	uint32 nc = strtol(info["nc"].c_str(), nullptr, 16);
-	if (nc > m_last_NC)
+	if (not m_replay_check.count(nc))
 	{
 		string ha2 = md5(method + ':' + info["uri"]).finalise();
 		
@@ -126,7 +127,9 @@ bool auth_info::validate(const string& method, const string& uri, const string& 
 			ha2).finalise();
 		
 		valid = info["response"] == response;
-		m_last_NC = nc;
+
+		// keep a list of seen nc-values in m_replay_check
+		m_replay_check.insert(nc);
 	}
 	return valid;
 }
