@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <boost/tr1/tuple.hpp>
+#include <tr1/tuple>
 
 #include <boost/logic/tribool.hpp>
 
@@ -19,7 +19,7 @@ namespace zeep { namespace http {
 class parser
 {
   public:
-	typedef std::tr1::tuple<boost::tribool,size_t> result_type;
+	typedef std::tuple<boost::tribool,size_t> result_type;
 
 	virtual				~parser() {}
 	

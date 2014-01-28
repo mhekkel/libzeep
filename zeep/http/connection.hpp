@@ -6,8 +6,7 @@
 #ifndef SOAP_HTTP_CONNECTION_HPP
 #define SOAP_HTTP_CONNECTION_HPP
 
-//#include <tr1/memory>
-#include <boost/tr1/memory.hpp>
+#include <tr1/memory>
 
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>
@@ -22,7 +21,7 @@ namespace zeep { namespace http {
 /// as provided by boost::asio. These objects are not to be used directly.
 
 class connection
-	: public std::tr1::enable_shared_from_this<connection>
+	: public std::enable_shared_from_this<connection>
 	, public boost::noncopyable
 {
   public:

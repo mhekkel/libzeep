@@ -126,7 +126,7 @@ class float_object_impl : public detail::object_impl
 	virtual void	print(ostream& os) const		{ os << m_v; }
 	virtual int		compare(object_impl* rhs) const;
 
-	virtual int64	to_int() const						{ return static_cast<int64>(tr1::round(m_v)); }
+	virtual int64	to_int() const						{ return static_cast<int64>(round(m_v)); }
 	virtual double	to_double() const					{ return m_v; }
 	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
 	virtual string	to_JSON() const						{ return boost::lexical_cast<string>(m_v); }

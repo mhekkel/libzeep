@@ -16,7 +16,6 @@
 #include <zeep/http/connection.hpp>
 #include <zeep/exception.hpp>
 
-//#include <boost/tr1/memory.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>

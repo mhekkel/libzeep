@@ -17,6 +17,12 @@ using namespace std;
 
 namespace zeep { namespace http {
 
+template<class T> typename shared_ptr<T>::element_type* get_pointer(shared_ptr<T> const & p)
+{
+	return p.get();
+}
+
+
 connection::connection(boost::asio::io_service& service,
 	request_handler& handler)
 	: m_socket(service)
@@ -46,7 +52,7 @@ void connection::handle_read(
 		boost::tribool result;
 		size_t used;
 
-		tr1::tie(result, used) = m_request_parser.parse(
+		tie(result, used) = m_request_parser.parse(
 			m_request, m_buffer.data(), bytes_transferred);
 
 #pragma message("Need to fix this, check for used == 0")
