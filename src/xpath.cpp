@@ -17,7 +17,6 @@
 #else
 #include <tr1/cmath>
 #endif
-#include <boost/tr1/memory.hpp>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -40,6 +39,12 @@ using namespace tr1;
 namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
+
+template<class T> typename shared_ptr<T>::element_type * get_pointer(shared_ptr<T> const & p)
+{
+	return p.get();
+}
+
 
 // debug code
 ostream& operator<<(ostream& lhs, const node* rhs)
@@ -646,8 +651,8 @@ class expression
 	virtual void		print(int level) = 0;
 };
 
-typedef std::tr1::shared_ptr<expression>	expression_ptr;
-typedef list<expression_ptr>				expression_list;
+typedef std::shared_ptr<expression>	expression_ptr;
+typedef list<expression_ptr>		expression_list;
 
 // --------------------------------------------------------------------
 

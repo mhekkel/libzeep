@@ -6,7 +6,6 @@
 #include <iostream>
 #include <map>
 
-//#include <boost/tr1/memory.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>

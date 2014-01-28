@@ -32,7 +32,7 @@ SO_NAME             = libzeep.so.$(VERSION_MAJOR)
 LIB_NAME            = $(SO_NAME).$(VERSION_MINOR)
 
 CXX                 ?= c++
-CFLAGS              += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared -std=c++0x
+CFLAGS              += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++11 -stdlib=libc++
 #CFLAGS             += -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
 CFLAGS              += -Wall
 CFLAGS              += -g
@@ -49,6 +49,7 @@ OBJECTS = \
 	obj/parser.o \
 	obj/reply.o \
 	obj/request.o \
+	obj/md5.o \
 	obj/message_parser.o \
 	obj/connection.o \
 	obj/http-server.o \

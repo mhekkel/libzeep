@@ -321,7 +321,7 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 		req.http_version_minor = m_http_version_minor;
 	}
 
-	return tr1::tie(result, used);
+	return tie(result, used);
 }
 
 boost::tribool request_parser::parse_initial_line(vector<header>& headers, string& payload, char ch)
@@ -424,7 +424,7 @@ parser::result_type reply_parser::parse(reply& rep, const char* text, size_t len
 		rep.m_version_minor = m_http_version_minor;
 	}
 
-	return tr1::tie(result, used);
+	return tie(result, used);
 }
 
 boost::tribool reply_parser::parse_initial_line(vector<header>& headers, string& payload, char ch)

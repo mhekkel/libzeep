@@ -9,8 +9,9 @@
 #include <typeinfo>
 #include <numeric>
 
-#include <boost/tr1/tuple.hpp>
-//#include <boost/tr1/memory.hpp>
+#include <tr1/memory>
+#include <tr1/tuple>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -22,7 +23,6 @@
 #include <zeep/xml/unicode_support.hpp>
 
 using namespace std;
-using namespace tr1;
 namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml { namespace doctype {
@@ -35,7 +35,7 @@ struct state_base : enable_shared_from_this<state_base>
 {
 								state_base() : m_ref_count(1) {}
 
-	virtual tr1::tuple<bool,bool>
+	virtual tuple<bool,bool>
 								allow(const string& name) = 0;
 	virtual bool				allow_char_data()					{ return false; }
 	virtual bool				allow_empty()						{ return false; }
@@ -55,16 +55,16 @@ struct state_base : enable_shared_from_this<state_base>
 
 struct state_any : public state_base
 {
-	virtual tr1::tuple<bool,bool>
-								allow(const string& name)			{ return tr1::make_tuple(true, true); }
+	virtual tuple<bool,bool>
+								allow(const string& name)			{ return make_tuple(true, true); }
 	virtual bool				allow_char_data()					{ return true; }
 	virtual bool				allow_empty()						{ return true; }
 };
 
 struct state_empty : public state_base
 {
-	virtual tr1::tuple<bool,bool>
-								allow(const string& name)			{ return tr1::make_tuple(false, true); }
+	virtual tuple<bool,bool>
+								allow(const string& name)			{ return make_tuple(false, true); }
 	virtual bool				allow_empty()						{ return true; }
 };
 
@@ -73,14 +73,14 @@ struct state_element : public state_base
 								state_element(const string& name)
 									: m_name(name), m_done(false) {}
 
-	virtual tr1::tuple<bool,bool>
+	virtual tuple<bool,bool>
 								allow(const string& name)
 								{
 									bool result = false;
 									if (not m_done and m_name == name)
 										m_done = result = true;
 //									m_done = true;
-									return tr1::make_tuple(result, m_done);
+									return make_tuple(result, m_done);
 								}
 
 	virtual void				reset()								{ m_done = false; }
@@ -114,12 +114,12 @@ struct state_repeated_zero_or_once : public state_repeated
 								state_repeated_zero_or_once(allowed_ptr sub)
 									: state_repeated(sub) {}
 
-	tr1::tuple<bool,bool>		allow(const string& name);
+	tuple<bool,bool>		allow(const string& name);
 
 	virtual bool				allow_empty()						{ return true; }
 };
 
-tr1::tuple<bool,bool> state_repeated_zero_or_once::allow(const string& name)
+tuple<bool,bool> state_repeated_zero_or_once::allow(const string& name)
 {
 	// use a state machine
 	enum State {
@@ -146,7 +146,7 @@ tr1::tuple<bool,bool> state_repeated_zero_or_once::allow(const string& name)
 			break;
 	}
 	
-	return tr1::make_tuple(result, done);
+	return make_tuple(result, done);
 }
 
 struct state_repeated_any : public state_repeated
@@ -154,12 +154,12 @@ struct state_repeated_any : public state_repeated
 								state_repeated_any(allowed_ptr sub)
 									: state_repeated(sub) {}
 
-	tr1::tuple<bool,bool>		allow(const string& name);
+	tuple<bool,bool>		allow(const string& name);
 
 	virtual bool				allow_empty()						{ return true; }
 };
 
-tr1::tuple<bool,bool> state_repeated_any::allow(const string& name)
+tuple<bool,bool> state_repeated_any::allow(const string& name)
 {
 	// use a state machine
 	enum State {
@@ -191,7 +191,7 @@ tr1::tuple<bool,bool> state_repeated_any::allow(const string& name)
 			break;
 	}
 	
-	return tr1::make_tuple(result, done);
+	return make_tuple(result, done);
 }
 
 struct state_repeated_at_least_once : public state_repeated
@@ -199,12 +199,12 @@ struct state_repeated_at_least_once : public state_repeated
 								state_repeated_at_least_once(allowed_ptr sub)
 									: state_repeated(sub) {}
 
-	tr1::tuple<bool,bool>		allow(const string& name);
+	tuple<bool,bool>		allow(const string& name);
 
 	virtual bool				allow_empty()						{ return m_sub->allow_empty(); }
 };
 
-tr1::tuple<bool,bool> state_repeated_at_least_once::allow(const string& name)
+tuple<bool,bool> state_repeated_at_least_once::allow(const string& name)
 {
 	// use a state machine
 	enum State {
@@ -246,7 +246,7 @@ tr1::tuple<bool,bool> state_repeated_at_least_once::allow(const string& name)
 			break;
 	}
 	
-	return tr1::make_tuple(result, done);
+	return make_tuple(result, done);
 }
 
 // allow a sequence
@@ -266,7 +266,7 @@ struct state_seq : public state_base
 										s->release();
 								}
 
-	virtual tr1::tuple<bool,bool>
+	virtual tuple<bool,bool>
 								allow(const string& name);
 
 	virtual void				reset()
@@ -297,7 +297,7 @@ struct state_seq : public state_base
 	int							m_state;
 };
 
-tr1::tuple<bool,bool> state_seq::allow(const string& name)
+tuple<bool,bool> state_seq::allow(const string& name)
 {
 	bool result = false, done = false;
 	
@@ -335,7 +335,7 @@ tr1::tuple<bool,bool> state_seq::allow(const string& name)
 			break;
 	}
 	
-	return tr1::make_tuple(result, done);
+	return make_tuple(result, done);
 }
 
 bool state_seq::allow_empty()
@@ -371,7 +371,7 @@ struct state_choice : public state_base
 										s->release();
 								}
 
-	virtual tr1::tuple<bool,bool>
+	virtual tuple<bool,bool>
 								allow(const string& name);
 
 	virtual void				reset()
@@ -390,7 +390,7 @@ struct state_choice : public state_base
 	state_ptr					m_sub;
 };
 
-tr1::tuple<bool,bool> state_choice::allow(const string& name)
+tuple<bool,bool> state_choice::allow(const string& name)
 {
 	bool result = false, done = false;
 	
@@ -419,7 +419,7 @@ tr1::tuple<bool,bool> state_choice::allow(const string& name)
 			break;
 	}
 	
-	return tr1::make_tuple(result, done);
+	return make_tuple(result, done);
 }
 
 bool state_choice::allow_empty()

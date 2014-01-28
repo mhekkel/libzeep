@@ -18,8 +18,6 @@
 #include <zeep/xml/xpath.hpp>
 #include <zeep/exception.hpp>
 
-#define nullptr NULL
-
 using namespace std;
 namespace ba = boost::algorithm;
 
@@ -785,7 +783,7 @@ bool text::equals(const node* n) const
 {
 	return
 		node::equals(n) and
-		dynamic_cast<const text*>(n) != NULL and
+		dynamic_cast<const text*>(n) != nullptr and
 		m_text == static_cast<const text*>(n)->m_text;
 }
 
@@ -806,7 +804,7 @@ bool cdata::equals(const node* n) const
 {
 	return
 		node::equals(n) and
-		dynamic_cast<const cdata*>(n) != NULL and
+		dynamic_cast<const cdata*>(n) != nullptr and
 		m_text == static_cast<const cdata*>(n)->m_text;
 }
 
