@@ -7,8 +7,8 @@
 #define SOAP_HTTP_REPLY_HPP
 
 #include <vector>
+#include <memory>
 
-#include <tr1/memory>
 #include <boost/asio/buffer.hpp>
 
 #include <zeep/http/header.hpp>
@@ -52,7 +52,7 @@ class reply
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
 
 						reply(int version_major = 1, int version_minor = 0);
-						reply(const reply&);
+						reply(const reply& rhs);
 						~reply();
 	reply&				operator=(const reply&);
 	

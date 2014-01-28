@@ -12,7 +12,7 @@
 #include <cmath>
 #include <map>
 
-#if _MSC_VER <= 1600
+#if defined(_MSC_VER) // <= 1600
 #include <boost/tr1/cmath.hpp>
 #else
 #include <tr1/cmath>
@@ -39,12 +39,6 @@ using namespace tr1;
 namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
-
-template<class T> typename shared_ptr<T>::element_type * get_pointer(shared_ptr<T> const & p)
-{
-	return p.get();
-}
-
 
 // debug code
 ostream& operator<<(ostream& lhs, const node* rhs)
@@ -653,6 +647,12 @@ class expression
 
 typedef std::shared_ptr<expression>	expression_ptr;
 typedef list<expression_ptr>		expression_list;
+
+// needed for CLang/libc++ on FreeBSD 10
+expression* get_pointer(shared_ptr<expression> const & p)
+{
+	return p.get();
+}
 
 // --------------------------------------------------------------------
 

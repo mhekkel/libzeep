@@ -6,7 +6,7 @@
 #ifndef SOAP_HTTP_CONNECTION_HPP
 #define SOAP_HTTP_CONNECTION_HPP
 
-#include <tr1/memory>
+#include <memory>
 
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>
