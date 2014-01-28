@@ -14,6 +14,7 @@
 
 #if defined(_MSC_VER) // <= 1600
 #include <boost/tr1/cmath.hpp>
+using namespace std::tr1;
 #else
 #include <tr1/cmath>
 #endif
@@ -35,7 +36,6 @@
 //extern int VERBOSE;
 
 using namespace std;
-using namespace tr1;
 namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
@@ -312,7 +312,7 @@ const bool object::as<bool>() const
 	bool result;
 	switch (m_type)
 	{
-		case ot_number:		result = m_number != 0 and not tr1::isnan(m_number); break;
+		case ot_number:		result = m_number != 0 and not isnan(m_number); break;
 		case ot_node_set:	result = not m_node_set.empty(); break;
 		case ot_string:		result = not m_string.empty(); break;
 		case ot_boolean:	result = m_boolean; break;
@@ -342,7 +342,7 @@ const int object::as<int>() const
 {
 	if (m_type != ot_number)
 		throw exception("object is not of type number");
-	return static_cast<int>(tr1::round(m_number));
+	return static_cast<int>(round(m_number));
 }
 
 template<>
@@ -1557,7 +1557,7 @@ template<>
 object core_function_expression<cf_Round>::evaluate(expression_context& context)
 {
 	object v = m_args.front()->evaluate(context);
-	return tr1::round(v.as<double>());
+	return round(v.as<double>());
 }
 
 // --------------------------------------------------------------------
