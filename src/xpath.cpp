@@ -15,6 +15,7 @@
 #if defined(_MSC_VER) // <= 1600
 #include <boost/tr1/cmath.hpp>
 using namespace std::tr1;
+namespace std { using ::std::tr1::isnan; }
 #else
 #include <tr1/cmath>
 #endif
