@@ -312,7 +312,7 @@ const bool object::as<bool>() const
 	bool result;
 	switch (m_type)
 	{
-		case ot_number:		result = m_number != 0 and not isnan(m_number); break;
+		case ot_number:		result = m_number != 0 and not std::isnan(m_number); break;
 		case ot_node_set:	result = not m_node_set.empty(); break;
 		case ot_string:		result = not m_string.empty(); break;
 		case ot_boolean:	result = m_boolean; break;
