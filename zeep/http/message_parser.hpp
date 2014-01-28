@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <tr1/tuple>
+#include <tuple>
 
 #include <boost/logic/tribool.hpp>
 

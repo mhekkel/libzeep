@@ -8,9 +8,8 @@
 #include <iostream>
 #include <typeinfo>
 #include <numeric>
-
-#include <tr1/memory>
-#include <tr1/tuple>
+#include <memory>
+#include <tuple>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>

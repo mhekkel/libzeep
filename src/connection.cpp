@@ -17,11 +17,11 @@ using namespace std;
 
 namespace zeep { namespace http {
 
-template<class T> typename shared_ptr<T>::element_type* get_pointer(shared_ptr<T> const & p)
+// Needed for CLang/libc++ on FreeBSD 10
+connection* get_pointer(const shared_ptr<connection>& p)
 {
 	return p.get();
 }
-
 
 connection::connection(boost::asio::io_service& service,
 	request_handler& handler)

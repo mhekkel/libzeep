@@ -11,8 +11,9 @@
 
 #include <iomanip>
 
-#if _MSC_VER <= 1600
+#if defined(_MSC_VER) /*<= 1600*/
 #include <boost/tr1/cmath.hpp>
+using namespace std::tr1;
 #else
 #include <tr1/cmath>
 #endif
