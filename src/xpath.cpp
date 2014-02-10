@@ -12,14 +12,6 @@
 #include <cmath>
 #include <map>
 
-#if defined(_MSC_VER) // <= 1600
-#include <boost/tr1/cmath.hpp>
-using namespace std::tr1;
-namespace std { using ::std::tr1::isnan; }
-#else
-#include <tr1/cmath>
-#endif
-
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -313,7 +305,7 @@ const bool object::as<bool>() const
 	bool result;
 	switch (m_type)
 	{
-		case ot_number:		result = m_number != 0 and not std::isnan(m_number); break;
+		case ot_number:		result = m_number != 0 and not std::isnan<double>(m_number); break;
 		case ot_node_set:	result = not m_node_set.empty(); break;
 		case ot_string:		result = not m_string.empty(); break;
 		case ot_boolean:	result = m_boolean; break;

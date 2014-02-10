@@ -200,6 +200,22 @@ void reply::set_header(const string& name, const string& value)
 	}
 }
 
+bool reply::keep_alive() const
+{
+	bool result = false;
+	
+	foreach (const header& h, m_headers)
+	{
+		if (h.name == "Connection" and h.value == "keep-alive")
+		{
+			result = true;
+			break;
+		}
+	}
+	
+	return result;
+}
+
 void reply::set_content(xml::element* data)
 {
 	xml::document doc;
