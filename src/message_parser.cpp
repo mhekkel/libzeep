@@ -33,15 +33,7 @@ bool is_tspecial(int c)
 
 parser::parser()
 {
-	m_parser = NULL;
-	m_state = 0;
-	m_chunk_size = 0;
-	m_data.clear();
-	m_uri.clear();
-	m_method.clear();
-	m_close = true;
-	m_http_version_major = 1;
-	m_http_version_minor = 0;
+	reset();
 }
 
 void parser::reset()
@@ -53,11 +45,13 @@ void parser::reset()
 	m_uri.clear();
 	m_method.clear();
 	m_close = true;
+	m_parsing_content = false;
+	m_collect_payload = true;
 	m_http_version_major = 1;
 	m_http_version_minor = 0;
 }
 
-boost::tribool parser::parse_header(vector<header>& headers, string& payload, char ch)
+boost::tribool parser::parse_header_lines(vector<header>& headers, string& payload, char ch)
 {
 	boost::tribool result = boost::indeterminate;
 	
@@ -79,6 +73,7 @@ boost::tribool parser::parse_header(vector<header>& headers, string& payload, ch
 					if (h->name == "Transfer-Encoding" and h->value == "chunked")
 					{
 						m_parser = &parser::parse_chunk;
+						m_parsing_content = true;
 						break;
 					}
 					else if (h->name == "Content-Length")
@@ -88,6 +83,7 @@ boost::tribool parser::parse_header(vector<header>& headers, string& payload, ch
 						payload.reserve(m_chunk_size);
 						m_state = 0;
 						m_parser = &parser::parse_content;
+//						m_parsing_content = true;
 						break;
 					}
 				}
@@ -241,7 +237,8 @@ boost::tribool parser::parse_chunk(vector<header>& headers, string& payload, cha
 			break;
 		
 		case 6:
-			payload += ch;
+			if (m_collect_payload)
+				payload += ch;
 			if (--m_chunk_size == 0)
 				m_state = 0;		// restart
 			break;
@@ -255,17 +252,6 @@ boost::tribool parser::parse_chunk(vector<header>& headers, string& payload, cha
 			break;
 	}
 	
-	// clean up in case we're done
-	if (result)
-	{
-		// remove the Transfer-Encoding header
-		headers.erase(remove_if(headers.begin(), headers.end(), [](header& h) -> bool { return h.name == "Transfer-Encoding"; }), headers.end());
-
-		// Set the length
-		header contentLength = { "Content-Length", boost::lexical_cast<string>(payload.length()) };
-		headers.push_back(contentLength);
-	}
-
 	return result;
 }
 
@@ -281,7 +267,8 @@ boost::tribool parser::parse_content(vector<header>& headers, string& payload, c
 		case 1: if (ch == '\n') ++m_state; else result = false; break;
 		
 		case 2:
-			payload += ch;
+			if (m_collect_payload)
+				payload += ch;
 			if (--m_chunk_size == 0)
 				result = true;
 			break;
@@ -304,6 +291,7 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 		// clear the request
 		req.clear();
 		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
+		m_parsing_content = false;
 	}
 
 	boost::tribool result = boost::indeterminate;
@@ -321,6 +309,58 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 		req.http_version_minor = m_http_version_minor;
 	}
 
+	return tie(result, used);
+}
+
+parser::result_type request_parser::parse_header(request& req, const char* text, size_t length)
+{
+	if (m_parser == NULL)
+	{
+		// clear the reply
+		req.clear();
+		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
+	}
+
+	boost::tribool result = boost::indeterminate;
+	size_t used = 0;
+	
+	while (used < length and boost::indeterminate(result))
+	{
+		result = (this->*m_parser)(req.headers, req.payload, text[used++]);
+		
+		if (boost::indeterminate(result) and m_parsing_content)
+			result = true;
+	}
+
+	if (result)
+	{
+		req.http_version_major = m_http_version_major;
+		req.http_version_minor = m_http_version_minor;
+	}
+
+	return tie(result, used);
+}
+
+parser::result_type request_parser::parse_content(request& req, const char* text, size_t length)
+{
+	boost::tribool result = boost::indeterminate;
+	size_t used = 0;
+
+	if (not m_parsing_content)
+		result = false;
+	else
+	{
+		m_collect_payload = false;
+		
+		while (used < length and boost::indeterminate(result))
+		{
+			result = (this->*m_parser)(req.headers, req.payload, text[used++]);
+			
+			if (boost::indeterminate(result) and m_parsing_content)
+				result = true;
+		}
+	}
+	
 	return tie(result, used);
 }
 
@@ -377,7 +417,7 @@ boost::tribool request_parser::parse_initial_line(vector<header>& headers, strin
 			if (ch == '\n')
 			{
 				m_state = 0;
-				m_parser = &request_parser::parse_header;
+				m_parser = &parser::parse_header_lines;
 			}
 			else
 				result = false;
@@ -408,6 +448,7 @@ parser::result_type reply_parser::parse(reply& rep, const char* text, size_t len
 		// clear the reply
 		rep.clear();
 		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
+		m_parsing_content = false;
 	}
 
 	boost::tribool result = boost::indeterminate;
@@ -424,6 +465,55 @@ parser::result_type reply_parser::parse(reply& rep, const char* text, size_t len
 		rep.m_version_minor = m_http_version_minor;
 	}
 
+	return tie(result, used);
+}
+
+parser::result_type reply_parser::parse_header(reply& rep, const char* text, size_t length)
+{
+	if (m_parser == NULL)
+	{
+		// clear the reply
+		rep.clear();
+		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
+	}
+
+	boost::tribool result = boost::indeterminate;
+	size_t used = 0;
+	
+	while (used < length and boost::indeterminate(result))
+	{
+		result = (this->*m_parser)(rep.m_headers, rep.m_content, text[used++]);
+		
+		if (boost::indeterminate(result) and m_parsing_content)
+			result = true;
+	}
+
+	if (result)
+	{
+		rep.m_status = static_cast<status_type>(m_status);
+		rep.m_status_line = m_status_line;
+		rep.m_version_major = m_http_version_major;
+		rep.m_version_minor = m_http_version_minor;
+	}
+
+	return tie(result, used);
+}
+
+parser::result_type reply_parser::parse_content(reply& rep, const char* text, size_t length)
+{
+	boost::tribool result = boost::indeterminate;
+	size_t used = 0;
+
+	if (not m_parsing_content)
+		result = false;
+	else
+	{
+		m_collect_payload = false;
+		
+		while (used < length and boost::indeterminate(result))
+			result = (this->*m_parser)(rep.m_headers, rep.m_content, text[used++]);
+	}
+	
 	return tie(result, used);
 }
 
@@ -503,7 +593,7 @@ boost::tribool reply_parser::parse_initial_line(vector<header>& headers, string&
 			if (ch == '\n')
 			{
 				m_state = 0;
-				m_parser = static_cast<state_parser>(&reply_parser::parse_header);
+				m_parser = &parser::parse_header_lines;
 			}
 			else
 				result = false;

@@ -64,6 +64,9 @@ class reply
 	void				set_header(const std::string& name,
 							const std::string& value);
 
+	/// If the reply contains Connection: keep-alive
+	bool				keep_alive() const;
+
 	std::string			get_content_type() const;
 	void				set_content_type(
 							const std::string& type);	///< Set the Content-Type header
