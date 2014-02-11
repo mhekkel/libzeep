@@ -134,6 +134,22 @@ bool request::is_mobile() const
     return result;
 }
 
+bool request::keep_alive() const
+{
+	bool result = false;
+
+	foreach(const header& h, headers)
+	{
+		if (h.name != "Connection")
+			continue;
+
+		result = h.value == "keep-alive";
+		break;
+	}
+
+	return result;
+}
+
 string request::get_header(const char* name) const
 {
 	string result;

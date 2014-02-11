@@ -83,7 +83,7 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 						payload.reserve(m_chunk_size);
 						m_state = 0;
 						m_parser = &parser::parse_content;
-//						m_parsing_content = true;
+						m_parsing_content = true;
 						break;
 					}
 				}
