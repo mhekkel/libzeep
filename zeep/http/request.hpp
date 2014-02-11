@@ -36,6 +36,7 @@ struct request
 
 	float			accept(const char* type) const;	///< Return the value in the Accept header for type
 	bool			is_mobile() const;		///< Check HTTP_USER_AGENT to see if it is a mobile client
+	bool			keep_alive() const;		///< Check for Connection: keep-alive header
 
 	std::string		get_header(const char* name) const; ///< Return the named header
 	void			remove_header(const char* name);	///< Remove this header from the list of headers
