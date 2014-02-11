@@ -44,7 +44,6 @@ void parser::reset()
 	m_data.clear();
 	m_uri.clear();
 	m_method.clear();
-	m_close = true;
 	m_parsing_content = false;
 	m_collect_payload = true;
 	m_http_version_major = 1;
@@ -83,7 +82,6 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 						payload.reserve(m_chunk_size);
 						m_state = 0;
 						m_parser = &parser::parse_content;
-						m_parsing_content = true;
 						break;
 					}
 				}
@@ -129,15 +127,7 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 		
 		case 4:
 			if (ch == '\n')
-			{
-				if (headers.back().name == "Connection" and
-					headers.back().value == "close")
-				{
-					m_close = true;
-				}	
-				
 				m_state = 0;
-			}
 			else
 				result = false;
 			break;
@@ -166,7 +156,16 @@ boost::tribool parser::parse_empty_line(vector<header>& headers, string& payload
 	switch (m_state)
 	{
 		case 0: if (ch == '\r') ++m_state; else result = false; break;
-		case 1: if (ch == '\n') result = true; else result = false; break;
+		case 1:
+			if (ch == '\n')
+			{
+				result = true;
+				if (m_chunk_size > 0)
+					m_parsing_content = true;
+			}
+			else
+				result = false;
+			break;
 	}
 	
 	return result;
@@ -270,7 +269,10 @@ boost::tribool parser::parse_content(vector<header>& headers, string& payload, c
 			if (m_collect_payload)
 				payload += ch;
 			if (--m_chunk_size == 0)
+			{
 				result = true;
+				m_parsing_content = false;
+			}
 			break;
 	}
 	
@@ -302,7 +304,6 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 
 	if (result)
 	{
-		req.close = m_close;
 		req.uri = m_uri;
 		req.method = m_method;
 		req.http_version_major = m_http_version_major;

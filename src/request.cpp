@@ -23,6 +23,7 @@ namespace zeep { namespace http {
 void request::clear()
 {
 	m_request_line.clear();
+	m_timestamp = boost::posix_time::second_clock::local_time();
 
 	method.clear();
 	uri.clear();

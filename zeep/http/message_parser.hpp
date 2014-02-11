@@ -44,7 +44,6 @@ class parser
 	std::string			m_data;
 	std::string			m_uri;
 	std::string			m_method;
-	bool				m_close;
 	bool				m_parsing_content;
 	bool				m_collect_payload;
 	int					m_http_version_major, m_http_version_minor;
