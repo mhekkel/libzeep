@@ -130,9 +130,11 @@ class basic_webapp
 	/// Create an error reply for the error with an additional message for the user
 	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
 
+	/// Dispatch and handle the request
+	virtual void handle_request(const request& req, reply& rep);
+
   protected:
 
-	virtual void handle_request(const request& req, reply& rep);
 	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
 		reply& rep)
 	{
@@ -252,7 +254,6 @@ class webapp : public http::server, public basic_webapp
 		const boost::filesystem::path& docroot = ".");
 	virtual ~webapp();
 
-  protected:
 	virtual void handle_request(const request& req, reply& rep);
 };
 
