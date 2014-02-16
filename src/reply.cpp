@@ -454,5 +454,17 @@ void reply::debug(ostream& os) const
 		os << h.name << ": " << h.value << endl;
 }
 
+ostream& operator<<(ostream& lhs, reply& rhs)
+{
+	vector<boost::asio::const_buffer> buffers;
+
+	rhs.to_buffers(buffers);
+
+	foreach(auto& b, buffers)
+		lhs.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
+
+	return lhs;
+}
+
 }
 }
