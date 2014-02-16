@@ -57,6 +57,10 @@ class request_parser : public parser
 	result_type			parse_header(request& req, const char* text, size_t length);
 	result_type			parse_content(request& req, const char* text, size_t length);
 
+	boost::tribool		parse(request& req, std::streambuf& text);
+	boost::tribool		parse_header(request& req, std::streambuf& text);
+	boost::tribool		parse_content(request& req, std::streambuf& text, std::streambuf& sink);
+
   private:
 	boost::tribool		parse_initial_line(std::vector<header>& headers, std::string& payload, char ch);
 };
@@ -68,6 +72,10 @@ class reply_parser : public parser
 	result_type			parse(reply& req, const char* text, size_t length);
 	result_type			parse_header(reply& req, const char* text, size_t length);
 	result_type			parse_content(reply& req, const char* text, size_t length);
+
+	boost::tribool		parse(reply& req, std::streambuf& text);
+	boost::tribool		parse_header(reply& req, std::streambuf& text);
+	boost::tribool		parse_content(reply& req, std::streambuf& text, std::streambuf& sink);
 
 	virtual void		reset();
 

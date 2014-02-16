@@ -106,6 +106,8 @@ class reply
 
 	void				debug(std::ostream& os) const;
 
+	friend std::ostream& operator<<(std::ostream&, reply&);
+
   private:
 	friend class reply_parser;
 
@@ -117,6 +119,8 @@ class reply
 	std::istream*		m_data;
 	std::vector<char>	m_buffer;
 };
+
+std::ostream& operator<<(std::ostream&, reply&);
 
 }
 }
