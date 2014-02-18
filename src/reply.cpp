@@ -43,6 +43,7 @@ struct status_string
 	{ proxy_authentication_required,	"Proxy Authentication Required" },
 	{ forbidden,			"Forbidden" },
 	{ not_found,			"Not Found" },
+	{ method_not_allowed,	"Method not allowed" },
 	{ internal_server_error,"Internal Server Error" },
 	{ not_implemented,		"Not Implemented" },
 	{ bad_gateway,			"Bad Gateway" },
