@@ -59,6 +59,7 @@ struct status_string
 	{ not_found,			"The requested web page was not found on this server." },
 	{ internal_server_error,"An internal error prevented the server from processing your request" },
 	{ not_implemented,		"Your request could not be handled since the required code is not implemented" },
+	{ bad_gateway,			"The server, while acting as a gateway or proxy, received an invalid response from the upstream server it accessed in attempting to fulfill the request. " },
 	{ service_unavailable,	"The service is unavailable at this moment, try again later" }
 };
 
