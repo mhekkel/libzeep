@@ -216,24 +216,36 @@ class vector_object_impl : public detail::base_array_object_impl
 
 	virtual object&	at(uint32 ix)
 					{
+						if (ix >= m_v.size())
+							throw logic_error("index out of bounds");
 						return m_v[ix];
 					}
 					
 	virtual const object
 					at(uint32 ix) const
 					{
-						return m_v[ix];
+						object result;
+						if (ix < m_v.size())
+							result = m_v[ix];
+						return result;
 					}
 
 	virtual object&	operator[](const object& index)
 					{
-						return m_v[index.as<uint32>()];
+						uint32 ix = index.as<uint32>();
+						if (ix >= m_v.size())
+							throw logic_error("index out of bounds");
+						return m_v[ix];
 					}
 
 	virtual const object
 					operator[](const object& index) const
 					{
-						return m_v[index.as<uint32>()];
+						object result;
+						uint32 ix = index.as<uint32>();
+						if (ix < m_v.size())
+							result = m_v[ix];
+						return result;
 					}
 
 	virtual void	print(ostream& os) const
@@ -1570,7 +1582,7 @@ object interpreter::parse_primary_expr()
 					if (index.empty() or (result.type() != object::array_type and result.type() != object::struct_type))
 						result = object();
 					else
-						result = const_cast<object&>(result)[index];
+						result = const_cast<const object&>(result)[index];
 					continue;
 				}
 
