@@ -911,7 +911,16 @@ void basic_webapp::get_parameters(const el::scope& scope, parameter_map& paramet
 	string ps;
 	
 	if (req.method == "POST")
-		ps = req.payload;
+	{
+		string contentType = req.get_header("Content-Type");
+		
+		if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+			ps = req.payload;
+//		else
+//		{
+//			
+//		}
+	}
 	else if (req.method == "GET" or req.method == "PUT")
 	{
 		string::size_type d = req.uri.find('?');

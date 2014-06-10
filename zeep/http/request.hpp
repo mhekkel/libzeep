@@ -47,6 +47,9 @@ struct request
 	void			remove_header(const char* name);	///< Remove this header from the list of headers
 	std::string		get_request_line() const; ///< Return the (reconstructed) request line
 
+	/// Alternative way to fetch parameters (as opposed to using webapp and parameter_map)
+	std::string		get_parameter(const char* name) const;	///< Return the named parameter
+
 	/// Can be used in code that sends HTTP requests
 	void			to_buffers(std::vector<boost::asio::const_buffer>& buffers);
 

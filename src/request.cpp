@@ -13,10 +13,12 @@
 #include <boost/regex.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <zeep/http/request.hpp>
 
 using namespace std;
+namespace ba = boost::algorithm;
 
 namespace zeep { namespace http {
 	
@@ -157,7 +159,7 @@ string request::get_header(const char* name) const
 
 	foreach (const header& h, headers)
 	{
-		if (h.name != name)
+		if (not ba::iequals(h.name, name))
 			continue;
 		
 		result = h.value;
@@ -173,6 +175,120 @@ void request::remove_header(const char* name)
 		remove_if(headers.begin(), headers.end(),
 			[name](const header& h) -> bool { return h.name == name; }),
 		headers.end());
+}
+
+string request::get_parameter(const char* name) const
+{
+	string result, contentType = get_header("Content-Type");
+	bool post = method == "POST";
+	string::size_type nlen = strlen(name);
+	
+	if (method == "GET" or method == "PUT" or
+		(post and contentType == "application/x-www-form-urlencoded"))
+	{
+		const string& s = post ? payload : uri;
+		string::size_type b = 0;
+		if (not post)
+		{
+			b = s.find('?');
+			if (b != string::npos)
+				b = b + 1;
+		}
+		
+		while (b != string::npos)
+		{
+			string::size_type e = s.find_first_of("&;", b);
+			string::size_type n = (e == string::npos) ? s.length() - b : e - b;
+			
+			if ((n == nlen or (n > nlen + 1 and s[b + nlen] == '=')) and strncmp(name, s.c_str() + b, nlen) == 0)
+			{
+				if (n == nlen)
+					result = name;	// what else?
+				else
+				{
+					b += nlen + 1;
+					result = s.substr(b, e - b);
+				}
+				break;
+			}
+			
+			b = e == string::npos ? e : e + 1;
+		}
+	}
+	else if (method == "POST" and ba::starts_with(contentType, "multipart/form-data"))
+	{
+		string::size_type b = contentType.find("boundary=");
+		if (b != string::npos)
+		{
+			string boundary = contentType.substr(b + strlen("boundary="));
+			
+			enum { START, HEADER, CONTENT, SKIP } state = SKIP;
+			
+			string contentName;
+			boost::regex rx("content-disposition:\\s*form-data;.*?\\bname=\"([^\"]+)\".*", boost::regex::icase);
+			boost::smatch m;
+			
+			string::size_type i = 0, r = 0, l = 0;
+			
+			for (auto i = 0; i <= payload.length(); ++i)
+			{
+				if (i < payload.length() and payload[i] != '\r' and payload[i] != '\n')
+					continue;
+
+				// we have found a 'line' at [l, i)
+				if (payload.compare(l, 2, "--") == 0 and
+					payload.compare(l + 2, boundary.length(), boundary) == 0)
+				{
+					// if we're in the content state or if this is the last line
+					if (state == CONTENT or payload.compare(l + 2 + boundary.length(), 2, "--") == 0)
+					{
+						if (r > 0)
+						{
+							auto n = l - r;
+							if (n >= 1 and payload[r + n - 1] == '\n')
+								--n;
+							if (n >= 1 and payload[r + n - 1] == '\r')
+								--n;
+
+							result.assign(payload, r, n);
+						}
+							
+						break;
+					}
+					
+					// Not the last, so it must be a separator and we're now in the Header part
+					state = HEADER;
+				}
+				else if (state == HEADER)
+				{
+					if (l == i)	// empty line
+					{
+						if (contentName == name)
+						{
+							state = CONTENT;
+
+							r = i + 1;
+							if (payload[i] == '\r' and payload[i + 1] == '\n')
+								r = i + 2;
+						}
+						else
+							state = SKIP;
+					}
+					else if (boost::regex_match(payload.begin() + l, payload.begin() + i, m, rx))
+						contentName = m[1].str();
+				}
+				
+				if (payload[i] == '\r' and payload[i + 1] == '\n')
+					++i;
+
+				l = i + 1;
+			}
+		}
+
+		ba::replace_all(result, "\r\n", "\n");
+	}
+	
+	return result;
 }
 
 string request::get_request_line() const
