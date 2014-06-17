@@ -340,7 +340,7 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 		else if (m_buffer.size() > kMaxChunkSize)
 			m_buffer.erase(m_buffer.begin() + kMaxChunkSize, m_buffer.end());
 		
-		streamsize n = m_data->readsome(&m_buffer[0], m_buffer.size());
+		streamsize n = m_data->rdbuf()->sgetn(&m_buffer[0], m_buffer.size());
 
 		// chunked encoding?
 		if (m_version_major > 1 or m_version_minor >= 1)
