@@ -146,7 +146,7 @@ bool request::keep_alive() const
 		if (h.name != "Connection")
 			continue;
 
-		result = h.value == "keep-alive";
+		result = ba::iequals(h.value, "keep-alive");
 		break;
 	}
 

@@ -197,7 +197,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 	
 	foreach (const header& h, req.headers)
 	{
-		if (m_log_forwarded and h.name == "X-Forwarded-For")
+		if (m_log_forwarded and ba::iequals(h.name, "X-Forwarded-For"))
 		{
 			client = h.value;
 			string::size_type comma = client.rfind(',');
@@ -208,11 +208,11 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 				client = client.substr(comma + 1, string::npos);
 			}
 		}
-		else if (h.name == "Referer")
+		else if (ba::iequals(h.name, "Referer"))
 			referer = h.value;
-		else if (h.name == "User-Agent")
+		else if (ba::iequals(h.name, "User-Agent"))
 			userAgent = h.value;
-		else if (h.name == "Accept")
+		else if (ba::iequals(h.name, "Accept"))
 			accept = h.value;
 	}
 	

@@ -10,6 +10,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <iostream>
 
@@ -19,6 +20,7 @@
 
 using namespace std;
 namespace io = boost::iostreams;
+namespace ba = boost::algorithm;
 
 namespace zeep { namespace http {
 
@@ -208,7 +210,7 @@ bool reply::keep_alive() const
 	
 	foreach (const header& h, m_headers)
 	{
-		if (h.name == "Connection" and h.value == "keep-alive")
+		if (ba::iequals(h.name, "Connection") and ba::iequals(h.value, "keep-alive"))
 		{
 			result = true;
 			break;
@@ -284,7 +286,7 @@ string reply::get_content_type() const
 	
 	foreach (const header& h, m_headers)
 	{
-		if (h.name == "Content-Type")
+		if (ba::iequals(h.name, "Content-Type"))
 		{
 			result = h.value;
 			break;
@@ -299,7 +301,7 @@ void reply::set_content_type(
 {
 	foreach (header& h, m_headers)
 	{
-		if (h.name == "Content-Type")
+		if (ba::iequals(h.name, "Content-Type"))
 		{
 			h.value = type;
 			break;
