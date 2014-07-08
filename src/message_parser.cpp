@@ -9,7 +9,10 @@
 
 #include <zeep/http/message_parser.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 using namespace std;
+namespace ba = boost::algorithm;
 
 namespace zeep { namespace http {
 	
@@ -69,13 +72,13 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 
 				for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
 				{
-					if (h->name == "Transfer-Encoding" and h->value == "chunked")
+					if (ba::iequals(h->name, "Transfer-Encoding") and ba::iequals(h->value, "chunked"))
 					{
 						m_parser = &parser::parse_chunk;
 						m_parsing_content = true;
 						break;
 					}
-					else if (h->name == "Content-Length")
+					else if (ba::iequals(h->name, "Content-Length"))
 					{
 						stringstream s(h->value);
 						s >> m_chunk_size;

@@ -350,7 +350,7 @@ void basic_webapp::handle_file(
 	string ifModifiedSince;
 	foreach (const zeep::http::header& h, request.headers)
 	{
-		if (h.name == "If-Modified-Since")
+		if (ba::iequals(h.name, "If-Modified-Since"))
 		{
 			local_date_time modifiedSince(local_sec_clock::local_time(time_zone_ptr()));
 
@@ -451,7 +451,7 @@ void basic_webapp::load_template(const string& file, xml::document& doc)
 		    DWORD dw = ::GetLastError();
 			if (dw != NO_ERROR)
 			{
-			    char* lpMsgBuf;
+			    char* lpMsgBuf = nullptr;
 				int m = ::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 					NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
 			
