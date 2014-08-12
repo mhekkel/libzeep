@@ -349,7 +349,7 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 		{
 			if (n == 0)
 			{
-				buffers.push_back(boost::asio::buffer("0"));
+				buffers.push_back(boost::asio::buffer('0'));
 				buffers.push_back(boost::asio::buffer(kCRLF));
 				buffers.push_back(boost::asio::buffer(kCRLF));
 				delete m_data;
