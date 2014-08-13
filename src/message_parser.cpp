@@ -122,8 +122,6 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 		case 3:
 			if (ch == '\r')
 				++m_state;
-			else if (iscntrl(ch))
-				result = false;
 			else
 				headers.back().value += ch;
 			break;
