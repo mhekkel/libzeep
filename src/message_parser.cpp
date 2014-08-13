@@ -264,7 +264,16 @@ boost::tribool parser::parse_content(vector<header>& headers, string& payload, c
 	switch (m_state)
 	{
 		case 0:	if (ch == '\r')	++m_state; else result = false; break;
-		case 1: if (ch == '\n') ++m_state; else result = false; break;
+		case 1:
+			if (ch == '\n')
+			{
+				++m_state;
+				if (m_chunk_size == 0)
+					result = true;
+			}
+			else
+				result = false;
+			break;
 		
 		case 2:
 			if (m_collect_payload)
