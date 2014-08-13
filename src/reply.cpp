@@ -111,7 +111,8 @@ namespace
 {
 const char
 		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' };
+		kCRLF[] = { '\r', '\n' },
+		kZERO[] = { '0' };
 }
 
 reply::reply(int version_major, int version_minor)
@@ -349,7 +350,7 @@ bool reply::data_to_buffers(vector<boost::asio::const_buffer>& buffers)
 		{
 			if (n == 0)
 			{
-				buffers.push_back(boost::asio::buffer('0'));
+				buffers.push_back(boost::asio::buffer(kZERO));
 				buffers.push_back(boost::asio::buffer(kCRLF));
 				buffers.push_back(boost::asio::buffer(kCRLF));
 				delete m_data;
