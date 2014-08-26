@@ -106,7 +106,7 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 		}
 
 		// first wait until we are allowed to start listening
-		boost::mutex::scoped_lock lock(m_lock);
+		boost::unique_lock<boost::mutex> lock(m_lock);
 
 		// then bind the address here
 		boost::asio::ip::tcp::resolver resolver(m_io_service);

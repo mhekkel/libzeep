@@ -271,7 +271,7 @@ void basic_webapp::handle_request(
 
 void basic_webapp::create_unauth_reply(const request& req, bool stale, const string& realm, const string& authenticate, reply& rep)
 {
-	boost::mutex::scoped_lock lock(m_auth_mutex);
+	boost::unique_lock<boost::mutex> lock(m_auth_mutex);
 	
 	create_error_reply(req, unauthorized, get_status_text(unauthorized), rep);
 	
@@ -975,7 +975,7 @@ string basic_webapp::validate_authentication(const string& authorization,
 	string ha1 = get_hashed_password(info["username"], realm);
 
 	// lock to avoid accessing m_auth_info from multiple threads at once
-	boost::mutex::scoped_lock lock(m_auth_mutex);
+	boost::unique_lock<boost::mutex> lock(m_auth_mutex);
 	bool authorized = false, stale = false;
 
 	for (auto auth = m_auth_info.begin(); auth != m_auth_info.end(); ++auth)
