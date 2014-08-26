@@ -939,7 +939,7 @@ struct serialize_container_type
 	
 	static void serialize_child(container* n, const char* name, const container_type& value)
 	{
-		BOOST_FOREACH (const value_type& v, value)
+		for (const value_type& v : value)
 		{
 			base_serializer_type::serialize_child(n, name, v);
 		}
@@ -950,7 +950,7 @@ struct serialize_container_type
 		// clear the value first
 		value.clear();
 		
-		BOOST_FOREACH (const element* e, *n)
+		for (const element* e : *n)
 		{
 			if (e->name() != name)
 				continue;

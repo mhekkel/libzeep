@@ -255,7 +255,7 @@ void server::log_request(const string& client,
 	const string& entry)
 {
 	// protect the output stream from garbled log messages
-	boost::mutex::scoped_lock lock(detail::s_log_lock);
+	boost::unique_lock<boost::mutex> lock(detail::s_log_lock);
 
 	using namespace boost::local_time;
 
