@@ -30,7 +30,6 @@ class parser
 	typedef boost::tribool (parser::*state_parser)(std::vector<header>& headers, std::string& payload, char ch);
 	
 	boost::tribool		parse_header_lines(std::vector<header>& headers, std::string& payload, char ch);
-	boost::tribool		parse_empty_line(std::vector<header>& headers, std::string& payload, char ch);
 	boost::tribool		parse_chunk(std::vector<header>& headers, std::string& payload, char ch);
 	boost::tribool		parse_footer(std::vector<header>& headers, std::string& payload, char ch);
 	boost::tribool		parse_content(std::vector<header>& headers, std::string& payload, char ch);
