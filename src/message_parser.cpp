@@ -67,30 +67,7 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 			// If the header starts with \r, it is the start of an empty line
 			// which indicates the end of the header section
 			if (ch == '\r')
-			{
-				m_parser = &parser::parse_empty_line;
-
-				for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
-				{
-					if (ba::iequals(h->name, "Transfer-Encoding") and ba::iequals(h->value, "chunked"))
-					{
-						m_parser = &parser::parse_chunk;
-						m_parsing_content = true;
-						break;
-					}
-					else if (ba::iequals(h->name, "Content-Length"))
-					{
-						stringstream s(h->value);
-						s >> m_chunk_size;
-						payload.reserve(m_chunk_size);
-						m_state = 0;
-						m_parser = &parser::parse_content;
-						break;
-					}
-				}
-				
-				result = (this->*m_parser)(headers, payload, ch);
-			}
+				m_state = 20;
 			else if ((ch == ' ' or ch == '\t') and not headers.empty())
 				m_state = 10;
 			else if (iscntrl(ch) or detail::is_tspecial(ch))
@@ -145,24 +122,34 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 			}
 			break;
 		
-	}
-	
-	return result;
-}
-
-boost::tribool parser::parse_empty_line(vector<header>& headers, string& payload, char ch)
-{
-	boost::tribool result = boost::indeterminate;
-	
-	switch (m_state)
-	{
-		case 0: if (ch == '\r') ++m_state; else result = false; break;
-		case 1:
+		case 20:
 			if (ch == '\n')
 			{
 				result = true;
-				if (m_chunk_size > 0)
-					m_parsing_content = true;
+
+				for (vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
+				{
+					if (ba::iequals(h->name, "Transfer-Encoding") and ba::iequals(h->value, "chunked"))
+					{
+						m_parser = &parser::parse_chunk;
+						m_state = 0;
+						m_parsing_content = true;
+						break;
+					}
+					else if (ba::iequals(h->name, "Content-Length"))
+					{
+						stringstream s(h->value);
+						s >> m_chunk_size;
+
+						if (m_chunk_size > 0)
+						{
+							m_parser = &parser::parse_content;
+							m_parsing_content = true;
+							payload.reserve(m_chunk_size);
+						}
+						break;
+					}
+				}
 			}
 			else
 				result = false;
@@ -183,42 +170,36 @@ boost::tribool parser::parse_chunk(vector<header>& headers, string& payload, cha
 		// then a newline (\r\n) and the actual length bytes.
 		// This repeats until length is zero
 		
-			// start with empty line...
-		case 0:	if (ch == '\r')	++m_state; else result = false; break;
-		case 1: if (ch == '\n') ++m_state; else result = false; break;
-		
-			// new chunk?
-		case 2:
+			// new chunk, starts with hex encoded length
+		case 0:
 			if (isxdigit(ch))
 			{
 				m_data = ch;
 				++m_state;
 			}
-			else if (ch == '\r')
-				m_state = 10;
 			else
 				result = false;
 			break;
 		
-		case 3:
+		case 1:
 			if (isxdigit(ch))
 				m_data += ch;
 			else if (ch == ';')
 				++m_state;
 			else if (ch == '\r')
-				m_state = 5;
+				m_state = 3;
 			else
 				result = false;
 			break;
 		
-		case 4:
+		case 2:
 			if (ch == '\r')
 				++m_state;
 			else if (detail::is_tspecial(ch) or iscntrl(ch))
 				result = false;
 			break;
 		
-		case 5:
+		case 3:
 			if (ch == '\n')
 			{
 				stringstream s(m_data);
@@ -230,26 +211,25 @@ boost::tribool parser::parse_chunk(vector<header>& headers, string& payload, cha
 					++m_state;
 				}
 				else
-					m_state = 2;
+					m_state = 10;
 			}
 			else
 				result = false;
 			break;
 		
-		case 6:
+		case 4:
 			if (m_collect_payload)
 				payload += ch;
 			if (--m_chunk_size == 0)
-				m_state = 0;		// restart
+				m_state = 5;		// parse trailing \r\n
 			break;
 		
+		case 5:	if (ch == '\r')	++m_state; else result = false; break;
+		case 6: if (ch == '\n') m_state = 0; else result = false; break;
+		
 			// trailing \r\n		
-		case 10:
-			if (ch == '\n')
-				result = true;
-			else
-				result = false;
-			break;
+		case 10: if (ch == '\r') ++m_state; else result = false; break;
+		case 11: if (ch == '\n') result = true; else result = false; break;
 	}
 	
 	return result;
@@ -260,30 +240,13 @@ boost::tribool parser::parse_content(vector<header>& headers, string& payload, c
 	boost::tribool result = boost::indeterminate;
 	
 	// here we simply read m_chunk_size of bytes and finish
-	
-	switch (m_state)
+	if (m_collect_payload)
+		payload += ch;
+
+	if (--m_chunk_size == 0)
 	{
-		case 0:	if (ch == '\r')	++m_state; else result = false; break;
-		case 1:
-			if (ch == '\n')
-			{
-				++m_state;
-				if (m_chunk_size == 0)
-					result = true;
-			}
-			else
-				result = false;
-			break;
-		
-		case 2:
-			if (m_collect_payload)
-				payload += ch;
-			if (--m_chunk_size == 0)
-			{
-				result = true;
-				m_parsing_content = false;
-			}
-			break;
+		result = true;
+		m_parsing_content = false;
 	}
 	
 	return result;
