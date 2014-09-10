@@ -58,6 +58,9 @@ class request_parser : public parser
 
 	boost::tribool		parse(request& req, std::streambuf& text);
 	boost::tribool		parse_header(request& req, std::streambuf& text);
+
+	// first variant is used to parse into payload, second into a separate stream
+	boost::tribool		parse_content(request& req, std::streambuf& text);
 	boost::tribool		parse_content(request& req, std::streambuf& text, std::streambuf& sink);
 
   private:

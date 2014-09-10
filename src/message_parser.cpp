@@ -346,13 +346,23 @@ boost::tribool request_parser::parse(request& req, streambuf& text)
 		req.clear();
 		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
 		m_parsing_content = false;
+		m_collect_payload = true;
 	}
 
 	boost::tribool result = boost::indeterminate;
 	
+	bool is_parsing_content = m_parsing_content;
 	while (text.in_avail() > 0 and boost::indeterminate(result))
+	{
 		result = (this->*m_parser)(req.headers, req.payload, text.sbumpc());
 
+		if (result and is_parsing_content == false and m_parsing_content == true)
+		{
+			is_parsing_content = true;
+			result = boost::indeterminate;
+		}
+	}
+	
 	if (result)
 	{
 		req.uri = m_uri;
@@ -393,6 +403,27 @@ boost::tribool request_parser::parse_header(request& req, streambuf& text)
 	return result;
 }
 
+boost::tribool request_parser::parse_content(request& req, streambuf& text)
+{
+	boost::tribool result = boost::indeterminate;
+	size_t used = 0;
+
+	if (not m_parsing_content)
+		result = false;
+	else
+	{
+		m_collect_payload = true;
+		
+		while (text.in_avail() > 0 and boost::indeterminate(result))
+		{
+			char ch = text.sbumpc();
+			result = (this->*m_parser)(req.headers, req.payload, ch);
+		}
+	}
+	
+	return result;
+}
+
 boost::tribool request_parser::parse_content(request& req, streambuf& text, streambuf& sink)
 {
 	boost::tribool result = boost::indeterminate;
@@ -409,9 +440,6 @@ boost::tribool request_parser::parse_content(request& req, streambuf& text, stre
 			char ch = text.sbumpc();
 			result = (this->*m_parser)(req.headers, req.payload, ch);
 			sink.sputc(ch);
-			
-			if (boost::indeterminate(result) and m_parsing_content)
-				result = true;
 		}
 	}
 	
