@@ -272,8 +272,17 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 	boost::tribool result = boost::indeterminate;
 	size_t used = 0;
 	
+	bool is_parsing_content = m_parsing_content;
 	while (used < length and boost::indeterminate(result))
+	{
 		result = (this->*m_parser)(req.headers, req.payload, text[used++]);
+		
+		if (result and is_parsing_content == false and m_parsing_content == true)
+		{
+			is_parsing_content = true;
+			result = boost::indeterminate;
+		}
+	}
 
 	if (result)
 	{
@@ -536,8 +545,17 @@ parser::result_type reply_parser::parse(reply& rep, const char* text, size_t len
 	boost::tribool result = boost::indeterminate;
 	size_t used = 0;
 	
+	bool is_parsing_content = m_parsing_content;
 	while (used < length and boost::indeterminate(result))
+	{
 		result = (this->*m_parser)(rep.m_headers, rep.m_content, text[used++]);
+
+		if (result and is_parsing_content == false and m_parsing_content == true)
+		{
+			is_parsing_content = true;
+			result = boost::indeterminate;
+		}
+	}
 
 	if (result)
 	{
@@ -612,8 +630,17 @@ boost::tribool reply_parser::parse(reply& rep, streambuf& text)
 	boost::tribool result = boost::indeterminate;
 	size_t used = 0;
 
+	bool is_parsing_content = m_parsing_content;
 	while (text.in_avail() and boost::indeterminate(result))
+	{
 		result = (this->*m_parser)(rep.m_headers, rep.m_content, text.sbumpc());
+
+		if (result and is_parsing_content == false and m_parsing_content == true)
+		{
+			is_parsing_content = true;
+			result = boost::indeterminate;
+		}
+	}
 
 	if (result)
 	{
