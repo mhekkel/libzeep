@@ -16,6 +16,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <zeep/http/request.hpp>
+#include <zeep/http/server.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -209,6 +210,8 @@ string request::get_parameter(const char* name) const
 					b += nlen + 1;
 					result = s.substr(b, e - b);
 				}
+				
+				result = decode_url(result);
 				break;
 			}
 			

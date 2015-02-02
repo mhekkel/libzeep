@@ -98,6 +98,7 @@ class reply
 
 	/// Create a standard reply based on a HTTP status code	
 	static reply		stock_reply(status_type inStatus);
+	static reply		stock_reply(status_type inStatus, const std::string& info);
 	
 	/// Create a standard redirect reply with the specified \a location
 	static reply		redirect(const std::string& location);
