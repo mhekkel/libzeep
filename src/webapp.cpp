@@ -346,6 +346,11 @@ void basic_webapp::handle_file(
 	using namespace boost::posix_time;
 	
 	fs::path file = get_docroot() / scope["baseuri"].as<string>();
+	if (not fs::exists(file))
+	{
+		reply = zeep::http::reply::stock_reply(not_found);
+		return;
+	}	
 
 	string ifModifiedSince;
 	foreach (const zeep::http::header& h, request.headers)

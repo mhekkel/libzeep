@@ -236,6 +236,10 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket,
 			rep.set_content_type("text/html; charset=utf-8");
 		}
 	}
+	catch (exception& e)
+	{
+		rep = reply::stock_reply(internal_server_error, e.what());
+	}
 	catch (...)
 	{
 		rep = reply::stock_reply(internal_server_error);

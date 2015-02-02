@@ -130,7 +130,15 @@ class float_object_impl : public detail::object_impl
 	virtual int64	to_int() const						{ return static_cast<int64>(round<double>(m_v)); }
 	virtual double	to_double() const					{ return m_v; }
 	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
-	virtual string	to_JSON() const						{ return boost::lexical_cast<string>(m_v); }
+	virtual string	to_JSON() const
+	{
+		if (std::isnan(m_v))
+			return "\"NaN\"";
+		else if (std::isinf(m_v))
+			return "\"Infinite\"";
+		else
+			return boost::lexical_cast<string>(m_v);
+	}
 	
 	double			m_v;
 };

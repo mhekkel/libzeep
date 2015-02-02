@@ -417,20 +417,54 @@ size_t reply::get_size() const
 	return size;
 }
 
-reply reply::stock_reply(status_type status)
+reply reply::stock_reply(status_type status, const string& info)
 {
 	reply result;
 
 	if (status != not_modified)
 	{
 		stringstream text;
-		text << "<html><body><h1>" << get_status_text(status) << "</h1></body></html>";
+
+		text << "<html>" << endl
+			 << "  <body>" << endl
+			 << "    <h1>" << get_status_text(status) << "</h1>" << endl;
+		
+		if (not info.empty())
+		{
+			text << "    <p>";
+		
+			foreach (char c, info)
+			{
+				switch (c)
+				{
+					case '&':	text << "&amp;"; break;
+					case '<':	text << "&lt;"; break;
+					case '>':	text << "&gt;"; break;
+					case 0:		break;	// silently ignore
+					default:	if ((c >= 1 and c <= 8) or (c >= 0x0b and c <= 0x0c) or (c >= 0x0e and c <= 0x1f) or c == 0x7f)
+									text << "&#" << hex << c << ';';
+								else	
+									text << c;
+								break;
+				}
+			}
+			
+			text << "</p>" << endl;
+		}
+		
+		text << "  </body>" << endl
+			 << "</html>";
 		result.set_content(text.str(), "text/html; charset=utf-8");
 	}
 
 	result.m_status = status;
 	
 	return result;
+}
+
+reply reply::stock_reply(status_type status)
+{
+	return stock_reply(status, "");
 }
 
 reply reply::redirect(const std::string& location)
