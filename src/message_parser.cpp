@@ -98,12 +98,22 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 		
 		case 3:
 			if (ch == '\r')
+				m_state += 2;
+			else if (ch != ' ')
+			{
+				headers.back().value += ch;
+				++m_state;
+			}
+			break;
+
+		case 4:
+			if (ch == '\r')
 				++m_state;
 			else
 				headers.back().value += ch;
 			break;
 		
-		case 4:
+		case 5:
 			if (ch == '\n')
 				m_state = 0;
 			else
