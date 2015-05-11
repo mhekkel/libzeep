@@ -10,6 +10,7 @@
 #include <zeep/http/message_parser.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/typeof/typeof.hpp>
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -159,6 +160,13 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 						}
 						break;
 					}
+				}
+				
+				if (not m_parsing_content and m_http_version_major == 1 and m_http_version_minor == 0)
+				{
+					m_chunk_size = numeric_limits<BOOST_TYPEOF(m_chunk_size)>::max();
+					m_parser = &parser::parse_content;
+					m_parsing_content = true;
 				}
 			}
 			else
