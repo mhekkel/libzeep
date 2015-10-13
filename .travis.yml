@@ -10,4 +10,4 @@ compiler:
   - clang
   - gcc
 
-script: bundle exec make && bundle exec make -C tests
+script: make && make -C tests
