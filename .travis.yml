@@ -7,7 +7,7 @@ install: true
 language: cpp
 
 compiler:
-	- clang
-	- gcc
+  - clang
+  - gcc
 
 script: bundle exec make && bundle exec make -C tests
