@@ -15,7 +15,7 @@
 #include <boost/tr1/cmath.hpp>
 using namespace std::tr1;
 #else
-#include <tr1/cmath>
+#include <cmath>
 #endif
 
 #include <boost/foreach.hpp>
@@ -127,7 +127,7 @@ class float_object_impl : public detail::object_impl
 	virtual void	print(ostream& os) const		{ os << m_v; }
 	virtual int		compare(object_impl* rhs) const;
 
-	virtual int64	to_int() const						{ return static_cast<int64>(round<double>(m_v)); }
+	virtual int64	to_int() const						{ return static_cast<int64>(round(m_v)); }
 	virtual double	to_double() const					{ return m_v; }
 	virtual string	to_str() const						{ return boost::lexical_cast<string>(m_v); }
 	virtual string	to_JSON() const
