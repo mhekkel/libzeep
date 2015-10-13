@@ -1,3 +1,5 @@
+## About libzeep
+
 Libzeep was developed to make it easy to create SOAP servers. And since
 working with SOAP means working with XML and no decent C++ XML library
 existed on my radar I've created a full XML library as well.
@@ -34,7 +36,7 @@ the tests directory and build the two test applications called xpath-test and
 parser-test. For Windows users there's a VC solution file in the msvc
 directory.
 
-XML Library -- usage
+## XML Library -- usage
 
 Using the XML library of libzeep is fairly trivial. The first class you use
 is the zeep::xml::document class. You can use this class to read XML files
@@ -105,7 +107,7 @@ qualified name, that is the namespace prefix, a colon and the localname
 contatenated. (Something like 'ns:book'). The method name() returns the
 qname() with its prefix stripped off.
 
-SOAP Server -- usage
+## SOAP Server -- usage
 
 Have a look at the zeep-test.cpp file to see how to create a server. This
 example server is not entirely trivial since it has three exported methods
