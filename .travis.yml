@@ -1,9 +1,9 @@
 sudo: false
 
 addons:
-	apt:
-		packages:
-			- libboost-all-dev
+  apt:
+    packages:
+      - libboost-all-dev
 
 install: true
 
