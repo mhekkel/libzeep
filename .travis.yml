@@ -1,9 +1,10 @@
-sudo: false
-
-addons:
-  apt:
-    packages:
-      - libboost-all-dev
+before_install:
+	- sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty universe"
+	- sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty main"
+	- sudo apt-get install debian-keyring debian-archive-keyring
+	- sudo apt-key update
+	- sudo apt-get update
+	- sudo apt-get install libboost1.55-all-dev
 
 install: true
 
