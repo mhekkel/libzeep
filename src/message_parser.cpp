@@ -411,7 +411,6 @@ boost::tribool request_parser::parse_header(request& req, streambuf& text)
 	}
 
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 	
 	while (text.in_avail() > 0 and boost::indeterminate(result))
 	{
@@ -433,7 +432,6 @@ boost::tribool request_parser::parse_header(request& req, streambuf& text)
 boost::tribool request_parser::parse_content(request& req, streambuf& text)
 {
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 
 	if (not m_parsing_content)
 		result = false;
@@ -454,7 +452,6 @@ boost::tribool request_parser::parse_content(request& req, streambuf& text)
 boost::tribool request_parser::parse_content(request& req, streambuf& text, streambuf& sink)
 {
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 
 	if (not m_parsing_content)
 		result = false;
@@ -646,7 +643,6 @@ boost::tribool reply_parser::parse(reply& rep, streambuf& text)
 	}
 
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 
 	bool is_parsing_content = m_parsing_content;
 	while (text.in_avail() and boost::indeterminate(result))
@@ -681,7 +677,6 @@ boost::tribool reply_parser::parse_header(reply& rep, streambuf& text)
 	}
 
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 
 	while (text.in_avail() and boost::indeterminate(result))
 	{
@@ -705,7 +700,6 @@ boost::tribool reply_parser::parse_header(reply& rep, streambuf& text)
 boost::tribool reply_parser::parse_content(reply& rep, streambuf& text, streambuf& sink)
 {
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 
 	if (not m_parsing_content)
 		result = false;
