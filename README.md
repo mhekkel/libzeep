@@ -37,6 +37,9 @@ the tests directory and build the two test applications called xpath-test and
 parser-test. For Windows users there's a VC solution file in the msvc
 directory.
 
+Full documentation for libzeep in docbook format can be found at
+[www.hekkelman.com/libzeep-doc](http://www.hekkelman.com/libzeep-doc/)
+
 ## XML Library -- usage
 
 Using the XML library of libzeep is fairly trivial. The first class you use
