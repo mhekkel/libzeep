@@ -25,7 +25,7 @@ LIBS                = $(BOOST_LIBS) stdc++ m pthread rt
 LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR       = 3.0
-VERSION_MINOR       = 2
+VERSION_MINOR       = 3
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME           = libzeep-$(VERSION)
 SO_NAME             = libzeep.so.$(VERSION_MAJOR)
