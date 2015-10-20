@@ -24,7 +24,7 @@
 
 </span>SOAP_XML_SET_STRUCT_NAME(s)</pre></div>
 <div class="refsect1">
-<a name="idp87213264"></a><h2>Description</h2>
+<a name="idp103010448"></a><h2>Description</h2>
 <p>By default, libzeep uses the typeid(s).name() as the name for an element. That's often not what is intented. Calling this macro will make sure the type name you used in your code will be used instead.</p>
 <p>E.g., struct FindResult { ... } might end up with a mangled name in the schema. To use FindResult instead, call SOAP_XML_SET_STRUCT_NAME(FindResult);</p>
 <p>An alternative is to call, which allows different schema and struct names: zeep::xml::struct_serializer&lt;FindResult&gt;::set_struct_name("FindResult"); </p>
