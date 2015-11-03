@@ -27,7 +27,7 @@ using namespace std;
 
 namespace zeep { namespace http {
 
-preforked_server_base::preforked_server_base(server_constructor_base* constructor)
+preforked_server::preforked_server(function<server*(void)> constructor)
 	: m_constructor(constructor)
 	, m_acceptor(m_io_service)
 	, m_socket(m_io_service)
@@ -35,7 +35,7 @@ preforked_server_base::preforked_server_base(server_constructor_base* constructo
 	m_lock.lock();
 }
 
-preforked_server_base::~preforked_server_base()
+preforked_server::~preforked_server()
 {
 	if (m_pid > 0)		// should never happen
 	{
@@ -46,10 +46,9 @@ preforked_server_base::~preforked_server_base()
 	}
 
 	m_io_service.stop();
-	delete m_constructor;
 }
 
-void preforked_server_base::run(const std::string& address, short port, int nr_of_threads)
+void preforked_server::run(const std::string& address, short port, int nr_of_threads)
 {
 	try
 	{
@@ -74,7 +73,7 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 			pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
 	
 			// Time to construct the Server object
-			unique_ptr<server> srvr(m_constructor->construct());
+			unique_ptr<server> srvr(m_constructor());
 			
 			// run the server as a worker
 			boost::thread t(boost::bind(&server::run, srvr.get(), nr_of_threads));
@@ -120,7 +119,7 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 		m_acceptor.listen();
 	
 		m_acceptor.async_accept(m_socket,
-			boost::bind(&preforked_server_base::handle_accept, this, boost::asio::placeholders::error));
+			boost::bind(&preforked_server::handle_accept, this, boost::asio::placeholders::error));
 		
 		// close one end of the pipe, save the other
 		m_fd = sockfd[0];
@@ -132,33 +131,67 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 		// start a thread to listen to the socket
 		boost::thread thread(
 			boost::bind(&boost::asio::io_service::run, &m_io_service));
+		
+		// now run until the child proces dies, or the server is stopped
+		while (not m_io_service.stopped())
+		{
+			int status;
+			
+			int r = waitpid(m_pid, &status, WUNTRACED | WCONTINUED);
+			if (r == -1)
+				throw exception("Error waiting for child process: %s", strerror(errno));
+			
+			if (WIFEXITED(status))
+			{
+				m_pid = -1;
+				
+				cerr << "Child exited, status=" << WEXITSTATUS(status) << endl;
+				break;
+			}
+			
+			if (WIFSIGNALED(status))
+			{
+				m_pid = -1;
+
+				cerr << "Child killed by signal " << WTERMSIG(status) << endl;
+				break;
+			}
+			
+			// some other reason, simply continue
+		}
 
 		thread.join();
 
-		// close the socket to the worker, this should terminate the child
-		close(m_fd);
-		m_fd = -1;
-		
-		// however, sometimes it doesn't, so we have to take some serious action
-		// Anyway, we'll wait until child dies to avoid zombies
-		// and to make sure the client really stops...
-		
-		int count = 5;	// wait five seconds before killing client
-		int status;
-
-		while (count-- > 0)
+		if (m_fd > 0)
 		{
-			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED | WNOHANG) == -1)
-				break;
-			
-			if (WIFEXITED(status))
-				break;
-			
-			sleep(1);
+			// close the socket to the worker, this should terminate the child if it is still alive
+			close(m_fd);
+			m_fd = -1;
 		}
-
-		if (not WIFEXITED(status))
-			kill(m_pid, SIGKILL);
+		
+		if (m_pid != -1)
+		{
+			// however, sometimes it doesn't, so we have to take some serious action
+			// Anyway, we'll wait until child dies to avoid zombies
+			// and to make sure the client really stops...
+			
+			int count = 5;	// wait five seconds before killing client
+			int status;
+	
+			while (count-- > 0)
+			{
+				if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED | WNOHANG) == -1)
+					break;
+				
+				if (WIFEXITED(status))
+					break;
+				
+				sleep(1);
+			}
+	
+			if (not WIFEXITED(status))
+				kill(m_pid, SIGKILL);
+		}
 	}
 	catch (std::exception& e)
 	{
@@ -166,12 +199,12 @@ void preforked_server_base::run(const std::string& address, short port, int nr_o
 	}
 }
 
-void preforked_server_base::start()
+void preforked_server::start()
 {
 	m_lock.unlock();
 }
 
-bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
+bool preforked_server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
 	typedef boost::asio::ip::tcp::socket::native_type native_type;
 
@@ -235,7 +268,7 @@ bool preforked_server_base::read_socket_from_parent(int fd_socket, boost::asio::
 	return result;
 }
 
-void preforked_server_base::write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket)
+void preforked_server::write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
 	typedef boost::asio::ip::tcp::socket::native_type native_type;
 	
@@ -276,19 +309,41 @@ void preforked_server_base::write_socket_to_worker(int fd_socket, boost::asio::i
 		throw exception("error passing filedescriptor: %s", strerror(errno));
 }
 
-void preforked_server_base::stop()
+void preforked_server::stop()
 {
+	close(m_fd);
+	m_fd = -1;
+
 	m_io_service.stop();
 }
 
-void preforked_server_base::handle_accept(const boost::system::error_code& ec)
+void preforked_server::handle_accept(const boost::system::error_code& ec)
 {
 	if (not ec)
 	{
-		write_socket_to_worker(m_fd, m_socket);
-		m_socket.close();
-		m_acceptor.async_accept(m_socket,
-			boost::bind(&preforked_server_base::handle_accept, this, boost::asio::placeholders::error));
+		try
+		{
+			write_socket_to_worker(m_fd, m_socket);
+
+			m_socket.close();
+
+			m_acceptor.async_accept(m_socket,
+				boost::bind(&preforked_server::handle_accept, this, boost::asio::placeholders::error));
+		}
+		catch (const std::exception& e)
+		{
+			cerr << "error writing socket to client: " << e.what() << endl;
+			
+			reply r = reply::stock_reply(service_unavailable);
+
+			vector<boost::asio::const_buffer> buffers;
+			r.to_buffers(buffers);
+
+			boost::asio::write(m_socket, buffers);
+			
+			m_socket.close();
+			m_io_service.stop();
+		}
 	}
 }
 
