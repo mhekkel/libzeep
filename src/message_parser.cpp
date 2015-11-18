@@ -161,13 +161,6 @@ boost::tribool parser::parse_header_lines(vector<header>& headers, string& paylo
 						break;
 					}
 				}
-				
-				if (not m_parsing_content and m_http_version_major == 1 and m_http_version_minor == 0)
-				{
-					m_chunk_size = numeric_limits<BOOST_TYPEOF(m_chunk_size)>::max();
-					m_parser = &parser::parse_content;
-					m_parsing_content = true;
-				}
 			}
 			else
 				result = false;
@@ -294,7 +287,7 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 	while (used < length and boost::indeterminate(result))
 	{
 		result = (this->*m_parser)(req.headers, req.payload, text[used++]);
-		
+
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
 			is_parsing_content = true;
