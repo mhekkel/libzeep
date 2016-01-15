@@ -19,7 +19,7 @@ INCDIR              ?= $(PREFIX)/include
 MANDIR              ?= $(PREFIX)/man/man3
 DOCDIR              ?= $(PREFIX)/share/libzeep
 
-BOOST_LIBS          = system thread filesystem regex math_c99
+BOOST_LIBS          = system thread filesystem regex math_c99 random
 BOOST_LIBS          := $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 LIBS                = $(BOOST_LIBS) stdc++ m pthread rt
 LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
@@ -77,8 +77,8 @@ libzeep.so: $(SO_NAME)
 	ln -fs $(LIB_NAME) $@
 
 # assuming zeep-test is build when install was not done already
-zeep-test: zeep-test.cpp libzeep.a
-	$(CXX) $(BOOST_INC_DIR:%=-I%) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS) -lboost_date_time -lboost_regex
+zeep-test: obj/zeep-test.o libzeep.a
+	$(CXX) $(BOOST_INC_DIR:%=-I%) -o $@ -I. $^ $(LDFLAGS) -lboost_date_time -lboost_regex
 
 install-libs: libzeep.so
 	install -d $(LIBDIR)

@@ -365,9 +365,21 @@ int main(int argc, const char* argv[])
 	    sigfillset(&new_mask);
 	    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-		zeep::http::preforked_server<my_server> server("bla bla");
+		zeep::http::preforked_server server([=]() -> zeep::http::server*
+		{
+			try
+			{
+				return new my_server("bla bla");
+			}
+			catch (const exception& e)
+			{
+				cerr << "Failed to launch server: " << e.what() << endl;
+				exit(1);
+			}
+		});
+		
 		boost::thread t(
-			boost::bind(&zeep::http::preforked_server<my_server>::run, &server, "0.0.0.0", 10333, 2));
+			boost::bind(&zeep::http::preforked_server::run, &server, "0.0.0.0", 10333, 2));
 		server.start();
 
 	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
