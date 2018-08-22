@@ -27,6 +27,7 @@ writer::writer(std::ostream& os)
 	, m_write_xml_decl(false)
 	, m_wrap(true)
 	, m_wrap_prolog(true)
+	, m_wrap_attributes(false)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
@@ -46,6 +47,7 @@ writer::writer(std::ostream& os, bool write_decl, bool standalone)
 	, m_write_xml_decl(write_decl)
 	, m_wrap(true)
 	, m_wrap_prolog(true)
+	, m_wrap_attributes(false)
 	, m_collapse_empty(true)
 	, m_escape_whitespace(false)
 	, m_trim(false)
@@ -156,8 +158,19 @@ void writer::attribute(const string& name, const string& value)
 {
 	if (not m_element_open)
 		throw exception("no open element to write attribute to");
+
+	if ((m_wrap_attributes and m_level <= m_wrap_attributes_max_level) and m_indent_attr > 0)
+	{
+		m_os << endl;
+		for (int i = 0; i < m_indent_attr; ++i)
+			m_os << ' ';
+	}
+	else
+		m_os << ' ';
 	
-	m_os << ' ' << name << "=\"";
+	m_indent_attr = abs(m_indent_attr);
+	
+	m_os << name << "=\"";
 	
 	bool last_is_space = false;
 
@@ -197,9 +210,12 @@ void writer::start_element(const string& qname)
 	
 	for (int i = 0; i < m_indent * m_level; ++i)
 		m_os << ' ';
+
+	// initialize to negative value, to flag opening of element
+	m_indent_attr = -(m_indent * m_level + 1 + qname.length() + 1);
 		
 	++m_level;
-
+	
 	m_os << '<' << qname;
 	
 	m_stack.push(qname);
@@ -220,11 +236,17 @@ void writer::end_element()
 
 	if (m_element_open)
 	{
+		if ((m_wrap_attributes and m_level < m_wrap_attributes_max_level) and m_indent_attr > 0)
+		{
+			m_os << endl;
+			for (int i = 0; i < m_indent_attr; ++i)
+				m_os << ' ';
+		}
+
 		if (m_collapse_empty)
 			m_os << "/>";
 		else
 			m_os << "></" << m_stack.top() << '>';
-		
 	}
 	else
 	{
@@ -289,8 +311,15 @@ void writer::comment(const string& text)
 		{
 			if (ch == '-' and lastWasHyphen)
 				m_os << ' ';
+			
 			m_os << ch;
 			lastWasHyphen = ch == '-';
+
+			if (ch == '\n')
+			{
+				for (int i = 0; i < m_indent * m_level; ++i)
+					m_os << ' ';
+			}
 		}
 		
 		m_os << "-->";
