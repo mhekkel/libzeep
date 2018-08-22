@@ -65,7 +65,9 @@ OBJECTS = \
 lib: libzeep.a # libzeep.so
 
 libzeep.a: $(OBJECTS)
-	ld -r -o $@ $(OBJECTS)
+	ar rc $@ $(OBJECTS)
+	ranlib $@
+#	ld -r -o $@ $(OBJECTS)
 
 $(LIB_NAME): $(OBJECTS)
 	$(CXX) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
