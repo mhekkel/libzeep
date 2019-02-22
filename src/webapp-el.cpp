@@ -222,6 +222,12 @@ class vector_object_impl : public detail::base_array_object_impl
 							m_v.push_back(object(s));
 					}
 
+					vector_object_impl(const vector<float>& v)
+					{
+						foreach (float f, v)
+							m_v.push_back(object(f));
+					}
+
 	virtual object&	at(uint32 ix)
 					{
 						if (ix >= m_v.size())
@@ -541,6 +547,11 @@ object::object(const vector<object>& v)
 }
 
 object::object(const vector<string>& v)
+	: m_impl(new vector_object_impl(v))
+{
+}
+
+object::object(const vector<float>& v)
 	: m_impl(new vector_object_impl(v))
 {
 }

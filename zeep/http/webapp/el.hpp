@@ -64,6 +64,7 @@ class object
 				/// create an array object
 	explicit	object(const std::vector<object>& v);
 	explicit	object(const std::vector<std::string>& v);
+	explicit	object(const std::vector<float>& v);
 
 				/// construct an object directly from some basic types
 	explicit	object(bool v);
