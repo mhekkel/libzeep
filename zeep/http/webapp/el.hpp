@@ -16,7 +16,7 @@
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
+#if not (defined(LIBZEEP_DOXYGEN_INVOKED) or defined(NO_STDINT))
 typedef boost::int8_t		int8;
 typedef boost::uint8_t		uint8;
 typedef boost::int16_t		int16;
