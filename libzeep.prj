@@ -41,11 +41,9 @@
     <target kind="Static Library">
       <name>zeep Debug</name>
       <linkTarget>libzeep</linkTarget>
-      <compiler>/usr/bin/g++-4.5</compiler>
+      <compiler>/usr/bin/g++</compiler>
       <defines>
         <define>DEBUG</define>
-        <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
-        <define>BOOST_FILESYSTEM_VERSION=2</define>
       </defines>
       <cflags>
         <cflag>-O0</cflag>
