@@ -206,7 +206,7 @@ void preforked_server::start()
 
 bool preforked_server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
-	typedef boost::asio::ip::tcp::socket::native_type native_type;
+	typedef boost::asio::ip::tcp::socket::native_handle_type native_handle_type;
 
 #if __APPLE__
 	// macos is special...
@@ -252,9 +252,9 @@ bool preforked_server::read_socket_from_parent(int fd_socket, boost::asio::ip::t
 			else
 			{
 				/* Produces warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
-				int fd = *(reinterpret_cast<native_type*>(CMSG_DATA(cmptr)));
+				int fd = *(reinterpret_cast<native_handle_type*>(CMSG_DATA(cmptr)));
 				*/
-				native_type *fdptr = reinterpret_cast<native_type*>(CMSG_DATA(cmptr));
+				native_handle_type *fdptr = reinterpret_cast<native_handle_type*>(CMSG_DATA(cmptr));
 				int fd = *fdptr;
 				if (fd >= 0)
 				{
@@ -270,7 +270,7 @@ bool preforked_server::read_socket_from_parent(int fd_socket, boost::asio::ip::t
 
 void preforked_server::write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
-	typedef boost::asio::ip::tcp::socket::native_type native_type;
+	typedef boost::asio::ip::tcp::socket::native_handle_type native_handle_type;
 	
 	struct msghdr msg;
 	union {
@@ -278,7 +278,7 @@ void preforked_server::write_socket_to_worker(int fd_socket, boost::asio::ip::tc
 #if __APPLE__
 	  char				control[16];
 #else
-	  char				control[CMSG_SPACE(sizeof(native_type))];
+	  char				control[CMSG_SPACE(sizeof(native_handle_type))];
 #endif
 	} control_un;
 	
@@ -290,10 +290,10 @@ void preforked_server::write_socket_to_worker(int fd_socket, boost::asio::ip::tc
 	cmptr->cmsg_level = SOL_SOCKET;
 	cmptr->cmsg_type = SCM_RIGHTS;
 	/* Procudes warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
-	*(reinterpret_cast<native_type*>(CMSG_DATA(cmptr))) = socket.native();
+	*(reinterpret_cast<native_handle_type*>(CMSG_DATA(cmptr))) = socket.native();
 	*/
-	native_type *fdptr = reinterpret_cast<native_type*>(CMSG_DATA(cmptr));
-	*fdptr = socket.native();
+	native_handle_type *fdptr = reinterpret_cast<native_handle_type*>(CMSG_DATA(cmptr));
+	*fdptr = socket.native_handle();
 	
 	msg.msg_name = nullptr;
 	msg.msg_namelen = 0;
