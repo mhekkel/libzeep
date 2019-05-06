@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mhekkel/libzeep.svg?branch=master)](https://travis-ci.org/mhekkel/libzeep)
+
 About libzeep
 =============
 
