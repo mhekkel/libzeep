@@ -38,6 +38,7 @@ CFLAGS              += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++11
 CFLAGS              += -Wall
 CFLAGS              += -g
 LD                  ?= ld
+LD_CONFIG			?= ldconfig
 
 VPATH += src
 
@@ -70,7 +71,7 @@ libzeep.a: $(OBJECTS)
 #	ld -r -o $@ $(OBJECTS)
 
 $(LIB_NAME): $(OBJECTS)
-	$(CXX) -shared -o $@ -Wl,-soname=$(SO_NAME) $(LDFLAGS) $(OBJECTS)
+	$(CXX) -shared -o $@ -Wl,-soname=$(SO_NAME) $(OBJECTS) $(LDFLAGS)
 
 $(SO_NAME): $(LIB_NAME)
 	ln -fs $(LIB_NAME) $@
@@ -88,7 +89,7 @@ install-libs: libzeep.so
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
 
-install-dev: doc
+install-dev: doc libzeep.a
 	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
 
 	install zeep/config.hpp $(INCDIR)/zeep/config.hpp
@@ -122,6 +123,7 @@ install-dev: doc
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	strip -SX $(LIBDIR)/libzeep.a
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
+	$(LD_CONFIG)
 
 install: install-libs install-dev
 

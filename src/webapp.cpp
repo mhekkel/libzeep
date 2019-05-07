@@ -236,7 +236,7 @@ void basic_webapp::handle_request(
 				// Do authentication here, if needed
 				if (not handler->realm.empty())
 				{
-#pragma message("This sucks, please fix")
+// #pragma message("This sucks, please fix")
 					// this is extremely dirty...
 					auto& r = const_cast<request&>(req);
 					validate_authentication(r, handler->realm);

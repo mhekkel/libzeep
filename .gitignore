@@ -1,0 +1,5 @@
+libzeep_Data/
+obj
+.vscode/ipch
+*.a
+*.so*

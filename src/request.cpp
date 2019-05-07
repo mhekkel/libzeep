@@ -233,7 +233,7 @@ string request::get_parameter(const char* name) const
 			
 			string::size_type i = 0, r = 0, l = 0;
 			
-			for (auto i = 0; i <= payload.length(); ++i)
+			for (i = 0; i <= payload.length(); ++i)
 			{
 				if (i < payload.length() and payload[i] != '\r' and payload[i] != '\n')
 					continue;
