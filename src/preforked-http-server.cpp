@@ -324,11 +324,6 @@ void preforked_server::handle_accept(const boost::system::error_code& ec)
 		try
 		{
 			write_socket_to_worker(m_fd, m_socket);
-
-			m_socket.close();
-
-			m_acceptor.async_accept(m_socket,
-				boost::bind(&preforked_server::handle_accept, this, boost::asio::placeholders::error));
 		}
 		catch (const std::exception& e)
 		{
@@ -347,10 +342,12 @@ void preforked_server::handle_accept(const boost::system::error_code& ec)
 			{
 				cerr << e.what() << '\n';
 			}
-			
-			m_socket.close();
-			m_io_service.stop();
 		}
+
+		m_socket.close();
+
+		m_acceptor.async_accept(m_socket,
+			boost::bind(&preforked_server::handle_accept, this, boost::asio::placeholders::error));
 	}
 }
 
