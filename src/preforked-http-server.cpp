@@ -339,7 +339,14 @@ void preforked_server::handle_accept(const boost::system::error_code& ec)
 			vector<boost::asio::const_buffer> buffers;
 			r.to_buffers(buffers);
 
-			boost::asio::write(m_socket, buffers);
+			try
+			{
+				boost::asio::write(m_socket, buffers);
+			}
+			catch(const std::exception& e)
+			{
+				cerr << e.what() << '\n';
+			}
 			
 			m_socket.close();
 			m_io_service.stop();
