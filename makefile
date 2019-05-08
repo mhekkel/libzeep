@@ -25,7 +25,7 @@ LIBS                = $(BOOST_LIBS) stdc++ m pthread rt
 LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR       = 3.0
-VERSION_MINOR       = 3
+VERSION_MINOR       = 4
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME           = libzeep-$(VERSION)
 SO_NAME             = libzeep.so.$(VERSION_MAJOR)
@@ -123,18 +123,19 @@ install-dev: doc libzeep.a
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	strip -SX $(LIBDIR)/libzeep.a
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
-	$(LD_CONFIG)
+	$(LD_CONFIG) -n $(LIBDIR)
 
 install: install-libs install-dev
 
 dist: lib
 	rm -rf $(DIST_NAME)
-	svn export . $(DIST_NAME)
-	find doc/html | grep -v '.svn' | cpio -pvd $(DIST_NAME)
+	# svn export . $(DIST_NAME)
+	mkdir -p $(DIST_NAME)
+	git archive master | tar xC $(DIST_NAME)
+	find doc/html | grep -v '.svn' | grep -v '.git' | cpio -pvd $(DIST_NAME)
 	rm -rf $(DIST_NAME)/tests
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
-	cp $(DIST_NAME).tgz ../ppa/libzeep_$(VERSION).orig.tar.gz
 
 doc: FORCE
 	cd doc; bjam

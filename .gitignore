@@ -3,3 +3,4 @@ obj
 .vscode/ipch
 *.a
 *.so*
+compile_commands.json
