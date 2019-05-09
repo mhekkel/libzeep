@@ -17,7 +17,7 @@ PREFIX              ?= /usr/local
 LIBDIR              ?= $(PREFIX)/lib
 INCDIR              ?= $(PREFIX)/include
 MANDIR              ?= $(PREFIX)/man/man3
-DOCDIR              ?= $(PREFIX)/share/libzeep
+DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
 
 BOOST_LIBS          = system thread filesystem regex math_c99 random
 BOOST_LIBS          := $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
@@ -25,7 +25,7 @@ LIBS                = $(BOOST_LIBS) stdc++ m pthread rt
 LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR       = 3.0
-VERSION_MINOR       = 4
+VERSION_MINOR       = 5
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME           = libzeep-$(VERSION)
 SO_NAME             = libzeep.so.$(VERSION_MAJOR)
@@ -86,32 +86,30 @@ zeep-test: obj/zeep-test.o libzeep.a
 install-libs: libzeep.so
 	install -d $(LIBDIR)
 	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
-	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
-
-install-dev: doc libzeep.a
-	install -d $(MANDIR) $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
-
-	for f in `find zeep -name "*.hpp"`; do install $$f $(INCDIR)/$$f; done
-
-	install doc/libzeep.3 $(MANDIR)/libzeep.3
-	for d in . images libzeep zeep zeep/http zeep/http/preforked_server_base zeep/http/el \
-		zeep/http/el/object zeep/xml zeep/xml/doctype zeep/xml/container zeep/xml/element \
-		index; do install -d $(DOCDIR)/$$d; install doc/html/$$d/* $(DOCDIR)/$$d; done;
-	install ./libzeep.a $(LIBDIR)/libzeep.a
-	strip -SX $(LIBDIR)/libzeep.a
+	ln -Tfs $(LIB_NAME) $(LIBDIR)/$(SO_NAME)
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 	$(LD_CONFIG) -n $(LIBDIR)
 
-install: install-libs install-dev
+install-dev: libzeep.a
+	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
+	for f in `find zeep -name "*.hpp"`; do install $$f $(INCDIR)/$$f; done
+	install ./libzeep.a $(LIBDIR)/libzeep.a
+	strip -SX $(LIBDIR)/libzeep.a
 
-dist: lib doc
+install-doc: doc
+	install -d $(MANDIR) $(DOCDIR)/html
+	install doc/libzeep.3 $(MANDIR)/libzeep.3
+	cd doc; for d in `find html -type d`; do install -d $(DOCDIR)/$$d; done
+	cd doc; for f in `find html -type f`; do install $$f $(DOCDIR)/$$f; done
+
+install: install-libs install-dev install-doc
+
+dist: doc
 	rm -rf $(DIST_NAME)
 	mkdir -p $(DIST_NAME)
 	git archive master | tar xC $(DIST_NAME)
-
-	find doc/html -depth | cpio -pvd $(DIST_NAME)
-
+	find doc/html -depth | cpio -pd $(DIST_NAME)
 	rm -rf $(DIST_NAME)/tests
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
@@ -135,6 +133,7 @@ test: libzeep.a
 clean:
 	rm -rf obj/* libzeep.a libzeep.so* zeep-test $(DIST_NAME) $(DIST_NAME).tgz
 	cd doc; bjam clean
+	rm -rf doc/bin doc/html
 	$(MAKE) -C tests clean
 
 FORCE:
