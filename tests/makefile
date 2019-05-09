@@ -47,4 +47,4 @@ include $(OBJECTS:%.o=%.d)
 $(OBJECTS:.o=.d):
 
 clean:
-	rm -rf obj/* libzeep.a libzeep.so zeep-test
+	rm -rf obj/* libzeep.a libzeep.so zeep-test XML-Test-Suite/

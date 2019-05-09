@@ -1,0 +1,98 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct request</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../../index.html" title="libzeep 3.0">
+<link rel="up" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.request_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/http/request.hpp&gt;">
+<link rel="prev" href="reply.html" title="Class reply">
+<link rel="next" href="request_handler.html" title="Class request_handler">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="reply.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.request_hpp"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="request_handler.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="zeep.http.request"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct request</span></h2>
+<p>zeep::http::request</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.request_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/http/request.hpp&gt;">/home/maarten/projects/libzeep/zeep/http/request.hpp</a>&gt;
+
+</span>
+<span class="keyword">struct</span> <a class="link" href="request.html" title="Struct request">request</a> <span class="special">{</span>
+
+  <span class="comment">// <a class="link" href="request.html#idm2769-bb">public member functions</a></span>
+  <span class="identifier">boost</span><span class="special">::</span><span class="identifier">posix_time</span><span class="special">::</span><span class="identifier">ptime</span> <a class="link" href="request.html#idm2770-bb"><span class="identifier">timestamp</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="request.html#idm2772-bb"><span class="identifier">clear</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">float</span> <a class="link" href="request.html#idm2775-bb"><span class="identifier">accept</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="request.html#idm2780-bb"><span class="identifier">is_mobile</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="request.html#idm2783-bb"><span class="identifier">keep_alive</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a class="link" href="request.html#idm2786-bb"><span class="identifier">get_header</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="request.html#idm2791-bb"><span class="identifier">remove_header</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a class="link" href="request.html#idm2796-bb"><span class="identifier">get_request_line</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a class="link" href="request.html#idm2799-bb"><span class="identifier">get_parameter</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="request.html#idm2807-bb"><span class="identifier">to_buffers</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">const_buffer</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="request.html#idm2812-bb"><span class="identifier">debug</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">method</span><span class="special">;</span>  <span class="comment">// POST or GET. </span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">uri</span><span class="special">;</span>  <span class="comment">// The uri as requested. </span>
+  <span class="keyword">int</span> <span class="identifier">http_version_major</span><span class="special">;</span>  <span class="comment">// HTTP major number (usually 1) </span>
+  <span class="keyword">int</span> <span class="identifier">http_version_minor</span><span class="special">;</span>  <span class="comment">// HTTP major number (0 or 1) </span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <a class="link" href="header.html" title="Struct header">header</a> <span class="special">&gt;</span> <span class="identifier">headers</span><span class="special">;</span>  <span class="comment">// A list with <a class="link" href="header.html" title="Struct header">zeep::http::header</a> values. </span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">payload</span><span class="special">;</span>  <span class="comment">// For POST requests. </span>
+  <span class="keyword">bool</span> <span class="identifier">close</span><span class="special">;</span>  <span class="comment">// Whether 'Connection: close' was specified. </span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">username</span><span class="special">;</span>  <span class="comment">// The authenticated user for this request (filled in by webapp::validate_authentication) </span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">local_address</span><span class="special">;</span>  <span class="comment">// The address the request was received upon. </span>
+  <span class="keyword">unsigned</span> <span class="keyword">short</span> <span class="identifier">local_port</span><span class="special">;</span>  <span class="comment">// The port number the request was received upon. </span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm5133"></a><h2>Description</h2>
+<p>request contains the parsed original HTTP request as received by the server. </p>
+<div class="refsect2">
+<a name="idm5136"></a><h3>
+<a name="idm2769-bb"></a><code class="computeroutput">request</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">posix_time</span><span class="special">::</span><span class="identifier">ptime</span> <a name="idm2770-bb"></a><span class="identifier">timestamp</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2772-bb"></a><span class="identifier">clear</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Reinitialises request and sets timestamp. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">float</span> <a name="idm2775-bb"></a><span class="identifier">accept</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> type<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Return the value in the Accept header for type. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idm2780-bb"></a><span class="identifier">is_mobile</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Check HTTP_USER_AGENT to see if it is a mobile client. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idm2783-bb"></a><span class="identifier">keep_alive</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Check for Connection: keep-alive header. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a name="idm2786-bb"></a><span class="identifier">get_header</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> name<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Return the named header. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2791-bb"></a><span class="identifier">remove_header</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> name<span class="special">)</span><span class="special">;</span></pre>Remove this header from the list of headers. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a name="idm2796-bb"></a><span class="identifier">get_request_line</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Return the (reconstructed) request line. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a name="idm2799-bb"></a><span class="identifier">get_parameter</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> name<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Alternative way to fetch parameters (as opposed to using webapp and <code class="computeroutput"><a class="link" href="parameter_map.html" title="Class parameter_map">parameter_map</a></code>) <p>Return the named parameter </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2807-bb"></a><span class="identifier">to_buffers</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">const_buffer</span> <span class="special">&gt;</span> <span class="special">&amp;</span> buffers<span class="special">)</span><span class="special">;</span></pre>Can be used in code that sends HTTP requests. </li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm2812-bb"></a><span class="identifier">debug</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span> os<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="reply.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.request_hpp"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="request_handler.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

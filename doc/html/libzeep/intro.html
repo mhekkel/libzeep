@@ -1,0 +1,301 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Introduction</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="libzeep 3.0">
+<link rel="up" href="../index.html" title="libzeep 3.0">
+<link rel="prev" href="../index.html" title="libzeep 3.0">
+<link rel="next" href="soap.html" title="Creating a SOAP and REST server">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="../index.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="soap.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="libzeep.intro"></a><a class="link" href="intro.html" title="Introduction">Introduction</a>
+</h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="intro.html#libzeep.intro.xml">XML Parser</a></span></dt>
+<dt><span class="section"><a href="intro.html#libzeep.intro.xml_serialization">XML Serialization</a></span></dt>
+<dt><span class="section"><a href="intro.html#libzeep.intro.xpath">XPath 1.0</a></span></dt>
+<dt><span class="section"><a href="intro.html#libzeep.intro.http">HTTP Server</a></span></dt>
+<dt><span class="section"><a href="intro.html#libzeep.intro.soap">SOAP Server</a></span></dt>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="libzeep.intro.xml"></a><a class="link" href="intro.html#libzeep.intro.xml" title="XML Parser">XML Parser</a>
+</h3></div></div></div>
+<p>
+        Libzeep comes with a validating XML parser. Using this parser is as simple
+        as writing:
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">zeep</span><span class="special">/</span><span class="identifier">xml</span><span class="special">/</span><span class="identifier">document</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">fstream</span><span class="special">&gt;</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">ifstream</span> <span class="identifier">file</span><span class="special">(</span><span class="string">"test.xml"</span><span class="special">);</span>
+	<code class="computeroutput"><a class="link" href="../zeep/xml/document.html" title="Class document">zeep::xml::document</a></code> <span class="identifier">doc</span><span class="special">(</span><span class="identifier">file</span><span class="special">);</span>
+	<span class="special">...</span>
+<span class="special">}</span>
+</pre>
+<p>
+        This will parse the file <code class="literal">text.xml</code> and create an object
+        <code class="computeroutput"><span class="identifier">doc</span></code> containing the DOM tree.
+        To traverse this tree you can use the various member functions of doc which
+        derives from the generic <code class="computeroutput"><a class="link" href="../zeep/xml/container.html" title="Class container">zeep::xml::container</a></code>
+        class. Siblings in the DOM tree are stored as linked lists and some elements
+        can have children. To make life easier, you can iterate over elements using
+        STL iterators.
+      </p>
+<p>
+        Suppose our <code class="literal">test.xml</code> file contains the following XML:
+      </p>
+<pre class="programlisting">&lt;persons&gt;
+	&lt;person&gt;
+		&lt;firstname&gt;John&lt;/firstname&gt;
+		&lt;lastname&gt;Doe&lt;/lastname&gt;
+	&lt;/person&gt;
+	&lt;person&gt;
+		&lt;firstname&gt;Jane&lt;/firstname&gt;
+		&lt;lastname&gt;Jones&lt;/lastname&gt;
+	&lt;/person&gt;
+&lt;/persons&gt;
+</pre>
+<p>
+        You could print out the file like this:
+      </p>
+<pre class="programlisting"><span class="comment">// a document contains at most one child node</span>
+<code class="computeroutput"><a class="link" href="../zeep/xml/element.html" title="Class element">zeep::xml::element</a></code><span class="special">*</span> <span class="identifier">persons</span> <span class="special">=</span> <span class="identifier">doc</span><span class="special">.</span><span class="identifier">child</span><span class="special">();</span>
+
+<span class="comment">// begin/end will return iterators to elements</span>
+<span class="keyword">for</span> <span class="special">(</span><code class="computeroutput"><a class="link" href="../zeep/xml/container.html" title="Class container">zeep::xml::container</a></code><span class="special">::</span><span class="identifier">iterator</span> <span class="identifier">person</span> <span class="special">=</span> <span class="identifier">persons</span><span class="special">-&gt;</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">person</span> <span class="special">!=</span> <span class="identifier">persons</span><span class="special">-&gt;</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">person</span><span class="special">)</span>
+<span class="special">{</span>
+	<span class="keyword">for</span> <span class="special">(</span><code class="computeroutput"><a class="link" href="../zeep/xml/container.html" title="Class container">zeep::xml::container</a></code><span class="special">::</span><span class="identifier">iterator</span> <span class="identifier">name</span> <span class="special">=</span> <span class="special">(*</span><span class="identifier">person</span><span class="special">)-&gt;</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">name</span> <span class="special">!=</span> <span class="special">(*</span><span class="identifier">person</span><span class="special">)-&gt;</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">name</span><span class="special">)</span>
+		<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="special">(*</span><span class="identifier">name</span><span class="special">)-&gt;</span><span class="identifier">name</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="string">" = "</span> <span class="special">&lt;&lt;</span> <span class="special">(*</span><span class="identifier">name</span><span class="special">)-&gt;</span><span class="identifier">content</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Of course, using the new for loop construct, this code would be much more
+        readable:
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">person</span> <span class="special">:</span> <span class="special">*</span><span class="identifier">persons</span><span class="special">)</span>
+<span class="special">{</span>
+	<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">name</span> <span class="special">:</span> <span class="special">*</span><span class="identifier">person</span><span class="special">)</span>
+		<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">name</span><span class="special">-&gt;</span><span class="identifier">name</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="string">" = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">name</span><span class="special">-&gt;</span><span class="identifier">content</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        But if your compiler does not support that syntax, you can always use <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">range</span></code> instead:
+      </p>
+<pre class="programlisting"><span class="identifier">BOOST_FOREACH</span> <span class="special">(</span><code class="computeroutput"><a class="link" href="../zeep/xml/element.html" title="Class element">zeep::xml::element</a></code><span class="special">*</span> <span class="identifier">person</span><span class="special">,</span> <span class="special">*</span><span class="identifier">persons</span><span class="special">)</span>
+<span class="special">{</span>
+	<span class="identifier">BOOST_FOREACH</span> <span class="special">(</span><code class="computeroutput"><a class="link" href="../zeep/xml/element.html" title="Class element">zeep::xml::element</a></code><span class="special">*</span> <span class="identifier">name</span><span class="special">,</span> <span class="special">*</span><span class="identifier">person</span><span class="special">)</span>
+		<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">name</span><span class="special">-&gt;</span><span class="identifier">name</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="string">" = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">name</span><span class="special">-&gt;</span><span class="identifier">content</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Accessing attributes is done using the member function <code class="computeroutput"><span class="identifier">element</span><span class="special">::</span><span class="identifier">get_attribute</span><span class="special">()</span></code>.
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="libzeep.intro.xml_serialization"></a><a class="link" href="intro.html#libzeep.intro.xml_serialization" title="XML Serialization">XML Serialization</a>
+</h3></div></div></div>
+<p>
+        An alternative way to read/write XML files is using serialization. To do
+        this, we first construct a structure called Person. We add a templated function
+        to this struct just like in <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">serialize</span></code>
+        and then we can read the file.
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">zeep</span><span class="special">/</span><span class="identifier">xml</span><span class="special">/</span><span class="identifier">document</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">zeep</span><span class="special">/</span><span class="identifier">xml</span><span class="special">/</span><span class="identifier">serialize</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">vector</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">fstream</span><span class="special">&gt;</span>
+
+<span class="keyword">struct</span> <span class="identifier">Person</span>
+<span class="special">{</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">firstname</span><span class="special">;</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">lastname</span><span class="special">;</span>
+
+	<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">class</span> <span class="identifier">Archive</span><span class="special">&gt;</span>
+	<span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">Archive</span><span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="identifier">version</span><span class="special">)</span>
+	<span class="special">{</span>
+		<span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">BOOST_SERIALIZATION_NVP</span><span class="special">(</span><span class="identifier">firstname</span><span class="special">)</span> <span class="special">&amp;</span> <span class="identifier">BOOST_SERIALIZATION_NVP</span><span class="special">(</span><span class="identifier">lastname</span><span class="special">);</span>
+	<span class="special">}</span>
+<span class="special">};</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">ifstream</span> <span class="identifier">file</span><span class="special">(</span><span class="string">"test.xml"</span><span class="special">);</span>
+	<code class="computeroutput"><a class="link" href="../zeep/xml/document.html" title="Class document">zeep::xml::document</a></code> <span class="identifier">doc</span><span class="special">(</span><span class="identifier">file</span><span class="special">);</span>
+	
+	<code class="computeroutput"><a class="link" href="../zeep/xml/deserializer.html" title="Struct deserializer">zeep::xml::deserializer</a></code> <span class="identifier">ds</span><span class="special">(</span><span class="identifier">doc</span><span class="special">.</span><span class="identifier">child</span><span class="special">());</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">Person</span><span class="special">&gt;</span> <span class="identifier">person</span><span class="special">;</span>
+	
+	<span class="comment">// the variable name person must be the same as the name of the XML element person</span>
+	<span class="identifier">ds</span> <span class="special">&amp;</span> <span class="identifier">BOOST_SERIALIZATION_NVP</span><span class="special">(</span><span class="identifier">person</span><span class="special">);</span>
+	
+	<span class="comment">// alternative is to use which allows another variable name:</span>
+	<span class="comment">// ds &amp; boost::serialization::make_nvp("person", person);</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Since libzeep 3.0 we can reduce the code required.
+      </p>
+<pre class="programlisting"><span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">ifstream</span> <span class="identifier">file</span><span class="special">(</span><span class="string">"test.xml"</span><span class="special">);</span>
+	<code class="computeroutput"><a class="link" href="../zeep/xml/document.html" title="Class document">zeep::xml::document</a></code> <span class="identifier">doc</span><span class="special">(</span><span class="identifier">file</span><span class="special">);</span>
+	
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">Person</span><span class="special">&gt;</span> <span class="identifier">persons</span><span class="special">;</span>
+	
+	<span class="comment">// New way of deserializing persons</span>
+	<span class="identifier">doc</span><span class="special">.</span><span class="identifier">deserialize</span><span class="special">(</span><span class="string">"persons"</span><span class="special">,</span> <span class="identifier">persons</span><span class="special">);</span>
+<span class="special">}</span>
+</pre>
+<p>
+        And to write out the persons, we do something similar.
+      </p>
+<pre class="programlisting"><code class="computeroutput"><a class="link" href="../zeep/xml/document.html" title="Class document">zeep::xml::document</a></code> <span class="identifier">doc</span><span class="special">;</span>
+<span class="identifier">doc</span><span class="special">.</span><span class="identifier">serialize</span><span class="special">(</span><span class="string">"persons"</span><span class="special">,</span> <span class="identifier">persons</span><span class="special">);</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">ofstream</span> <span class="identifier">file</span><span class="special">(</span><span class="string">"test-out.xml"</span><span class="special">);</span>
+<span class="identifier">file</span> <span class="special">&lt;&lt;</span> <span class="identifier">doc</span><span class="special">;</span>
+</pre>
+<p>
+        To find out more about serialization, look at the reference for <code class="computeroutput"><a class="link" href="../zeep/xml/serializer.html" title="Struct serializer">zeep::xml::serializer</a></code>
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="libzeep.intro.xpath"></a><a class="link" href="intro.html#libzeep.intro.xpath" title="XPath 1.0">XPath 1.0</a>
+</h3></div></div></div>
+<p>
+        Libzeep comes with a <a href="http://www.w3.org/TR/xpath/" target="_top">XPath 1.0</a>
+        implementation. You can use this to locate elements in a DOM tree easily.
+        For a complete description of the XPath specification you should read the
+        documentation at e.g. <a href="http://www.w3.org/TR/xpath/" target="_top">http://www.w3.org/TR/xpath/</a>
+        or <a href="http://www.w3schools.com/xpath/default.asp" target="_top">http://www.w3schools.com/xpath/default.asp</a>.
+      </p>
+<p>
+        The way it works in libzeep is that you can call <code class="computeroutput"><span class="identifier">find</span><span class="special">()</span></code> on an <code class="computeroutput"><a class="link" href="../zeep/xml/element.html" title="Class element">zeep::xml::element</a></code>
+        object and it will return a zeep::xml::element_set object which is actually
+        a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">list</span></code> of <code class="computeroutput"><a class="link" href="../zeep/xml/element.html" title="Class element">zeep::xml::element</a></code>
+        pointers of the elements that conform to the specification in XPath passed
+        as parameter to <code class="computeroutput"><span class="identifier">find</span><span class="special">()</span></code>.
+        An alternative method <code class="computeroutput"><span class="identifier">find_first</span><span class="special">()</span></code> can be used to return only the first element.
+      </p>
+<p>
+        An example where we look for the first person in our test file with the lastname
+        Jones:
+      </p>
+<pre class="programlisting"><code class="computeroutput"><a class="link" href="../zeep/xml/element.html" title="Class element">zeep::xml::element</a></code><span class="special">*</span> <span class="identifier">jones</span> <span class="special">=</span> <span class="identifier">doc</span><span class="special">.</span><span class="identifier">child</span><span class="special">()-&gt;</span><span class="identifier">find_first</span><span class="special">(</span><span class="string">"//person[lastname='Jones']"</span><span class="special">);</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="libzeep.intro.http"></a><a class="link" href="intro.html#libzeep.intro.http" title="HTTP Server">HTTP Server</a>
+</h3></div></div></div>
+<p>
+        Creating a HTTP server with libzeep is as simple as:
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">zeep</span><span class="special">/</span><span class="identifier">http</span><span class="special">/</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">class</span> <span class="identifier">my_server</span> <span class="special">:</span> <span class="keyword">public</span> <code class="computeroutput"><a class="link" href="../zeep/http/server.html" title="Class server">zeep::http::server</a></code>
+<span class="special">{</span>
+	<span class="keyword">virtual</span> <span class="keyword">void</span> <span class="identifier">handle_request</span><span class="special">(</span><span class="keyword">const</span> <code class="computeroutput"><a class="link" href="../zeep/http/request.html" title="Struct request">zeep::http::request</a></code><span class="special">&amp;</span> <span class="identifier">req</span><span class="special">,</span> <code class="computeroutput"><a class="link" href="../zeep/http/reply.html" title="Class reply">zeep::http::reply</a></code><span class="special">&amp;</span> <span class="identifier">rep</span><span class="special">)</span>
+	<span class="special">{</span>
+		<span class="special">...</span>	<span class="comment">// do something useful</span>
+	<span class="special">}</span>
+<span class="special">};</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+	<span class="identifier">my_server</span> <span class="identifier">server</span><span class="special">;</span>
+	<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">80</span><span class="special">);</span>
+	<span class="identifier">server</span><span class="special">.</span><span class="identifier">run</span><span class="special">(</span><span class="number">1</span><span class="special">);</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Of course you will have to fill in the <code class="computeroutput"><span class="identifier">handle_request</span></code>
+        part...
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="libzeep.intro.soap"></a><a class="link" href="intro.html#libzeep.intro.soap" title="SOAP Server">SOAP Server</a>
+</h3></div></div></div>
+<p>
+        Setting up a SOAP server is very easy. Let's continue with our test file
+        and serve it as a SOAP/REST server. We already created the Person struct.
+        The most simple server we can create is one that lists all persons in the
+        test file:
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">zeep</span><span class="special">/</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">fstream</span><span class="special">&gt;</span>
+
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">std</span><span class="special">;</span>
+
+<span class="special">...</span> <span class="comment">// define the Person struct as above</span>
+
+<span class="keyword">class</span> <span class="identifier">my_server</span> <span class="special">:</span> <span class="keyword">public</span> <code class="computeroutput"><a class="link" href="../zeep/server.html" title="Class server">zeep::server</a></code>
+<span class="special">{</span>
+  <span class="keyword">public</span><span class="special">:</span>
+	<span class="identifier">my_server</span><span class="special">();</span>
+
+	<span class="comment">// The method we want to export</span>
+	<span class="keyword">void</span> <span class="identifier">ListPersons</span><span class="special">(</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">Person</span><span class="special">&gt;&amp;</span> <span class="identifier">result</span><span class="special">);</span>
+<span class="special">};</span>
+
+<span class="keyword">void</span> <span class="identifier">my_server</span><span class="special">::</span><span class="identifier">ListPersons</span><span class="special">(</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">Person</span><span class="special">&gt;&amp;</span> <span class="identifier">result</span><span class="special">)</span>
+<span class="special">{</span>
+	<span class="identifier">std</span><span class="special">::</span><span class="identifier">ifstream</span> <span class="identifier">file</span><span class="special">(</span><span class="string">"test.xml"</span><span class="special">);</span>
+	<code class="computeroutput"><a class="link" href="../zeep/xml/document.html" title="Class document">zeep::xml::document</a></code> <span class="identifier">doc</span><span class="special">(</span><span class="identifier">file</span><span class="special">);</span>
+	
+	<code class="computeroutput"><a class="link" href="../zeep/xml/deserializer.html" title="Struct deserializer">zeep::xml::deserializer</a></code> <span class="identifier">ds</span><span class="special">(</span><span class="identifier">doc</span><span class="special">.</span><span class="identifier">child</span><span class="special">());</span>
+	<span class="identifier">ds</span> <span class="special">&amp;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">serialization</span><span class="special">::</span><span class="identifier">make_nvp</span><span class="special">(</span><span class="string">"person"</span><span class="special">,</span> <span class="identifier">result</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="identifier">my_server</span><span class="special">::</span><span class="identifier">my_server</span><span class="special">()</span> <span class="special">:</span> <code class="computeroutput"><a class="link" href="../zeep/server.html" title="Class server">zeep::server</a></code><span class="special">(</span><span class="string">"http://www.example.org/soaptest"</span><span class="special">,</span> <span class="string">"soaptest"</span><span class="special">)</span>
+<span class="special">{</span>
+	<span class="comment">// assign a name to the Person struct (will appear in the WSDL e.g.)</span>
+	<span class="identifier">zeep</span><span class="special">::</span><span class="identifier">xml</span><span class="special">::</span><span class="identifier">serialize_struct</span><span class="special">&lt;</span><span class="identifier">Person</span><span class="special">&gt;::</span><span class="identifier">set_struct_name</span><span class="special">(</span><span class="string">"person"</span><span class="special">);</span>
+	
+	<span class="comment">// assign names to the parameters of the exported method, in this case there's only</span>
+	<span class="comment">// one return value to name</span>
+	<span class="keyword">const</span> <span class="keyword">char</span><span class="special">*</span> <span class="identifier">kListPersonsParameterNames</span><span class="special">[]</span> <span class="special">=</span> <span class="special">{</span> <span class="string">"response"</span> <span class="special">};</span>
+	<span class="identifier">register_action</span><span class="special">(</span><span class="string">"ListPersons"</span><span class="special">,</span> <span class="keyword">this</span><span class="special">,</span> <span class="special">&amp;</span><span class="identifier">my_server</span><span class="special">::</span><span class="identifier">ListPersons</span><span class="special">,</span> <span class="identifier">kListPersonsParameterNames</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+	<span class="identifier">my_server</span> <span class="identifier">server</span><span class="special">;</span>
+	<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">(</span><span class="string">"192.168.0.1"</span><span class="special">,</span> <span class="number">8083</span><span class="special">);</span>
+	<span class="identifier">server</span><span class="special">.</span><span class="identifier">run</span><span class="special">(</span><span class="number">1</span><span class="special">);</span>	<span class="comment">// keep our server single threaded</span>
+<span class="special">}</span>
+</pre>
+<p>
+        After building this server and running it, you can access the REST version
+        of this routine at <a href="http://192.168.0.1:8083/rest/ListPersons" target="_top">http://192.168.0.1:8083/rest/ListPersons</a>
+        and there's a WSDL at <a href="http://192.168.0.1:8083/wsdl" target="_top">http://192.168.0.1:8083/wsdl</a>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../index.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="soap.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

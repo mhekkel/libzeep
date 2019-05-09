@@ -1,0 +1,70 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class exception</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="libzeep 3.0">
+<link rel="up" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.exception_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/exception.hpp&gt;">
+<link rel="prev" href="make_fault_idm2221.html" title="Function make_fault">
+<link rel="next" href="http/connection.html" title="Class connection">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="make_fault_idm2221.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.exception_hpp"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="http/connection.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="zeep.exception"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class exception</span></h2>
+<p>zeep::exception &#8212; <a class="link" href="exception.html" title="Class exception">zeep::exception</a> is a class used to throw zeep exception. </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.exception_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/exception.hpp&gt;">/home/maarten/projects/libzeep/zeep/exception.hpp</a>&gt;
+
+</span>
+<span class="keyword">class</span> <a class="link" href="exception.html" title="Class exception">exception</a> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">exception</span> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="exception.html#zeep.exceptionconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="exception.html#idm2243-bb"><span class="identifier">exception</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span><span class="special">,</span> <span class="special">...</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="exception.html#idm2249-bb"><span class="identifier">exception</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="exception.html#idm2252-bb"><span class="special">~</span><span class="identifier">exception</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="exception.html#idm2240-bb">public member functions</a></span>
+  <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> <a class="link" href="exception.html#idm2241-bb"><span class="identifier">what</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm2475"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm2477"></a><h3>
+<a name="zeep.exceptionconstruct-copy-destruct"></a><code class="computeroutput">exception</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><a name="idm2243-bb"></a><span class="identifier">exception</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> message<span class="special">,</span> <span class="special">...</span><span class="special">)</span><span class="special">;</span></pre>Create an exception with vsprintf like parameters. </li>
+<li class="listitem"><pre class="literallayout"><a name="idm2249-bb"></a><span class="identifier">exception</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> message<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm2252-bb"></a><span class="special">~</span><span class="identifier">exception</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm2517"></a><h3>
+<a name="idm2240-bb"></a><code class="computeroutput">exception</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> <a name="idm2241-bb"></a><span class="identifier">what</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="make_fault_idm2221.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.exception_hpp"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="http/connection.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

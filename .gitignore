@@ -4,3 +4,4 @@ obj
 *.a
 *.so*
 compile_commands.json
+doc/bin

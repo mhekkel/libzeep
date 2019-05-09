@@ -1,0 +1,133 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class reply</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../../index.html" title="libzeep 3.0">
+<link rel="up" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.reply_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/http/reply.hpp&gt;">
+<link rel="prev" href="preforked_server.html" title="Class preforked_server">
+<link rel="next" href="request.html" title="Struct request">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="preforked_server.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.reply_hpp"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="request.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="zeep.http.reply"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class reply</span></h2>
+<p>zeep::http::reply</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.reply_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/http/reply.hpp&gt;">/home/maarten/projects/libzeep/zeep/http/reply.hpp</a>&gt;
+
+</span>
+<span class="keyword">class</span> <a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="reply.html#zeep.http.replyconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="reply.html#idm2634-bb"><span class="identifier">reply</span></a><span class="special">(</span><span class="keyword">int</span> <span class="special">=</span> <span class="number">1</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="reply.html#idm2642-bb"><span class="identifier">reply</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">&amp;</span> <a class="link" href="reply.html#idm2647-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="reply.html#idm2646-bb"><span class="special">~</span><span class="identifier">reply</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="reply.html#idm2554-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2555-bb"><span class="identifier">clear</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2557-bb"><span class="identifier">set_version</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2563-bb"><span class="identifier">set_header</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="reply.html#idm2572-bb"><span class="identifier">keep_alive</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a class="link" href="reply.html#idm2575-bb"><span class="identifier">get_content_type</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2577-bb"><span class="identifier">set_content_type</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2582-bb"><span class="identifier">set_content</span></a><span class="special">(</span><a class="link" href="../xml/document.html" title="Class document">xml::document</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2588-bb"><span class="identifier">set_content</span></a><span class="special">(</span><a class="link" href="../xml/element.html" title="Class element">xml::element</a> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2594-bb"><span class="identifier">set_content</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2601-bb"><span class="identifier">set_content</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">istream</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2610-bb"><span class="identifier">to_buffers</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">const_buffer</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="reply.html#idm2614-bb"><span class="identifier">data_to_buffers</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">const_buffer</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a class="link" href="reply.html#idm2619-bb"><span class="identifier">get_as_text</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <a class="link" href="reply.html#idm2622-bb"><span class="identifier">get_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2624-bb"><span class="identifier">set_status</span></a><span class="special">(</span><span class="identifier">status_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">status_type</span> <a class="link" href="reply.html#idm2628-bb"><span class="identifier">get_status</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="reply.html#idm2630-bb"><span class="identifier">debug</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="reply.html#idm2653-bb">public static functions</a></span>
+  <span class="keyword">static</span> <a class="link" href="reply.html" title="Class reply">reply</a> <a class="link" href="reply.html#idm2654-bb"><span class="identifier">stock_reply</span></a><span class="special">(</span><span class="identifier">status_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <a class="link" href="reply.html" title="Class reply">reply</a> <a class="link" href="reply.html#idm2660-bb"><span class="identifier">stock_reply</span></a><span class="special">(</span><span class="identifier">status_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <a class="link" href="reply.html" title="Class reply">reply</a> <a class="link" href="reply.html#idm2667-bb"><span class="identifier">redirect</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm4565"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm4567"></a><h3>
+<a name="zeep.http.replyconstruct-copy-destruct"></a><code class="computeroutput">reply</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><a name="idm2634-bb"></a><span class="identifier">reply</span><span class="special">(</span><span class="keyword">int</span> version_major <span class="special">=</span> <span class="number">1</span><span class="special">,</span> <span class="keyword">int</span> version_minor <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span></pre>Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g. </li>
+<li class="listitem"><pre class="literallayout"><a name="idm2642-bb"></a><span class="identifier">reply</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">&amp;</span> <a name="idm2647-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="reply.html" title="Class reply">reply</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm2646-bb"></a><span class="special">~</span><span class="identifier">reply</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm4621"></a><h3>
+<a name="idm2554-bb"></a><code class="computeroutput">reply</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm2555-bb"></a><span class="identifier">clear</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm2557-bb"></a><span class="identifier">set_version</span><span class="special">(</span><span class="keyword">int</span> version_major<span class="special">,</span> <span class="keyword">int</span> version_minor<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2563-bb"></a><span class="identifier">set_header</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> name<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> value<span class="special">)</span><span class="special">;</span></pre>Add a header with name <span class="emphasis"><em>name</em></span> and value <span class="emphasis"><em>value</em></span>. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idm2572-bb"></a><span class="identifier">keep_alive</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>If the reply contains Connection: keep-alive. </li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a name="idm2575-bb"></a><span class="identifier">get_content_type</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2577-bb"></a><span class="identifier">set_content_type</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> type<span class="special">)</span><span class="special">;</span></pre>Set the Content-Type header. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2582-bb"></a><span class="identifier">set_content</span><span class="special">(</span><a class="link" href="../xml/document.html" title="Class document">xml::document</a> <span class="special">&amp;</span> doc<span class="special">)</span><span class="special">;</span></pre>Set the content and the content-type header. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2588-bb"></a><span class="identifier">set_content</span><span class="special">(</span><a class="link" href="../xml/element.html" title="Class element">xml::element</a> <span class="special">*</span> data<span class="special">)</span><span class="special">;</span></pre>Set the content and the content-type header. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2594-bb"></a><span class="identifier">set_content</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> data<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> contentType<span class="special">)</span><span class="special">;</span></pre>Set the content and the content-type header. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm2601-bb"></a><span class="identifier">set_content</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">istream</span> <span class="special">*</span> data<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> contentType<span class="special">)</span><span class="special">;</span></pre>
+<p>To send a stream of data, with unknown size (using chunked transfer). reply takes ownership of <span class="emphasis"><em>data</em></span> and deletes it when done. </p>
+</li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm2610-bb"></a><span class="identifier">to_buffers</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">const_buffer</span> <span class="special">&gt;</span> <span class="special">&amp;</span> buffers<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idm2614-bb"></a><span class="identifier">data_to_buffers</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">const_buffer</span> <span class="special">&gt;</span> <span class="special">&amp;</span> buffers<span class="special">)</span><span class="special">;</span></pre>for istream data, continues until data_to_buffers returns false </li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <a name="idm2619-bb"></a><span class="identifier">get_as_text</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>For debugging purposes. </li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <a name="idm2622-bb"></a><span class="identifier">get_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm2624-bb"></a><span class="identifier">set_status</span><span class="special">(</span><span class="identifier">status_type</span> status<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">status_type</span> <a name="idm2628-bb"></a><span class="identifier">get_status</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm2630-bb"></a><span class="identifier">debug</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span> os<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm4865"></a><h3>
+<a name="idm2653-bb"></a><code class="computeroutput">reply</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <a class="link" href="reply.html" title="Class reply">reply</a> <a name="idm2654-bb"></a><span class="identifier">stock_reply</span><span class="special">(</span><span class="identifier">status_type</span> inStatus<span class="special">)</span><span class="special">;</span></pre>Create a standard reply based on a HTTP status code. </li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <a class="link" href="reply.html" title="Class reply">reply</a> <a name="idm2660-bb"></a><span class="identifier">stock_reply</span><span class="special">(</span><span class="identifier">status_type</span> inStatus<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> info<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <a class="link" href="reply.html" title="Class reply">reply</a> <a name="idm2667-bb"></a><span class="identifier">redirect</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> location<span class="special">)</span><span class="special">;</span></pre>Create a standard redirect reply with the specified <span class="emphasis"><em>location</em></span>. </li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="preforked_server.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.reply_hpp"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="request.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

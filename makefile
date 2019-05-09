@@ -155,5 +155,7 @@ test: libzeep.a
 
 clean:
 	rm -rf obj/* libzeep.a libzeep.so* zeep-test $(DIST_NAME) $(DIST_NAME).tgz
+	cd doc; bjam clean
+	$(MAKE) -C tests clean
 
 FORCE:

@@ -56,7 +56,7 @@ class writer
 	//! if the trim flag is set, all whitespace will be trimmed to one space exactly
 	void			set_trim(bool flag)								{ m_trim = flag; }
 
-	//! collapsing empty elements (<empyt/>) is the default behaviour
+	//! collapsing empty elements (\<empyt/>) is the default behaviour
 	void			set_collapse_empty_elements(bool collapse)		{ m_collapse_empty = collapse; }
 
 	//! escape whitespace into character refences can be specified.

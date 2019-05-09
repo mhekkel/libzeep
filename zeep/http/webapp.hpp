@@ -178,6 +178,7 @@ class basic_webapp
 	/// process xml parses the XHTML and fills in the special tags and evaluates the el constructs
 	virtual void process_xml(xml::node* node, const el::scope& scope, boost::filesystem::path dir);
 
+	/// The type of the callback for processing tags
 	typedef boost::function<void(xml::element* node, const el::scope& scope, boost::filesystem::path dir)> processor_type;
 
 	/// To add additional processors

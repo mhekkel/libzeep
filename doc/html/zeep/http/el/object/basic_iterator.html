@@ -1,0 +1,99 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template basic_iterator</title>
+<link rel="stylesheet" href="../../../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../../../../index.html" title="libzeep 3.0">
+<link rel="up" href="../object.html#idm8254" title="Description">
+<link rel="prev" href="../object.html" title="Class object">
+<link rel="next" href="../scope.html" title="Class scope">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="../object.html"><img src="../../../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../object.html#idm8254"><img src="../../../../images/up.png" alt="Up"></a><a accesskey="h" href="../../../../index.html"><img src="../../../../images/home.png" alt="Home"></a><a accesskey="n" href="../scope.html"><img src="../../../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="zeep.http.el.object.basic_iterator"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template basic_iterator</span></h2>
+<p>zeep::http::el::object::basic_iterator</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../../../index/s05.html#header..home.maarten.projects.libzeep.zeep.http.webapp.el_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/http/webapp/el.hpp&gt;">/home/maarten/projects/libzeep/zeep/http/webapp/el.hpp</a>&gt;
+
+</span>
+<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ObjectType<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">:</span>
+  <span class="keyword">public</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator</span><span class="special">&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">forward_iterator_tag</span><span class="special">,</span> <span class="identifier">ObjectType</span> <span class="special">&gt;</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator</span><span class="special">&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">forward_iterator_tag</span><span class="special">,</span> <span class="identifier">ObjectType</span> <span class="special">&gt;</span> <a name="zeep.http.el.object.basic_iterator.base_type"></a><span class="identifier">base_type</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">base_type</span><span class="special">::</span><span class="identifier">reference</span>                                   <a name="zeep.http.el.object.basic_iterator.reference"></a><span class="identifier">reference</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">base_type</span><span class="special">::</span><span class="identifier">pointer</span>                                     <a name="zeep.http.el.object.basic_iterator.pointer"></a><span class="identifier">pointer</span><span class="special">;</span>  
+
+  <span class="comment">// <a class="link" href="basic_iterator.html#zeep.http.el.object.basic_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="basic_iterator.html#idm3332-bb"><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html#idm3333-bb"><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html#idm3337-bb"><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html#idm3341-bb"><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html#idm3347-bb"><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html#idm3351-bb"><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> <a class="link" href="basic_iterator.html#idm3358-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html#idm3357-bb"><span class="special">~</span><span class="identifier">basic_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="basic_iterator.html#idm3309-bb">public member functions</a></span>
+  <span class="identifier">reference</span> <a class="link" href="basic_iterator.html#idm3310-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">pointer</span> <a class="link" href="basic_iterator.html#idm3312-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> <a class="link" href="basic_iterator.html#idm3314-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <a class="link" href="basic_iterator.html#idm3317-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="basic_iterator.html#idm3322-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="basic_iterator.html#idm3327-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm9112"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm9114"></a><h3>
+<a name="zeep.http.el.object.basic_iteratorconstruct-copy-destruct"></a><code class="computeroutput">basic_iterator</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idm3332-bb"></a><span class="identifier">basic_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm3333-bb"></a><span class="identifier">basic_iterator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm3337-bb"></a><span class="identifier">basic_iterator</span><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span> a<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm3341-bb"></a><span class="identifier">basic_iterator</span><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span> a<span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm3347-bb"></a><span class="identifier">basic_iterator</span><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span> a<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm3351-bb"></a><span class="identifier">basic_iterator</span><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span> a<span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> <a name="idm3358-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm3357-bb"></a><span class="special">~</span><span class="identifier">basic_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm9205"></a><h3>
+<a name="idm3309-bb"></a><code class="computeroutput">basic_iterator</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm3310-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">pointer</span> <a name="idm3312-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> <a name="idm3314-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <a name="idm3317-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm3322-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm3327-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="basic_iterator.html" title="Class template basic_iterator">basic_iterator</a> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../object.html"><img src="../../../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../object.html#idm8254"><img src="../../../../images/up.png" alt="Up"></a><a accesskey="h" href="../../../../index.html"><img src="../../../../images/home.png" alt="Home"></a><a accesskey="n" href="../scope.html"><img src="../../../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

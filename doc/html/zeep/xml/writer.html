@@ -1,0 +1,141 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class writer</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../../index.html" title="libzeep 3.0">
+<link rel="up" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.xml.writer_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/xml/writer.hpp&gt;">
+<link rel="prev" href="unicode.html" title="Type definition unicode">
+<link rel="next" href="context.html" title="Class context">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="unicode.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.xml.writer_hpp"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="context.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="zeep.xml.writer"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class writer</span></h2>
+<p>zeep::xml::writer &#8212; Use <a class="link" href="writer.html" title="Class writer">xml::writer</a> to write XML documents to a stream. </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.xml.writer_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/xml/writer.hpp&gt;">/home/maarten/projects/libzeep/zeep/xml/writer.hpp</a>&gt;
+
+</span>
+<span class="keyword">class</span> <a class="link" href="writer.html" title="Class writer">writer</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="writer.html#zeep.xml.writerconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="writer.html#idm6013-bb"><span class="identifier">writer</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="writer.html#idm6017-bb"><span class="identifier">writer</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">bool</span><span class="special">,</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="writer.html#idm6025-bb"><span class="special">~</span><span class="identifier">writer</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="writer.html#idm5887-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5888-bb"><span class="identifier">set_xml_decl</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5895-bb"><span class="identifier">set_indent</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5900-bb"><span class="identifier">set_wrap</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5905-bb"><span class="identifier">set_wrap_prolog</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5910-bb"><span class="identifier">set_wrap_attributes</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5918-bb"><span class="identifier">set_trim</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5923-bb"><span class="identifier">set_collapse_empty_elements</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5928-bb"><span class="identifier">set_escape_whitespace</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5933-bb"><span class="identifier">set_no_comment</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5938-bb"><span class="identifier">xml_decl</span></a><span class="special">(</span><span class="keyword">bool</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5943-bb"><span class="identifier">empty_doctype</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> 
+  <a class="link" href="writer.html#idm5950-bb"><span class="identifier">doctype</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5959-bb"><span class="identifier">start_doctype</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> 
+  <a class="link" href="writer.html#idm5965-bb"><span class="identifier">notation</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5974-bb"><span class="identifier">end_doctype</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5977-bb"><span class="identifier">start_element</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5981-bb"><span class="identifier">end_element</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5983-bb"><span class="identifier">attribute</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5989-bb"><span class="identifier">content</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="writer.html#idm5993-bb"><span class="identifier">element</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm5999-bb"><span class="identifier">cdata</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="writer.html#idm6003-bb"><span class="identifier">comment</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> 
+  <a class="link" href="writer.html#idm6007-bb"><span class="identifier">processing_instruction</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm22611"></a><h2>Description</h2>
+<p>The <a class="link" href="writer.html" title="Class writer">zeep::xml::writer</a> class is used to write XML documents. It has several options that influence the way the data is written. E.g. it is possible to specify whether to wrap the elements and what indentation to use. The writer keeps track of opened elements and therefore knows how to close an element.</p>
+<p>The writer writes out XML 1.0 files. </p>
+<div class="refsect2">
+<a name="idm22616"></a><h3>
+<a name="zeep.xml.writerconstruct-copy-destruct"></a><code class="computeroutput">writer</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><a name="idm6013-bb"></a><span class="identifier">writer</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span> os<span class="special">)</span><span class="special">;</span></pre>The constructor takes a std::ostream as argument. </li>
+<li class="listitem"><pre class="literallayout"><a name="idm6017-bb"></a><span class="identifier">writer</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">ostream</span> <span class="special">&amp;</span> os<span class="special">,</span> <span class="keyword">bool</span> write_decl<span class="special">,</span> <span class="keyword">bool</span> standalone <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm6025-bb"></a><span class="special">~</span><span class="identifier">writer</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm22660"></a><h3>
+<a name="idm5887-bb"></a><code class="computeroutput">writer</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5888-bb"></a><span class="identifier">set_xml_decl</span><span class="special">(</span><span class="keyword">bool</span> flag<span class="special">)</span><span class="special">;</span></pre>set_encoding is not yet implemented, we only support UTF-8 for now <p>the xml declaration flag (&lt;?xml version...) is not written by default </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5895-bb"></a><span class="identifier">set_indent</span><span class="special">(</span><span class="keyword">int</span> indentation<span class="special">)</span><span class="special">;</span></pre>the indentation in number of spaces, default is two. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5900-bb"></a><span class="identifier">set_wrap</span><span class="special">(</span><span class="keyword">bool</span> flag<span class="special">)</span><span class="special">;</span></pre>default is to wrap XML files </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5905-bb"></a><span class="identifier">set_wrap_prolog</span><span class="special">(</span><span class="keyword">bool</span> flag<span class="special">)</span><span class="special">;</span></pre>default is to wrap XML files </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5910-bb"></a><span class="identifier">set_wrap_attributes</span><span class="special">(</span><span class="keyword">bool</span> flag<span class="special">,</span> <span class="keyword">int</span> maxLevel <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span></pre>default is to not wrap attributes </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5918-bb"></a><span class="identifier">set_trim</span><span class="special">(</span><span class="keyword">bool</span> flag<span class="special">)</span><span class="special">;</span></pre>if the trim flag is set, all whitespace will be trimmed to one space exactly </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5923-bb"></a><span class="identifier">set_collapse_empty_elements</span><span class="special">(</span><span class="keyword">bool</span> collapse<span class="special">)</span><span class="special">;</span></pre>collapsing empty elements (&lt;empyt/&gt;) is the default behaviour </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5928-bb"></a><span class="identifier">set_escape_whitespace</span><span class="special">(</span><span class="keyword">bool</span> escape<span class="special">)</span><span class="special">;</span></pre>escape whitespace into character refences can be specified. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm5933-bb"></a><span class="identifier">set_no_comment</span><span class="special">(</span><span class="keyword">bool</span> no_comment<span class="special">)</span><span class="special">;</span></pre>do not write out comments </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5938-bb"></a><span class="identifier">xml_decl</span><span class="special">(</span><span class="keyword">bool</span> standalone<span class="special">)</span><span class="special">;</span></pre>write a xml declaration, version will be 1.0, standalone can be specified. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5943-bb"></a><span class="identifier">empty_doctype</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> root<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> dtd<span class="special">)</span><span class="special">;</span></pre>To write an empty DOCTYPE specifying an external subset. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> 
+<a name="idm5950-bb"></a><span class="identifier">doctype</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> root<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> pubid<span class="special">,</span> 
+        <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> dtd<span class="special">)</span><span class="special">;</span></pre>This opens a DOCTYPE declaration. The root parameter is the name of the base element. </li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5959-bb"></a><span class="identifier">start_doctype</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> root<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> dtd<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> 
+<a name="idm5965-bb"></a><span class="identifier">notation</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> name<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> sysid<span class="special">,</span> 
+         <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> pubid<span class="special">)</span><span class="special">;</span></pre>To write a NOTATION declaration. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5974-bb"></a><span class="identifier">end_doctype</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>End a DOCTYPE declaration. </li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5977-bb"></a><span class="identifier">start_element</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> name<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5981-bb"></a><span class="identifier">end_element</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5983-bb"></a><span class="identifier">attribute</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> name<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> value<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5989-bb"></a><span class="identifier">content</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> content<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm5993-bb"></a><span class="identifier">element</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> name<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> s<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm5999-bb"></a><span class="identifier">cdata</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> text<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm6003-bb"></a><span class="identifier">comment</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> text<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> 
+<a name="idm6007-bb"></a><span class="identifier">processing_instruction</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> target<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> text<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="unicode.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s05.html#header..home.maarten.projects.libzeep.zeep.xml.writer_hpp"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="context.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class server</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="libzeep 3.0">
+<link rel="up" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.server_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/server.hpp&gt;">
+<link rel="prev" href="http/el/evaluate_el_idm3705.html" title="Function evaluate_el">
+<link rel="next" href="http/server.html" title="Class server">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="http/el/evaluate_el_idm3705.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.server_hpp"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="http/server.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="zeep.server"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class server</span></h2>
+<p>zeep::server</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.server_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/server.hpp&gt;">/home/maarten/projects/libzeep/zeep/server.hpp</a>&gt;
+
+</span>
+<span class="keyword">class</span> <a class="link" href="server.html" title="Class server">server</a> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">zeep</span><span class="special">::</span><span class="identifier">dispatcher</span>, <span class="keyword">public</span> <span class="identifier">zeep</span><span class="special">::</span><span class="identifier">http</span><span class="special">::</span><span class="identifier">server</span> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="server.html#zeep.serverconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="server.html#idm3762-bb"><span class="identifier">server</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="server.html#idm3745-bb">public member functions</a></span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="server.html#idm3746-bb"><span class="identifier">bind</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">short</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="server.html#idm3754-bb"><span class="identifier">set_location</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="server.html#idm3773-bb">protected member functions</a></span>
+  <span class="keyword">virtual</span> <span class="keyword">void</span> <a class="link" href="server.html#idm3774-bb"><span class="identifier">handle_request</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="http/request.html" title="Struct request">http::request</a> <span class="special">&amp;</span><span class="special">,</span> <a class="link" href="http/reply.html" title="Class reply">http::reply</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm9951"></a><h2>Description</h2>
+<p><a class="link" href="server.html" title="Class server">zeep::server</a> inherits from <a class="link" href="http/server.html" title="Class server">zeep::http::server</a> and <a class="link" href="dispatcher.html" title="Class dispatcher">zeep::dispatcher</a> to do its work. You construct a new server object by passing in a namespace in the <span class="emphasis"><em>ns</em></span> parameter and a service name in the <span class="emphasis"><em>service</em></span> parameter.</p>
+<p>If the server is behind a proxy, you'll also need to call set_location to specify the external address of your server. </p>
+<div class="refsect2">
+<a name="idm9960"></a><h3>
+<a name="zeep.serverconstruct-copy-destruct"></a><code class="computeroutput">server</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+<pre class="literallayout"><a name="idm3762-bb"></a><span class="identifier">server</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> ns<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> service<span class="special">)</span><span class="special">;</span></pre>
+<p>The constructor takes two arguments 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">ns</code></span></p></td>
+<td><p>The namespace as used for the WSDL and SOAP messages </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">service</code></span></p></td>
+<td><p>The service name for this server </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idm10000"></a><h3>
+<a name="idm3745-bb"></a><code class="computeroutput">server</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm3746-bb"></a><span class="identifier">bind</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> address<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">short</span> port<span class="special">)</span><span class="special">;</span></pre>Calls <code class="computeroutput"><a class="link" href="http/server.html" title="Class server">zeep::http::server</a></code> and sets m_location if it wasn't already specified. </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idm3754-bb"></a><span class="identifier">set_location</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> location<span class="special">)</span><span class="special">;</span></pre>
+<p>If your server is located behind a reverse proxy, you'll have to specify the address where it can be found by clients. If you don't, the WSDL will contain an unreachable address. 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term"><code class="computeroutput">location</code></span></p></td>
+<td><p>The URL that specifies the external address of this server. </p></td>
+</tr></tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm10050"></a><h3>
+<a name="idm3773-bb"></a><code class="computeroutput">server</code> protected member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">virtual</span> <span class="keyword">void</span> <a name="idm3774-bb"></a><span class="identifier">handle_request</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="http/request.html" title="Struct request">http::request</a> <span class="special">&amp;</span> req<span class="special">,</span> <a class="link" href="http/reply.html" title="Class reply">http::reply</a> <span class="special">&amp;</span> rep<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="http/el/evaluate_el_idm3705.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.maarten.projects.libzeep.zeep.server_hpp"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="http/server.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

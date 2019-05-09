@@ -199,7 +199,7 @@ bool process_el(const scope& scope, std::string& text);
 /// in \a result.
 /// \param scope  The scope for this el script
 /// \param text   The el script
-/// \return       The result of the script
+/// \param result The result of the script
 void evaluate_el(const scope& scope, const std::string& text, object& result);
 
 /// \brief Process the text in \a text and replace it with the result

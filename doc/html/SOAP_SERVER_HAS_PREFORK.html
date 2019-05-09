@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Macro SOAP_SERVER_HAS_PREFORK</title>
 <link rel="stylesheet" href="boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="libzeep 3.0">
 <link rel="up" href="index/s05.html#header..home.maarten.projects.libzeep.zeep.config_hpp" title="Header &lt;/home/maarten/projects/libzeep/zeep/config.hpp&gt;">
 <link rel="prev" href="SOAP_XML_HAS_EXPAT_SUPPORT.html" title="Macro SOAP_XML_HAS_EXPAT_SUPPORT">
@@ -24,13 +24,13 @@
 
 </span>SOAP_SERVER_HAS_PREFORK</pre></div>
 <div class="refsect1">
-<a name="idp92021680"></a><h2>Description</h2>
+<a name="idm1866"></a><h2>Description</h2>
 <p>The http server implementation in libzeep can use a preforked mode. That means the main process listens to a network port and passes the socket to a client process for doing the actual handling. The advantages for a setup like this is that if the client fails, the server can detect this and restart the client thereby guaranteeing a better uptime. </p>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2012 Maarten L. Hekkelman<p>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2012-2019 Maarten L. Hekkelman<p>
         Distributed under the Boost Software License, Version 1.0. (See accompanying
         file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
       </p>

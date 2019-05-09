@@ -131,8 +131,8 @@ class document
 	void				wrap(bool wrap);				///< set wrap flag, whether elements will appear on their own line or not
 	
 	// reduce the whitespace in #PCDATA sections
-	bool				trim() const;					///< get trim flag, strips white space in #PCDATA sections
-	void				trim(bool trim);				///< set trim flag, strips white space in #PCDATA sections
+	bool				trim() const;					///< get trim flag, strips white space in \#PCDATA sections
+	void				trim(bool trim);				///< set trim flag, strips white space in \#PCDATA sections
 
 	// suppress writing out comments
 	bool				no_comment() const;				///< get no_comment flag, suppresses the output of XML comments
