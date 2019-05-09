@@ -10,13 +10,7 @@
 #include <zeep/config.hpp>
 
 #include <iomanip>
-
-#if defined(_MSC_VER) /*<= 1600*/
-#include <boost/tr1/cmath.hpp>
-using namespace std::tr1;
-#else
 #include <cmath>
-#endif
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
