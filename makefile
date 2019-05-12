@@ -19,9 +19,9 @@ INCDIR              ?= $(PREFIX)/include
 MANDIR              ?= $(PREFIX)/man/man3
 DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
 
-BOOST_LIBS          = system thread filesystem regex math_c99 random
+BOOST_LIBS          = system thread filesystem regex random
 BOOST_LIBS          := $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
-LIBS                = $(BOOST_LIBS) stdc++ m pthread rt
+LIBS                = $(BOOST_LIBS) stdc++ m pthread
 LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
 
 VERSION_MAJOR       = 3.0
@@ -32,11 +32,9 @@ SO_NAME             = libzeep.so.$(VERSION_MAJOR)
 LIB_NAME            = $(SO_NAME).$(VERSION_MINOR)
 
 CXX                 ?= c++
-#CFLAGS              += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++11 -stdlib=libc++
-CFLAGS              += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++11 
-#CFLAGS             += -g $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -shared # -std=c++0x
-CFLAGS              += -Wall
-CFLAGS              += -g
+CXXFLAGS            += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++11 
+CXXFLAGS            += -Wall
+CXXFLAGS            += -g
 LD                  ?= ld
 LD_CONFIG			?= ldconfig
 
@@ -110,7 +108,6 @@ dist: doc
 	mkdir -p $(DIST_NAME)
 	git archive master | tar xC $(DIST_NAME)
 	find doc/html -depth | cpio -pd $(DIST_NAME)
-	rm -rf $(DIST_NAME)/tests
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
 
@@ -118,12 +115,12 @@ doc: FORCE
 	cd doc; bjam
 
 obj/%.o: %.cpp | obj
-	$(CXX) -MD -c -o $@ $< $(CFLAGS)
+	$(CXX) -MD -c -o $@ $< $(CXXFLAGS)
 
 obj:
 	mkdir -p obj
 
-include $(OBJECTS:%.o=%.d)
+-include $(OBJECTS:%.o=%.d)
 
 $(OBJECTS:.o=.d):
 

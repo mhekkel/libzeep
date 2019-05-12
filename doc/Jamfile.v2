@@ -1,11 +1,3 @@
-using xsltproc ;
-using boostbook
-    : /usr/share/xml/docbook/stylesheet/nwalsh
-    : /usr/share/xml/docbook/schema/dtd/4.2
-    ;
-using doxygen ;
-using quickbook ;
-
 doxygen autodoc
     :
         [ glob ../zeep/*.hpp ]
