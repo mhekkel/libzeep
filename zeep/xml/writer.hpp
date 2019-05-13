@@ -50,10 +50,13 @@ class writer
 	//! default is to wrap XML files
 	void			set_wrap_prolog(bool flag)						{ m_wrap_prolog = flag; }
 
+	//! default is to not wrap attributes
+	void			set_wrap_attributes(bool flag, int maxLevel = 0){ m_wrap_attributes = flag; m_wrap_attributes_max_level = maxLevel; }
+
 	//! if the trim flag is set, all whitespace will be trimmed to one space exactly
 	void			set_trim(bool flag)								{ m_trim = flag; }
 
-	//! collapsing empty elements (<empyt/>) is the default behaviour
+	//! collapsing empty elements (\<empyt/>) is the default behaviour
 	void			set_collapse_empty_elements(bool collapse)		{ m_collapse_empty = collapse; }
 
 	//! escape whitespace into character refences can be specified.
@@ -108,11 +111,14 @@ class writer
 	bool			m_write_xml_decl;
 	bool			m_wrap;
 	bool			m_wrap_prolog;
+	bool			m_wrap_attributes;
+	int				m_wrap_attributes_max_level;
 	bool			m_collapse_empty;
 	bool			m_escape_whitespace;
 	bool			m_trim;
 	bool			m_no_comment;
 	int				m_indent;
+	int				m_indent_attr;
 	int				m_level;
 	bool			m_element_open;
 	std::stack<std::string>

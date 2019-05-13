@@ -16,7 +16,7 @@
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
+#if not (defined(LIBZEEP_DOXYGEN_INVOKED) or defined(NO_STDINT))
 typedef boost::int8_t		int8;
 typedef boost::uint8_t		uint8;
 typedef boost::int16_t		int16;
@@ -64,6 +64,7 @@ class object
 				/// create an array object
 	explicit	object(const std::vector<object>& v);
 	explicit	object(const std::vector<std::string>& v);
+	explicit	object(const std::vector<float>& v);
 
 				/// construct an object directly from some basic types
 	explicit	object(bool v);
@@ -198,7 +199,7 @@ bool process_el(const scope& scope, std::string& text);
 /// in \a result.
 /// \param scope  The scope for this el script
 /// \param text   The el script
-/// \return       The result of the script
+/// \param result The result of the script
 void evaluate_el(const scope& scope, const std::string& text, object& result);
 
 /// \brief Process the text in \a text and replace it with the result

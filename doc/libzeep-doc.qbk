@@ -1,7 +1,7 @@
 [article libzeep
 	[quickbook 1.5]
 	[version 3.0]
-	[copyright 2012 Maarten L. Hekkelman]
+	[copyright 2012-2019 Maarten L. Hekkelman]
 	[license
 		Distributed under the Boost Software License, Version 1.0.
 		(See accompanying file LICENSE_1_0.txt or copy at
@@ -22,7 +22,7 @@
 [def __http_reply__ [classref zeep::http::reply `zeep::http::reply`]]
 [def __soap_server__ [classref zeep::server `zeep::server`]]
 [def __webapp__ [classref zeep::http::webapp `zeep::http::webapp`]]
-[def __add_processor__ [memberref zeep::http::webapp::add_processor `zeep::http::webapp::add_processor`]]
+[def __add_processor__ [memberref zeep::http::basic_webapp::add_processor `zeep::http::basic_webapp::add_processor`]]
 [def __el_scope__ [classref zeep::http::el::scope `zeep::http::el::scope`]]
 [def __el_object__ [classref zeep::http::el::object `zeep::http::el::object`]]
 

@@ -60,7 +60,7 @@ enum Token {
 
 	xp_OperatorUnion,
 	xp_OperatorAdd,
-	xp_OperatorSubstract,
+	xp_OperatorSubtract,
 	xp_OperatorEqual,
 	xp_OperatorNotEqual,
 	xp_OperatorLess,
@@ -78,7 +78,10 @@ enum Token {
 	xp_Number,
 	xp_Variable,
 	xp_Asterisk,
-	xp_Colon
+	xp_Colon,
+
+	// english... added a backward compatibility here after fixing the spelling above
+	xp_OperatorSubstract = xp_OperatorSubtract
 };
 
 enum AxisType

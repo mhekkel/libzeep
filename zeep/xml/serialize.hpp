@@ -83,6 +83,30 @@ const std::string kPrefix = "ns";
 /// Older versions of libzeep used to use boost::serialization::nvp as type to
 /// specify name/value pairs. This will continue to work, but to use attributes
 /// we come up with a special version of name/value pairs specific for libzeep.
+///
+/// Since version 3.0.3 a name of "." for elements means the content of the
+/// parent node is used. This enables you to write XML like:
+///
+///>	<A>
+///>	   <B a="x">y</B>
+///>	</A>
+///
+/// Using the structs:
+///
+///> struct B {
+///>   string x, y;
+///>   template<class Archive> void serialize(Archive& ar, uint v) {
+///>     ar & make_element_nvp(".", y) & make_attribute_nvp("a", x);
+///>   }
+///> };
+///>
+///> struct A {
+///>   B b;
+///>   template<class Archive> void serialize(Archive& ar, uint v) {
+///>     ar & make_element_nvp("B", b);
+///>   }
+///> };
+///>
 
 struct serializer;
 struct deserializer;
@@ -865,14 +889,22 @@ struct basic_serializer_type : public Serializer
 
 	static void serialize_child(container* n, const char* name, const value_type& value)
 	{
-		element* e = new element(name);
-		basic_serializer_type::serialize(e, value);
-		n->append(e);
+		if (name == nullptr or strlen(name) == 0 or strcmp(name, ".") == 0)
+			basic_serializer_type::serialize(n, value);
+		else
+		{
+			element* e = new element(name);
+			basic_serializer_type::serialize(e, value);
+			n->append(e);
+		}
 	}
 
 	static void deserialize_child(const container* n, const char* name, value_type& value)
 	{
-		element* e = n->find_first(name);
+		const element* e = dynamic_cast<const element*>(n);
+		if (e == nullptr or (name != nullptr and strlen(name) > 0 and strcmp(name, ".") != 0))
+			e = n->find_first(name);
+
 		if (e != nullptr)
 			basic_serializer_type::deserialize(e, value);
 		else

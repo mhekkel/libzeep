@@ -10,13 +10,7 @@
 #include <zeep/config.hpp>
 
 #include <iomanip>
-
-#if defined(_MSC_VER) /*<= 1600*/
-#include <boost/tr1/cmath.hpp>
-using namespace std::tr1;
-#else
 #include <cmath>
-#endif
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -220,6 +214,12 @@ class vector_object_impl : public detail::base_array_object_impl
 					{
 						foreach (const string& s, v)
 							m_v.push_back(object(s));
+					}
+
+					vector_object_impl(const vector<float>& v)
+					{
+						foreach (float f, v)
+							m_v.push_back(object(f));
 					}
 
 	virtual object&	at(uint32 ix)
@@ -541,6 +541,11 @@ object::object(const vector<object>& v)
 }
 
 object::object(const vector<string>& v)
+	: m_impl(new vector_object_impl(v))
+{
+}
+
+object::object(const vector<float>& v)
 	: m_impl(new vector_object_impl(v))
 {
 }

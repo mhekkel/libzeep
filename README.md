@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.org/mhekkel/libzeep.svg?branch=master)](https://travis-ci.org/mhekkel/libzeep)
+
+About libzeep
+=============
+
 Libzeep was developed to make it easy to create SOAP servers. And since
 working with SOAP means working with XML and no decent C++ XML library
 existed on my radar I've created a full XML library as well.
@@ -25,19 +30,22 @@ has a REST style interface.
 
 libzeep requires the Boost libraries and currently requires at least version
 1.36 of Boost since it uses the new asio library for network I/O. The current
-version of libzeep has been tested with boost 1.39 and newer only.
+version of libzeep has been tested with boost 1.55 and newer only.
 
 To use libzeep, you have to edit the makefile and make sure the paths to your
 installation of boost libraries are correct. After this you simply type
-'make zeep-test' and a 'zeep-test' executable is build. You can also cd into
+`make zeep-test` and a `zeep-test` executable is build. You can also cd into
 the tests directory and build the two test applications called xpath-test and
 parser-test. For Windows users there's a VC solution file in the msvc
 directory.
 
-XML Library -- usage
+Full documentation for libzeep in docbook format can be found at
+[www.hekkelman.com/libzeep-doc](http://www.hekkelman.com/libzeep-doc/)
+
+## XML Library -- usage
 
 Using the XML library of libzeep is fairly trivial. The first class you use
-is the zeep::xml::document class. You can use this class to read XML files
+is the `zeep::xml::document` class. You can use this class to read XML files
 and write them out again. Reading and writing is strictly done using stl
 iostreams. Make sure you open these streams in binary mode, random parsing
 errors will occur if you don't when running in Windows.
@@ -57,13 +65,13 @@ errors will occur if you don't when running in Windows.
 	
 Now that you have a document, you can walk its content which is organised in
 nodes. There are several nodes classes, the most interesting for most is
-xml::element. These elements can have children, some of which are also
+`xml::element`. These elements can have children, some of which are also
 elements.
 
 Internally the nodes are stored as linked lists. However, to conform to STL
-coding practices, xml::element can used like a container. The iterator of
-xml::element (which it inherits from its base class xml::container) only
-returns child xml::element objects skipping over comments and processing
+coding practices, `xml::element` can used like a container. The iterator of
+`xml::element` (which it inherits from its base class `xml::container`) only
+returns child `xml::element` objects skipping over comments and processing
 instructions.
 
 So, to iterate over all elements directly under the first element of a
@@ -73,7 +81,7 @@ document, we do something like this:
 	for (xml::document::iterator e = first.begin(); e != first.end(); ++e)
 		cout << e.name() << endl;
 
-Likewise you can iterate over the attributes of an xml::element, like this:
+Likewise you can iterate over the attributes of an `xml::element`, like this:
 
 	for (xml::element::attribute_iterator a = e.attr_begin(); a != e.attr_end(); ++a)
 		cout << a->name() << endl;
@@ -81,7 +89,7 @@ Likewise you can iterate over the attributes of an xml::element, like this:
 More often you're interested in a specific element among many others. Now you
 can recursively iterate the tree until you've found what you're looking for,
 but it is way easier to use xpaths in that case. Let say you need the element
-'book' having an attribute 'title' with value 'Du côté de chez Swann', you
+`book` having an attribute `title` with value *Du côté de chez Swann*, you
 could do this:
 
 	xml::element* book = doc.find("//book[@title='Du côté de chez Swann']");
@@ -94,18 +102,18 @@ And the content, contained in the text nodes of an element:
 	
 	cout << book->content() << endl;
 
-And writing out an XML file again can be done by writing an xml::document:
+And writing out an XML file again can be done by writing an `xml::document`:
 
 	cout << doc;
 	
-Or by using xml::writer directly.
+Or by using `xml::writer` directly.
 
 libzeep has XML Namespace support. The qname method of the nodes returns a
 qualified name, that is the namespace prefix, a colon and the localname
-contatenated. (Something like 'ns:book'). The method name() returns the
+contatenated. (Something like `ns:book`). The method name() returns the
 qname() with its prefix stripped off.
 
-SOAP Server -- usage
+## SOAP Server -- usage
 
 Have a look at the zeep-test.cpp file to see how to create a server. This
 example server is not entirely trivial since it has three exported methods
@@ -127,7 +135,7 @@ that allow more than one value.
 
 The steps to create a server are:
 
-Create a new server object that derives from soap::server. The constructor
+Create a new server object that derives from `soap::server`. The constructor
 of this object should call the inherited constructor passing it the
 namespace and the service name for this new SOAP server as well as the
 internet address and port to listen to.
@@ -143,11 +151,11 @@ action in the WSDL. To the outside world this method will look like it has
 multiple output parameters. This was done to be compatible with another
 popular SOAP tool but the result may be a bit confusing at times.
 
-To register the methods you have to call the inherited 'register_action'
+To register the methods you have to call the inherited `register_action`
 method which takes four parameters:
 
 - the name of the action as it is published
-- the pointer for your server object, usually it is 'this'.
+- the pointer for your server object, usually it is `this`.
 - a pointer to the method of your server object you want to export
 - an array of pointers to the exported names for each of the parameters
 	of the exported method/action. The size of this array should be exactly
@@ -174,14 +182,14 @@ The next thing you need for each struct is to set its exported name using the
 SOAP_XML_SET_STRUCT_NAME macro.
 
 And that's it. The moment the constructor is done, your server is ready to
-run. You can start it by calling the 'run' method, normally you do this from
+run. You can start it by calling the `run` method, normally you do this from
 a new thread. The servers will start listening to the address and port you
 specified. Beware though that the server is multithreaded and so your exported
 methods should be reentrant. The number of threads the server will use can be
-specified in the constructor of the soap::server base class.
+specified in the constructor of the `soap::server` base class.
 
 If your server is behind a reverse proxy, you set the actual location in the
-WSDL from which it is accessible by calling the server's set_location method.
+WSDL from which it is accessible by calling the server's `set_location` method.
 
 Inside your server method you have access to the ostream object used to write
 out log entries by using the inherited log() member function.
