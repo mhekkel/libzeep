@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<env:Envelope
+	xmlns:env="http://schemas.xmlsoap.org/soap/envelope/">
+	<env:Body>
+		<CountResponse xmlns="http://mrs.cmbi.ru.nl/mrsws/search">
+			<response>10</response>
+		</CountResponse>
+	</env:Body>
+</env:Envelope>

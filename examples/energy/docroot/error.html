@@ -1,0 +1,33 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:z="http://www.hekkelman.com/libzeep/ml"
+	xml:lang="en" lang="en">
+<head>
+    <title>Error</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Maarten L. Hekkelman" />
+    <meta name="generator" content="Japi" />
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+	<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+	<div class="head">
+		<z:if test="${error.nr}">
+			<span class="error-nr">${error.nr}</span>
+		</z:if>
+		<span class="error-head-text">${error.head}</span>
+	</div>
+	<div id="main">
+		<p class="error-main-text">${error.description}</p>
+		<z:if test="${error.message}">
+			<p>Additional information: ${error.message}</p>
+		</z:if>
+	</div>
+	<div id="footer">
+		<z:if test="${error.request.method}">Method: <em>${error.request.method}</em></z:if>
+		<z:if test="${error.request.uri}">URI: <em>${error.request.uri}</em></z:if>
+		<z:if test="${error.request.username}">Username: <em>${error.request.username}</em></z:if>
+	</div>
+</body>
+</html>

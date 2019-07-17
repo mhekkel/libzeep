@@ -1,0 +1,15 @@
+<AAA test-count-3="1">
+  <CCC test-count-3="1">
+       <BBB/>
+       <BBB/>
+       <BBB/>
+  </CCC>
+  <DDD test-count-1="1" test-count-2="1">
+       <BBB/>
+       <BBB/>
+  </DDD>
+  <EEE test-count-2="1">
+       <CCC/>
+       <DDD/>
+  </EEE>
+</AAA> 

@@ -1,0 +1,12 @@
+<!DOCTYPE AAA [
+<!ELEMENT AAA (BBB+)>
+<!ELEMENT BBB EMPTY>
+<!ATTLIST BBB ident ID #REQUIRED>
+]>
+<AAA>
+  <BBB ident="aap" />
+  <BBB ident="noot" />
+  <BBB ident="mies" />
+  <BBB ident="boom" />
+  <BBB ident="roos" />
+</AAA> 

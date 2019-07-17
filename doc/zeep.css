@@ -1,0 +1,14 @@
+/*
+	CSS file for libzeep documentation
+*/
+
+pre {
+	font-family: monospace;
+	border: solid 1px gray;
+	padding: 6px;
+	background-color: #eee;
+}
+
+span.comment {
+	color: gray;
+}

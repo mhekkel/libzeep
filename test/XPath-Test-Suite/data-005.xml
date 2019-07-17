@@ -1,0 +1,15 @@
+<AAA>
+  <BCC test-name-2="1" test-name-3="1">
+       <BBB test-name-1="1" test-name-2="1"/>
+       <BBB test-name-1="1" test-name-2="1"/>
+       <BBB test-name-1="1" test-name-2="1"/>
+  </BCC>
+  <DDB>
+       <BBB test-name-1="1" test-name-2="1"/>
+       <BBB test-name-1="1" test-name-2="1"/>
+  </DDB>
+  <BEC test-name-2="1" test-name-3="1">
+       <CCC test-name-3="1"/>
+       <DBD/>
+  </BEC>
+</AAA> 

@@ -1,0 +1,11 @@
+<!DOCTYPE aaa [
+<!ELEMENT aaa (bbb)>
+<!ELEMENT bbb (ccc+)>
+<!ELEMENT ccc EMPTY>
+]>
+<aaa>
+	<bbb>
+		<ccc/>
+		<ccc/>
+	</bbb>
+</aaa>

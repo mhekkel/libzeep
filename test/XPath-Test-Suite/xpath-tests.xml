@@ -1,0 +1,149 @@
+<!DOCTYPE xpath-tests [
+<!ELEMENT xpath-tests (xpath-test+)>
+<!ATTLIST xpath-tests xml:base CDATA #IMPLIED>
+<!ELEMENT xpath-test (var)*>
+<!ATTLIST xpath-test data CDATA #REQUIRED
+					 xpath CDATA #REQUIRED
+					 expected-size NMTOKEN #IMPLIED
+					 test-name NMTOKEN "test"
+					 test-attr NMTOKEN #IMPLIED>
+<!ELEMENT var EMPTY>
+<!ATTLIST var name NMTOKEN #REQUIRED
+			  value CDATA #REQUIRED>
+]>
+<xpath-tests xml:base="XPath-Test-Suite">
+
+	<xpath-test data="data-004.xml" xpath="//*[count(BBB) = 2]" expected-size="1"
+		test-name="test-count-1" test-attr="1" />
+
+	<xpath-test data="data-004.xml" xpath="//*[count(*) = 2]" expected-size="2"
+		test-name="test-count-2" test-attr="1" />
+
+	<xpath-test data="data-004.xml" xpath="//*[count(*) = 3]" expected-size="2"
+		test-name="test-count-3" test-attr="1" />
+
+	<xpath-test data="data-005.xml" xpath="//*[name() = 'BBB']" expected-size="5"
+		test-name="test-name-1" test-attr="1" />
+
+	<xpath-test data="data-005.xml" xpath="//*[starts-with(name(), 'B')]" expected-size="7"
+		test-name="test-name-2" test-attr="1" />
+
+	<xpath-test data="data-005.xml" xpath="//*[contains(name(), 'C')]" expected-size="3"
+		test-name="test-name-3" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[1]" expected-size="1"
+		test-name="test-first" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[name() = translate('-bbb-', 'abc-', 'ABC')][1]" expected-size="1"
+		test-name="test-first" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[position() mod 2 = 0 ]" expected-size="4"
+		test-name="test-even" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[ position() = floor(last() div 2 + 0.5) or position() = ceiling(last() div 2 + 0.5) ]" expected-size="2"
+		test-name="test-2" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//CCC[ position() = floor(last() div 2 + 0.5) or position() = ceiling(last() div 2 + 0.5) ]" expected-size="1"
+		test-name="test-3" test-attr="1" />
+
+	<xpath-test data="data-003.xml" xpath="//BBB[position() = last()]" expected-size="1"
+		test-name="test-last" test-attr="1" />
+
+	<xpath-test data="data-002.xml" xpath="/AAA/XXX//GGG/ancestor::*"
+		expected-size="4" test-attr="a" />
+
+	<xpath-test data="data-002.xml" xpath="/AAA/*//GGG/descendant::*"
+		expected-size="3" test-attr="d" />
+
+	<xpath-test data="data-001.xml" xpath="//ccc" expected-size="2" />
+
+	<xpath-test data="data-002.xml" xpath="//GGG/ancestor::*" expected-size="4"
+		test-attr="a" />
+	<xpath-test data="data-002.xml" xpath="//GGG/descendant::*" expected-size="3"
+		test-attr="d" />
+	<xpath-test data="data-002.xml" xpath="//GGG/following::*" expected-size="3"
+		test-attr="f" />
+	<xpath-test data="data-002.xml" xpath="//GGG/preceding::*" expected-size="5"
+		test-attr="p" />
+	<xpath-test data="data-002.xml" xpath="//GGG/self::*" expected-size="1"
+		test-attr="s" />
+
+	<xpath-test data="data-006.xml" xpath="//*[string-length(name()) = 3]" expected-size="2"
+		test-name="len-1" test-attr="1" />
+	<xpath-test data="data-006.xml" xpath="//*[string-length(name()) &lt; 3]" expected-size="2"
+		test-name="len-2" test-attr="1" />
+	<xpath-test data="data-006.xml" xpath="//*[string-length(name()) > 3]" expected-size="3"
+		test-name="len-3" test-attr="1" />
+
+	<xpath-test data="data-007.xml" xpath="//BBB|//CCC" expected-size="3"
+		test-name="un-1" test-attr="1" />
+	<xpath-test data="data-007.xml" xpath="/AAA/EEE | //BBB" expected-size="2"
+		test-name="un-2" test-attr="1" />
+	<xpath-test data="data-007.xml" xpath="/AAA/EEE | //DDD/CCC | /AAA | //BBB" expected-size="4"
+		test-name="un-3" test-attr="1" />
+
+	<xpath-test data="data-007.xml" xpath="/AAA/../AAA/BBB" expected-size="1"
+		test-name="un-3" test-attr="1" />
+
+	<xpath-test data="data-008.xml" xpath="//*[lang('nl')]" expected-size="4" />
+	
+	<xpath-test data="data-009.xml" xpath="//@id" expected-size="2" />
+
+	<xpath-test data="data-009.xml" xpath="//@*" expected-size="3" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[@id]" expected-size="2" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[@name]" expected-size="1" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[@*]" expected-size="3" />
+
+	<xpath-test data="data-009.xml" xpath="//BBB[not(@*)]" expected-size="1" />
+
+	<xpath-test data="data-010.xml" xpath="//BBB[@id='b1']" expected-size="1" />
+
+	<xpath-test data="data-010.xml" xpath="//BBB[@name='bbb']" expected-size="1" />
+
+	<xpath-test data="data-010.xml" xpath="//BBB[normalize-space(@name)='bbb']" expected-size="2" />
+
+	<xpath-test data="data-011.xml" xpath="//BBB[CCC[@id='x']]" expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//BBB[./CCC[@id='x']]" expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//CCC[@id='x']/.." expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//CCC[string()='aap']/.." expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-011.xml" xpath="//BBB[./CCC[string()=$v]]" expected-size="1"
+		test-name="test" test-attr="1">
+		<var name="v" value="aap" />
+	</xpath-test>
+
+	<xpath-test data="data-011.xml" xpath="//BBB[./CCC='aap']" expected-size="1"
+		test-name="test" test-attr="1" />
+
+	<xpath-test data="data-012.xml"
+		xpath=" /Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']
+				/Body[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']" expected-size="1"
+		 />
+
+	<xpath-test data="data-013.xml"
+		xpath="//page/id" expected-size="1"
+		 />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='aap']" expected-size="1"
+		test-name="ident" test-attr="aap" />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='noot']" expected-size="1"
+		test-name="ident" test-attr="noot" />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='noot' or id()='aap']" expected-size="2"
+		 />
+
+	<xpath-test data="data-014.xml" xpath="//BBB[id()='aap' and id()='aap' and id()='aap']" expected-size="1"
+		test-name="ident" test-attr="aap" />
+
+</xpath-tests>
