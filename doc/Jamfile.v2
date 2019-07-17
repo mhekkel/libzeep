@@ -1,9 +1,19 @@
+using xsltproc ;
+using boostbook
+    : /usr/share/xml/docbook/stylesheet/nwalsh
+    : /usr/share/xml/docbook/schema/dtd/4.2
+    ;
+using doxygen ;
+using quickbook
+    : /usr/bin/quickbook
+    ;
+
 doxygen autodoc
     :
-        [ glob ../zeep/*.hpp ]
-        [ glob ../zeep/xml/*.hpp ]
-        [ glob ../zeep/http/*.hpp ]
-        [ glob ../zeep/http/webapp/*.hpp ]
+        [ glob ../include/zeep/*.hpp ]
+        [ glob ../include/zeep/xml/*.hpp ]
+        [ glob ../include/zeep/http/*.hpp ]
+        [ glob ../include/zeep/http/webapp/*.hpp ]
     :
         <doxygen:param>EXTRACT_ALL=YES
         <doxygen:param>"PREDEFINED=\"LIBZEEP_DOXYGEN_INVOKED\" \\

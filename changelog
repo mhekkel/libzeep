@@ -1,3 +1,12 @@
+Version 4.0.0
+
+- Major rewrite, may break code.
+- Added a JSON parser and compatible internal object, is analogous
+  to the version of nlohmann. Replaces the old element class in
+  webapp.
+- Removed parameter_map, get request parameters from request itself.
+- Reorganized code, added a more complete example application (energyd).
+
 Version 3.0.2
 
 - Change in zeep/xml/serialize.hpp for gcc 4.7 compiler
