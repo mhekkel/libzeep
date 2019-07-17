@@ -7,6 +7,10 @@ Libzeep was developed to make it easy to create SOAP servers. And since
 working with SOAP means working with XML and no decent C++ XML library
 existed on my radar I've created a full XML library as well.
 
+Unfortunately, REST proved to be more popular than SOAP, and so I added a
+better JSON implmentation to version 4 of libzeep as well as a way to create
+REST servers more easily.
+
 The XML part of libzeep consists of a validating parser, a DOM(-like) node
 implementation, an XPath search engine and a XML writer/formatter. The
 validation works based on DOCTYPE definitions, XML schema support will be
@@ -30,7 +34,7 @@ has a REST style interface.
 
 libzeep requires the Boost libraries and currently requires at least version
 1.36 of Boost since it uses the new asio library for network I/O. The current
-version of libzeep has been tested with boost 1.55 and newer only.
+version of libzeep has been tested with boost 1.65 and newer only.
 
 To use libzeep, you have to edit the makefile and make sure the paths to your
 installation of boost libraries are correct. After this you simply type
