@@ -19,10 +19,16 @@
 #include <zeep/el/to_element.hpp>
 #include <zeep/el/from_element.hpp>
 
+#if __has_include(<optional>)
 #include <optional>
-//#include <boost/optional.hpp>
-
-//namespace std { using boost::optional; }
+#elif __has_include(<experimental/optional>)
+#include <boost/optional.hpp>
+#elif __has_include(<boost/optional.hpp>)
+#include <boost/optional.hpp>
+namespace std { using boost::optional; }
+#else
+#error "No optional"
+#endif
 
 namespace zeep
 {
