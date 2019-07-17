@@ -15,4 +15,4 @@ language: cpp
 compiler: clang
 
 #script: make && make -C tests
-script: make
+script: make libs
