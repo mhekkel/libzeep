@@ -44,6 +44,14 @@ namespace std
 		
 		} // namespace detail
 
+		struct nonesuch {
+
+			nonesuch() = delete;
+			~nonesuch() = delete;
+			nonesuch(nonesuch const&) = delete;
+			void operator=(nonesuch const&) = delete;
+		};
+
 		template <template<class...> class Op, class... Args>
 		using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
 		
