@@ -60,6 +60,10 @@ namespace std
 		
 		template <class Default, template<class...> class Op, class... Args>
 		using detected_or = detail::detector<Default, void, Op, Args...>;
+
+		template <class Expected, template <class...> class Op, class... Args>
+		using is_detected_exact = std::is_same<Expected, detected_t<Op, Args...>>;
+
 	}
 }
 
