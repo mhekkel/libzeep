@@ -19,37 +19,39 @@
 // This code is copied from:
 // https://ld2015.scusa.lsu.edu/cppreference/en/cpp/experimental/is_detected.html
 
-namespace detail2
-{
-
-template <class Default, class AlwaysVoid,
-          template<class...> class Op, class... Args>
-struct detector {
-  using value_t = false_type;
-  using type = Default;
-};
- 
-template <class Default, template<class...> class Op, class... Args>
-struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
-  // Note that std::void_t is a C++17 feature
-  using value_t = true_type;
-  using type = Op<Args...>;
-};
- 
-} // namespace detail
-
 namespace std
 {
+	template< class... >
+	using void_t = void;
+
 	namespace experimental
 	{
+		namespace detail
+		{
+			template <class Default, class AlwaysVoid,
+					template<class...> class Op, class... Args>
+			struct detector {
+			using value_t = false_type;
+			using type = Default;
+			};
+			
+			template <class Default, template<class...> class Op, class... Args>
+			struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
+			// Note that std::void_t is a C++17 feature
+			using value_t = true_type;
+			using type = Op<Args...>;
+			};
+		
+		} // namespace detail
+
 		template <template<class...> class Op, class... Args>
-		using is_detected = typename detail2::detector<nonesuch, void, Op, Args...>::value_t;
+		using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
 		
 		template <template<class...> class Op, class... Args>
-		using detected_t = typename detail2::detector<nonesuch, void, Op, Args...>::type;
+		using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
 		
 		template <class Default, template<class...> class Op, class... Args>
-		using detected_or = detail2::detector<Default, void, Op, Args...>;
+		using detected_or = detail::detector<Default, void, Op, Args...>;
 	}
 }
 
