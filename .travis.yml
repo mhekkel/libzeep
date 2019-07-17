@@ -12,6 +12,7 @@ install: true
 
 language: cpp
 
-compiler: clang
+# compiler: clang
 
-script: make && make -C tests
+#script: make && make -C tests
+script: make
