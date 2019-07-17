@@ -15,14 +15,52 @@
 
 #include <zeep/el/element_fwd.hpp>
 
+#ifndef __cpp_lib_experimental_detect
+// This code is copied from:
+// https://ld2015.scusa.lsu.edu/cppreference/en/cpp/experimental/is_detected.html
+
+namespace detail2
+{
+
+template <class Default, class AlwaysVoid,
+          template<class...> class Op, class... Args>
+struct detector {
+  using value_t = false_type;
+  using type = Default;
+};
+ 
+template <class Default, template<class...> class Op, class... Args>
+struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
+  // Note that std::void_t is a C++17 feature
+  using value_t = true_type;
+  using type = Op<Args...>;
+};
+ 
+} // namespace detail
+
+namespace std
+{
+	namespace experimental
+	{
+		template <template<class...> class Op, class... Args>
+		using is_detected = typename detail2::detector<nonesuch, void, Op, Args...>::value_t;
+		
+		template <template<class...> class Op, class... Args>
+		using detected_t = typename detail2::detector<nonesuch, void, Op, Args...>::type;
+		
+		template <class Default, template<class...> class Op, class... Args>
+		using detected_or = detail2::detector<Default, void, Op, Args...>;
+	}
+}
+
+#endif
+
 namespace zeep
 {
 namespace el
 {
 namespace detail
 {
-
-static_assert(__cpp_lib_experimental_detect, "This one is needed");
 
 template<typename> struct is_element : std::false_type {};
 template<> struct is_element<element> : std::true_type {};
