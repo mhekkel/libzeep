@@ -1,0 +1,29 @@
+.nummer {
+	text-align: right;
+}
+
+.grafiek-container {
+	height: 100%;
+	width: 100%;
+	font-size: small;
+}
+
+.grafiek-titel span {
+	display: none;
+}
+
+.grafiek-status-loading .loading,
+.grafiek-status-loaded .loaded,
+.grafiek-status-failed .failed,
+.grafiek-titel .grafiek-naam {
+	display: unset;
+}
+
+.spinner {
+	display: none;
+}
+
+g.tick line {
+	stroke: lightgrey;
+	opacity: 0.7;
+}

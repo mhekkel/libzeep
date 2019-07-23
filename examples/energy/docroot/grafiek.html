@@ -1,0 +1,77 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z="http://www.hekkelman.com/libzeep/ml" lang="nl">
+<head>
+	<meta charset="UTF-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+
+	<title>Energieverbruik</title>
+
+	<script src="/scripts/grafiek.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="css/style.css" />
+</head>
+<body>
+	<z:include file="/menu.html" />
+
+	<div class="container">
+
+		<div class="row mt-3 mb-3">
+			<div class="col">
+
+				<div class="input-group">
+					<div class="input-group-prepend">
+						<label class="input-group-text" for="grafiek-id">Grafiek</label>
+					</div>
+					<select id="grafiek-id" class="custom-select">
+						<option value="warmte">Warmte</option>
+						<option value="electriciteit">Electriciteit Totaal</option>
+						<option value="electriciteit-hoog">Electriciteit Hoog</option>
+						<option value="electriciteit-laag">Electriciteit Laag</option>
+						<option value="electriciteit-verbruik">Electriciteit Verbruik</option>
+						<option value="electriciteit-levering">Electriciteit Levering</option>
+						<option value="electriciteit-verbruik-hoog">Electriciteit Verbruik Hoog</option>
+						<option value="electriciteit-verbruik-laag">Electriciteit Verbruik Laag</option>
+						<option value="electriciteit-levering-hoog">Electriciteit Levering Hoog</option>
+						<option value="electriciteit-levering-laag">Electriciteit Levering Laag</option>
+					</select>
+				</div>
+			</div>
+			<div class="col">
+				<div class="btn-group btn-group-toggle" data-toggle="buttons">
+					<label class="btn btn-secondary active">
+						<input type="radio" name="aggr" id="btn-dag-aggr" autocomplete="off" data-aggr="dag"
+							class="aggr-btn" checked="true"/> Dag
+					</label>
+					<label class="btn btn-secondary">
+						<input type="radio" name="aggr" id="btn-week-aggr" autocomplete="off" data-aggr="week"
+							class="aggr-btn"/> Week
+					</label>
+					<label class="btn btn-secondary">
+						<input type="radio" name="aggr" id="btn-maand-aggr" autocomplete="off" data-aggr="maand"
+							class="aggr-btn"/> Maand
+					</label>
+				</div>
+			</div>
+		</div>
+
+		<hr />
+
+		<div class="container vh-100">
+			<div class="mb-3 grafiek-titel">
+				<span class="loading"><i class="fa fa-circle-notch fa-spin" style="font-size: 24px"></i> Grafiek <span
+						class="grafiek-naam"></span> wordt geladen...</span>
+				<span class="loaded">Grafiek voor <span class="grafiek-naam"></span></span>
+				<span class="failed">Grafiek voor <span class="grafiek-naam"></span> kon niet geladen worden.</span>
+			</div>
+
+			<div class="grafiek-container">
+				<svg width="100%" height="100%" id="plot"></svg>
+			</div>
+		</div>
+
+	</div>
+
+
+</body>
+
+</html>
