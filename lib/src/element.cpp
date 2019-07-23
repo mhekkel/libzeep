@@ -124,13 +124,14 @@ std::string element::type_name() const
 {
   switch (m_type)
 	{
-		case value_type::null:			return "null"; break;
-		case value_type::array:			return "array"; break;
-		case value_type::object:		return "object"; break;
-		case value_type::string:		return "string"; break;
-		case value_type::number_int:	return "number_int"; break;
-		case value_type::number_float:	return "number_float"; break;
-		case value_type::boolean:		return "boolean"; break;
+		case value_type::null:			return "null";
+		case value_type::array:			return "array";
+		case value_type::object:		return "object";
+		case value_type::string:		return "string";
+		case value_type::number_int:	return "number_int";
+		case value_type::number_float:	return "number_float";
+		case value_type::boolean:		return "boolean";
+        default:                        assert(false); return "";
 	}
 }
 

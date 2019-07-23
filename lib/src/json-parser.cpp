@@ -66,20 +66,21 @@ class json_parser
 	{
 		switch (t)
 		{
-			case token_t::Eof:			return "end of data"; break; 
-			case token_t::LeftBrace:	return "left brace ('{')"; break; 
-			case token_t::RightBrace:	return "richt brace ('}')"; break; 
-			case token_t::LeftBracket:	return "left bracket ('[')"; break; 
-			case token_t::RightBracket:	return "right bracket (']')"; break; 
-			case token_t::Comma:		return "comma"; break; 
-			case token_t::Colon:		return "colon"; break; 
-			case token_t::String:		return "string"; break; 
-			case token_t::Integer:		return "integer"; break; 
-			case token_t::Number:		return "number"; break; 
-			case token_t::True:			return "true"; break; 
-			case token_t::False:		return "false"; break; 
-			case token_t::Null:			return "null"; break; 
-			case token_t::Undef:		return "undefined token"; break; 
+			case token_t::Eof:			return "end of data";
+			case token_t::LeftBrace:	return "left brace ('{')";
+			case token_t::RightBrace:	return "richt brace ('}')";
+			case token_t::LeftBracket:	return "left bracket ('[')";
+			case token_t::RightBracket:	return "right bracket (']')";
+			case token_t::Comma:		return "comma";
+			case token_t::Colon:		return "colon";
+			case token_t::String:		return "string";
+			case token_t::Integer:		return "integer";
+			case token_t::Number:		return "number";
+			case token_t::True:			return "true";
+			case token_t::False:		return "false";
+			case token_t::Null:			return "null";
+			case token_t::Undef:		return "undefined token";
+            default:                    assert(false); return "???";
 		}
 	}
 

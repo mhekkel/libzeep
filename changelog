@@ -5,7 +5,7 @@ Version 4.0.0
   to the version of nlohmann. Replaces the old element class in
   webapp.
 - Removed parameter_map, get request parameters from request itself.
-- Reorganized code, added a more complete example application (energyd).
+- Reorganized code, separate folder for lib and examples.
 
 Version 3.0.2
 
