@@ -6,3 +6,4 @@ obj
 compile_commands.json
 doc/bin
 libzeep-*.tgz
+make.config

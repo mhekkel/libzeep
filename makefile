@@ -14,6 +14,8 @@ firstTarget: all
 # installation prefix
 PREFIX              ?= /usr/local
 
+-include make.config
+
 # main build variables
 CXX                 ?= c++
 CXXFLAGS            += -O2 $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++14
@@ -23,33 +25,31 @@ LD                  ?= ld
 LDFLAGS				= -g
 
 # default is to only create a static library
-BUILD_STATIC_LIB	= 1
-BUILD_SHARED_LIB	= 0
+BUILD_STATIC_LIB	?= 1
+BUILD_SHARED_LIB	?= 0
 
 # Use the DEBUG flag to build debug versions of the code
-DEBUG               = 0
-
--include make.config
+DEBUG               ?= 0
 
 make.config:
-	@echo "# Use this file to override some of the predefined variables" > $@
-	@echo "#" >> $@
-	@echo "# Specifically, you might want to change these:" >> $@
-	@echo "# PREFIX = $(PREFIX)" >> $@
-	@echo "# CXX = $(CXX)" >> $@
-	@echo "# CXXFLAGS = $(CXXFLAGS)" >> $@
-	@echo "# LD = $(LD)" >> $@
-	@echo "# LDFLAGS = $(LDFLAGS)" >> $@
-	@echo "# BOOST = $(HOME)/my-boost" >> $@
-	@echo "# BOOST_LIB_SUFFIX = $(BOOST_LIB_SUFFIX)" >> $@
-	@echo "#" >> $@
-	@echo "# Default is to build only static libraries, you can change that here" >> $@
-	@echo "# BUILD_STATIC_LIB = $(BUILD_STATIC_LIB)" >> $@
-	@echo "# BUILD_SHARED_LIB = $(BUILD_SHARED_LIB)" >> $@
-	@echo "#" >> $@
-	@echo "# To build a debug version of the library set DEBUG to 1" >> $@
-	@echo "# DEBUG = $(DEBUG)" >> $@
-	echo "Wrote a new make.config file"
+	@ echo "# Use this file to override some of the predefined variables" > $@
+	@ echo "#" >> $@
+	@ echo "# Specifically, you might want to change these:" >> $@
+	@ echo "# PREFIX = $(PREFIX)" >> $@
+	@ echo "# CXX = $(CXX)" >> $@
+	@ echo "# CXXFLAGS = $(CXXFLAGS)" >> $@
+	@ echo "# LD = $(LD)" >> $@
+	@ echo "# LDFLAGS = $(LDFLAGS)" >> $@
+	@ echo "# BOOST = $(HOME)/my-boost" >> $@
+	@ echo "# BOOST_LIB_SUFFIX = $(BOOST_LIB_SUFFIX)" >> $@
+	@ echo "#" >> $@
+	@ echo "# Default is to build only static libraries, you can change that here" >> $@
+	@ echo "# BUILD_STATIC_LIB = $(BUILD_STATIC_LIB)" >> $@
+	@ echo "# BUILD_SHARED_LIB = $(BUILD_SHARED_LIB)" >> $@
+	@ echo "#" >> $@
+	@ echo "# To build a debug version of the library set DEBUG to 1" >> $@
+	@ echo "# DEBUG = $(DEBUG)" >> $@
+	@ echo "Wrote a new make.config file"
 
 VERSION_MAJOR       = 4.0
 VERSION_MINOR       = 0
