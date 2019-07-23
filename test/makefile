@@ -54,6 +54,13 @@ $(OBJDIR):
 
 PROGRAMS			= parser-test xpath-test json-test processor-test
 
+define PROGRAM_template =
+ $(1).log: $(1)
+	./$(1) > $$@
+endef
+
+$(foreach program,$(PROGRAMS),$(eval $(call PROGRAM_template,$(program))))
+
 OBJECTS = $(PROGRAMS:%=$(OBJDIR)/%.o)
 	
 -include $(OBJECTS:%.o=%.d)
@@ -63,6 +70,13 @@ $(OBJECTS:.o=.d):
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
 	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
+
+XML-Test-Suite: XML-Test-Suite.tbz
+	tar xf XML-Test-Suite.tbz
+
+.PHONY: all-tests
+all-tests: all XML-Test-Suite
+	$(MAKE) $(PROGRAMS:%=%.log)
 
 all: $(PROGRAMS)
 .PHONY: all

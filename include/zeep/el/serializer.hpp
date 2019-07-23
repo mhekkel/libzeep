@@ -21,9 +21,13 @@
 
 #if __has_include(<optional>)
 #include <optional>
-#else
+#elif __has_include(<experimental/optional>)
+#include <boost/optional.hpp>
+#elif __has_include(<boost/optional.hpp>)
 #include <boost/optional.hpp>
 namespace std { using boost::optional; }
+#else
+#error "No optional"
 #endif
 
 namespace zeep
@@ -78,7 +82,7 @@ template<typename T, typename Archive>
 struct has_serialize<T, Archive,
 	typename std::enable_if<std::is_class<T>::value>::type>
 {
-	static constexpr bool value = std::experimental::is_detected_v<serialize_function,T,Archive>;
+	static constexpr bool value = std::experimental::is_detected<serialize_function,T,Archive>::value;
 };
 
 template<typename T, typename Archive, typename = void>
@@ -91,9 +95,9 @@ struct is_serializable_array_type<T, Archive,
 		std::experimental::is_detected<el::detail::iterator_t, T>::value and
 		not el::detail::is_compatible_string_type<typename Archive::element_type,T>::value>>
 {
-    static constexpr bool value =
+	static constexpr bool value =
 		el::detail::is_compatible_type<typename T::value_type>::value or
-        has_serialize<typename T::value_type, Archive>::value;
+		has_serialize<typename T::value_type, Archive>::value;
 };
 
 template<typename T, typename Archive, typename = void>
@@ -107,11 +111,11 @@ struct is_serializable_map_type<T, Archive,
 		std::experimental::is_detected<el::detail::iterator_t, T>::value and
 		not el::detail::is_compatible_string_type<typename Archive::element_type,T>::value>>
 {
-    static constexpr bool value =
+	static constexpr bool value =
 		std::is_same<typename T::key_type, std::string>::value and
 		(
 			el::detail::is_compatible_type<typename T::mapped_type>::value or
-        has_serialize<typename T::mapped_type, Archive>::value
+		has_serialize<typename T::mapped_type, Archive>::value
 		);
 };
 
@@ -128,9 +132,9 @@ struct is_serializable_optional_type<T, Archive,
 		std::is_same<has_value_or_result<T>,typename T::value_type>::value and
 		not el::detail::is_compatible_string_type<typename Archive::element_type,T>::value>>
 {
-    static constexpr bool value =
+	static constexpr bool value =
 		el::detail::is_compatible_type<typename T::value_type>::value or
-        has_serialize<typename T::value_type, Archive>::value;
+		has_serialize<typename T::value_type, Archive>::value;
 };
 
 template<typename E>
@@ -400,17 +404,17 @@ namespace detail
 
 struct to_element_fn
 {
-    template<typename T>
-    auto operator()(element& j, T&& val) const noexcept(noexcept(to_element(j, std::forward<T>(val))))
-    -> decltype(to_element(j, std::forward<T>(val)), void())
-    {
-        return to_element(j, std::forward<T>(val));
-    }
+	template<typename T>
+	auto operator()(element& j, T&& val) const noexcept(noexcept(to_element(j, std::forward<T>(val))))
+	-> decltype(to_element(j, std::forward<T>(val)), void())
+	{
+		return to_element(j, std::forward<T>(val));
+	}
 };
 
 namespace
 {
-    constexpr const auto& to_element = typename ::zeep::el::detail::to_element_fn{};
+	constexpr const auto& to_element = typename ::zeep::el::detail::to_element_fn{};
 }
 
 }
