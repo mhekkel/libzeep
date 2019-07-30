@@ -330,14 +330,16 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::NegativeZero:
-			if (ch >= '0' or ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				throw zeep::exception("invalid number in json, should not start with zero");
+			retract();
 			token = token_t::Number;
 			break;
 
 		case state_t::Zero:
-			if (ch >= '0' or ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				throw zeep::exception("invalid number in json, should not start with zero");
+			retract();
 			token = token_t::Number;
 			break;
 
