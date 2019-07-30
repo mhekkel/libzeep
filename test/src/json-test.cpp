@@ -177,6 +177,11 @@ int main()
 				  << std::endl;
 		
 
+		// test nan
+		double d = 1 / 0.;
+		json nan_test{ "d", d };
+		std::cout << nan_test << std::endl;
+
 		// for (auto[key, value]: j_object2.items())
 		// {
 		// 	std::cout << "key: " << key << " value: " << value << std::endl;

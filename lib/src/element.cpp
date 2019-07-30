@@ -726,10 +726,11 @@ void serialize(std::ostream& os, const element& v)
 			break;
 
 		case element::value_type::number_float:
-			if (std::isnan(v.m_data.m_float))
-				os << "NaN";
-			else
+			if (v.m_data.m_float == 0 or std::isnormal(v.m_data.m_float))
 				os << v.m_data.m_float;
+			else
+				// os << "\"NaN\"";
+				os << "null";
 			break;
 
 		case element::value_type::number_int:
