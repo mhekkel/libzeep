@@ -359,9 +359,9 @@ void to_element(J& e, T& v)
 	e = J::value_type::array;
 	for (auto& vi: v)
 	{
-		serializer<J> sr;
-		vi.serialize(sr, 0);
-		e.push_back(std::move(sr.m_elem));
+		J j;
+		zeep::el::detail::to_element(j, vi);
+		e.push_back(std::move(j));
 	}
 }
 
@@ -371,9 +371,9 @@ void to_element(J& e, T& v)
 	e = J::value_type::object;
 	for (auto& vi: v)
 	{
-		serializer<J> sr;
-		vi.second.serialize(sr, 0);
-		e.emplace({ vi.first, std::move(sr.m_elem)});
+		J j;
+		zeep::el::detail::to_element(j, vi.second);
+		e.emplace({ vi.first, std::move(j)});
 	}
 }
 
