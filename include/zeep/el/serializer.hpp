@@ -224,6 +224,10 @@ struct serializer
 	template<typename T>
 	void serialize(const char* name, T& data)
 	{
+		// element_type j;
+		// zeep::el::detail::to_element(j, data);
+		// m_elem.emplace(std::make_pair(name, std::move(j)));
+
 		using serializer_impl = serializer_impl<T>;
 
 		element_type e;
