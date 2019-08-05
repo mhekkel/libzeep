@@ -32,7 +32,8 @@ tag_processor_v2::tag_processor_v2(template_loader& tldr, const std::string& ns)
     using namespace std::placeholders;
 
     register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4));
-    register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4));
+    register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, true));
+    register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, false));
 }
 
 tag_processor_v2::~tag_processor_v2()
@@ -41,120 +42,160 @@ tag_processor_v2::~tag_processor_v2()
 
 void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope, fs::path dir)
 {
-    xml::element* element = dynamic_cast<xml::element*>(node);
+	xml::text *text = dynamic_cast<xml::text *>(node);
+	if (text != nullptr)
+	{
+		xml::container *parent = text->parent();
 
-	if (element == nullptr)
+		std::string s = text->str();
+		auto next = text->next();
+
+		size_t b = 0;
+
+		while (b < s.length())
+		{
+			auto i = s.find('[', b);
+			if (i == std::string::npos)
+				break;
+			
+			char c2 = s[i + 1];
+			if (c2 != '[' and c2 != '(')
+			{
+				b = i + 1;
+				continue;
+			}
+
+			i += 2;
+
+			auto j = s.find(c2 == '(' ? ")]" : "]]", i);
+			if (j == std::string::npos)
+				break;
+			
+			auto m = s.substr(i, j - i);
+
+			if (not el::process_el(parentScope, m))
+				m.clear();
+			else if (c2 == '(' and m.find('<') != std::string::npos)		// 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the 
+			{
+				xml::document subDoc("<foo>" + m + "</foo>");
+				auto foo = subDoc.find_first("//foo");
+
+				for (auto n: foo->children<xml::node>())
+					parent->insert(next, n->clone());
+				
+				text->str(s.substr(0, i - 2));
+
+				s = s.substr(j + 2);
+				b = 0;
+				text = new xml::text(s);
+				parent->insert(next, text);
+			}
+			else
+			{
+				s.replace(i - 2, j - i + 4, m);
+				b = i + m.length();
+			}
+		}
+
+		text->str(s);
+		return;
+	}
+
+	xml::element *e = dynamic_cast<xml::element *>(node);
+	if (e == nullptr)
 		return;
 
-    el::scope scope(parentScope);
+	xml::container *parent = e->parent();
 
-    for (auto attr: element->attributes())
-    {
-        if (attr->ns() != m_ns)
-            continue;
+	try
+	{
+		el::scope scope(parentScope);
 
-        auto h = m_attr_handlers.find(attr->name());
-        if (h != m_attr_handlers.end())
-            h->second(element, attr, scope, dir);
-        else
-        {
-            std::cerr << "Unknown attribute " + attr->name() << std::endl;
-        }
-    }
+		std::list<xml::attribute*> attributes;
+		for (auto& attr: e->attributes())
+			attributes.push_back(attr);
 
-    for (auto child: element->children<zeep::xml::element>())
-        process_xml(child, scope, dir);
+		for (auto attr: attributes)
+		{
+			if (attr->ns() != m_ns)
+				continue;
+
+			auto h = m_attr_handlers.find(attr->name());
+			if (h != m_attr_handlers.end())
+			{
+				auto action = h->second(e, attr, scope, dir);
+
+				if (action == AttributeAction::remove)
+				{
+					parent->remove(node);
+					node = nullptr;
+					break;
+				}
+			}
+
+			e->remove_attribute(attr);
+		}
+
+
+		// el::scope nested(parentScope);
+
+		// processor_map::iterator p = m_processor_table.find(e->name());
+		// if (p != m_processor_table.end())
+		// 	p->second(e, scope, dir);
+		// else
+		// 	throw exception((boost::format("unimplemented <mrs:%1%> tag") % e->name()).str());
+	}
+	catch (exception& ex)
+	{
+		xml::node *replacement = new xml::text(
+			(boost::format("Error processing directive 'mrs:%1%': %2%") %
+				e->name() % ex.what())
+				.str());
+
+		parent->insert(e, replacement);
+	}
+
+	if (node != nullptr)
+	{
+		// make a copy of the list since process_xml might remove eleemnts
+		std::list<xml::node *> nodes;
+		copy(e->node_begin(), e->node_end(), back_inserter(nodes));
+
+		for (xml::node *n : nodes)
+		{
+			process_xml(n, parentScope, dir);
+		}
+	}
 }
 
-void tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir)
+auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir) -> AttributeAction
 {
-    std::cerr << "Processing if" << std::endl;
-
 	el::element obj;
 	el::evaluate_el(scope, attr->value(), obj);
-	
-	std::cout << "Het resultaat van de test is: " << (bool)obj << std::endl;
-
-	// xml::text *text = dynamic_cast<xml::text *>(node);
-
-	// if (text != nullptr)
-	// {
-	// 	std::string s = text->str();
-	// 	if (el::process_el(scope, s))
-	// 		text->str(s);
-	// 	return;
-	// }
-
-	// xml::element *e = dynamic_cast<xml::element *>(node);
-	// if (e == nullptr)
-	// 	return;
-
-	// // if node is one of our special nodes, we treat it here
-	// if (e->ns() == m_ns)
-	// {
-	// 	xml::container *parent = e->parent();
-
-	// 	try
-	// 	{
-	// 		el::scope nested(scope);
-
-	// 		processor_map::iterator p = m_processor_table.find(e->name());
-	// 		if (p != m_processor_table.end())
-	// 			p->second(e, scope, dir);
-	// 		else
-	// 			throw exception((boost::format("unimplemented <mrs:%1%> tag") % e->name()).str());
-	// 	}
-	// 	catch (exception& ex)
-	// 	{
-	// 		xml::node *replacement = new xml::text(
-	// 			(boost::format("Error processing directive 'mrs:%1%': %2%") %
-	// 			 e->name() % ex.what())
-	// 				.str());
-
-	// 		parent->insert(e, replacement);
-	// 	}
-
-	// 	try
-	// 	{
-	// 		//			assert(parent == e->parent());
-	// 		//			assert(find(parent->begin(), parent->end(), e) != parent->end());
-
-	// 		parent->remove(e);
-	// 		delete e;
-	// 	}
-	// 	catch (exception& ex)
-	// 	{
-	// 		std::cerr << "exception: " << ex.what() << std::endl
-	// 				  << *e << std::endl;
-	// 	}
-	// }
-	// else
-	// {
-	// 	for (xml::attribute& a : boost::iterator_range<xml::element::attribute_iterator>(e->attr_begin(), e->attr_end()))
-	// 	{
-	// 		std::string s = a.value();
-	// 		if (process_el(scope, s))
-	// 			a.value(s);
-	// 	}
-
-	// 	std::list<xml::node *> nodes;
-	// 	copy(e->node_begin(), e->node_end(), back_inserter(nodes));
-
-	// 	for (xml::node *n : nodes)
-	// 	{
-	// 		process_xml(n, scope, dir);
-	// 	}
-	// }
+	return obj ? AttributeAction::none : AttributeAction::remove;
 }
 
-void tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir)
+auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, bool escaped) ->AttributeAction
 {
 	el::element obj;
 	el::evaluate_el(scope, attr->value(), obj);
 
-	element->set_text(obj.as<std::string>());
-	element->remove_attribute(attr);
-	delete attr;
+	if (escaped)
+		element->set_text(obj.as<std::string>());
+	else
+	{
+		auto children = element->children<xml::node>();
+		for (auto child: children)
+			element->remove(child);
+
+		xml::document subDoc("<foo>" + obj.as<std::string>() + "</foo>");
+		auto foo = subDoc.find_first("//foo");
+
+		for (auto n: foo->children<xml::node>())
+			element->append(n->clone());
+	}
+
+	return AttributeAction::none;
 }
 
 // void tag_processor::add_processor(const std::string& name, processor_type processor)

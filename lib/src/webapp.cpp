@@ -434,6 +434,8 @@ void basic_webapp::load_template(const std::string& file, xml::document& doc)
 #endif
 		}
 	}
+
+	doc.set_preserve_cdata(true);
 	doc.read(data);
 }
 

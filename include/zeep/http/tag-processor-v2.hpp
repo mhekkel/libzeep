@@ -17,9 +17,14 @@ namespace http
 class tag_processor_v2 : public tag_processor
 {
   public:
-	using attr_handler = std::function<void(xml::element*, xml::attribute*, const el::scope&, boost::filesystem::path)>;
+	enum class AttributeAction
+	{
+		none, remove, replace
+	};
 
-	tag_processor_v2(template_loader& tldr, const std::string& ns = "http://www.cmbi.ru.nl/libzeep/ml");
+	using attr_handler = std::function<AttributeAction(xml::element*, xml::attribute*, const el::scope&, boost::filesystem::path)>;
+
+	tag_processor_v2(template_loader& tldr, const std::string& ns = "http://www.cmbi.ru.nl/libzeep/ml-2");
 
 	virtual ~tag_processor_v2();
 
@@ -34,8 +39,8 @@ class tag_processor_v2 : public tag_processor
   protected:
 
 	// virtual void process_node_attr(xml::node* node, const el::scope& scope, boost::filesystem::path dir);
-	virtual void process_attr_if(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir);
-	virtual void process_attr_text(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir);
+	virtual AttributeAction process_attr_if(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir);
+	virtual AttributeAction process_attr_text(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, bool escaped);
 
 	std::map<std::string, attr_handler> m_attr_handlers;
 };

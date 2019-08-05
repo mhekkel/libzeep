@@ -52,7 +52,7 @@ endif
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-PROGRAMS			= parser-test xpath-test json-test processor-test
+PROGRAMS			= parser-test xpath-test json-test processor-test webapp-v2
 
 define PROGRAM_template =
  $(1).log: $(1)
