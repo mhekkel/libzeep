@@ -29,6 +29,7 @@
 #include <zeep/el/process.hpp>
 #include <zeep/http/md5.hpp>
 #include <zeep/http/tag-processor.hpp>
+#include <zeep/http/tag-processor-v2.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
@@ -146,19 +147,12 @@ bool auth_info::validate(method_type method, const std::string& uri, const std::
 //
 
 basic_webapp::basic_webapp(const fs::path& docroot)
-	: m_docroot(docroot), m_tag_processor(nullptr)
+	: m_docroot(docroot)
 {
 }
 
 basic_webapp::~basic_webapp()
 {
-}
-
-void basic_webapp::set_tag_processor(tag_processor* p)
-{
-	if (m_tag_processor != nullptr)
-		delete m_tag_processor;
-	m_tag_processor = p;
 }
 
 void basic_webapp::handle_request(const request& req, reply& rep)
@@ -446,13 +440,16 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 
 	load_template(file, doc);
 
-	if (m_tag_processor != nullptr)
-		m_tag_processor->process_xml(doc.child(), scope, "/");
+	for (auto& tpc: m_tag_processor_creators)
+	{
+		std::unique_ptr<tag_processor> processor(tpc.second->create(tpc.first));
+		processor->process_xml(doc.child(), scope, "/", *this);
+	}
 
-	doc.set_doctype("html", "", "about:legacy-compat");
-	
 	reply.set_content(doc);
 
+	// this is required to make the document HTML5 compliant, sort of
+	doc.set_doctype("html", "", "about:legacy-compat");
 	reply.set_content_type("text/html; charset=utf-8");
 }
 
@@ -518,10 +515,9 @@ std::string basic_webapp::get_hashed_password(const std::string& username, const
 // --------------------------------------------------------------------
 //
 
-webapp::webapp(const std::string& ns, const boost::filesystem::path& docroot)
+webapp::webapp(const boost::filesystem::path& docroot)
 	: basic_webapp(docroot)
 {
-	set_tag_processor(new tag_processor(*this, ns));
 }
 
 webapp::~webapp()

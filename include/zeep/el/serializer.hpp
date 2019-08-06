@@ -364,7 +364,7 @@ void to_element(J& e, T& v)
 	for (auto& vi: v)
 	{
 		J j;
-		zeep::el::detail::to_element(j, vi);
+		to_element(j, vi);
 		e.push_back(std::move(j));
 	}
 }
@@ -376,7 +376,7 @@ void to_element(J& e, T& v)
 	for (auto& vi: v)
 	{
 		J j;
-		zeep::el::detail::to_element(j, vi.second);
+		to_element(j, vi.second);
 		e.emplace({ vi.first, std::move(j)});
 	}
 }

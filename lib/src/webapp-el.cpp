@@ -42,7 +42,7 @@ struct interpreter
 
 	object evaluate(const string &s);
 
-	void process(string &s);
+	bool process(string &s);
 
 	void match(uint32_t t);
 
@@ -60,6 +60,20 @@ struct interpreter
 	object parse_multiplicative_expr(); // unary_expr (('%'|'/') unary_expr)*
 	object parse_unary_expr();			// ('-')? primary_expr
 	object parse_primary_expr();		// '(' expr ')' | number | string
+
+	// --------------------------------------------------------------------
+	// these are for inside ${} templates
+
+	object parse_template_expr();					// or_expr ( '?' expr ':' expr )?
+	object parse_template_or_expr();				// and_expr ( 'or' and_expr)*
+	object parse_template_and_expr();				// equality_expr ( 'and' equality_expr)*
+	object parse_template_equality_expr();			// relational_expr ( ('=='|'!=') relational_expr )?
+	object parse_template_relational_expr();		// additive_expr ( ('<'|'<='|'>='|'>') additive_expr )*
+	object parse_template_additive_expr();			// multiplicative_expr ( ('+'|'-') multiplicative_expr)*
+	object parse_template_multiplicative_expr();	 // unary_expr (('%'|'/') unary_expr)*
+	object parse_template_unary_expr();				// ('-')? primary_expr
+	object parse_template_primary_expr();			// '(' expr ')' | number | string
+
 
 	const scope &m_scope;
 	uint32_t m_lookahead;
@@ -90,7 +104,6 @@ enum token_type
 	elt_and,
 	elt_or,
 	elt_not,
-	elt_empty,
 	elt_eq,
 	elt_ne,
 	elt_lt,
@@ -106,6 +119,8 @@ enum token_type
 	elt_rparen,
 	elt_lbracket,
 	elt_rbracket,
+	elt_lbrace,
+	elt_rbrace,
 	elt_if,
 	elt_else,
 	elt_dot,
@@ -113,11 +128,16 @@ enum token_type
 	elt_true,
 	elt_false,
 	elt_in,
-	elt_comma
+	elt_comma,
+
+	elt_variable_template,
+	elt_selection_template,
+	elt_message_template,
+	elt_link_template,
+	elt_fragment_template
 };
 
-object interpreter::evaluate(
-	const string &s)
+object interpreter::evaluate(const string &s)
 {
 	object result;
 
@@ -131,30 +151,33 @@ object interpreter::evaluate(
 			result = parse_expr();
 		match(elt_eof);
 	}
-	catch (exception & /* e */)
+	catch (const exception& e)
 	{
-		//		if (VERBOSE)
-		//			cerr << e.what() << endl;
+		result = "Error parsing expression: "s + e.what();
 	}
 
 	return result;
 }
 
-void interpreter::process(string &s)
+bool interpreter::process(string &s)
 {
+	bool result = false;
+
 	try
 	{
 		m_ptr = s.begin();
 		m_end = s.end();
 		get_next_token();
 
-		object result;
+		object obj;
 
 		if (m_lookahead != elt_eof)
-			result = parse_expr();
+			obj = parse_expr();
 		match(elt_eof);
 
-		s = result.as<string>();
+		s = obj.as<string>();
+
+		result = true;
 	}
 	catch (exception &e)
 	{
@@ -164,6 +187,8 @@ void interpreter::process(string &s)
 		s = "error in el expression: ";
 		s += e.what();
 	}
+
+	return result;
 }
 
 void interpreter::match(uint32_t t)
@@ -257,12 +282,13 @@ void interpreter::get_next_token()
 		els_Number,
 		els_NumberFraction,
 		els_Name,
-		els_Literal
+		els_Literal,
+
+		els_TemplateStart
 	} state = els_Start;
 
 	token_type token = elt_undef;
 	double fraction = 1.0;
-	unicode quoteChar = 0;
 
 	m_token_string.clear();
 
@@ -290,14 +316,17 @@ void interpreter::get_next_token()
 			case ']':
 				token = elt_rbracket;
 				break;
+			case '{':
+				token = elt_lbrace;
+				break;
+			case '}':
+				token = elt_rbrace;
+				break;
 			case ':':
 				token = elt_else;
 				break;
 			case '?':
 				token = elt_if;
-				break;
-			case '*':
-				token = elt_mult;
 				break;
 			case '/':
 				token = elt_div;
@@ -326,6 +355,15 @@ void interpreter::get_next_token()
 			case '>':
 				state = els_GreaterThan;
 				break;
+
+			case '*':
+			case '$':
+			case '#':
+			case '@':
+			case '~':
+				state = els_TemplateStart;
+				break;
+
 			case ' ':
 			case '\n':
 			case '\r':
@@ -333,11 +371,6 @@ void interpreter::get_next_token()
 				m_token_string.clear();
 				break;
 			case '\'':
-				quoteChar = ch;
-				state = els_Literal;
-				break;
-			case '"':
-				quoteChar = ch;
 				state = els_Literal;
 				break;
 
@@ -351,6 +384,29 @@ void interpreter::get_next_token()
 					state = els_Name;
 				else
 					throw zeep::exception("invalid character (" + xml::to_hex(ch) + ") in expression");
+			}
+			break;
+
+		case els_TemplateStart:
+			if (ch == '{')
+			{
+				switch (m_token_string[0])
+				{
+					case '$':	token = elt_variable_template; break;
+					case '*':	token = elt_selection_template; break;
+					case '#':	token = elt_message_template; break;
+					case '@':	token = elt_link_template; break;
+					case '~':	token = elt_fragment_template; break;
+					default: assert(false);
+				}
+			}
+			else
+			{
+				retract();
+				if (ch == '*')
+					token = elt_mult;
+				else
+					throw zeep::exception("invalid character (" + (isprint(ch) ? ch : ' ') + '/' + xml::to_hex(ch) + ") in expression");
 			}
 			break;
 
@@ -431,8 +487,6 @@ void interpreter::get_next_token()
 					token = elt_or;
 				else if (m_token_string == "not")
 					token = elt_not;
-				else if (m_token_string == "empty")
-					token = elt_empty;
 				else if (m_token_string == "lt")
 					token = elt_lt;
 				else if (m_token_string == "le")
@@ -459,7 +513,7 @@ void interpreter::get_next_token()
 		case els_Literal:
 			if (ch == 0)
 				throw zeep::exception("run-away string, missing quote character?");
-			else if (ch == quoteChar)
+			else if (ch == '\'')
 			{
 				token = elt_string;
 				m_token_string = m_token_string.substr(1, m_token_string.length() - 2);
@@ -483,12 +537,18 @@ object interpreter::parse_expr()
 		{
 			match(m_lookahead);
 			object a = parse_expr();
-			match(elt_else);
-			object b = parse_expr();
-			if (result.as<bool>())
+
+			if (m_lookahead == elt_else)
+			{
+				match(elt_else);
+				object b = parse_expr();
+				if (result.as<bool>())
+					result = a;
+				else
+					result = b;
+			}
+			else if (result.as<bool>())
 				result = a;
-			else
-				result = b;
 		}
 
 		if (m_lookahead != elt_comma)
@@ -653,114 +713,297 @@ object interpreter::parse_primary_expr()
 	object result;
 	switch (m_lookahead)
 	{
-	case elt_true:
-		result = true;
-		break;
-	case elt_false:
-		result = false;
-		break;
-	case elt_number:
-		result = m_token_number;
-		match(m_lookahead);
-		break;
-	case elt_string:
-		result = m_token_string;
-		match(m_lookahead);
-		break;
-	case elt_lparen:
-		match(m_lookahead);
-		result = parse_expr();
-		match(elt_rparen);
-		break;
-	case elt_object:
-		result = m_scope.lookup(m_token_string);
-		match(elt_object);
-		for (;;)
-		{
-			if (m_lookahead == elt_dot)
-			{
-				match(m_lookahead);
-				if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
-					result = object((uint32_t)result.size());
-				else if (result.type() == object::value_type::object)
-					result = const_cast<const object &>(result)[m_token_string];
-				else
-					result = object::value_type::null;
-				match(elt_object);
-				continue;
-			}
-
-			if (m_lookahead == elt_lbracket)
-			{
-				match(m_lookahead);
-
-				object index = parse_expr();
-				match(elt_rbracket);
-
-				if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
-					result = object();
-				else if (result.type() == object::value_type::array)
-					result = result[index.as<int>()];
-				else if (result.type() == object::value_type::object)
-					result = result[index.as<string>()];
-				else
-					result = object::value_type::null;
-				continue;
-			}
-
+		case elt_variable_template:
+			match(elt_variable_template);
+			result = parse_template_expr();
+			match(elt_rbrace);
 			break;
-		}
-		break;
-	case elt_empty:
-		match(m_lookahead);
-		if (m_lookahead != elt_object)
-			throw zeep::exception("syntax error, expected an object after operator 'empty'");
-		result = parse_primary_expr().empty();
-		break;
-	default:
-		throw zeep::exception("syntax error, expected number, string or object");
+
+		case elt_true:
+			result = true;
+			break;
+		case elt_false:
+			result = false;
+			break;
+		case elt_number:
+			result = m_token_number;
+			match(m_lookahead);
+			break;
+		case elt_string:
+			result = m_token_string;
+			match(m_lookahead);
+			break;
+		case elt_lparen:
+			match(m_lookahead);
+			result = parse_expr();
+			match(elt_rparen);
+			break;
+
+		default:
+			throw zeep::exception("syntax error, expected number, string or object");
 	}
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+object interpreter::parse_template_expr()
+{
+	object result;
+	
+	result = parse_template_or_expr();
+
+	if (m_lookahead == elt_if)
+	{
+		match(m_lookahead);
+		object a = parse_template_expr();
+
+#warning("aanpassen")
+		match(elt_else);
+		object b = parse_template_expr();
+		if (result.as<bool>())
+			result = a;
+		else
+			result = b;
+	}
+
+	return result;
+}
+
+object interpreter::parse_template_or_expr()
+{
+	object result = parse_template_and_expr();
+	while (m_lookahead == elt_or)
+	{
+		match(m_lookahead);
+		bool b1 = result.as<bool>();
+		bool b2 = parse_template_and_expr().as<bool>();
+		result = b1 or b2;
+	}
+	return result;
+}
+
+object interpreter::parse_template_and_expr()
+{
+	object result = parse_template_equality_expr();
+	while (m_lookahead == elt_and)
+	{
+		match(m_lookahead);
+		bool b1 = result.as<bool>();
+		bool b2 = parse_template_equality_expr().as<bool>();
+		result = b1 and b2;
+	}
+	return result;
+}
+
+object interpreter::parse_template_equality_expr()
+{
+	object result = parse_template_relational_expr();
+	if (m_lookahead == elt_eq)
+	{
+		match(m_lookahead);
+		result = (result == parse_template_relational_expr());
+	}
+	else if (m_lookahead == elt_ne)
+	{
+		match(m_lookahead);
+		result = not(result == parse_template_relational_expr());
+	}
+	return result;
+}
+
+object interpreter::parse_template_relational_expr()
+{
+	object result = parse_template_additive_expr();
+	switch (m_lookahead)
+	{
+		case elt_lt:
+			match(m_lookahead);
+			result = (result < parse_template_additive_expr());
+			break;
+		case elt_le:
+			match(m_lookahead);
+			result = (result <= parse_template_additive_expr());
+			break;
+		case elt_ge:
+			match(m_lookahead);
+			result = (parse_template_additive_expr() <= result);
+			break;
+		case elt_gt:
+			match(m_lookahead);
+			result = (parse_template_additive_expr() < result);
+			break;
+		case elt_not:
+		{
+			match(elt_not);
+			match(elt_in);
+
+			object list = parse_template_additive_expr();
+
+			result = not list.contains(result);
+			break;
+		}
+		case elt_in:
+		{
+			match(m_lookahead);
+			object list = parse_template_additive_expr();
+
+			result = list.contains(result);
+			break;
+		}
+		default:
+			break;
+	}
+	return result;
+}
+
+object interpreter::parse_template_additive_expr()
+{
+	object result = parse_template_multiplicative_expr();
+	while (m_lookahead == elt_plus or m_lookahead == elt_minus)
+	{
+		if (m_lookahead == elt_plus)
+		{
+			match(m_lookahead);
+			result = (result + parse_template_multiplicative_expr());
+		}
+		else
+		{
+			match(m_lookahead);
+			result = (result - parse_template_multiplicative_expr());
+		}
+	}
+	return result;
+}
+
+object interpreter::parse_template_multiplicative_expr()
+{
+	object result = parse_template_unary_expr();
+	while (m_lookahead == elt_div or m_lookahead == elt_mod or m_lookahead == elt_mult)
+	{
+		if (m_lookahead == elt_mult)
+		{
+			match(m_lookahead);
+			result = (result * parse_template_unary_expr());
+		}
+		else if (m_lookahead == elt_div)
+		{
+			match(m_lookahead);
+			result = (result / parse_template_unary_expr());
+		}
+		else
+		{
+			match(m_lookahead);
+			result = (result % parse_template_unary_expr());
+		}
+	}
+	return result;
+}
+
+object interpreter::parse_template_unary_expr()
+{
+	object result;
+	if (m_lookahead == elt_minus)
+	{
+		match(m_lookahead);
+		result = -(parse_template_primary_expr());
+	}
+	else if (m_lookahead == elt_not)
+	{
+		match(m_lookahead);
+		result = not parse_template_primary_expr().as<bool>();
+	}
+	else
+		result = parse_template_primary_expr();
+	return result;
+}
+
+object interpreter::parse_template_primary_expr()
+{
+	object result;
+	switch (m_lookahead)
+	{
+		case elt_true:
+			result = true;
+			break;
+		case elt_false:
+			result = false;
+			break;
+		case elt_number:
+			result = m_token_number;
+			match(m_lookahead);
+			break;
+		case elt_string:
+			result = m_token_string;
+			match(m_lookahead);
+			break;
+		case elt_lparen:
+			match(m_lookahead);
+			result = parse_expr();
+			match(elt_rparen);
+			break;
+		case elt_object:
+			result = m_scope.lookup(m_token_string);
+			match(elt_object);
+			for (;;)
+			{
+				if (m_lookahead == elt_dot)
+				{
+					match(m_lookahead);
+					if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
+						result = object((uint32_t)result.size());
+					else if (m_token_string == "empty")
+						result = result.empty();
+					else if (result.type() == object::value_type::object)
+						result = const_cast<const object &>(result)[m_token_string];
+					else
+						result = object::value_type::null;
+					match(elt_object);
+					continue;
+				}
+
+				if (m_lookahead == elt_lbracket)
+				{
+					match(m_lookahead);
+
+					object index = parse_expr();
+					match(elt_rbracket);
+
+					if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
+						result = object();
+					else if (result.type() == object::value_type::array)
+						result = result[index.as<int>()];
+					else if (result.type() == object::value_type::object)
+						result = result[index.as<string>()];
+					else
+						result = object::value_type::null;
+					continue;
+				}
+
+				break;
+			}
+			break;
+
+		default:
+			throw zeep::exception("syntax error, expected number, string or object");
+	}
+	return result;
+}
+
 
 // --------------------------------------------------------------------
 // interpreter calls
 
 bool process_el(const el::scope &scope, string &text)
 {
-	static const boost::regex re("\\$\\{([^}]+)\\}");
-
 	el::interpreter interpreter(scope);
-
-	ostringstream os;
-	ostream_iterator<char, char> out(os);
-	boost::regex_replace(out, text.begin(), text.end(), re, interpreter,
-						 boost::match_default | boost::format_all);
-
-	bool result = false;
-	if (os.str() != text)
-	{
-		//cerr << "processed \"" << text << "\" => \"" << os.str() << '"' << endl;
-		text = os.str();
-		result = true;
-	}
-
-	return result;
+	return interpreter.process(text);
 }
 
 void evaluate_el(const el::scope &scope, const string &text, el::object &result)
 {
-	static const boost::regex re("^\\$\\{([^}]+)\\}$");
-
-	boost::smatch m;
-	if (boost::regex_match(text, m, re))
-	{
-		el::interpreter interpreter(scope);
-		result = interpreter.evaluate(m[1]);
-		//cerr << "evaluated \"" << text << "\" => \"" << result << '"' << endl;
-	}
-	else
-		result = text;
+	el::interpreter interpreter(scope);
+	result = interpreter.evaluate(text);
 }
 
 bool evaluate_el(const el::scope &scope, const string &text)

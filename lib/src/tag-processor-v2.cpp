@@ -5,7 +5,6 @@
 
 #include <zeep/config.hpp>
 
-#include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 
@@ -24,23 +23,40 @@ namespace http
 {
 
 // --------------------------------------------------------------------
+
+int attribute_precedence(const xml::attribute* attr)
+{
+		 if (attr->name() == "insert" or attr->name() == "replace")		return -10;
+	else if (attr->name() == "each")									return -9;
+	else if (attr->name() == "if" or attr->name() == "unless" or
+			 attr->name() == "switch" or attr->name() == "case")		return -8;
+	else if (attr->name() == "object" or attr->name() == "with")		return -7;
+	else if (attr->name() == "attr" or attr->name() == "attrappend" or
+			 attr->name() == "attrprepend")								return -6;
+
+	else if (attr->name() == "text" or attr->name() == "utext")			return 1;
+	else if (attr->name() == "fragment")								return 2;
+	else if (attr->name() == "remove")									return 3;
+
+	else																return 0;
+};
+
+// --------------------------------------------------------------------
 //
 
-tag_processor_v2::tag_processor_v2(template_loader& tldr, const std::string& ns)
-    : tag_processor(tldr, ns)
+tag_processor_v2::tag_processor_v2(const std::string& ns)
+    : tag_processor(ns)
 {
     using namespace std::placeholders;
 
-    register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4));
-    register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, true));
-    register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, false));
+    register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5));
+    register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, true));
+    register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, false));
+    register_attr_handler("each", std::bind(&tag_processor_v2::process_attr_each, this, _1, _2, _3, _4, _5));
+    register_attr_handler("attr", std::bind(&tag_processor_v2::process_attr_attr, this, _1, _2, _3, _4, _5));
 }
 
-tag_processor_v2::~tag_processor_v2()
-{
-}
-
-void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope, fs::path dir)
+void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope, fs::path dir, basic_webapp& webapp)
 {
 	xml::text *text = dynamic_cast<xml::text *>(node);
 	if (text != nullptr)
@@ -111,19 +127,30 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 	{
 		el::scope scope(parentScope);
 
-		std::list<xml::attribute*> attributes;
+		std::vector<xml::attribute*> attributes;
 		for (auto& attr: e->attributes())
 			attributes.push_back(attr);
+		
+		sort(attributes.begin(), attributes.end(), [](auto a, auto b) { return attribute_precedence(a) < attribute_precedence(b); });
 
 		for (auto attr: attributes)
 		{
 			if (attr->ns() != m_ns)
 				continue;
-
-			auto h = m_attr_handlers.find(attr->name());
-			if (h != m_attr_handlers.end())
+			
+			if (attr->name() == "inline")
 			{
-				auto action = h->second(e, attr, scope, dir);
+
+			}
+			else
+			{
+				auto h = m_attr_handlers.find(attr->name());
+
+				AttributeAction action;
+				if (h != m_attr_handlers.end())
+					action = h->second(e, attr, scope, dir, webapp);
+				else
+					action = process_attr_generic(e, attr, scope, dir, webapp);
 
 				if (action == AttributeAction::remove)
 				{
@@ -148,9 +175,7 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 	catch (exception& ex)
 	{
 		xml::node *replacement = new xml::text(
-			(boost::format("Error processing directive 'mrs:%1%': %2%") %
-				e->name() % ex.what())
-				.str());
+			"Error processing directive '" + e->prefix() + ':' + e->name() + "': " + ex.what());
 
 		parent->insert(e, replacement);
 	}
@@ -162,20 +187,16 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 		copy(e->node_begin(), e->node_end(), back_inserter(nodes));
 
 		for (xml::node *n : nodes)
-		{
-			process_xml(n, parentScope, dir);
-		}
+			process_xml(n, parentScope, dir, webapp);
 	}
 }
 
-auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir) -> AttributeAction
+auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp) -> AttributeAction
 {
-	el::element obj;
-	el::evaluate_el(scope, attr->value(), obj);
-	return obj ? AttributeAction::none : AttributeAction::remove;
+	return el::evaluate_el(scope, attr->value()) ? AttributeAction::none : AttributeAction::remove;
 }
 
-auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, bool escaped) ->AttributeAction
+auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp, bool escaped) ->AttributeAction
 {
 	el::element obj;
 	el::evaluate_el(scope, attr->value(), obj);
@@ -197,6 +218,97 @@ auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* 
 
 	return AttributeAction::none;
 }
+
+// --------------------------------------------------------------------
+
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp)
+{
+	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
+
+	std::smatch m;
+	auto s = attr->str();
+
+	if (not std::regex_match(s, m, kEachRx))
+		throw std::runtime_error("Invalid attribute value for :each");
+
+	std::string var = m[1];
+	std::string stat = m[2];
+	
+	el::object collection;
+	el::evaluate_el(scope, m[3], collection);
+
+	if (not collection.is_array())
+		throw std::runtime_error("Collection is not an array in :each");
+
+	xml::container *parent = node->parent();
+	assert(parent);
+
+	size_t collectionSize = collection.size();
+	size_t i = 0;
+
+	for (auto v: collection)
+	{
+		el::scope s(scope);
+		s.put(var, v);
+
+		if (not stat.empty())
+			s.put(stat, el::object{
+				{ "index", i},
+				{ "count", i + 1},
+				{ "size", collectionSize },
+				{ "current", v},
+				{ "even", i % 2 == 1 },
+				{ "odd", i % 2 == 0 },
+				{ "first", i == 0 },
+				{ "last", i + 1 == collectionSize }
+			});
+
+		xml::element* clone = static_cast<xml::element*>(node->clone());
+
+		clone->remove_attribute(attr->qname());
+
+		parent->insert(node, clone); // insert before processing, to assign namespaces
+		process_xml(clone, s, dir, webapp);
+
+		++i;
+	}	
+
+	return AttributeAction::remove;
+}
+
+// --------------------------------------------------------------------
+
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp)
+{
+	auto s = attr->str();
+
+	const std::regex kRx(R"((\w[-_[:alnum:]]+)\s*=\s*(.+?)(?=$|,\s*\w[-_[:alnum:]]+=))");
+
+	auto b = std::sregex_iterator(s.begin(), s.end(), kRx);
+	auto e = std::sregex_iterator();
+
+	for (auto i = b; i != e; ++i)
+	{
+		auto v = i->str(2);
+		el::process_el(scope, v);
+		node->set_attribute(i->str(1), v);
+	}
+
+	return AttributeAction::none;
+}
+
+// --------------------------------------------------------------------
+
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp)
+{
+	auto s = attr->str();
+
+	el::process_el(scope, s);
+	node->set_attribute(attr->name(), s);
+
+	return AttributeAction::none;
+}
+
 
 // void tag_processor::add_processor(const std::string& name, processor_type processor)
 // {

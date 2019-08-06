@@ -2986,7 +2986,7 @@ void parser_imp::element(doctype::validator& valid)
 		uri = ns.default_ns();
 
 	// sort the attributes (why? disabled to allow similar output)
-	attrs.sort([](auto& a, auto& b) { return a.m_name < b.m_name; });
+	// attrs.sort([](auto& a, auto& b) { return a.m_name < b.m_name; });
 
 	if (m_lookahead == '/')
 	{
