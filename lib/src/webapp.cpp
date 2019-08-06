@@ -446,10 +446,10 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 		processor->process_xml(doc.child(), scope, "/", *this);
 	}
 
-	reply.set_content(doc);
-
 	// this is required to make the document HTML5 compliant, sort of
 	doc.set_doctype("html", "", "about:legacy-compat");
+	reply.set_content(doc);
+
 	reply.set_content_type("text/html; charset=utf-8");
 }
 

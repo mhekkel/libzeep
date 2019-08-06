@@ -446,12 +446,44 @@ BOOST_AUTO_TEST_CASE(test_11)
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE(test_12)
 {
     auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
 <test m:class="${ok}? 'ok'" />
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test class="ok" />
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+
+    zeep::el::scope scope(*static_cast<zeep::http::request*>(nullptr));
+     scope.put("ok", true);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+
+BOOST_AUTO_TEST_CASE(test_13)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:class="${not ok} ?: 'ok'" />
 </data>
     )"_xml;
 

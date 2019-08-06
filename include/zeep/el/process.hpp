@@ -57,6 +57,17 @@ void evaluate_el(const scope& scope, const std::string& text, object& result);
 /// \return       Returns true if \a text was changed.
 bool evaluate_el(const scope& scope, const std::string& text);
 
+/// \brief Process the text in \a text and return a list of name/value pairs
+///
+///	The expressions found in \a text are processed and the result is
+/// 				returned as a list of name/value pairs to be used in e.g.
+///                 processing a m2:attr attribute.
+/// \param scope  The scope for the el scripts
+/// \param text   The text optionally containing el scripts.
+/// \return       list of name/value pairs
+std::vector<std::pair<std::string,std::string>> evaluate_el_attr(const scope& scope, const std::string& text);
+
+
 // --------------------------------------------------------------------
 
 class scope

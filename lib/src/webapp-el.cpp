@@ -42,6 +42,8 @@ struct interpreter
 
 	object evaluate(const string &s);
 
+	vector<pair<string,string>> evaluate_attr_expr(const string& s);
+
 	bool process(string &s);
 
 	void match(uint32_t t);
@@ -74,6 +76,9 @@ struct interpreter
 	object parse_template_unary_expr();				// ('-')? primary_expr
 	object parse_template_primary_expr();			// '(' expr ')' | number | string
 
+	object parse_utility_expr();
+
+	object call_method(const string& className, const string& method, vector<object>& params);
 
 	const scope &m_scope;
 	uint32_t m_lookahead;
@@ -122,8 +127,10 @@ enum token_type
 	elt_lbrace,
 	elt_rbrace,
 	elt_if,
+	elt_elvis,
 	elt_else,
 	elt_dot,
+	elt_hash,
 
 	elt_true,
 	elt_false,
@@ -155,6 +162,36 @@ object interpreter::evaluate(const string &s)
 	{
 		result = "Error parsing expression: "s + e.what();
 	}
+
+	return result;
+}
+
+vector<pair<string,string>> interpreter::evaluate_attr_expr(const string& s)
+{
+	vector<pair<string,string>> result;
+
+	m_ptr = s.begin();
+	m_end = s.end();
+	get_next_token();
+
+	for (;;)
+	{
+		string var = m_token_string;
+		match(elt_object);
+
+		match (elt_eq);
+
+		auto value = parse_expr();
+
+		result.emplace_back(var, value.as<string>());
+
+		if (m_lookahead != elt_comma)
+			break;
+		
+		match(elt_comma);
+	}
+
+	match(elt_eof);
 
 	return result;
 }
@@ -279,10 +316,13 @@ void interpreter::get_next_token()
 		els_ExclamationMark,
 		els_LessThan,
 		els_GreaterThan,
+		els_Question,
 		els_Number,
 		els_NumberFraction,
 		els_Name,
 		els_Literal,
+
+		els_Hash,
 
 		els_TemplateStart
 	} state = els_Start;
@@ -326,7 +366,7 @@ void interpreter::get_next_token()
 				token = elt_else;
 				break;
 			case '?':
-				token = elt_if;
+				state = els_Question;
 				break;
 			case '/':
 				token = elt_div;
@@ -403,10 +443,12 @@ void interpreter::get_next_token()
 			else
 			{
 				retract();
-				if (ch == '*')
+				if (m_token_string[0] == '*')
 					token = elt_mult;
+				else if (m_token_string[0] == '#')
+					state = els_Hash;
 				else
-					throw zeep::exception("invalid character (" + (isprint(ch) ? ch : ' ') + '/' + xml::to_hex(ch) + ") in expression");
+					throw zeep::exception("invalid character (" + string{(isprint(ch) ? ch : ' ')} + '/' + xml::to_hex(ch) + ") in expression");
 			}
 			break;
 
@@ -414,6 +456,16 @@ void interpreter::get_next_token()
 			if (ch != '=')
 				retract();
 			token = elt_eq;
+			break;
+
+		case els_Question:
+			if (ch == ':')
+				token = elt_elvis;
+			else
+			{
+				retract();
+				token = elt_if;
+			}
 			break;
 
 		case els_ExclamationMark:
@@ -519,6 +571,14 @@ void interpreter::get_next_token()
 				m_token_string = m_token_string.substr(1, m_token_string.length() - 2);
 			}
 			break;
+		
+		case els_Hash:
+			if (ch == '.' or not zeep::xml::is_name_char(ch))
+			{
+				retract();
+				token = elt_hash;
+			}
+			break;
 		}
 	}
 
@@ -529,32 +589,32 @@ object interpreter::parse_expr()
 {
 	object result;
 	
-	for (;;)
+	result = parse_or_expr();
+
+	if (m_lookahead == elt_if)
 	{
-		result = parse_or_expr();
+		match(m_lookahead);
+		object a = parse_expr();
 
-		if (m_lookahead == elt_if)
+		if (m_lookahead == elt_else)
 		{
-			match(m_lookahead);
-			object a = parse_expr();
-
-			if (m_lookahead == elt_else)
-			{
-				match(elt_else);
-				object b = parse_expr();
-				if (result.as<bool>())
-					result = a;
-				else
-					result = b;
-			}
-			else if (result.as<bool>())
+			match(elt_else);
+			object b = parse_expr();
+			if (result.as<bool>())
 				result = a;
+			else
+				result = b;
 		}
+		else if (result.as<bool>())
+			result = a;
+	}
+	else if (m_lookahead == elt_elvis)
+	{
+		match(m_lookahead);
+		object a = parse_expr();
 
-		if (m_lookahead != elt_comma)
-			break;
-
-		match(elt_comma);
+		if (not result.as<bool>())
+			result = a;
 	}
 
 	return result;
@@ -758,13 +818,25 @@ object interpreter::parse_template_expr()
 		match(m_lookahead);
 		object a = parse_template_expr();
 
-#warning("aanpassen")
-		match(elt_else);
-		object b = parse_template_expr();
-		if (result.as<bool>())
+		if (m_lookahead == elt_else)
+		{
+			match(elt_else);
+			object b = parse_template_expr();
+			if (result.as<bool>())
+				result = a;
+			else
+				result = b;
+		}
+		else if (result.as<bool>())
 			result = a;
-		else
-			result = b;
+	}
+	else if (m_lookahead == elt_elvis)
+	{
+		match(m_lookahead);
+		object a = parse_template_expr();
+
+		if (not result.as<bool>())
+			result = a;
 	}
 
 	return result;
@@ -942,6 +1014,11 @@ object interpreter::parse_template_primary_expr()
 			result = parse_expr();
 			match(elt_rparen);
 			break;
+
+		case elt_hash:
+			result = parse_utility_expr();
+			break;
+
 		case elt_object:
 			result = m_scope.lookup(m_token_string);
 			match(elt_object);
@@ -966,7 +1043,7 @@ object interpreter::parse_template_primary_expr()
 				{
 					match(m_lookahead);
 
-					object index = parse_expr();
+					object index = parse_template_expr();
 					match(elt_rbracket);
 
 					if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
@@ -990,6 +1067,62 @@ object interpreter::parse_template_primary_expr()
 	return result;
 }
 
+object interpreter::parse_utility_expr()
+{
+	auto className = m_token_string;
+	match(elt_hash);
+	match(elt_dot);
+	auto method = m_token_string;
+	match(elt_object);
+
+	vector<object> params;
+	if (m_lookahead == elt_lparen)
+	{
+		match(elt_lparen);
+		while (m_lookahead != elt_rparen)
+		{
+			params.push_back(parse_template_expr());
+			
+			if (m_lookahead == elt_comma)
+			{
+				match(elt_comma);
+				continue;
+			}
+
+			break;
+		}
+		match(elt_rparen);
+	}
+
+	return call_method(className, method, params);
+}
+
+object interpreter::call_method(const string& className, const string& method, vector<object>& params)
+{
+	object result;
+	if (className == "#dates")
+	{
+		if (method == "format")
+		{
+			tm t = {};
+			istringstream ss(params[0].as<string>());
+			// ss.imbue(std::locale("de_DE.utf-8"));
+			ss >> get_time(&t, "%Y-%m-%d %H:%M:%S");
+			if (ss.fail())
+				throw runtime_error("Invalid date");
+			
+			ostringstream os;
+			os << put_time(&t, params[1].as<string>().c_str());
+			result = os.str();
+		}
+		else
+			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+	}
+	else
+		throw runtime_error("Undefined class for utility object call: " + className);
+	
+	return result;
+}
 
 // --------------------------------------------------------------------
 // interpreter calls
@@ -1011,6 +1144,12 @@ bool evaluate_el(const el::scope &scope, const string &text)
 	el::object result;
 	evaluate_el(scope, text, result);
 	return result.as<bool>();
+}
+
+vector<pair<string,string>> evaluate_el_attr(const scope& scope, const string& text)
+{
+	el::interpreter interpreter(scope);
+	return interpreter.evaluate_attr_expr(text);
 }
 
 // --------------------------------------------------------------------
