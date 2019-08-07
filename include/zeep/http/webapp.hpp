@@ -30,8 +30,6 @@ namespace zeep
 namespace http
 {
 
-class tag_processor;
-
 /// webapps can use authentication, this exception is thrown for unauthorized access
 
 struct unauthorized_exception : public std::exception
@@ -101,23 +99,9 @@ class basic_webapp
 
   protected:
 
-	struct tag_processor_creator_base
-	{
-		virtual ~tag_processor_creator_base() = default;
+	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
 
-		virtual tag_processor* create(const std::string& ns) = 0;
-	};
-
-	template<typename TagProcessor>
-	struct tag_processor_creator : public tag_processor_creator_base
-	{
-		virtual tag_processor* create(const std::string& ns)
-		{
-			return new TagProcessor(ns);
-		}
-	};
-
-	std::map<std::string,std::shared_ptr<tag_processor_creator_base>> m_tag_processor_creators;
+	virtual void process_tags(xml::element* node, const el::scope& scope, std::set<std::string> registeredNamespaces);
 
   public:
 
@@ -125,15 +109,19 @@ class basic_webapp
 	template<typename TagProcessor>
 	void register_tag_processor(const std::string& ns)
 	{
-		m_tag_processor_creators.emplace(ns, new tag_processor_creator<TagProcessor>());
+		m_tag_processor_creators.emplace(ns, [](const std::string& ns) { return new TagProcessor(ns.c_str()); });
 	}
 
 	/// Create a tag_processor
-	tag_processor* create_tag_processor(const std::string& ns) const;
+	tag_processor* create_tag_processor(const std::string& ns) const
+	{
+		return m_tag_processor_creators.at(ns)(ns);
+	}
 
 	// --------------------------------------------------------------------
 
   protected:
+
 	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
 									 reply& rep)
 	{
@@ -230,7 +218,6 @@ class webapp : public http::server, public basic_webapp
 {
 public:
 	webapp(const boost::filesystem::path& docroot = ".");
-	virtual ~webapp();
 
 	virtual void handle_request(const request& req, reply& rep);
 };

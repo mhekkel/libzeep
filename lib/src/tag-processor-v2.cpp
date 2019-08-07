@@ -11,7 +11,7 @@
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/unicode_support.hpp>
 #include <zeep/el/process.hpp>
-#include <zeep/http/tag-processor-v2.hpp>
+#include <zeep/http/tag-processor.hpp>
 
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
@@ -44,7 +44,7 @@ int attribute_precedence(const xml::attribute* attr)
 // --------------------------------------------------------------------
 //
 
-tag_processor_v2::tag_processor_v2(const std::string& ns)
+tag_processor_v2::tag_processor_v2(const char* ns)
     : tag_processor(ns)
 {
     using namespace std::placeholders;

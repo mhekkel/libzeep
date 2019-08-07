@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE Processor_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include <zeep/http/tag-processor-v2.hpp>
+#include <zeep/http/webapp.hpp>
 
 using namespace std;
 
@@ -13,8 +13,7 @@ zeep::xml::document operator""_xml(const char* text, size_t length)
     return doc;
 }
 
-zeep::http::basic_webapp dummy_webapp;
-
+zeep::http::basic_webapp& dummy_webapp = *(new zeep::http::webapp());
 
 BOOST_AUTO_TEST_CASE(test_1)
 {
@@ -478,7 +477,6 @@ BOOST_AUTO_TEST_CASE(test_12)
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE(test_13)
 {
     auto doc = R"(<?xml version="1.0"?>
@@ -511,3 +509,142 @@ BOOST_AUTO_TEST_CASE(test_13)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(test_14)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test> 7 augustus 2019, 12:14</test>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+
+	zeep::http::request req;
+	req.headers.push_back({ "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" });
+
+    zeep::el::scope scope(req);
+     scope.put("ok", true);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(test_15)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test> 7 August 2019, 12:14</test>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+
+	zeep::http::request req;
+	req.headers.push_back({ "Accept-Language", "da, en-US;q=0.7, en;q=0.3" });
+
+    zeep::el::scope scope(req);
+     scope.put("ok", true);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(test_16)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:text="${#numbers.formatDecimal(12345.6789, 1, 2)}" />
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test>12,345.68</test>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+
+	zeep::http::request req;
+	req.headers.push_back({ "Accept-Language", "en-GB, en-US;q=0.7, en;q=0.3" });
+
+    zeep::el::scope scope(req);
+     scope.put("ok", true);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(test_17)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:text="${#numbers.formatDecimal(12345.6789, 1, 2)}" />
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test>12 345,68</test>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+
+	zeep::http::request req;
+	req.headers.push_back({ "Accept-Language", "fr_FR, en-US;q=0.7, en;q=0.3" });
+
+    zeep::el::scope scope(req);
+     scope.put("ok", true);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}

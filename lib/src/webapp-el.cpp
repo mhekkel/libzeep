@@ -12,6 +12,8 @@
 
 #include <iomanip>
 #include <cmath>
+#include <locale>
+#include <codecvt>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/el/process.hpp>
@@ -83,7 +85,8 @@ struct interpreter
 	const scope &m_scope;
 	uint32_t m_lookahead;
 	string m_token_string;
-	double m_token_number;
+	int64_t m_token_number_int;
+	double m_token_number_float;
 	string::const_iterator m_ptr, m_end;
 };
 
@@ -103,7 +106,8 @@ enum token_type
 {
 	elt_undef,
 	elt_eof,
-	elt_number,
+	elt_number_int,
+	elt_number_float,
 	elt_string,
 	elt_object,
 	elt_and,
@@ -417,7 +421,7 @@ void interpreter::get_next_token()
 			default:
 				if (ch >= '0' and ch <= '9')
 				{
-					m_token_number = ch - '0';
+					m_token_number_int = ch - '0';
 					state = els_Number;
 				}
 				else if (zeep::xml::is_name_start_char(ch))
@@ -448,7 +452,7 @@ void interpreter::get_next_token()
 				else if (m_token_string[0] == '#')
 					state = els_Hash;
 				else
-					throw zeep::exception("invalid character (" + string{(isprint(ch) ? ch : ' ')} + '/' + xml::to_hex(ch) + ") in expression");
+					throw zeep::exception("invalid character (" + string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + xml::to_hex(ch) + ") in expression");
 			}
 			break;
 
@@ -499,29 +503,30 @@ void interpreter::get_next_token()
 
 		case els_Number:
 			if (ch >= '0' and ch <= '9')
-				m_token_number = 10 * m_token_number + (ch - '0');
+				m_token_number_int = 10 * m_token_number_int + (ch - '0');
 			else if (ch == '.')
 			{
+				m_token_number_float = m_token_number_int;
 				fraction = 0.1;
 				state = els_NumberFraction;
 			}
 			else
 			{
 				retract();
-				token = elt_number;
+				token = elt_number_int;
 			}
 			break;
 
 		case els_NumberFraction:
 			if (ch >= '0' and ch <= '9')
 			{
-				m_token_number += fraction * (ch - '0');
+				m_token_number_float += fraction * (ch - '0');
 				fraction /= 10;
 			}
 			else
 			{
 				retract();
-				token = elt_number;
+				token = elt_number_float;
 			}
 			break;
 
@@ -781,12 +786,18 @@ object interpreter::parse_primary_expr()
 
 		case elt_true:
 			result = true;
+			match(m_lookahead);
 			break;
 		case elt_false:
 			result = false;
+			match(m_lookahead);
 			break;
-		case elt_number:
-			result = m_token_number;
+		case elt_number_int:
+			result = m_token_number_int;
+			match(m_lookahead);
+			break;
+		case elt_number_float:
+			result = m_token_number_float;
 			match(m_lookahead);
 			break;
 		case elt_string:
@@ -997,12 +1008,18 @@ object interpreter::parse_template_primary_expr()
 	{
 		case elt_true:
 			result = true;
+			match(m_lookahead);
 			break;
 		case elt_false:
 			result = false;
+			match(m_lookahead);
 			break;
-		case elt_number:
-			result = m_token_number;
+		case elt_number_int:
+			result = m_token_number_int;
+			match(m_lookahead);
+			break;
+		case elt_number_float:
+			result = m_token_number_float;
 			match(m_lookahead);
 			break;
 		case elt_string:
@@ -1104,16 +1121,54 @@ object interpreter::call_method(const string& className, const string& method, v
 	{
 		if (method == "format")
 		{
-			tm t = {};
-			istringstream ss(params[0].as<string>());
-			// ss.imbue(std::locale("de_DE.utf-8"));
-			ss >> get_time(&t, "%Y-%m-%d %H:%M:%S");
-			if (ss.fail())
-				throw runtime_error("Invalid date");
-			
-			ostringstream os;
-			os << put_time(&t, params[1].as<string>().c_str());
-			result = os.str();
+			if (params.size() == 2 and params[0].is_string())
+			{
+				tm t = {};
+				istringstream ss(params[0].as<string>());
+				// ss.imbue(std::locale("de_DE.utf-8"));
+
+				ss >> get_time(&t, "%Y-%m-%d %H:%M:%S");
+				if (ss.fail())
+					throw runtime_error("Invalid date");
+				
+				wostringstream os;
+
+				os.imbue(m_scope.get_request().get_locale());
+
+				std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+				wstring time = myconv.from_bytes(params[1].as<string>());
+
+				os << put_time(&t, time.c_str());
+
+				result = os.str();
+			}
+		}
+		else
+			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+	}
+	else if (className == "#numbers")
+	{
+		if (method == "formatDecimal")
+		{
+			if (params.size() >= 1 and params[0].is_number())
+			{
+				wostringstream os;
+				
+				os.imbue(m_scope.get_request().get_locale());
+
+				if (params.size() >= 2 and params[1].is_number_int())
+					os.width(params[1].as<int>());
+				
+				if (params.size() >= 3 and params[2].is_number_int())
+					os.precision(params[2].as<int>());
+
+				if (params[0].is_number_int())
+					os << std::fixed << params[0].as<int64_t>();
+				else
+					os << std::fixed << params[0].as<double>();
+
+				result = os.str();
+			}
 		}
 		else
 			throw runtime_error("Undefined method " + method + " for utility object " + className);	

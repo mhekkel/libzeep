@@ -25,9 +25,49 @@ namespace http
 // --------------------------------------------------------------------
 //
 
-tag_processor_v1::tag_processor_v1(const std::string& ns)
+tag_processor_v1::tag_processor_v1(const char* ns)
     : tag_processor(ns)
 {
+}
+
+bool tag_processor_v1::process_el(const el::scope& scope, std::string& s)
+{
+	bool replaced = false;
+
+	size_t b = 0;
+
+	while (b < s.length())
+	{
+		auto i = s.find('$', b);
+		if (i == std::string::npos)
+			break;
+		
+		char c2 = s[i + 1];
+		if (c2 != '{')
+		{
+			b = i + 1;
+			continue;
+		}
+
+		auto j = s.find('}', i);
+		if (j == std::string::npos)
+			break;
+
+		j += 1;
+
+		replaced = true;
+
+		auto m = s.substr(i, j - i);
+
+		if (el::process_el(scope, m))
+			s.replace(i, j - i, m);
+		else
+			s.erase(i, j - i);
+
+		b = j;
+	}
+
+	return replaced;
 }
 
 void tag_processor_v1::process_xml(xml::node *node, const el::scope& scope, fs::path dir, basic_webapp& webapp)
@@ -37,8 +77,10 @@ void tag_processor_v1::process_xml(xml::node *node, const el::scope& scope, fs::
 	if (text != nullptr)
 	{
 		std::string s = text->str();
-		if (el::process_el(scope, s))
+
+		if (process_el(scope, s))
 			text->str(s);
+
 		return;
 	}
 
@@ -115,6 +157,7 @@ void tag_processor_v1::process_include(xml::element *node, const el::scope& scop
 {
 	// an include directive, load file and include resulting content
 	std::string file = node->get_attribute("file");
+
 	process_el(scope, file);
 
 	if (file.empty())
@@ -444,6 +487,10 @@ void tag_processor_v1::process_embed(xml::element *node, const el::scope& scope,
 
 	process_xml(replacement, scope, dir, webapp);
 }
+
+// --------------------------------------------------------------------
+
+
 
 }
 }

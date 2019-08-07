@@ -52,7 +52,19 @@ inline void to_element(E& v, const std::string& s)
 }
 
 template<typename E>
+inline void to_element(E& v, const std::wstring& s)
+{
+	factory<value_type::string>::construct(v, s);
+}
+
+template<typename E>
 void to_element(E& v, std::string&& s)
+{
+	factory<value_type::string>::construct(v, std::move(s));
+}
+
+template<typename E>
+void to_element(E& v, std::wstring&& s)
 {
 	factory<value_type::string>::construct(v, std::move(s));
 }
