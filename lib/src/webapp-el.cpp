@@ -18,6 +18,7 @@
 #include <zeep/http/webapp.hpp>
 #include <zeep/el/process.hpp>
 #include <zeep/xml/unicode_support.hpp>
+#include <zeep/el/utils.hpp>
 
 using namespace std;
 
@@ -1152,22 +1153,21 @@ object interpreter::call_method(const string& className, const string& method, v
 		{
 			if (params.size() >= 1 and params[0].is_number())
 			{
-				wostringstream os;
-				
-				os.imbue(m_scope.get_request().get_locale());
-
+				int intDigits = 1;
 				if (params.size() >= 2 and params[1].is_number_int())
-					os.width(params[1].as<int>());
+					intDigits = params[1].as<int>();
 				
+				int decimals = 0;
 				if (params.size() >= 3 and params[2].is_number_int())
-					os.precision(params[2].as<int>());
+					decimals = params[2].as<int>();
 
+				double d;
 				if (params[0].is_number_int())
-					os << std::fixed << params[0].as<int64_t>();
+					d = params[0].as<int64_t>();
 				else
-					os << std::fixed << params[0].as<double>();
+					d = params[0].as<double>();
 
-				result = os.str();
+				return FormatDecimal(d, intDigits, decimals, m_scope.get_request().get_locale());
 			}
 		}
 		else

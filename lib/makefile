@@ -93,6 +93,7 @@ OBJECTS = \
 	$(OBJDIR)/unicode_support.o \
 	$(OBJDIR)/webapp.o \
 	$(OBJDIR)/webapp-el.o \
+	$(OBJDIR)/webapp-utils.o \
 	$(OBJDIR)/writer.o \
 	$(OBJDIR)/xml-parser.o \
 	$(OBJDIR)/xpath.o
