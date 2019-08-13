@@ -121,11 +121,14 @@ struct request
 
 	void debug(std::ostream& os) const;
 
+	std::locale& get_locale() const;
+
   private:
 	std::tuple<std::string,bool> get_parameter_ex(const char* name) const;
 
 	std::string m_request_line;
 	boost::posix_time::ptime m_timestamp;
+	mutable std::unique_ptr<std::locale> m_locale;
 };
 
 std::iostream& operator<<(std::iostream& io, request& req);

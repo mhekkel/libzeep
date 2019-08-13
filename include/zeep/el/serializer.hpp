@@ -224,6 +224,10 @@ struct serializer
 	template<typename T>
 	void serialize(const char* name, T& data)
 	{
+		// element_type j;
+		// zeep::el::detail::to_element(j, data);
+		// m_elem.emplace(std::make_pair(name, std::move(j)));
+
 		using serializer_impl = serializer_impl<T>;
 
 		element_type e;
@@ -359,9 +363,9 @@ void to_element(J& e, T& v)
 	e = J::value_type::array;
 	for (auto& vi: v)
 	{
-		serializer<J> sr;
-		vi.serialize(sr, 0);
-		e.push_back(std::move(sr.m_elem));
+		J j;
+		to_element(j, vi);
+		e.push_back(std::move(j));
 	}
 }
 
@@ -371,9 +375,9 @@ void to_element(J& e, T& v)
 	e = J::value_type::object;
 	for (auto& vi: v)
 	{
-		serializer<J> sr;
-		vi.second.serialize(sr, 0);
-		e.emplace({ vi.first, std::move(sr.m_elem)});
+		J j;
+		to_element(j, vi.second);
+		e.emplace({ vi.first, std::move(j)});
 	}
 }
 

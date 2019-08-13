@@ -30,8 +30,6 @@ namespace zeep
 namespace http
 {
 
-class tag_processor;
-
 /// webapps can use authentication, this exception is thrown for unauthorized access
 
 struct unauthorized_exception : public std::exception
@@ -57,7 +55,7 @@ struct unauthorized_exception : public std::exception
 struct auth_info;
 typedef std::list<auth_info> auth_info_list;
 
-class basic_webapp : public template_loader
+class basic_webapp
 {
   public:
 	/// first parameter to constructor is the
@@ -68,9 +66,6 @@ class basic_webapp : public template_loader
 
 	virtual void set_docroot(const boost::filesystem::path& docroot);
 	boost::filesystem::path get_docroot() const { return m_docroot; }
-
-	/// Set the tag processor to use
-	void set_tag_processor(tag_processor* p);
 
 	/// Support for HTTP Authentication, sets the username field in the request
 	virtual void validate_authentication(request& request, const std::string& realm)
@@ -99,7 +94,34 @@ class basic_webapp : public template_loader
 	/// Dispatch and handle the request
 	virtual void handle_request(const request& req, reply& rep);
 
+	// --------------------------------------------------------------------
+	// tag processor support
+
   protected:
+
+	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
+
+	virtual void process_tags(xml::element* node, const el::scope& scope, std::set<std::string> registeredNamespaces);
+
+  public:
+
+	/// Use to register a new tag_processor and couple it to a namespace
+	template<typename TagProcessor>
+	void register_tag_processor(const std::string& ns)
+	{
+		m_tag_processor_creators.emplace(ns, [](const std::string& ns) { return new TagProcessor(ns.c_str()); });
+	}
+
+	/// Create a tag_processor
+	tag_processor* create_tag_processor(const std::string& ns) const
+	{
+		return m_tag_processor_creators.at(ns)(ns);
+	}
+
+	// --------------------------------------------------------------------
+
+  protected:
+
 	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm,
 									 reply& rep)
 	{
@@ -169,7 +191,7 @@ class basic_webapp : public template_loader
 	/// Initialize the el::scope object
 	virtual void init_scope(el::scope& scope);
 
-private:
+  private:
 
 	struct mount_point
 	{
@@ -185,7 +207,6 @@ private:
 	boost::filesystem::path m_docroot;
 	auth_info_list m_auth_info;
 	std::mutex m_auth_mutex;
-	tag_processor* m_tag_processor;
 };
 
 // --------------------------------------------------------------------
@@ -196,104 +217,10 @@ private:
 class webapp : public http::server, public basic_webapp
 {
 public:
-	webapp(const std::string& ns = "http://www.cmbi.ru.nl/libzeep/ml",
-		   const boost::filesystem::path& docroot = ".");
-	virtual ~webapp();
+	webapp(const boost::filesystem::path& docroot = ".");
 
 	virtual void handle_request(const request& req, reply& rep);
 };
-
-// // --------------------------------------------------------------------
-
-// template <class T>
-// inline T parameter_value::as() const
-// {
-// 	T result;
-
-// 	if (std::is_arithmetic<T>::value and m_v.empty())
-// 		result = 0;
-// 	else
-// 		result = boost::lexical_cast<T>(m_v);
-
-// 	return result;
-// }
-
-// template <>
-// inline std::string parameter_value::as<std::string>() const
-// {
-// 	return m_v;
-// }
-
-// template <>
-// inline bool parameter_value::as<bool>() const
-// {
-// 	bool result = false;
-
-// 	if (not m_v.empty() and m_v != "false")
-// 	{
-// 		if (m_v == "true")
-// 			result = true;
-// 		else
-// 		{
-// 			try
-// 			{
-// 				result = boost::lexical_cast<int>(m_v) != 0;
-// 			}
-// 			catch (...)
-// 			{
-// 			}
-// 		}
-// 	}
-
-// 	return result;
-// }
-
-// template <class T>
-// inline const parameter_value& 
-// parameter_map::get(
-// 	const std::string& name,
-// 	T defaultValue)
-// {
-// 	iterator i = lower_bound(name);
-// 	if (i == end() or i->first != name)
-// 		i = insert(std::make_pair(name, parameter_value(boost::lexical_cast<std::string>(defaultValue), true)));
-// 	return i->second;
-// }
-
-// // specialisation for const char*
-// template <>
-// inline const parameter_value& 
-// parameter_map::get(
-// 	const std::string& name,
-// 	const char* defaultValue)
-// {
-// 	if (defaultValue == nullptr)
-// 		defaultValue = "";
-
-// 	iterator i = lower_bound(name);
-// 	if (i == end() or i->first != name)
-// 		i = insert(std::make_pair(name, parameter_value(defaultValue, true)));
-// 	else if (i->second.empty())
-// 		i->second = parameter_value(defaultValue, true);
-
-// 	return i->second;
-// }
-
-// // specialisation for bool (if missing, value is false)
-// template <>
-// inline const parameter_value& 
-// parameter_map::get(
-// 	const std::string& name,
-// 	bool defaultValue)
-// {
-// 	iterator i = lower_bound(name);
-// 	if (i == end() or i->first != name)
-// 		i = insert(std::make_pair(name, parameter_value("false", true)));
-// 	else if (i->second.empty())
-// 		i->second = parameter_value("false", true);
-
-// 	return i->second;
-// }
 
 } // namespace http
 } // namespace zeep

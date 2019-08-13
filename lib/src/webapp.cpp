@@ -28,7 +28,7 @@
 #include <zeep/xml/unicode_support.hpp>
 #include <zeep/el/process.hpp>
 #include <zeep/http/md5.hpp>
-#include <zeep/http/tag-processor.hpp>
+#include <zeep/http/webapp.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
@@ -39,40 +39,6 @@ namespace zeep
 {
 namespace http
 {
-
-// --------------------------------------------------------------------
-//
-
-// // add a name/value pair as a std::string formatted as 'name=value'
-// void parameter_map::add(const std::string& param)
-// {
-// 	std::string name, value;
-
-// 	std::string::size_type d = param.find('=');
-// 	if (d != std::string::npos)
-// 	{
-// 		name = param.substr(0, d);
-// 		value = param.substr(d + 1);
-// 	}
-
-// 	add(name, value);
-// }
-
-// void parameter_map::add(std::string name, std::string value)
-// {
-// 	name = decode_url(name);
-// 	if (not value.empty())
-// 		value = decode_url(value);
-
-// 	insert(make_pair(name, parameter_value(value, false)));
-// }
-
-// void parameter_map::replace(std::string name, std::string value)
-// {
-// 	if (count(name))
-// 		erase(lower_bound(name), upper_bound(name));
-// 	add(name, value);
-// }
 
 // --------------------------------------------------------------------
 //
@@ -146,19 +112,12 @@ bool auth_info::validate(method_type method, const std::string& uri, const std::
 //
 
 basic_webapp::basic_webapp(const fs::path& docroot)
-	: m_docroot(docroot), m_tag_processor(nullptr)
+	: m_docroot(docroot)
 {
 }
 
 basic_webapp::~basic_webapp()
 {
-}
-
-void basic_webapp::set_tag_processor(tag_processor* p)
-{
-	if (m_tag_processor != nullptr)
-		delete m_tag_processor;
-	m_tag_processor = p;
 }
 
 void basic_webapp::handle_request(const request& req, reply& rep)
@@ -434,6 +393,8 @@ void basic_webapp::load_template(const std::string& file, xml::document& doc)
 #endif
 		}
 	}
+
+	doc.set_preserve_cdata(true);
 	doc.read(data);
 }
 
@@ -444,11 +405,15 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 
 	load_template(file, doc);
 
-	if (m_tag_processor != nullptr)
-		m_tag_processor->process_xml(doc.child(), scope, "/");
+	std::set<std::string> registeredNamespaces;
+	for (auto& tpc: m_tag_processor_creators)
+		registeredNamespaces.insert(tpc.first);
 
+	if (not registeredNamespaces.empty())
+		process_tags(doc.child(), scope, registeredNamespaces);
+
+	// this is required to make the document HTML5 compliant, sort of
 	doc.set_doctype("html", "", "about:legacy-compat");
-	
 	reply.set_content(doc);
 
 	reply.set_content_type("text/html; charset=utf-8");
@@ -456,6 +421,26 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 
 void basic_webapp::init_scope(el::scope& scope)
 {
+}
+
+void basic_webapp::process_tags(xml::element* node, const el::scope& scope, std::set<std::string> registeredNamespaces)
+{
+	for (auto ns: node->name_spaces())
+	{
+		if (registeredNamespaces.count(ns->str()))
+		{
+			std::unique_ptr<tag_processor> processor(create_tag_processor(ns->str()));
+			processor->process_xml(node, scope, "/", *this);
+
+			registeredNamespaces.erase(ns->str());
+		}
+	}
+
+	if (not registeredNamespaces.empty())
+	{
+		for (auto e: node->children<xml::element>())
+			process_tags(e, scope, registeredNamespaces);
+	}
 }
 
 // --------------------------------------------------------------------
@@ -516,14 +501,11 @@ std::string basic_webapp::get_hashed_password(const std::string& username, const
 // --------------------------------------------------------------------
 //
 
-webapp::webapp(const std::string& ns, const boost::filesystem::path& docroot)
+webapp::webapp(const boost::filesystem::path& docroot)
 	: basic_webapp(docroot)
 {
-	set_tag_processor(new tag_processor(*this, ns));
-}
-
-webapp::~webapp()
-{
+	register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
+	register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());
 }
 
 void webapp::handle_request(const request& req, reply& rep)

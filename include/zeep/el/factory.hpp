@@ -12,6 +12,8 @@
 #include <map>
 #include <algorithm>
 #include <experimental/type_traits>
+#include <locale>
+#include <codecvt>
 
 #include <zeep/el/element_fwd.hpp>
 #include <zeep/el/traits.hpp>
@@ -56,6 +58,29 @@ struct factory<value_type::string>
 		j.m_data = std::move(s);
 		j.validate();
 	}
+
+	template<typename J>
+	static void construct(J& j, const std::wstring& s)
+	{
+		j.m_type = value_type::string;
+	
+		std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+		j.m_data = myconv.to_bytes(s);
+
+		j.validate();
+	}
+
+	template<typename J>
+	static void construct(J& j, std::wstring&& s)
+	{
+		j.m_type = value_type::string;
+
+		std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+		j.m_data = myconv.to_bytes(s);
+
+		j.validate();
+	}
+
 
 	// template<typename J, typename T,
 	// 	std::enable_if_t<not std::is_same<T, typename J::string_type>::value, int> = 0>

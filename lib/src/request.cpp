@@ -13,8 +13,10 @@
 #include <zeep/http/server.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/locale.hpp>
 
 namespace ba = boost::algorithm;
+namespace bl = boost::locale;
 
 namespace zeep { namespace http {
 
@@ -335,6 +337,122 @@ std::string request::get_cookie(const char* name) const
 	}
 
 	return "";
+}
+
+const std::map<std::string,std::vector<std::string>>
+	kLocalesPerLang = {
+		{ "ar", { "AE", "BH", "DZ", "EG", "IQ", "JO", "KW", "LB", "LY", "MA", "OM", "QA", "SA", "SD", "SY", "TN", "YE" } },
+		{ "be", { "BY" } },
+		{ "bg", { "BG" } },
+		{ "ca", { "ES" } },
+		{ "cs", { "CZ" } },
+		{ "da", { "DK" } },
+		{ "de", { "AT", "CH", "DE", "LU" } },
+		{ "el", { "GR" } },
+		{ "en", { "US", "AU", "CA", "GB", "IE", "IN", "NZ", "ZA" } },
+		{ "es", { "AR", "BO", "CL", "CO", "CR", "DO", "EC", "ES", "GT", "HN", "MX", "NI", "PA", "PE", "PR", "PY", "SV", "UY", "VE" } },
+		{ "et", { "EE" } },
+		{ "fi", { "FI" } },
+		{ "fr", { "BE", "CA", "CH", "FR", "LU" } },
+		{ "hi", { "IN" } },
+		{ "hr", { "HR" } },
+		{ "hu", { "HU" } },
+		{ "is", { "IS" } },
+		{ "it", { "CH", "IT" } },
+		{ "iw", { "IL" } },
+		{ "ja", { "JP" } },
+		{ "ko", { "KR" } },
+		{ "lt", { "LT" } },
+		{ "lv", { "LV" } },
+		{ "mk", { "MK" } },
+		{ "nl", { "NL", "BE" } },
+		{ "no", { "NO", "NO_NY" } },
+		{ "pl", { "PL" } },
+		{ "pt", { "BR", "PT" } },
+		{ "ro", { "RO" } },
+		{ "ru", { "RU" } },
+		{ "sk", { "SK" } },
+		{ "sl", { "SI" } },
+		{ "sq", { "AL" } },
+		{ "sr", { "BA", "CS" } },
+		{ "sv", { "SE" } },
+		{ "th", { "TH", "TH_TH" } },
+		{ "tr", { "TR" } },
+		{ "uk", { "UA" } },
+		{ "vi", { "VN" } },
+		{ "zh", { "CN", "HK", "TW" } }
+	};
+
+std::locale& request::get_locale() const
+{
+	if (not m_locale)
+	{
+		auto acceptedLanguage = get_header("Accept-Language");
+
+		std::string preferred;
+		std::vector<std::string> accepted;
+		ba::split(accepted, acceptedLanguage, ba::is_any_of(","));
+
+		struct lang_score
+		{
+			std::string lang, region;
+			float score;
+			std::locale loc;
+			bool operator<(const lang_score& rhs) const
+			{
+				return score > rhs.score;
+			}
+		};
+
+		std::vector<lang_score> scores;
+
+		std::regex r(R"(([[:alpha:]]{1,8})(?:-([[:alnum:]]{1,8}))?(?:;q=([01](?:\.\d{1,3})))?)");
+
+		auto tryLangRegion = [&scores](const std::string& lang, const std::string& region, float score)
+		{
+			try
+			{
+				auto name = lang + '_' + region + ".UTF-8";
+				std::locale loc(name);
+				if (iequals(loc.name(), name))
+					scores.push_back({lang, region, score, loc});
+			}
+			catch(const std::exception& e)
+			{
+			}
+		};
+
+		for (auto& l: accepted)
+		{
+			std::smatch m;
+			if (std::regex_search(l, m, r))
+			{
+				float score = 1;
+				if (m[3].matched)
+					score = std::stof(m.str(3));
+				
+				auto lang = m.str(1);
+
+				if (m[2].matched)
+					tryLangRegion(lang, m[2], score);
+				else if (kLocalesPerLang.count(lang))
+				{
+					for (auto region: kLocalesPerLang.at(lang))
+						tryLangRegion(lang, region, score);
+				}
+			}
+		}
+
+		if (scores.empty())
+			m_locale.reset(new std::locale("C"));
+		else
+		{
+			std::stable_sort(scores.begin(), scores.end());
+			m_locale.reset(new std::locale(scores.front().loc));
+		}
+	}
+
+	return *m_locale;
 }
 
 std::string request::get_request_line() const
