@@ -105,10 +105,10 @@ std::string get_status_description(status_type status)
 
 namespace
 {
-const char
-		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' },
-		kZERO[] = { '0' };
+const std::string
+		kNameValueSeparator{ ':', ' ' },
+		kCRLF{ '\r', '\n' },
+		kZERO{ '0' };
 }
 
 reply::reply(int version_major, int version_minor)
