@@ -6,6 +6,8 @@ Version 4.0.0
   webapp.
 - Removed parameter_map, get request parameters from request itself.
 - Reorganized code, separate folder for lib and examples.
+- Refactored webapp and move the tag processing into a separate
+  class. Added a second tag processor that mimics thymeleaf.
 
 Version 3.0.2
 
