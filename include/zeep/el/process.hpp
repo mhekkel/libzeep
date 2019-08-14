@@ -46,16 +46,16 @@ bool process_el(const scope& scope, std::string& text);
 /// \param scope  The scope for this el script
 /// \param text   The el script
 /// \param result The result of the script
-void evaluate_el(const scope& scope, const std::string& text, object& result);
+object evaluate_el(const scope& scope, const std::string& text);
 
-/// \brief Process the text in \a text and replace it with the result
-///
-///	The expressions found in \a text are processed and the output of
-/// 				the processing is used as a replacement value for the expressions.
-/// \param scope  The scope for the el scripts
-/// \param text   The text optionally containing el scripts.
-/// \return       Returns true if \a text was changed.
-bool evaluate_el(const scope& scope, const std::string& text);
+// /// \brief Process the text in \a text and replace it with the result
+// ///
+// ///	The expressions found in \a text are processed and the output of
+// /// 				the processing is used as a replacement value for the expressions.
+// /// \param scope  The scope for the el scripts
+// /// \param text   The text optionally containing el scripts.
+// /// \return       Returns true if \a text was changed.
+// bool evaluate_el(const scope& scope, const std::string& text);
 
 /// \brief Process the text in \a text and return a list of name/value pairs
 ///
@@ -104,7 +104,7 @@ private:
 	data_map m_data;
 	scope *m_next;
 	const http::request *m_req;
-    const object* m_selected = nullptr;
+    object m_selected;
 };
 
 template <typename T>

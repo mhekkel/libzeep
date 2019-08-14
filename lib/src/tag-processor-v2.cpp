@@ -142,11 +142,7 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 
 			}
 			else if (attr->name() == "object")
-			{
-               	el::element obj;
-            	el::evaluate_el(scope, attr->value(), obj);
-                scope.select_object(obj);
-			}
+                scope.select_object(el::evaluate_el(scope, attr->value()));
 			else
 			{
 				auto h = m_attr_handlers.find(attr->name());
@@ -203,8 +199,7 @@ auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* at
 
 auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp, bool escaped) ->AttributeAction
 {
-	el::element obj;
-	el::evaluate_el(scope, attr->value(), obj);
+	el::element obj = el::evaluate_el(scope, attr->value());
 
 	if (escaped)
 		element->set_text(obj.as<std::string>());
@@ -239,8 +234,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 	std::string var = m[1];
 	std::string stat = m[2];
 	
-	el::object collection;
-	el::evaluate_el(scope, m[3], collection);
+	el::object collection = el::evaluate_el(scope, m[3]);
 
 	if (not collection.is_array())
 		throw std::runtime_error("Collection is not an array in :each");

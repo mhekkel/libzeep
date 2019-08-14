@@ -200,7 +200,7 @@ void tag_processor_v1::process_iterate(xml::element *node, const el::scope& scop
 
 	el::object collection = scope[node->get_attribute("collection")];
 	if (collection.type() != value_type::array)
-		evaluate_el(scope, node->get_attribute("collection"), collection);
+		collection = evaluate_el(scope, node->get_attribute("collection"));
 
 	std::string var = node->get_attribute("var");
 	if (var.empty())
@@ -226,10 +226,8 @@ void tag_processor_v1::process_iterate(xml::element *node, const el::scope& scop
 
 void tag_processor_v1::process_for(xml::element *node, const el::scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	el::object b, e;
-
-	evaluate_el(scope, node->get_attribute("begin"), b);
-	evaluate_el(scope, node->get_attribute("end"), e);
+	el::object b = evaluate_el(scope, node->get_attribute("begin"));
+	el::object e = evaluate_el(scope, node->get_attribute("end"));
 
 	std::string var = node->get_attribute("var");
 	if (var.empty())
@@ -269,10 +267,7 @@ void tag_processor_v1::process_number(xml::element *node, const el::scope& scope
 	{
 		const char kBase[] = {'B', 'K', 'M', 'G', 'T', 'P', 'E'}; // whatever
 
-		el::object n;
-		evaluate_el(scope, number, n);
-
-		uint64_t nr = n.as<uint64_t>();
+		uint64_t nr = evaluate_el(scope, number).as<uint64_t>();
 		int base = 0;
 
 		while (nr > 1024)
@@ -292,10 +287,7 @@ void tag_processor_v1::process_number(xml::element *node, const el::scope& scope
 	}
 	else if (format.empty() or ba::starts_with(format, "#,##0"))
 	{
-		el::object n;
-		evaluate_el(scope, number, n);
-
-		uint64_t nr = n.as<uint64_t>();
+		uint64_t nr = evaluate_el(scope, number).as<uint64_t>();
 
 		std::locale mylocale(std::locale(), new with_thousands);
 
@@ -317,18 +309,14 @@ void tag_processor_v1::process_options(xml::element *node, const el::scope& scop
 
 	el::object collection = scope[node->get_attribute("collection")];
 	if (collection.type() != value_type::array)
-		evaluate_el(scope, node->get_attribute("collection"), collection);
+		collection = evaluate_el(scope, node->get_attribute("collection"));
 
 	std::string value = node->get_attribute("value");
 	std::string label = node->get_attribute("label");
 
 	std::string selected = node->get_attribute("selected");
 	if (not selected.empty())
-	{
-		el::object o;
-		evaluate_el(scope, selected, o);
-		selected = o.as<std::string>();
-	}
+		selected = evaluate_el(scope, selected).as<std::string>();
 
 	for (el::object& o : collection)
 	{
@@ -359,19 +347,11 @@ void tag_processor_v1::process_option(xml::element *node, const el::scope& scope
 {
 	std::string value = node->get_attribute("value");
 	if (not value.empty())
-	{
-		el::object o;
-		evaluate_el(scope, value, o);
-		value = o.as<std::string>();
-	}
+		value = evaluate_el(scope, value).as<std::string>();
 
 	std::string selected = node->get_attribute("selected");
 	if (not selected.empty())
-	{
-		el::object o;
-		evaluate_el(scope, selected, o);
-		selected = o.as<std::string>();
-	}
+		selected = evaluate_el(scope, selected).as<std::string>();
 
 	zeep::xml::element *option = new zeep::xml::element("option");
 
@@ -395,19 +375,11 @@ void tag_processor_v1::process_checkbox(xml::element *node, const el::scope& sco
 {
 	std::string name = node->get_attribute("name");
 	if (not name.empty())
-	{
-		el::object o;
-		evaluate_el(scope, name, o);
-		name = o.as<std::string>();
-	}
+		name = evaluate_el(scope, name).as<std::string>();
 
 	bool checked = false;
-	if (not node->get_attribute("checked").empty())
-	{
-		el::object o;
-		evaluate_el(scope, node->get_attribute("checked"), o);
-		checked = o.as<bool>();
-	}
+	if (evaluate_el(scope, node->get_attribute("checked")))
+		checked = true;
 
 	zeep::xml::element *checkbox = new zeep::xml::element("input");
 	checkbox->set_attribute("type", "checkbox");

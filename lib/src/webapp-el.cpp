@@ -606,12 +606,12 @@ object interpreter::parse_expr()
 		{
 			match(elt_else);
 			object b = parse_expr();
-			if (result.as<bool>())
+			if (result)
 				result = a;
 			else
 				result = b;
 		}
-		else if (result.as<bool>())
+		else if (result)
 			result = a;
 	}
 	else if (m_lookahead == elt_elvis)
@@ -619,7 +619,7 @@ object interpreter::parse_expr()
 		match(m_lookahead);
 		object a = parse_expr();
 
-		if (not result.as<bool>())
+		if (not result)
 			result = a;
 	}
 
@@ -846,12 +846,12 @@ object interpreter::parse_template_expr()
 		{
 			match(elt_else);
 			object b = parse_template_expr();
-			if (result.as<bool>())
+			if (result)
 				result = a;
 			else
 				result = b;
 		}
-		else if (result.as<bool>())
+		else if (result)
 			result = a;
 	}
 	else if (m_lookahead == elt_elvis)
@@ -859,7 +859,7 @@ object interpreter::parse_template_expr()
 		match(m_lookahead);
 		object a = parse_template_expr();
 
-		if (not result.as<bool>())
+		if (not result)
 			result = a;
 	}
 
@@ -1194,28 +1194,21 @@ object interpreter::call_method(const string& className, const string& method, v
 // --------------------------------------------------------------------
 // interpreter calls
 
-bool process_el(const el::scope &scope, string &text)
+bool process_el(const scope &scope, string &text)
 {
-	el::interpreter interpreter(scope);
+	interpreter interpreter(scope);
 	return interpreter.process(text);
 }
 
-void evaluate_el(const el::scope &scope, const string &text, el::object &result)
+object evaluate_el(const scope &scope, const string &text)
 {
-	el::interpreter interpreter(scope);
-	result = interpreter.evaluate(text);
-}
-
-bool evaluate_el(const el::scope &scope, const string &text)
-{
-	el::object result;
-	evaluate_el(scope, text, result);
-	return result.as<bool>();
+	interpreter interpreter(scope);
+	return interpreter.evaluate(text);
 }
 
 vector<pair<string,string>> evaluate_el_attr(const scope& scope, const string& text)
 {
-	el::interpreter interpreter(scope);
+	interpreter interpreter(scope);
 	return interpreter.evaluate_attr_expr(text);
 }
 
@@ -1256,8 +1249,8 @@ const object& scope::lookup(const string &name, bool includeSelected) const
 	auto i = m_data.find(name);
 	if (i != m_data.end())
 		result = &i->second;
-	else if (includeSelected and m_selected != nullptr and m_selected->contains(name))
-		result = &*m_selected->find(name);
+	else if (includeSelected and m_selected.contains(name))
+		result = &*m_selected.find(name);
 	else if (m_next != nullptr)
 		result = &m_next->lookup(name, includeSelected);
 
@@ -1305,7 +1298,7 @@ const request &scope::get_request() const
 
 void scope::select_object(const object& o)
 {
-	m_selected = &o;
+	m_selected = o;
 }
 
 } // namespace el
