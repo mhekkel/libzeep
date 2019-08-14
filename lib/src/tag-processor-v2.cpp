@@ -24,64 +24,11 @@ namespace zeep
 namespace http
 {
 
-std::unordered_set<std::string> kGenericAttributes{
-	"abbr", "accept", "accept-charset", "accesskey", "action", "align",
-	"alt", "archive", "audio", "autocomplete", "axis", "background",
-	"bgcolor", "border", "cellpadding", "cellspacing", "challenge", "charset",
-	"cite", "class", "classid", "codebase", "codetype", "cols",
-	"colspan", "compact", "content", "contenteditable", "contextmenu", "data",
-	"datetime", "dir", "draggable", "dropzone", "enctype", "for",
-	"form", "formaction", "formenctype", "formmethod", "formtarget", "fragment",
-	"frame", "frameborder", "headers", "height", "high", "href",
-	"hreflang", "hspace", "http-equiv", "icon", "id", "inline",
-	"keytype", "kind", "label", "lang", "list", "longdesc",
-	"low", "manifest", "marginheight", "marginwidth", "max", "maxlength",
-	"media", "method", "min", "name", "onabort", "onafterprint",
-	"onbeforeprint", "onbeforeunload", "onblur", "oncanplay", "oncanplaythrough", "onchange",
-	"onclick", "oncontextmenu", "ondblclick", "ondrag", "ondragend", "ondragenter",
-	"ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied",
-	"onended", "onerror", "onfocus", "onformchange", "onforminput", "onhashchange",
-	"oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload",
-	"onloadeddata", "onloadedmetadata", "onloadstart", "onmessage", "onmousedown", "onmousemove",
-	"onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onoffline", "ononline",
-	"onpause", "onplay", "onplaying", "onpopstate", "onprogress", "onratechange",
-	"onreadystatechange", "onredo", "onreset", "onresize", "onscroll", "onseeked",
-	"onseeking", "onselect", "onshow", "onstalled", "onstorage", "onsubmit",
-	"onsuspend", "ontimeupdate", "onundo", "onunload", "onvolumechange", "onwaiting",
-	"optimum", "pattern", "placeholder", "poster", "preload", "radiogroup",
-	"rel", "rev", "rows", "rowspan", "rules", "sandbox",
-	"scheme", "scope", "scrolling", "size", "sizes", "span",
-	"spellcheck", "src", "srclang", "standby", "start", "step",
-	"style", "summary", "tabindex", "target", "title", "type",
-	"usemap", "value", "valuetype", "vspace", "width", "wrap",
-	"xmlbase", "xmllang", "xmlspace"
-};
-
 std::unordered_set<std::string> kFixedValueBooleanAttributes{
-	"async",
-	"autofocus",
-	"autoplay",
-	"checked",
-	"controls",
-	"declare",
-	"default",
-	"defer",
-	"disabled",
-	"formnovalidate",
-	"hidden",
-	"ismap",
-	"loop",
-	"multiple",
-	"novalidate",
-	"nowrap",
-	"open",
-	"pubdate",
-	"readonly",
-	"required",
-	"reversed",
-	"scoped",
-	"seamless",
-	"selected"
+	"async", "autofocus", "autoplay", "checked", "controls", "declare",
+	"default", "defer", "disabled", "formnovalidate", "hidden", "ismap",
+	"loop", "multiple", "novalidate", "nowrap", "open", "pubdate", "readonly",
+	"required", "reversed", "scoped", "seamless", "selected"
 };
 
 // --------------------------------------------------------------------
@@ -107,15 +54,15 @@ int attribute_precedence(const xml::attribute* attr)
 //
 
 tag_processor_v2::tag_processor_v2(const char* ns)
-    : tag_processor(ns)
+	: tag_processor(ns)
 {
-    using namespace std::placeholders;
+	using namespace std::placeholders;
 
-    register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5));
-    register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, true));
-    register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, false));
-    register_attr_handler("each", std::bind(&tag_processor_v2::process_attr_each, this, _1, _2, _3, _4, _5));
-    register_attr_handler("attr", std::bind(&tag_processor_v2::process_attr_attr, this, _1, _2, _3, _4, _5));
+	register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5));
+	register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("each", std::bind(&tag_processor_v2::process_attr_each, this, _1, _2, _3, _4, _5));
+	register_attr_handler("attr", std::bind(&tag_processor_v2::process_attr_attr, this, _1, _2, _3, _4, _5));
 }
 
 void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope, fs::path dir, basic_webapp& webapp)
@@ -204,7 +151,7 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 
 			}
 			else if (attr->name() == "object")
-                scope.select_object(el::evaluate_el(scope, attr->value()));
+				scope.select_object(el::evaluate_el(scope, attr->value()));
 			else
 			{
 				auto h = m_attr_handlers.find(attr->name());
@@ -212,7 +159,9 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 				AttributeAction action = AttributeAction::none;
 				if (h != m_attr_handlers.end())
 					action = h->second(e, attr, scope, dir, webapp);
-				else if (kGenericAttributes.count(attr->name()))
+				else if (kFixedValueBooleanAttributes.count(attr->name()))
+					action = process_attr_boolean_value(e, attr, scope, dir, webapp);
+				else //if (kGenericAttributes.count(attr->name()))
 					action = process_attr_generic(e, attr, scope, dir, webapp);
 
 				if (action == AttributeAction::remove)
@@ -356,6 +305,21 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::el
 
 	el::process_el(scope, s);
 	node->set_attribute(attr->name(), s);
+
+	return AttributeAction::none;
+}
+
+// --------------------------------------------------------------------
+
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
+	xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp)
+{
+	auto s = attr->str();
+
+	if (el::evaluate_el(scope, s))
+		node->set_attribute(attr->name(), attr->name());
+	else
+		node->remove_attribute(attr->name());
 
 	return AttributeAction::none;
 }

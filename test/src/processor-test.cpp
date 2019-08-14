@@ -686,3 +686,40 @@ BOOST_AUTO_TEST_CASE(test_18)
 		BOOST_TEST(s1.str() == s2.str());
 	}
 }
+
+
+BOOST_AUTO_TEST_CASE(test_19)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<input type="checkbox" m:checked="${b}"/>
+<input type="checkbox" m:checked="${c}"/>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<input type="checkbox" checked="checked"/>
+<input type="checkbox"/>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", true);
+    scope.put("c", false);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
