@@ -5,6 +5,8 @@
 
 using namespace std;
 
+using json = zeep::el::element;
+
 zeep::xml::document operator""_xml(const char* text, size_t length)
 {
     zeep::xml::document doc;
@@ -635,6 +637,42 @@ BOOST_AUTO_TEST_CASE(test_17)
 
     zeep::el::scope scope(req);
      scope.put("ok", true);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(test_18)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:object="${p}"><test2 m:text="*{n}" /></test>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test><test2>x</test2></test>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    json p;
+    p["n"] = "x";
+
+    scope.put("p", p);
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  

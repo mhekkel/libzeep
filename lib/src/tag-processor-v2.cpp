@@ -122,11 +122,10 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 		return;
 
 	xml::container *parent = e->parent();
+	el::scope scope(parentScope);
 
 	try
 	{
-		el::scope scope(parentScope);
-
 		std::vector<xml::attribute*> attributes;
 		for (auto& attr: e->attributes())
 			attributes.push_back(attr);
@@ -142,6 +141,8 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 			{
 
 			}
+			else if (attr->name() == "object")
+                scope.select_object(el::evaluate_el(scope, attr->value()));
 			else
 			{
 				auto h = m_attr_handlers.find(attr->name());
@@ -187,7 +188,7 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 		copy(e->node_begin(), e->node_end(), back_inserter(nodes));
 
 		for (xml::node *n : nodes)
-			process_xml(n, parentScope, dir, webapp);
+			process_xml(n, scope, dir, webapp);
 	}
 }
 
@@ -198,8 +199,7 @@ auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* at
 
 auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp, bool escaped) ->AttributeAction
 {
-	el::element obj;
-	el::evaluate_el(scope, attr->value(), obj);
+	el::element obj = el::evaluate_el(scope, attr->value());
 
 	if (escaped)
 		element->set_text(obj.as<std::string>());
@@ -234,8 +234,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 	std::string var = m[1];
 	std::string stat = m[2];
 	
-	el::object collection;
-	el::evaluate_el(scope, m[3], collection);
+	el::object collection = el::evaluate_el(scope, m[3]);
 
 	if (not collection.is_array())
 		throw std::runtime_error("Collection is not an array in :each");

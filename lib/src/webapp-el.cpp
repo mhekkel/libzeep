@@ -606,12 +606,12 @@ object interpreter::parse_expr()
 		{
 			match(elt_else);
 			object b = parse_expr();
-			if (result.as<bool>())
+			if (result)
 				result = a;
 			else
 				result = b;
 		}
-		else if (result.as<bool>())
+		else if (result)
 			result = a;
 	}
 	else if (m_lookahead == elt_elvis)
@@ -619,7 +619,7 @@ object interpreter::parse_expr()
 		match(m_lookahead);
 		object a = parse_expr();
 
-		if (not result.as<bool>())
+		if (not result)
 			result = a;
 	}
 
@@ -784,6 +784,18 @@ object interpreter::parse_primary_expr()
 			result = parse_template_expr();
 			match(elt_rbrace);
 			break;
+		
+		case elt_selection_template:
+			match(elt_selection_template);
+			if (m_lookahead == elt_object)
+			{
+				result = m_scope.lookup(m_token_string, true);
+				match(elt_object);
+			}
+			else
+				result = parse_template_expr();
+			match(elt_rbrace);
+			break;
 
 		case elt_true:
 			result = true;
@@ -834,12 +846,12 @@ object interpreter::parse_template_expr()
 		{
 			match(elt_else);
 			object b = parse_template_expr();
-			if (result.as<bool>())
+			if (result)
 				result = a;
 			else
 				result = b;
 		}
-		else if (result.as<bool>())
+		else if (result)
 			result = a;
 	}
 	else if (m_lookahead == elt_elvis)
@@ -847,7 +859,7 @@ object interpreter::parse_template_expr()
 		match(m_lookahead);
 		object a = parse_template_expr();
 
-		if (not result.as<bool>())
+		if (not result)
 			result = a;
 	}
 
@@ -1182,28 +1194,21 @@ object interpreter::call_method(const string& className, const string& method, v
 // --------------------------------------------------------------------
 // interpreter calls
 
-bool process_el(const el::scope &scope, string &text)
+bool process_el(const scope &scope, string &text)
 {
-	el::interpreter interpreter(scope);
+	interpreter interpreter(scope);
 	return interpreter.process(text);
 }
 
-void evaluate_el(const el::scope &scope, const string &text, el::object &result)
+object evaluate_el(const scope &scope, const string &text)
 {
-	el::interpreter interpreter(scope);
-	result = interpreter.evaluate(text);
-}
-
-bool evaluate_el(const el::scope &scope, const string &text)
-{
-	el::object result;
-	evaluate_el(scope, text, result);
-	return result.as<bool>();
+	interpreter interpreter(scope);
+	return interpreter.evaluate(text);
 }
 
 vector<pair<string,string>> evaluate_el_attr(const scope& scope, const string& text)
 {
-	el::interpreter interpreter(scope);
+	interpreter interpreter(scope);
 	return interpreter.evaluate_attr_expr(text);
 }
 
@@ -1237,38 +1242,48 @@ object &scope::operator[](const string &name)
 	return lookup(name);
 }
 
-const object &scope::lookup(const string &name) const
+const object& scope::lookup(const string &name, bool includeSelected) const
 {
-	map<string, object>::const_iterator i = m_data.find(name);
-	if (i != m_data.end())
-		return i->second;
-	else if (m_next != nullptr)
-		return m_next->lookup(name);
+	const object* result = nullptr;
 
-	static object s_null;
-	return s_null;
+	auto i = m_data.find(name);
+	if (i != m_data.end())
+		result = &i->second;
+	else if (includeSelected and m_selected.contains(name))
+		result = &*m_selected.find(name);
+	else if (m_next != nullptr)
+		result = &m_next->lookup(name, includeSelected);
+
+	if (result == nullptr)
+	{
+		static object s_null;
+		result = &s_null;
+	}
+		
+	return *result;
 }
 
-const object &scope::operator[](const string &name) const
+const object& scope::operator[](const string &name) const
 {
 	return lookup(name);
 }
 
-object &scope::lookup(const string &name)
+object& scope::lookup(const string &name)
 {
-	object *result = nullptr;
+	object* result = nullptr;
 
-	map<string, object>::iterator i = m_data.find(name);
+	auto i = m_data.find(name);
 	if (i != m_data.end())
 		result = &i->second;
 	else if (m_next != nullptr)
 		result = &m_next->lookup(name);
-	else
+
+	if (result == nullptr)
 	{
 		m_data[name] = object();
 		result = &m_data[name];
 	}
-
+		
 	return *result;
 }
 
@@ -1279,6 +1294,11 @@ const request &scope::get_request() const
 	if (m_req == nullptr)
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
+}
+
+void scope::select_object(const object& o)
+{
+	m_selected = o;
 }
 
 } // namespace el
