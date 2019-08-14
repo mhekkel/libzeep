@@ -5,6 +5,8 @@
 
 #include <zeep/config.hpp>
 
+#include <unordered_set>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 
@@ -21,6 +23,66 @@ namespace zeep
 {
 namespace http
 {
+
+std::unordered_set<std::string> kGenericAttributes{
+	"abbr", "accept", "accept-charset", "accesskey", "action", "align",
+	"alt", "archive", "audio", "autocomplete", "axis", "background",
+	"bgcolor", "border", "cellpadding", "cellspacing", "challenge", "charset",
+	"cite", "class", "classid", "codebase", "codetype", "cols",
+	"colspan", "compact", "content", "contenteditable", "contextmenu", "data",
+	"datetime", "dir", "draggable", "dropzone", "enctype", "for",
+	"form", "formaction", "formenctype", "formmethod", "formtarget", "fragment",
+	"frame", "frameborder", "headers", "height", "high", "href",
+	"hreflang", "hspace", "http-equiv", "icon", "id", "inline",
+	"keytype", "kind", "label", "lang", "list", "longdesc",
+	"low", "manifest", "marginheight", "marginwidth", "max", "maxlength",
+	"media", "method", "min", "name", "onabort", "onafterprint",
+	"onbeforeprint", "onbeforeunload", "onblur", "oncanplay", "oncanplaythrough", "onchange",
+	"onclick", "oncontextmenu", "ondblclick", "ondrag", "ondragend", "ondragenter",
+	"ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied",
+	"onended", "onerror", "onfocus", "onformchange", "onforminput", "onhashchange",
+	"oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload",
+	"onloadeddata", "onloadedmetadata", "onloadstart", "onmessage", "onmousedown", "onmousemove",
+	"onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onoffline", "ononline",
+	"onpause", "onplay", "onplaying", "onpopstate", "onprogress", "onratechange",
+	"onreadystatechange", "onredo", "onreset", "onresize", "onscroll", "onseeked",
+	"onseeking", "onselect", "onshow", "onstalled", "onstorage", "onsubmit",
+	"onsuspend", "ontimeupdate", "onundo", "onunload", "onvolumechange", "onwaiting",
+	"optimum", "pattern", "placeholder", "poster", "preload", "radiogroup",
+	"rel", "rev", "rows", "rowspan", "rules", "sandbox",
+	"scheme", "scope", "scrolling", "size", "sizes", "span",
+	"spellcheck", "src", "srclang", "standby", "start", "step",
+	"style", "summary", "tabindex", "target", "title", "type",
+	"usemap", "value", "valuetype", "vspace", "width", "wrap",
+	"xmlbase", "xmllang", "xmlspace"
+};
+
+std::unordered_set<std::string> kFixedValueBooleanAttributes{
+	"async",
+	"autofocus",
+	"autoplay",
+	"checked",
+	"controls",
+	"declare",
+	"default",
+	"defer",
+	"disabled",
+	"formnovalidate",
+	"hidden",
+	"ismap",
+	"loop",
+	"multiple",
+	"novalidate",
+	"nowrap",
+	"open",
+	"pubdate",
+	"readonly",
+	"required",
+	"reversed",
+	"scoped",
+	"seamless",
+	"selected"
+};
 
 // --------------------------------------------------------------------
 
@@ -147,10 +209,10 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 			{
 				auto h = m_attr_handlers.find(attr->name());
 
-				AttributeAction action;
+				AttributeAction action = AttributeAction::none;
 				if (h != m_attr_handlers.end())
 					action = h->second(e, attr, scope, dir, webapp);
-				else
+				else if (kGenericAttributes.count(attr->name()))
 					action = process_attr_generic(e, attr, scope, dir, webapp);
 
 				if (action == AttributeAction::remove)
