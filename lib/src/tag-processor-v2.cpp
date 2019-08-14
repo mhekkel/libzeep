@@ -122,11 +122,10 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 		return;
 
 	xml::container *parent = e->parent();
+	el::scope scope(parentScope);
 
 	try
 	{
-		el::scope scope(parentScope);
-
 		std::vector<xml::attribute*> attributes;
 		for (auto& attr: e->attributes())
 			attributes.push_back(attr);
@@ -141,6 +140,12 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 			if (attr->name() == "inline")
 			{
 
+			}
+			else if (attr->name() == "object")
+			{
+               	el::element obj;
+            	el::evaluate_el(scope, attr->value(), obj);
+                scope.select_object(obj);
 			}
 			else
 			{
@@ -187,7 +192,7 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 		copy(e->node_begin(), e->node_end(), back_inserter(nodes));
 
 		for (xml::node *n : nodes)
-			process_xml(n, parentScope, dir, webapp);
+			process_xml(n, scope, dir, webapp);
 	}
 }
 

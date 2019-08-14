@@ -82,13 +82,16 @@ public:
 	template <typename ForwardIterator>
 	void put(const std::string& name, ForwardIterator begin, ForwardIterator end);
 
-	const object& lookup(const std::string& name) const;
+	const object& lookup(const std::string& name, bool includeSelected = false) const;
 	const object& operator[](const std::string& name) const;
 
 	object& lookup(const std::string& name);
 	object& operator[](const std::string& name);
 
 	const http::request& get_request() const;
+
+    // current selected object
+    void select_object(const object& o);
 
 private:
 	/// for debugging purposes
@@ -101,6 +104,7 @@ private:
 	data_map m_data;
 	scope *m_next;
 	const http::request *m_req;
+    const object* m_selected = nullptr;
 };
 
 template <typename T>
