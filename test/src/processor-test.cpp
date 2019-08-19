@@ -795,3 +795,36 @@ BOOST_AUTO_TEST_CASE(test_20)
 		BOOST_TEST(s1.str() == s2.str());
 	}
 }
+
+BOOST_AUTO_TEST_CASE(test_21)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<a m:with="a=${b}" m:text="${a}"/>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<a>b</a>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", "b");
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}

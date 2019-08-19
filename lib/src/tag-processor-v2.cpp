@@ -152,6 +152,21 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 			}
 			else if (attr->name() == "object")
 				scope.select_object(el::evaluate_el(scope, attr->value()));
+			else if (attr->name() == "with")
+			{
+				std::regex kEachRx(R"(^\s*(\w+)\s*=\s*(.+)$)");
+
+				std::smatch m;
+				auto s = attr->str();
+
+				if (not std::regex_match(s, m, kEachRx))
+					throw std::runtime_error("Invalid attribute value for :with");
+
+				std::string var = m[1];
+				std::string val = m[2];
+
+				scope.put(var, el::evaluate_el(scope, val));
+			}
 			else
 			{
 				auto h = m_attr_handlers.find(attr->name());
