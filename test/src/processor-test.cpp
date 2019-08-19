@@ -21,13 +21,15 @@ BOOST_AUTO_TEST_CASE(test_1)
 {
     auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <test m:if="${true}"/>
+    <test1 m:if="${true}"/>
+    <test2 m:unless="${true}"/>
 </data>
     )"_xml;
 
     auto doc_test = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <test />
+    <test1 />
+
 </data>
     )"_xml;
 
@@ -223,7 +225,7 @@ BOOST_AUTO_TEST_CASE(test_6)
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
     <script>
 	<![CDATA[
-		const x = "<b>hallo, wereld!</b>";
+		const x = "<b>'hallo, wereld!'</b>";
 	]]>
 	</script>
 </data>
@@ -232,7 +234,7 @@ BOOST_AUTO_TEST_CASE(test_6)
 	zeep::http::tag_processor_v2 tp;
 
     zeep::el::scope scope(*static_cast<zeep::http::request*>(nullptr));
-    scope.put("x", "\"<b>hallo, wereld!</b>\"");
+    scope.put("x", "\"<b>'hallo, wereld!'</b>\"");
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
@@ -687,7 +689,6 @@ BOOST_AUTO_TEST_CASE(test_18)
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE(test_19)
 {
     auto doc = R"(<?xml version="1.0"?>
@@ -710,6 +711,77 @@ BOOST_AUTO_TEST_CASE(test_19)
 
     scope.put("b", true);
     scope.put("c", false);
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(test_20)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div m:switch="${a}">
+<div m:case="1">1</div>
+<div m:case="2">2</div>
+<div m:case="3">3</div>
+<div m:case="*">*</div>
+</div>
+
+<div m:switch="${a}">
+<a><div m:case="1">1</div></a>
+<div m:case="2">2</div>
+<div m:case="3">3</div>
+<div m:case="*">*</div>
+</div>
+
+<div m:switch="${a}">
+<div m:case="1">1<div m:case="2">2</div></div>
+<div m:case="2">2</div>
+<div m:case="3">3</div>
+<div m:case="*">*</div>
+</div>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div>
+
+<div>2</div>
+
+
+</div>
+
+<div>
+<a/>
+<div>2</div>
+
+
+</div>
+
+<div>
+
+<div>2</div>
+
+
+</div>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("a", 2);
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  

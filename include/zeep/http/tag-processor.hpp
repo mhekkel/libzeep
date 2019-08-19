@@ -112,8 +112,8 @@ class tag_processor_v2 : public tag_processor
   protected:
 
 	// virtual void process_node_attr(xml::node* node, const el::scope& scope, boost::filesystem::path dir);
-	AttributeAction process_attr_if(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 	AttributeAction process_attr_text(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp, bool escaped);
+	AttributeAction process_attr_switch(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 	AttributeAction process_attr_each(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 	AttributeAction process_attr_attr(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 

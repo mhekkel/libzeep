@@ -58,7 +58,7 @@ tag_processor_v2::tag_processor_v2(const char* ns)
 {
 	using namespace std::placeholders;
 
-	register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5));
+	register_attr_handler("switch", std::bind(&tag_processor_v2::process_attr_switch, this, _1, _2, _3, _4, _5));
 	register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, true));
 	register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, false));
 	register_attr_handler("each", std::bind(&tag_processor_v2::process_attr_each, this, _1, _2, _3, _4, _5));
@@ -157,8 +157,13 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 				auto h = m_attr_handlers.find(attr->name());
 
 				AttributeAction action = AttributeAction::none;
+
 				if (h != m_attr_handlers.end())
 					action = h->second(e, attr, scope, dir, webapp);
+				else if (attr->name() == "if")
+					action = el::evaluate_el(scope, attr->value()) ? AttributeAction::none : AttributeAction::remove;
+				else if (attr->name() == "unless")
+					action = (not el::evaluate_el(scope, attr->value())) ? AttributeAction::none : AttributeAction::remove;
 				else if (kFixedValueBooleanAttributes.count(attr->name()))
 					action = process_attr_boolean_value(e, attr, scope, dir, webapp);
 				else //if (kGenericAttributes.count(attr->name()))
@@ -203,11 +208,6 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 	}
 }
 
-auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp) -> AttributeAction
-{
-	return el::evaluate_el(scope, attr->value()) ? AttributeAction::none : AttributeAction::remove;
-}
-
 auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp, bool escaped) ->AttributeAction
 {
 	el::element obj = el::evaluate_el(scope, attr->value());
@@ -226,6 +226,53 @@ auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* 
 		for (auto n: foo->children<xml::node>())
 			element->append(n->clone());
 	}
+
+	return AttributeAction::none;
+}
+
+// --------------------------------------------------------------------
+
+auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute* attr, const el::scope& scope, fs::path dir, basic_webapp& webapp) -> AttributeAction
+{
+	auto v = el::evaluate_el(scope, attr->value()).as<std::string>();
+
+	auto prefix = element->prefix_for_namespace(ns());
+
+	auto cases = element->find(".//*[@case]");
+	xml::element* selected = nullptr;
+	xml::element* wildcard = nullptr;
+	for (auto c: cases)
+	{
+		auto ca = c->get_attribute(prefix + ":case");
+
+		if (ca == "*")
+			wildcard = c;
+		else if (v == ca or (el::process_el(scope, ca) and v == ca))
+		{
+			selected = c;
+			break;
+		}
+	}
+
+	if (selected == nullptr)
+		selected = wildcard;
+
+	// be very careful here,, c might be nested in another c
+
+	for (auto c: cases)
+	{
+		if (c != selected)
+			c->parent()->remove(c);
+	}
+
+	for (auto c: cases)
+	{
+		if (c != selected)
+			delete c;
+	}
+
+	if (selected)
+		selected->remove_attribute(prefix + ":case");
 
 	return AttributeAction::none;
 }
