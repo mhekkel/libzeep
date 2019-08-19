@@ -21,15 +21,13 @@ BOOST_AUTO_TEST_CASE(test_1)
 {
     auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <test1 m:if="${true}"/>
-    <test2 m:unless="${true}"/>
+<test1 m:if="${true}"/><test2 m:unless="${true}"/>
 </data>
     )"_xml;
 
     auto doc_test = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <test1 />
-
+<test1 />
 </data>
     )"_xml;
 
@@ -213,21 +211,49 @@ BOOST_AUTO_TEST_CASE(test_6)
 {
     auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <script m:inline="javascript">
-	<![CDATA[
-		const x = /* [[${x}]] */ null;
-	]]>
-	</script>
+<script m:inline="javascript">
+<![CDATA[
+	const x = /*[[${x}]]*/ null;
+	var y = [[${y}]];
+]]>
+</script>
+<script m:inline="none">
+	const x = /*[[${x}]]*/ null;
+	var y = [[${y}]];
+</script>
+<script>
+	const x = /*[[${x}]]*/ null;
+	var y = [[${y}]];
+</script>
+
+<script m:inline="javascript">
+	const a = /*[[${a}]]*/ null
+	const b = 1;
+</script>
 </data>
     )"_xml;
 
     auto doc_test = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <script>
-	<![CDATA[
-		const x = "<b>'hallo, wereld!'</b>";
-	]]>
-	</script>
+<script>
+<![CDATA[
+	const x = "\"<b>'hallo, wereld!'<\/b>\"";
+	var y = "Een \"moeilijke\" string";
+]]>
+</script>
+<script>
+	const x = /*[[${x}]]*/ null;
+	var y = [[${y}]];
+</script>
+<script>
+	const x = /*&quot;&lt;b&gt;&#39;hallo, wereld!&#39;&lt;/b&gt;&quot;*/ null;
+	var y = Een &quot;moeilijke&quot; string;
+</script>
+
+<script>
+	const a = ["a","b","c"]
+	const b = 1;
+</script>
 </data>
     )"_xml;
 
@@ -235,47 +261,9 @@ BOOST_AUTO_TEST_CASE(test_6)
 
     zeep::el::scope scope(*static_cast<zeep::http::request*>(nullptr));
     scope.put("x", "\"<b>'hallo, wereld!'</b>\"");
+    scope.put("y", "Een \"moeilijke\" string");
+    scope.put("a", zeep::el::element{ "a", "b", "c"});
  
-    tp.process_xml(doc.child(), scope, "", dummy_webapp);
- 
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
-}
-
-BOOST_AUTO_TEST_CASE(test_7)
-{
-    auto doc = R"(<?xml version="1.0"?>
-<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <script m:inline="javascript">
-//<![CDATA[
-		const a = /* [[${a}]] */ null;
-//]]>
-	</script>
-</data>
-    )"_xml;
-
-    auto doc_test = R"(<?xml version="1.0"?>
-<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-    <script>
-//<![CDATA[
-		const x = ["a","b","c"];
-//]]>
-	</script>
-</data>
-    )"_xml;
-
-	zeep::http::tag_processor_v2 tp;
-
-    zeep::el::scope scope(*static_cast<zeep::http::request*>(nullptr));
-     scope.put("a", zeep::el::element{ "a", "b", "c"});
-
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
 	if (doc != doc_test)
