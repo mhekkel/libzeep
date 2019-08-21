@@ -97,7 +97,7 @@ class tag_processor_v2 : public tag_processor
 		none, remove, replace
 	};
 
-	using attr_handler = std::function<AttributeAction(xml::element*, xml::attribute*, const el::scope&, boost::filesystem::path, basic_webapp& webapp)>;
+	using attr_handler = std::function<AttributeAction(xml::element*, xml::attribute*, el::scope&, boost::filesystem::path, basic_webapp& webapp)>;
 
 	tag_processor_v2(const char* ns = tag_processor_v2::ns());
 
@@ -112,12 +112,15 @@ class tag_processor_v2 : public tag_processor
   protected:
 
 	// virtual void process_node_attr(xml::node* node, const el::scope& scope, boost::filesystem::path dir);
-	AttributeAction process_attr_if(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
-	AttributeAction process_attr_text(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp, bool escaped);
-	AttributeAction process_attr_each(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
-	AttributeAction process_attr_attr(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
-
-	AttributeAction process_attr_generic(xml::element* node, xml::attribute* attr, const el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_if(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp, bool unless);
+	AttributeAction process_attr_text(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp, bool escaped);
+	AttributeAction process_attr_switch(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_each(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_attr(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_with(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_generic(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_boolean_value(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
+	AttributeAction process_attr_inline(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 
 	std::map<std::string, attr_handler> m_attr_handlers;
 };

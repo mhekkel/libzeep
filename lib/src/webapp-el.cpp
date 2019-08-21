@@ -791,6 +791,43 @@ object interpreter::parse_primary_expr()
 			{
 				result = m_scope.lookup(m_token_string, true);
 				match(elt_object);
+				for (;;)
+				{
+					if (m_lookahead == elt_dot)
+					{
+						match(m_lookahead);
+						if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
+							result = object((uint32_t)result.size());
+						else if (m_token_string == "empty")
+							result = result.empty();
+						else if (result.type() == object::value_type::object)
+							result = const_cast<const object &>(result)[m_token_string];
+						else
+							result = object::value_type::null;
+						match(elt_object);
+						continue;
+					}
+
+					if (m_lookahead == elt_lbracket)
+					{
+						match(m_lookahead);
+
+						object index = parse_template_expr();
+						match(elt_rbracket);
+
+						if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
+							result = object();
+						else if (result.type() == object::value_type::array)
+							result = result[index.as<int>()];
+						else if (result.type() == object::value_type::object)
+							result = result[index.as<string>()];
+						else
+							result = object::value_type::null;
+						continue;
+					}
+
+					break;
+				}
 			}
 			else
 				result = parse_template_expr();

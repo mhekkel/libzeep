@@ -250,6 +250,22 @@ container::~container()
 }
 
 template<>
+std::list<text*> container::children<text>() const
+{
+	std::list<text*> result;
+	
+	node* child = m_child;
+	while (child != nullptr)
+	{
+		if (typeid(*child) == typeid(text))
+			result.push_back(static_cast<text*>(child));
+		child = child->next();
+	}
+	
+	return result;
+}
+
+template<>
 node_set container::children<node>() const
 {
 	node_set result;
