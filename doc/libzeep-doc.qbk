@@ -25,6 +25,7 @@
 [def __add_processor__ [memberref zeep::http::basic_webapp::add_processor `zeep::http::basic_webapp::add_processor`]]
 [def __el_scope__ [classref zeep::http::el::scope `zeep::http::el::scope`]]
 [def __el_object__ [classref zeep::http::el::object `zeep::http::el::object`]]
+[def __rest_controller__ [classref zeep::http::rest_controller `zeep::http::rest_controller`]]
 
 
 
@@ -32,7 +33,7 @@
 
 Libzeep is packaged as one library, but actually contains two different libraries. The first part of libzeep consists of code to read, manipulate and write XML. It contains a validating XML parser, an XPath implementation to query a DOM tree, code to serialize objects into and out of XML and finally it contains an XML writing module.
 
-The second part of libzeep is targeted to writing SOAP and REST servers as well as full web applications using C++. There is a simple HTTP server implementation, code to create SOAP (and REST) servers out of existing C++ objects and there is code to create complete web applications that work a bit like popular Java web application frameworks. The libzeep web application framework turns page templates consisting of XHTML with custom tags and a custom script language into HTML.
+The second part of libzeep is targeted to writing SOAP and REST servers as well as full web applications using C++. There is a simple HTTP server implementation, code to create SOAP and REST servers out of existing C++ objects and there is code to create complete web applications that work a bit like popular Java web application frameworks. The libzeep web application framework turns page templates consisting of XHTML with custom tags and a custom script language into HTML.
 
 [endsect]
 
@@ -262,13 +263,12 @@ create client code that uses the exposed functions.
 REST on the other hand, is much easier to use ad hoc. It passes the arguments to the invoked functions in the
 URL and uses standard GET, POST and PUT methods of the HTTP protocol.
 
-libzeep is mainly focussed to using SOAP, but allows to access the exported functionality in a REST like way. Not
-all functions can be accessed this way, if the input parameters are some complex type, you're out of luck. This
-documentation will focus on SOAP, but if the function is simple, you can test it using REST from a browser.
+Since version 4.0 libzeep fully supports creating REST servers. This documentation first describes the way to create
+a SOAP server followed by the steps to create a REST server.
 
 [endsect]
 
-[section:basics A real world example]
+[section:basics A real world SOAP example]
 
 Creating a SOAP server using libzeep is very easy. The bulk of the work is done by libzeep, you only have
 to specify what methods to expose and optionally what datatypes.
@@ -397,6 +397,89 @@ you can test the REST versions of the code by visiting the following URL's with 
 
 [@http://localhost/rest/FindDocument/terms/bla/algorithm/vector]
 
+
+[endsect]
+
+[section:basics And a real world REST example]
+
+Just like the SOAP server, creating a REST server is pretty easy. This time we will use the
+new __rest_controller__ class. This is a concept borrowed from Spring, the controller handles
+HTTP requests done in a subdomain. The path to this domain is specified in the constructor.
+
+Here's the declaration of our MyController class:[c++]
+
+	class MyController : public __rest_controller__
+	{
+	  public:
+	..  MyController();
+	
+	    // this is similar 
+	    struct MyHit
+	    {
+	      long   id;
+	      float  score;
+	      string title;
+	      
+	      template<class Archive>
+	      void serialize(Archive& ar, const unsigned int version)
+	      {
+	        ar & zeep::make_nvp("id", id) & zeep::make_nvp("score", score) & zeep::make_nvp("title", title);
+	      }
+	    };
+	    
+	    enum class MyAlgorithm
+	    {
+	      vector, dice, jaccard
+	    };
+	    
+	    long CountDocuments();
+	    string GetDocument(long inID);
+	    vector<MyHit> FindDocument(const vector<string>& inTerms, MyAlgorithm inAlgorithm);
+	};	
+
+This looks even better than our SOAP server. We simply return the values, no need to have the result as last
+reference parameter.The REST controller converts basic types into strings and complex types into JSON. A full
+JSON implementation is available as __el_object__ class. The implementation of this class follows the implementation
+of N.Lohmann's json library very closely.
+
+To help in serialization, helper functions need to be created. For MyAlgorithm we have e.g.:[c++]
+
+	void to_element(__el_object__& e, MyAlgorithm algorithm)
+	{
+	  switch (algorithm)
+	  {
+	    case MyAlgorithm::vector:    e = "vector"; break;
+	    case MyAlgorithm::dice:      e = "dice"; break;
+	    case MyAlgorithm::jaccard:   e = "jaccard"; break;
+	  }
+	}
+	
+	void from_element(const __el_object__& e, MyAlgorithm& algorithm)
+	{
+	  if (e == "vector")       algorithm = MyAlgorithm::vector;
+	  else if (e == "dice")    algorithm = MyAlgorithm::dice;
+	  else if (e == "jaccard") algorithm = MyAlgorithm::jaccard;
+	}
+
+Now all we need is the constructor for MyController where we bind the methods to the REST logic. Important to
+know here is that REST uses PUT, GET, POST and DELETE as HTTP methods. We can bind to these methods specifically.
+
+	MyController::MyController()
+	  : __rest_controller__("ajax")
+	{
+	  add_get_request("count", &MyController::CountDocuments);
+	  add_get_request("document/{id}", &MyController::GetDocument, "id");
+	  add_get_request("find", &MyController::FindDocument, "terms", "algorithm");
+	  add_post_request("find", &MyController::FindDocument, "terms", "algorithm");
+	}
+
+And that's all. Note that we added FindDocument twice, once as a GET request and once as a POST. This allows
+the client of this server to use either method.
+
+The parameters of the exposed methods are named in the add_xxx_request call. The number of name arguments
+must of course match the number of arguments in the exposed method. By default parameters are taken from
+request parameters or the POST payload. But if you specify the name in accolades in the path they will
+be taken from there.
 
 [endsect]
 
