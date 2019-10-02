@@ -418,14 +418,18 @@ void basic_webapp::init_scope(el::scope& scope)
 {
 }
 
-void basic_webapp::process_tags(xml::element* node, const el::scope& scope)
+void basic_webapp::process_tags(xml::node* node, const el::scope& scope)
 {
+	// only process elements
+	if (dynamic_cast<xml::element*>(node) == nullptr)
+		return;
+
 	std::set<std::string> registeredNamespaces;
 	for (auto& tpc: m_tag_processor_creators)
 		registeredNamespaces.insert(tpc.first);
 
 	if (not registeredNamespaces.empty())
-		process_tags(node, scope, registeredNamespaces);
+		process_tags(static_cast<xml::element*>(node), scope, registeredNamespaces);
 }
 
 void basic_webapp::process_tags(xml::element* node, const el::scope& scope, std::set<std::string> registeredNamespaces)
