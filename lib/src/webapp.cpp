@@ -405,12 +405,7 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 
 	load_template(file, doc);
 
-	std::set<std::string> registeredNamespaces;
-	for (auto& tpc: m_tag_processor_creators)
-		registeredNamespaces.insert(tpc.first);
-
-	if (not registeredNamespaces.empty())
-		process_tags(doc.child(), scope, registeredNamespaces);
+	process_tags(doc.child(), scope);
 
 	// this is required to make the document HTML5 compliant, sort of
 	doc.set_doctype("html", "", "about:legacy-compat");
@@ -421,6 +416,16 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 
 void basic_webapp::init_scope(el::scope& scope)
 {
+}
+
+void basic_webapp::process_tags(xml::element* node, const el::scope& scope)
+{
+	std::set<std::string> registeredNamespaces;
+	for (auto& tpc: m_tag_processor_creators)
+		registeredNamespaces.insert(tpc.first);
+
+	if (not registeredNamespaces.empty())
+		process_tags(node, scope, registeredNamespaces);
 }
 
 void basic_webapp::process_tags(xml::element* node, const el::scope& scope, std::set<std::string> registeredNamespaces)
