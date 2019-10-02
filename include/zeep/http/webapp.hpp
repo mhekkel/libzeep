@@ -101,6 +101,10 @@ class basic_webapp
 
 	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
 
+	/// process all the tags in this node
+	virtual void process_tags(xml::node* node, const el::scope& scope);
+
+	/// process only the tags with the specified namespace prefixes
 	virtual void process_tags(xml::element* node, const el::scope& scope, std::set<std::string> registeredNamespaces);
 
   public:

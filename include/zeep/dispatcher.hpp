@@ -84,7 +84,7 @@ struct invoker<void(A0, A1, A...)>
 
 		argument_type arg = {};
  		d.deserialize_element(*name, arg);
-		next_invoker::invoke(f, d, ++name, response, arg, args...);
+		next_invoker::invoke(f, d, ++name, response, args..., arg);
 	}
 
 	static void collect_types(schema_creator& c, const char** name)
