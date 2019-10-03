@@ -333,41 +333,41 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 	
 	el::object collection = el::evaluate_el(scope, m[3]);
 
-	if (not collection.is_array())
-		throw std::runtime_error("Collection is not an array in :each");
-
-	xml::container *parent = node->parent();
-	assert(parent);
-
-	size_t collectionSize = collection.size();
-	size_t i = 0;
-
-	for (auto v: collection)
+	if (collection.is_array())
 	{
-		el::scope s(scope);
-		s.put(var, v);
+		xml::container *parent = node->parent();
+		assert(parent);
 
-		if (not stat.empty())
-			s.put(stat, el::object{
-				{ "index", i},
-				{ "count", i + 1},
-				{ "size", collectionSize },
-				{ "current", v},
-				{ "even", i % 2 == 1 },
-				{ "odd", i % 2 == 0 },
-				{ "first", i == 0 },
-				{ "last", i + 1 == collectionSize }
-			});
+		size_t collectionSize = collection.size();
+		size_t i = 0;
 
-		xml::element* clone = static_cast<xml::element*>(node->clone());
+		for (auto v: collection)
+		{
+			el::scope s(scope);
+			s.put(var, v);
 
-		clone->remove_attribute(attr->qname());
+			if (not stat.empty())
+				s.put(stat, el::object{
+					{ "index", i},
+					{ "count", i + 1},
+					{ "size", collectionSize },
+					{ "current", v},
+					{ "even", i % 2 == 1 },
+					{ "odd", i % 2 == 0 },
+					{ "first", i == 0 },
+					{ "last", i + 1 == collectionSize }
+				});
 
-		parent->insert(node, clone); // insert before processing, to assign namespaces
-		process_xml(clone, s, dir, webapp);
+			xml::element* clone = static_cast<xml::element*>(node->clone());
 
-		++i;
-	}	
+			clone->remove_attribute(attr->qname());
+
+			parent->insert(node, clone); // insert before processing, to assign namespaces
+			process_xml(clone, s, dir, webapp);
+
+			++i;
+		}
+	}
 
 	return AttributeAction::remove;
 }
@@ -523,7 +523,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 {
 	auto s = attr->str();
 
-	const std::regex kTemplateRx(R"(^\s*([-_[:alnum:]]*)\s*::\s*(#?[-_[:alnum:]]+)$)");
+	const std::regex kTemplateRx(R"(^\s*(\S*)\s*::\s*(#?[-_[:alnum:]]+)$)");
 
 	std::smatch m;
 
@@ -545,10 +545,10 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 		bool loaded = false;
 
-		for (const char* ext: { ".xhtml", ".html", ".xml", "" })
+		for (const char* ext: { "", ".xhtml", ".html", ".xml" })
 		{
 			fs::path file = dir / (templateFile + ext);
-			if (not fs::exists(file))
+			if (not fs::exists(webapp.get_docroot() / file))
 				continue;
 
 			webapp.load_template(file.string(), doc);
