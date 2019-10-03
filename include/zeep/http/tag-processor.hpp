@@ -122,6 +122,10 @@ class tag_processor_v2 : public tag_processor
 	AttributeAction process_attr_boolean_value(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 	AttributeAction process_attr_inline(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp);
 
+	enum class TemplateIncludeAction { include, insert, replace };
+
+	AttributeAction process_attr_include(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp, TemplateIncludeAction tia);
+
 	std::map<std::string, attr_handler> m_attr_handlers;
 };
 

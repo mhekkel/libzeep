@@ -74,6 +74,7 @@ public:
 		{
 			case value_type::array:		m_it.m_array_it = m_obj->m_data.m_array->end(); break;
 			case value_type::object:	m_it.m_object_it = m_obj->m_data.m_object->end(); break;
+			case value_type::null:		m_it.m_p = 0; break;
 			default:					m_it.m_p = 1; break;
 		}
 	}

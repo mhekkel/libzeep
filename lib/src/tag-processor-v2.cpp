@@ -9,6 +9,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
+#include <boost/filesystem/operations.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/unicode_support.hpp>
@@ -67,6 +68,10 @@ tag_processor_v2::tag_processor_v2(const char* ns)
 	register_attr_handler("attr", std::bind(&tag_processor_v2::process_attr_attr, this, _1, _2, _3, _4, _5));
 	register_attr_handler("with", std::bind(&tag_processor_v2::process_attr_with, this, _1, _2, _3, _4, _5));
 	register_attr_handler("inline", std::bind(&tag_processor_v2::process_attr_inline, this, _1, _2, _3, _4, _5));
+
+	register_attr_handler("insert", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
+	register_attr_handler("include", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
+	register_attr_handler("replace", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
 }
 
 void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope, fs::path dir, basic_webapp& webapp)
@@ -510,6 +515,94 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 	}
 
 	return AttributeAction::none;
+}
+
+// --------------------------------------------------------------------
+
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::element* node, xml::attribute* attr, el::scope& scope, boost::filesystem::path dir, basic_webapp& webapp, TemplateIncludeAction tia)
+{
+	auto s = attr->str();
+
+	const std::regex kTemplateRx(R"(^\s*([-_[:alnum:]]*)\s*::\s*(#?[-_[:alnum:]]+)$)");
+
+	std::smatch m;
+
+	if (not std::regex_match(s, m, kTemplateRx))
+		throw std::runtime_error("Invalid attribute value for :include/insert/replace");
+
+	std::string templateFile = m[1];
+	std::string templateID = m[2];
+
+	xml::element* replacement = nullptr;
+	xml::document doc;
+	xml::root_node* root = nullptr;
+
+	if (templateFile.empty() or templateFile == "this")
+		root = node->root();
+	else
+	{
+		doc.set_preserve_cdata(true);
+
+		bool loaded = false;
+
+		for (const char* ext: { ".xhtml", ".html", ".xml", "" })
+		{
+			fs::path file = dir / (templateFile + ext);
+			if (not fs::exists(file))
+				continue;
+
+			webapp.load_template(file.string(), doc);
+			loaded = true;
+			break;
+		}
+
+		if (not loaded)
+			throw std::runtime_error("Could not locate template file " + templateFile);
+
+		root = doc.root();
+	}
+
+	if (templateID[0] == '#')	// by ID
+		replacement = root->find_first("//*[@id='" + templateID.substr(1) + "']");
+	else
+		replacement = root->find_first("//*[@fragment='" + templateID + "']");
+
+	if (not replacement)
+		throw std::runtime_error("Could not find template with id " + templateID);
+	
+	if (root == doc.root())
+		replacement->parent()->remove(replacement);
+	else
+		replacement = static_cast<xml::element*>(replacement->clone());
+
+	AttributeAction result = AttributeAction::none;
+	
+	if (tia == TemplateIncludeAction::include)
+	{
+		for (auto child: replacement->children<xml::node>())
+		{
+			replacement->remove(child);
+			node->push_back(child);
+		}
+		delete replacement;
+	}
+	else
+	{
+		if (tia == TemplateIncludeAction::insert)
+			node->push_back(replacement);
+		else
+		{
+			node->parent()->insert(node, replacement);
+			result = AttributeAction::remove;
+		}
+
+		if (templateID[0] == '#')	// by ID
+			replacement->remove_attribute("id");
+		else
+			replacement->remove_attribute(replacement->prefix_for_namespace(ns()) + ":fragment");
+	}
+
+	return result;
 }
 
 }

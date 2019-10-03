@@ -816,3 +816,59 @@ BOOST_AUTO_TEST_CASE(test_21)
 		BOOST_TEST(s1.str() == s2.str());
 	}
 }
+
+BOOST_AUTO_TEST_CASE(test_22)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div id="frag1">hello world</div>
+<span m:insert=" :: #frag1"></span>
+<span m:replace=" :: #frag1"></span>
+<span m:include=" :: #frag1"></span>
+<span m:insert="this :: #frag1"></span>
+<span m:replace="this :: #frag1"></span>
+<span m:include="this :: #frag1"></span>
+<span m:insert="fragment-file :: frag1"></span>
+<span m:replace="fragment-file :: frag1"></span>
+<span m:include="fragment-file :: frag1"></span>
+<span m:insert="fragment-file :: #frag2"></span>
+<span m:replace="fragment-file :: #frag2"></span>
+<span m:include="fragment-file :: #frag2"></span>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div id="frag1">hello world</div>
+<span><div>hello world</div></span>
+<div>hello world</div>
+<span>hello world</span>
+<span><div>hello world</div></span>
+<div>hello world</div>
+<span>hello world</span>
+<span><div>fragment-1</div></span>
+<div>fragment-1</div>
+<span>fragment-1</span>
+<span><div>fragment-2</div></span>
+<div>fragment-2</div>
+<span>fragment-2</span>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", "b");
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
