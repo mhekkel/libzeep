@@ -873,7 +873,6 @@ BOOST_AUTO_TEST_CASE(test_22)
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE(test_23)
 {
     auto doc = R"(<?xml version="1.0"?>
@@ -895,6 +894,46 @@ BOOST_AUTO_TEST_CASE(test_23)
 <span>link?b=b&amp;test=test%26</span>
 <span>link/bb</span>
 <span>link?c=bla%20met%20%3c%20en%20%3d</span>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", "b");
+	scope.put("c", "bla met < en =");
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	if (doc != doc_test)
+	{
+		ostringstream s1;
+		s1 << doc;
+		ostringstream s2;
+		s2 << doc_test;
+
+		BOOST_TEST(s1.str() == s2.str());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(test_24)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<span m:text="${||}"/>
+<span m:text="${|een twee drie|}"/>
+<span m:text="${|een ${b} en ${c}|}"/>
+<span m:text="${'een ' + |twee ${b}|}"/>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<span></span>
+<span>een twee drie</span>
+<span>een b en bla met &lt; en =</span>
+<span>een twee b</span>
 </data>
     )"_xml;
 

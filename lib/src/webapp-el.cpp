@@ -78,6 +78,9 @@ struct interpreter
 	object parse_template_multiplicative_expr();	 // unary_expr (('%'|'/') unary_expr)*
 	object parse_template_unary_expr();				// ('-')? primary_expr
 	object parse_template_primary_expr();			// '(' expr ')' | number | string
+	object parse_template_literal_substitution();	// |xxx ${var}|
+
+	object parse_template_template_expr();
 
 	object parse_link_template_expr();
 
@@ -91,6 +94,7 @@ struct interpreter
 	int64_t m_token_number_int;
 	double m_token_number_float;
 	string::const_iterator m_ptr, m_end;
+	bool m_return_whitespace = false;
 };
 
 template <class OutputIterator, class Match>
@@ -141,11 +145,14 @@ enum token_type
 	elt_else,
 	elt_dot,
 	elt_hash,
+	elt_pipe,
 
 	elt_true,
 	elt_false,
 	elt_in,
 	elt_comma,
+
+	elt_whitespace,
 
 	elt_variable_template,
 	elt_selection_template,
@@ -393,6 +400,9 @@ void interpreter::get_next_token()
 			case ',':
 				token = elt_comma;
 				break;
+			case '|':
+				token = elt_pipe;
+				break;
 			case '=':
 				state = els_Equals;
 				break;
@@ -418,7 +428,10 @@ void interpreter::get_next_token()
 			case '\n':
 			case '\r':
 			case '\t':
-				m_token_string.clear();
+				if (m_return_whitespace)
+					token = elt_whitespace;
+				else
+					m_token_string.clear();
 				break;
 			case '\'':
 				state = els_Literal;
@@ -783,7 +796,7 @@ object interpreter::parse_unary_expr()
 	return result;
 }
 
-object interpreter::parse_primary_expr()
+object interpreter::parse_template_template_expr()
 {
 	object result;
 	switch (m_lookahead)
@@ -848,7 +861,22 @@ object interpreter::parse_primary_expr()
 				result = parse_template_expr();
 			match(elt_rbrace);
 			break;
+	}
 
+	return result;
+}
+
+object interpreter::parse_primary_expr()
+{
+	object result;
+	switch (m_lookahead)
+	{
+		case elt_variable_template:
+		case elt_link_template:
+		case elt_selection_template:
+			result = parse_template_template_expr();
+			break;
+		
 		case elt_true:
 			result = true;
 			match(m_lookahead);
@@ -1097,6 +1125,12 @@ object interpreter::parse_template_primary_expr()
 			match(elt_rparen);
 			break;
 
+		case elt_pipe:
+			match(elt_pipe);
+			result = parse_template_literal_substitution();
+			match(elt_pipe);
+			break;
+
 		case elt_hash:
 			result = parse_utility_expr();
 			break;
@@ -1149,6 +1183,33 @@ object interpreter::parse_template_primary_expr()
 	return result;
 }
 
+object interpreter::parse_template_literal_substitution()
+{
+	string result;
+
+	m_return_whitespace = true;
+
+	while (m_lookahead != elt_pipe and m_lookahead != elt_eof)
+	{
+		switch (m_lookahead)
+		{
+			case elt_variable_template:
+			case elt_selection_template:
+				result += parse_template_template_expr().as<string>();
+				break;
+			
+			default:
+				result += m_token_string;
+				match(m_lookahead);
+				break;
+		}
+	}
+
+	m_return_whitespace = false;
+
+	return result;
+}
+
 // --------------------------------------------------------------------
 
 object interpreter::parse_link_template_expr()
@@ -1172,9 +1233,8 @@ object interpreter::parse_link_template_expr()
 		switch (m_lookahead)
 		{
 			case elt_variable_template:
-				match(elt_fragment_template);
-				path += parse_template_expr().as<string>();
-				match(elt_rbrace);
+			case elt_selection_template:
+				path += parse_template_template_expr().as<string>();
 				break;
 			
 			case elt_lbrace:
