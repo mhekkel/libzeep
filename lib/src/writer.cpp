@@ -51,6 +51,8 @@ void writer::xml_decl(bool standalone)
 	if (m_write_xml_decl)
 	{
 		assert(m_encoding == encoding_type::enc_UTF8);
+		if (m_encoding != encoding_type::enc_UTF8)
+			throw std::logic_error("libzeep only supports writing in utf-8");
 
 		if (m_version == 1.0f)
 			m_os << "<?xml version=\"1.0\"";
@@ -59,6 +61,7 @@ void writer::xml_decl(bool standalone)
 		else
 			throw exception("don't know how to write this version of XML");
 		
+		// utf-8 is default, leave it out.
 		// m_os << " encoding=\"UTF-8\"";
 		
 		if (standalone)
