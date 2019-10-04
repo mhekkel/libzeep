@@ -79,6 +79,8 @@ struct interpreter
 	object parse_template_unary_expr();				// ('-')? primary_expr
 	object parse_template_primary_expr();			// '(' expr ')' | number | string
 
+	object parse_link_template_expr();
+
 	object parse_utility_expr();
 
 	object call_method(const string& className, const string& method, vector<object>& params);
@@ -111,6 +113,9 @@ enum token_type
 	elt_number_float,
 	elt_string,
 	elt_object,
+
+	elt_assign,
+
 	elt_and,
 	elt_or,
 	elt_not,
@@ -184,7 +189,7 @@ vector<pair<string,string>> interpreter::evaluate_attr_expr(const string& s)
 		string var = m_token_string;
 		match(elt_object);
 
-		match (elt_eq);
+		match (elt_assign);
 
 		auto value = parse_expr();
 
@@ -459,8 +464,12 @@ void interpreter::get_next_token()
 
 		case els_Equals:
 			if (ch != '=')
+			{
 				retract();
-			token = elt_eq;
+				token = elt_assign;
+			}
+			else
+				token = elt_eq;
 			break;
 
 		case els_Question:
@@ -785,6 +794,12 @@ object interpreter::parse_primary_expr()
 			match(elt_rbrace);
 			break;
 		
+		case elt_link_template:
+			match(elt_link_template);
+			result = parse_link_template_expr();
+			match(elt_rbrace);
+			break;
+
 		case elt_selection_template:
 			match(elt_selection_template);
 			if (m_lookahead == elt_object)
@@ -1133,6 +1148,104 @@ object interpreter::parse_template_primary_expr()
 	}
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+object interpreter::parse_link_template_expr()
+{
+	string path;
+
+	int braces = 0;
+
+	while (m_lookahead != elt_lparen and m_lookahead != elt_eof)
+	{
+		if (m_lookahead == elt_rbrace)
+		{
+			if (braces-- == 0)
+				break;
+
+			path += m_token_string;
+			match(elt_rbrace);
+			continue;
+		}
+
+		switch (m_lookahead)
+		{
+			case elt_variable_template:
+				match(elt_fragment_template);
+				path += parse_template_expr().as<string>();
+				match(elt_rbrace);
+				break;
+			
+			case elt_lbrace:
+				path += m_token_string;
+				match(elt_lbrace);
+				++braces;
+				break;
+			
+			default:
+				path += m_token_string;
+				match(m_lookahead);
+				break;
+		}
+	}
+
+	if (m_lookahead == elt_lparen)
+	{
+		match(elt_lparen);
+
+		map<string,string> parameters;
+
+		for (;;)
+		{
+			string name = m_token_string;
+			match(elt_object);
+
+			match(elt_assign);
+			string value = parse_primary_expr().as<string>();
+
+			// put into path directly, if found
+			string::size_type p = path.find('{' + name + '}');
+			if (p == string::npos)
+				parameters[name] = value;
+			else
+			{
+				do
+				{
+					path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
+					p += value.length();
+				}
+				while ((p = path.find('{' + name + '}', p)) != string::npos);
+			}
+
+			if (m_lookahead == elt_comma)
+			{
+				match(elt_comma);
+				continue;
+			}
+
+			break;
+		}
+
+		match(elt_rparen);
+
+		if (not parameters.empty())
+		{
+			path += '?';
+			auto n = parameters.size();
+			for (auto p: parameters)
+			{
+				path += http::encode_url(p.first) + '=' + http::encode_url(p.second);
+				if (--n > 0)
+					path += '&';
+			}
+		}
+	}
+
+	return path;
+}
+
+// --------------------------------------------------------------------
 
 object interpreter::parse_utility_expr()
 {
