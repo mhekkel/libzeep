@@ -175,6 +175,8 @@ void basic_webapp::handle_request(const request& req, reply& rep)
 		scope.put("baseuri", uri);
 		scope.put("mobile", req.is_mobile());
 
+		init_scope(scope);
+
 		auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
 							   [uri](const mount_point& m) -> bool { return m.path == uri; });
 
@@ -204,8 +206,6 @@ void basic_webapp::handle_request(const request& req, reply& rep)
 
 					scope.put("username", req.username);
 				}
-
-				init_scope(scope);
 
 				handler->handler(req, scope, rep);
 

@@ -244,6 +244,9 @@ bool element::empty() const
 		case value_type::object:
 			return m_data.m_object->empty();
 
+		case value_type::string:
+			return m_data.m_string->empty();
+
 		default:
 			return false;
 	}

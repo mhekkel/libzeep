@@ -65,6 +65,7 @@ struct interpreter
 	object parse_multiplicative_expr(); // unary_expr (('%'|'/') unary_expr)*
 	object parse_unary_expr();			// ('-')? primary_expr
 	object parse_primary_expr();		// '(' expr ')' | number | string
+	object parse_literal_substitution();// '|xxx ${var}|'
 
 	// --------------------------------------------------------------------
 	// these are for inside ${} templates
@@ -78,7 +79,6 @@ struct interpreter
 	object parse_template_multiplicative_expr();	 // unary_expr (('%'|'/') unary_expr)*
 	object parse_template_unary_expr();				// ('-')? primary_expr
 	object parse_template_primary_expr();			// '(' expr ')' | number | string
-	object parse_template_literal_substitution();	// |xxx ${var}|
 
 	object parse_template_template_expr();
 
@@ -876,6 +876,12 @@ object interpreter::parse_primary_expr()
 		case elt_selection_template:
 			result = parse_template_template_expr();
 			break;
+
+		case elt_pipe:
+			match(elt_pipe);
+			result = parse_literal_substitution();
+			match(elt_pipe);
+			break;
 		
 		case elt_true:
 			result = true;
@@ -1125,12 +1131,6 @@ object interpreter::parse_template_primary_expr()
 			match(elt_rparen);
 			break;
 
-		case elt_pipe:
-			match(elt_pipe);
-			result = parse_template_literal_substitution();
-			match(elt_pipe);
-			break;
-
 		case elt_hash:
 			result = parse_utility_expr();
 			break;
@@ -1183,7 +1183,7 @@ object interpreter::parse_template_primary_expr()
 	return result;
 }
 
-object interpreter::parse_template_literal_substitution()
+object interpreter::parse_literal_substitution()
 {
 	string result;
 
@@ -1392,8 +1392,38 @@ object interpreter::call_method(const string& className, const string& method, v
 				return FormatDecimal(d, intDigits, decimals, m_scope.get_request().get_locale());
 			}
 		}
+		else if (method == "formatDiskSize")
+		{
+			if (params.size() >= 1 and params[0].is_number())
+			{
+				double nr = params[0].as<double>();
+
+				const char kBase[] = {'B', 'K', 'M', 'G', 'T', 'P', 'E'}; // whatever
+
+				int base = 0;
+
+				while (nr > 1024)
+				{
+					nr /= 1024;
+					++base;
+				}
+
+				int decimals = 0;
+				if (params.size() >= 2 and params[1].is_number_int())
+					decimals = params[1].as<int>();
+
+				return FormatDecimal(nr, 1, decimals, m_scope.get_request().get_locale()) + ' ' + kBase[base];
+			}
+		}
 		else
 			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+	}
+	else if (className == "#numbers")
+	{
+		if (method == "getRequestURI")
+			result = m_scope.get_request().uri;
+		else if (method == "getRequestURL")
+			result = m_scope.get_request().uri;
 	}
 	else
 		throw runtime_error("Undefined class for utility object call: " + className);
