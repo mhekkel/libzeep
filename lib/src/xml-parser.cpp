@@ -114,9 +114,8 @@ struct parser_imp
 	void pereference();
 
 	void doctypedecl();
-	data_source *external_id();
-	std::tuple<std::string, std::string>
-	read_external_id();
+	data_source* get_data_source(const std::string& pubid, std::string uri);
+	std::tuple<std::string, std::string> read_external_id();
 	void intsubset();
 	void extsubset();
 	void declsep();
@@ -125,8 +124,7 @@ struct parser_imp
 	void markup_decl();
 	void element_decl();
 	void contentspec(doctype::element& element);
-	doctype::allowed_ptr
-	cp();
+	doctype::allowed_ptr cp();
 	void attlist_decl();
 	void notation_decl();
 	void entity_decl();
@@ -1249,6 +1247,8 @@ void parser_imp::xml_decl()
 
 		match('?');
 		match('>');
+
+		m_parser.xml_decl(m_encoding, m_standalone, m_version);
 	}
 }
 
@@ -1330,8 +1330,40 @@ void parser_imp::doctypedecl()
 
 		if (m_lookahead == xml_Name)
 		{
-			dtd.reset(external_id());
+			std::string pubid, uri;
+
+			if (m_token == "SYSTEM")
+			{
+				match(xml_Name);
+				s(true);
+
+				uri = m_token;
+
+				if (not is_valid_system_literal(uri))
+					not_well_formed("invalid system literal");
+			}
+			else if (m_token == "PUBLIC")
+			{
+				match(xml_Name);
+				s(true);
+
+				pubid = m_token;
+				match(xml_String);
+
+				// validate the public ID
+				if (not is_valid_public_id(pubid))
+					not_well_formed("Invalid public ID");
+
+				s(true);
+				uri = m_token;
+			}
+			else
+				not_well_formed("Expected external id starting with either SYSTEM or PUBLIC");
+
 			match(xml_String);
+			dtd.reset(get_data_source(pubid, uri));
+
+			m_parser.doctype_decl(m_root_element, pubid, uri);
 		}
 
 		s();
@@ -2235,19 +2267,47 @@ void parser_imp::notation_decl()
 	m_parser.notation_decl(name, sysid, pubid);
 }
 
-data_source *parser_imp::external_id()
+data_source* parser_imp::get_data_source(const std::string& pubid, std::string uri)
 {
 	data_source *result = nullptr;
-	std::string pubid, sysid;
+
+	std::istream *is = m_parser.external_entity_ref(m_data_source->base(), pubid, uri);
+	if (is != nullptr)
+	{
+		result = new istream_data_source(is);
+
+		std::string::size_type s = uri.rfind('/');
+		if (s == std::string::npos)
+			result->base(m_data_source->base());
+		else
+		{
+			uri.erase(s, std::string::npos);
+
+			if (is_absolute_path(uri))
+				result->base(uri);
+			else
+				result->base(m_data_source->base() + '/' + uri);
+		}
+	}
+
+	return result;
+}
+
+std::tuple<std::string, std::string> parser_imp::read_external_id()
+{
+	std::string result;
+	std::string path;
+
+	std::string pubid, uri;
 
 	if (m_token == "SYSTEM")
 	{
 		match(xml_Name);
 		s(true);
 
-		sysid = m_token;
+		uri = m_token;
 
-		if (not is_valid_system_literal(sysid))
+		if (not is_valid_system_literal(uri))
 			not_well_formed("invalid system literal");
 	}
 	else if (m_token == "PUBLIC")
@@ -2263,44 +2323,17 @@ data_source *parser_imp::external_id()
 			not_well_formed("Invalid public ID");
 
 		s(true);
-		sysid = m_token;
+		uri = m_token;
 	}
 	else
 		not_well_formed("Expected external id starting with either SYSTEM or PUBLIC");
 
-	std::istream *is = m_parser.external_entity_ref(m_data_source->base(), pubid, sysid);
-	if (is != nullptr)
-	{
-		result = new istream_data_source(is);
-
-		std::string::size_type s = sysid.rfind('/');
-		if (s == std::string::npos)
-			result->base(m_data_source->base());
-		else
-		{
-			sysid.erase(s, std::string::npos);
-
-			if (is_absolute_path(sysid))
-				result->base(sysid);
-			else
-				result->base(m_data_source->base() + '/' + sysid);
-		}
-	}
-
-	return result;
-}
-
-std::tuple<std::string, std::string> parser_imp::read_external_id()
-{
-	std::string result;
-	std::string path;
-
-	std::unique_ptr<data_source> data(external_id());
-
-	parser_state save(this, data.get());
+	std::unique_ptr<data_source> data(get_data_source(pubid, uri));
 
 	if (m_data_source)
 	{
+		parser_state save(this, data.get());
+
 		path = m_data_source->base();
 
 		m_lookahead = get_next_token();
@@ -3281,6 +3314,12 @@ void parser::parse(bool validate)
 	m_impl->parse(validate);
 }
 
+void parser::xml_decl(encoding_type encoding, bool standalone, float version)
+{
+	if (xml_decl_handler)
+		xml_decl_handler(encoding, standalone, version);
+}
+
 void parser::start_element(const std::string& name, const std::string& uri, const std::list<detail::attr> &atts)
 {
 	if (start_element_handler)
@@ -3333,6 +3372,12 @@ void parser::end_namespace_decl(const std::string& prefix)
 {
 	if (end_namespace_decl_handler)
 		end_namespace_decl_handler(prefix);
+}
+
+void parser::doctype_decl(const std::string& root, const std::string& publicId, const std::string& uri)
+{
+	if (doctype_decl_handler)
+		doctype_decl_handler(root, publicId, uri);
 }
 
 void parser::notation_decl(const std::string& name, const std::string& systemId, const std::string& publicId)

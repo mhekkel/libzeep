@@ -47,8 +47,8 @@ int main(int argc, char* argv[])
 		xml::document doc(file);
 	
 		xml::writer w(cout);
-		w.indent(2);
-		w.wrap(true);
+		w.set_indent(2);
+		w.set_wrap(true);
 		
 		doc.write(w);
 	}

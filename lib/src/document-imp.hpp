@@ -29,6 +29,7 @@ struct document_imp
 	std::string m_dtd_dir;
 
 	// some content information
+	bool m_has_xml_decl;
 	encoding_type m_encoding;
 	bool m_standalone;
 	int m_indent;
@@ -41,12 +42,7 @@ struct document_imp
 	bool m_validating;
 	bool m_preserve_cdata;
 
-	struct
-	{
-		std::string m_root;
-		std::string m_pubid;
-		std::string m_dtd;
-	}	m_doctype;
+	doc_type m_doctype;
 
 	std::istream* external_entity_ref(const std::string& base,
 									  const std::string& pubid,

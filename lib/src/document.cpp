@@ -27,7 +27,7 @@ namespace xml
 // --------------------------------------------------------------------
 
 document_imp::document_imp(document *doc)
-	: m_encoding(encoding_type::enc_UTF8), m_standalone(false), m_indent(2), m_empty(true)
+	: m_has_xml_decl(false), m_encoding(encoding_type::enc_UTF8), m_standalone(false), m_indent(2), m_empty(true)
 	, m_wrap(true), m_trim(true), m_escape_whitespace(false), m_no_comment(false)
 	, m_validating(false), m_preserve_cdata(false), m_doc(doc), m_cur(nullptr), m_cdata(nullptr)
 {
@@ -87,6 +87,8 @@ struct zeep_document_imp : public document_imp
 {
 	zeep_document_imp(document *doc);
 
+	virtual void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
+
 	virtual void StartElementHandler(const std::string& name, const std::string& uri,
 									 const parser::attr_list_type& atts);
 
@@ -106,6 +108,8 @@ struct zeep_document_imp : public document_imp
 
 	virtual void EndNamespaceDeclHandler(const std::string& prefix);
 
+	virtual void DoctypeDeclHandler(const std::string& root, const std::string& publicId, const std::string& uri);
+
 	virtual void NotationDeclHandler(const std::string& name, const std::string& sysid, const std::string& pubid);
 
 	virtual void parse(std::istream& data);
@@ -116,6 +120,14 @@ struct zeep_document_imp : public document_imp
 zeep_document_imp::zeep_document_imp(document *doc)
 	: document_imp(doc)
 {
+}
+
+void zeep_document_imp::XmlDeclHandler(encoding_type encoding, bool standalone, float version)
+{
+	m_has_xml_decl = true;
+	m_encoding = encoding;
+	m_standalone = standalone;
+	// m_version = version;
 }
 
 void zeep_document_imp::StartElementHandler(const std::string& name, const std::string& uri,
@@ -217,6 +229,13 @@ void zeep_document_imp::EndNamespaceDeclHandler(const std::string& prefix)
 {
 }
 
+void zeep_document_imp::DoctypeDeclHandler(const std::string& root, const std::string& publicId, const std::string& uri)
+{
+	m_doctype.m_root = root;
+	m_doctype.m_pubid = publicId;
+	m_doctype.m_dtd = uri;
+}
+
 void zeep_document_imp::NotationDeclHandler(
 	const std::string& name, const std::string& sysid, const std::string& pubid)
 {
@@ -239,6 +258,8 @@ void zeep_document_imp::parse(
 	using std::placeholders::_2;
 	using std::placeholders::_3;
 
+	p.xml_decl_handler = std::bind(&zeep_document_imp::XmlDeclHandler, this, _1, _2, _3);
+	p.doctype_decl_handler = std::bind(&zeep_document_imp::DoctypeDeclHandler, this, _1, _2, _3);
 	p.start_element_handler = std::bind(&zeep_document_imp::StartElementHandler, this, _1, _2, _3);
 	p.end_element_handler = std::bind(&zeep_document_imp::EndElementHandler, this, _1, _2);
 	p.character_data_handler = std::bind(&zeep_document_imp::CharacterDataHandler, this, _1);
@@ -457,11 +478,29 @@ void document::set_preserve_cdata(bool preserve_cdata)
 	m_impl->m_preserve_cdata = preserve_cdata;
 }
 
+void document::set_doctype(const doc_type& doctype)
+{
+	m_impl->m_doctype = doctype;
+}
+
 void document::set_doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
 {
 	m_impl->m_doctype.m_root = root;
 	m_impl->m_doctype.m_pubid = pubid;
 	m_impl->m_doctype.m_dtd = dtd;
+}
+
+doc_type document::get_doctype() const
+{
+	return m_impl->m_doctype;
+}
+
+bool document::is_html5() const
+{
+	return
+		m_impl->m_doctype.m_root == "html" and
+		m_impl->m_doctype.m_pubid == "" and
+		m_impl->m_doctype.m_dtd == "about:legacy-compat";
 }
 
 bool document::operator==(const document& other) const

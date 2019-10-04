@@ -583,6 +583,8 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 		{
 			replacement->remove(child);
 			node->push_back(child);
+
+			process_xml(child, scope, dir, webapp);
 		}
 		delete replacement;
 	}
@@ -600,6 +602,8 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 			replacement->remove_attribute("id");
 		else
 			replacement->remove_attribute(replacement->prefix_for_namespace(ns()) + ":fragment");
+
+		process_xml(replacement, scope, dir, webapp);
 	}
 
 	return result;

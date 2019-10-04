@@ -34,7 +34,7 @@ class writer
 public:
 	//! The constructor takes a std::ostream as argument
 	writer(std::ostream& os);
-	writer(std::ostream& os, bool write_decl, bool standalone = false);
+	writer(std::ostream& os, bool write_decl);
 
 	virtual ~writer();
 

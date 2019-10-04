@@ -35,14 +35,11 @@ writer::writer(std::ostream& os)
 {
 }
 				
-writer::writer(std::ostream& os, bool write_decl, bool standalone)
+writer::writer(std::ostream& os, bool write_decl)
 	: writer(os)
 {
 	if (write_decl)
-	{
 		m_write_xml_decl = true;
-		xml_decl(standalone);
-	}
 }
 				
 writer::~writer()
@@ -62,7 +59,7 @@ void writer::xml_decl(bool standalone)
 		else
 			throw exception("don't know how to write this version of XML");
 		
-		m_os << " encoding=\"UTF-8\"";
+		// m_os << " encoding=\"UTF-8\"";
 		
 		if (standalone)
 			m_os << " standalone=\"yes\"";
