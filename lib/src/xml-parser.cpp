@@ -215,7 +215,7 @@ struct parser_imp
 	struct parser_state
 	{
 		parser_state(parser_imp *imp, data_source *source)
-			: m_impl(imp), m_lookahead(0), m_data_source(source), m_version(1.0f), m_encoding(encoding_type::enc_UTF8), m_external_subset(true), m_external_dtd(false)
+			: m_impl(imp), m_lookahead(0), m_data_source(source), m_version(imp->m_version), m_encoding(encoding_type::enc_UTF8), m_external_subset(true), m_external_dtd(false)
 		{
 			swap_state();
 		}
@@ -292,6 +292,48 @@ struct parser_imp
 			return result;
 		}
 	};
+
+	bool is_char(unicode uc)
+	{
+		return
+			m_version == 1.0 ?
+				uc == 0x09 or
+				uc == 0x0A or
+				uc == 0x0D or
+				(uc >= 0x020 and uc <= 0x0D7FF) or
+				(uc >= 0x0E000 and uc <= 0x0FFFD) or
+				(uc >= 0x010000 and uc <= 0x010FFFF) :
+
+				// or 1.1?				
+				
+				uc == 0x09 or
+				uc == 0x0A or
+				uc == 0x0D or
+				(uc >= 0x020 and uc < 0x07F) or
+				uc == 0x085 or
+				(uc >= 0x0A0 and uc <= 0x0D7FF) or
+				(uc >= 0x0E000 and uc <= 0x0FFFD) or
+				(uc >= 0x010000 and uc <= 0x010FFFF)
+				;
+	}
+
+	bool is_referrable_char(unicode charref)
+	{
+		return
+			m_version == 1.0 ?
+				charref == 0x09 or
+				charref == 0x0A or
+				charref == 0x0D or
+				(charref > 0x01F and charref < 0x0D800) or
+				(charref > 0x0DFFF and charref < 0x0FFFE) or
+				(charref > 0x0FFFF and charref < 0x00110000) :
+
+				// 1.1
+				(charref > 0x0 and charref < 0x0D800) or
+				(charref > 0x0DFFF and charref < 0x0FFFE) or
+				(charref > 0x0FFFF and charref < 0x00110000)
+				;
+	}
 
 	bool m_validating;
 	bool m_has_dtd;
@@ -402,10 +444,10 @@ const doctype::entity& parser_imp::get_parameter_entity(const std::string& name)
 	{
 		std::string msg = "Undefined parameter entity '" + m_token + '\'';
 
-		if (m_standalone)
+		// if (m_standalone)
 			not_well_formed(msg);
-		else
-			not_valid(msg);
+		// else
+		// 	not_valid(msg);
 
 		// should not happen...
 		throw zeep::exception(msg);
@@ -812,7 +854,7 @@ int parser_imp::get_next_content()
 				retract();
 				token = xml_Content;
 			}
-			else if (not is_char(uc))
+			else if (not is_referrable_char(uc))
 				not_well_formed("Illegal character in content text");
 			break;
 
@@ -937,7 +979,7 @@ int parser_imp::get_next_content()
 				charref = charref * 10 + (uc - '0');
 			else if (uc == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character in content text");
 				m_token.clear();
 				append(m_token, charref);
@@ -976,7 +1018,7 @@ int parser_imp::get_next_content()
 				charref = (charref << 4) + (uc - '0');
 			else if (uc == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character in content text");
 				m_token.clear();
 				append(m_token, charref);
@@ -1201,9 +1243,12 @@ void parser_imp::xml_decl()
 			not_well_formed("expected a version attribute in XML declaration");
 		match(xml_Name);
 		eq();
-		m_version = parse_version();
-		if (m_version >= 2.0 or m_version < 1.0)
-			not_well_formed("This library only supports XML version 1.x");
+		if (not m_in_doctype)
+		{
+			m_version = parse_version();
+			if (m_version >= 2.0 or m_version < 1.0)
+				not_well_formed("This library only supports XML version 1.x");
+		}
 		match(xml_String);
 
 		if (m_lookahead == xml_Space)
@@ -1264,9 +1309,12 @@ void parser_imp::text_decl()
 		{
 			match(xml_Name);
 			eq();
-			m_version = parse_version();
-			if (m_version >= 2.0 or m_version < 1.0)
-				throw exception("This library only supports XML version 1.x");
+			if (not m_in_doctype)
+			{
+				m_version = parse_version();
+				if (m_version >= 2.0 or m_version < 1.0)
+					throw exception("This library only supports XML version 1.x");
+			}
 			match(xml_String);
 			s(true);
 		}
@@ -2073,6 +2121,9 @@ void parser_imp::attlist_decl()
 
 				s();
 
+				if (find(enums.begin(), enums.end(), m_token) != enums.end())
+					not_valid("Duplicate token in enumerated attribute declaration ('" + m_token + "')");
+
 				enums.push_back(m_token);
 				if (m_lookahead == xml_Name)
 					match(xml_Name);
@@ -2128,6 +2179,8 @@ void parser_imp::attlist_decl()
 
 					s();
 
+					if (find(notations.begin(), notations.end(), m_token) != notations.end())
+						not_valid("Duplicate token in enumerated attribute declaration ('" + m_token + "')");
 					notations.push_back(m_token);
 					match(xml_Name);
 
@@ -2376,6 +2429,8 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 				else
 					not_well_formed("parameter entities may not occur in declarations that are not in an external subset");
 			}
+			else if (not is_char(c))
+				not_well_formed("Invalid character in entity value");
 			else
 				append(result, c);
 			break;
@@ -2408,7 +2463,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 				charref = charref * 10 + (c - '0');
 			else if (c == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character referenced: " + to_hex(charref) + '\'');
 
 				append(result, charref);
@@ -2447,7 +2502,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 				charref = (charref << 4) + (c - '0');
 			else if (c == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
 				append(result, charref);
@@ -2492,9 +2547,23 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 	unicode charref = 0;
 	std::string name;
 
-	for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
+	auto& f = std::use_facet<std::codecvt<char32_t, char, std::mbstate_t>>(std::locale());
+
+	unicode us[1];
+	unicode& c = us[0];
+	std::mbstate_t mb = {};
+
+	// for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
+	const char* sp = s.data();
+	const char* se = sp + s.length();
+	
+	while (sp != se)
 	{
-		unicode c = *i;
+		unicode* un;
+
+		auto r = f.in(mb, sp, se, sp, us, us + 1, un);
+		if (r != std::codecvt_base::ok and r != std::codecvt_base::partial)
+			not_well_formed("Error converting entity value");
 
 		switch (state)
 		{
@@ -2511,6 +2580,8 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 				else
 					not_well_formed("parameter entities may not occur in declarations that are not in an external subset");
 			}
+			else if (not is_char(c))
+				not_well_formed("Invalid character in entity value");
 			else
 				append(result, c);
 			break;
@@ -2543,7 +2614,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 				charref = charref * 10 + (c - '0');
 			else if (c == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
 				append(result, charref);
@@ -2582,7 +2653,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 				charref = (charref << 4) + (c - '0');
 			else if (c == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
 				append(result, charref);
@@ -2702,7 +2773,7 @@ std::string parser_imp::normalize_attribute_value(data_source *data)
 				charref = charref * 10 + (c - '0');
 			else if (c == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
 				append(result, charref);
@@ -2741,7 +2812,7 @@ std::string parser_imp::normalize_attribute_value(data_source *data)
 				charref = (charref << 4) + (c - '0');
 			else if (c == ';')
 			{
-				if (not is_char(charref))
+				if (not is_referrable_char(charref))
 					not_well_formed("Illegal character referenced: '" + to_hex(charref) + '\'');
 
 				append(result, charref);
@@ -3063,6 +3134,9 @@ void parser_imp::element(doctype::validator& valid)
 
 void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 {
+	if (not valid.allow_char_data() and m_lookahead != xml_ETag and m_lookahead != xml_Eof)
+		not_valid("No content allowed");
+
 	do
 	{
 		switch (m_lookahead)

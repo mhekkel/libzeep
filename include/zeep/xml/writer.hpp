@@ -73,6 +73,10 @@ public:
 	//! do not write out comments
 	void set_no_comment(bool no_comment) { m_no_comment = no_comment; }
 
+	//! do not write out doctype
+	void set_no_doctype(bool no_doctype) { m_no_doctype = no_doctype; }
+
+	
 	// actual writing routines
 
 	//! write a xml declaration, version will be 1.0, standalone can be specified.
@@ -124,6 +128,7 @@ protected:
 	bool m_escape_whitespace;
 	bool m_trim;
 	bool m_no_comment;
+	bool m_no_doctype;
 	int m_indent;
 	int m_indent_attr;
 	int m_level;

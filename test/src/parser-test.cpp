@@ -48,6 +48,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	w.set_collapse_empty_elements(false);
 	w.set_escape_whitespace(true);
 	w.set_no_comment(true);
+	w.set_no_doctype(true);
 	indoc.write(w);
 
 	string s1 = s.str();

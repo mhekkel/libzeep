@@ -30,7 +30,6 @@ enum class encoding_type
 
 bool is_name_start_char(unicode uc);
 bool is_name_char(unicode uc);
-bool is_char(unicode uc);
 bool is_valid_system_literal_char(unicode uc);
 bool is_valid_system_literal(const std::string& s);
 bool is_valid_public_id_char(unicode uc);
@@ -50,17 +49,6 @@ bool iequals(const std::string& a, const std::string& b);
 std::string to_hex(int i);
 
 // inlines
-
-inline bool is_char(unicode uc)
-{
-	return
-		uc == 0x09 or
-		uc == 0x0A or
-		uc == 0x0D or
-		(uc >= 0x020 and uc <= 0x0D7FF) or
-		(uc >= 0x0E000 and uc <= 0x0FFFD) or
-		(uc >= 0x010000 and uc <= 0x010FFFF);
-}
 
 inline void append(std::string& s, unicode uc)
 {

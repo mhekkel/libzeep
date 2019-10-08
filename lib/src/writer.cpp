@@ -27,6 +27,7 @@ writer::writer(std::ostream& os)
 	, m_escape_whitespace(false)
 	, m_trim(false)
 	, m_no_comment(false)
+	, m_no_doctype(false)
 	, m_indent(2)
 	, m_level(0)
 	, m_element_open(false)
@@ -78,17 +79,20 @@ void writer::xml_decl(bool standalone)
 
 void writer::doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
 {
-	m_os << "<!DOCTYPE " << root;
-	
-	if (not pubid.empty())
-		m_os << " PUBLIC \"" << pubid << "\"";
-	else
-		m_os << " SYSTEM";
-	
-	m_os << " \"" << dtd << "\">";
+	if (not m_no_doctype)
+	{
+		m_os << "<!DOCTYPE " << root;
+		
+		if (not pubid.empty())
+			m_os << " PUBLIC \"" << pubid << "\"";
+		else
+			m_os << " SYSTEM";
+		
+		m_os << " \"" << dtd << "\">";
 
-	if (m_wrap_prolog)
-		m_os << std::endl;
+		if (m_wrap_prolog)
+			m_os << std::endl;
+	}
 }
 
 void writer::start_doctype(const std::string& root, const std::string& dtd)
