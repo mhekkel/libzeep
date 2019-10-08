@@ -123,6 +123,7 @@ public:
 	int id() const { return m_id; }
 
 	int get_line_nr() const { return m_line_nr; }
+	void inc_line_nr() { ++m_line_nr; }
 
 protected:
 	data_source(const data_source &);

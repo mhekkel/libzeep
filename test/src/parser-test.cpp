@@ -283,7 +283,9 @@ void run_test_case(const xml::element* testcase, const string& id,
 	if (not testcase->get_attribute("xml:base").empty())
 	{
 		base_dir /= testcase->get_attribute("xml:base");
-		fs::current_path(base_dir);
+
+		if (fs::exists(base_dir))
+			fs::current_path(base_dir);
 	}
 	
 	string path;

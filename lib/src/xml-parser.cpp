@@ -641,6 +641,11 @@ int parser_imp::get_next_token()
 				token = xml_Eof;
 			else if (uc == ' ' or uc == '\t' or uc == '\n')
 				state = state_WhiteSpace;
+			else if ((uc == 0x85 or uc == 0x2028) and m_version > 1.0 and m_encoding == encoding_type::enc_ISO88591)
+			{
+				state = state_WhiteSpace;
+				m_data_source->inc_line_nr();
+			}
 			else if (uc == '<')
 				state = state_Tag;
 			else if (uc == '\'' or uc == '\"')
@@ -1316,15 +1321,21 @@ void parser_imp::text_decl()
 					throw exception("This library only supports XML version 1.x");
 			}
 			match(xml_String);
-			s(true);
+			s(m_version == 1.0);
 		}
 
 		if (m_token != "encoding")
-			not_well_formed("encoding attribute is mandatory in text declaration");
-		match(xml_Name);
-		eq();
-		match(xml_String);
-		s();
+		{
+			if (m_version == 1.0)
+				not_well_formed("encoding attribute is mandatory in text declaration");
+		}
+		else
+		{
+			match(xml_Name);
+			eq();
+			match(xml_String);
+			s();
+		}
 
 		match('?');
 		match('>');
