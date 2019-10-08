@@ -36,15 +36,7 @@ BOOST_AUTO_TEST_CASE(test_1)
     zeep::el::scope scope(*static_cast<zeep::http::request*>(nullptr));
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
 
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_2)
@@ -68,15 +60,7 @@ BOOST_AUTO_TEST_CASE(test_2)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_3)
@@ -100,15 +84,7 @@ BOOST_AUTO_TEST_CASE(test_3)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_3a)
@@ -132,15 +108,7 @@ BOOST_AUTO_TEST_CASE(test_3a)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_4)
@@ -164,15 +132,7 @@ BOOST_AUTO_TEST_CASE(test_4)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_5)
@@ -196,15 +156,7 @@ BOOST_AUTO_TEST_CASE(test_5)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_6)
@@ -266,15 +218,7 @@ BOOST_AUTO_TEST_CASE(test_6)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_8)
@@ -298,15 +242,7 @@ BOOST_AUTO_TEST_CASE(test_8)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_8a)
@@ -330,15 +266,7 @@ BOOST_AUTO_TEST_CASE(test_8a)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_9)
@@ -362,15 +290,7 @@ BOOST_AUTO_TEST_CASE(test_9)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_10)
@@ -394,15 +314,7 @@ BOOST_AUTO_TEST_CASE(test_10)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_11)
@@ -426,15 +338,7 @@ BOOST_AUTO_TEST_CASE(test_11)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_12)
@@ -458,15 +362,7 @@ BOOST_AUTO_TEST_CASE(test_12)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_13)
@@ -490,15 +386,7 @@ BOOST_AUTO_TEST_CASE(test_13)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_14)
@@ -525,15 +413,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_15)
@@ -560,15 +440,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_16)
@@ -597,15 +469,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_17)
@@ -632,15 +496,7 @@ BOOST_AUTO_TEST_CASE(test_17)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_18)
@@ -668,15 +524,7 @@ BOOST_AUTO_TEST_CASE(test_18)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_19)
@@ -704,15 +552,7 @@ BOOST_AUTO_TEST_CASE(test_19)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_20)
@@ -775,15 +615,7 @@ BOOST_AUTO_TEST_CASE(test_20)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_21)
@@ -808,15 +640,7 @@ BOOST_AUTO_TEST_CASE(test_21)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_22)
@@ -864,15 +688,7 @@ BOOST_AUTO_TEST_CASE(test_22)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_23)
@@ -908,15 +724,7 @@ BOOST_AUTO_TEST_CASE(test_23)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_24)
@@ -948,13 +756,5 @@ BOOST_AUTO_TEST_CASE(test_24)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }

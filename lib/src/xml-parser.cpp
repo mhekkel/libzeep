@@ -2330,7 +2330,7 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 	std::unique_ptr<data_source> data(get_data_source(pubid, uri));
 
-	if (m_data_source)
+	if (data)
 	{
 		parser_state save(this, data.get());
 
