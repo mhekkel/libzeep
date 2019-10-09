@@ -317,7 +317,10 @@ auto json_parser::get_next_token() -> token_t
 
 		case state_t::Negative:
 			if (ch == '0')
+			{
 				state = state_t::Zero;
+				negative = true;
+			}
 			else if (ch >= '1' and ch <= '9')
 			{
 				state = state_t::Number;
@@ -329,8 +332,19 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::Zero:
+#if DISALLOW_LEADING_ZERO
 			if ((ch >= '0' and ch <= '9') or ch == '.')
 				throw zeep::exception("invalid number in json, should not start with zero");
+#else
+			if (ch >= '0' and ch <= '9')
+				throw zeep::exception("invalid number in json, should not start with zero");
+			else if (ch == '.')
+			{
+				m_token_float = m_token_int = 0;
+				fraction = 0.1;
+				state = state_t::NumberFraction;
+			}
+#endif
 			else
 			{
 				retract();

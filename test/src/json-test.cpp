@@ -104,8 +104,8 @@ BOOST_AUTO_TEST_CASE(j_5)
 
 BOOST_AUTO_TEST_CASE(j_6)
 {
-	for (string fs: { "1e3", "1.0e3", "10.0", "1.0", "1.0e-2",
-					  "-1e3", "-1.0e3", "-10.0", "-1.0", "-1.0e-2" })
+	for (string fs: { "1e3", "1.0e3", "10.0", "1.0", "1.0e-2", "0.1", 
+					  "-1e3", "-1.0e3", "-10.0", "-1.0", "-1.0e-2", "-0.1" })
 	{
 		json jfloat;
 		parse_json(fs, jfloat);
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(j_6)
 
 BOOST_AUTO_TEST_CASE(j_7)
 {
-	for (string fs: { "01", "0.1", "-01", "-0.1" })
+	for (string fs: { "01", "-01" })
 	{
 		json jf;
 		BOOST_CHECK_THROW(parse_json(fs, jf), zeep::exception);
