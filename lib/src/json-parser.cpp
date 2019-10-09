@@ -232,7 +232,6 @@ auto json_parser::get_next_token() -> token_t
  		Start,
 		Negative,
 		Zero,
-		NegativeZero,
 		Number,
 		NumberFraction,
 		NumberExpSign,
@@ -312,13 +311,13 @@ auto json_parser::get_next_token() -> token_t
 				else if (zeep::xml::is_name_start_char(ch))
 					state = state_t::Literal;
 				else
-					throw zeep::exception("invalid character (" + xml::to_hex(ch) + ") in json");
+					throw zeep::exception("invalid character (" + (std::isprint(ch) ? std::string(1, ch) :xml::to_hex(ch)) + ") in json");
 			}
 			break;
 
 		case state_t::Negative:
 			if (ch == '0')
-				state = state_t::NegativeZero;
+				state = state_t::Zero;
 			else if (ch >= '1' and ch <= '9')
 			{
 				state = state_t::Number;
@@ -329,32 +328,9 @@ auto json_parser::get_next_token() -> token_t
 				throw zeep::exception("invalid character '-' in json");
 			break;
 
-		case state_t::NegativeZero:
-			if (ch >= '0' and ch <= '9')
-				throw zeep::exception("invalid number in json, should not start with zero");
-			else if (ch == '.')
-			{
-				m_token_float = 0;
-				fraction = 0.1;
-				state = state_t::NumberFraction;
-			}
-			else
-			{
-				retract();
-				m_token_int = 0;
-				token = token_t::Integer;
-			}
-			break;
-
 		case state_t::Zero:
-			if (ch >= '0' and ch <= '9')
+			if ((ch >= '0' and ch <= '9') or ch == '.')
 				throw zeep::exception("invalid number in json, should not start with zero");
-			else if (ch == '.')
-			{
-				m_token_float = 0;
-				fraction = 0.1;
-				state = state_t::NumberFraction;
-			}
 			else
 			{
 				retract();
@@ -372,10 +348,17 @@ auto json_parser::get_next_token() -> token_t
 				fraction = 0.1;
 				state = state_t::NumberFraction;
 			}
+			else if (ch == 'e' or ch == 'E')
+			{
+				m_token_float = m_token_int;
+				state = state_t::NumberExpSign;
+			}
 			else
 			{
 				retract();
 				token = token_t::Integer;
+				if (negative)
+					m_token_int = -m_token_int;
 			}
 			break;
 
@@ -391,6 +374,8 @@ auto json_parser::get_next_token() -> token_t
 			{
 				retract();
 				token = token_t::Number;
+				if (negative)
+					m_token_float = -m_token_float;
 			}
 			break;
 
