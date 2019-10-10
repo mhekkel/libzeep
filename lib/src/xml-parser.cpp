@@ -473,11 +473,11 @@ struct parser_imp
 	// same goes for attribute values
 	std::string normalize_attribute_value(const std::string& s)
 	{
-		string_data_source data(s);
-		return normalize_attribute_value(&data);
+		m_source.emplace(new string_data_source(s));
+		return normalize_attribute_value();
 	}
 
-	std::string normalize_attribute_value(data_source *data);
+	std::string normalize_attribute_value();
 
 	// The scanner is next. We recognize the following tokens:
 	enum XMLToken
@@ -575,20 +575,56 @@ struct parser_imp
 
 	void push_state()
 	{
-		m_state.push({});
+		m_state_stack.push(m_state);
 	}
 
 	void pop_state()
 	{
-		assert(m_state.size() > 1);
-		m_state.pop();
+		assert(not m_state_stack.empty());
+		m_state = m_state_stack.top();
+		m_state_stack.pop();
 	}
 
 	struct stack_state
 	{
-		stack_state(parser_imp& imp) : m_imp(imp) { m_imp.push_state(); }
+		stack_state(parser_imp* imp) : m_imp(*imp) { m_imp.push_state(); }
 		~stack_state() { m_imp.pop_state(); }
 
+		parser_imp& m_imp;
+	};
+
+	struct lookahead_state
+	{
+		int m_lookahead;
+		std::string m_token;
+		std::stack<unicode> m_buffer;
+	};
+
+	void push_lookahead()
+	{
+		m_lookahead_stack.push({m_lookahead, std::move(m_token), std::move(m_buffer)});
+		m_lookahead = xml_Undef;
+		m_token.clear();
+	}
+
+	void pop_lookahead()
+	{
+		m_lookahead = m_lookahead_stack.top().m_lookahead;
+		std::swap(m_lookahead_stack.top().m_token, m_token);
+		std::swap(m_lookahead_stack.top().m_buffer, m_buffer);
+		m_lookahead_stack.pop();
+	}
+
+	struct stack_lookahead
+	{
+		stack_lookahead(parser_imp* imp) : m_imp(*imp)
+		{
+			m_imp.push_lookahead();
+		}
+		~stack_lookahead()
+		{
+			m_imp.pop_lookahead();
+		}
 		parser_imp& m_imp;
 	};
 
@@ -637,7 +673,7 @@ struct parser_imp
 	bool is_char(unicode uc)
 	{
 		return
-			m_state.top().m_version == 1.0 ?
+			m_state.m_version == 1.0 ?
 				uc == 0x09 or
 				uc == 0x0A or
 				uc == 0x0D or
@@ -661,7 +697,7 @@ struct parser_imp
 	bool is_referrable_char(unicode charref)
 	{
 		return
-			m_state.top().m_version == 1.0 ?
+			m_state.m_version == 1.0 ?
 				charref == 0x09 or
 				charref == 0x0A or
 				charref == 0x0D or
@@ -680,8 +716,12 @@ struct parser_imp
 	bool m_has_dtd;
 	int m_lookahead;
 	std::stack<std::unique_ptr<data_source>> m_source;
-	std::stack<parser_state> m_state;
-	mini_stack m_buffer;
+
+	parser_state m_state;
+	std::stack<parser_state> m_state_stack;
+
+	std::stack<lookahead_state> m_lookahead_stack;
+	std::stack<unicode> m_buffer;
 	std::string m_token;
 	bool m_standalone;
 	parser& m_parser;
@@ -803,26 +843,15 @@ unicode parser_imp::get_next_char()
 		result = m_buffer.top();
 		m_buffer.pop();
 	}
-	else
+	else if (not m_source.empty())
 	{
-		while (not m_source.empty())
+		try
 		{
-			try
-			{
-				result = m_source.top()->get_next_char();
-			}
-			catch (source_exception& e)
-			{
-				not_well_formed(e.m_wmsg);
-			}
-
-			if (result == 0)
-			{
-				m_source.pop();
-				continue;
-			}
-
-			break;
+			result = m_source.top()->get_next_char();
+		}
+		catch (source_exception& e)
+		{
+			not_well_formed(e.m_wmsg);
 		}
 	}
 
@@ -850,13 +879,13 @@ void parser_imp::match(int token)
 			"Error parsing XML, expected '" + expected + "' but found '" + found + "' ('" + m_token + "')");
 	}
 
-	if (m_state.top().m_in_content)
+	if (m_state.m_in_content)
 		m_lookahead = get_next_content();
 	else
 	{
 		m_lookahead = get_next_token();
 
-		if (m_lookahead == xml_PEReference and m_state.top().m_allow_parameter_entity_references)
+		if (m_lookahead == xml_PEReference and m_state.m_allow_parameter_entity_references)
 			pereference();
 	}
 }
@@ -916,7 +945,11 @@ int parser_imp::get_next_token()
 		// start scanning.
 		case state_Start:
 			if (uc == 0)
+			{
 				token = xml_Eof;
+				if (not m_source.empty())
+					m_source.pop();
+			}
 			else if (uc == ' ' or uc == '\t' or uc == '\n')
 				state = state_WhiteSpace;
 			else if (uc == '<')
@@ -967,7 +1000,7 @@ int parser_imp::get_next_token()
 		case state_CommentOrDoctype:
 			if (uc == '-')
 				state = state_Comment;
-			else if (uc == '[' and m_state.top().m_external_subset)
+			else if (uc == '[' and m_state.m_external_subset)
 				token = xml_IncludeIgnore;
 			else if (is_name_start_char(uc))
 				state = state_DocTypeDecl;
@@ -1073,7 +1106,7 @@ int parser_imp::get_next_token()
 
 	//#if DEBUG
 	//	if (VERBOSE)
-	//		cout << "token: " << describe_token(token) << " (" << m_token << ')' << endl;
+			std::cout << "token: " << describe_token(token) << " (" << m_token << ')' << std::endl;
 	//#endif
 
 	return token;
@@ -1112,7 +1145,11 @@ int parser_imp::get_next_content()
 		{
 		case state_Start:
 			if (uc == 0)
+			{
 				token = xml_Eof; // end of file reached
+				if (not m_source.empty())
+					m_source.pop();
+			}
 			else if (uc == '<')
 				state = state_Tag; // beginning of a tag
 			else if (uc == '&')
@@ -1336,7 +1373,7 @@ int parser_imp::get_next_content()
 
 	//#if DEBUG
 	//	if (VERBOSE)
-	//		cout << "content: " << describe_token(token) << " (" << m_token << ')' << endl;
+			std::cout << "content: " << describe_token(token) << " (" << m_token << ')' << std::endl;
 	//#endif
 
 	return token;
@@ -1383,7 +1420,7 @@ std::string parser_imp::describe_token(int token)
 			result = "nmtoken";
 			break;
 		case xml_String:
-			result = "quoted std::string";
+			result = "quoted string";
 			break;
 		case xml_PI:
 			result = "processing instruction";
@@ -1521,10 +1558,10 @@ void parser_imp::xml_decl()
 			not_well_formed("expected a version attribute in XML declaration");
 		match(xml_Name);
 		eq();
-		if (not m_state.top().m_in_doctype)
+		if (not m_state.m_in_doctype)
 		{
-			m_state.top().m_version = parse_version();
-			if (m_state.top().m_version >= 2.0 or m_state.top().m_version < 1.0)
+			m_state.m_version = parse_version();
+			if (m_state.m_version >= 2.0 or m_state.m_version < 1.0)
 				not_well_formed("This library only supports XML version 1.x");
 		}
 		match(xml_String);
@@ -1539,21 +1576,21 @@ void parser_imp::xml_decl()
 				eq();
 				ba::to_upper(m_token);
 				if (m_token == "UTF-8" or m_token == "US-ASCII") // ascii is a subset of utf-8
-					m_state.top().m_encoding = encoding_type::enc_UTF8;
+					m_state.m_encoding = encoding_type::enc_UTF8;
 				else if (m_token == "UTF-16")
 				{
-					if (m_state.top().m_encoding != encoding_type::enc_UTF16LE and m_state.top().m_encoding != encoding_type::enc_UTF16BE)
+					if (m_state.m_encoding != encoding_type::enc_UTF16LE and m_state.m_encoding != encoding_type::enc_UTF16BE)
 						not_well_formed("Inconsistent encoding attribute in XML declaration");
 					//						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
-					m_state.top().m_encoding = encoding_type::enc_UTF16BE;
+					m_state.m_encoding = encoding_type::enc_UTF16BE;
 				}
 				else if (m_token == "ISO-8859-1")
-					m_state.top().m_encoding = encoding_type::enc_ISO88591;
+					m_state.m_encoding = encoding_type::enc_ISO88591;
 				else
 					not_well_formed("Unsupported encoding value '" + m_token + "'");
 				match(xml_String);
 
-				m_source.top()->encoding(m_state.top().m_encoding);
+				m_source.top()->encoding(m_state.m_encoding);
 
 				s();
 			}
@@ -1573,7 +1610,7 @@ void parser_imp::xml_decl()
 		match('?');
 		match('>');
 
-		m_parser.xml_decl(m_state.top().m_encoding, m_standalone, m_state.top().m_version);
+		m_parser.xml_decl(m_state.m_encoding, m_standalone, m_state.m_version);
 	}
 }
 
@@ -1589,19 +1626,19 @@ void parser_imp::text_decl()
 		{
 			match(xml_Name);
 			eq();
-			if (not m_state.top().m_in_doctype)
+			if (not m_state.m_in_doctype)
 			{
-				m_state.top().m_version = parse_version();
-				if (m_state.top().m_version >= 2.0 or m_state.top().m_version < 1.0)
+				m_state.m_version = parse_version();
+				if (m_state.m_version >= 2.0 or m_state.m_version < 1.0)
 					throw exception("This library only supports XML version 1.x");
 			}
 			match(xml_String);
-			s(m_state.top().m_version == 1.0);
+			s(m_state.m_version == 1.0);
 		}
 
 		if (m_token != "encoding")
 		{
-			if (m_state.top().m_version == 1.0)
+			if (m_state.m_version == 1.0)
 				not_well_formed("encoding attribute is mandatory in text declaration");
 		}
 		else
@@ -1642,8 +1679,9 @@ void parser_imp::misc()
 
 void parser_imp::doctypedecl()
 {
-	value_saver<bool> in_doctype(m_state.top().m_in_doctype, true);
-	m_state.top().m_allow_parameter_entity_references = false;
+	stack_state save(this);
+	m_state.m_in_doctype = true;
+	m_state.m_allow_parameter_entity_references = false;
 
 	match(xml_DocType);
 
@@ -1717,11 +1755,12 @@ void parser_imp::doctypedecl()
 	if (dtd.get() != nullptr)
 	{
 		// save the parser state
-		push_state();
+		stack_lookahead save1(this);
+		stack_state save2(this);
 
 		m_source.emplace(dtd.release());
 		m_lookahead = get_next_token();
-		m_state.top().m_in_external_dtd = true;
+		m_state.m_in_external_dtd = true;
 
 		text_decl();
 
@@ -1729,8 +1768,6 @@ void parser_imp::doctypedecl()
 
 		if (m_lookahead != xml_Eof)
 			not_well_formed("Error parsing external dtd");
-
-		pop_state();
 	}
 
 	match('>');
@@ -1771,8 +1808,8 @@ void parser_imp::pereference()
 
 void parser_imp::intsubset()
 {
-	stack_state save(*this);
-	m_state.top().m_allow_parameter_entity_references = false;
+	stack_state save(this);
+	m_state.m_allow_parameter_entity_references = false;
 
 	for (;;)
 	{
@@ -1812,7 +1849,7 @@ void parser_imp::declsep()
 		const doctype::entity& e = get_parameter_entity(m_token);
 
 		{
-			stack_state state(*this);
+			stack_state state(this);
 			m_source.emplace(new parameter_entity_data_source(e.replacement(), e.path()));
 
 			m_lookahead = get_next_token();
@@ -1833,9 +1870,9 @@ void parser_imp::declsep()
 
 void parser_imp::extsubset()
 {
-	stack_state save(*this);
-	m_state.top().m_external_subset = true;
-	m_state.top().m_allow_parameter_entity_references = false;
+	stack_state save(this);
+	m_state.m_external_subset = true;
+	m_state.m_allow_parameter_entity_references = false;
 
 	for (;;)
 	{
@@ -1985,8 +2022,8 @@ void parser_imp::ignoresectcontents()
 
 void parser_imp::markup_decl()
 {
-	stack_state save(*this);
-	m_state.top().m_allow_parameter_entity_references = m_state.top().m_external_subset;
+	stack_state save(this);
+	m_state.m_allow_parameter_entity_references = m_state.m_external_subset;
 
 	switch (m_lookahead)
 	{
@@ -2033,11 +2070,11 @@ void parser_imp::element_decl()
 						  [name](auto e) { return e->name() == name; });
 
 	if (e == m_doctype.end())
-		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_state.top().m_in_external_dtd));
+		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_state.m_in_external_dtd));
 	else if ((*e)->declared())
 		not_valid("duplicate element declaration for element '" + name + "'");
 	else
-		(*e)->external(m_state.top().m_in_external_dtd);
+		(*e)->external(m_state.m_in_external_dtd);
 
 	match(xml_Name);
 	s(true);
@@ -2045,7 +2082,7 @@ void parser_imp::element_decl()
 	contentspec(**e);
 	s();
 
-	m_state.top().m_allow_parameter_entity_references = true;
+	m_state.m_allow_parameter_entity_references = true;
 
 	check.check(*m_source.top());
 	match('>');
@@ -2250,8 +2287,8 @@ doctype::allowed_ptr parser_imp::cp()
 
 void parser_imp::entity_decl()
 {
-	stack_state save(*this);
-	m_state.top().m_allow_parameter_entity_references = true;
+	stack_state save(this);
+	m_state.m_allow_parameter_entity_references = true;
 
 	match(xml_Entity);
 	s(true);
@@ -2275,13 +2312,15 @@ void parser_imp::parameter_entity_decl()
 	std::string path;
 	std::string value;
 
-	m_state.top().m_allow_parameter_entity_references = false;
+	m_state.m_allow_parameter_entity_references = false;
 
 	// PEDef is either a EntityValue...
 	if (m_lookahead == xml_String)
 	{
 		value = m_token;
 		match(xml_String);
+
+		stack_lookahead save(this);
 		parse_parameter_entity_declaration(value);
 	}
 	else // ... or an external id
@@ -2292,7 +2331,7 @@ void parser_imp::parameter_entity_decl()
 
 	s();
 
-	m_state.top().m_allow_parameter_entity_references = true;
+	m_state.m_allow_parameter_entity_references = true;
 	match('>');
 
 	if (find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
@@ -2343,7 +2382,7 @@ void parser_imp::general_entity_decl()
 
 	s();
 
-	m_state.top().m_allow_parameter_entity_references = true;
+	m_state.m_allow_parameter_entity_references = true;
 	match('>');
 
 	if (std::find_if(m_general_entities.begin(), m_general_entities.end(),
@@ -2354,7 +2393,7 @@ void parser_imp::general_entity_decl()
 		if (not parsed)
 			m_general_entities.back()->ndata(ndata);
 
-		if (m_state.top().m_in_external_dtd)
+		if (m_state.m_in_external_dtd)
 			m_general_entities.back()->externally_defined(true);
 	}
 }
@@ -2370,7 +2409,7 @@ void parser_imp::attlist_decl()
 					   [element](auto e) { return e->name() == element; });
 
 	if (dte == m_doctype.end())
-		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false, m_state.top().m_in_external_dtd));
+		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false, m_state.m_in_external_dtd));
 
 	// attdef
 
@@ -2545,11 +2584,11 @@ void parser_imp::attlist_decl()
 				not_valid("only one attribute per element can have the ID type");
 		}
 
-		attribute->external(m_state.top().m_in_external_dtd);
+		attribute->external(m_state.m_in_external_dtd);
 		(*dte)->add_attribute(attribute.release());
 	}
 
-	m_state.top().m_allow_parameter_entity_references = true;
+	m_state.m_allow_parameter_entity_references = true;
 	match('>');
 }
 
@@ -2603,7 +2642,7 @@ void parser_imp::notation_decl()
 
 	s();
 
-	m_state.top().m_allow_parameter_entity_references = true;
+	m_state.m_allow_parameter_entity_references = true;
 	match('>');
 
 	m_parser.notation_decl(name, sysid, pubid);
@@ -2674,7 +2713,9 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 	if (data)
 	{
-		stack_state save(*this);
+		stack_state save(this);
+		stack_lookahead save2(this);
+
 		m_source.emplace(data.release());
 
 		path = m_source.top()->base();
@@ -2685,8 +2726,10 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 		result = m_token;
 
-		while (unicode ch = get_next_char())
+		while (unicode ch = m_source.top()->get_next_char())
 			append(result, ch);
+		
+		m_source.pop();
 	}
 
 	return std::make_tuple(path, result);
@@ -2711,7 +2754,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 				state = 1;
 			else if (c == '%')
 			{
-				if (m_state.top().m_external_subset)
+				if (m_state.m_external_subset)
 				{
 					name.clear();
 					state = 20;
@@ -2862,7 +2905,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 				state = 1;
 			else if (c == '%')
 			{
-				if (m_state.top().m_external_subset)
+				if (m_state.m_external_subset)
 				{
 					name.clear();
 					state = 20;
@@ -2993,7 +3036,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 	swap(s, result);
 }
 
-std::string parser_imp::normalize_attribute_value(data_source *data)
+std::string parser_imp::normalize_attribute_value()
 {
 	std::string result;
 
@@ -3014,10 +3057,13 @@ std::string parser_imp::normalize_attribute_value(data_source *data)
 
 	for (;;)
 	{
-		unicode c = data->get_next_char();
+		unicode c = m_source.top()->get_next_char();
 
 		if (c == 0)
+		{
+			m_source.pop();
 			break;
+		}
 
 		if (c == '<')
 			not_well_formed("Attribute values may not contain '<' character");
@@ -3115,8 +3161,9 @@ std::string parser_imp::normalize_attribute_value(data_source *data)
 		case state_EntityReference:
 			if (c == ';')
 			{
-				if (data->is_entity_on_stack(name))
-					not_well_formed("infinite recursion in nested entity references");
+#warning("fix me")
+				// if (data->is_entity_on_stack(name))
+				// 	not_well_formed("infinite recursion in nested entity references");
 
 				const doctype::entity& e = get_general_entity(name);
 
@@ -3126,8 +3173,8 @@ std::string parser_imp::normalize_attribute_value(data_source *data)
 				if (e.externally_defined() and m_standalone)
 					not_well_formed("document marked as standalone but an external entity is referenced");
 
-				entity_data_source next_data(name, m_data_source->base(), e.replacement(), data);
-				std::string replacement = normalize_attribute_value(&next_data);
+				m_source.emplace(new entity_data_source(name, m_source.top()->base(), e.replacement()));
+				std::string replacement = normalize_attribute_value();
 				result += replacement;
 
 				state = state_Start;
@@ -3152,9 +3199,10 @@ std::string parser_imp::normalize_attribute_value(data_source *data)
 
 void parser_imp::element(doctype::validator& valid)
 {
-	stack_state save(*this);
-	m_state.top().m_in_element = true;
-	m_state.top().m_in_content = false;
+	stack_state save(this);
+	bool saved_in_content = m_state.m_in_content;
+	m_state.m_in_element = true;
+	m_state.m_in_content = false;
 
 	match(xml_STag);
 	std::string name = m_token;
@@ -3395,8 +3443,8 @@ void parser_imp::element(doctype::validator& valid)
 
 		// open scope, we're entering a content production
 		{
-			stack_state save(*this);
-			m_state.top().m_in_content = true;
+			stack_state save(this);
+			m_state.m_in_content = true;
 			match('>');
 
 			if (m_lookahead != xml_ETag)
@@ -3415,7 +3463,7 @@ void parser_imp::element(doctype::validator& valid)
 		m_parser.end_element(name, uri);
 	}
 
-	m_state.top().m_in_content = in_content.m_value;
+	m_state.m_in_content = saved_in_content;
 	match('>');
 
 	if (m_validating and dte != nullptr and not sub_valid.done())
@@ -3454,8 +3502,9 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 		{
 			const doctype::entity& e = get_general_entity(m_token);
 
-			if (m_data_source->is_entity_on_stack(m_token))
-				not_well_formed("infinite recursion of entity references");
+#warning("fix me")
+			// if (m_data_source->is_entity_on_stack(m_token))
+			// 	not_well_formed("infinite recursion of entity references");
 
 			if (e.externally_defined() and m_standalone)
 				not_well_formed("document marked as standalone but an external entity is referenced");
@@ -3465,11 +3514,13 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 
 			// scope
 			{
-				entity_data_source source(m_token, m_data_source->base(), e.replacement(), m_data_source);
-				parser_state state(this, &source);
+				stack_state state(this);
+				stack_lookahead state2(this);
+
+				m_source.emplace(new entity_data_source(m_token, m_source.top()->base(), e.replacement()));
 
 				m_lookahead = get_next_content();
-				m_in_external_dtd = e.externally_defined();
+				m_state.m_in_external_dtd = e.externally_defined();
 
 				if (m_lookahead != xml_Eof)
 					content(valid, check_for_whitespace);
