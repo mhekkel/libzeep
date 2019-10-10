@@ -567,7 +567,7 @@ struct parser_imp
 		float m_version = 1.0f;
 		encoding_type m_encoding = encoding_type::enc_UTF8;
 		bool m_external_subset = true;
-		bool m_allow_parameter_entity_references = true;
+		bool m_allow_parameter_entity_references = false;
 		bool m_in_external_dtd = false;
 		bool m_in_doctype = false; // used to keep track where we are (parameter entities are only recognized inside a doctype section)
 		bool m_in_content = false;
@@ -2169,7 +2169,6 @@ void parser_imp::markup_decl()
 
 void parser_imp::element_decl()
 {
-	disallow_parameter_entity_references da(this);
 	valid_nesting_validator check(*m_source.top());
 
 	match(xml_Element);
@@ -2192,6 +2191,8 @@ void parser_imp::element_decl()
 
 	contentspec(**e);
 	s();
+
+	m_state.m_allow_parameter_entity_references = true;
 
 	check.check(*m_source.top());
 	match(xml_GreaterThan);
