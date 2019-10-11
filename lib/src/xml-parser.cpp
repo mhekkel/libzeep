@@ -482,55 +482,96 @@ struct parser_imp
 	// The scanner is next. We recognize the following tokens:
 	enum XMLToken
 	{
-		xml_Undef,
+		Undef,
 		
-		xml_Eq = '=',
-		xml_QuestionMark = '?',
-		xml_GreaterThan = '>',
-		xml_OpenBracket = '[',
-		xml_CloseBracket = ']',
-		xml_OpenParenthesis = '(',
-		xml_CloseParenthesis = ')',
-		xml_Percent = '%',
-		xml_Plus = '+',
-		xml_Pipe = '|',
-		xml_Asterisk = '*',
-		xml_Slash = '/',
-		xml_Hash = '#',
-		xml_Comma = ',',
+		Eq = '=',
+		QuestionMark = '?',
+		GreaterThan = '>',
+		OpenBracket = '[',
+		CloseBracket = ']',
+		OpenParenthesis = '(',
+		CloseParenthesis = ')',
+		Percent = '%',
+		Plus = '+',
+		Pipe = '|',
+		Asterisk = '*',
+		Slash = '/',
+		Hash = '#',
+		Comma = ',',
 		
-		xml_Eof = 256,
+		Eof = 256,
 
 		// these are tokens for the markup
 
-		xml_XMLDecl,  // <?xml
-		xml_Space,	// Really needed
-		xml_Comment,  // <!--
-		xml_Name,	 // name-start-char (name-char)*
-		xml_NMToken,  // (name-char)+
-		xml_String,   // (\"[^"]*\") | (\'[^\']*\')		// single or double quoted std::string
-		xml_PI,		  // <?
-		xml_STag,	 // <
-		xml_ETag,	 // </
-		xml_DocType,  // <!DOCTYPE
-		xml_Element,  // <!ELEMENT
-		xml_AttList,  // <!ATTLIST
-		xml_Entity,   // <!ENTITY
-		xml_Notation, // <!NOTATION
+		XMLDecl,  // <?xml
+		Space,	// Really needed
+		Comment,  // <!--
+		Name,	 // name-start-char (name-char)*
+		NMToken,  // (name-char)+
+		String,   // (\"[^"]*\") | (\'[^\']*\')		// single or double quoted std::string
+		PI,		  // <?
+		STag,	 // <
+		ETag,	 // </
+		DocType,  // <!DOCTYPE
+		Element,  // <!ELEMENT
+		AttList,  // <!ATTLIST
+		Entity,   // <!ENTITY
+		Notation, // <!NOTATION
 
-		xml_IncludeIgnore, // <![
+		IncludeIgnore, // <![
 
-		xml_PEReference, // %name;
+		PEReference, // %name;
 
 		// next are tokens for the content part
 
-		xml_Reference, // &name;
-		xml_CDSect,	// CData section <![CDATA[ ... ]]>
-		xml_Content,   // anything else up to the next element start
+		Reference, // &name;
+		CDSect,	// CData section <![CDATA[ ... ]]>
+		Content,   // anything else up to the next element start
 	};
 
 	// for debugging and error reporting we have the following describing routine
-	std::string describe_token(int token);
+	constexpr const char* describe_token(XMLToken token)
+	{
+		switch (token)
+		{
+			case XMLToken::Undef:			return "undefined";
+			case XMLToken::Eq:				return "=";
+			case XMLToken::QuestionMark:	return "?";
+			case XMLToken::GreaterThan:		return ">";
+			case XMLToken::OpenBracket:		return "[";
+			case XMLToken::CloseBracket:	return "]";
+			case XMLToken::OpenParenthesis:	return "(";
+			case XMLToken::CloseParenthesis:return ")";
+			case XMLToken::Percent:			return "%";
+			case XMLToken::Plus:			return "+";
+			case XMLToken::Pipe:			return "|";
+			case XMLToken::Asterisk:		return "*";
+			case XMLToken::Slash:			return "/";
+			case XMLToken::Hash:			return "#";
+			case XMLToken::Comma:			return ",";
+			case XMLToken::Eof:				return "end of file";
+			case XMLToken::XMLDecl:			return "'<?xml'";
+			case XMLToken::Space:			return "space character";
+			case XMLToken::Comment:			return "comment";
+			case XMLToken::Name:			return "identifier or name";
+			case XMLToken::NMToken:			return "nmtoken";
+			case XMLToken::String:			return "quoted string";
+			case XMLToken::PI:				return "processing instruction";
+			case XMLToken::STag:			return "tag";
+			case XMLToken::ETag:			return "end tag";
+			case XMLToken::DocType:			return "<!DOCTYPE";
+			case XMLToken::Element:			return "<!ELEMENT";
+			case XMLToken::AttList:			return "<!ATTLIST";
+			case XMLToken::Entity:			return "<!ENTITY";
+			case XMLToken::Notation:		return "<!NOTATION";
+			case XMLToken::PEReference:		return "parameter entity reference";
+			case XMLToken::Reference:		return "entity reference";
+			case XMLToken::CDSect:			return "CDATA section";
+			case XMLToken::Content:			return "content";
+			case XMLToken::IncludeIgnore:	return "<![ (as in <![INCLUDE[ )";
+			default:						assert(false); return "unknown token";
+		}
+	}
 
 	unicode get_next_char();
 
@@ -551,9 +592,7 @@ struct parser_imp
 
 	// error handling routines
 	void not_well_formed(const std::string& msg) const;
-	// void			not_well_formed(const boost::format& msg) const			{ not_well_formed(msg.str()); }
 	void not_valid(const std::string& msg) const;
-	// void			not_valid(const boost::format& msg) const				{ not_valid(msg.str()); }
 
 	// doctype support
 	const doctype::entity& get_general_entity(const std::string& name) const;
@@ -569,6 +608,7 @@ struct parser_imp
 		bool m_external_subset = true;
 		bool m_allow_parameter_entity_references = false;
 		bool m_in_external_dtd = false;
+		bool m_in_element_content_spec = false;
 		bool m_in_doctype = false; // used to keep track where we are (parameter entities are only recognized inside a doctype section)
 		bool m_in_content = false;
 	};
@@ -781,23 +821,23 @@ struct parser_imp
 inline void parser_imp::s(bool at_least_one)
 {
 	if (at_least_one)
-		match(xml_Space);
+		match(XMLToken::Space);
 
-	while (m_lookahead == xml_Space)
-		match(xml_Space);
+	while (m_lookahead == XMLToken::Space)
+		match(XMLToken::Space);
 }
 
 inline void parser_imp::eq()
 {
 	s();
-	match(xml_Eq);
+	match(XMLToken::Eq);
 	s();
 }
 
 // --------------------------------------------------------------------
 
 parser_imp::parser_imp(std::istream& data, parser& parser)
-	: m_validating(true), m_has_dtd(false), m_lookahead(xml_Eof), m_standalone(false)
+	: m_validating(true), m_has_dtd(false), m_lookahead(XMLToken::Eof), m_standalone(false)
 	, m_parser(parser), m_ns(nullptr)
 {
 	push_data_source(new istream_data_source(data), false);
@@ -897,7 +937,7 @@ unicode parser_imp::get_next_char()
 				not_well_formed(e.m_wmsg);
 			}
 
-			if (result and m_source.top().inserted())
+			if (result == 0 and m_source.top().inserted())
 			{
 				m_source.pop();
 				continue;
@@ -936,11 +976,14 @@ void parser_imp::match(XMLToken token)
 	{
 		m_lookahead = get_next_token();
 
-		if (m_lookahead == xml_PEReference)
+		if (m_lookahead == XMLToken::PEReference)
 		{
-			if (not m_state.m_allow_parameter_entity_references)
-				not_valid("Invalid entity reference at this location");
-			pereference();
+			if (m_state.m_in_doctype and not m_state.m_in_element_content_spec)
+				pereference();
+			else
+				not_well_formed("Invalid entity reference at this location");
+			// if (not m_state.m_allow_parameter_entity_references)
+			// 	not_well_formed("Invalid entity reference at this location");
 		} 
 	}
 }
@@ -992,14 +1035,14 @@ parser_imp::XMLToken parser_imp::get_next_token()
 		state_PI = 90,
 	};
 
-	XMLToken token = xml_Undef;
+	XMLToken token = XMLToken::Undef;
 	unicode quote_char = 0;
 	int state = state_Start;
 	bool might_be_name = false;
 
 	m_token.clear();
 
-	while (token == xml_Undef)
+	while (token == XMLToken::Undef)
 	{
 		unicode uc = get_next_char();
 
@@ -1010,7 +1053,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			switch (uc)
 			{
 				case 0:
-					token = xml_Eof;
+					token = XMLToken::Eof;
 					break;
 				
 				case ' ':
@@ -1035,20 +1078,20 @@ parser_imp::XMLToken parser_imp::get_next_token()
 					state = state_PERef;
 					break;
 
-				case '=': token = xml_Eq; break;
-				case '?': token = xml_QuestionMark; break;
-				case '>': token = xml_GreaterThan; break;
-				case '[': token = xml_OpenBracket; break;
-				case ']': token = xml_CloseBracket; break;
-				case '(': token = xml_OpenParenthesis; break;
-				case ')': token = xml_CloseParenthesis; break;
-				// case '%': token = xml_Percent; break;
-				case '+': token = xml_Plus; break;
-				case '|': token = xml_Pipe; break;
-				case '*': token = xml_Asterisk; break;
-				case '/': token = xml_Slash; break;
-				case '#': token = xml_Hash; break;
-				case ',': token = xml_Comma; break;
+				case '=': token = XMLToken::Eq; break;
+				case '?': token = XMLToken::QuestionMark; break;
+				case '>': token = XMLToken::GreaterThan; break;
+				case '[': token = XMLToken::OpenBracket; break;
+				case ']': token = XMLToken::CloseBracket; break;
+				case '(': token = XMLToken::OpenParenthesis; break;
+				case ')': token = XMLToken::CloseParenthesis; break;
+				// case '%': token = XMLToken::Percent; break;
+				case '+': token = XMLToken::Plus; break;
+				case '|': token = XMLToken::Pipe; break;
+				case '*': token = XMLToken::Asterisk; break;
+				case '/': token = XMLToken::Slash; break;
+				case '#': token = XMLToken::Hash; break;
+				case ',': token = XMLToken::Comma; break;
 
 				default:
 					if (is_name_start_char(uc))
@@ -1070,7 +1113,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			if (uc != ' ' and uc != '\t' and uc != '\n')
 			{
 				retract();
-				token = xml_Space;
+				token = XMLToken::Space;
 			}
 			break;
 
@@ -1079,13 +1122,13 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			if (uc == '!') // comment or doctype thing
 				state = state_CommentOrDoctype;
 			else if (uc == '/') // end tag
-				token = xml_ETag;
+				token = XMLToken::ETag;
 			else if (uc == '?') // processing instruction
 				state = state_PI;
 			else // anything else
 			{
 				retract();
-				token = xml_STag;
+				token = XMLToken::STag;
 			}
 			break;
 
@@ -1094,7 +1137,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			if (uc == '-')
 				state = state_Comment;
 			else if (uc == '[' and m_state.m_external_subset)
-				token = xml_IncludeIgnore;
+				token = XMLToken::IncludeIgnore;
 			else if (is_name_start_char(uc))
 				state = state_DocTypeDecl;
 			else
@@ -1104,7 +1147,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 		// Comment, strictly check for <!-- -->
 		case state_Comment:
 			if (uc == '-')
-				token = xml_Comment;
+				token = XMLToken::Comment;
 			else
 				not_well_formed("Invalid formatted comment");
 			break;
@@ -1117,11 +1160,11 @@ parser_imp::XMLToken parser_imp::get_next_token()
 
 				// we treat the xml processing instruction separately.
 				if (m_token.substr(2) == "xml")
-					token = xml_XMLDecl;
+					token = XMLToken::XMLDecl;
 				else if (iequals(m_token.substr(2), "xml"))
 					not_well_formed("<?XML is neither an XML declaration nor a legal processing instruction target");
 				else
-					token = xml_PI;
+					token = XMLToken::PI;
 			}
 			break;
 
@@ -1132,15 +1175,15 @@ parser_imp::XMLToken parser_imp::get_next_token()
 				retract();
 
 				if (m_token == "<!DOCTYPE")
-					token = xml_DocType;
+					token = XMLToken::DocType;
 				else if (m_token == "<!ELEMENT")
-					token = xml_Element;
+					token = XMLToken::Element;
 				else if (m_token == "<!ATTLIST")
-					token = xml_AttList;
+					token = XMLToken::AttList;
 				else if (m_token == "<!ENTITY")
-					token = xml_Entity;
+					token = XMLToken::Entity;
 				else if (m_token == "<!NOTATION")
-					token = xml_Notation;
+					token = XMLToken::Notation;
 				else
 					not_well_formed("invalid doctype declaration '" + m_token + "'");
 			}
@@ -1150,7 +1193,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 		case state_String:
 			if (uc == quote_char)
 			{
-				token = xml_String;
+				token = XMLToken::String;
 				m_token = m_token.substr(1, m_token.length() - 2);
 			}
 			else if (uc == 0)
@@ -1164,9 +1207,9 @@ parser_imp::XMLToken parser_imp::get_next_token()
 				retract();
 
 				if (might_be_name)
-					token = xml_Name;
+					token = XMLToken::Name;
 				else
-					token = xml_NMToken;
+					token = XMLToken::NMToken;
 			}
 			break;
 
@@ -1177,7 +1220,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			else
 			{
 				retract();
-				token = xml_Percent;
+				token = XMLToken::Percent;
 			}
 			break;
 
@@ -1185,7 +1228,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			if (uc == ';')
 			{
 				m_token = m_token.substr(1, m_token.length() - 2);
-				token = xml_PEReference;
+				token = XMLToken::PEReference;
 			}
 			else if (not is_name_char(uc))
 				not_well_formed("invalid parameter entity reference");
@@ -1221,13 +1264,13 @@ parser_imp::XMLToken parser_imp::get_next_content()
 		state_Illegal = 100
 	};
 
-	XMLToken token = xml_Undef;
+	XMLToken token = XMLToken::Undef;
 	int state = state_Start;
 	unicode charref = 0;
 
 	m_token.clear();
 
-	while (token == xml_Undef)
+	while (token == XMLToken::Undef)
 	{
 		unicode uc = get_next_char();
 
@@ -1240,7 +1283,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 			switch (uc)
 			{
 				case 0:
-					token = xml_Eof; // end of file reached
+					token = XMLToken::Eof; // end of file reached
 					break;
 	
 				case '<':
@@ -1275,7 +1318,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 			if (uc != ' ' and uc != '\t' and uc != '\n')
 			{
 				retract();
-				token = xml_Space;
+				token = XMLToken::Space;
 			}
 			break;
 
@@ -1286,7 +1329,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 			else if (uc == 0 or uc == '<' or uc == '&')
 			{
 				retract();
-				token = xml_Content;
+				token = XMLToken::Content;
 			}
 			else if (not is_referrable_char(uc))
 				not_well_formed("Illegal character in content text");
@@ -1295,7 +1338,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 		// beginning of a tag?
 		case state_Tag:
 			if (uc == '/')
-				token = xml_ETag;
+				token = XMLToken::ETag;
 			else if (uc == '?') // processing instruction
 				state = state_PI;
 			else if (uc == '!') // comment or CDATA
@@ -1303,7 +1346,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 			else
 			{
 				retract();
-				token = xml_STag;
+				token = XMLToken::STag;
 			}
 			break;
 
@@ -1312,7 +1355,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 			if (not is_name_char(uc))
 			{
 				retract();
-				token = xml_PI;
+				token = XMLToken::PI;
 			}
 			break;
 
@@ -1328,7 +1371,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 
 		case state_Comment:
 			if (uc == '-')
-				token = xml_Comment;
+				token = XMLToken::Comment;
 			else
 				not_well_formed("invalid content");
 			break;
@@ -1367,7 +1410,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 		case state_CDATA + 4:
 			if (uc == '>')
 			{
-				token = xml_CDSect;
+				token = XMLToken::CDSect;
 				m_token = m_token.substr(9, m_token.length() - 12);
 			}
 			else if (uc == 0)
@@ -1391,7 +1434,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 			{
 				if (uc != ';')
 					not_well_formed("invalid entity found in content, missing semicolon?");
-				token = xml_Reference;
+				token = XMLToken::Reference;
 				m_token = m_token.substr(1, m_token.length() - 2);
 			}
 			break;
@@ -1417,7 +1460,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 					not_well_formed("Illegal character in content text");
 				m_token.clear();
 				append(m_token, charref);
-				token = xml_Content;
+				token = XMLToken::Content;
 			}
 			else
 				not_well_formed("invalid character reference");
@@ -1456,7 +1499,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 					not_well_formed("Illegal character in content text");
 				m_token.clear();
 				append(m_token, charref);
-				token = xml_Content;
+				token = XMLToken::Content;
 			}
 			else
 				not_well_formed("invalid character reference");
@@ -1496,95 +1539,6 @@ parser_imp::XMLToken parser_imp::get_next_content()
 	//#endif
 
 	return token;
-}
-
-std::string parser_imp::describe_token(int token)
-{
-	std::string result;
-
-	if (token > xml_Undef and token < xml_Eof)
-	{
-		std::stringstream s;
-
-		if (isprint(token))
-			s << char(token);
-		else
-			s << "&#x" << std::hex << token << ';';
-
-		result = s.str();
-	}
-	else
-	{
-		switch (XMLToken(token))
-		{
-		case xml_Undef:
-			result = "undefined";
-			break;
-		case xml_Eof:
-			result = "end of file";
-			break;
-		case xml_XMLDecl:
-			result = "'<?xml'";
-			break;
-		case xml_Space:
-			result = "space character";
-			break;
-		case xml_Comment:
-			result = "comment";
-			break;
-		case xml_Name:
-			result = "identifier or name";
-			break;
-		case xml_NMToken:
-			result = "nmtoken";
-			break;
-		case xml_String:
-			result = "quoted string";
-			break;
-		case xml_PI:
-			result = "processing instruction";
-			break;
-		case xml_STag:
-			result = "tag";
-			break;
-		case xml_ETag:
-			result = "end tag";
-			break;
-		case xml_DocType:
-			result = "<!DOCTYPE";
-			break;
-		case xml_Element:
-			result = "<!ELEMENT";
-			break;
-		case xml_AttList:
-			result = "<!ATTLIST";
-			break;
-		case xml_Entity:
-			result = "<!ENTITY";
-			break;
-		case xml_Notation:
-			result = "<!NOTATION";
-			break;
-		case xml_PEReference:
-			result = "parameter entity reference";
-			break;
-		case xml_Reference:
-			result = "entity reference";
-			break;
-		case xml_CDSect:
-			result = "CDATA section";
-			break;
-		case xml_Content:
-			result = "content";
-			break;
-
-		case xml_IncludeIgnore:
-			result = "<![ (as in <![INCLUDE[ )";
-			break;
-		}
-	}
-
-	return result;
 }
 
 float parser_imp::parse_version()
@@ -1642,7 +1596,7 @@ void parser_imp::parse(bool validate)
 	element(valid);
 	misc();
 
-	if (m_lookahead != xml_Eof)
+	if (m_lookahead != XMLToken::Eof)
 		not_well_formed("garbage at end of file");
 
 	if (not m_unresolved_ids.empty())
@@ -1657,7 +1611,7 @@ void parser_imp::prolog()
 
 	misc();
 
-	if (m_lookahead == xml_DocType)
+	if (m_lookahead == XMLToken::DocType)
 	{
 		doctypedecl();
 		misc();
@@ -1668,14 +1622,14 @@ void parser_imp::prolog()
 
 void parser_imp::xml_decl()
 {
-	if (m_lookahead == xml_XMLDecl)
+	if (m_lookahead == XMLToken::XMLDecl)
 	{
-		match(xml_XMLDecl);
+		match(XMLToken::XMLDecl);
 
 		s(true);
 		if (m_token != "version")
 			not_well_formed("expected a version attribute in XML declaration");
-		match(xml_Name);
+		match(XMLToken::Name);
 		eq();
 		if (not m_state.m_in_doctype)
 		{
@@ -1683,15 +1637,15 @@ void parser_imp::xml_decl()
 			if (m_state.m_version >= 2.0 or m_state.m_version < 1.0)
 				not_well_formed("This library only supports XML version 1.x");
 		}
-		match(xml_String);
+		match(XMLToken::String);
 
-		if (m_lookahead == xml_Space)
+		if (m_lookahead == XMLToken::Space)
 		{
 			s(true);
 
 			if (m_token == "encoding")
 			{
-				match(xml_Name);
+				match(XMLToken::Name);
 				eq();
 				ba::to_upper(m_token);
 				if (m_token == "UTF-8" or m_token == "US-ASCII") // ascii is a subset of utf-8
@@ -1707,7 +1661,7 @@ void parser_imp::xml_decl()
 					m_state.m_encoding = encoding_type::enc_ISO88591;
 				else
 					not_well_formed("Unsupported encoding value '" + m_token + "'");
-				match(xml_String);
+				match(XMLToken::String);
 
 				m_source.top()->encoding(m_state.m_encoding);
 
@@ -1716,18 +1670,18 @@ void parser_imp::xml_decl()
 
 			if (m_token == "standalone")
 			{
-				match(xml_Name);
+				match(XMLToken::Name);
 				eq();
 				if (m_token != "yes" and m_token != "no")
 					not_well_formed("Invalid XML declaration, standalone value should be either yes or no");
 				m_standalone = (m_token == "yes");
-				match(xml_String);
+				match(XMLToken::String);
 				s();
 			}
 		}
 
-		match(xml_QuestionMark);
-		match(xml_GreaterThan);
+		match(XMLToken::QuestionMark);
+		match(XMLToken::GreaterThan);
 
 		m_parser.xml_decl(m_state.m_encoding, m_standalone, m_state.m_version);
 	}
@@ -1735,15 +1689,15 @@ void parser_imp::xml_decl()
 
 void parser_imp::text_decl()
 {
-	if (m_lookahead == xml_XMLDecl)
+	if (m_lookahead == XMLToken::XMLDecl)
 	{
-		match(xml_XMLDecl);
+		match(XMLToken::XMLDecl);
 
 		s(true);
 
 		if (m_token == "version")
 		{
-			match(xml_Name);
+			match(XMLToken::Name);
 			eq();
 			if (not m_state.m_in_doctype)
 			{
@@ -1751,7 +1705,7 @@ void parser_imp::text_decl()
 				if (m_state.m_version >= 2.0 or m_state.m_version < 1.0)
 					throw exception("This library only supports XML version 1.x");
 			}
-			match(xml_String);
+			match(XMLToken::String);
 			s(m_state.m_version == 1.0);
 		}
 
@@ -1762,14 +1716,14 @@ void parser_imp::text_decl()
 		}
 		else
 		{
-			match(xml_Name);
+			match(XMLToken::Name);
 			eq();
-			match(xml_String);
+			match(XMLToken::String);
 			s();
 		}
 
-		match(xml_QuestionMark);
-		match(xml_GreaterThan);
+		match(XMLToken::QuestionMark);
+		match(XMLToken::GreaterThan);
 	}
 }
 
@@ -1779,17 +1733,18 @@ void parser_imp::misc()
 	{
 		switch (m_lookahead)
 		{
-		case xml_Space:
-			s();
-			continue;
+			case XMLToken::Space:
+				s();
+				continue;
 
-		case xml_Comment:
-			comment();
-			continue;
+			case XMLToken::Comment:
+				comment();
+				continue;
 
-		case xml_PI:
-			pi();
-			continue;
+			case XMLToken::PI:
+				pi();
+				continue;
+			default:;
 		}
 
 		break;
@@ -1801,30 +1756,30 @@ void parser_imp::doctypedecl()
 	disallow_parameter_entity_references de(this);
 	m_state.m_in_doctype = true;
 
-	match(xml_DocType);
+	match(XMLToken::DocType);
 
 	m_has_dtd = true;
 
 	s(true);
 
 	auto name = m_token;
-	match(xml_Name);
+	match(XMLToken::Name);
 
 	m_root_element = name;
 
 	std::unique_ptr<data_source> dtd;
 
-	if (m_lookahead == xml_Space)
+	if (m_lookahead == XMLToken::Space)
 	{
 		s(true);
 
-		if (m_lookahead == xml_Name)
+		if (m_lookahead == XMLToken::Name)
 		{
 			std::string pubid, uri;
 
 			if (m_token == "SYSTEM")
 			{
-				match(xml_Name);
+				match(XMLToken::Name);
 				s(true);
 
 				uri = m_token;
@@ -1834,11 +1789,11 @@ void parser_imp::doctypedecl()
 			}
 			else if (m_token == "PUBLIC")
 			{
-				match(xml_Name);
+				match(XMLToken::Name);
 				s(true);
 
 				pubid = m_token;
-				match(xml_String);
+				match(XMLToken::String);
 
 				// validate the public ID
 				if (not is_valid_public_id(pubid))
@@ -1850,7 +1805,7 @@ void parser_imp::doctypedecl()
 			else
 				not_well_formed("Expected external id starting with either SYSTEM or PUBLIC");
 
-			match(xml_String);
+			match(XMLToken::String);
 			dtd.reset(get_data_source(pubid, uri));
 
 			m_parser.doctype_decl(m_root_element, pubid, uri);
@@ -1859,11 +1814,11 @@ void parser_imp::doctypedecl()
 		s();
 	}
 
-	if (m_lookahead == xml_OpenBracket)
+	if (m_lookahead == XMLToken::OpenBracket)
 	{
-		match(xml_OpenBracket);
+		match(XMLToken::OpenBracket);
 		intsubset();
-		match(xml_CloseBracket);
+		match(XMLToken::CloseBracket);
 
 		s();
 	}
@@ -1880,10 +1835,12 @@ void parser_imp::doctypedecl()
 
 		extsubset();
 
+		match(XMLToken::Eof);
+
 		pop_data_source();
 	}
 
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 
 	// test if all ndata references can be resolved
 
@@ -1918,7 +1875,7 @@ void parser_imp::pereference()
 
 	push_data_source(new parameter_entity_data_source(e.replacement(), e.path()), true);
 
-	match(xml_PEReference);
+	match(XMLToken::PEReference);
 }
 
 void parser_imp::intsubset()
@@ -1929,25 +1886,26 @@ void parser_imp::intsubset()
 	{
 		switch (m_lookahead)
 		{
-		case xml_Element:
-		case xml_AttList:
-		case xml_Entity:
-		case xml_Notation:
-			markup_decl();
-			continue;
+			case XMLToken::Element:
+			case XMLToken::AttList:
+			case XMLToken::Entity:
+			case XMLToken::Notation:
+				markup_decl();
+				continue;
 
-		case xml_PI:
-			pi();
-			continue;
+			case XMLToken::PI:
+				pi();
+				continue;
 
-		case xml_Comment:
-			comment();
-			continue;
+			case XMLToken::Comment:
+				comment();
+				continue;
 
-		case xml_Space:
-		case xml_PEReference:
-			declsep();
-			continue;
+			case XMLToken::Space:
+			case XMLToken::PEReference:
+				declsep();
+				continue;
+			default:;
 		}
 
 		break;
@@ -1958,22 +1916,24 @@ void parser_imp::declsep()
 {
 	switch (m_lookahead)
 	{
-	case xml_PEReference:
-	{
-		const doctype::entity& e = get_parameter_entity(m_token);
+		case XMLToken::PEReference:
+		{
+			const doctype::entity& e = get_parameter_entity(m_token);
 
-		push_data_source(new parameter_entity_data_source(e.replacement(), e.path()), true);
+			push_data_source(new parameter_entity_data_source(e.replacement(), e.path()), true);
 
-		m_lookahead = get_next_token();
-		extsubset();
+			m_lookahead = get_next_token();
+			extsubset();
 
-		match(xml_PEReference);
-		break;
-	}
+			match(XMLToken::PEReference);
+			break;
+		}
 
-	case xml_Space:
-		s();
-		break;
+		case XMLToken::Space:
+			s();
+			break;
+
+		default:;
 	}
 }
 
@@ -1986,29 +1946,31 @@ void parser_imp::extsubset()
 	{
 		switch (m_lookahead)
 		{
-		case xml_Element:
-		case xml_AttList:
-		case xml_Entity:
-		case xml_Notation:
-			markup_decl();
-			continue;
+			case XMLToken::Element:
+			case XMLToken::AttList:
+			case XMLToken::Entity:
+			case XMLToken::Notation:
+				markup_decl();
+				continue;
 
-		case xml_IncludeIgnore:
-			conditionalsect();
-			continue;
+			case XMLToken::IncludeIgnore:
+				conditionalsect();
+				continue;
 
-		case xml_PI:
-			pi();
-			continue;
+			case XMLToken::PI:
+				pi();
+				continue;
 
-		case xml_Comment:
-			comment();
-			continue;
+			case XMLToken::Comment:
+				comment();
+				continue;
 
-		case xml_Space:
-		case xml_PEReference:
-			declsep();
-			continue;
+			case XMLToken::Space:
+			case XMLToken::PEReference:
+				declsep();
+				continue;
+
+			default:;
 		}
 
 		break;
@@ -2018,13 +1980,13 @@ void parser_imp::extsubset()
 void parser_imp::conditionalsect()
 {
 	valid_nesting_validator check(*m_source.top());
-	match(xml_IncludeIgnore);
+	match(XMLToken::IncludeIgnore);
 
 	s();
 
 	bool include = false;
 
-	if (m_lookahead == xml_PEReference)
+	if (m_lookahead == XMLToken::PEReference)
 	{
 		pereference();
 		s();
@@ -2034,10 +1996,10 @@ void parser_imp::conditionalsect()
 		include = true;
 	else if (m_token == "IGNORE")
 		include = false;
-	else if (m_lookahead == xml_Name)
+	else if (m_lookahead == XMLToken::Name)
 		not_well_formed("Unexpected literal '" + m_token + "'");
 
-	match(xml_Name);
+	match(XMLToken::Name);
 
 	check.check(*m_source.top());
 
@@ -2045,12 +2007,12 @@ void parser_imp::conditionalsect()
 
 	if (include)
 	{
-		match(xml_OpenBracket);
+		match(XMLToken::OpenBracket);
 		extsubset();
-		match(xml_CloseBracket);
-		match(xml_CloseBracket);
+		match(XMLToken::CloseBracket);
+		match(XMLToken::CloseBracket);
 		check.check(*m_source.top());
-		match(xml_GreaterThan);
+		match(XMLToken::GreaterThan);
 	}
 	else
 	{
@@ -2135,33 +2097,35 @@ void parser_imp::markup_decl()
 
 	switch (m_lookahead)
 	{
-	case xml_Element:
-		element_decl();
-		break;
+		case XMLToken::Element:
+			element_decl();
+			break;
 
-	case xml_AttList:
-		attlist_decl();
-		break;
+		case XMLToken::AttList:
+			attlist_decl();
+			break;
 
-	case xml_Entity:
-		entity_decl();
-		break;
+		case XMLToken::Entity:
+			entity_decl();
+			break;
 
-	case xml_Notation:
-		notation_decl();
-		break;
+		case XMLToken::Notation:
+			notation_decl();
+			break;
 
-	case xml_PI:
-		pi();
-		break;
+		case XMLToken::PI:
+			pi();
+			break;
 
-	case xml_Comment:
-		comment();
-		break;
+		case XMLToken::Comment:
+			comment();
+			break;
 
-	case xml_Space:
-		s();
-		break;
+		case XMLToken::Space:
+			s();
+			break;
+
+		default:;
 	}
 
 	m_state.m_allow_parameter_entity_references = saved_allow_parameter_entity_references;
@@ -2171,7 +2135,7 @@ void parser_imp::element_decl()
 {
 	valid_nesting_validator check(*m_source.top());
 
-	match(xml_Element);
+	match(XMLToken::Element);
 	s(true);
 
 	std::string name = m_token;
@@ -2186,7 +2150,7 @@ void parser_imp::element_decl()
 	else
 		(*e)->external(m_state.m_in_external_dtd);
 
-	match(xml_Name);
+	match(XMLToken::Name);
 	s(true);
 
 	contentspec(**e);
@@ -2195,12 +2159,12 @@ void parser_imp::element_decl()
 	m_state.m_allow_parameter_entity_references = true;
 
 	check.check(*m_source.top());
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 }
 
 void parser_imp::contentspec(doctype::element& element)
 {
-	if (m_lookahead == xml_Name)
+	if (m_lookahead == XMLToken::Name)
 	{
 		if (m_token == "EMPTY")
 			element.set_allowed(new doctype::allowed_empty);
@@ -2208,12 +2172,14 @@ void parser_imp::contentspec(doctype::element& element)
 			element.set_allowed(new doctype::allowed_any);
 		else
 			not_well_formed("Invalid element content specification");
-		match(xml_Name);
+		match(XMLToken::Name);
 	}
 	else
 	{
 		valid_nesting_validator check(*m_source.top());
-		match(xml_OpenParenthesis);
+
+		m_state.m_in_element_content_spec = true;
+		match(XMLToken::OpenParenthesis);
 
 		std::unique_ptr<doctype::allowed_base> allowed;
 
@@ -2222,31 +2188,31 @@ void parser_imp::contentspec(doctype::element& element)
 		bool mixed = false;
 		bool more = false;
 
-		if (m_lookahead == xml_Hash) // Mixed
+		if (m_lookahead == XMLToken::Hash) // Mixed
 		{
 			mixed = true;
 
 			match(m_lookahead);
 			if (m_token != "PCDATA")
 				not_well_formed("Invalid element content specification, expected #PCDATA");
-			match(xml_Name);
+			match(XMLToken::Name);
 
 			s();
 
 			std::set<std::string> seen;
 
-			while (m_lookahead == xml_Pipe)
+			while (m_lookahead == XMLToken::Pipe)
 			{
 				more = true;
 
-				match(xml_Pipe);
+				match(XMLToken::Pipe);
 				s();
 
 				if (seen.count(m_token) > 0)
 					not_valid("no duplicates allowed in mixed content for element declaration");
 				seen.insert(m_token);
 
-				match(xml_Name);
+				match(XMLToken::Name);
 				s();
 			}
 
@@ -2261,7 +2227,7 @@ void parser_imp::contentspec(doctype::element& element)
 
 			s();
 
-			if (m_lookahead == xml_Comma)
+			if (m_lookahead == XMLToken::Comma)
 			{
 				doctype::allowed_seq *seq = new doctype::allowed_seq(allowed.release());
 				allowed.reset(seq);
@@ -2273,9 +2239,9 @@ void parser_imp::contentspec(doctype::element& element)
 					s();
 					seq->add(cp());
 					s();
-				} while (m_lookahead == xml_Comma);
+				} while (m_lookahead == XMLToken::Comma);
 			}
-			else if (m_lookahead == xml_Pipe)
+			else if (m_lookahead == XMLToken::Pipe)
 			{
 				doctype::allowed_choice *choice = new doctype::allowed_choice(allowed.release(), false);
 				allowed.reset(choice);
@@ -2287,36 +2253,39 @@ void parser_imp::contentspec(doctype::element& element)
 					s();
 					choice->add(cp());
 					s();
-				} while (m_lookahead == xml_Pipe);
+				} while (m_lookahead == XMLToken::Pipe);
 			}
 		}
 
 		s();
 
-		check.check(*m_source.top());
-		match(xml_CloseParenthesis);
 
-		if (m_lookahead == xml_Asterisk)
+		check.check(*m_source.top());
+
+		m_state.m_in_element_content_spec = false;
+		match(XMLToken::CloseParenthesis);
+
+		if (m_lookahead == XMLToken::Asterisk)
 		{
 			allowed.reset(new doctype::allowed_repeated(allowed.release(), '*'));
-			match(xml_Asterisk);
+			match(XMLToken::Asterisk);
 		}
 		else if (more)
 		{
 			if (mixed)
 			{
 				allowed.reset(new doctype::allowed_repeated(allowed.release(), '*'));
-				match(xml_Asterisk);
+				match(XMLToken::Asterisk);
 			}
-			else if (m_lookahead == xml_Plus)
+			else if (m_lookahead == XMLToken::Plus)
 			{
 				allowed.reset(new doctype::allowed_repeated(allowed.release(), '+'));
-				match(xml_Plus);
+				match(XMLToken::Plus);
 			}
-			else if (m_lookahead == xml_QuestionMark)
+			else if (m_lookahead == XMLToken::QuestionMark)
 			{
 				allowed.reset(new doctype::allowed_repeated(allowed.release(), '?'));
-				match(xml_QuestionMark);
+				match(XMLToken::QuestionMark);
 			}
 		}
 
@@ -2328,16 +2297,16 @@ doctype::allowed_ptr parser_imp::cp()
 {
 	std::unique_ptr<doctype::allowed_base> result;
 
-	if (m_lookahead == xml_OpenParenthesis)
+	if (m_lookahead == XMLToken::OpenParenthesis)
 	{
 		valid_nesting_validator check(*m_source.top());
 
-		match(xml_OpenParenthesis);
+		match(XMLToken::OpenParenthesis);
 
 		s();
 		result.reset(cp());
 		s();
-		if (m_lookahead == xml_Comma)
+		if (m_lookahead == XMLToken::Comma)
 		{
 			doctype::allowed_seq *seq = new doctype::allowed_seq(result.release());
 			result.reset(seq);
@@ -2348,9 +2317,9 @@ doctype::allowed_ptr parser_imp::cp()
 				s();
 				seq->add(cp());
 				s();
-			} while (m_lookahead == xml_Comma);
+			} while (m_lookahead == XMLToken::Comma);
 		}
-		else if (m_lookahead == xml_Pipe)
+		else if (m_lookahead == XMLToken::Pipe)
 		{
 			doctype::allowed_choice *choice = new doctype::allowed_choice(result.release(), false);
 			result.reset(choice);
@@ -2361,35 +2330,36 @@ doctype::allowed_ptr parser_imp::cp()
 				s();
 				choice->add(cp());
 				s();
-			} while (m_lookahead == xml_Pipe);
+			} while (m_lookahead == XMLToken::Pipe);
 		}
 
 		s();
 		check.check(*m_source.top());
-		match(xml_CloseParenthesis);
+		match(XMLToken::CloseParenthesis);
 	}
 	else
 	{
 		std::string name = m_token;
-		match(xml_Name);
+		match(XMLToken::Name);
 
 		result.reset(new doctype::allowed_element(name));
 	}
 
 	switch (m_lookahead)
 	{
-	case xml_Asterisk:
-		result.reset(new doctype::allowed_repeated(result.release(), '*'));
-		match(xml_Asterisk);
-		break;
-	case xml_Plus:
-		result.reset(new doctype::allowed_repeated(result.release(), '+'));
-		match(xml_Plus);
-		break;
-	case xml_QuestionMark:
-		result.reset(new doctype::allowed_repeated(result.release(), '?'));
-		match(xml_QuestionMark);
-		break;
+		case XMLToken::Asterisk:
+			result.reset(new doctype::allowed_repeated(result.release(), '*'));
+			match(XMLToken::Asterisk);
+			break;
+		case XMLToken::Plus:
+			result.reset(new doctype::allowed_repeated(result.release(), '+'));
+			match(XMLToken::Plus);
+			break;
+		case XMLToken::QuestionMark:
+			result.reset(new doctype::allowed_repeated(result.release(), '?'));
+			match(XMLToken::QuestionMark);
+			break;
+		default:;
 	}
 
 	return result.release();
@@ -2399,10 +2369,10 @@ void parser_imp::entity_decl()
 {
 	disallow_parameter_entity_references ap(this);
 
-	match(xml_Entity);
+	match(XMLToken::Entity);
 	s(true);
 
-	if (m_lookahead == xml_Percent) // PEDecl
+	if (m_lookahead == XMLToken::Percent) // PEDecl
 		parameter_entity_decl();
 	else
 		general_entity_decl();
@@ -2410,11 +2380,11 @@ void parser_imp::entity_decl()
 
 void parser_imp::parameter_entity_decl()
 {
-	match(xml_Percent);
+	match(XMLToken::Percent);
 	s(true);
 
 	std::string name = m_token;
-	match(xml_Name);
+	match(XMLToken::Name);
 
 	s(true);
 
@@ -2425,23 +2395,23 @@ void parser_imp::parameter_entity_decl()
 		disallow_parameter_entity_references de(this);
 
 		// PEDef is either a EntityValue...
-		if (m_lookahead == xml_String)
+		if (m_lookahead == XMLToken::String)
 		{
 			value = m_token;
-			match(xml_String);
+			match(XMLToken::String);
 
 			parse_parameter_entity_declaration(value);
 		}
 		else // ... or an external id
 		{
 			std::tie(path, value) = read_external_id();
-			match(xml_String);
+			match(XMLToken::String);
 		}
 
 		s();
 	}
 
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 
 	if (find_if(m_parameter_entities.begin(), m_parameter_entities.end(),
 				[name](auto e) { return e->name() == name; }) == m_parameter_entities.end())
@@ -2453,38 +2423,38 @@ void parser_imp::parameter_entity_decl()
 void parser_imp::general_entity_decl()
 {
 	std::string name = m_token;
-	match(xml_Name);
+	match(XMLToken::Name);
 	s(true);
 
 	std::string value, ndata;
 	bool external = false;
 	bool parsed = true;
 
-	if (m_lookahead == xml_String)
+	if (m_lookahead == XMLToken::String)
 	{
 		value = m_token;
-		match(xml_String);
+		match(XMLToken::String);
 
 		parse_general_entity_declaration(value);
 	}
 	else // ... or an ExternalID
 	{
 		std::tie(std::ignore, value) = read_external_id();
-		match(xml_String);
+		match(XMLToken::String);
 		external = true;
 
-		if (m_lookahead == xml_Space)
+		if (m_lookahead == XMLToken::Space)
 		{
 			s(true);
-			if (m_lookahead == xml_Name and m_token == "NDATA")
+			if (m_lookahead == XMLToken::Name and m_token == "NDATA")
 			{
-				match(xml_Name);
+				match(XMLToken::Name);
 				s(true);
 
 				parsed = false;
 				ndata = m_token;
 
-				match(xml_Name);
+				match(XMLToken::Name);
 			}
 		}
 	}
@@ -2492,7 +2462,7 @@ void parser_imp::general_entity_decl()
 	s();
 
 	m_state.m_allow_parameter_entity_references = true;
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 
 	if (std::find_if(m_general_entities.begin(), m_general_entities.end(),
 					 [name](auto e) { return e->name() == name; }) == m_general_entities.end())
@@ -2509,10 +2479,10 @@ void parser_imp::general_entity_decl()
 
 void parser_imp::attlist_decl()
 {
-	match(xml_AttList);
+	match(XMLToken::AttList);
 	s(true);
 	std::string element = m_token;
-	match(xml_Name);
+	match(XMLToken::Name);
 
 	auto dte = find_if(m_doctype.begin(), m_doctype.end(),
 					   [element](auto e) { return e->name() == element; });
@@ -2522,21 +2492,21 @@ void parser_imp::attlist_decl()
 
 	// attdef
 
-	while (m_lookahead == xml_Space)
+	while (m_lookahead == XMLToken::Space)
 	{
 		s(true);
 
-		if (m_lookahead != xml_Name)
+		if (m_lookahead != XMLToken::Name)
 			break;
 
 		std::string name = m_token;
-		match(xml_Name);
+		match(XMLToken::Name);
 		s(true);
 
 		std::unique_ptr<doctype::attribute> attribute;
 
 		// att type: several possibilities:
-		if (m_lookahead == xml_OpenParenthesis) // enumeration
+		if (m_lookahead == XMLToken::OpenParenthesis) // enumeration
 		{
 			std::vector<std::string> enums;
 
@@ -2545,16 +2515,16 @@ void parser_imp::attlist_decl()
 			s();
 
 			enums.push_back(m_token);
-			if (m_lookahead == xml_Name)
-				match(xml_Name);
+			if (m_lookahead == XMLToken::Name)
+				match(XMLToken::Name);
 			else
-				match(xml_NMToken);
+				match(XMLToken::NMToken);
 
 			s();
 
-			while (m_lookahead == xml_Pipe)
+			while (m_lookahead == XMLToken::Pipe)
 			{
-				match(xml_Pipe);
+				match(XMLToken::Pipe);
 
 				s();
 
@@ -2562,24 +2532,24 @@ void parser_imp::attlist_decl()
 					not_valid("Duplicate token in enumerated attribute declaration ('" + m_token + "')");
 
 				enums.push_back(m_token);
-				if (m_lookahead == xml_Name)
-					match(xml_Name);
+				if (m_lookahead == XMLToken::Name)
+					match(XMLToken::Name);
 				else
-					match(xml_NMToken);
+					match(XMLToken::NMToken);
 
 				s();
 			}
 
 			s();
 
-			match(xml_CloseParenthesis);
+			match(XMLToken::CloseParenthesis);
 
 			attribute.reset(new doctype::attribute(name, doctype::attTypeEnumerated, enums));
 		}
 		else
 		{
 			std::string type = m_token;
-			match(xml_Name);
+			match(XMLToken::Name);
 
 			std::vector<std::string> notations;
 
@@ -2602,31 +2572,31 @@ void parser_imp::attlist_decl()
 			else if (type == "NOTATION")
 			{
 				s(true);
-				match(xml_OpenParenthesis);
+				match(XMLToken::OpenParenthesis);
 				s();
 
 				notations.push_back(m_token);
-				match(xml_Name);
+				match(XMLToken::Name);
 
 				s();
 
-				while (m_lookahead == xml_Pipe)
+				while (m_lookahead == XMLToken::Pipe)
 				{
-					match(xml_Pipe);
+					match(XMLToken::Pipe);
 
 					s();
 
 					if (find(notations.begin(), notations.end(), m_token) != notations.end())
 						not_valid("Duplicate token in enumerated attribute declaration ('" + m_token + "')");
 					notations.push_back(m_token);
-					match(xml_Name);
+					match(XMLToken::Name);
 
 					s();
 				}
 
 				s();
 
-				match(xml_CloseParenthesis);
+				match(XMLToken::CloseParenthesis);
 
 				attribute.reset(new doctype::attribute(name, doctype::attTypeNotation, notations));
 			}
@@ -2640,11 +2610,11 @@ void parser_imp::attlist_decl()
 
 		std::string value;
 
-		if (m_lookahead == xml_Hash)
+		if (m_lookahead == XMLToken::Hash)
 		{
 			match(m_lookahead);
 			std::string def = m_token;
-			match(xml_Name);
+			match(XMLToken::Name);
 
 			if (def == "REQUIRED")
 				attribute->set_default(doctype::attDefRequired, "");
@@ -2665,7 +2635,7 @@ void parser_imp::attlist_decl()
 				}
 
 				attribute->set_default(doctype::attDefFixed, value);
-				match(xml_String);
+				match(XMLToken::String);
 			}
 			else
 				not_well_formed("invalid attribute default");
@@ -2682,7 +2652,7 @@ void parser_imp::attlist_decl()
 				not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
 			}
 			attribute->set_default(doctype::attDefNone, value);
-			match(xml_String);
+			match(XMLToken::String);
 		}
 
 		if (attribute->get_type() == doctype::attTypeTokenizedID)
@@ -2698,12 +2668,12 @@ void parser_imp::attlist_decl()
 	}
 
 	m_state.m_allow_parameter_entity_references = true;
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 }
 
 void parser_imp::notation_decl()
 {
-	match(xml_Notation);
+	match(XMLToken::Notation);
 	s(true);
 
 	std::string name = m_token, pubid, sysid;
@@ -2712,27 +2682,27 @@ void parser_imp::notation_decl()
 		not_valid("notation names should be unique");
 	m_notations.insert(name);
 
-	match(xml_Name);
+	match(XMLToken::Name);
 	s(true);
 
 	if (m_token == "SYSTEM")
 	{
-		match(xml_Name);
+		match(XMLToken::Name);
 		s(true);
 
 		sysid = m_token;
-		match(xml_String);
+		match(XMLToken::String);
 
 		if (not is_valid_system_literal(sysid))
 			not_well_formed("invalid system literal");
 	}
 	else if (m_token == "PUBLIC")
 	{
-		match(xml_Name);
+		match(XMLToken::Name);
 		s(true);
 
 		pubid = m_token;
-		match(xml_String);
+		match(XMLToken::String);
 
 		// validate the public ID
 		if (not is_valid_public_id(pubid))
@@ -2740,10 +2710,10 @@ void parser_imp::notation_decl()
 
 		s();
 
-		if (m_lookahead == xml_String)
+		if (m_lookahead == XMLToken::String)
 		{
 			sysid = m_token;
-			match(xml_String);
+			match(XMLToken::String);
 		}
 	}
 	else
@@ -2752,7 +2722,7 @@ void parser_imp::notation_decl()
 	s();
 
 	m_state.m_allow_parameter_entity_references = true;
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 
 	m_parser.notation_decl(name, sysid, pubid);
 }
@@ -2792,7 +2762,7 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 	if (m_token == "SYSTEM")
 	{
-		match(xml_Name);
+		match(XMLToken::Name);
 		s(true);
 
 		uri = m_token;
@@ -2802,11 +2772,11 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 	}
 	else if (m_token == "PUBLIC")
 	{
-		match(xml_Name);
+		match(XMLToken::Name);
 		s(true);
 
 		pubid = m_token;
-		match(xml_String);
+		match(XMLToken::String);
 
 		// validate the public ID
 		if (not is_valid_public_id(pubid))
@@ -2830,7 +2800,7 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 		text_decl();
 
-		if (m_lookahead != xml_Eof)
+		if (m_lookahead != XMLToken::Eof)
 		{
 			s();
 
@@ -2871,13 +2841,13 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 				state = 1;
 			else if (c == '%')
 			{
-				if (m_state.m_external_subset and m_state.m_allow_parameter_entity_references)
-				{
+			// 	if (m_state.m_external_subset and m_state.m_allow_parameter_entity_references)
+			// 	{
 					name.clear();
 					state = 20;
-				}
-				else
-					not_well_formed("parameter entities may not occur in declarations that are not in an external subset");
+			// 	}
+			// 	else
+			// 		not_well_formed("parameter entities may not occur in declarations that are not in an external subset");
 			}
 			else if (not is_char(c))
 				not_well_formed("Invalid character in entity value");
@@ -3322,9 +3292,9 @@ void parser_imp::element(doctype::validator& valid)
 {
 	m_state.m_in_content = false;
 
-	match(xml_STag);
+	match(XMLToken::STag);
 	std::string name = m_token;
-	match(xml_Name);
+	match(XMLToken::Name);
 
 	if (not valid(name))
 		not_valid("element '" + name + "' not expected at this position");
@@ -3345,16 +3315,16 @@ void parser_imp::element(doctype::validator& valid)
 
 	for (;;)
 	{
-		if (m_lookahead != xml_Space)
+		if (m_lookahead != XMLToken::Space)
 			break;
 
 		s(true);
 
-		if (m_lookahead != xml_Name)
+		if (m_lookahead != XMLToken::Name)
 			break;
 
 		std::string attr_name = m_token;
-		match(xml_Name);
+		match(XMLToken::Name);
 
 		if (seen.count(attr_name) > 0)
 			not_well_formed("multiple values for attribute '" + attr_name + "'");
@@ -3363,7 +3333,7 @@ void parser_imp::element(doctype::validator& valid)
 		eq();
 
 		std::string attr_value = normalize_attribute_value(m_token);
-		match(xml_String);
+		match(XMLToken::String);
 
 		const doctype::attribute *dta = nullptr;
 		if (dte != nullptr)
@@ -3549,9 +3519,9 @@ void parser_imp::element(doctype::validator& valid)
 	// sort the attributes (why? disabled to allow similar output)
 	// attrs.sort([](auto& a, auto& b) { return a.m_name < b.m_name; });
 
-	if (m_lookahead == xml_Slash)
+	if (m_lookahead == XMLToken::Slash)
 	{
-		match(xml_Slash);
+		match(XMLToken::Slash);
 		m_parser.start_element(name, uri, attrs);
 		m_parser.end_element(name, uri);
 	}
@@ -3563,18 +3533,18 @@ void parser_imp::element(doctype::validator& valid)
 		{
 			enter_content ec(this);
 
-			match(xml_GreaterThan);
+			match(XMLToken::GreaterThan);
 
-			if (m_lookahead != xml_ETag)
+			if (m_lookahead != XMLToken::ETag)
 				content(sub_valid, m_validating and m_standalone and dte->external() and dte->element_content());
 		}
 
-		match(xml_ETag);
+		match(XMLToken::ETag);
 
 		if (m_token != raw)
 			not_well_formed("end tag does not match start tag");
 
-		match(xml_Name);
+		match(XMLToken::Name);
 
 		s();
 
@@ -3582,7 +3552,7 @@ void parser_imp::element(doctype::validator& valid)
 	}
 
 	m_state.m_in_content = true;
-	match(xml_GreaterThan);
+	match(XMLToken::GreaterThan);
 
 	if (m_validating and dte != nullptr and not sub_valid.done())
 		not_valid("missing child elements for element '" + dte->name() + "'");
@@ -3592,7 +3562,7 @@ void parser_imp::element(doctype::validator& valid)
 
 void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 {
-	if (not valid.allow_char_data() and m_lookahead != xml_ETag and m_lookahead != xml_Eof)
+	if (not valid.allow_char_data() and m_lookahead != XMLToken::ETag and m_lookahead != XMLToken::Eof)
 		not_valid("No content allowed");
 
 	enter_content ec(this);
@@ -3601,7 +3571,7 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 	{
 		switch (m_lookahead)
 		{
-		case xml_Content:
+		case XMLToken::Content:
 			if (valid.allow_char_data())
 				m_parser.character_data(m_token);
 			else
@@ -3615,17 +3585,17 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 				else
 					not_valid("character data '" + m_token + "' not allowed in element");
 			}
-			match(xml_Content);
+			match(XMLToken::Content);
 			break;
 
-		case xml_Space:
+		case XMLToken::Space:
 			if (check_for_whitespace)
 				not_valid("element declared in external subset contains white space");
-			match(xml_Space);
+			match(XMLToken::Space);
 			s();
 			break;
 
-		case xml_Reference:
+		case XMLToken::Reference:
 		{
 			if (std::find(m_entities_on_stack.begin(), m_entities_on_stack.end(), m_token) != m_entities_on_stack.end())
 				not_well_formed("infinite recursion of entity references");
@@ -3645,42 +3615,42 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 			m_lookahead = get_next_content();
 			m_state.m_in_external_dtd = e.externally_defined();
 
-			if (m_lookahead != xml_Eof)
+			if (m_lookahead != XMLToken::Eof)
 				content(valid, check_for_whitespace);
 
-			if (m_lookahead != xml_Eof)
+			if (m_lookahead != XMLToken::Eof)
 				not_well_formed("entity reference should be a valid content production");
 
 			pop_data_source();
 
-			match(xml_Reference);
+			match(XMLToken::Reference);
 
 			m_entities_on_stack.pop_back();
 			break;
 		}
 
-		case xml_STag:
+		case XMLToken::STag:
 		{
 			leave_content lc(this);
 			element(valid);
 			break;
 		}
 
-		case xml_PI:
+		case XMLToken::PI:
 		{
 			leave_content lc(this);
 			pi();
 			break;
 		}
 
-		case xml_Comment:
+		case XMLToken::Comment:
 		{
 			leave_content lc(this);
 			comment();
 			break;
 		}
 
-		case xml_CDSect:
+		case XMLToken::CDSect:
 			if (not valid.allow_char_data())
 				not_valid("character data '" + m_token + "' not allowed in element");
 
@@ -3688,22 +3658,22 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 			m_parser.character_data(m_token);
 			m_parser.end_cdata_section();
 
-			match(xml_CDSect);
+			match(XMLToken::CDSect);
 			break;
 
-		case xml_PEReference:
+		case XMLToken::PEReference:
 			pereference();
 			break;
 
 		default:
-			match(xml_Content); // will fail and report error
+			match(XMLToken::Content); // will fail and report error
 		}
-	} while (m_lookahead != xml_ETag and m_lookahead != xml_Eof);
+	} while (m_lookahead != XMLToken::ETag and m_lookahead != XMLToken::Eof);
 }
 
 void parser_imp::comment()
 {
-	// m_lookahead == xml_Comment
+	// m_lookahead == XMLToken::Comment
 	// read characters until we reach -->
 	// check all characters in between for validity
 
@@ -3756,12 +3726,12 @@ void parser_imp::comment()
 	m_token.erase(m_token.end() - 3, m_token.end());
 	m_parser.comment(m_token);
 
-	match(xml_Comment);
+	match(XMLToken::Comment);
 }
 
 void parser_imp::pi()
 {
-	// m_lookahead == xml_PI
+	// m_lookahead == XMLToken::PI
 	// read characters until we reach -->
 	// check all characters in between for validity
 
@@ -3839,7 +3809,7 @@ void parser_imp::pi()
 	m_token.erase(m_token.end() - 2, m_token.end());
 	m_parser.processing_instruction(pi_target, m_token);
 
-	match(xml_PI);
+	match(XMLToken::PI);
 }
 
 // --------------------------------------------------------------------
