@@ -31,6 +31,7 @@ struct document_imp
 	// some content information
 	bool m_has_xml_decl;
 	encoding_type m_encoding;
+	float m_version;
 	bool m_standalone;
 	int m_indent;
 	bool m_empty;

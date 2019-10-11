@@ -132,6 +132,9 @@ class document
 	encoding_type encoding() const;   ///< The text encoding as detected in the input.
 	void encoding(encoding_type enc); ///< The text encoding to use for output
 
+	float version() const;			///< XML version, should be either 1.0 or 1.1
+	void version(float v);			///< XML version, should be either 1.0 or 1.1
+
 	// to format the output, use the following:
 	int indent() const;		 ///< get number of spaces to indent elements:
 	void indent(int indent); ///< set number of spaces to indent elements:

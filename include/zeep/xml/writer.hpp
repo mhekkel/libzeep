@@ -42,6 +42,13 @@ public:
 	//! set_encoding is not yet implemented, we only support UTF-8 for now
 	//	void			set_encoding(encoding_type enc)					{ m_encoding = enc; }
 
+	void set_version(float version)
+	{
+		m_version = version;
+		if (m_version > 1.0)
+			m_write_xml_decl = true;
+	}
+
 	//! the xml declaration flag (<?xml version...) is not written by default
 	void set_xml_decl(bool flag) { m_write_xml_decl = flag; }
 

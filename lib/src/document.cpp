@@ -27,7 +27,7 @@ namespace xml
 // --------------------------------------------------------------------
 
 document_imp::document_imp(document *doc)
-	: m_has_xml_decl(false), m_encoding(encoding_type::enc_UTF8), m_standalone(false), m_indent(2), m_empty(true)
+	: m_has_xml_decl(false), m_encoding(encoding_type::enc_UTF8), m_version(1.0), m_standalone(false), m_indent(2), m_empty(true)
 	, m_wrap(true), m_trim(true), m_escape_whitespace(false), m_no_comment(false)
 	, m_validating(false), m_preserve_cdata(false), m_doc(doc), m_cur(nullptr), m_cdata(nullptr)
 {
@@ -127,7 +127,7 @@ void zeep_document_imp::XmlDeclHandler(encoding_type encoding, bool standalone, 
 	m_has_xml_decl = true;
 	m_encoding = encoding;
 	m_standalone = standalone;
-	// m_version = version;
+	m_version = version;
 }
 
 void zeep_document_imp::StartElementHandler(const std::string& name, const std::string& uri,
@@ -426,6 +426,16 @@ encoding_type document::encoding() const
 void document::encoding(encoding_type enc)
 {
 	m_impl->m_encoding = enc;
+}
+
+float document::version() const
+{
+	return m_impl->m_version;
+}
+
+void document::version(float v)
+{
+	m_impl->m_version = v;
 }
 
 int document::indent() const

@@ -353,7 +353,7 @@ void writer::content(const std::string& text)
 			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
 			case ' ':	if (not m_trim or not last_is_space) m_os << ' '; last_is_space = true; break;
 			case 0:		throw exception("Invalid null character in XML content");
-			default:	if (c >= 0x0A0 or (m_version == 1.0 and is_valid_xml_1_0_char(c)) or (m_version == 1.1 and is_valid_xml_1_1_char(c)))
+			default:	if (c >= 0x0A0 or (m_version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
 							m_os << c;
 						else
 							m_os << "&#" << std::hex << c << ';';

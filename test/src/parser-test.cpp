@@ -29,7 +29,7 @@ namespace ba = boost::algorithm;
 
 int VERBOSE;
 int TRACE;
-int dubious_tests, error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
+int error_tests, should_have_failed, total_tests, wrong_exception, skipped_tests;
 
 bool run_valid_test(istream& is, fs::path& outfile)
 {
@@ -41,7 +41,8 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	stringstream s;
 
 	xml::writer w(s);
-	w.set_xml_decl(false);
+
+	w.set_version(indoc.version());
 	w.set_indent(0);
 	w.set_wrap(false);
 	w.set_wrap_prolog(false);
@@ -72,26 +73,15 @@ bool run_valid_test(istream& is, fs::path& outfile)
 
 		if (s1 != s2)
 		{
-			xml::document a;
-			a.set_validating(false);
-			a.read(s1);
+			stringstream s;
+			s	 << "output differs: " << endl
+				 << endl
+				 << s1 << endl
+				 << endl
+				 << s2 << endl
+				 << endl;
 
-			xml::document b;
-			b.set_validating(false);
-			b.read(s2);
-			
-			if (a == b)
-				++dubious_tests;
-			else
-			{
-				stringstream s;
-				s	 << "output differs: " << endl
-					 << s1 << endl
-					 << s2 << endl
-					 << endl;
-
-				throw zeep::exception(s.str());
-			}
+			throw zeep::exception(s.str());
 		}
 	}
 	else
@@ -423,8 +413,7 @@ int main(int argc, char* argv[])
 				 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
 				 << "  " << error_tests << " threw an exception" << endl
 				 << "  " << wrong_exception << " wrong exception" << endl
-				 << "  " << should_have_failed << " should have failed but didn't" << endl
-				 << "  " << dubious_tests << " had a dubious output" << endl;
+				 << "  " << should_have_failed << " should have failed but didn't" << endl;
 
 			if (vm.count("print-ids"))
 			{

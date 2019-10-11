@@ -323,7 +323,7 @@ unicode istream_data_source::get_next_char()
 	if (ch == '\r')
 	{
 		ch = (this->*m_next)();
-		if (ch != '\n')
+		if (ch != '\n' and ch != 0x85)
 			m_char_buffer = ch;
 		ch = '\n';
 	}
@@ -2654,8 +2654,7 @@ void parser_imp::attlist_decl()
 			if (attribute->get_type() == doctype::attTypeTokenizedID)
 				not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
 
-			std::string value = m_token;
-			normalize_attribute_value(value);
+			std::string value = normalize_attribute_value(m_token);
 			if (not value.empty() and not attribute->validate_value(value, m_general_entities))
 			{
 				not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
@@ -2809,8 +2808,6 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 
 		if (m_lookahead != XMLToken::Eof)
 		{
-			s();
-
 			result = m_token;
 
 			while (not m_buffer.empty())
@@ -3151,6 +3148,7 @@ std::string parser_imp::normalize_attribute_value()
 
 	unicode charref = 0;
 	std::string name;
+	bool space = false;
 
 	enum State
 	{
@@ -3177,12 +3175,21 @@ std::string parser_imp::normalize_attribute_value()
 		switch (state)
 		{
 		case state_Start:
-			if (c == '&')
-				state = state_ReferenceStart;
-			else if (c == ' ' or c == '\n' or c == '\t' or c == '\r')
-				result += ' ';
+			if (c == ' ' or c == '\n' or c == '\t' or c == '\r')
+			{
+				if (not (space or result.empty()))
+					result += ' ';
+				space = true;
+			}
 			else
-				append(result, c);
+			{
+				space = false;
+				
+				if (c == '&')
+					state = state_ReferenceStart;
+				else 
+					append(result, c);
+			}
 			break;
 
 		case state_ReferenceStart:
@@ -3299,6 +3306,14 @@ std::string parser_imp::normalize_attribute_value()
 			assert(false);
 			not_well_formed("invalid state");
 		}
+	}
+
+	if (space)
+	{
+		if (result.empty())
+			result = " ";
+		else
+			result.pop_back();
 	}
 
 	if (state != state_Start)
@@ -3543,7 +3558,7 @@ void parser_imp::element(doctype::validator& valid)
 		uri = ns.default_ns();
 
 	// sort the attributes (why? disabled to allow similar output)
-	// attrs.sort([](auto& a, auto& b) { return a.m_name < b.m_name; });
+	attrs.sort([](auto& a, auto& b) { return a.m_name < b.m_name; });
 
 	if (m_lookahead == XMLToken::Slash)
 	{
@@ -3579,8 +3594,6 @@ void parser_imp::element(doctype::validator& valid)
 
 	if (m_validating and dte != nullptr and not sub_valid.done())
 		not_valid("missing child elements for element '" + dte->name() + "'");
-
-	s();
 }
 
 void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
@@ -3612,6 +3625,7 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 			case XMLToken::Space:
 				if (check_for_whitespace)
 					not_valid("element declared in external subset contains white space");
+				m_parser.character_data(m_token);
 				match(XMLToken::Space);
 				s();
 				break;
@@ -3712,27 +3726,27 @@ void parser_imp::comment()
 
 		switch (state)
 		{
-		case state_Start:
-			if (ch == '-')
-				state = state_FirstHyphenSeen;
-			break;
+			case state_Start:
+				if (ch == '-')
+					state = state_FirstHyphenSeen;
+				break;
 
-		case state_FirstHyphenSeen:
-			if (ch == '-')
-				state = state_SecondHyphenSeen;
-			else
-				state = state_Start;
-			break;
+			case state_FirstHyphenSeen:
+				if (ch == '-')
+					state = state_SecondHyphenSeen;
+				else
+					state = state_Start;
+				break;
 
-		case state_SecondHyphenSeen:
-			if (ch == '>')
-				state = state_CommentClosed;
-			else
-				not_well_formed("double hyphen found in comment");
-			break;
+			case state_SecondHyphenSeen:
+				if (ch == '>')
+					state = state_CommentClosed;
+				else
+					not_well_formed("double hyphen found in comment");
+				break;
 
-		case state_CommentClosed:
-			assert(false);
+			case state_CommentClosed:
+				assert(false);
 		}
 	}
 
