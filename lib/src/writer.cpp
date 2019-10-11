@@ -161,7 +161,7 @@ void writer::attribute(const std::string& name, const std::string& value)
 	
 	bool last_is_space = false;
 
-	for (char c: value)
+	for (uint8_t c: value)
 	{
 		switch (c)
 		{
@@ -174,10 +174,10 @@ void writer::attribute(const std::string& name, const std::string& value)
 			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
 			case ' ':	if (not m_trim or not last_is_space) m_os << ' '; last_is_space = true; break;
 			case 0:		throw exception("Invalid null character in XML content");
-			default:	if ((c >= 1 and c <= 8) or (c >= 0x0b and c <= 0x0c) or (c >= 0x0e and c <= 0x1f) or c == 0x7f)
-							m_os << "&#" << std::hex << c << ';';
-						else	
+			default:	if (c >= 0x0A0 or (m_version == 1.0 and is_valid_xml_1_0_char(c)) or (m_version == 1.1 and is_valid_xml_1_1_char(c)))
 							m_os << c;
+						else
+							m_os << "&#" << std::hex << c << ';';
 						last_is_space = false;
 						break;
 		}
@@ -340,7 +340,7 @@ void writer::content(const std::string& text)
 	
 	bool last_is_space = false;
 	
-	for (char c: text)
+	for (uint8_t c: text)
 	{
 		switch (c)
 		{
@@ -353,10 +353,10 @@ void writer::content(const std::string& text)
 			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
 			case ' ':	if (not m_trim or not last_is_space) m_os << ' '; last_is_space = true; break;
 			case 0:		throw exception("Invalid null character in XML content");
-			default:	if ((c >= 1 and c <= 8) or (c >= 0x0b and c <= 0x0c) or (c >= 0x0e and c <= 0x1f) or c == 0x7f)
-							m_os << "&#" << std::hex << c << ';';
-						else	
+			default:	if (c >= 0x0A0 or (m_version == 1.0 and is_valid_xml_1_0_char(c)) or (m_version == 1.1 and is_valid_xml_1_1_char(c)))
 							m_os << c;
+						else
+							m_os << "&#" << std::hex << c << ';';
 						last_is_space = false;
 						break;
 		}

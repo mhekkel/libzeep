@@ -30,6 +30,8 @@ enum class encoding_type
 
 bool is_name_start_char(unicode uc);
 bool is_name_char(unicode uc);
+bool is_valid_xml_1_0_char(unicode uc);
+bool is_valid_xml_1_1_char(unicode uc);
 bool is_valid_system_literal_char(unicode uc);
 bool is_valid_system_literal(const std::string& s);
 bool is_valid_public_id_char(unicode uc);

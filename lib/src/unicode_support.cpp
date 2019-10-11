@@ -47,29 +47,27 @@ bool is_name_char(unicode uc)
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
-// bool is_control_or_undefined(unicode ch)
-// {
-// 	return 
-// 		(ch >= 0x7F and ch <= 0x84) or
-// 		(ch >= 0x86 and ch <= 0x9F) or
-// 		(ch >= 0xFDD0 and ch <= 0xFDEF) or
-// 		(ch >= 0x1FFFE and ch <= 0x1FFFF) or
-// 		(ch >= 0x2FFFE and ch <= 0x2FFFF) or
-// 		(ch >= 0x3FFFE and ch <= 0x3FFFF) or
-// 		(ch >= 0x4FFFE and ch <= 0x4FFFF) or
-// 		(ch >= 0x5FFFE and ch <= 0x5FFFF) or
-// 		(ch >= 0x6FFFE and ch <= 0x6FFFF) or
-// 		(ch >= 0x7FFFE and ch <= 0x7FFFF) or
-// 		(ch >= 0x8FFFE and ch <= 0x8FFFF) or
-// 		(ch >= 0x9FFFE and ch <= 0x9FFFF) or
-// 		(ch >= 0xAFFFE and ch <= 0xAFFFF) or
-// 		(ch >= 0xBFFFE and ch <= 0xBFFFF) or
-// 		(ch >= 0xCFFFE and ch <= 0xCFFFF) or
-// 		(ch >= 0xDFFFE and ch <= 0xDFFFF) or
-// 		(ch >= 0xEFFFE and ch <= 0xEFFFF) or
-// 		(ch >= 0xFFFFE and ch <= 0xFFFFF) or
-// 		(ch >= 0x10FFFE and ch <= 0x10FFFF);
-// }
+bool is_valid_xml_1_0_char(unicode uc)
+{
+	return	uc == 0x09 or
+			uc == 0x0A or
+			uc == 0x0D or
+			(uc >= 0x020 and uc <= 0x0D7FF) or
+			(uc >= 0x0E000 and uc <= 0x0FFFD) or
+			(uc >= 0x010000 and uc <= 0x010FFFF);
+}
+
+bool is_valid_xml_1_1_char(unicode uc)
+{
+	return	uc == 0x09 or
+			uc == 0x0A or
+			uc == 0x0D or
+			(uc >= 0x020 and uc < 0x07F) or
+			uc == 0x085 or
+			(uc >= 0x0A0 and uc <= 0x0D7FF) or
+			(uc >= 0x0E000 and uc <= 0x0FFFD) or
+			(uc >= 0x010000 and uc <= 0x010FFFF);
+}
 
 bool is_valid_system_literal_char(unicode uc)
 {
