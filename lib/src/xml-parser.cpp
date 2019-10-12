@@ -11,6 +11,7 @@
 #include <memory>
 #include <algorithm>
 #include <stack>
+#include <regex>
 
 #include <boost/algorithm/string.hpp>
 
@@ -27,6 +28,25 @@ namespace zeep
 {
 namespace xml
 {
+
+#define url_hexdigit	"[[:digit:]a-fA-F]"
+#define url_unreserved	"[-[:alnum:]._~]"
+#define url_pct_encoded	"%" url_hexdigit "{2}"
+#define url_sub_delims	"[!$&'()*+,;=]"
+#define url_userinfo	"(?:((?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)@)?"
+#define url_scheme		"[[:alpha:]][[:alnum:]]*"
+#define url_host		"(\\[(?:[[:digit:]a-fA-F:]+)\\]|(?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)"
+#define url_port		"(?::([[:digit:]]+))?"
+#define url_pchar		url_unreserved "|" url_pct_encoded "|" url_sub_delims "|:|@"
+#define url_path		"(?:/((?:" url_pchar "|\\*|\\?|/)*))?"
+#define url_fragment	"(?:#(?:" url_pchar ")*)?"
+
+const std::regex kURL_rx( url_scheme "://" url_userinfo url_host url_port url_path url_fragment);
+
+bool is_valid_url(const std::string& url)
+{
+	return std::regex_match(url, kURL_rx);
+}
 
 using namespace ::zeep::detail;
 
@@ -73,6 +93,7 @@ public:
 
 	encoding_type encoding() const { return m_encoding; }
 	virtual void encoding(encoding_type enc) { m_encoding = enc; }
+	virtual bool has_bom() { return false; }
 
 	void version(float v) { m_version = v; }
 
@@ -113,7 +134,7 @@ public:
 			delete m_data;
 	}
 
-	bool has_bom() { return m_has_bom; }
+	virtual bool has_bom() { return m_has_bom; }
 
 	virtual unicode get_next_char();
 	virtual void encoding(encoding_type enc);
@@ -125,6 +146,7 @@ private:
 	unicode next_utf16le_char();
 	unicode next_utf16be_char();
 	unicode next_iso88591_char();
+	unicode next_ascii_char();
 
 	unsigned char next_byte()
 	{
@@ -204,7 +226,7 @@ void istream_data_source::encoding(encoding_type enc)
 {
 	if (enc != m_encoding)
 	{
-		if (enc == encoding_type::enc_ISO88591 and m_encoding == encoding_type::enc_UTF8)
+		if (is_single_byte_encoding(enc) and is_single_byte_encoding(m_encoding))
 			m_encoding = enc;
 		else
 			throw invalid_exception("Invalid encoding specified, incompatible with actual encoding");
@@ -225,6 +247,9 @@ void istream_data_source::encoding(encoding_type enc)
             break;
         case encoding_type::enc_ISO88591:
             m_next = &istream_data_source::next_iso88591_char;
+            break;
+        case encoding_type::enc_ASCII:
+            m_next = &istream_data_source::next_ascii_char;
             break;
         default: break;
 	}
@@ -274,23 +299,63 @@ unicode istream_data_source::next_utf16le_char()
 {
 	unsigned char c1 = next_byte(), c2 = next_byte();
 
-	unicode result = (static_cast<unicode>(c2) << 8) | c1;
+	unicode ch = (static_cast<unicode>(c2) << 8) | c1;
 
-	return result;
+	if (ch >= 0x080)
+	{
+		// surrogate support
+		if (ch >= 0x0D800 and ch <= 0x0DBFF)
+		{
+			unicode uc2 = next_utf16le_char();
+			if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
+				ch = (ch - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
+			else
+				throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: leading surrogate character without trailing surrogate character");
+		}
+		else if (ch >= 0x0DC00 and ch <= 0x0DFFF)
+			throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: trailing surrogate character without a leading surrogate");
+	}
+
+	return ch;
 }
 
 unicode istream_data_source::next_utf16be_char()
 {
 	unsigned char c1 = next_byte(), c2 = next_byte();
 
-	unicode result = (static_cast<unicode>(c1) << 8) | c2;
+	unicode ch = (static_cast<unicode>(c1) << 8) | c2;
 
-	return result;
+	if (ch >= 0x080)
+	{
+		// surrogate support
+		if (ch >= 0x0D800 and ch <= 0x0DBFF)
+		{
+			unicode uc2 = next_utf16be_char();
+			if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
+				ch = (ch - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
+			else
+				throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: leading surrogate character without trailing surrogate character");
+		}
+		else if (ch >= 0x0DC00 and ch <= 0x0DFFF)
+			throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: trailing surrogate character without a leading surrogate");
+	}
+
+	return ch;
 }
 
 unicode istream_data_source::next_iso88591_char()
 {
 	return (unicode)next_byte();
+}
+
+unicode istream_data_source::next_ascii_char()
+{
+	unicode c = next_byte();
+
+	if (c > 127)
+		throw not_wf_exception("Invalid ascii value");
+
+	return c;
 }
 
 unicode istream_data_source::get_next_char()
@@ -302,35 +367,24 @@ unicode istream_data_source::get_next_char()
 	else
 		m_char_buffer = 0;
 
-	if (ch >= 0x080)
-	{
-		if (ch == 0x0ffff or ch == 0x0fffe)
-			throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: character " + to_hex(ch) + " is not allowed");
-
-		// surrogate support
-		else if (ch >= 0x0D800 and ch <= 0x0DBFF)
-		{
-			unicode uc2 = get_next_char();
-			if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
-				ch = (ch - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
-			else
-				throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: leading surrogate character without trailing surrogate character");
-		}
-		else if (ch >= 0x0DC00 and ch <= 0x0DFFF)
-			throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: trailing surrogate character without a leading surrogate");
-	}
+	if (ch == 0x0ffff or ch == 0x0fffe)
+		throw not_wf_exception("Document (line: " + std::to_string(m_line_nr) + " not well-formed: character " + to_hex(ch) + " is not allowed");
 
 	if (ch == '\r')
 	{
 		ch = (this->*m_next)();
-		if (ch != '\n' and (m_version == 1.0 or ch != 0x85))
+		if (ch != '\n' and (m_version == 1.0 or ch != 0x85 or m_encoding == encoding_type::enc_ASCII))
 			m_char_buffer = ch;
 		ch = '\n';
 	}
-	if (m_version > 1.0 and ch == 0x85)
-		ch = '\n';
-	else if (m_encoding != encoding_type::enc_ISO88591 and m_version > 1.0 and ch == 0x2028)
-		ch = '\n';
+
+	if (m_encoding != encoding_type::enc_ASCII)
+	{
+		if (m_version > 1.0 and ch == 0x85)
+			ch = '\n';
+		else if (m_encoding != encoding_type::enc_ISO88591 and m_version > 1.0 and ch == 0x2028)
+			ch = '\n';
+	}
 
 	if (ch == '\n')
 		++m_line_nr;
@@ -633,37 +687,22 @@ struct parser_imp
 	const doctype::entity& get_parameter_entity(const std::string& name) const;
 	const doctype::element *get_element(const std::string& name) const;
 
-	// Sometimes we need to reuse our parser/scanner to parse an external entity e.g.
-	// We use stack based state objects to store the current state.
-	struct parser_state
-	{
-		float m_version = 1.0f;
-		encoding_type m_encoding = encoding_type::enc_UTF8;
-		bool m_external_subset = false;
-		bool m_internal_subset = false;
-		bool m_allow_peref = false;
-		bool m_in_declsep = false;
-		bool m_in_external_dtd = false;
-		bool m_in_doctype = false; // used to keep track where we are (parameter entities are only recognized inside a doctype section)
-		bool m_in_content = false;
-	};
-
 	struct leave_content
 	{
 		leave_content(parser_imp* impl)
-			: m_impl(*impl), m_saved(m_impl.m_state.m_in_content)
+			: m_impl(*impl), m_saved(m_impl.m_in_content)
 		{
-			m_impl.m_state.m_in_content = false;
+			m_impl.m_in_content = false;
 		}
 
 		~leave_content()
 		{
-			m_impl.m_state.m_in_content = m_saved;
+			m_impl.m_in_content = m_saved;
 		}
 
 		void reset()
 		{
-			m_impl.m_state.m_in_content = m_saved;
+			m_impl.m_in_content = m_saved;
 		}
 
 		parser_imp& m_impl;
@@ -704,7 +743,7 @@ struct parser_imp
 
 	void push_data_source(data_source* source, bool insert)
 	{
-		source->version(m_state.m_version);
+		source->version(m_version);
 		m_source.emplace(this, source, insert);
 	}
 
@@ -732,8 +771,9 @@ struct parser_imp
 		std::string m_default_ns;
 		ns_state *m_next;
 
-		std::map<std::string, std::string>
-			m_known;
+		std::map<std::string, std::string> m_known;
+		std::set<std::string> m_known_uris;
+		std::set<std::string> m_unbound;
 
 		std::string default_ns()
 		{
@@ -747,19 +787,27 @@ struct parser_imp
 		{
 			std::string result;
 
-			if (m_known.find(prefix) != m_known.end())
-				result = m_known[prefix];
-			else if (m_next != nullptr)
-				result = m_next->ns_for_prefix(prefix);
+			if (m_unbound.count(prefix) == 0)
+			{
+				if (m_known.find(prefix) != m_known.end())
+					result = m_known[prefix];
+				else if (m_next != nullptr)
+					result = m_next->ns_for_prefix(prefix);
+			}
 
 			return result;
+		}
+
+		bool is_known_uri(const std::string& uri)
+		{
+			return m_known_uris.count(uri) or (m_next != nullptr and m_next->is_known_uri(uri));
 		}
 	};
 
 	bool is_char(unicode uc)
 	{
 		return
-			m_state.m_version == 1.0 ?
+			m_version == 1.0 ?
 				is_valid_xml_1_0_char(uc) :
 				is_valid_xml_1_1_char(uc);
 	}
@@ -767,7 +815,7 @@ struct parser_imp
 	bool is_referrable_char(unicode charref)
 	{
 		return
-			m_state.m_version == 1.0 ?
+			m_version == 1.0 ?
 				charref == 0x09 or
 				charref == 0x0A or
 				charref == 0x0D or
@@ -782,17 +830,30 @@ struct parser_imp
 				;
 	}
 
+	parser& m_parser;
 	bool m_validating;
 	bool m_has_dtd;
 	XMLToken m_lookahead;
 	std::string m_token;
 
 	std::stack<source_state> m_source;
-	parser_state m_state;
 	std::stack<unicode> m_buffer;
-	std::vector<std::string> m_entities_on_stack;
+	
+	float m_version = 1.0f;
+	encoding_type m_encoding = encoding_type::enc_UTF8;
 	bool m_standalone;
-	parser& m_parser;
+
+	// parser state
+	bool m_external_subset = false;
+	bool m_internal_subset = false;
+	bool m_allow_peref = false;
+	bool m_in_declsep = false;
+	bool m_in_external_dtd = false;
+	bool m_in_doctype = false; // used to keep track where we are (parameter entities are only recognized inside a doctype section)
+	bool m_in_content = false;
+	bool m_in_xml_decl = false;
+
+	std::vector<std::string> m_entities_on_stack;
 	ns_state* m_ns;
 
 	std::string m_root_element;
@@ -829,12 +890,12 @@ inline void parser_imp::eq()
 // --------------------------------------------------------------------
 
 parser_imp::parser_imp(std::istream& data, parser& parser)
-	: m_validating(true), m_has_dtd(false), m_lookahead(XMLToken::Eof), m_standalone(false)
-	, m_parser(parser), m_ns(nullptr)
+	: m_parser(parser), m_validating(true), m_has_dtd(false), m_lookahead(XMLToken::Eof)
+	, m_encoding(encoding_type::enc_ASCII), m_standalone(false), m_ns(nullptr)
 {
 	push_data_source(new istream_data_source(data), false);
 
-	m_state.m_encoding = m_source.top()->encoding();
+	m_encoding = m_source.top()->encoding();
 
 	// these entities are always recognized:
 	m_general_entities.push_back(new doctype::general_entity("lt", "&#60;"));
@@ -945,6 +1006,9 @@ unicode parser_imp::get_next_char()
 		}
 	}
 
+	if (m_in_xml_decl and result > 127)
+		not_well_formed("Illegal character in XML decl, not ascii");
+
 	append(m_token, result);
 
 	return result;
@@ -968,15 +1032,15 @@ void parser_imp::match(XMLToken token)
 			"Error parsing XML, expected '" + expected + "' but found '" + found + "' ('" + m_token + "')");
 	}
 
-	if (m_state.m_in_content)
+	if (m_in_content)
 		m_lookahead = get_next_content();
 	else
 	{
 		m_lookahead = get_next_token();
 
-		if (m_lookahead == XMLToken::PEReference and not m_state.m_in_declsep)
+		if (m_lookahead == XMLToken::PEReference and not m_in_declsep)
 		{
-			if (m_state.m_allow_peref)
+			if (m_allow_peref)
 				pereference();
 			else
 				not_well_formed("Invalid entity reference at this location");
@@ -1134,7 +1198,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 		case state_CommentOrDoctype:
 			if (uc == '-')
 				state = state_Comment;
-			else if (uc == '[' /*and m_state.m_external_subset*/)
+			else if (uc == '[' /*and m_external_subset*/)
 				token = XMLToken::IncludeIgnore;
 			else if (is_name_start_char(uc))
 				state = state_DocTypeDecl;
@@ -1622,6 +1686,13 @@ void parser_imp::xml_decl()
 {
 	if (m_lookahead == XMLToken::XMLDecl)
 	{
+		m_in_xml_decl = true;
+
+		encoding_type encoding = m_encoding;
+		
+		if (m_encoding == encoding_type::enc_UTF8)
+			m_source.top()->encoding(encoding_type::enc_ASCII);
+
 		match(XMLToken::XMLDecl);
 
 		s(true);
@@ -1632,16 +1703,16 @@ void parser_imp::xml_decl()
 
 		auto version = parse_version();
 
-		if (m_state.m_in_doctype)
+		if (m_in_doctype)
 		{
-			if (version > m_state.m_version)
+			if (version > m_version)
 				not_well_formed("External entity has different version");
 		}
 		else
 		{
-			m_state.m_version = version;
+			m_version = version;
 
-			if ((m_state.m_version > 1.1f and not m_validating) or m_state.m_version >= 2.0f or m_state.m_version < 1.0f)
+			if ((m_version > 1.1f and not m_validating) or m_version >= 2.0f or m_version < 1.0f)
 				not_well_formed("This library only supports XML version 1.0 or 1.1");
 		}
 
@@ -1657,22 +1728,21 @@ void parser_imp::xml_decl()
 				match(XMLToken::Name);
 				eq();
 				ba::to_upper(m_token);
-				if (m_token == "UTF-8" or m_token == "US-ASCII") // ascii is a subset of utf-8
-					m_state.m_encoding = encoding_type::enc_UTF8;
+				if (m_token == "US-ASCII")
+					encoding = encoding_type::enc_ASCII;
+				else if (m_token == "ISO-8859-1")
+					encoding = encoding_type::enc_ISO88591;
+				else if (m_token == "UTF-8")
+					encoding = encoding_type::enc_UTF8;
 				else if (m_token == "UTF-16")
 				{
-					if (m_state.m_encoding != encoding_type::enc_UTF16LE and m_state.m_encoding != encoding_type::enc_UTF16BE)
+					if (m_source.top()->encoding() != encoding_type::enc_UTF16LE and m_source.top()->encoding() != encoding_type::enc_UTF16BE)
 						not_well_formed("Inconsistent encoding attribute in XML declaration");
-					//						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
-					m_state.m_encoding = encoding_type::enc_UTF16BE;
+					encoding = m_source.top()->encoding();
 				}
-				else if (m_token == "ISO-8859-1")
-					m_state.m_encoding = encoding_type::enc_ISO88591;
 				else
 					not_well_formed("Unsupported encoding value '" + m_token + "'");
 				match(XMLToken::String);
-
-				m_source.top()->encoding(m_state.m_encoding);
 
 				s();
 			}
@@ -1689,17 +1759,29 @@ void parser_imp::xml_decl()
 			}
 		}
 
+		m_encoding = encoding;
+		m_source.top()->encoding(encoding);
+
+		m_in_xml_decl = false;
 		match(XMLToken::QuestionMark);
 		match(XMLToken::GreaterThan);
 
-		m_parser.xml_decl(m_state.m_encoding, m_standalone, m_state.m_version);
+		m_parser.xml_decl(m_encoding, m_standalone, m_version);
 	}
+	else
+		m_encoding = m_source.top()->encoding();
 }
 
 void parser_imp::text_decl()
 {
 	if (m_lookahead == XMLToken::XMLDecl)
 	{
+		m_in_xml_decl = true;
+
+		encoding_type encoding = m_source.top()->encoding();
+		if (encoding == encoding_type::enc_UTF8 and not m_source.top()->has_bom())
+			m_source.top()->encoding(encoding_type::enc_ISO88591);
+
 		match(XMLToken::XMLDecl);
 
 		s(true);
@@ -1710,16 +1792,16 @@ void parser_imp::text_decl()
 			eq();
 
 			auto version = parse_version();
-			if (version > m_state.m_version)
+			if (version > m_version)
 				not_well_formed("Version mismatch between document and external entity");
 
 			match(XMLToken::String);
-			s(m_state.m_version == 1.0);
+			s(m_version == 1.0);
 		}
 
 		if (m_token != "encoding")
 		{
-			if (m_state.m_version == 1.0)
+			if (m_version == 1.0)
 				not_well_formed("encoding attribute is mandatory in text declaration");
 		}
 		else
@@ -1730,6 +1812,9 @@ void parser_imp::text_decl()
 			s();
 		}
 
+		m_source.top()->encoding(encoding);
+
+		m_in_xml_decl = false;
 		match(XMLToken::QuestionMark);
 		match(XMLToken::GreaterThan);
 	}
@@ -1761,7 +1846,7 @@ void parser_imp::misc()
 
 void parser_imp::doctypedecl()
 {
-	m_state.m_in_doctype = true;
+	m_in_doctype = true;
 
 	match(XMLToken::DocType);
 
@@ -1836,8 +1921,8 @@ void parser_imp::doctypedecl()
 	{
 		push_data_source(dtd.release(), false);
 
-		m_state.m_external_subset = true;
-		m_state.m_in_external_dtd = true;
+		m_external_subset = true;
+		m_in_external_dtd = true;
 
 		m_lookahead = get_next_token();
 
@@ -1848,7 +1933,7 @@ void parser_imp::doctypedecl()
 		match(XMLToken::Eof);
 
 		pop_data_source();
-		m_state.m_in_external_dtd = false;
+		m_in_external_dtd = false;
 	}
 
 	match(XMLToken::GreaterThan);
@@ -1877,7 +1962,7 @@ void parser_imp::doctypedecl()
 		}
 	}
 
-	m_state.m_in_doctype = false;
+	m_in_doctype = false;
 }
 
 void parser_imp::pereference()
@@ -1891,10 +1976,10 @@ void parser_imp::pereference()
 
 void parser_imp::intsubset()
 {
-	m_state.m_internal_subset = true;
+	m_internal_subset = true;
 
-	bool save_allow_peref = m_state.m_allow_peref;
-	m_state.m_allow_peref = true;
+	bool save_allow_peref = m_allow_peref;
+	m_allow_peref = true;
 
 	for (;;)
 	{
@@ -1925,15 +2010,15 @@ void parser_imp::intsubset()
 		break;
 	}
 
-	m_state.m_internal_subset = false;
-	m_state.m_allow_peref = save_allow_peref;
+	m_internal_subset = false;
+	m_allow_peref = save_allow_peref;
 }
 
 void parser_imp::declsep()
 {
-	bool save_allow_peref = m_state.m_allow_peref;
-	m_state.m_allow_peref = false;
-	m_state.m_in_declsep = true;
+	bool save_allow_peref = m_allow_peref;
+	m_allow_peref = false;
+	m_in_declsep = true;
 
 	switch (m_lookahead)
 	{
@@ -1961,17 +2046,17 @@ void parser_imp::declsep()
 		default:;
 	}
 
-	m_state.m_allow_peref = save_allow_peref;
-	m_state.m_in_declsep = false;
+	m_allow_peref = save_allow_peref;
+	m_in_declsep = false;
 }
 
 void parser_imp::extsubset()
 {
-	bool save_external_subset = m_state.m_external_subset;
-	m_state.m_external_subset = true;
+	bool save_external_subset = m_external_subset;
+	m_external_subset = true;
 
-	bool save_allow_peref = m_state.m_allow_peref;
-	m_state.m_allow_peref = true;
+	bool save_allow_peref = m_allow_peref;
+	m_allow_peref = true;
 
 	for (;;)
 	{
@@ -2007,8 +2092,8 @@ void parser_imp::extsubset()
 		break;
 	}
 
-	m_state.m_external_subset = save_external_subset;
-	m_state.m_allow_peref = save_allow_peref;
+	m_external_subset = save_external_subset;
+	m_allow_peref = save_allow_peref;
 }
 
 void parser_imp::conditionalsect()
@@ -2126,7 +2211,7 @@ void parser_imp::ignoresectcontents()
 
 void parser_imp::markup_decl()
 {
-	m_state.m_allow_peref = not m_state.m_internal_subset or m_state.m_external_subset;
+	m_allow_peref = not m_internal_subset or m_external_subset;
 
 	switch (m_lookahead)
 	{
@@ -2161,7 +2246,7 @@ void parser_imp::markup_decl()
 		default:;
 	}
 
-	m_state.m_allow_peref = true;
+	m_allow_peref = true;
 }
 
 void parser_imp::element_decl()
@@ -2177,11 +2262,11 @@ void parser_imp::element_decl()
 						  [name](auto e) { return e->name() == name; });
 
 	if (e == m_doctype.end())
-		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_state.m_in_external_dtd));
+		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_in_external_dtd));
 	else if ((*e)->declared())
 		not_valid("duplicate element declaration for element '" + name + "'");
 	else
-		(*e)->external(m_state.m_in_external_dtd);
+		(*e)->external(m_in_external_dtd);
 
 	match(XMLToken::Name);
 	s(true);
@@ -2413,6 +2498,9 @@ void parser_imp::parameter_entity_decl()
 	std::string name = m_token;
 	match(XMLToken::Name);
 
+	// if (name.find(':') != std::string::npos)
+	// 	not_well_formed("Entity names should not contain a colon");
+
 	s(true);
 
 	std::string path;
@@ -2450,6 +2538,9 @@ void parser_imp::general_entity_decl()
 	std::string name = m_token;
 	match(XMLToken::Name);
 	s(true);
+
+	// if (name.find(':') != std::string::npos)
+	// 	not_well_formed("Entity names should not contain a colon");
 
 	std::string value, ndata;
 	bool external = false;
@@ -2496,7 +2587,7 @@ void parser_imp::general_entity_decl()
 		if (not parsed)
 			m_general_entities.back()->ndata(ndata);
 
-		if (m_state.m_in_external_dtd)
+		if (m_in_external_dtd)
 			m_general_entities.back()->externally_defined(true);
 	}
 }
@@ -2512,7 +2603,7 @@ void parser_imp::attlist_decl()
 					   [element](auto e) { return e->name() == element; });
 
 	if (dte == m_doctype.end())
-		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false, m_state.m_in_external_dtd));
+		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false, m_in_external_dtd));
 
 	// attdef
 
@@ -2691,8 +2782,8 @@ void parser_imp::attlist_decl()
 				not_valid("only one attribute per element can have the ID type");
 		}
 
-		attribute->external(m_state.m_in_external_dtd);
-		// attribute->version(m_state.m_version);
+		attribute->external(m_in_external_dtd);
+		// attribute->version(m_version);
 		(*dte)->add_attribute(attribute.release());
 	}
 
@@ -2705,6 +2796,9 @@ void parser_imp::notation_decl()
 	s(true);
 
 	std::string name = m_token, pubid, sysid;
+
+	// if (name.find(':') != std::string::npos)
+	// 	not_well_formed("Notation names should not contain a colon");
 
 	if (m_notations.count(name) > 0)
 		not_valid("notation names should be unique");
@@ -2870,7 +2964,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 				state = 1;
 			else if (c == '%')
 			{
-				if (m_state.m_allow_peref)
+				if (m_allow_peref)
 				{
 					name.clear();
 					state = 20;
@@ -3035,7 +3129,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 				state = 1;
 			else if (c == '%')
 			{
-				if (m_state.m_allow_peref)
+				if (m_allow_peref)
 				{
 					name.clear();
 					state = 20;
@@ -3367,7 +3461,7 @@ void parser_imp::element(doctype::validator& valid)
 
 	if (not valid(name))
 		not_valid("element '" + name + "' not expected at this position");
-
+	
 	const doctype::element *dte = get_element(name);
 
 	if (m_has_dtd and dte == nullptr and m_validating)
@@ -3381,6 +3475,19 @@ void parser_imp::element(doctype::validator& valid)
 
 	ns_state ns(this);
 	std::set<std::string> seen;
+
+	if (dte == nullptr)
+	{
+		if (name[0] == ':')
+			not_well_formed("Element name should not start with colon");
+
+		if (auto cp = name.find(':') != std::string::npos)
+		{
+			auto prefix = name.substr(0, cp);
+			if (not ns.m_known.count(prefix))
+				not_well_formed("Unknown prefix for element " + name);
+		}
+	}
 
 	for (;;)
 	{
@@ -3424,17 +3531,40 @@ void parser_imp::element(doctype::validator& valid)
 		// had a crash suddenly here deep down in ba::starts_with...
 		if (attr_name == "xmlns" or attr_name.compare(0, 6, "xmlns:", 6) == 0) // namespace support
 		{
+			if (not ((m_version > 1.0f and attr_value.empty()) or is_valid_url(attr_value)))
+				not_well_formed("Not a valid namespace URI: " + attr_value);
+			
+			if (not (m_version > 1.0f and attr_value.empty()) and ns.is_known_uri(attr_value))
+				not_well_formed("This uri is repeated: " + attr_value);
+
+			if (attr_value == "http://www.w3.org/XML/1998/namespace" or attr_value == "http://www.w3.org/2000/xmlns/")
+				not_well_formed("The xml namespace is reserved");
+
 			if (attr_name.length() == 5)
 			{
 				ns.m_default_ns = attr_value;
 				m_parser.start_namespace_decl("", attr_value);
 			}
+			else if (attr_name.length() == 6)
+				not_well_formed("Invalid xmlns: ");
 			else
 			{
 				std::string prefix = attr_name.substr(6);
-				ns.m_known[prefix] = attr_value;
-				m_parser.start_namespace_decl(prefix, attr_value);
+
+				if (iequals(prefix, "xml") or iequals(prefix, "xmlns"))
+					not_well_formed(prefix + " is a preserved prefix");
+
+				if (m_version > 1.0f and attr_value.empty())
+					ns.m_unbound.insert(prefix);
+				else
+				{
+					ns.m_known[prefix] = attr_value;
+					m_parser.start_namespace_decl(prefix, attr_value);
+				}
 			}
+
+			if (not attr_value.empty())
+				ns.m_known_uris.insert(attr_value);
 		}
 		else
 		{
@@ -3509,15 +3639,22 @@ void parser_imp::element(doctype::validator& valid)
 			attr.m_value = attr_value;
 			attr.m_id = id;
 
-			if (m_ns != nullptr)
+			if (m_ns != nullptr and dta == nullptr)
 			{
 				std::string::size_type d = attr_name.find(':');
 				if (d != std::string::npos)
 				{
-					std::string ns = m_ns->ns_for_prefix(attr_name.substr(0, d));
+					if (attr_name.find(':', d + 1) != std::string::npos)
+						not_well_formed("Multiple colons in attribute name");
 
-					if (not ns.empty())
+					auto prefix = attr_name.substr(0, d);
+					if (not iequals(prefix, "xml"))
 					{
+						std::string ns = m_ns->ns_for_prefix(prefix);
+
+						if (ns.empty())
+							not_well_formed("Unbound attribute prefix");
+
 						attr.m_ns = ns;
 						attr.m_name = attr_name.substr(d + 1);
 					}
@@ -3603,13 +3740,13 @@ void parser_imp::element(doctype::validator& valid)
 	{
 		m_parser.start_element(name, uri, attrs);
 
-		m_state.m_in_content = true;
+		m_in_content = true;
 		match(XMLToken::GreaterThan);
 
 		if (m_lookahead != XMLToken::ETag)
 			content(sub_valid, m_validating and m_standalone and dte->external() and dte->element_content());
 
-		m_state.m_in_content = false;
+		m_in_content = false;
 		match(XMLToken::ETag);
 
 		if (m_token != raw)
@@ -3643,11 +3780,13 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 					m_parser.character_data(m_token);
 				else
 				{
-					ba::trim(m_token);
-					if (m_token.empty())
+					auto r = ba::trim_copy(m_token);
+					if (r.empty())
 					{
 						if (check_for_whitespace)
 							not_valid("element declared in external subset contains white space");
+						else
+							m_parser.character_data(m_token);
 					}
 					else
 						not_valid("character data '" + m_token + "' not allowed in element");
@@ -3681,7 +3820,7 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 				push_data_source(new entity_data_source(m_token, m_source.top()->base(), e.replacement()), false);
 
 				m_lookahead = get_next_content();
-				m_state.m_in_external_dtd = e.externally_defined();
+				m_in_external_dtd = e.externally_defined();
 
 				if (m_lookahead != XMLToken::Eof)
 					content(valid, check_for_whitespace);
@@ -3809,6 +3948,8 @@ void parser_imp::pi()
 		not_well_formed("xml declaration are only valid as the start of the file");
 	else if (iequals(pi_target, "xml"))
 		not_well_formed("<?XML is neither an XML declaration nor a legal processing instruction target");
+	// else if (pi_target.find(':') != std::string::npos)
+	// 	not_well_formed("processing instruction target contains colon");
 
 	enum
 	{

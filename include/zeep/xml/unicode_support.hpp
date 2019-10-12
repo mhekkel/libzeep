@@ -20,11 +20,17 @@ typedef uint32_t unicode;
 /// the supported encodings. Perhaps we should extend this list a bit?
 enum class encoding_type
 {
+	enc_ASCII,
 	enc_UTF8,			///< UTF-8
 	enc_UTF16BE,		///< UTF-16 Big Endian
 	enc_UTF16LE,		///< UTF 16 Little Endian
 	enc_ISO88591
 };
+
+constexpr bool is_single_byte_encoding(encoding_type enc)
+{
+	return enc == encoding_type::enc_ASCII or enc == encoding_type::enc_ISO88591 or enc == encoding_type::enc_UTF8;
+}
 
 /// some character classification routines
 
