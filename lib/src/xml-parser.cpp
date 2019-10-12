@@ -29,19 +29,21 @@ namespace zeep
 namespace xml
 {
 
-#define url_hexdigit	"[[:digit:]a-fA-F]"
-#define url_unreserved	"[-[:alnum:]._~]"
-#define url_pct_encoded	"%" url_hexdigit "{2}"
-#define url_sub_delims	"[!$&'()*+,;=]"
-#define url_userinfo	"(?:((?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)@)?"
-#define url_scheme		"[[:alpha:]][[:alnum:]]*"
-#define url_host		"(\\[(?:[[:digit:]a-fA-F:]+)\\]|(?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)"
-#define url_port		"(?::([[:digit:]]+))?"
-#define url_pchar		url_unreserved "|" url_pct_encoded "|" url_sub_delims "|:|@"
-#define url_path		"(?:/((?:" url_pchar "|\\*|\\?|/)*))?"
-#define url_fragment	"(?:#(?:" url_pchar ")*)?"
+// #define url_hexdigit	"[[:digit:]a-fA-F]"
+// #define url_unreserved	"[-[:alnum:]._~]"
+// #define url_pct_encoded	"%" url_hexdigit "{2}"
+// #define url_sub_delims	"[!$&'()*+,;=]"
+// #define url_userinfo	"(?:((?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)@)?"
+// #define url_scheme		"[[:alpha:]][[:alnum:]]*"
+// #define url_host		"(\\[(?:[[:digit:]a-fA-F:]+)\\]|(?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)"
+// #define url_port		"(?::([[:digit:]]+))?"
+// #define url_pchar		url_unreserved "|" url_pct_encoded "|" url_sub_delims "|:|@"
+// #define url_path		"(?:/((?:" url_pchar "|\\*|\\?|/)*))?"
+// #define url_fragment	"(?:#(?:" url_pchar ")*)?"
+// 
+// const std::regex kURL_rx( url_scheme "://" url_userinfo url_host url_port url_path url_fragment);
 
-const std::regex kURL_rx( url_scheme "://" url_userinfo url_host url_port url_path url_fragment);
+const std::regex kURL_rx(R"([[:alpha:]][[:alnum:]]*:.+)");
 
 bool is_valid_url(const std::string& url)
 {
@@ -1712,7 +1714,7 @@ void parser_imp::xml_decl()
 		{
 			m_version = version;
 
-			if ((m_version > 1.1f and not m_validating) or m_version >= 2.0f or m_version < 1.0f)
+			if (m_version >= 2.0f or m_version < 1.0f)
 				not_well_formed("This library only supports XML version 1.0 or 1.1");
 		}
 
@@ -2257,6 +2259,8 @@ void parser_imp::element_decl()
 	s(true);
 
 	std::string name = m_token;
+	if (ba::starts_with(name, "xmlns:"))
+		not_well_formed("Element names should not start with xmlns:");
 
 	auto e = std::find_if(m_doctype.begin(), m_doctype.end(),
 						  [name](auto e) { return e->name() == name; });
@@ -2500,6 +2504,8 @@ void parser_imp::parameter_entity_decl()
 
 	// if (name.find(':') != std::string::npos)
 	// 	not_well_formed("Entity names should not contain a colon");
+	if (ba::starts_with(name, "xmlns:"))
+		not_well_formed("Entity names should not start with xmlns:");
 
 	s(true);
 
@@ -2541,6 +2547,8 @@ void parser_imp::general_entity_decl()
 
 	// if (name.find(':') != std::string::npos)
 	// 	not_well_formed("Entity names should not contain a colon");
+	if (ba::starts_with(name, "xmlns:"))
+		not_well_formed("Entity names should not start with xmlns:");
 
 	std::string value, ndata;
 	bool external = false;
@@ -2846,6 +2854,9 @@ void parser_imp::notation_decl()
 	match(XMLToken::GreaterThan);
 
 	collapse_spaces(sysid);
+
+	ba::replace_all(pubid, "\t", " ");
+	ba::replace_all(pubid, "\n", " ");
 	collapse_spaces(pubid);
 
 	m_parser.notation_decl(name, sysid, pubid);

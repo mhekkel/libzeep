@@ -239,6 +239,9 @@ void zeep_document_imp::DoctypeDeclHandler(const std::string& root, const std::s
 void zeep_document_imp::NotationDeclHandler(
 	const std::string& name, const std::string& sysid, const std::string& pubid)
 {
+	if (m_notations.empty())
+		m_root_size_at_first_notation = m_root.size();
+
 	notation n = {name, sysid, pubid};
 
 	auto i = find_if(m_notations.begin(), m_notations.end(),

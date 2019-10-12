@@ -114,13 +114,13 @@ bool run_test(const xml::element& test, fs::path base_dir)
 		return false;
 	}
 	
-	if (test.get_attribute("SECTIONS") == "B.")
-	{
-		if (VERBOSE)
-			cout << "skipping unicode character validation tests" << endl;
-		++skipped_tests;
-		return true;
-	}
+	// if (test.get_attribute("SECTIONS") == "B.")
+	// {
+	// 	if (VERBOSE)
+	// 		cout << "skipping unicode character validation tests" << endl;
+	// 	++skipped_tests;
+	// 	return true;
+	// }
 	
 	fs::current_path(input.branch_path());
 
@@ -218,10 +218,12 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	if (VERBOSE or result == false)
 	{
 		cout << "-----------------------------------------------" << endl
-			 << "ID:      " << test.get_attribute("ID") << endl
-			 << "FILE:    " << fs::system_complete(input) << endl
-			 << "TYPE:    " << test.get_attribute("TYPE") << endl
-			 << "SECTION: " << test.get_attribute("SECTIONS") << endl;
+			 << "ID:             " << test.get_attribute("ID") << endl
+			 << "FILE:           " << fs::system_complete(input) << endl
+			 << "TYPE:           " << test.get_attribute("TYPE") << endl
+			 << "SECTION:        " << test.get_attribute("SECTIONS") << endl
+			 << "EDITION:        " << test.get_attribute("EDITION") << endl
+			 << "RECOMMENDATION: " << test.get_attribute("RECOMMENDATION") << endl;
 		
 		istringstream s(test.content());
 		for (;;)
@@ -238,7 +240,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 				continue;
 			}
 			
-			cout << "DESCR:   " << line << endl;
+			cout << "DESCR:          " << line << endl;
 		}
 		
 		cout << endl;
@@ -270,7 +272,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 }
 
 void run_test_case(const xml::element* testcase, const string& id,
-	const string& type, fs::path base_dir, vector<string>& failed_ids)
+	const string& type, int edition, fs::path base_dir, vector<string>& failed_ids)
 {
 	if (VERBOSE and id.empty())
 		cout << "Running testcase " << testcase->get_attribute("PROFILE") << endl;
@@ -289,11 +291,27 @@ void run_test_case(const xml::element* testcase, const string& id,
 	else
 		path = string(".//TEST[@ID='") + id + "']";
 	
+	regex ws_re(" "); // whitespace
+
 	for (const xml::element* n: xml::xpath(path).evaluate<xml::element>(*testcase))
 	{
 		if ((id.empty() or id == n->get_attribute("ID")) and
 			(type.empty() or type == n->get_attribute("TYPE")))
 		{
+			if (edition != 0)
+			{
+				auto es = n->get_attribute("EDITION");
+				if (not es.empty())
+				{
+					auto b = sregex_token_iterator(es.begin(), es.end(), ws_re, -1);
+					auto e = sregex_token_iterator();
+					auto ei = find_if(b, e, [edition](const string& e) { return stoi(e) == edition; });
+
+					if (ei == e)
+						continue;
+				}
+			}
+
 			if (fs::exists(base_dir / n->get_attribute("URI")) and
 				not run_test(*n, base_dir))
 			{
@@ -304,7 +322,7 @@ void run_test_case(const xml::element* testcase, const string& id,
 }
 
 void test_testcases(const fs::path& testFile, const string& id,
-	const string& type, vector<string>& failed_ids)
+	const string& type, int edition, vector<string>& failed_ids)
 {
 	fs::ifstream file(testFile, ios::binary);
 	
@@ -326,7 +344,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	
 	for (const xml::element* test: doc.find("//TESTCASES"))
 	{
-		run_test_case(test, id, type, base_dir, failed_ids);
+		run_test_case(test, id, type, edition, base_dir, failed_ids);
 	}
 }
 
@@ -338,6 +356,7 @@ int main(int argc, char* argv[])
 	    ("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
+		("edition", po::value<int>(), "XML 1.0 specification edition to test, default is 5, 0 which means run all tests")
 	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
 	    ("single", po::value<string>(), "Test a single XML file")
@@ -408,10 +427,14 @@ int main(int argc, char* argv[])
 			string type;
 			if (vm.count("type"))
 				type = vm["type"].as<string>();
+
+			int edition = 5;
+			if (vm.count("edition"))
+				edition = vm["edition"].as<int>();
 			
 			vector<string> failed_ids;
 			
-			test_testcases(xmlconfFile, id, type, failed_ids);
+			test_testcases(xmlconfFile, id, type, edition, failed_ids);
 			
 			cout << endl
 				 << "summary: " << endl

@@ -59,9 +59,9 @@ struct document_imp
 	document* m_doc;
 	element* m_cur; // construction
 	cdata* m_cdata; // only defined in a CDATA section
-	std::vector<std::pair<std::string, std::string>>
-		m_namespaces;
+	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::list<notation> m_notations;
+	size_t m_root_size_at_first_notation = 0;	// for processing instructions that occur before a notation
 };
 
 } // namespace xml
