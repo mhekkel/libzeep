@@ -409,34 +409,7 @@ public:
 		unicode result = 0;
 
 		if (m_ptr != m_data.end())
-		{
-			result = static_cast<unsigned char>(*m_ptr);
-			++m_ptr;
-
-			if (result > 0x07f)
-			{
-				unsigned char ch[3];
-				
-				if ((result & 0x0E0) == 0x0C0)
-				{
-					ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-					result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
-				}
-				else if ((result & 0x0F0) == 0x0E0)
-				{
-					ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-					ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-					result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
-				}
-				else if ((result & 0x0F8) == 0x0F0)
-				{
-					ch[0] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-					ch[1] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-					ch[2] = static_cast<unsigned char>(*m_ptr); ++m_ptr;
-					result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
-				}
-			}
-		}
+			std::tie(result, m_ptr) = get_first_char(m_ptr);
 
 		if (result == '\n')
 			++m_line_nr;
@@ -3114,24 +3087,13 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 	unicode charref = 0;
 	std::string name;
 
-	auto& f = std::use_facet<std::codecvt<char32_t, char, std::mbstate_t>>(std::locale());
+	auto sp = s.begin();
+	auto se = s.end();
 
-	char32_t us[1];
-	std::mbstate_t mb = {};
-
-	// for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
-	const char* sp = s.data();
-	const char* se = sp + s.length();
-	
-	while (sp != se)
+	while (sp < se)
 	{
-		char32_t* un;
-
-		auto r = f.in(mb, sp, se, sp, us, us + 1, un);
-		if (r != std::codecvt_base::ok and r != std::codecvt_base::partial)
-			not_well_formed("Error converting entity value");
-		
-		unicode c = us[0];
+		unicode c;
+		std::tie(c, sp) = get_first_char(sp);
 
 		switch (state)
 		{

@@ -324,24 +324,15 @@ void writer::write_string(const std::string& s)
 {
 	bool last_is_space = false;
 
-	auto& f = std::use_facet<std::codecvt<char32_t, char, std::mbstate_t>>(std::locale());
+	auto sp = s.begin();
+	auto se = s.end();
 
-	char32_t us[1];
-	std::mbstate_t mb = {};
-
-	const char* sb = s.data();
-	const char* se = sb + s.length();
-	
-	while (sb < se)
+	while (sp < se)
 	{
-		char32_t* un;
-		const char* sp;
+		auto sb = sp;
 
-		auto r = f.in(mb, sb, se, sp, us, us + 1, un);
-		if (r != std::codecvt_base::ok and r != std::codecvt_base::partial)
-			throw zeep::exception("Error writing invalid unicode value");
-		
-		unicode c = us[0];
+		unicode c;
+		std::tie(c, sp) = get_first_char(sp);
 
 		switch (c)
 		{

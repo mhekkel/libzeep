@@ -10,6 +10,7 @@
 #include <zeep/config.hpp>
 
 #include <string>
+#include <tuple>
 
 namespace zeep { namespace xml {
 
@@ -49,6 +50,8 @@ std::string wstring_to_string(const std::wstring& s);
 /// manipulate UTF-8 encoded strings
 void append(std::string& s, unicode ch);
 unicode pop_last_char(std::string& s);
+template<typename Iter>
+std::tuple<unicode,Iter> get_first_char(Iter ptr);
 
 /// our own implementation of iequals: strings are compared case-insensitive
 bool iequals(const std::string& a, const std::string& b);
@@ -130,6 +133,39 @@ inline unicode pop_last_char(std::string& s)
 	return result;
 }
 
+// this code only works if the input is valid utf-8
+template<typename Iter>
+std::tuple<unicode,Iter> get_first_char(Iter ptr)
+{
+	unicode result = static_cast<unsigned char>(*ptr);
+	++ptr;
+
+	if (result > 0x07f)
+	{
+		unsigned char ch[3];
+		
+		if ((result & 0x0E0) == 0x0C0)
+		{
+			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
+			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
+		}
+		else if ((result & 0x0F0) == 0x0E0)
+		{
+			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
+			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
+			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
+		}
+		else if ((result & 0x0F8) == 0x0F0)
+		{
+			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
+			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
+			ch[2] = static_cast<unsigned char>(*ptr); ++ptr;
+			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
+		}
+	}
+
+	return std::make_tuple(result, ptr);
+}
 
 }
 }
