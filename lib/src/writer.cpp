@@ -7,6 +7,7 @@
 #include <cassert>
 
 #include <iostream>
+#include <iomanip>
 
 #include <zeep/xml/writer.hpp>
 #include <zeep/exception.hpp>
@@ -55,12 +56,10 @@ void writer::xml_decl(bool standalone)
 		if (m_encoding != encoding_type::enc_UTF8)
 			throw std::logic_error("libzeep only supports writing in utf-8");
 
-		if (m_version == 1.0f)
-			m_os << "<?xml version=\"1.0\"";
-		else if (m_version == 1.1f)
-			m_os << "<?xml version=\"1.1\"";
-		else
-			throw exception("don't know how to write this version of XML");
+		std::stringstream sv;
+		sv << std::fixed << std::setprecision(1) << m_version;
+
+		m_os << "<?xml version=\"" << sv.str() << "\"";
 		
 		// utf-8 is default, leave it out.
 		// m_os << " encoding=\"UTF-8\"";

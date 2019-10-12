@@ -180,7 +180,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			if (VERBOSE and not failed)
 				throw zeep::exception("invalid document, should have failed");
 		}
-		else // if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "error" )
+		else
 		{
 			bool failed = false;
 			try
@@ -199,7 +199,12 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			}
 
 			if (VERBOSE and not failed)
-				throw zeep::exception("invalid document, should have failed");
+			{
+				if (test.get_attribute("TYPE") == "not-wf")
+					throw zeep::exception("document should have been not well formed");
+				else // or test.get_attribute("TYPE") == "error" 
+					throw zeep::exception("document should have been invalid");
+			}
 		}
 	}
 	catch (std::exception& e)

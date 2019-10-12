@@ -495,10 +495,16 @@ struct parser_imp
 	std::string normalize_attribute_value(const std::string& s)
 	{
 		push_data_source(new string_data_source(s), false);
-		return normalize_attribute_value();
+
+		std::string result = normalize_attribute_value();
+		if (m_standalone and result != s)
+			not_valid("Document cannot be standalone since an attribute was modified");
+		return result;
 	}
 
 	std::string normalize_attribute_value();
+
+	void collapse_spaces(std::string& s);
 
 	// The scanner is next. We recognize the following tokens:
 	enum XMLToken
@@ -860,6 +866,9 @@ const doctype::entity& parser_imp::get_general_entity(const std::string& name) c
 
 	if (e == m_general_entities.end())
 		not_well_formed("undefined entity reference '" + name + "'");
+
+	if ((*e)->external() and m_standalone)
+		not_valid("Document cannot be standalone since entity " + name + " is defined externally");
 
 	return **e;
 }
@@ -1626,8 +1635,9 @@ void parser_imp::xml_decl()
 		else
 		{
 			m_state.m_version = version;
-			if (m_state.m_version >= 2.0 or m_state.m_version < 1.0)
-				not_well_formed("This library only supports XML version 1.x");
+
+			if ((m_state.m_version > 1.1 and not m_validating) or m_state.m_version >= 2.0 or m_state.m_version < 1.0)
+				not_well_formed("This library only supports XML version 1.0 or 1.1");
 		}
 
 		m_source.top()->version(version);
@@ -1647,7 +1657,7 @@ void parser_imp::xml_decl()
 				else if (m_token == "UTF-16")
 				{
 					if (m_state.m_encoding != encoding_type::enc_UTF16LE and m_state.m_encoding != encoding_type::enc_UTF16BE)
-						not_valid("Inconsistent encoding attribute in XML declaration");
+						not_well_formed("Inconsistent encoding attribute in XML declaration");
 					//						cerr << "Inconsistent encoding attribute in XML declaration" << endl;
 					m_state.m_encoding = encoding_type::enc_UTF16BE;
 				}
@@ -2653,8 +2663,13 @@ void parser_imp::attlist_decl()
 		{
 			if (attribute->get_type() == doctype::attTypeTokenizedID)
 				not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
+			
+			if (m_standalone)
+				not_valid("Document cannot be standalone since there is a default value for an attribute");
 
-			std::string value = normalize_attribute_value(m_token);
+			std::string value = m_token;
+			normalize_attribute_value(value);
+			collapse_spaces(value);
 			if (not value.empty() and not attribute->validate_value(value, m_general_entities))
 			{
 				not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
@@ -2729,6 +2744,9 @@ void parser_imp::notation_decl()
 	s();
 
 	match(XMLToken::GreaterThan);
+
+	collapse_spaces(sysid);
+	collapse_spaces(pubid);
 
 	m_parser.notation_decl(name, sysid, pubid);
 }
@@ -3322,6 +3340,33 @@ std::string parser_imp::normalize_attribute_value()
 	m_source.pop();
 
 	return result;
+}
+
+void parser_imp::collapse_spaces(std::string& s)
+{
+	auto i = s.begin(), o = s.begin();;
+	bool space = true;
+
+	while (i != s.end())
+	{
+		if (isspace(*i))
+		{
+			if (not space)
+				*o++ = ' ';
+			++i;
+			space = true;
+		}
+		else
+		{
+			*o++ = *i++;
+			space = false;
+		}
+	}
+
+	if (space and o != s.begin())
+		--o;
+	
+	s.erase(o, s.end());
 }
 
 void parser_imp::element(doctype::validator& valid)
