@@ -123,6 +123,9 @@ public:
 										const std::string& text);
 
 protected:
+
+	void write_string(const std::string& s);
+
 	std::ostream& m_os;
 	encoding_type m_encoding;
 	float m_version;
