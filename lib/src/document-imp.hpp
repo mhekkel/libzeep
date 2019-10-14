@@ -29,7 +29,9 @@ struct document_imp
 	std::string m_dtd_dir;
 
 	// some content information
+	bool m_has_xml_decl;
 	encoding_type m_encoding;
+	float m_version;
 	bool m_standalone;
 	int m_indent;
 	bool m_empty;
@@ -41,12 +43,7 @@ struct document_imp
 	bool m_validating;
 	bool m_preserve_cdata;
 
-	struct
-	{
-		std::string m_root;
-		std::string m_pubid;
-		std::string m_dtd;
-	}	m_doctype;
+	doc_type m_doctype;
 
 	std::istream* external_entity_ref(const std::string& base,
 									  const std::string& pubid,
@@ -62,9 +59,9 @@ struct document_imp
 	document* m_doc;
 	element* m_cur; // construction
 	cdata* m_cdata; // only defined in a CDATA section
-	std::vector<std::pair<std::string, std::string>>
-		m_namespaces;
+	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::list<notation> m_notations;
+	size_t m_root_size_at_first_notation = 0;	// for processing instructions that occur before a notation
 };
 
 } // namespace xml

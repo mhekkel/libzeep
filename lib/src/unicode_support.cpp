@@ -47,6 +47,28 @@ bool is_name_char(unicode uc)
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
+bool is_valid_xml_1_0_char(unicode uc)
+{
+	return	uc == 0x09 or
+			uc == 0x0A or
+			uc == 0x0D or
+			(uc >= 0x020 and uc <= 0x0D7FF) or
+			(uc >= 0x0E000 and uc <= 0x0FFFD) or
+			(uc >= 0x010000 and uc <= 0x010FFFF);
+}
+
+bool is_valid_xml_1_1_char(unicode uc)
+{
+	return	uc == 0x09 or
+			uc == 0x0A or
+			uc == 0x0D or
+			(uc >= 0x020 and uc < 0x07F) or
+			uc == 0x085 or
+			(uc >= 0x0A0 and uc <= 0x0D7FF) or
+			(uc >= 0x0E000 and uc <= 0x0FFFD) or
+			(uc >= 0x010000 and uc <= 0x010FFFF);
+}
+
 bool is_valid_system_literal_char(unicode uc)
 {
 	return

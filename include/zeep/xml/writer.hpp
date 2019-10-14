@@ -34,13 +34,20 @@ class writer
 public:
 	//! The constructor takes a std::ostream as argument
 	writer(std::ostream& os);
-	writer(std::ostream& os, bool write_decl, bool standalone = false);
+	writer(std::ostream& os, bool write_decl);
 
 	virtual ~writer();
 
 	// behaviour
 	//! set_encoding is not yet implemented, we only support UTF-8 for now
 	//	void			set_encoding(encoding_type enc)					{ m_encoding = enc; }
+
+	void set_version(float version)
+	{
+		m_version = version;
+		if (m_version > 1.0)
+			m_write_xml_decl = true;
+	}
 
 	//! the xml declaration flag (<?xml version...) is not written by default
 	void set_xml_decl(bool flag) { m_write_xml_decl = flag; }
@@ -73,6 +80,10 @@ public:
 	//! do not write out comments
 	void set_no_comment(bool no_comment) { m_no_comment = no_comment; }
 
+	//! do not write out doctype
+	void set_no_doctype(bool no_doctype) { m_no_doctype = no_doctype; }
+
+	
 	// actual writing routines
 
 	//! write a xml declaration, version will be 1.0, standalone can be specified.
@@ -112,6 +123,9 @@ public:
 										const std::string& text);
 
 protected:
+
+	void write_string(const std::string& s);
+
 	std::ostream& m_os;
 	encoding_type m_encoding;
 	float m_version;
@@ -124,6 +138,7 @@ protected:
 	bool m_escape_whitespace;
 	bool m_trim;
 	bool m_no_comment;
+	bool m_no_doctype;
 	int m_indent;
 	int m_indent_attr;
 	int m_level;

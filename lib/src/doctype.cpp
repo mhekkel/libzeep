@@ -790,11 +790,11 @@ bool attribute::is_nmtokens(std::string& s) const
 		result = false;
 		do
 		{
-			if (not isspace((unsigned char)*c))
+			if (*c != ' ')
 				break;
 			result = true;
 			++c;
-		} while (c != s.end() and isspace((unsigned char)*c));
+		} while (c != s.end() and *c == ' ');
 
 		t += ' ';
 	}

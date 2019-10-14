@@ -36,15 +36,7 @@ BOOST_AUTO_TEST_CASE(test_1)
     zeep::el::scope scope(*static_cast<zeep::http::request*>(nullptr));
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
 
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_2)
@@ -68,15 +60,7 @@ BOOST_AUTO_TEST_CASE(test_2)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_3)
@@ -100,15 +84,7 @@ BOOST_AUTO_TEST_CASE(test_3)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_3a)
@@ -132,15 +108,7 @@ BOOST_AUTO_TEST_CASE(test_3a)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_4)
@@ -164,15 +132,7 @@ BOOST_AUTO_TEST_CASE(test_4)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_5)
@@ -196,15 +156,7 @@ BOOST_AUTO_TEST_CASE(test_5)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_6)
@@ -266,15 +218,7 @@ BOOST_AUTO_TEST_CASE(test_6)
  
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_8)
@@ -298,15 +242,7 @@ BOOST_AUTO_TEST_CASE(test_8)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_8a)
@@ -330,15 +266,7 @@ BOOST_AUTO_TEST_CASE(test_8a)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_9)
@@ -362,15 +290,7 @@ BOOST_AUTO_TEST_CASE(test_9)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_10)
@@ -394,15 +314,7 @@ BOOST_AUTO_TEST_CASE(test_10)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_11)
@@ -426,15 +338,7 @@ BOOST_AUTO_TEST_CASE(test_11)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_12)
@@ -458,15 +362,7 @@ BOOST_AUTO_TEST_CASE(test_12)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_13)
@@ -490,15 +386,7 @@ BOOST_AUTO_TEST_CASE(test_13)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_14)
@@ -525,15 +413,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_15)
@@ -560,15 +440,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_16)
@@ -576,12 +448,14 @@ BOOST_AUTO_TEST_CASE(test_16)
     auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
 <test m:text="${#numbers.formatDecimal(12345.6789, 1, 2)}" />
+<test m:text="${#numbers.formatDiskSize(12345, 2)}" />
 </data>
     )"_xml;
 
     auto doc_test = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
 <test>12,345.68</test>
+<test>12,06 K</test>
 </data>
     )"_xml;
 
@@ -595,15 +469,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_17)
@@ -630,15 +496,7 @@ BOOST_AUTO_TEST_CASE(test_17)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_18)
@@ -666,15 +524,7 @@ BOOST_AUTO_TEST_CASE(test_18)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_19)
@@ -702,15 +552,7 @@ BOOST_AUTO_TEST_CASE(test_19)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_20)
@@ -773,15 +615,7 @@ BOOST_AUTO_TEST_CASE(test_20)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
-
-		BOOST_TEST(s1.str() == s2.str());
-	}
+	BOOST_TEST(doc == doc_test);
 }
 
 BOOST_AUTO_TEST_CASE(test_21)
@@ -806,13 +640,121 @@ BOOST_AUTO_TEST_CASE(test_21)
 
     tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	if (doc != doc_test)
-	{
-		ostringstream s1;
-		s1 << doc;
-		ostringstream s2;
-		s2 << doc_test;
+	BOOST_TEST(doc == doc_test);
+}
 
-		BOOST_TEST(s1.str() == s2.str());
-	}
+BOOST_AUTO_TEST_CASE(test_22)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div id="frag1">hello world</div>
+<span m:insert=" :: #frag1"></span>
+<span m:replace=" :: #frag1"></span>
+<span m:include=" :: #frag1"></span>
+<span m:insert="this :: #frag1"></span>
+<span m:replace="this :: #frag1"></span>
+<span m:include="this :: #frag1"></span>
+<span m:insert="fragment-file :: frag1"></span>
+<span m:replace="fragment-file :: frag1"></span>
+<span m:include="fragment-file :: frag1"></span>
+<span m:insert="fragment-file :: #frag2"></span>
+<span m:replace="fragment-file :: #frag2"></span>
+<span m:include="fragment-file :: #frag2"></span>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div id="frag1">hello world</div>
+<span><div>hello world</div></span>
+<div>hello world</div>
+<span>hello world</span>
+<span><div>hello world</div></span>
+<div>hello world</div>
+<span>hello world</span>
+<span><div>fragment-1</div></span>
+<div>fragment-1</div>
+<span>fragment-1</span>
+<span><div>fragment-2</div></span>
+<div>fragment-2</div>
+<span>fragment-2</span>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", "b");
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	BOOST_TEST(doc == doc_test);
+}
+
+BOOST_AUTO_TEST_CASE(test_23)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<span m:text="@{link}"/>
+<span m:text="@{link(b=${b})}"/>
+<span m:text="@{link/{b}(b=${b})}"/>
+<span m:text="@{link(b=${b},test='test&amp;')}"/>
+<span m:text="@{link/{b}{b}(b=${b})}"/>
+<span m:text="@{link(c=${c})}"/>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<span>link</span>
+<span>link?b=b</span>
+<span>link/b</span>
+<span>link?b=b&amp;test=test%26</span>
+<span>link/bb</span>
+<span>link?c=bla%20met%20%3c%20en%20%3d</span>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", "b");
+	scope.put("c", "bla met < en =");
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	BOOST_TEST(doc == doc_test);
+}
+
+BOOST_AUTO_TEST_CASE(test_24)
+{
+    auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<span m:text="||"/>
+<span m:text="|een twee drie|"/>
+<span m:text="|een ${b} en ${c}|"/>
+<span m:text="'een ' + |twee ${b}|"/>
+</data>
+    )"_xml;
+
+    auto doc_test = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<span></span>
+<span>een twee drie</span>
+<span>een b en bla met &lt; en =</span>
+<span>een twee b</span>
+</data>
+    )"_xml;
+
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::request req;
+    zeep::el::scope scope(req);
+
+    scope.put("b", "b");
+	scope.put("c", "bla met < en =");
+
+    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+ 
+	BOOST_TEST(doc == doc_test);
 }

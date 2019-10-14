@@ -175,6 +175,8 @@ void basic_webapp::handle_request(const request& req, reply& rep)
 		scope.put("baseuri", uri);
 		scope.put("mobile", req.is_mobile());
 
+		init_scope(scope);
+
 		auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
 							   [uri](const mount_point& m) -> bool { return m.path == uri; });
 
@@ -204,8 +206,6 @@ void basic_webapp::handle_request(const request& req, reply& rep)
 
 					scope.put("username", req.username);
 				}
-
-				init_scope(scope);
 
 				handler->handler(req, scope, rep);
 
@@ -407,11 +407,7 @@ void basic_webapp::create_reply_from_template(const std::string& file, const el:
 
 	process_tags(doc.child(), scope);
 
-	// this is required to make the document HTML5 compliant, sort of
-	doc.set_doctype("html", "", "about:legacy-compat");
 	reply.set_content(doc);
-
-	reply.set_content_type("text/html; charset=utf-8");
 }
 
 void basic_webapp::init_scope(el::scope& scope)

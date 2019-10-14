@@ -235,17 +235,23 @@ void reply::set_content(xml::document& doc)
 {
 	std::stringstream s;
 
-	xml::writer w(s);
+	xml::writer w(s, not doc.is_html5());
+
 	w.set_wrap(false);
 	w.set_indent(0);
 	w.set_collapse_empty_elements(false);
 	// w.set_preserve_script_elements(true);
-//	w.trim(true);
+	// w.trim(true);
 	doc.write(w);
 	
-	std::string contentType = "text/xml; charset=utf-8";
-	if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
+	std::string contentType;
+	
+	if (doc.is_html5())
+		contentType = "text/html; charset=utf-8";
+	else if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
 		contentType = "application/xhtml+xml; charset=utf-8";
+	else
+		contentType = "text/xml; charset=utf-8";
 
 	set_content(s.str(), contentType);
 }

@@ -11,6 +11,7 @@
 
 #include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
+#include <zeep/xml/unicode_support.hpp>
 
 namespace zeep
 {
@@ -72,6 +73,9 @@ public:
 
 	virtual ~parser();
 
+	std::function<void(encoding_type encoding, bool standalone, float version)>
+		xml_decl_handler;
+
 	std::function<void(const std::string& name, const std::string& uri, const attr_list_type& atts)>
 		start_element_handler;
 
@@ -96,6 +100,10 @@ public:
 
 	std::function<void(const std::string& prefix)> end_namespace_decl_handler;
 
+	std::function<void(const std::string& root,
+					   const std::string& publicId, const std::string& uri)>
+		doctype_decl_handler;
+
 	std::function<void(const std::string& name,
 					   const std::string& systemId, const std::string& publicId)>
 		notation_decl_handler;
@@ -110,6 +118,10 @@ public:
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 protected:
 	friend struct parser_imp;
+
+	virtual void xml_decl(encoding_type encoding, bool standalone, float version);
+
+	virtual void doctype_decl(const std::string& root, const std::string& publicId, const std::string& uri);
 
 	virtual void start_element(const std::string& name,
 							   const std::string& uri, const attr_list_type& atts);

@@ -7,6 +7,7 @@
 #include <cassert>
 
 #include <iostream>
+#include <iomanip>
 
 #include <zeep/xml/writer.hpp>
 #include <zeep/exception.hpp>
@@ -27,6 +28,7 @@ writer::writer(std::ostream& os)
 	, m_escape_whitespace(false)
 	, m_trim(false)
 	, m_no_comment(false)
+	, m_no_doctype(false)
 	, m_indent(2)
 	, m_level(0)
 	, m_element_open(false)
@@ -35,14 +37,11 @@ writer::writer(std::ostream& os)
 {
 }
 				
-writer::writer(std::ostream& os, bool write_decl, bool standalone)
+writer::writer(std::ostream& os, bool write_decl)
 	: writer(os)
 {
 	if (write_decl)
-	{
 		m_write_xml_decl = true;
-		xml_decl(standalone);
-	}
 }
 				
 writer::~writer()
@@ -54,15 +53,16 @@ void writer::xml_decl(bool standalone)
 	if (m_write_xml_decl)
 	{
 		assert(m_encoding == encoding_type::enc_UTF8);
+		if (m_encoding != encoding_type::enc_UTF8)
+			throw std::logic_error("libzeep only supports writing in utf-8");
 
-		if (m_version == 1.0f)
-			m_os << "<?xml version=\"1.0\"";
-		else if (m_version == 1.1f)
-			m_os << "<?xml version=\"1.1\"";
-		else
-			throw exception("don't know how to write this version of XML");
+		std::stringstream sv;
+		sv << std::fixed << std::setprecision(1) << m_version;
+
+		m_os << "<?xml version=\"" << sv.str() << "\"";
 		
-		m_os << " encoding=\"UTF-8\"";
+		// utf-8 is default, leave it out.
+		// m_os << " encoding=\"UTF-8\"";
 		
 		if (standalone)
 			m_os << " standalone=\"yes\"";
@@ -78,17 +78,20 @@ void writer::xml_decl(bool standalone)
 
 void writer::doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
 {
-	m_os << "<!DOCTYPE " << root;
-	
-	if (not pubid.empty())
-		m_os << " PUBLIC \"" << pubid << "\"";
-	else
-		m_os << " SYSTEM";
-	
-	m_os << " \"" << dtd << "\">";
+	if (not m_no_doctype)
+	{
+		m_os << "<!DOCTYPE " << root;
+		
+		if (not pubid.empty())
+			m_os << " PUBLIC \"" << pubid << "\"";
+		else
+			m_os << " SYSTEM";
+		
+		m_os << " \"" << dtd << "\">";
 
-	if (m_wrap_prolog)
-		m_os << std::endl;
+		if (m_wrap_prolog)
+			m_os << std::endl;
+	}
 }
 
 void writer::start_doctype(const std::string& root, const std::string& dtd)
@@ -155,29 +158,7 @@ void writer::attribute(const std::string& name, const std::string& value)
 	
 	m_os << name << "=\"";
 	
-	bool last_is_space = false;
-
-	for (char c: value)
-	{
-		switch (c)
-		{
-			case '&':	m_os << "&amp;";			last_is_space = false; break;
-			case '<':	m_os << "&lt;";				last_is_space = false; break;
-			case '>':	m_os << "&gt;";				last_is_space = false; break;
-			case '\"':	m_os << "&quot;";			last_is_space = false; break;
-			case '\n':	if (m_escape_whitespace)	m_os << "&#10;"; else m_os << c; last_is_space = true; break;
-			case '\r':	if (m_escape_whitespace)	m_os << "&#13;"; else m_os << c; last_is_space = false; break;
-			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
-			case ' ':	if (not m_trim or not last_is_space) m_os << ' '; last_is_space = true; break;
-			case 0:		throw exception("Invalid null character in XML content");
-			default:	if ((c >= 1 and c <= 8) or (c >= 0x0b and c <= 0x0c) or (c >= 0x0e and c <= 0x1f) or c == 0x7f)
-							m_os << "&#" << std::hex << c << ';';
-						else	
-							m_os << c;
-						last_is_space = false;
-						break;
-		}
-	}
+	write_string(value);
 	
 	m_os << '"';
 }
@@ -334,10 +315,25 @@ void writer::content(const std::string& text)
 		m_os << '>';
 	m_element_open = false;
 	
+	write_string(text);
+
+	m_wrote_element = false;
+}
+
+void writer::write_string(const std::string& s)
+{
 	bool last_is_space = false;
-	
-	for (char c: text)
+
+	auto sp = s.begin();
+	auto se = s.end();
+
+	while (sp < se)
 	{
+		auto sb = sp;
+
+		unicode c;
+		std::tie(c, sp) = get_first_char(sp);
+
 		switch (c)
 		{
 			case '&':	m_os << "&amp;";			last_is_space = false; break;
@@ -349,15 +345,17 @@ void writer::content(const std::string& text)
 			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
 			case ' ':	if (not m_trim or not last_is_space) m_os << ' '; last_is_space = true; break;
 			case 0:		throw exception("Invalid null character in XML content");
-			default:	if ((c >= 1 and c <= 8) or (c >= 0x0b and c <= 0x0c) or (c >= 0x0e and c <= 0x1f) or c == 0x7f)
-							m_os << "&#" << std::hex << c << ';';
-						else	
-							m_os << c;
+			default:	if (c >= 0x0A0 or (m_version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))
+							for (auto ci = sb; ci < sp; ++ci)
+								m_os << *ci;
+						else
+							m_os << "&#" << c << ';';
 						last_is_space = false;
 						break;
 		}
+
+		sb = sp;
 	}
-	m_wrote_element = false;
 }
 
 }

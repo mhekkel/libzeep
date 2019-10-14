@@ -311,35 +311,38 @@ void tag_processor_v1::process_options(xml::element *node, const el::scope& scop
 	if (collection.type() != value_type::array)
 		collection = evaluate_el(scope, node->get_attribute("collection"));
 
-	std::string value = node->get_attribute("value");
-	std::string label = node->get_attribute("label");
-
-	std::string selected = node->get_attribute("selected");
-	if (not selected.empty())
-		selected = evaluate_el(scope, selected).as<std::string>();
-
-	for (el::object& o : collection)
+	if (collection.is_array())
 	{
-		zeep::xml::element *option = new zeep::xml::element("option");
+		std::string value = node->get_attribute("value");
+		std::string label = node->get_attribute("label");
 
-		if (not(value.empty() or label.empty()))
-		{
-			option->set_attribute("value", o[value].as<std::string>());
-			if (selected == o[value].as<std::string>())
-				option->set_attribute("selected", "selected");
-			option->add_text(o[label].as<std::string>());
-		}
-		else
-		{
-			option->set_attribute("value", o.as<std::string>());
-			if (selected == o.as<std::string>())
-				option->set_attribute("selected", "selected");
-			option->add_text(o.as<std::string>());
-		}
+		std::string selected = node->get_attribute("selected");
+		if (not selected.empty())
+			selected = evaluate_el(scope, selected).as<std::string>();
 
-		zeep::xml::container *parent = node->parent();
-		assert(parent);
-		parent->insert(node, option);
+		for (el::object& o : collection)
+		{
+			zeep::xml::element *option = new zeep::xml::element("option");
+
+			if (not(value.empty() or label.empty()))
+			{
+				option->set_attribute("value", o[value].as<std::string>());
+				if (selected == o[value].as<std::string>())
+					option->set_attribute("selected", "selected");
+				option->add_text(o[label].as<std::string>());
+			}
+			else
+			{
+				option->set_attribute("value", o.as<std::string>());
+				if (selected == o.as<std::string>())
+					option->set_attribute("selected", "selected");
+				option->add_text(o.as<std::string>());
+			}
+
+			zeep::xml::container *parent = node->parent();
+			assert(parent);
+			parent->insert(node, option);
+		}
 	}
 }
 

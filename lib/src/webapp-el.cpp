@@ -65,6 +65,7 @@ struct interpreter
 	object parse_multiplicative_expr(); // unary_expr (('%'|'/') unary_expr)*
 	object parse_unary_expr();			// ('-')? primary_expr
 	object parse_primary_expr();		// '(' expr ')' | number | string
+	object parse_literal_substitution();// '|xxx ${var}|'
 
 	// --------------------------------------------------------------------
 	// these are for inside ${} templates
@@ -79,6 +80,10 @@ struct interpreter
 	object parse_template_unary_expr();				// ('-')? primary_expr
 	object parse_template_primary_expr();			// '(' expr ')' | number | string
 
+	object parse_template_template_expr();
+
+	object parse_link_template_expr();
+
 	object parse_utility_expr();
 
 	object call_method(const string& className, const string& method, vector<object>& params);
@@ -89,6 +94,7 @@ struct interpreter
 	int64_t m_token_number_int;
 	double m_token_number_float;
 	string::const_iterator m_ptr, m_end;
+	bool m_return_whitespace = false;
 };
 
 template <class OutputIterator, class Match>
@@ -111,6 +117,9 @@ enum token_type
 	elt_number_float,
 	elt_string,
 	elt_object,
+
+	elt_assign,
+
 	elt_and,
 	elt_or,
 	elt_not,
@@ -136,11 +145,14 @@ enum token_type
 	elt_else,
 	elt_dot,
 	elt_hash,
+	elt_pipe,
 
 	elt_true,
 	elt_false,
 	elt_in,
 	elt_comma,
+
+	elt_whitespace,
 
 	elt_variable_template,
 	elt_selection_template,
@@ -184,7 +196,7 @@ vector<pair<string,string>> interpreter::evaluate_attr_expr(const string& s)
 		string var = m_token_string;
 		match(elt_object);
 
-		match (elt_eq);
+		match (elt_assign);
 
 		auto value = parse_expr();
 
@@ -388,6 +400,9 @@ void interpreter::get_next_token()
 			case ',':
 				token = elt_comma;
 				break;
+			case '|':
+				token = elt_pipe;
+				break;
 			case '=':
 				state = els_Equals;
 				break;
@@ -413,7 +428,10 @@ void interpreter::get_next_token()
 			case '\n':
 			case '\r':
 			case '\t':
-				m_token_string.clear();
+				if (m_return_whitespace)
+					token = elt_whitespace;
+				else
+					m_token_string.clear();
 				break;
 			case '\'':
 				state = els_Literal;
@@ -459,8 +477,12 @@ void interpreter::get_next_token()
 
 		case els_Equals:
 			if (ch != '=')
+			{
 				retract();
-			token = elt_eq;
+				token = elt_assign;
+			}
+			else
+				token = elt_eq;
 			break;
 
 		case els_Question:
@@ -774,7 +796,7 @@ object interpreter::parse_unary_expr()
 	return result;
 }
 
-object interpreter::parse_primary_expr()
+object interpreter::parse_template_template_expr()
 {
 	object result;
 	switch (m_lookahead)
@@ -785,6 +807,12 @@ object interpreter::parse_primary_expr()
 			match(elt_rbrace);
 			break;
 		
+		case elt_link_template:
+			match(elt_link_template);
+			result = parse_link_template_expr();
+			match(elt_rbrace);
+			break;
+
 		case elt_selection_template:
 			match(elt_selection_template);
 			if (m_lookahead == elt_object)
@@ -833,7 +861,28 @@ object interpreter::parse_primary_expr()
 				result = parse_template_expr();
 			match(elt_rbrace);
 			break;
+	}
 
+	return result;
+}
+
+object interpreter::parse_primary_expr()
+{
+	object result;
+	switch (m_lookahead)
+	{
+		case elt_variable_template:
+		case elt_link_template:
+		case elt_selection_template:
+			result = parse_template_template_expr();
+			break;
+
+		case elt_pipe:
+			match(elt_pipe);
+			result = parse_literal_substitution();
+			match(elt_pipe);
+			break;
+		
 		case elt_true:
 			result = true;
 			match(m_lookahead);
@@ -1134,6 +1183,130 @@ object interpreter::parse_template_primary_expr()
 	return result;
 }
 
+object interpreter::parse_literal_substitution()
+{
+	string result;
+
+	m_return_whitespace = true;
+
+	while (m_lookahead != elt_pipe and m_lookahead != elt_eof)
+	{
+		switch (m_lookahead)
+		{
+			case elt_variable_template:
+			case elt_selection_template:
+				result += parse_template_template_expr().as<string>();
+				break;
+			
+			default:
+				result += m_token_string;
+				match(m_lookahead);
+				break;
+		}
+	}
+
+	m_return_whitespace = false;
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+object interpreter::parse_link_template_expr()
+{
+	string path;
+
+	int braces = 0;
+
+	while (m_lookahead != elt_lparen and m_lookahead != elt_eof)
+	{
+		if (m_lookahead == elt_rbrace)
+		{
+			if (braces-- == 0)
+				break;
+
+			path += m_token_string;
+			match(elt_rbrace);
+			continue;
+		}
+
+		switch (m_lookahead)
+		{
+			case elt_variable_template:
+			case elt_selection_template:
+				path += parse_template_template_expr().as<string>();
+				break;
+			
+			case elt_lbrace:
+				path += m_token_string;
+				match(elt_lbrace);
+				++braces;
+				break;
+			
+			default:
+				path += m_token_string;
+				match(m_lookahead);
+				break;
+		}
+	}
+
+	if (m_lookahead == elt_lparen)
+	{
+		match(elt_lparen);
+
+		map<string,string> parameters;
+
+		for (;;)
+		{
+			string name = m_token_string;
+			match(elt_object);
+
+			match(elt_assign);
+			string value = parse_primary_expr().as<string>();
+
+			// put into path directly, if found
+			string::size_type p = path.find('{' + name + '}');
+			if (p == string::npos)
+				parameters[name] = value;
+			else
+			{
+				do
+				{
+					path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
+					p += value.length();
+				}
+				while ((p = path.find('{' + name + '}', p)) != string::npos);
+			}
+
+			if (m_lookahead == elt_comma)
+			{
+				match(elt_comma);
+				continue;
+			}
+
+			break;
+		}
+
+		match(elt_rparen);
+
+		if (not parameters.empty())
+		{
+			path += '?';
+			auto n = parameters.size();
+			for (auto p: parameters)
+			{
+				path += http::encode_url(p.first) + '=' + http::encode_url(p.second);
+				if (--n > 0)
+					path += '&';
+			}
+		}
+	}
+
+	return path;
+}
+
+// --------------------------------------------------------------------
+
 object interpreter::parse_utility_expr()
 {
 	auto className = m_token_string;
@@ -1219,8 +1392,38 @@ object interpreter::call_method(const string& className, const string& method, v
 				return FormatDecimal(d, intDigits, decimals, m_scope.get_request().get_locale());
 			}
 		}
+		else if (method == "formatDiskSize")
+		{
+			if (params.size() >= 1 and params[0].is_number())
+			{
+				double nr = params[0].as<double>();
+
+				const char kBase[] = {'B', 'K', 'M', 'G', 'T', 'P', 'E'}; // whatever
+
+				int base = 0;
+
+				while (nr > 1024)
+				{
+					nr /= 1024;
+					++base;
+				}
+
+				int decimals = 0;
+				if (params.size() >= 2 and params[1].is_number_int())
+					decimals = params[1].as<int>();
+
+				return FormatDecimal(nr, 1, decimals, m_scope.get_request().get_locale()) + ' ' + kBase[base];
+			}
+		}
 		else
 			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+	}
+	else if (className == "#numbers")
+	{
+		if (method == "getRequestURI")
+			result = m_scope.get_request().uri;
+		else if (method == "getRequestURL")
+			result = m_scope.get_request().uri;
 	}
 	else
 		throw runtime_error("Undefined class for utility object call: " + className);

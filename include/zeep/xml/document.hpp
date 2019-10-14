@@ -40,6 +40,13 @@ struct document_imp;
 /// A document has one zeep::xml::root_node element. This root element
 /// can have only one zeep::xml::element child node.
 
+struct doc_type
+{
+	std::string m_root;
+	std::string m_pubid;	/// pubid is empty for SYSTEM DOCTYPE
+	std::string m_dtd;
+};
+
 class document
 {
   public:
@@ -125,6 +132,9 @@ class document
 	encoding_type encoding() const;   ///< The text encoding as detected in the input.
 	void encoding(encoding_type enc); ///< The text encoding to use for output
 
+	float version() const;			///< XML version, should be either 1.0 or 1.1
+	void version(float v);			///< XML version, should be either 1.0 or 1.1
+
 	// to format the output, use the following:
 	int indent() const;		 ///< get number of spaces to indent elements:
 	void indent(int indent); ///< set number of spaces to indent elements:
@@ -150,6 +160,15 @@ class document
 
 	/// Set the doctype to write out
 	void set_doctype(const std::string& root, const std::string& pubid, const std::string& dtd);
+
+	/// Set the doctype to write out
+	void set_doctype(const doc_type& doctype);
+
+	/// Get the doctype as parsed
+	doc_type get_doctype() const;
+
+	/// Check the doctype to see if this is supposed to be HTML5
+	bool is_html5() const;
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:

@@ -5,7 +5,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-// #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string.hpp>
 // #include <boost/algorithm/string/join.hpp>
 #include <boost/range.hpp>
 #include <vector>
@@ -15,6 +15,8 @@
 #include <zeep/xml/writer.hpp>
 #include <zeep/xml/xpath.hpp>
 #include <zeep/exception.hpp>
+
+namespace ba = boost::algorithm;
 
 namespace zeep { namespace xml {
 
@@ -712,7 +714,7 @@ void root_node::write(writer& w) const
 bool root_node::equals(const node* n) const
 {
 	bool result = false;
-	if (typeid(n) == typeid(*this))
+	if (typeid(*n) == typeid(*this))
 	{
 		result = true;
 		
@@ -792,10 +794,21 @@ void text::write(writer& w) const
 
 bool text::equals(const node* n) const
 {
-	return
-		node::equals(n) and
-		dynamic_cast<const text*>(n) != nullptr and
-		m_text == static_cast<const text*>(n)->m_text;
+	bool result = false;
+	auto t = dynamic_cast<const text*>(n);
+
+	if (node::equals(n) and t != nullptr)
+	{
+		std::string text = m_text;
+		ba::trim(text);
+
+		std::string ttext = t->m_text;
+		ba::trim(ttext);
+
+		result = text == ttext;
+	}
+
+	return result;
 }
 
 node* text::clone() const

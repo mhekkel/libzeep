@@ -231,8 +231,7 @@ private:
 	AttributeType m_type;
 	AttributeDefault m_default;
 	std::string m_default_value;
-	std::vector<std::string>
-		m_enum;
+	std::vector<std::string> m_enum;
 	bool m_external;
 };
 
