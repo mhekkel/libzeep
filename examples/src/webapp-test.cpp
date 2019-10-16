@@ -31,8 +31,10 @@ class my_webapp : public zh::webapp
 };
 
 my_webapp::my_webapp()
-	: webapp("http://www.hekkelman.com/libzeep/ml", fs::current_path() / "docroot")
+	: webapp(fs::current_path() / "docroot")
 {
+	register_tag_processor<zh::tag_processor_v1>("http://www.hekkelman.com/libzeep/ml");
+
 	string realm = "test-realm";
 
 	mount("", &my_webapp::welcome);

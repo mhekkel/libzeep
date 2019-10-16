@@ -60,7 +60,7 @@ endif
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-TEST_APPS = rest-test zeep-test webapp-test
+TEST_APPS = zeep-test webapp-test
 
 OBJECTS = $(TEST_APPS:%=$(OBJDIR)/%.o)
 	

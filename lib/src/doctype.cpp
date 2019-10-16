@@ -443,11 +443,6 @@ bool state_choice::allow_empty()
 
 int validator::s_next_nr = 1;
 
-// validator::validator()
-// 	: m_state(new state_any()), m_nr(0), m_done(false)
-// {
-// }
-
 validator::validator(content_spec_ptr allowed)
 	: m_state(allowed->create_state()), m_allowed(allowed), m_nr(s_next_nr++), m_done(m_state->allow_empty())
 {
@@ -459,12 +454,12 @@ validator::validator(const element* e)
 	if (m_allowed == nullptr)
 	{
 		m_state = new state_any();
-		m_done = false;
+		m_done = true;
 	}
 	else
 	{
 		m_state = m_allowed->create_state();
-		m_done = m_allowed->content_spec() == ContentSpecType::Empty;
+		m_done = m_state->allow_empty();
 	}
 }
 
@@ -473,27 +468,11 @@ validator::~validator()
 	m_state->release();
 }
 
-void validator::reset()
-{
-	m_done = false;
-	m_state->reset();
-}
-
 bool validator::allow(const std::string& name)
 {
 	bool result;
 	std::tie(result, m_done) = m_state->allow(name);
 	return result;
-}
-
-bool validator::must_be_empty() const
-{
-	return m_state->must_be_empty();
-}
-
-bool validator::allow_char_data()
-{
-	return m_state->allow_char_data();
 }
 
 bool validator::done()

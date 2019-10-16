@@ -490,7 +490,7 @@ struct parser_imp
 	void eq();
 	void misc();
 	void element(doctype::validator& valid);
-	void content(doctype::validator& valid, bool check_for_whitespace);
+	void content(doctype::validator& valid);
 
 	void comment();
 	void pi();
@@ -586,9 +586,10 @@ struct parser_imp
 
 		// next are tokens for the content part
 
-		Reference,	// &name;
-		CDSect,		// CData section <![CDATA[ ... ]]>
-		Content,	// anything else up to the next element start
+		CharRef,		// &#xx; en zo
+		Reference,		// &name;
+		CDSect,			// CData section <![CDATA[ ... ]]>
+		Content,		// anything else up to the next element start
 	};
 
 	// for debugging and error reporting we have the following describing routine
@@ -628,6 +629,7 @@ struct parser_imp
 			case XMLToken::Entity:			return "<!ENTITY";
 			case XMLToken::Notation:		return "<!NOTATION";
 			case XMLToken::PEReference:		return "parameter entity reference";
+			case XMLToken::CharRef:			return "character reference";
 			case XMLToken::Reference:		return "entity reference";
 			case XMLToken::CDSect:			return "CDATA section";
 			case XMLToken::Content:			return "content";
@@ -662,25 +664,25 @@ struct parser_imp
 	const doctype::entity& get_parameter_entity(const std::string& name) const;
 	const doctype::element *get_element(const std::string& name) const;
 
-	struct leave_content
+	struct save_state
 	{
-		leave_content(parser_imp* impl)
-			: m_impl(*impl), m_saved(m_impl.m_in_content)
+		save_state(bool& state, bool v)
+			: m_state(state), m_saved(state)
 		{
-			m_impl.m_in_content = false;
+			state = v;
 		}
 
-		~leave_content()
+		~save_state()
 		{
-			m_impl.m_in_content = m_saved;
+			m_state = m_saved;
 		}
 
 		void reset()
 		{
-			m_impl.m_in_content = m_saved;
+			m_state = m_saved;
 		}
 
-		parser_imp& m_impl;
+		bool& m_state;
 		bool m_saved;
 	};
 
@@ -794,7 +796,7 @@ struct parser_imp
 
 	bool is_space(const std::string& s)
 	{
-		return s.find_first_not_of(" \t\r\n") != std::string::npos;
+		return not s.empty() and s.find_first_not_of(" \t\r\n") == std::string::npos;
 	}
 
 	bool is_referrable_char(unicode charref)
@@ -1508,10 +1510,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 					not_well_formed("Illegal character in content text");
 				m_token.clear();
 				append(m_token, charref);
-				if (is_space(charref))
-					token = XMLToken::Space;
-				else
-					token = XMLToken::Content;
+				token = XMLToken::CharRef;
 			}
 			else
 				not_well_formed("invalid character reference");
@@ -1550,10 +1549,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 					not_well_formed("Illegal character in content text");
 				m_token.clear();
 				append(m_token, charref);
-				if (is_space(charref))
-					token = XMLToken::Space;
-				else
-					token = XMLToken::Content;
+				token = XMLToken::CharRef;
 			}
 			else
 				not_well_formed("invalid character reference");
@@ -1591,9 +1587,6 @@ parser_imp::XMLToken parser_imp::get_next_content()
 	//	if (VERBOSE)
 			// std::cout << "content: " << describe_token(token) << " (" << m_token << ')' << std::endl;
 	//#endif
-
-	// if (token == XMLToken::Content and ba::trim_copy(m_token).empty())
-	// 	token = XMLToken::Space;
 
 	return token;
 }
@@ -1902,6 +1895,9 @@ void parser_imp::doctypedecl()
 			match(XMLToken::String);
 			dtd.reset(get_data_source(pubid, uri));
 
+			if (m_validating and not dtd)
+				not_valid("Could not load DTD " + uri);
+
 			m_parser.doctype_decl(m_root_element, pubid, uri);
 		}
 
@@ -1978,10 +1974,8 @@ void parser_imp::pereference()
 
 void parser_imp::intsubset()
 {
-	m_internal_subset = true;
-
-	bool save_allow_peref = m_allow_peref;
-	m_allow_peref = true;
+	save_state state_intsubset(m_internal_subset, true);
+	save_state state_allow_peref(m_allow_peref, true);
 
 	for (;;)
 	{
@@ -2011,16 +2005,11 @@ void parser_imp::intsubset()
 
 		break;
 	}
-
-	m_internal_subset = false;
-	m_allow_peref = save_allow_peref;
 }
 
 void parser_imp::declsep()
 {
-	bool save_allow_peref = m_allow_peref;
-	m_allow_peref = false;
-	m_in_declsep = true;
+	save_state state_declsep(m_in_declsep, true);
 
 	switch (m_lookahead)
 	{
@@ -2047,18 +2036,12 @@ void parser_imp::declsep()
 
 		default:;
 	}
-
-	m_allow_peref = save_allow_peref;
-	m_in_declsep = false;
 }
 
 void parser_imp::extsubset()
 {
-	bool save_external_subset = m_external_subset;
-	m_external_subset = true;
-
-	bool save_allow_peref = m_allow_peref;
-	m_allow_peref = true;
+	save_state state_extsubset(m_external_subset, true);
+	save_state state_allow_peref(m_allow_peref, true);
 
 	for (;;)
 	{
@@ -2093,9 +2076,6 @@ void parser_imp::extsubset()
 
 		break;
 	}
-
-	m_external_subset = save_external_subset;
-	m_allow_peref = save_allow_peref;
 }
 
 void parser_imp::conditionalsect()
@@ -2106,12 +2086,6 @@ void parser_imp::conditionalsect()
 	s();
 
 	bool include = false;
-
-	if (m_lookahead == XMLToken::PEReference)
-	{
-		pereference();
-		s();
-	}
 
 	if (m_token == "INCLUDE")
 		include = true;
@@ -2213,7 +2187,7 @@ void parser_imp::ignoresectcontents()
 
 void parser_imp::markup_decl()
 {
-	m_allow_peref = not m_internal_subset or m_external_subset;
+	save_state state_allow_peref(m_allow_peref, m_external_subset);
 
 	switch (m_lookahead)
 	{
@@ -2247,8 +2221,6 @@ void parser_imp::markup_decl()
 
 		default:;
 	}
-
-	m_allow_peref = true;
 }
 
 void parser_imp::element_decl()
@@ -3453,7 +3425,7 @@ void parser_imp::collapse_spaces(std::string& s)
 
 void parser_imp::element(doctype::validator& valid)
 {
-	leave_content lc(this);
+	save_state in_content(m_in_content, false);
 
 	match(XMLToken::STag);
 	std::string name = m_token;
@@ -3742,7 +3714,7 @@ void parser_imp::element(doctype::validator& valid)
 		match(XMLToken::GreaterThan);
 
 		if (m_lookahead != XMLToken::ETag)
-			content(sub_valid, m_validating and m_standalone and dte->external() and dte->element_content());
+			content(sub_valid);
 
 		m_in_content = false;
 
@@ -3758,14 +3730,14 @@ void parser_imp::element(doctype::validator& valid)
 		m_parser.end_element(name, uri);
 	}
 
-	lc.reset();
+	in_content.reset();
 	match(XMLToken::GreaterThan);
 
 	if (m_validating and dte != nullptr and not sub_valid.done())
 		not_valid("missing child elements for element '" + dte->name() + "'");
 }
 
-void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
+void parser_imp::content(doctype::validator& valid)
 {
 	if (valid.content_spec() == doctype::ContentSpecType::Empty and m_lookahead != XMLToken::ETag)
 		not_valid("Content is not allowed in an element declared to be EMPTY");
@@ -3775,18 +3747,22 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 		switch (m_lookahead)
 		{
 			case XMLToken::Content:
-				if (valid.content_spec() == doctype::ContentSpecType::Mixed or valid.content_spec() == doctype::ContentSpecType::Any)
-					m_parser.character_data(m_token);
-				else
+			case XMLToken::Space:
+				if (valid.content_spec() == doctype::ContentSpecType::Empty)
+					not_valid("character data not allowed in EMPTY element");
+				else if (valid.content_spec() == doctype::ContentSpecType::Children and m_lookahead == XMLToken::Content)
 					not_valid("character data '" + m_token + "' not allowed in element");
-				match(XMLToken::Content);
+				m_parser.character_data(m_token);
+				match(m_lookahead);
 				break;
 
-			case XMLToken::Space:
-				if (check_for_whitespace)
-					not_valid("element declared in external subset contains white space");
+			case XMLToken::CharRef:
+				if (valid.content_spec() == doctype::ContentSpecType::Empty)
+					not_valid("data not allowed in EMPTY element");
+				else if (valid.content_spec() == doctype::ContentSpecType::Children and is_space(m_token))
+					not_valid("Element may not contain reference to space");
 				m_parser.character_data(m_token);
-				match(XMLToken::Space);
+				match(m_lookahead);
 				break;
 
 			case XMLToken::Reference:
@@ -3804,16 +3780,25 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 				if (not e.parsed())
 					not_well_formed("content has a general entity reference to an unparsed entity");
 
-				if (is_space(e.replacement()) and valid.content_spec() == doctype::ContentSpecType::Children)
-					not_valid("Element may not contain reference to space");
-
 				push_data_source(new entity_data_source(m_token, m_source.top()->base(), e.replacement()), false);
 
 				m_lookahead = get_next_content();
-				m_in_external_dtd = e.externally_defined();
+
+				save_state in_external_dtd(m_in_external_dtd, e.externally_defined());
+
+				// a children production may not contain references to spaces
+				if (m_lookahead == XMLToken::Space and valid.content_spec() == doctype::ContentSpecType::Children)
+				{
+					auto space = m_token;
+					match(m_lookahead);
+
+					if (m_lookahead == XMLToken::Eof)
+						not_valid("Element may not contain reference to space");
+					m_parser.character_data(space);
+				}
 
 				if (m_lookahead != XMLToken::Eof)
-					content(valid, check_for_whitespace);
+					content(valid);
 
 				if (m_lookahead != XMLToken::Eof)
 					not_well_formed("entity reference should be a valid content production");
@@ -3839,7 +3824,7 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 				break;
 
 			case XMLToken::CDSect:
-				if (not valid.allow_char_data())
+				if (valid.content_spec() != doctype::ContentSpecType::Mixed and valid.content_spec() != doctype::ContentSpecType::Any)
 					not_valid("character data '" + m_token + "' not allowed in element");
 
 				m_parser.start_cdata_section();
@@ -3853,10 +3838,6 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 				match(XMLToken::CDSect);
 				break;
 
-			case XMLToken::PEReference:
-				pereference();
-				break;
-
 			default:
 				match(XMLToken::Content); // will fail and report error
 		}
@@ -3865,7 +3846,7 @@ void parser_imp::content(doctype::validator& valid, bool check_for_whitespace)
 
 void parser_imp::comment()
 {
-	leave_content lc(this);
+	save_state in_content(m_in_content, false);
 
 	// m_lookahead == XMLToken::Comment
 	// read characters until we reach -->
@@ -3920,13 +3901,13 @@ void parser_imp::comment()
 	m_token.erase(m_token.end() - 3, m_token.end());
 	m_parser.comment(m_token);
 
-	lc.reset();
+	in_content.reset();
 	match(XMLToken::Comment);
 }
 
 void parser_imp::pi()
 {
-	leave_content lc(this);
+	save_state in_content(m_in_content, false);
 
 	// m_lookahead == XMLToken::PI
 	// read characters until we reach -->
@@ -4008,7 +3989,7 @@ void parser_imp::pi()
 	m_token.erase(m_token.end() - 2, m_token.end());
 	m_parser.processing_instruction(pi_target, m_token);
 
-	lc.reset();
+	in_content.reset();
 	match(XMLToken::PI);
 }
 

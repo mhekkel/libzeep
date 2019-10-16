@@ -57,10 +57,7 @@ public:
 
 	~validator();
 
-	void reset();
-	bool must_be_empty() const;
 	bool allow(const std::string& name);
-	bool allow_char_data();
 	ContentSpecType content_spec() const;
 	bool done();
 
