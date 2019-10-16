@@ -34,10 +34,10 @@ struct state_base : std::enable_shared_from_this<state_base>
 {
 	state_base() : m_ref_count(1) {}
 
-	virtual std::tuple<bool, bool>
-	allow(const std::string& name) = 0;
+	virtual std::tuple<bool, bool> allow(const std::string& name) = 0;
 	virtual bool allow_char_data() { return false; }
 	virtual bool allow_empty() { return false; }
+	virtual bool must_be_empty() { return false; }
 
 	virtual void reset() {}
 
@@ -68,6 +68,7 @@ struct state_empty : public state_base
 	virtual std::tuple<bool, bool>
 	allow(const std::string& name) { return std::make_tuple(false, true); }
 	virtual bool allow_empty() { return true; }
+	virtual bool must_be_empty() { return true; }
 };
 
 struct state_element : public state_base
@@ -93,7 +94,7 @@ struct state_element : public state_base
 
 struct state_repeated : public state_base
 {
-	state_repeated(allowed_ptr sub)
+	state_repeated(content_spec_ptr sub)
 		: m_sub(sub->create_state()), m_state(0) {}
 
 	~state_repeated()
@@ -117,7 +118,7 @@ struct state_repeated : public state_base
 
 struct state_repeated_zero_or_once : public state_repeated
 {
-	state_repeated_zero_or_once(allowed_ptr sub)
+	state_repeated_zero_or_once(content_spec_ptr sub)
 		: state_repeated(sub) {}
 
 	std::tuple<bool, bool> allow(const std::string& name);
@@ -158,7 +159,7 @@ std::tuple<bool, bool> state_repeated_zero_or_once::allow(const std::string& nam
 
 struct state_repeated_any : public state_repeated
 {
-	state_repeated_any(allowed_ptr sub)
+	state_repeated_any(content_spec_ptr sub)
 		: state_repeated(sub) {}
 
 	std::tuple<bool, bool> allow(const std::string& name);
@@ -204,7 +205,7 @@ std::tuple<bool, bool> state_repeated_any::allow(const std::string& name)
 
 struct state_repeated_at_least_once : public state_repeated
 {
-	state_repeated_at_least_once(allowed_ptr sub)
+	state_repeated_at_least_once(content_spec_ptr sub)
 		: state_repeated(sub) {}
 
 	std::tuple<bool, bool> allow(const std::string& name);
@@ -262,10 +263,10 @@ std::tuple<bool, bool> state_repeated_at_least_once::allow(const std::string& na
 
 struct state_seq : public state_base
 {
-	state_seq(const allowed_list& allowed)
+	state_seq(const content_spec_list& allowed)
 		: m_state(0)
 	{
-		for (allowed_ptr a : allowed)
+		for (content_spec_ptr a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
@@ -367,10 +368,10 @@ bool state_seq::allow_empty()
 
 struct state_choice : public state_base
 {
-	state_choice(const allowed_list& allowed, bool mixed)
+	state_choice(const content_spec_list& allowed, bool mixed)
 		: m_mixed(mixed), m_state(0)
 	{
-		for (allowed_ptr a : allowed)
+		for (content_spec_ptr a : allowed)
 			m_states.push_back(a->create_state());
 	}
 
@@ -442,45 +443,34 @@ bool state_choice::allow_empty()
 
 int validator::s_next_nr = 1;
 
-validator::validator()
-	: m_state(new state_any()), m_nr(0), m_done(false)
-{
-}
+// validator::validator()
+// 	: m_state(new state_any()), m_nr(0), m_done(false)
+// {
+// }
 
-validator::validator(allowed_ptr allowed)
+validator::validator(content_spec_ptr allowed)
 	: m_state(allowed->create_state()), m_allowed(allowed), m_nr(s_next_nr++), m_done(m_state->allow_empty())
 {
 }
 
-validator::validator(const validator& other)
-	: m_state(other.m_state), m_allowed(other.m_allowed), m_nr(other.m_nr), m_done(other.m_done)
+validator::validator(const element* e)
+	: m_allowed(e ? e->allowed() : nullptr), m_nr(s_next_nr++)
 {
-	m_state->reference();
+	if (m_allowed == nullptr)
+	{
+		m_state = new state_any();
+		m_done = false;
+	}
+	else
+	{
+		m_state = m_allowed->create_state();
+		m_done = m_allowed->content_spec() == ContentSpecType::Empty;
+	}
 }
 
 validator::~validator()
 {
 	m_state->release();
-}
-
-validator& validator::operator=(const validator& other)
-{
-	if (&other != this)
-	{
-		m_nr = other.m_nr;
-
-		if (m_state != other.m_state)
-		{
-			m_state->release();
-			m_state = other.m_state;
-			m_state->reference();
-		}
-
-		m_allowed = other.m_allowed;
-		m_done = other.m_done;
-	}
-
-	return *this;
 }
 
 void validator::reset()
@@ -496,6 +486,11 @@ bool validator::allow(const std::string& name)
 	return result;
 }
 
+bool validator::must_be_empty() const
+{
+	return m_state->must_be_empty();
+}
+
 bool validator::allow_char_data()
 {
 	return m_state->allow_char_data();
@@ -504,6 +499,11 @@ bool validator::allow_char_data()
 bool validator::done()
 {
 	return m_done;
+}
+
+ContentSpecType validator::content_spec() const
+{
+	return m_allowed ? m_allowed->content_spec() : ContentSpecType::Any;
 }
 
 std::ostream& operator<<(std::ostream& lhs, validator& rhs)
@@ -517,48 +517,48 @@ std::ostream& operator<<(std::ostream& lhs, validator& rhs)
 
 // --------------------------------------------------------------------
 
-state_ptr allowed_any::create_state() const
+state_ptr content_spec_any::create_state() const
 {
 	return new state_any();
 }
 
-void allowed_any::print(std::ostream& os)
+void content_spec_any::print(std::ostream& os)
 {
 	os << "ANY";
 }
 
 // --------------------------------------------------------------------
 
-state_ptr allowed_empty::create_state() const
+state_ptr content_spec_empty::create_state() const
 {
 	return new state_empty();
 }
 
-void allowed_empty::print(std::ostream& os)
+void content_spec_empty::print(std::ostream& os)
 {
 	os << "EMPTY";
 }
 
 // --------------------------------------------------------------------
 
-state_ptr allowed_element::create_state() const
+state_ptr content_spec_element::create_state() const
 {
 	return new state_element(m_name);
 }
 
-void allowed_element::print(std::ostream& os)
+void content_spec_element::print(std::ostream& os)
 {
 	os << m_name;
 }
 
 // --------------------------------------------------------------------
 
-allowed_repeated::~allowed_repeated()
+content_spec_repeated::~content_spec_repeated()
 {
 	delete m_allowed;
 }
 
-state_ptr allowed_repeated::create_state() const
+state_ptr content_spec_repeated::create_state() const
 {
 	switch (m_repetition)
 	{
@@ -574,39 +574,39 @@ state_ptr allowed_repeated::create_state() const
 	}
 }
 
-void allowed_repeated::print(std::ostream& os)
+void content_spec_repeated::print(std::ostream& os)
 {
 	m_allowed->print(os);
 	os << m_repetition;
 }
 
-bool allowed_repeated::element_content() const
+bool content_spec_repeated::element_content() const
 {
 	return m_allowed->element_content();
 }
 
 // --------------------------------------------------------------------
 
-allowed_seq::~allowed_seq()
+content_spec_seq::~content_spec_seq()
 {
-	for (allowed_ptr a : m_allowed)
+	for (content_spec_ptr a : m_allowed)
 		delete a;
 }
 
-void allowed_seq::add(allowed_ptr a)
+void content_spec_seq::add(content_spec_ptr a)
 {
 	m_allowed.push_back(a);
 }
 
-state_ptr allowed_seq::create_state() const
+state_ptr content_spec_seq::create_state() const
 {
 	return new state_seq(m_allowed);
 }
 
-void allowed_seq::print(std::ostream& os)
+void content_spec_seq::print(std::ostream& os)
 {
 	os << '(';
-	for (allowed_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
+	for (content_spec_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
 	{
 		(*s)->print(os);
 		if (boost::next(s) != m_allowed.end())
@@ -615,10 +615,10 @@ void allowed_seq::print(std::ostream& os)
 	os << ')';
 }
 
-bool allowed_seq::element_content() const
+bool content_spec_seq::element_content() const
 {
 	bool result = true;
-	for (allowed_ptr a : m_allowed)
+	for (content_spec_ptr a : m_allowed)
 	{
 		if (not a->element_content())
 		{
@@ -631,23 +631,23 @@ bool allowed_seq::element_content() const
 
 // --------------------------------------------------------------------
 
-allowed_choice::~allowed_choice()
+content_spec_choice::~content_spec_choice()
 {
-	for (allowed_ptr a : m_allowed)
+	for (content_spec_ptr a : m_allowed)
 		delete a;
 }
 
-void allowed_choice::add(allowed_ptr a)
+void content_spec_choice::add(content_spec_ptr a)
 {
 	m_allowed.push_back(a);
 }
 
-state_ptr allowed_choice::create_state() const
+state_ptr content_spec_choice::create_state() const
 {
 	return new state_choice(m_allowed, m_mixed);
 }
 
-void allowed_choice::print(std::ostream& os)
+void content_spec_choice::print(std::ostream& os)
 {
 	os << '(';
 
@@ -658,7 +658,7 @@ void allowed_choice::print(std::ostream& os)
 			os << "|";
 	}
 
-	for (allowed_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
+	for (content_spec_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
 	{
 		(*s)->print(os);
 		if (boost::next(s) != m_allowed.end())
@@ -667,14 +667,14 @@ void allowed_choice::print(std::ostream& os)
 	os << ')';
 }
 
-bool allowed_choice::element_content() const
+bool content_spec_choice::element_content() const
 {
 	bool result = true;
 	if (m_mixed)
 		result = false;
 	else
 	{
-		for (allowed_ptr a : m_allowed)
+		for (content_spec_ptr a : m_allowed)
 		{
 			if (not a->element_content())
 			{
@@ -874,7 +874,7 @@ element::~element()
 	delete m_allowed;
 }
 
-void element::set_allowed(allowed_ptr allowed)
+void element::set_allowed(content_spec_ptr allowed)
 {
 	if (allowed != m_allowed)
 	{
@@ -903,17 +903,17 @@ const attribute* element::get_attribute(const std::string& name) const
 	return result;
 }
 
-validator element::get_validator() const
-{
-	validator valid;
-	if (m_allowed)
-		valid = validator(m_allowed);
-	return valid;
-}
+// validator element::get_validator() const
+// {
+// 	// validator valid;
+// 	// if (m_allowed)
+// 	// 	valid = validator(m_allowed);
+// 	return { m_allowed };
+// }
 
 bool element::empty() const
 {
-	return dynamic_cast<allowed_empty *>(m_allowed) != nullptr;
+	return dynamic_cast<content_spec_empty *>(m_allowed) != nullptr;
 }
 
 bool element::element_content() const
