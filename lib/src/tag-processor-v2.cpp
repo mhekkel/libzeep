@@ -205,7 +205,7 @@ void tag_processor_v2::process_xml(xml::node *node, const el::scope& parentScope
 
 	if (node != nullptr)
 	{
-		// make a copy of the list since process_xml might remove eleemnts
+		// make a copy of the list since process_xml might remove elements
 		std::list<xml::node *> nodes;
 		copy(e->node_begin(), e->node_end(), back_inserter(nodes));
 
