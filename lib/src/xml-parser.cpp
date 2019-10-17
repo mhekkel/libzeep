@@ -731,8 +731,9 @@ struct parser_imp
 	}
 
 	// And during parsing we keep track of the namespaces we encounter.
-	struct ns_state
+	class ns_state
 	{
+	  public:
 		ns_state(parser_imp *imp)
 			: m_parser_imp(imp), m_next(imp->m_ns)
 		{
@@ -744,14 +745,6 @@ struct parser_imp
 			m_parser_imp->m_ns = m_next;
 		}
 
-		parser_imp *m_parser_imp;
-		std::string m_default_ns;
-		ns_state *m_next;
-
-		std::map<std::string, std::string> m_known;
-		std::set<std::string> m_known_uris;
-		std::set<std::string> m_unbound;
-
 		std::string default_ns()
 		{
 			std::string result = m_default_ns;
@@ -760,14 +753,20 @@ struct parser_imp
 			return result;
 		}
 
+		void default_ns(const std::string& ns)
+		{
+			m_default_ns = ns;
+		}
+
 		std::string ns_for_prefix(const std::string& prefix)
 		{
 			std::string result;
 
 			if (m_unbound.count(prefix) == 0)
 			{
-				if (m_known.find(prefix) != m_known.end())
-					result = m_known[prefix];
+				auto np = m_known.find(prefix);
+				if (np != m_known.end())
+					result = np->second;
 				else if (m_next != nullptr)
 					result = m_next->ns_for_prefix(prefix);
 			}
@@ -775,10 +774,35 @@ struct parser_imp
 			return result;
 		}
 
+		void bind(const std::string& prefix, const std::string& uri)
+		{
+			m_known[prefix] = uri;
+		}
+
+		void unbind(const std::string& prefix)
+		{
+			m_unbound.insert(prefix);
+		}
+
+		bool is_known_prefix(const std::string& prefix)
+		{
+			return m_known.count(prefix) or (m_next != nullptr and m_next->is_known_prefix(prefix));
+		}
+
 		bool is_known_uri(const std::string& uri)
 		{
-			return m_known_uris.count(uri) or (m_next != nullptr and m_next->is_known_uri(uri));
+			return find_if(m_known.begin(), m_known.end(), [uri] (auto k) { return k.second == uri; }) != m_known.end() or
+				(m_next != nullptr and m_next->is_known_uri(uri));
 		}
+
+	  private:
+
+		parser_imp *m_parser_imp;
+		std::string m_default_ns;
+		ns_state *m_next;
+
+		std::map<std::string, std::string> m_known;
+		std::set<std::string> m_unbound;
 	};
 
 	bool is_char(unicode uc)
@@ -3451,10 +3475,11 @@ void parser_imp::element(doctype::validator& valid)
 		if (name[0] == ':')
 			not_well_formed("Element name should not start with colon");
 
-		if (auto cp = name.find(':') != std::string::npos)
+		auto cp = name.find(':');
+		if (cp != std::string::npos)
 		{
 			auto prefix = name.substr(0, cp);
-			if (not ns.m_known.count(prefix))
+			if (not ns.is_known_prefix(prefix))
 				not_well_formed("Unknown prefix for element " + name);
 		}
 	}
@@ -3512,7 +3537,7 @@ void parser_imp::element(doctype::validator& valid)
 
 			if (attr_name.length() == 5)
 			{
-				ns.m_default_ns = attr_value;
+				ns.default_ns(attr_value);
 				m_parser.start_namespace_decl("", attr_value);
 			}
 			else if (attr_name.length() == 6)
@@ -3525,16 +3550,16 @@ void parser_imp::element(doctype::validator& valid)
 					not_well_formed(prefix + " is a preserved prefix");
 
 				if (m_version > 1.0f and attr_value.empty())
-					ns.m_unbound.insert(prefix);
+					ns.unbind(prefix);
 				else
 				{
-					ns.m_known[prefix] = attr_value;
+					ns.bind(prefix, attr_value);
 					m_parser.start_namespace_decl(prefix, attr_value);
 				}
 			}
 
-			if (not attr_value.empty())
-				ns.m_known_uris.insert(attr_value);
+			// if (not attr_value.empty())
+			// 	ns.m_known_uris.insert(attr_value);
 		}
 		else
 		{

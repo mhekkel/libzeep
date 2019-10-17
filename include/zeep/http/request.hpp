@@ -100,10 +100,17 @@ struct request
 		return static_cast<T>(std::stod(get_parameter(name, std::to_string(defaultValue))));
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_integral<T>::value and not std::is_same<T,bool>::value, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		return static_cast<T>(std::stol(get_parameter(name, std::to_string(defaultValue))));
+	}
+
+	template<typename T, typename std::enable_if_t<std::is_same<T,bool>::value, int> = 0>
+	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
+	{
+		auto v = get_parameter(name, std::to_string(defaultValue));
+		return v == "true" or v == "1";
 	}
 
 	bool has_parameter(const char* name) const ///< Return whether the named parameter is present in the request

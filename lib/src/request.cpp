@@ -222,7 +222,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 	if (pp != path_params.end())
 		return std::make_tuple(pp->value, true);
 	
-	if (contentType == "application/x-www-form-urlencoded")
+	if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
 		tie(result, found) = get_urlencode_parameter(payload, name);
 		if (found)

@@ -91,25 +91,33 @@ void writer::doctype(const std::string& root, const std::string& pubid, const st
 
 		if (m_wrap_prolog)
 			m_os << std::endl;
+		
+		m_no_doctype = true;
 	}
 }
 
 void writer::start_doctype(const std::string& root, const std::string& dtd)
 {
-	m_os << "<!DOCTYPE " << root;
-	if (not dtd.empty())
-		m_os << " \"" << dtd << '"';
-	m_os << " [";
+	if (not m_no_doctype)
+	{
+		if (not dtd.empty())
+			m_os << " \"" << dtd << '"';
+		m_os << " [";
 
-//	if (m_wrap_prolog)
-		m_os << std::endl;
+	//	if (m_wrap_prolog)
+			m_os << std::endl;
+	}
 }
 
 void writer::end_doctype()
 {
-	m_os << "]>";
-//	if (m_wrap_prolog)
-		m_os << std::endl;
+	if (not m_no_doctype)
+	{
+		m_os << "]>";
+	//	if (m_wrap_prolog)
+			m_os << std::endl;
+		m_no_doctype = true;
+	}
 }
 
 void writer::empty_doctype(const std::string& root, const std::string& dtd)
