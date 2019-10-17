@@ -3480,7 +3480,7 @@ void parser_imp::element(doctype::validator& valid)
 		{
 			auto prefix = name.substr(0, cp);
 			if (not ns.is_known_prefix(prefix))
-				not_well_formed("Unknown prefix for element " + name);
+				not_valid("Unknown prefix for element " + name);
 		}
 	}
 
