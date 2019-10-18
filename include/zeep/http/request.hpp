@@ -113,7 +113,7 @@ struct request
 		return v == "true" or v == "1";
 	}
 
-	std::vector<param> get_parameters() const;
+	std::multimap<std::string,std::string> get_parameters() const;
 
 	bool has_parameter(const char* name) const ///< Return whether the named parameter is present in the request
 	{

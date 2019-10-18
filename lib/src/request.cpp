@@ -314,7 +314,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 	return make_tuple(result, found);
 }
 
-std::vector<request::param> request::get_parameters() const
+std::multimap<std::string,std::string> request::get_parameters() const
 {
 	std::string ps;
 	
@@ -332,7 +332,7 @@ std::vector<request::param> request::get_parameters() const
 			ps = uri.substr(d + 1);
 	}
 
-	std::vector<param> parameters;
+	std::multimap<std::string,std::string> parameters;
 
 	while (not ps.empty())
 	{
@@ -358,7 +358,7 @@ std::vector<request::param> request::get_parameters() const
 				value = param.substr(d + 1);
 			}
 
-			parameters.emplace_back(header{name, value});
+			parameters.emplace(decode_url(name), decode_url(value));
 		}
 	}
 
