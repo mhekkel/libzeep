@@ -1127,7 +1127,7 @@ object interpreter::parse_template_primary_expr()
 			break;
 		case elt_lparen:
 			match(m_lookahead);
-			result = parse_expr();
+			result = parse_template_expr();
 			match(elt_rparen);
 			break;
 

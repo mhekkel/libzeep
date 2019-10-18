@@ -199,7 +199,7 @@ void tag_processor_v1::process_iterate(xml::element *node, const el::scope& scop
 	using el::detail::value_type;
 
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.type() != value_type::array)
+	if (collection.type() == value_type::string or collection.type() == value_type::null)
 		collection = evaluate_el(scope, node->get_attribute("collection"));
 
 	std::string var = node->get_attribute("var");
@@ -308,7 +308,7 @@ void tag_processor_v1::process_options(xml::element *node, const el::scope& scop
 	using ::zeep::el::detail::value_type;
 
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.type() != value_type::array)
+	if (collection.type() == value_type::string or collection.type() == value_type::null)
 		collection = evaluate_el(scope, node->get_attribute("collection"));
 
 	if (collection.is_array())
@@ -318,7 +318,7 @@ void tag_processor_v1::process_options(xml::element *node, const el::scope& scop
 
 		std::string selected = node->get_attribute("selected");
 		if (not selected.empty())
-			selected = evaluate_el(scope, selected).as<std::string>();
+			process_el(scope, selected);
 
 		for (el::object& o : collection)
 		{
@@ -350,11 +350,11 @@ void tag_processor_v1::process_option(xml::element *node, const el::scope& scope
 {
 	std::string value = node->get_attribute("value");
 	if (not value.empty())
-		value = evaluate_el(scope, value).as<std::string>();
+		process_el(scope, value);
 
 	std::string selected = node->get_attribute("selected");
 	if (not selected.empty())
-		selected = evaluate_el(scope, selected).as<std::string>();
+		process_el(scope, selected);
 
 	zeep::xml::element *option = new zeep::xml::element("option");
 
@@ -378,7 +378,7 @@ void tag_processor_v1::process_checkbox(xml::element *node, const el::scope& sco
 {
 	std::string name = node->get_attribute("name");
 	if (not name.empty())
-		name = evaluate_el(scope, name).as<std::string>();
+		process_el(scope, name);
 
 	bool checked = false;
 	if (evaluate_el(scope, node->get_attribute("checked")))

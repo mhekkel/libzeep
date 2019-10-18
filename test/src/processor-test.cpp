@@ -21,13 +21,17 @@ BOOST_AUTO_TEST_CASE(test_1)
 {
     auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div>
 <test1 m:if="${true}"/><test2 m:unless="${true}"/>
+</div>
 </data>
     )"_xml;
 
     auto doc_test = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<div>
 <test1 />
+</div>
 </data>
     )"_xml;
 

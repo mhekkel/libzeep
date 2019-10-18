@@ -529,6 +529,8 @@ element operator+(const element& lhs, const element& rhs)
 		result = rhs;
 	else if (rhs_type == value_type::null)
 		result = lhs;
+	else if (lhs_type == value_type::string or rhs_type == value_type::string)
+		result = lhs.as<std::string>() + rhs.as<std::string>();
 	else
 		throw std::runtime_error("Invalid types for operator +");
 

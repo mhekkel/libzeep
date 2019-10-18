@@ -91,25 +91,33 @@ void writer::doctype(const std::string& root, const std::string& pubid, const st
 
 		if (m_wrap_prolog)
 			m_os << std::endl;
+		
+		m_no_doctype = true;
 	}
 }
 
 void writer::start_doctype(const std::string& root, const std::string& dtd)
 {
-	m_os << "<!DOCTYPE " << root;
-	if (not dtd.empty())
-		m_os << " \"" << dtd << '"';
-	m_os << " [";
+	if (not m_no_doctype)
+	{
+		if (not dtd.empty())
+			m_os << " \"" << dtd << '"';
+		m_os << " [";
 
-//	if (m_wrap_prolog)
-		m_os << std::endl;
+	//	if (m_wrap_prolog)
+			m_os << std::endl;
+	}
 }
 
 void writer::end_doctype()
 {
-	m_os << "]>";
-//	if (m_wrap_prolog)
-		m_os << std::endl;
+	if (not m_no_doctype)
+	{
+		m_os << "]>";
+	//	if (m_wrap_prolog)
+			m_os << std::endl;
+		m_no_doctype = true;
+	}
 }
 
 void writer::empty_doctype(const std::string& root, const std::string& dtd)
@@ -340,9 +348,9 @@ void writer::write_string(const std::string& s)
 			case '<':	m_os << "&lt;";				last_is_space = false; break;
 			case '>':	m_os << "&gt;";				last_is_space = false; break;
 			case '\"':	m_os << "&quot;";			last_is_space = false; break;
-			case '\n':	if (m_escape_whitespace)	m_os << "&#10;"; else m_os << c; last_is_space = true; break;
-			case '\r':	if (m_escape_whitespace)	m_os << "&#13;"; else m_os << c; last_is_space = false; break;
-			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << c; last_is_space = false; break;
+			case '\n':	if (m_escape_whitespace)	m_os << "&#10;"; else m_os << static_cast<char>(c); last_is_space = true; break;
+			case '\r':	if (m_escape_whitespace)	m_os << "&#13;"; else m_os << static_cast<char>(c); last_is_space = false; break;
+			case '\t':	if (m_escape_whitespace)	m_os << "&#9;"; else m_os << static_cast<char>(c); last_is_space = false; break;
 			case ' ':	if (not m_trim or not last_is_space) m_os << ' '; last_is_space = true; break;
 			case 0:		throw exception("Invalid null character in XML content");
 			default:	if (c >= 0x0A0 or (m_version == 1.0 ? is_valid_xml_1_0_char(c) : is_valid_xml_1_1_char(c)))

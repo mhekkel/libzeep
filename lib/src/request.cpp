@@ -222,7 +222,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 	if (pp != path_params.end())
 		return std::make_tuple(pp->value, true);
 	
-	if (contentType == "application/x-www-form-urlencoded")
+	if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
 		tie(result, found) = get_urlencode_parameter(payload, name);
 		if (found)
@@ -312,6 +312,57 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 	}
 	
 	return make_tuple(result, found);
+}
+
+std::multimap<std::string,std::string> request::get_parameters() const
+{
+	std::string ps;
+	
+	if (method == method_type::POST)
+	{
+		std::string contentType = get_header("Content-Type");
+		
+		if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+			ps = payload;
+	}
+	else if (method == method_type::GET or method == method_type::PUT)
+	{
+		std::string::size_type d = uri.find('?');
+		if (d != std::string::npos)
+			ps = uri.substr(d + 1);
+	}
+
+	std::multimap<std::string,std::string> parameters;
+
+	while (not ps.empty())
+	{
+		std::string::size_type e = ps.find_first_of("&;");
+		std::string param;
+		
+		if (e != std::string::npos)
+		{
+			param = ps.substr(0, e);
+			ps.erase(0, e + 1);
+		}
+		else
+			swap(param, ps);
+		
+		if (not param.empty())
+		{
+			std::string name, value;
+	
+			std::string::size_type d = param.find('=');
+			if (d != std::string::npos)
+			{
+				name = param.substr(0, d);
+				value = param.substr(d + 1);
+			}
+
+			parameters.emplace(decode_url(name), decode_url(value));
+		}
+	}
+
+	return parameters;
 }
 
 std::string request::get_cookie(const char* name) const

@@ -33,11 +33,15 @@ typedef std::vector<element *> element_list;
 typedef std::vector<attribute *> attribute_list;
 
 // --------------------------------------------------------------------
+
+enum class ContentSpecType { Empty, Any, Mixed, Children };
+
+// --------------------------------------------------------------------
 // validation of elements is done by the validator classes
 
-struct allowed_base;
-typedef allowed_base* allowed_ptr;
-typedef std::list<allowed_ptr> allowed_list;
+struct content_spec_base;
+typedef content_spec_base* content_spec_ptr;
+typedef std::list<content_spec_ptr> content_spec_list;
 
 struct state_base;
 typedef state_base* state_ptr;
@@ -45,18 +49,16 @@ typedef state_base* state_ptr;
 class validator
 {
 public:
-	validator();
+	validator(content_spec_base* allowed);
+	validator(const element* e);
 
-	validator(allowed_ptr allowed);
-
-	validator(const validator& other);
-	validator& operator=(const validator& other);
+	validator(const validator& other) = delete;
+	validator& operator=(const validator& other) = delete;
 
 	~validator();
 
-	void reset();
 	bool allow(const std::string& name);
-	bool allow_char_data();
+	ContentSpecType content_spec() const;
 	bool done();
 
 	bool operator()(const std::string& name) { return allow(name); }
@@ -65,41 +67,56 @@ private:
 	friend std::ostream& operator<<(std::ostream& lhs, validator& rhs);
 
 	state_ptr m_state;
-	allowed_ptr m_allowed;
+	content_spec_ptr m_allowed;
 	int m_nr;
 	static int s_next_nr;
 	bool m_done;
 };
 
-std::ostream& operator<<(std::ostream& lhs, validator& rhs);
+// --------------------------------------------------------------------
 
-struct allowed_base
+struct content_spec_base
 {
-	allowed_base() {}
-	virtual ~allowed_base() {}
+	content_spec_base(const content_spec_base&) = delete;
+	content_spec_base& operator=(const content_spec_base&) = delete;
+
+	virtual ~content_spec_base() {}
 
 	virtual state_ptr create_state() const = 0;
 	virtual bool element_content() const { return false; }
 
+	ContentSpecType content_spec() const	{ return m_content_spec; }
+
 	virtual void print(std::ostream& os) = 0;
+
+  protected:
+
+	content_spec_base(ContentSpecType contentSpec)
+		: m_content_spec(contentSpec) {}
+
+	ContentSpecType m_content_spec;
 };
 
-struct allowed_any : public allowed_base
+struct content_spec_any : public content_spec_base
 {
+	content_spec_any() : content_spec_base(ContentSpecType::Any) {}
+
 	virtual state_ptr create_state() const;
 	virtual void print(std::ostream& os);
 };
 
-struct allowed_empty : public allowed_base
+struct content_spec_empty : public content_spec_base
 {
+	content_spec_empty() : content_spec_base(ContentSpecType::Empty) {}
+
 	virtual state_ptr create_state() const;
 	virtual void print(std::ostream& os);
 };
 
-struct allowed_element : public allowed_base
+struct content_spec_element : public content_spec_base
 {
-	allowed_element(const std::string& name)
-		: m_name(name) {}
+	content_spec_element(const std::string& name)
+		: content_spec_base(ContentSpecType::Children), m_name(name) {}
 
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const { return true; }
@@ -109,56 +126,57 @@ struct allowed_element : public allowed_base
 	std::string m_name;
 };
 
-struct allowed_repeated : public allowed_base
+struct content_spec_repeated : public content_spec_base
 {
-	allowed_repeated(allowed_ptr allowed, char repetion)
-		: m_allowed(allowed), m_repetition(repetion)
+	content_spec_repeated(content_spec_ptr allowed, char repetion)
+		: content_spec_base(allowed->content_spec()), m_allowed(allowed), m_repetition(repetion)
 	{
 		assert(allowed);
 	}
 
-	~allowed_repeated();
+	~content_spec_repeated();
 
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const;
 
 	virtual void print(std::ostream& os);
 
-	allowed_ptr m_allowed;
+	content_spec_ptr m_allowed;
 	char m_repetition;
 };
 
-struct allowed_seq : public allowed_base
+struct content_spec_seq : public content_spec_base
 {
-	allowed_seq(allowed_ptr a) { add(a); }
-	~allowed_seq();
+	content_spec_seq(content_spec_ptr a)
+		: content_spec_base(a->content_spec()) { add(a); }
+	~content_spec_seq();
 
-	void add(allowed_ptr a);
+	void add(content_spec_ptr a);
 
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const;
 
 	virtual void print(std::ostream& os);
 
-	allowed_list m_allowed;
+	content_spec_list m_allowed;
 };
 
-struct allowed_choice : public allowed_base
+struct content_spec_choice : public content_spec_base
 {
-	allowed_choice(bool mixed)
-		: m_mixed(mixed) {}
-	allowed_choice(allowed_ptr a, bool mixed)
-		: m_mixed(mixed) { add(a); }
-	~allowed_choice();
+	content_spec_choice(bool mixed)
+		: content_spec_base(mixed ? ContentSpecType::Mixed : ContentSpecType::Children), m_mixed(mixed) {}
+	content_spec_choice(content_spec_ptr a, bool mixed)
+		: content_spec_base(mixed ? ContentSpecType::Mixed : a->content_spec()), m_mixed(mixed) { add(a); }
+	~content_spec_choice();
 
-	void add(allowed_ptr a);
+	void add(content_spec_ptr a);
 
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const;
 
 	virtual void print(std::ostream& os);
 
-	allowed_list m_allowed;
+	content_spec_list m_allowed;
 	bool m_mixed;
 };
 
@@ -257,7 +275,7 @@ public:
 	const attribute_list &
 	attributes() const { return m_attlist; }
 
-	void set_allowed(allowed_ptr allowed);
+	void set_allowed(content_spec_ptr allowed);
 
 	void declared(bool declared) { m_declared = declared; }
 	bool declared() const { return m_declared; }
@@ -268,12 +286,14 @@ public:
 	bool empty() const;
 	bool element_content() const;
 
-	validator get_validator() const;
+	ContentSpecType content_spec() const { return m_allowed->content_spec(); }
+
+	content_spec_ptr allowed() const { return m_allowed; }
 
 private:
 	std::string m_name;
 	attribute_list m_attlist;
-	allowed_ptr m_allowed;
+	content_spec_ptr m_allowed;
 	bool m_declared, m_external;
 };
 
