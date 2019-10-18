@@ -362,16 +362,16 @@ void document::write(writer& w) const
 
 	w.xml_decl(m_impl->m_standalone);
 
-	if (not m_impl->m_doctype.m_root.empty())
-		w.doctype(m_impl->m_doctype.m_root, m_impl->m_doctype.m_pubid, m_impl->m_doctype.m_dtd);
-
 	if (not m_impl->m_notations.empty())
 	{
-		w.start_doctype(e->qname(), "");
+		// w.start_doctype(e->qname(), "");
+		w.start_doctype(e->qname(), m_impl->m_doctype.m_dtd);
 		for (const document_imp::notation& n : m_impl->m_notations)
 			w.notation(n.m_name, n.m_sysid, n.m_pubid);
 		w.end_doctype();
 	}
+	else if (not m_impl->m_doctype.m_root.empty())
+		w.doctype(e->qname(), m_impl->m_doctype.m_pubid, m_impl->m_doctype.m_dtd);
 
 	m_impl->m_root.write(w);
 }
