@@ -428,15 +428,11 @@ private:
 class entity_data_source : public string_data_source
 {
 public:
-	entity_data_source(const std::string& entity_name, const std::string& entity_path,
-					   const std::string& text)
-		: string_data_source(text), m_entity_name(entity_name)
+	entity_data_source(const std::string& text, const std::string& entity_path)
+		: string_data_source(text)
 	{
 		base(entity_path);
 	}
-
-protected:
-	std::string m_entity_name;
 };
 
 // --------------------------------------------------------------------
@@ -557,7 +553,6 @@ struct parser_imp
 		Pipe = '|',
 		Asterisk = '*',
 		Slash = '/',
-		Hash = '#',
 		Comma = ',',
 		
 		Eof = 256,
@@ -579,6 +574,11 @@ struct parser_imp
 		AttList,	// <!ATTLIST
 		Entity,		// <!ENTITY
 		Notation,	// <!NOTATION
+
+		Required,	// #REQUIRED
+		Implied,	// #IMPLIED
+		PCData,		// #PCDATA
+		Fixed,		// #FIXED
 
 		IncludeIgnore, // <![
 
@@ -610,7 +610,6 @@ struct parser_imp
 			case XMLToken::Pipe:			return "|";
 			case XMLToken::Asterisk:		return "*";
 			case XMLToken::Slash:			return "/";
-			case XMLToken::Hash:			return "#";
 			case XMLToken::Comma:			return ",";
 			case XMLToken::Eof:				return "end of file";
 			case XMLToken::Other:			return "an invalid character";
@@ -628,6 +627,10 @@ struct parser_imp
 			case XMLToken::AttList:			return "<!ATTLIST";
 			case XMLToken::Entity:			return "<!ENTITY";
 			case XMLToken::Notation:		return "<!NOTATION";
+			case XMLToken::Required:		return "#REQUIRED";
+			case XMLToken::Implied:			return "#IMPLIED";
+			case XMLToken::Fixed:			return "#FIXED";
+			case XMLToken::PCData:			return "#PCData";
 			case XMLToken::PEReference:		return "parameter entity reference";
 			case XMLToken::CharRef:			return "character reference";
 			case XMLToken::Reference:		return "entity reference";
@@ -860,9 +863,7 @@ struct parser_imp
 	bool m_allow_peref = false;
 	bool m_in_declsep = false;
 	bool m_in_external_dtd = false;
-	bool m_in_doctype = false; // used to keep track where we are (parameter entities are only recognized inside a doctype section)
 	bool m_in_content = false;
-	bool m_in_xml_decl = false;
 
 	std::vector<std::string> m_entities_on_stack;
 	ns_state* m_ns;
@@ -956,17 +957,7 @@ const doctype::entity& parser_imp::get_parameter_entity(const std::string& name)
 					 [name](auto e) { return e->name() == name; });
 
 	if (e == m_parameter_entities.end())
-	{
-		std::string msg = "Undefined parameter entity '" + m_token + '\'';
-
-		// if (m_standalone)
-			not_well_formed(msg);
-		// else
-		// 	not_valid(msg);
-
-		// should not happen...
-		throw zeep::exception(msg);
-	}
+		not_well_formed("Undefined parameter entity '" + m_token + '\'');
 
 	return **e;
 }
@@ -1016,9 +1007,6 @@ unicode parser_imp::get_next_char()
 			break;
 		}
 	}
-
-	if (m_in_xml_decl and result > 127)
-		not_well_formed("Illegal character in XML decl, not ascii");
 
 	append(m_token, result);
 
@@ -1099,6 +1087,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 		state_Tag = 20,
 		state_String = 30,
 		state_PERef = 40,
+		state_HashName = 49,
 		state_Name = 50,
 		state_CommentOrDoctype = 60,
 		state_Comment = 70,
@@ -1149,6 +1138,10 @@ parser_imp::XMLToken parser_imp::get_next_token()
 					state = state_PERef;
 					break;
 
+				case '#':
+					state = state_HashName;
+					break;
+
 				case '=': token = XMLToken::Eq; break;
 				case '?': token = XMLToken::QuestionMark; break;
 				case '>': token = XMLToken::GreaterThan; break;
@@ -1161,7 +1154,6 @@ parser_imp::XMLToken parser_imp::get_next_token()
 				case '|': token = XMLToken::Pipe; break;
 				case '*': token = XMLToken::Asterisk; break;
 				case '/': token = XMLToken::Slash; break;
-				case '#': token = XMLToken::Hash; break;
 				case ',': token = XMLToken::Comma; break;
 
 				default:
@@ -1274,6 +1266,19 @@ parser_imp::XMLToken parser_imp::get_next_token()
 			break;
 
 		// Names
+		case state_HashName:
+			if (not is_name_char(uc))
+			{
+				retract();
+
+					 if (m_token == "#PCDATA")		token = XMLToken::PCData;
+				else if (m_token == "#FIXED")		token = XMLToken::Fixed;
+				else if (m_token == "#IMPLIED")		token = XMLToken::Implied;
+				else if (m_token == "#REQUIRED")	token = XMLToken::Required;
+				else not_well_formed("Unexpected token " + m_token);
+			}
+			break;
+
 		case state_Name:
 			if (not is_name_char(uc))
 			{
@@ -1705,8 +1710,6 @@ void parser_imp::xml_decl()
 {
 	if (m_lookahead == XMLToken::XMLDecl)
 	{
-		m_in_xml_decl = true;
-
 		encoding_type encoding = m_encoding;
 		
 		if (m_encoding == encoding_type::enc_UTF8)
@@ -1722,18 +1725,10 @@ void parser_imp::xml_decl()
 
 		auto version = parse_version();
 
-		if (m_in_doctype)
-		{
-			if (version > m_version)
-				not_well_formed("External entity has different version");
-		}
-		else
-		{
-			m_version = version;
+		m_version = version;
 
-			if (m_version >= 2.0f or m_version < 1.0f)
-				not_well_formed("This library only supports XML version 1.0 or 1.1");
-		}
+		if (m_version >= 2.0f or m_version < 1.0f)
+			not_well_formed("This library only supports XML version 1.0 or 1.1");
 
 		m_source.top()->version(version);
 		match(XMLToken::String);
@@ -1781,7 +1776,6 @@ void parser_imp::xml_decl()
 		m_encoding = encoding;
 		m_source.top()->encoding(encoding);
 
-		m_in_xml_decl = false;
 		match(XMLToken::QuestionMark);
 		match(XMLToken::GreaterThan);
 
@@ -1795,8 +1789,6 @@ void parser_imp::text_decl()
 {
 	if (m_lookahead == XMLToken::XMLDecl)
 	{
-		m_in_xml_decl = true;
-
 		encoding_type encoding = m_source.top()->encoding();
 		if (encoding == encoding_type::enc_UTF8 and not m_source.top()->has_bom())
 			m_source.top()->encoding(encoding_type::enc_ISO88591);
@@ -1833,7 +1825,6 @@ void parser_imp::text_decl()
 
 		m_source.top()->encoding(encoding);
 
-		m_in_xml_decl = false;
 		match(XMLToken::QuestionMark);
 		match(XMLToken::GreaterThan);
 	}
@@ -1865,8 +1856,6 @@ void parser_imp::misc()
 
 void parser_imp::doctypedecl()
 {
-	m_in_doctype = true;
-
 	match(XMLToken::DocType);
 
 	m_has_dtd = true;
@@ -1983,8 +1972,6 @@ void parser_imp::doctypedecl()
 			}
 		}
 	}
-
-	m_in_doctype = false;
 }
 
 void parser_imp::pereference()
@@ -2303,14 +2290,10 @@ void parser_imp::contentspec(doctype::element& element)
 		bool mixed = false;
 		bool more = false;
 
-		if (m_lookahead == XMLToken::Hash) // Mixed
+		if (m_lookahead == XMLToken::PCData) // Mixed
 		{
 			mixed = true;
-
 			match(m_lookahead);
-			if (m_token != "PCDATA")
-				not_well_formed("Invalid element content specification, expected #PCDATA");
-			match(XMLToken::Name);
 
 			s();
 
@@ -2729,18 +2712,21 @@ void parser_imp::attlist_decl()
 
 		std::string value;
 
-		if (m_lookahead == XMLToken::Hash)
+		switch (m_lookahead)
 		{
-			match(m_lookahead);
-			std::string def = m_token;
-			match(XMLToken::Name);
-
-			if (def == "REQUIRED")
+			case XMLToken::Required:
+				match(m_lookahead);
 				attribute->set_default(doctype::attDefRequired, "");
-			else if (def == "IMPLIED")
+				break;
+			
+			case XMLToken::Implied:
+				match(m_lookahead);
 				attribute->set_default(doctype::attDefImplied, "");
-			else if (def == "FIXED")
+				break;
+			
+			case XMLToken::Fixed:
 			{
+				match(m_lookahead);
 				if (attribute->get_type() == doctype::attTypeTokenizedID)
 					not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
 
@@ -2755,27 +2741,28 @@ void parser_imp::attlist_decl()
 
 				attribute->set_default(doctype::attDefFixed, value);
 				match(XMLToken::String);
+				break;
 			}
-			else
-				not_well_formed("invalid attribute default");
-		}
-		else
-		{
-			if (attribute->get_type() == doctype::attTypeTokenizedID)
-				not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
-			
-			if (m_standalone)
-				not_valid("Document cannot be standalone since there is a default value for an attribute");
 
-			std::string value = m_token;
-			normalize_attribute_value(value, attribute->get_type() == doctype::attTypeString);
-			collapse_spaces(value);
-			if (not value.empty() and not attribute->validate_value(value, m_general_entities))
+			default:
 			{
-				not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
+				if (attribute->get_type() == doctype::attTypeTokenizedID)
+					not_valid("the default declaration for an ID attribute declaration should be #IMPLIED or #REQUIRED");
+				
+				if (m_standalone)
+					not_valid("Document cannot be standalone since there is a default value for an attribute");
+
+				std::string value = m_token;
+				normalize_attribute_value(value, attribute->get_type() == doctype::attTypeString);
+				collapse_spaces(value);
+				if (not value.empty() and not attribute->validate_value(value, m_general_entities))
+				{
+					not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
+				}
+				attribute->set_default(doctype::attDefNone, value);
+				match(XMLToken::String);
+				break;
 			}
-			attribute->set_default(doctype::attDefNone, value);
-			match(XMLToken::String);
 		}
 
 		if (attribute->get_type() == doctype::attTypeTokenizedID)
@@ -3391,7 +3378,7 @@ std::string parser_imp::normalize_attribute_value()
 					if (e.externally_defined() and m_standalone)
 						not_well_formed("document marked as standalone but an external entity is referenced");
 
-					push_data_source(new entity_data_source(name, m_source.top()->base(), e.replacement()), false);
+					push_data_source(new entity_data_source(e.replacement(), m_source.top()->base()), false);
 
 					std::string replacement = normalize_attribute_value();
 					result += replacement;
@@ -3805,7 +3792,7 @@ void parser_imp::content(doctype::validator& valid)
 				if (not e.parsed())
 					not_well_formed("content has a general entity reference to an unparsed entity");
 
-				push_data_source(new entity_data_source(m_token, m_source.top()->base(), e.replacement()), false);
+				push_data_source(new entity_data_source(e.replacement(), m_source.top()->base()), false);
 
 				m_lookahead = get_next_content();
 

@@ -364,8 +364,9 @@ void document::write(writer& w) const
 
 	if (not m_impl->m_notations.empty())
 	{
-		// w.start_doctype(e->qname(), "");
-		w.start_doctype(e->qname(), m_impl->m_doctype.m_dtd);
+		w.set_no_doctype(false);
+		// w.start_doctype(e->qname(), m_impl->m_doctype.m_dtd);
+		w.start_doctype(e->qname(), "");
 		for (const document_imp::notation& n : m_impl->m_notations)
 			w.notation(n.m_name, n.m_sysid, n.m_pubid);
 		w.end_doctype();

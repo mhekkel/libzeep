@@ -100,6 +100,8 @@ void writer::start_doctype(const std::string& root, const std::string& dtd)
 {
 	if (not m_no_doctype)
 	{
+		m_os << "<!DOCTYPE " << root;
+		
 		if (not dtd.empty())
 			m_os << " \"" << dtd << '"';
 		m_os << " [";
