@@ -16,6 +16,7 @@ PREFIX              ?= /usr/local
 
 # main build variables
 CXX                 ?= c++
+LD_CONFIG			?= ldconfig
 CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++14
 CXXFLAGS            += -Wall
 CXXFLAGS            += -g
@@ -126,7 +127,7 @@ static-lib: libzeep.a
 shared-lib: libzeep.so
 .PHONY: shared-lib
 
-install-libs: libs
+install-libs: shared-lib
 	install -d $(LIBDIR)
 	install $(LIB_NAME) $(LIBDIR)/$(LIB_NAME)
 	strip --strip-unneeded $(LIBDIR)/$(LIB_NAME)
@@ -134,9 +135,9 @@ install-libs: libs
 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
 	$(LD_CONFIG) -n $(LIBDIR)
 
-install-dev: libzeep.a
-	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
-	for f in `find zeep -name "*.hpp"`; do install $$f $(INCDIR)/$$f; done
+install-dev: static-lib
+	install -d $(LIBDIR) $(INCDIR)/zeep/el $(INCDIR)/zeep/http $(INCDIR)/zeep/xml
+	cd ../include; for f in `find zeep -name "*.hpp"`; do install $$f $(INCDIR)/$$f; done
 	install ./libzeep.a $(LIBDIR)/libzeep.a
 	strip -SX $(LIBDIR)/libzeep.a
 
