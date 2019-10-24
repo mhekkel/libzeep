@@ -100,6 +100,11 @@ doc:
 .PHONY: all	
 all: libs test examples
 
+.PHONY: install
+	
+install:
+	+$(MAKE) -C lib install
+
 .PHONY: clean
 clean:
 	$(MAKE) -C lib clean

@@ -1033,6 +1033,31 @@ struct serializer_type<std::deque<T> > : public serialize_container_type<std::de
 {
 };
 
+template<typename T, size_t N>
+struct serializer_type<std::array<T,N> > : public serialize_container_type<std::array<T,N> >
+{
+	using base_type = serialize_container_type<std::array<T,N>>;
+	using container_type = typename base_type::container_type;
+	using value_type = typename container_type::value_type;
+	using base_serializer_type = serializer_type<value_type>;
+
+	static void deserialize_child(const container* n, const char* name, container_type& value)
+	{
+		auto ei = n->begin();
+		for (size_t i = 0; i < N and ei != n->end(); ++ei)
+		{
+			auto e = *ei;
+
+			if (e->name() != name)
+				continue;
+			
+			base_serializer_type::deserialize(e, value[i]);
+
+			++i;
+		}
+	}
+};
+
 template<typename T>
 struct serializer_type<boost::optional<T> >
 {
