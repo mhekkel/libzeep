@@ -69,6 +69,13 @@ tag_processor_v2::tag_processor_v2(const char* ns)
 	register_attr_handler("with", std::bind(&tag_processor_v2::process_attr_with, this, _1, _2, _3, _4, _5));
 	register_attr_handler("inline", std::bind(&tag_processor_v2::process_attr_inline, this, _1, _2, _3, _4, _5));
 
+	register_attr_handler("attrappend", std::bind(&tag_processor_v2::process_attr_append, this, _1, _2, _3, _4, _5, "", false));
+	register_attr_handler("classappend", std::bind(&tag_processor_v2::process_attr_append, this, _1, _2, _3, _4, _5, "class", false));
+	register_attr_handler("styleappend", std::bind(&tag_processor_v2::process_attr_append, this, _1, _2, _3, _4, _5, "style", false));
+	register_attr_handler("attrprepend", std::bind(&tag_processor_v2::process_attr_append, this, _1, _2, _3, _4, _5, "", true));
+	register_attr_handler("classprepend", std::bind(&tag_processor_v2::process_attr_append, this, _1, _2, _3, _4, _5, "class", true));
+	register_attr_handler("styleprepend", std::bind(&tag_processor_v2::process_attr_append, this, _1, _2, _3, _4, _5, "style", true));
+
 	register_attr_handler("insert", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
 	register_attr_handler("include", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
 	register_attr_handler("replace", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
@@ -608,6 +615,41 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_append(xml::element* node, xml::attribute* attr, el::scope& scope,
+	boost::filesystem::path dir, basic_webapp& webapp, std::string dest, bool prepend)
+{
+	auto s = attr->str();
+
+	if (dest.empty())
+	{
+		std::regex kDestRx(R"(^\s*(\w+)\s*=\s*(.+)$)");
+
+		std::smatch m;
+		auto s = attr->str();
+
+		if (not std::regex_match(s, m, kDestRx))
+			throw std::runtime_error("Invalid attribute value for :" + attr->name());
+
+		dest = m[1];
+		s = m[2];
+	}
+
+	el::process_el(scope, s);
+
+	auto v = node->get_attribute(dest);
+	if (v.empty())
+		node->set_attribute(dest, s);
+	else if (prepend)
+		node->set_attribute(dest, s + ' ' + v);
+	else
+		node->set_attribute(dest, v + ' ' + s);
+
+	return AttributeAction::none;
+}
+
 
 }
 }

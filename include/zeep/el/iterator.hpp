@@ -84,7 +84,7 @@ public:
 	iterator_impl operator--(int)
 	{
 		auto result(*this);
-		--(*this);
+		operator--();
 		return result;
 	}
 
@@ -103,7 +103,7 @@ public:
 	iterator_impl operator++(int)
 	{
 		auto result(*this);
-		++(*this);
+		operator++();
 		return result;
 	}
 
@@ -375,6 +375,14 @@ template<typename Iterator> class iteration_proxy_value
 		return m_anchor.value();
 	}
 
+	// support for structured binding
+	template<size_t N>
+	decltype(auto) get() const
+	{
+			 if constexpr (N == 0)	return key();
+		else if constexpr (N == 1)	return value();
+	}
+
   private:
 	Iterator			m_anchor;
 	size_t				m_index = 0;
@@ -404,19 +412,6 @@ template<typename Iterator> class iteration_proxy
 	}
 };
 
-// support for structured binding
-template<size_t N, typename Iterator, std::enable_if_t<N == 0, int> = 0>
-auto get(const ::zeep::el::detail::iteration_proxy_value<Iterator>& i) -> decltype(i.key())
-{
-	return i.key();
-}
-
-template<size_t N, typename Iterator, std::enable_if_t<N == 1, int> = 0>
-auto get(const ::zeep::el::detail::iteration_proxy_value<Iterator>& i) -> decltype(i.value())
-{
-	return i.value();
-}
-
 } // detail
 } // el
 } // zeep
@@ -427,12 +422,26 @@ template <typename IteratorType>
 struct tuple_size<::zeep::el::detail::iteration_proxy_value<IteratorType>>
             : public std::integral_constant<std::size_t, 2> {};
 
-template <std::size_t N, typename IteratorType>
-struct tuple_element<N, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
+template<typename IteratorType>
+struct tuple_element<0, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
 {
-  public:
-    using type = decltype(
-                     get<N>(std::declval < ::zeep::el::detail::iteration_proxy_value<IteratorType >> ()));
+	using proxy_type = typename ::zeep::el::detail::iteration_proxy_value<IteratorType>;
+	using type = decltype(std::declval<proxy_type>().key());
 };
+
+template<typename IteratorType>
+struct tuple_element<1, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
+{
+	using proxy_type = typename ::zeep::el::detail::iteration_proxy_value<IteratorType>;
+	using type = decltype(std::declval<proxy_type>().value());
+};
+
+// template <std::size_t N, typename IteratorType>
+// struct tuple_element<N, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
+// {
+//   public:
+// 	using proxy_type = typename ::zeep::el::detail::iteration_proxy_value<IteratorType>;
+//     using type = decltype(std::declval<proxy_type>().get<N>());
+// };
 
 }
