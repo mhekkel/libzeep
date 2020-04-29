@@ -4,8 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef ZEEP_XML_DOCTYPE_HPP
-#define ZEEP_XML_DOCTYPE_HPP
+#pragma once
 
 #include <zeep/config.hpp>
 
@@ -19,7 +18,6 @@ namespace xml
 {
 namespace doctype
 {
-
 // --------------------------------------------------------------------
 // doctype support with full validation.
 
@@ -28,9 +26,9 @@ class attlist;
 class entity;
 class attribute;
 
-typedef std::vector<entity *> entity_list;
-typedef std::vector<element *> element_list;
-typedef std::vector<attribute *> attribute_list;
+typedef std::vector<entity*> entity_list;
+typedef std::vector<element*> element_list;
+typedef std::vector<attribute*> attribute_list;
 
 // --------------------------------------------------------------------
 
@@ -48,7 +46,7 @@ typedef state_base* state_ptr;
 
 class validator
 {
-public:
+  public:
 	validator(content_spec_base* allowed);
 	validator(const element* e);
 
@@ -63,7 +61,7 @@ public:
 
 	bool operator()(const std::string& name) { return allow(name); }
 
-private:
+  private:
 	friend std::ostream& operator<<(std::ostream& lhs, validator& rhs);
 
 	state_ptr m_state;
@@ -182,38 +180,38 @@ struct content_spec_choice : public content_spec_base
 
 // --------------------------------------------------------------------
 
-enum AttributeType
+enum class AttributeType
 {
-	attTypeString,
-	attTypeTokenizedID,
-	attTypeTokenizedIDREF,
-	attTypeTokenizedIDREFS,
-	attTypeTokenizedENTITY,
-	attTypeTokenizedENTITIES,
-	attTypeTokenizedNMTOKEN,
-	attTypeTokenizedNMTOKENS,
-	attTypeNotation,
-	attTypeEnumerated
+	CDATA,
+	ID,
+	IDREF,
+	IDREFS,
+	ENTITY,
+	ENTITIES,
+	NMTOKEN,
+	NMTOKENS,
+	Notation,
+	Enumerated
 };
 
-enum AttributeDefault
+enum class AttributeDefault
 {
-	attDefNone,
-	attDefRequired,
-	attDefImplied,
-	attDefFixed,
-	attDefDefault
+	None,
+	Required,
+	Implied,
+	Fixed,
+	Default
 };
 
 class attribute
 {
 public:
 	attribute(const std::string& name, AttributeType type)
-		: m_name(name), m_type(type), m_default(attDefNone), m_external(false) {}
+		: m_name(name), m_type(type), m_default(AttributeDefault::None), m_external(false) {}
 
 	attribute(const std::string& name, AttributeType type,
 			  const std::vector<std::string> &enums)
-		: m_name(name), m_type(type), m_default(attDefNone), m_enum(enums), m_external(false) {}
+		: m_name(name), m_type(type), m_default(AttributeDefault::None), m_enum(enums), m_external(false) {}
 
 	const std::string& name() const { return m_name; }
 
@@ -230,8 +228,7 @@ public:
 
 	AttributeType get_type() const { return m_type; }
 	AttributeDefault get_default_type() const { return m_default; }
-	const std::vector<std::string> &
-	get_enums() const { return m_enum; }
+	const std::vector<std::string>& get_enums() const { return m_enum; }
 
 	void external(bool external) { m_external = external; }
 	bool external() const { return m_external; }
@@ -272,8 +269,7 @@ public:
 
 	const std::string& name() const { return m_name; }
 
-	const attribute_list &
-	attributes() const { return m_attlist; }
+	const attribute_list& attributes() const { return m_attlist; }
 
 	void set_allowed(content_spec_ptr allowed);
 
@@ -362,5 +358,3 @@ public:
 } // namespace doctype
 } // namespace xml
 } // namespace zeep
-
-#endif

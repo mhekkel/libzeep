@@ -15,7 +15,7 @@ PREFIX              ?= /usr/local
 
 # main build variables
 CXX                 ?= c++
-CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -pthread -std=c++14
+CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -pthread -std=c++17
 CXXFLAGS            += -Wall
 CXXFLAGS            += -g
 LD                  ?= ld
@@ -81,10 +81,10 @@ all-tests: all XML-Test-Suite
 all: $(PROGRAMS)
 .PHONY: all
 
-../lib/libzeep.a: FORCE
-	+$(MAKE) -C ../lib DEBUG=$(DEBUG) static-lib
+$(ZEEP_LIBS):
+	+$(MAKE) -C .. DEBUG=$(DEBUG) libs
 
-$(PROGRAMS): ../lib/libzeep.a
+$(PROGRAMS): $(ZEEP_LIBS)
 
 $(PROGRAMS): %: $(OBJDIR)/%.o
 	@ echo '->' $@

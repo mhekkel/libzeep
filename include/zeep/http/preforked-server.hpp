@@ -4,8 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_HTTP_PREFORKED_SERVER_HPP
-#define SOAP_HTTP_PREFORKED_SERVER_HPP
+#pragma once
 
 #include <thread>
 #include <mutex>
@@ -86,5 +85,3 @@ class preforked_server
 
 }
 }
-
-#endif

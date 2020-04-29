@@ -7,16 +7,15 @@
 
 #include <functional>
 #include <utility>
+#include <filesystem>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/http/md5.hpp>
 
-#include <boost/filesystem.hpp>
-
 using namespace std;
 namespace zh = zeep::http;
 namespace el = zeep::el;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 class my_webapp : public zh::webapp
 {

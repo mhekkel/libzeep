@@ -4,20 +4,17 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_XML_DOCUMENT_H
-#define SOAP_XML_DOCUMENT_H
+#pragma once
 
 #include <zeep/config.hpp>
-#include <zeep/xml/node.hpp>
-#include <zeep/xml/unicode_support.hpp>
+#include <zeep/xml/character-classification.hpp>
+#include <zeep/xml/parser.hpp>
 #include <zeep/xml/serialize.hpp>
 
 namespace zeep
 {
 namespace xml
 {
-
-struct document_imp;
 
 /// zeep::xml::document is the class that contains a parsed XML file.
 /// You can create an empty document and add nodes to it, or you can
@@ -47,24 +44,29 @@ struct doc_type
 	std::string m_dtd;
 };
 
-class document
+class document : public element
 {
   public:
-	document(const document &) = delete;
-	document& operator=(const document &) = delete;
-
-	/// !brief Move constructor
-	document(document&& other);
-	/// !brief Move operator=
-	document& operator=(document&& other);
 
 	/// \brief Constructor for an empty document.
 	document();
 
-	/// \brief Constructor that will parse the XML passed in argument \a s
+	/// \brief Copy constructor
+	document(const document& doc);
+
+	/// \brief Move constructor
+	document(document&& other);
+
+	/// \brief Copy operator=
+	document& operator=(const document& doc);
+
+	/// \brief Move operator=
+	document& operator=(document&& other);
+
+	/// \brief Constructor that will parse the XML passed in argument using default settings \a s
 	document(const std::string& s);
 
-	/// \brief Constructor that will parse the XML passed in argument \a is
+	/// \brief Constructor that will parse the XML passed in argument using default settings \a is
 	document(std::istream& is);
 
 	/// \brief Constructor that will parse the XML passed in argument \a is. This
@@ -75,13 +77,54 @@ class document
 	virtual ~document();
 #endif
 
-	// I/O
-	void read(const std::string& s); ///< Replace the content of the document with the parsed XML in \a s
-	void read(std::istream& is);	 ///< Replace the content of the document with the parsed XML in \a is
-	void read(std::istream& is, const std::string& base_dir);
-	///< Replace the content of the document with the parsed XML in \a is and use validation based on DTD's found in \a base_dir
+	/// options for parsing
+	/// validating uses a DTD if it is defined
+	bool validating() const								{ return m_validating; }
+	void validating(bool validate)						{ m_validating = validate; }
 
-	virtual void write(writer& w) const; ///< Write the contents of the document as XML using zeep::xml::writer object \a w
+	/// preserve cdata, preserves CDATA sections instead of converting them
+	/// into text nodes.
+	bool preserve_cdata() const							{ return m_preserve_cdata; }
+	void preserve_cdata(bool p)							{ m_preserve_cdata = p; }
+
+	bool collapse_empty_tags() const					{ return m_fmt.collapse_tags; }
+	void collapse_empty_tags(bool c)					{ m_fmt.collapse_tags = c; }
+
+	bool suppress_comments() const						{ return m_fmt.suppress_comments; }
+	void suppress_comments(bool s)						{ m_fmt.suppress_comments = s; }
+
+	bool escape_white_space() const						{ return m_fmt.escape_white_space; }
+	void escape_white_space(bool e)						{ m_fmt.escape_white_space = e; }
+
+	bool escape_double_quote() const					{ return m_fmt.escape_double_quote; }
+	void escape_double_quote(bool e)					{ m_fmt.escape_double_quote = e; }
+
+	bool wrap_prolog() const							{ return m_wrap_prolog; }
+	void wrap_prolog(bool w)							{ m_wrap_prolog = w; }
+
+	/// Get the doctype as parsed
+	doc_type doctype() const							{ return m_doctype; }
+
+	/// Set the doctype to write out
+	void doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
+	{
+		doctype({root, pubid, dtd});
+	}
+
+	/// Set the doctype to write out
+	void doctype(const doc_type& doctype)				{ m_doctype = doctype; m_write_doctype = true; }
+
+	bool write_doctype() const							{ return m_write_doctype; }
+	void write_doctype(bool f)							{ m_write_doctype = f; }
+
+	/// Check the doctype to see if this is supposed to be HTML5
+	bool is_html5() const;
+
+	/// Write out the document
+	friend std::ostream& operator<<(std::ostream& os, const document& doc);
+
+	/// Using operator>> is an alternative for calling rhs.read(lhs);
+	friend std::istream& operator>>(std::istream& is, document& doc);
 
 	/// Serialization support
 	template <typename T>
@@ -89,30 +132,6 @@ class document
 
 	template <typename T>
 	void deserialize(const char* name, T& data); ///< Deserialize root node with name \a name into \a data.
-
-	/// A valid xml document contains exactly one zeep::xml::root_node element
-	root_node* root() const;
-
-	/// The root has one child zeep::xml::element
-	element* child() const;
-	void child(element* e);
-
-	// helper functions
-	element_set find(const std::string& path) const ///< Return all zeep::xml::elements that match the XPath query \a path
-	{
-		return find(path.c_str());
-	}
-	element* find_first(const std::string& path) const ///< Return the first zeep::xml::element that matches the XPath query \a path
-	{
-		return find_first(path.c_str());
-	}
-
-	element_set find(const char* path) const;	///< Return all zeep::xml::elements that match the XPath query \a path
-	element* find_first(const char* path) const; ///< Return the first zeep::xml::element that matches the XPath query \a path
-
-	void find(const char* path, node_set& nodes) const;		  ///< Return all zeep::xml::nodes (attributes or elements) that match the XPath query \a path
-	void find(const char* path, element_set& elements) const; ///< Return all zeep::xml::elements that match the XPath query \a path
-	node* find_first_node(const char* path) const;			  ///< Return the first zeep::xml::node (attribute or element) that matches the XPath query \a path
 
 	/// Compare two xml documents
 	bool operator==(const document& doc) const;
@@ -122,12 +141,11 @@ class document
 	/// the document.
 	void base_dir(const std::string& path);
 
-	/// The default for libzeep is to locate the external reference based
-	/// on sysid and base_dir. Only local files are loaded this way.
-	/// You can specify a entity loader here if you want to be able to load
-	/// DTD files from another source.
-	std::function<std::istream *(const std::string& base, const std::string& pubid, const std::string& sysid)>
-		external_entity_ref_handler;
+	template<typename Callback>
+	void entity_loader(Callback&& cb)
+	{
+		m_external_entity_ref_loader = cb;
+	}
 
 	encoding_type encoding() const;   ///< The text encoding as detected in the input.
 	void encoding(encoding_type enc); ///< The text encoding to use for output
@@ -135,71 +153,92 @@ class document
 	float version() const;			///< XML version, should be either 1.0 or 1.1
 	void version(float v);			///< XML version, should be either 1.0 or 1.1
 
-	// to format the output, use the following:
-	int indent() const;		 ///< get number of spaces to indent elements:
-	void indent(int indent); ///< set number of spaces to indent elements:
+	virtual element* root()					{ return this; }
+	virtual const element* root() const		{ return this; }
 
-	// whether to have each element on a separate line
-	bool wrap() const;	///< get wrap flag, whether elements will appear on their own line or not
-	void wrap(bool wrap); ///< set wrap flag, whether elements will appear on their own line or not
-
-	// reduce the whitespace in #PCDATA sections
-	bool trim() const;	///< get trim flag, strips white space in \#PCDATA sections
-	void trim(bool trim); ///< set trim flag, strips white space in \#PCDATA sections
-
-	// suppress writing out comments
-	bool no_comment() const;		  ///< get no_comment flag, suppresses the output of XML comments
-	void no_comment(bool no_comment); ///< get no_comment flag, suppresses the output of XML comments
-
-	/// options for parsing
-	/// validating uses a DTD if it is defined
-	void set_validating(bool validate);
-	/// preserve cdata, preserves CDATA sections instead of converting them
-	/// into text nodes.
-	void set_preserve_cdata(bool preserve_cdata);
-
-	/// Set the doctype to write out
-	void set_doctype(const std::string& root, const std::string& pubid, const std::string& dtd);
-
-	/// Set the doctype to write out
-	void set_doctype(const doc_type& doctype);
-
-	/// Get the doctype as parsed
-	doc_type get_doctype() const;
-
-	/// Check the doctype to see if this is supposed to be HTML5
-	bool is_html5() const;
+	virtual node* child()					{ return empty() ? nullptr : &front(); }
+	virtual const node* child() const		{ return empty() ? nullptr : &front(); }
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
-	document(struct document_imp* impl);
 
-	friend void process_document_elements(std::istream& data, const std::string& element_xpath,
-										  std::function<bool(node* doc_root, element* e)> cb);
+	virtual node_iterator insert_impl(const_iterator pos, node* n);
 
-	document_imp* m_impl;
+	void XmlDeclHandler(encoding_type encoding, bool standalone, float version);
+	void StartElementHandler(const std::string& name, const std::string& uri, const parser::attr_list_type& atts);
+	void EndElementHandler(const std::string& name, const std::string& uri);
+	void CharacterDataHandler(const std::string& data);
+	void ProcessingInstructionHandler(const std::string& target, const std::string& data);
+	void CommentHandler(const std::string& comment);
+	void StartCdataSectionHandler();
+	void EndCdataSectionHandler();
+	void StartNamespaceDeclHandler(const std::string& prefix, const std::string& uri);
+	void EndNamespaceDeclHandler(const std::string& prefix);
+	void DoctypeDeclHandler(const std::string& root, const std::string& publicId, const std::string& uri);
+	void NotationDeclHandler(const std::string& name, const std::string& sysid, const std::string& pubid);
+
+	std::istream* external_entity_ref(const std::string& base, const std::string& pubid, const std::string& sysid);
+	void parse(std::istream& data);
+
+	// /// \brief To read a document and process elements on the go, use this streaming input function.
+	// /// If the \a proc callback retuns false, processing is terminated. The \a doc_root parameter of
+	// /// the callback is the leading xml up to the first element.
+	// void process_document_elements(std::istream& data, const std::string& element_xpath,
+	// 							std::function<bool(node* doc_root, element* e)> cb);
+
+	/// The default for libzeep is to locate the external reference based
+	/// on sysid and base_dir. Only local files are loaded this way.
+	/// You can specify a entity loader here if you want to be able to load
+	/// DTD files from another source.
+	std::function<std::istream *(const std::string& base, const std::string& pubid, const std::string& sysid)>
+		m_external_entity_ref_loader;
+
+	virtual void write(std::ostream& os, format_info fmt) const;
+
+	std::string m_dtd_dir;
+
+	// some content information
+	doc_type m_doctype;
+	bool m_validating;
+	bool m_preserve_cdata;
+	bool m_has_xml_decl;
+	encoding_type m_encoding;
+	float m_version;
+	bool m_standalone;
+	bool m_wrap_prolog = true;
+	bool m_write_doctype = false;
+
+	format_info m_fmt;
+
+	struct notation
+	{
+		std::string m_name;
+		std::string m_sysid;
+		std::string m_pubid;
+	};
+
+	element* m_cur = nullptr; // construction
+	cdata* m_cdata = nullptr; // only defined in a CDATA section
+	std::vector<std::pair<std::string, std::string>> m_namespaces;
+	std::list<notation> m_notations;
+	size_t m_root_size_at_first_notation = 0;	// for processing instructions that occur before a notation
 
 #endif
 };
 
-/// Using operator>> is an alternative for calling rhs.read(lhs);
-std::istream& operator>>(std::istream& lhs, document& rhs);
+namespace literals
+{
 
-/// Using operator<< is an alternative for calling writer w(lhs); rhs.write(w);
-std::ostream& operator<<(std::ostream& lhs, const document& rhs);
+document operator""_xml(const char* text, size_t length);
 
-/// \brief To read a document and process elements on the go, use this streaming input function.
-/// If the \a proc callback retuns false, processing is terminated. The \a doc_root parameter of
-/// the callback is the leading xml up to the first element.
-void process_document_elements(std::istream& data, const std::string& element_xpath,
-							   std::function<bool(node* doc_root, element* e)> cb);
+}
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template <typename T>
 void document::serialize(const char* name, const T& data)
 {
-	serializer sr(root());
+	serializer sr(*this);
 	sr.serialize_element(name, data);
 }
 
@@ -212,7 +251,7 @@ void document::deserialize(const char* name, T& data)
 	if (child()->name() != name)
 		throw zeep::exception("root mismatch");
 
-	deserializer sr(root());
+	deserializer sr(*this);
 	sr.deserialize_element(name, data);
 }
 
@@ -220,5 +259,3 @@ void document::deserialize(const char* name, T& data)
 
 } // namespace xml
 } // namespace zeep
-
-#endif
