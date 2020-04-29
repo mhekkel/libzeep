@@ -7,3 +7,4 @@ compile_commands.json
 doc/bin
 libzeep-*.tgz
 make.config
+lib-xml/test/XML-Test-Suite/
