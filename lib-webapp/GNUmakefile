@@ -216,7 +216,12 @@ $(1)-test: test/$(1)-test
 
 endef
 
-TESTS = webapp processor rsrc_webapp
+TESTS = webapp processor
+
+ifeq ($(NO_RSRC),0)
+TESTS += rsrc_webapp
+endif
+
 $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 
 .PHONY: test
