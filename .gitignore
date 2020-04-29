@@ -8,3 +8,14 @@ doc/bin
 libzeep-*.tgz
 make.config
 lib-xml/test/XML-Test-Suite/
+**/obj/
+**/obj.dbg/
+lib-webapp/src/mrsrc.h
+.gradle/
+lib-webapp/test/webapp-test
+lib-webapp/test/rsrc_webapp-test
+lib-webapp/test/processor-test
+lib-soap/test/soap-test
+lib-http/test/http-test
+lib-generic/test/crypto-test
+lib-el/test/json-test

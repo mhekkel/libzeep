@@ -200,6 +200,7 @@ webapp_PARAMS =
 rsrc_webapp_FLAGS = -DWEBAPP_USES_RESOURCES
 
 ZEEP_LIBS = http xml el generic
+BOOST_LIBS = random program_options thread system
 
 define TEST_template =
 
@@ -207,12 +208,7 @@ define TEST_template =
 
 test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o $$(OBJDIR)/test_rsrc.o
 	@ echo ">>> building $(1)-test"
-	+$(MAKE) -C ../lib-http static-lib
-	+$(MAKE) -C ../lib-xml static-lib
-	+$(MAKE) -C ../lib-generic static-lib
-	@ $(CXX) -o $$@ $$($(1)_FLAGS) $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $(OBJDIR)/test_rsrc.o $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) -lboost_program_options -lboost_thread -lboost_system -lboost_random -lstdc++fs
-
-test/$(1)-test: $(ZEEP_LIBS:%=../lib/libzeep-%.a)
+	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
@@ -228,7 +224,3 @@ test: $(TESTS:%=%-test)
 
 FORCE:
 
-.PHONY: help
-help:
-	echo $(OBJECTS)
-	echo no-rsrc: $(NO_RSRC)
