@@ -4,8 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_HTTP_HEADER_H
-#define SOAP_HTTP_HEADER_H
+#pragma once
 
 #include <string>
 
@@ -22,5 +21,3 @@ struct header
 	
 }
 }
-
-#endif

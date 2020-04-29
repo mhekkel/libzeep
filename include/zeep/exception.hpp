@@ -4,8 +4,7 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_EXCEPTION_H
-#define SOAP_EXCEPTION_H
+#pragma once
 
 #include <exception>
 #include <string>
@@ -34,5 +33,3 @@ protected:
 };
 
 } // namespace zeep
-
-#endif

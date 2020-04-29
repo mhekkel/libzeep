@@ -11,15 +11,15 @@
 
 #include <zeep/el/element.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 
 void parse_json(const std::string& json, el::element& object);
 void parse_json(std::istream& os, el::element& object);
 
-} // namespace el
-} // namespace zeep
-
+namespace literals
+{
 zeep::el::element operator""_json(const char* s, size_t len);
+}
+
+} // namespace zeep::el

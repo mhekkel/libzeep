@@ -22,6 +22,14 @@
 #endif
 #endif
 
+/// The webapp class in libzeep can use resources to load files.
+/// In this case you need the resource compiler 'mrc' obtainable
+/// from https://github.com/mhekkel/mrc
+
+#ifndef WEBAPP_USES_RESOURCES
+#define WEBAPP_USES_RESOURCES 0
+#endif
+
 #define LIBZEEP_VERSION_MAJOR 4
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED

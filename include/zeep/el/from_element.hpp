@@ -144,9 +144,9 @@ auto from_element_array_impl(const E& e, A& arr, priority_tag<1>)
     arr.reserve(e.size());
     std::transform(e.begin(), e.end(), std::inserter(arr, std::end(arr)),
         [](const E& i)
-    {
-        return i.template as<typename A::value_type>();
-    });
+		{
+			return i.template as<typename A::value_type>();
+		});
 }
 
 template<typename E, typename A>
@@ -154,9 +154,9 @@ void from_element_array_impl(const E& e, A& arr, priority_tag<0>)
 {
     std::transform(e.begin(), e.end(), std::inserter(arr, std::end(arr)),
         [](const E& i)
-    {
-        return i.template as<typename A::value_type>();
-    });
+		{
+			return i.template as<typename A::value_type>();
+		});
 }
 
 template<typename E, typename A,

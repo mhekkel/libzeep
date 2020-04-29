@@ -4,7 +4,7 @@
  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
- xmlns:ns="http://mrs.cmbi.ru.nl/mrsws/search">
+ xmlns:ns="https://mrs.cmbi.umcn.nl/mrsws/search">
  <SOAP-ENV:Body>
   <ns:Count>
    <ns:db>sprot</ns:db>

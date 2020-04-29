@@ -226,11 +226,13 @@ public:
 			case value_type::object:	throw std::runtime_error("Cannot use offsets with object iterators");
 			default:					m_it.m_p += i;
 		}
+		return *this;
 	}
 
 	iterator_impl& operator-=(difference_type i)
 	{
 		operator+=(-i);
+		return *this;
 	}
 
 	iterator_impl operator+(difference_type i) const

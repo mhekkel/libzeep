@@ -4,15 +4,14 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_HTTP_CONNECTION_HPP
-#define SOAP_HTTP_CONNECTION_HPP
+#pragma once
 
 #include <memory>
 
 #include <boost/asio/posix/stream_descriptor.hpp>
 
-#include <zeep/http/message_parser.hpp>
-#include <zeep/http/request_handler.hpp>
+#include <zeep/http/message-parser.hpp>
+#include <zeep/http/request-handler.hpp>
 
 namespace zeep
 {
@@ -50,5 +49,3 @@ private:
 
 } // namespace http
 } // namespace zeep
-
-#endif

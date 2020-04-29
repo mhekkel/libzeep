@@ -4,10 +4,10 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_HTTP_REQUEST_HPP
-#define SOAP_HTTP_REQUEST_HPP
+#pragma once
 
 #include <vector>
+#include <istream>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -41,12 +41,33 @@ inline constexpr const char* to_string(method_type method)
 	}
 }
 
+// --------------------------------------------------------------------
+// Files submitted using multipart/form-data contain a filename and
+// mimetype that might be interesting to the client.
+// TODO: one day this should be able to work with temporary files
+
+struct file_param
+{
+	std::string filename;
+	std::string mimetype;
+	const char* data;
+	size_t length;
+
+	explicit operator bool() const
+	{
+		return data != nullptr;
+	}
+};
+
+// --------------------------------------------------------------------
+
 /// request contains the parsed original HTTP request as received
 /// by the server.
 
 struct request
 {
 	using param = header;	// alias name
+	using cookie_directive = header;	
 
 	method_type method;		///< POST, GET, etc.
 	std::string uri;		///< The uri as requested
@@ -57,8 +78,6 @@ struct request
 	std::string payload;  ///< For POST requests
 	bool close;			  ///< Whether 'Connection: close' was specified
 	std::string username; ///< The authenticated user for this request (filled in by webapp::validate_authentication)
-	std::vector<param>
-		path_params;      ///< The parameters found in the path (used by e.g. rest-controller)
 
 	// for redirects...
 	std::string local_address; ///< The address the request was received upon
@@ -70,12 +89,18 @@ struct request
 	void clear(); ///< Reinitialises request and sets timestamp
 
 	float accept(const char* type) const; ///< Return the value in the Accept header for type
-	bool is_mobile() const;				  ///< Check HTTP_USER_AGENT to see if it is a mobile client
 	bool keep_alive() const;			  ///< Check for Connection: keep-alive header
 
+	void set_header(const char* name, const std::string& value);
 	std::string get_header(const char* name) const; ///< Return the named header
 	void remove_header(const char* name);			///< Remove this header from the list of headers
 	std::string get_request_line() const;			///< Return the (reconstructed) request line
+
+	std::string get_pathname() const
+	{
+		auto s = uri.find('?');
+		return s == std::string::npos ? uri : uri.substr(0, s);
+	}
 
 	/// Fetch parameters from a request, either from the URL or from the payload in case
 	/// the request contains a url-encoded or multi-part content-type header
@@ -115,6 +140,10 @@ struct request
 
 	std::multimap<std::string,std::string> get_parameters() const;
 
+	/// for now we only support a single file per parameter
+	/// TODO: implement multi file upload support
+	file_param get_file_parameter(const char* name) const;
+
 	bool has_parameter(const char* name) const ///< Return whether the named parameter is present in the request
 	{
 		bool result;
@@ -124,6 +153,13 @@ struct request
 
 	/// Return a parameter_map containing the cookies as found in the current request
 	std::string get_cookie(const char* name) const;
+	std::string get_cookie(const std::string& name) const
+	{
+		return get_cookie(name.c_str());
+	}
+
+	/// Set a cookie
+	void set_cookie(const char* name, const std::string& value);
 
 	/// Can be used in code that sends HTTP requests
 	void to_buffers(std::vector<boost::asio::const_buffer> &buffers);
@@ -144,5 +180,3 @@ std::iostream& operator<<(std::iostream& io, request& req);
 
 } // namespace http
 } // namespace zeep
-
-#endif

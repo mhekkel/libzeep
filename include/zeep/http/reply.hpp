@@ -4,8 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef SOAP_HTTP_REPLY_HPP
-#define SOAP_HTTP_REPLY_HPP
+#pragma once
 
 #include <vector>
 #include <memory>
@@ -51,7 +50,9 @@ std::string get_status_description(status_type status);
 
 class reply
 {
-public:
+  public:
+	using cookie_directive = header;
+
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
 
 	reply(int version_major = 1, int version_minor = 0);
@@ -67,6 +68,12 @@ public:
 	void set_header(const std::string& name,
 									const std::string& value);
 
+	std::string get_header(const std::string& name);
+
+	/// Set a cookie
+	void set_cookie(const char* name, const std::string& value, std::initializer_list<cookie_directive> directives = {});
+	std::string get_cookie(const char* name) const;
+
 	/// If the reply contains Connection: keep-alive
 	bool keep_alive() const;
 
@@ -74,14 +81,14 @@ public:
 	void set_content_type(
 			const std::string& type); ///< Set the Content-Type header
 
-	/// Set the content and the content-type header based on JSON data
-	void set_content(el::element& json);
-
 	/// Set the content and the content-type header
 	void set_content(xml::document& doc);
 
 	/// Set the content and the content-type header
-	void set_content(xml::element* data);
+	void set_content(const xml::element& data);
+
+	/// Set the content and the content-type header based on JSON data
+	void set_content(const el::element& json);
 
 	/// Set the content and the content-type header
 	void set_content(const std::string& data,
@@ -91,6 +98,11 @@ public:
 	/// reply takes ownership of \a data and deletes it when done.
 	void set_content(std::istream* data,
 									 const std::string& contentType);
+
+	std::string get_content() const
+	{
+		return m_content;
+	}
 
 	void to_buffers(std::vector<boost::asio::const_buffer> &buffers);
 
@@ -115,7 +127,7 @@ public:
 
 	friend std::ostream& operator<<(std::ostream &, reply &);
 
-private:
+  private:
 	friend class reply_parser;
 
 	int m_version_major, m_version_minor;
@@ -127,9 +139,5 @@ private:
 	std::vector<char> m_buffer;
 };
 
-std::ostream& operator<<(std::ostream&, reply&);
-
 }
 }
-
-#endif

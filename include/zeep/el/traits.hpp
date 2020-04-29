@@ -162,10 +162,11 @@ template<typename T>
 struct is_compatible_array_type<T,
 	std::enable_if_t<
 		std::experimental::is_detected<value_type_t, T>::value and
-		std::experimental::is_detected<iterator_t, T>::value>>
+		std::experimental::is_detected<iterator_t, T>::value and
+		std::is_constructible<element, typename T::value_type>::value>>
 {
-    static constexpr bool value =
-        std::is_constructible<element, typename T::value_type>::value;
+    static constexpr bool value = true;
+        // std::is_constructible_v<element, typename T::value_type>;
 };
 
 template<typename E, typename T, typename = void>
@@ -210,6 +211,9 @@ struct is_compatible_type<T, std::enable_if_t<is_complete_type<T>::value>>
 {
 	static constexpr bool value = has_to_element<T>::value;
 };
+
+template<typename T>
+inline constexpr bool is_compatible_type_v = is_compatible_type<T>::value;
 
 // compatible string
 

@@ -28,7 +28,7 @@ namespace el
 
 class element
 {
-public:
+  public:
 	using value_type = detail::value_type;
 
 	using nullptr_type = std::nullptr_t;
@@ -652,6 +652,7 @@ private:
         assert(m_type != value_type::string or m_data.m_string != nullptr);
 	}
 
+  public:
 	value_type		m_type;
 	element_data	m_data;
 };
