@@ -218,7 +218,7 @@ endef
 
 TESTS = webapp processor
 
-ifeq ($(NO_RSRC),0)
+ifneq ($(NO_RSRC),1)
 TESTS += rsrc_webapp
 endif
 
