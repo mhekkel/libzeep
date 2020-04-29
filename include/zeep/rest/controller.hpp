@@ -9,6 +9,7 @@
 #include <zeep/config.hpp>
 
 #include <filesystem>
+#include <fstream>
 #include <utility>
 #include <experimental/tuple>
 

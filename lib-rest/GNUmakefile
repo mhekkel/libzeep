@@ -53,6 +53,13 @@ INCDIR              ?= $(PREFIX)/include
 MANDIR              ?= $(PREFIX)/man/man3
 DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
 
+BOOST_INC_DIR		?= $(BOOST)/include
+BOOST_LIB_DIR		?= $(BOOST)/lib
+
+CFLAGS				+= -I $(BOOST_INC_DIR)
+CXXFLAGS			+= -I $(BOOST_INC_DIR)
+LDFLAGS				+= -L $(BOOST_LIB_DIR)
+
 ifeq "$(DEBUG)" "1"
 CXXFLAGS			+= -DDEBUG
 else

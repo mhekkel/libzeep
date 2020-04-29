@@ -480,7 +480,10 @@ file_param request::get_file_parameter(const char* name) const
 								r = i + 2;
 						}
 						else
+						{
+							result = {};
 							state = SKIP;
+						}
 					}
 					else if (std::regex_match(payload.begin() + l, payload.begin() + i, m, rx_disp))
 					{
