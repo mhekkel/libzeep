@@ -206,7 +206,13 @@ define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o $$(OBJDIR)/test_rsrc.o
+$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+
+ifneq ($(NO_RSRC),1)
+$(1)_OBJECTS +=  $$(OBJDIR)/test_rsrc.o
+endif
+
+test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
 	@ echo ">>> building $(1)-test"
 	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
