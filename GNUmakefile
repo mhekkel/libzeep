@@ -52,7 +52,7 @@ make.config:
 	@ echo "# DEBUG = $(DEBUG)" >> $@
 	@ echo "Wrote a new make.config file"
 
-VERSION_MAJOR       = 4.0
+VERSION_MAJOR       = 5.0
 VERSION_MINOR       = 0
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME           = libzeep-$(VERSION)
@@ -68,6 +68,9 @@ MANDIR              ?= $(PREFIX)/man/man3
 DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
 
 # targets
+
+$(OUTPUT_DIR):
+	mkdir -p $(OUTPUT_DIR)
 
 ZEEP_LIB_PARTS		= generic xml http el rest soap webapp
 ZEEP_SHARED_LIBS	+= $(ZEEP_LIB_PARTS:%=$(OUTPUT_DIR)/libzeep_%.so)
@@ -91,10 +94,10 @@ define ZEEPLIB_template =
  $(1)_test: static-libs
 	+$(MAKE) -C lib-$(1) test
 
- $(OUTPUT_DIR)/libzeep_$(1).a: FORCE
+ $(OUTPUT_DIR)/libzeep_$(1).a: FORCE | $(OUTPUT_DIR)
 	+$(MAKE) -C lib-$(1) static-lib
 
- $(OUTPUT_DIR)/libzeep_$(1).so: FORCE
+ $(OUTPUT_DIR)/libzeep_$(1).so: FORCE | $(OUTPUT_DIR)
 	+$(MAKE) -C lib-$(1) shared-lib
 endef
 

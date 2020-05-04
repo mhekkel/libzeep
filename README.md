@@ -11,9 +11,12 @@ existed on my radar I created a full XML library as well.
 
 
 
-Unfortunately, REST proved to be more popular than SOAP, and so I added a
-better JSON implmentation to version 4 of libzeep as well as a way to create
-REST servers more easily.
+Unfortunately (well, considering the work I did), REST proved to be more
+popular than SOAP, and so I added a better JSON implementation to version
+4 of libzeep as well as a way to create REST servers more easily.
+
+Oh, and you can use libzeep to build complete web applications as well,
+using a tag processor that turns XHTML templates into HTML on the fly.
 
 The XML part of libzeep consists of a validating parser, a DOM(-like) node
 implementation, an XPath search engine and a XML writer/formatter. The

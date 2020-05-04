@@ -60,6 +60,9 @@ CFLAGS				+= -I $(BOOST_INC_DIR)
 CXXFLAGS			+= -I $(BOOST_INC_DIR)
 LDFLAGS				+= -L $(BOOST_LIB_DIR)
 
+CFLAGS				+= $(DEFINES:%=-D%)
+CXXFLAGS			+= $(DEFINES:%=-D%)
+
 ifeq "$(DEBUG)" "1"
 CXXFLAGS			+= -DDEBUG
 else
@@ -152,15 +155,19 @@ dist-clean: clean
 
 soap_PARAMS = 
 
+ZEEP_LIBS = http xml el generic
+
 define TEST_template =
+
+-include $$(OBJDIR)/$(1)-test.d
 
 test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) -L../lib -lzeep-xml -lzeep-http -lzeep-el -lzeep-generic -lboost_program_options -lboost_filesystem -lboost_system
+	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
-	test/$(1)-test $$($(1)_PARAMS)
+	cd test; ./$(1)-test $$($(1)_PARAMS)
 
 endef
 

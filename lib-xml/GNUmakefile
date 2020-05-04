@@ -60,6 +60,9 @@ CFLAGS				+= -I $(BOOST_INC_DIR)
 CXXFLAGS			+= -I $(BOOST_INC_DIR)
 LDFLAGS				+= -L $(BOOST_LIB_DIR)
 
+CFLAGS				+= $(DEFINES:%=-D%)
+CXXFLAGS			+= $(DEFINES:%=-D%)
+
 ifeq "$(DEBUG)" "1"
 CXXFLAGS			+= -DDEBUG
 else
@@ -161,11 +164,17 @@ clean:
 parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml
 xpath_PARAMS = XPath-Test-Suite/xpath-tests.xml
 
+
+ZEEP_LIBS = generic
+BOOST_LIBS = program_options system
+
 define TEST_template =
+
+-include $$(OBJDIR)/$(1)-test.d
 
 test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) -L../lib -lzeep-generic -lboost_program_options -lboost_system -lstdc++fs
+	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test

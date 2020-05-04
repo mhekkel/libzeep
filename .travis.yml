@@ -1,0 +1,18 @@
+dist: bionic
+
+before_install:
+  - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu bionic universe"
+  - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu bionic main"
+  - sudo apt-get install debian-keyring debian-archive-keyring
+  - sudo apt-key update
+  - sudo apt-get update
+  - sudo apt-get install libboost-all-dev libstdc++-8-dev
+
+install: true
+
+language: cpp
+
+compiler: clang
+
+#script: make && make -C tests
+script: make static-libs test
