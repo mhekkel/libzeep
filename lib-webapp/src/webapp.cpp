@@ -94,7 +94,7 @@ void basic_webapp::handle_request(request& req, reply& rep)
 
 	if (csrf_is_new)
 	{
-		csrf = encode_base64(random_hash());
+		csrf = encode_base64url(random_hash());
 		req.set_cookie("csrf-token", csrf);
 	}
 

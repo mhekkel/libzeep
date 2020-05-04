@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 		}
 	} app;
 
-	auto secret = zeep::encode_base64(zeep::random_hash());
+	auto secret = zeep::encode_hex(zeep::random_hash());
 
 	auto validator = new zh::simple_jws_authentication_validation("mijn-realm", secret, {
 		{ "scott", "tiger" }
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 	req.method = zh::method_type::GET;
 	req.uri = "/test";
 
-	zh::reply rep;
+	zh::reply rep = {};
 
 	app.handle_request(req, rep);
 
@@ -210,6 +210,8 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 	req.uri = "/login";
 	req.set_header("content-type", "application/x-www-form-urlencoded");
 	req.payload = "username=scott&password=tiger&_csrf=" + csrf;
+
+	rep = {};
 
 	app.handle_request(req, rep);
 
