@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 
 	tp.process_xml(doc.child(), scope, "", dummy_webapp);
  
-	BOOST_TEST(doc == doc_test);
+	BOOST_TEST_WARN(doc == doc_test);
 	if (doc != doc_test)
 	{
 		cerr << doc << endl
