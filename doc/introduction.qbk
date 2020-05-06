@@ -1,0 +1,19 @@
+[/
+	Documentation for libzeep version 5.0
+
+          Copyright Maarten L. Hekkelman, 2020
+ Distributed under the Boost Software License, Version 1.0.
+    (See accompanying file LICENSE_1_0.txt or copy at
+          http://www.boost.org/LICENSE_1_0.txt)
+
+	This document is for libzeep-generic
+]
+
+[preface Introduction
+    [quickbook 1.7]
+	[version 5.0]
+    [id quickbook.intro]
+]
+
+This is my introduction.
+

@@ -1,3 +1,36 @@
+[/
+	Documentation for libzeep version 5.0
+
+          Copyright Maarten L. Hekkelman, 2020
+ Distributed under the Boost Software License, Version 1.0.
+    (See accompanying file LICENSE_1_0.txt or copy at
+          http://www.boost.org/LICENSE_1_0.txt)
+
+	This document is for libzeep-generic
+]
+
+[book libzeep-generic
+    [quickbook 1.7]
+    [version 5.0]
+    [id quickbook]
+    [copyright 2020 Maarten L. Hekkelman]
+    [authors [Hekkelman, Maarten L.]]
+    [license 
+		Distributed under the Boost Software License, Version 1.0.
+        (See accompanying file LICENSE_1_0.txt or copy at
+        [@http://www.boost.org/LICENSE_1_0.txt])
+	]
+    [source-mode c++]
+]
+
+[/ links, geen idee wat hier gaat komen... ]
+
+[include introduction.qbk]
+[include generic.qbk]
+
+
+[/
+
 [article libzeep
 	[quickbook 1.5]
 	[version 3.0]
@@ -10,10 +43,9 @@
 	[authors [Hekkelman, Maarten L.]]
 ]
 
-[def __node__ [classref zeep::xml::node `zeep::xml::node`]]
+[/ [def __node__ [classref zeep::xml::node `zeep::xml::node`]]
 [def __element__ [classref zeep::xml::element `zeep::xml::element`]]
 [def __attribute__ [classref zeep::xml::attribute `zeep::xml::attribute`]]
-[def __container__ [classref zeep::xml::container `zeep::xml::container`]]
 [def __document__ [classref zeep::xml::document `zeep::xml::document`]]
 [def __serializer__ [classref zeep::xml::serializer `zeep::xml::serializer`]]
 [def __deserializer__ [classref zeep::xml::deserializer `zeep::xml::deserializer`]]
@@ -26,6 +58,7 @@
 [def __el_scope__ [classref zeep::http::el::scope `zeep::http::el::scope`]]
 [def __el_object__ [classref zeep::http::el::object `zeep::http::el::object`]]
 [def __rest_controller__ [classref zeep::http::rest_controller `zeep::http::rest_controller`]]
+]
 
 
 
@@ -834,3 +867,4 @@ is a call back function.
 [endsect]
 
 [xinclude autodoc.xml]
+]

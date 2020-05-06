@@ -13,7 +13,10 @@ namespace zeep
 {
 
 // --------------------------------------------------------------------
-// A simple class to use const char buffers as streambuf
+/// \brief A simple class to use const char buffers as streambuf
+///
+/// It is very often useful to have a streambuf class that can wrap
+/// wrap around a const char* pointer.
 
 class char_streambuf : public std::streambuf
 {

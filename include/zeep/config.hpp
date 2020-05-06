@@ -30,7 +30,7 @@
 #define WEBAPP_USES_RESOURCES 0
 #endif
 
-#define LIBZEEP_VERSION_MAJOR 4
+#define LIBZEEP_VERSION_MAJOR 5
 
 #ifndef LIBZEEP_DOXYGEN_INVOKED
 // see if we're using Visual C++, if so we have to include

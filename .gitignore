@@ -23,3 +23,4 @@ lib-xml/test/parser-test
 lib-xml/test/serializer-test
 lib-xml/test/unit-test
 lib-xml/test/xpath-test
+.vscode
