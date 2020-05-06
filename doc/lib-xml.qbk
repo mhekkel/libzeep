@@ -9,14 +9,13 @@
 	This document is for libzeep-generic
 ]
 
-[chapter Generic
+[chapter XML
     [quickbook 1.7]
-	[version 5.0]
-    [id libzeep.generic]
+    [id libzeep.xml]
 ]
 
 
-[section:descr The libzeep-generic library]
+[section:descr The libzeep-xml library]
 This is the descripion of the generic library.
 
 [endsect:descr]

@@ -9,7 +9,7 @@
 	This document is for libzeep-generic
 ]
 
-[book libzeep-generic
+[book libzeep
     [quickbook 1.7]
     [version 5.0]
     [id quickbook]
@@ -26,7 +26,8 @@
 [/ links, geen idee wat hier gaat komen... ]
 
 [include introduction.qbk]
-[include generic.qbk]
+[include lib-generic.qbk]
+[include lib-xml.qbk]
 
 
 [/

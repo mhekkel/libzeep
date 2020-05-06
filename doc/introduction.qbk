@@ -11,9 +11,42 @@
 
 [preface Introduction
     [quickbook 1.7]
-	[version 5.0]
     [id quickbook.intro]
 ]
 
-This is my introduction.
+Libzeep started as a collection of code split out of [@https://mrs.cmbi.umcn.nl MRS] which is a tool to index and search large text-based bioinformatics databanks. The code that generates a SOAP server in compile time in MRS was needed in another project and this is how libzeep started. BTW, zeep is the dutch word for soap.
+
+One of the major parts of libzeep used to be the XML library. It contains a full validating parser with support for XML 1.0 and 1.1 as well as a DOM API for manipulating XML based data structures in memory.
+
+The current implementation of libzeep goes much further. It is by now a swissarmy knife for building web applications in C++ including a web server implementation, a JSON library, SOAP and REST controller support and a templating engine looking suspisciously like Thymeleaf. Lots of the concepts used in libzeep are inspired by the Java based [@https://spring.io/ Spring framework].
+
+In version 5.0 the library has been split up in seven sub libraries, each targeted at a different audience.
+
+[heading:generic libzeep-generic]
+
+A very small library containing code that is used by all the others. Here you find the basics for serializing datastructures as well as some cryptographic routines (for calculating hash values).
+
+[heading:xml libzeep-xml]
+
+A solid XML library containing a validating parser as well as a modern C++ API for the datastructures. It also supports serializing datastructures using a boost-like serialization interface.
+
+[heading:el libzeep-el]
+
+This is an implementation of a JSON library. I've attempted to make it source code compatible with the very good [@https://github.com/nlohmann/json JSON library by Niels Lohmann]. There are some major differences though, my library has a very different parser as well as support for serializing using the same technique as libzeep-xml.
+
+[heading:http libzeep-http]
+
+This library contains a web server implementation. There's also code to create daemon processes and run a preforked webserver.
+
+[heading:webapp libzeep-webapp]
+
+The webapp library builds on libzeep-http and offers a way to create dynamic webapplications with full templating support. The design mimics a bit [@https://spring.io Spring] in combination with [@https://www.thymeleaf.org/ Thymeleaf]. The template language implementation attempts to be source code compatible with Thymeleaf.
+
+[heading:rest libzeep-rest]
+
+Building on libzeep-webapp, this library offers the ability to create controllers that process REST requests. The translation of HTTP parameters and HTTP form content into function variables as well as translation from result types into JSON is fully automatic.
+
+[heading:soap libzeep-soap]
+
+This is similar to libzeep-rest, but now using SOAP as protocol.
 
