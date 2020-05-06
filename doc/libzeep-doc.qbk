@@ -30,6 +30,9 @@
 [include lib-xml.qbk]
 
 
+[include reference.qbk]
+
+
 [/
 
 [article libzeep

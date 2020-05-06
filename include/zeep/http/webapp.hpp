@@ -107,7 +107,8 @@ class basic_webapp
 	std::filesystem::path get_docroot() const { return m_docroot; }
 
 	/// Set the authentication handler, basic_webapp takes ownership.
-	/// \param login If true, this class will handle a POST to /login with username/password
+	/// \param authenticator	The object that will the authentication 
+	/// \param login			If true, this class will handle a POST to /login with username/password
 	void set_authenticator(authentication_validation_base* authenticator, bool login = false);
 
 	/// Create an error reply for the error containing a validation header
