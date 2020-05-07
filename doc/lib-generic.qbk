@@ -14,7 +14,6 @@
     [id libzeep.generic]
 ]
 
-
 [section:descr The libzeep-generic library]
 This is the descripion of the generic library.
 

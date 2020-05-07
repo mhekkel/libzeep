@@ -6,7 +6,7 @@
     (See accompanying file LICENSE_1_0.txt or copy at
           http://www.boost.org/LICENSE_1_0.txt)
 
-	This document is for libzeep-generic
+	This document is for the introduction
 ]
 
 [preface Introduction
@@ -14,7 +14,7 @@
     [id quickbook.intro]
 ]
 
-Libzeep started as a collection of code split out of [@https://mrs.cmbi.umcn.nl MRS] which is a tool to index and search large text-based bioinformatics databanks. The code that generates a SOAP server in compile time in MRS was needed in another project and this is how libzeep started. BTW, zeep is the dutch word for soap.
+Libzeep started as a spin-off of [@https://mrs.cmbi.umcn.nl MRS] which is a tool to index and search large text-based bioinformatics databanks. The code that generates a SOAP server in compile time in MRS was needed in another project and this is how libzeep started. BTW, zeep is the dutch word for soap.
 
 One of the major parts of libzeep used to be the XML library. It contains a full validating parser with support for XML 1.0 and 1.1 as well as a DOM API for manipulating XML based data structures in memory.
 
