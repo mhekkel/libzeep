@@ -178,7 +178,7 @@ define TEST_template =
 
 test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(BOOST_LIBS:%=-lboost_%) $(ZEEP_LIBS:%=-lzeep-%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test

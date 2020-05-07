@@ -141,7 +141,7 @@ public:
 	jws_authentication_validation_base(const std::string &realm, const std::string &secret)
 		: authentication_validation_base(realm), m_secret(secret) {}
 
-	/// Validate the authorization, returns the validated user. Throws unauthorized_exception in case of failure
+	/// Validate the authorization, returns the validated user or a null object in case of failure
 	virtual el::element validate_authentication(const request &req);
 
 	/// Add e.g. headers to reply for an authorized request
