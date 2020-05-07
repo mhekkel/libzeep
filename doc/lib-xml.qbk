@@ -14,9 +14,66 @@
     [id libzeep.xml]
 ]
 
-
 [section:descr The libzeep-xml library]
-This is the descripion of the generic library.
+The core of this library is a validating XML parser with DTD processing and all. On top of this are implemented an API for manipulating XML data in a DOM like fashion and a serialization API. As a bonus there's also an XPath implementation, albeit this is limited to XPath 1.0.
 
 [endsect:descr]
 
+[section:api The API]
+libzeep uses a modern C++ way of accessing and manipulating data. To give an idea have a look at the following code.
+
+[c++]
+	#include <zeep/xml/document.hpp>
+
+	void foo()
+	{
+		/*<< Pull operator _xml into our namespace >>*/
+		using namespace zeep::xml::literals;
+
+		/*<< Create a __document__ by parsing some XML >>*/
+		auto doc = R"(<persons>
+				<person>
+					<firstname>John</firstname>
+					<lastname>Doe</lastname>
+				</person>
+				<person>
+					<firstname>Jane</firstname>
+					<lastname>Jones</lastname>
+				</person>
+			</persons>)"_xml;
+
+		/*<< A __document__ has one __document__child__ (/persons/ in this case) which can be iterated >>*/
+		for (auto person: doc.child())
+		{
+			std::string firstname, lastname;
+
+			for (auto name: person)
+			{
+				if (name.name() == "firstname")	firstname = name.str();
+				if (name.name() == "lastname")	lastname = name.str();
+			}
+
+			std::cout << firstname << ", " << lastname << std::endl;
+		}
+	}
+
+
+
+[endsect:api]
+
+
+[section:ser Serialization]
+
+
+[endsect:ser]
+
+
+[section:xpath XPath]
+
+
+[endsect:xpath]
+
+[section:parser The parser]
+
+
+[endsect:parser]

@@ -23,7 +23,9 @@
     [source-mode c++]
 ]
 
-[/ links, geen idee wat hier gaat komen... ]
+[def __document__ [classref zeep::xml::document `zeep::xml::document`]]
+[def __document__child__ [memberref zeep::xml::document::child `child`]]
+
 
 [include introduction.qbk]
 [include lib-generic.qbk]

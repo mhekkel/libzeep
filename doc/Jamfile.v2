@@ -45,8 +45,10 @@ boostbook standalone
 install css : [ glob ./css/*.css ]
     : <location>html/css ;
 
-install images : [ glob ./images/*.png ]
-    : <location>html/images ;
+install images
+	: [ glob images/*.png ]
+	  [ glob images/callouts/*.png ]
+    : <location>html/images <install-source-root>images ;
 
 explicit css ;
 
