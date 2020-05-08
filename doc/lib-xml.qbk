@@ -1,12 +1,12 @@
 [/
-	Documentation for libzeep version 5.0
+    Documentation for libzeep version 5.0
 
           Copyright Maarten L. Hekkelman, 2020
  Distributed under the Boost Software License, Version 1.0.
     (See accompanying file LICENSE_1_0.txt or copy at
           http://www.boost.org/LICENSE_1_0.txt)
 
-	This document is for libzeep-generic
+    This document is for libzeep-generic
 ]
 
 [chapter XML
@@ -22,42 +22,8 @@ The core of this library is a validating XML parser with DTD processing and all.
 [section:api The API]
 libzeep uses a modern C++ way of accessing and manipulating data. To give an idea have a look at the following code.
 
-[c++]
-	#include <zeep/xml/document.hpp>
-
-	void foo()
-	{
-		/*<< Pull operator _xml into our namespace >>*/
-		using namespace zeep::xml::literals;
-
-		/*<< Create a __document__ by parsing some XML >>*/
-		auto doc = R"(<persons>
-				<person>
-					<firstname>John</firstname>
-					<lastname>Doe</lastname>
-				</person>
-				<person>
-					<firstname>Jane</firstname>
-					<lastname>Jones</lastname>
-				</person>
-			</persons>)"_xml;
-
-		/*<< A __document__ has one __document__child__ (/persons/ in this case) which can be iterated >>*/
-		for (auto person: doc.child())
-		{
-			std::string firstname, lastname;
-
-			for (auto name: person)
-			{
-				if (name.name() == "firstname")	firstname = name.str();
-				if (name.name() == "lastname")	lastname = name.str();
-			}
-
-			std::cout << firstname << ", " << lastname << std::endl;
-		}
-	}
-
-
+[import ./examples/synopsis-xml.cpp]
+[synopsis_xml_main]
 
 [endsect:api]
 
