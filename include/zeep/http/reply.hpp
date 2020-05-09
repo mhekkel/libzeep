@@ -104,14 +104,10 @@ class reply
 		return m_content;
 	}
 
-	void to_buffers(std::vector<boost::asio::const_buffer> &buffers);
+	std::vector<boost::asio::const_buffer> to_buffers() const;
 
-	/// for istream data, continues until data_to_buffers returns false
-	bool data_to_buffers(std::vector<boost::asio::const_buffer> &buffers);
-
-	/// For debugging purposes
-	std::string get_as_text();
-	std::size_t get_size() const;
+	/// for istream data, if the returned buffer array is empty, the data is done
+	std::vector<boost::asio::const_buffer> data_to_buffers();
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
@@ -123,20 +119,23 @@ class reply
 	void set_status(status_type status) { m_status = status; }
 	status_type get_status() const { return m_status; }
 
-	void debug(std::ostream& os) const;
+	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
+	size_t size() const;
 
-	friend std::ostream& operator<<(std::ostream &, reply &);
+	friend std::ostream& operator<<(std::ostream& os, const reply& rep);
 
   private:
 	friend class reply_parser;
 
 	int m_version_major, m_version_minor;
 	status_type m_status;
-	std::string m_status_line;
 	std::vector<header> m_headers;
 	std::string m_content;
 	std::istream* m_data;
 	std::vector<char> m_buffer;
+
+	// this status line is only here to have a sensible location to store it
+	mutable std::string m_status_line;
 };
 
 }

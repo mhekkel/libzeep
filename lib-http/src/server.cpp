@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <locale>
+#include <thread>
 
 #include <zeep/http/server.hpp>
 #include <zeep/http/connection.hpp>
@@ -16,8 +17,6 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
-#include <boost/thread.hpp>
-// #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
 namespace ba = boost::algorithm;
@@ -28,8 +27,8 @@ namespace detail {
 
 // a thread specific logger
 
-boost::thread_specific_ptr<std::ostringstream>	s_log;
-boost::mutex								s_log_lock;
+thread_local std::unique_ptr<std::ostringstream> s_log;
+std::mutex s_log_lock;
 
 }
 
@@ -221,7 +220,7 @@ void server::log_request(const std::string& client,
 	const std::string& entry)
 {
 	// protect the output stream from garbled log messages
-	boost::unique_lock<boost::mutex> lock(detail::s_log_lock);
+	std::unique_lock<std::mutex> lock(detail::s_log_lock);
 
 	using namespace boost::local_time;
 
@@ -238,7 +237,7 @@ void server::log_request(const std::string& client,
 		 << '"' << to_string(req.method) << ' ' << req.uri << ' '
 				<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
 		 << rep.get_status() << ' '
-		 << rep.get_size() << ' '
+		 << rep.size() << ' '
 		 << '"' << referer << '"' << ' '
 		 << '"' << userAgent << '"' << ' ';
 	

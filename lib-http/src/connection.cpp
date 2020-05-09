@@ -60,8 +60,7 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 			
 			m_request_handler.handle_request(m_socket, m_request, m_reply);
 
-			std::vector<boost::asio::const_buffer> buffers;
-			m_reply.to_buffers(buffers);
+			auto buffers = m_reply.to_buffers();
 
 			boost::asio::async_write(m_socket, buffers,
 				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
@@ -71,8 +70,7 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 		{
 			m_reply = reply::stock_reply(bad_request);
 
-			std::vector<boost::asio::const_buffer> buffers;
-			m_reply.to_buffers(buffers);
+			auto buffers = m_reply.to_buffers();
 
 			boost::asio::async_write(m_socket, buffers,
 				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
@@ -91,9 +89,9 @@ void connection::handle_write(boost::system::error_code ec, size_t bytes_transfe
 {
 	if (not ec)
 	{
-		std::vector<boost::asio::const_buffer> buffers;
+		auto buffers = m_reply.data_to_buffers();
 		
-		if (m_reply.data_to_buffers(buffers))
+		if (not buffers.empty())
 		{
 			boost::asio::async_write(m_socket, buffers,
 				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)

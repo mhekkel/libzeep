@@ -103,7 +103,19 @@ bool rest_controller::handle_request(request& req, reply& rep)
 		}
 
 		if (mp->m_realm.empty() or validate_request(req, rep, mp->m_realm))
-			mp->call(params, rep);
+		{
+			try
+			{
+				mp->call(params, rep);
+			}
+			catch(const std::exception& e)
+			{
+				rep = reply::stock_reply(internal_server_error);
+				
+				el::element error({ { "error", e.what() }});
+				rep.set_content(error);
+			}
+		}
 
 		result = true;
 		break;

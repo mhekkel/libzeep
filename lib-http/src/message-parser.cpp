@@ -585,7 +585,6 @@ parser::result_type reply_parser::parse(reply& rep, const char* text, size_t len
 	if (result)
 	{
 		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_status_line = m_status_line;
 		rep.m_version_major = m_http_version_major;
 		rep.m_version_minor = m_http_version_minor;
 	}
@@ -616,7 +615,6 @@ parser::result_type reply_parser::parse_header(reply& rep, const char* text, siz
 	if (result)
 	{
 		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_status_line = m_status_line;
 		rep.m_version_major = m_http_version_major;
 		rep.m_version_minor = m_http_version_minor;
 	}
@@ -669,7 +667,6 @@ boost::tribool reply_parser::parse(reply& rep, std::streambuf& text)
 	if (result)
 	{
 		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_status_line = m_status_line;
 		rep.m_version_major = m_http_version_major;
 		rep.m_version_minor = m_http_version_minor;
 	}
@@ -699,7 +696,6 @@ boost::tribool reply_parser::parse_header(reply& rep, std::streambuf& text)
 	if (result)
 	{
 		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_status_line = m_status_line;
 		rep.m_version_major = m_http_version_major;
 		rep.m_version_minor = m_http_version_minor;
 	}

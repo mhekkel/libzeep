@@ -20,6 +20,7 @@
 #include <zeep/el/factory.hpp>
 #include <zeep/el/to_element.hpp>
 #include <zeep/el/from_element.hpp>
+#include <zeep/el/traits.hpp>
 
 #if __has_include(<optional>)
 #include <optional>
@@ -87,11 +88,20 @@ struct serializer
 	struct serializer_impl {};
 
 	template<typename T>
-	struct serializer_impl<T, std::enable_if_t<is_type_with_value_serializer_v<T,serializer>>>
+	struct serializer_impl<T, std::enable_if_t<el::detail::is_compatible_type_v<T>>>
+	{
+		static void serialize(const T& data, element_type& e)
+		{
+			e = data;
+		}
+	};
+
+	template<typename T>
+	struct serializer_impl<T, std::enable_if_t<not el::detail::is_compatible_type_v<T> and is_type_with_value_serializer_v<T,serializer>>>
 	{
 		using value_serializer = zeep::value_serializer<T>;
 
-		static void serialize(T& data, element_type& e)
+		static void serialize(const T& data, element_type& e)
 		{
 			e = value_serializer::to_string(data);
 		}
@@ -100,10 +110,10 @@ struct serializer
 	template<typename T>
 	struct serializer_impl<T, std::enable_if_t<has_serialize_v<T,serializer>>>
 	{
-		static void serialize(T& data, element_type& e)
+		static void serialize(const T& data, element_type& e)
 		{
 			serializer sr;
-			data.serialize(sr, 0);
+			const_cast<T&>(data).serialize(sr, 0);
 			e.swap(sr.m_elem);
 		}
 	};
@@ -115,7 +125,7 @@ struct serializer
 		not is_serializable_array_type_v<T,serializer> and
 		not is_serializable_map_type_v<T,serializer>>>
 	{
-		static void serialize(T& data, element_type& e)
+		static void serialize(const T& data, element_type& e)
 		{
 			e = data;
 		}
@@ -124,7 +134,7 @@ struct serializer
 	template<typename T>
 	struct serializer_impl<T, std::enable_if_t<is_serializable_array_type_v<T,serializer>>>
 	{
-		static void serialize(T& data, element_type& e)
+		static void serialize(const T& data, element_type& e)
 		{
 			using serializer_impl = serializer_impl<typename T::value_type>;
 
@@ -142,7 +152,7 @@ struct serializer
 	template<typename T>
 	struct serializer_impl<T, std::enable_if_t<is_serializable_map_type_v<T,serializer>>>
 	{
-		static void serialize(T& data, element_type& e)
+		static void serialize(const T& data, element_type& e)
 		{
 			using serializer_impl = serializer_impl<typename T::mapped_type>;
 
@@ -160,7 +170,7 @@ struct serializer
 	template<typename T>
 	struct serializer_impl<T, std::enable_if_t<is_serializable_optional_type_v<T,serializer>>>
 	{
-		static void serialize(T& data, element_type& e)
+		static void serialize(const T& data, element_type& e)
 		{
 			using serializer_impl = serializer_impl<typename T::value_type>;
 
@@ -193,7 +203,7 @@ struct serializer
 	}
 
 	template<typename T>
-	static void serialize(E& e, T& v)
+	static void serialize(E& e, const T& v)
 	{
 		using serializer_impl = serializer_impl<T>;
 		serializer_impl::serialize(v, e);
