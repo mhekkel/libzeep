@@ -12,8 +12,6 @@
 namespace zeep
 {
 
-/// zeep::exception is a class used to throw zeep exception.
-
 class exception : public std::exception
 {
 public:

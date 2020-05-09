@@ -1,5 +1,3 @@
-using quickbook : /usr/local/bin/quickbook ;
-using doxygen ;
 
 doxygen autodoc
     :

@@ -3,6 +3,13 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+/*! \file zeep/serialize.hpp
+	\brief File containing the common serialization code in libzeep
+
+	Serialization in libzeep is used by both the XML and the JSON sub libraries.
+	Code that is common is found here.
+*/
+
 #pragma once
 
 #include <regex>
