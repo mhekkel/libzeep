@@ -32,17 +32,6 @@ constexpr bool is_single_byte_encoding(encoding_type enc)
 	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
 }
 
-/// some character classification routines
-
-bool is_name_start_char(unicode uc);
-bool is_name_char(unicode uc);
-bool is_valid_xml_1_0_char(unicode uc);
-bool is_valid_xml_1_1_char(unicode uc);
-bool is_valid_system_literal_char(unicode uc);
-bool is_valid_system_literal(const std::string& s);
-bool is_valid_public_id_char(unicode uc);
-bool is_valid_public_id(const std::string& s);
-
 /// Convert a string from UCS4 to UTF-8
 std::string wstring_to_string(const std::wstring& s);
 
@@ -52,7 +41,7 @@ unicode pop_last_char(std::string& s);
 template<typename Iter>
 std::tuple<unicode,Iter> get_first_char(Iter ptr);
 
-/// our own implementation of iequals: strings are compared case-insensitive
+/// our own implementation of iequals: compares \a a with \a b case-insensitive
 bool iequals(const std::string& a, const std::string& b);
 
 /// Maybe not the correct location, but here's a to_string equivalent returning a hexadecimal representation.
