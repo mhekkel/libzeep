@@ -195,9 +195,9 @@ struct type_serializer
 		assert(name);
 
 		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			n.content(value_serializer_type::to_string(value));
+			n.set_content(value_serializer_type::to_string(value));
 		else
-			n.emplace_back(name).content(value_serializer_type::to_string(value));
+			n.emplace_back(name).set_content(value_serializer_type::to_string(value));
 	}
 
 	static void deserialize_child(const element& n, const char* name, value_type& value)
@@ -207,12 +207,12 @@ struct type_serializer
 		value = {};
 
 		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			value = value_serializer_type::from_string(n.content());
+			value = value_serializer_type::from_string(n.get_content());
 		else
 		{
 			auto e = std::find_if(n.begin(), n.end(), [name](auto& e) { return e.name() == name; });
 			if (e != n.end())
-				value = value_serializer_type::from_string(e->content());
+				value = value_serializer_type::from_string(e->get_content());
 		}
 	}
 
@@ -274,8 +274,8 @@ struct type_serializer<T[N]>
 	static element schema(const std::string& name, const std::string& prefix)
 	{
 		element result = type_serializer_type::schema(name, prefix);
-		result.attr("minOccurs", std::to_string(N));
-		result.attr("maxOccurs", std::to_string(N));
+		result.set_attribute("minOccurs", std::to_string(N));
+		result.set_attribute("maxOccurs", std::to_string(N));
 		return result;
 	}
 
@@ -308,9 +308,9 @@ struct type_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 		assert(name);
 
 		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			n.content(value_serializer_type::to_string(value));
+			n.set_content(value_serializer_type::to_string(value));
 		else
-			n.emplace_back(name).content(value_serializer_type::to_string(value));
+			n.emplace_back(name).set_content(value_serializer_type::to_string(value));
 	}
 
 	static void deserialize_child(const element& n, const char* name, value_type& value)
@@ -320,12 +320,12 @@ struct type_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 		value = value_type();
 
 		if (std::strlen(name) == 0 or std::strcmp(name, ".") == 0)
-			value = value_serializer_type::from_string(n.content());
+			value = value_serializer_type::from_string(n.get_content());
 		else
 		{
 			auto e = std::find_if(n.begin(), n.end(), [name](auto& e) { return e.name() == name; });
 			if (e != n.end())
-				value = value_serializer_type::from_string(e->content());
+				value = value_serializer_type::from_string(e->get_content());
 		}
 	}
 
@@ -651,7 +651,7 @@ deserializer& deserializer::deserialize_attribute(const char* name, T& value)
 	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
 	using type_serializer = type_serializer<value_type>;
 
-	std::string attr = m_node.attr(name);
+	std::string attr = m_node.get_attribute(name);
 	if (not attr.empty())
 		value = type_serializer::deserialize_value(attr);
 
