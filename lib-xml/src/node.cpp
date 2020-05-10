@@ -513,7 +513,7 @@ element::element(const std::string& qname, std::initializer_list<zeep::xml::attr
 	, m_attributes(*this)
 {
 	for (auto& a: attributes)
-		attr(a.get_qname(), a.value());
+		set_attribute(a.get_qname(), a.value());
 }
 
 // copy constructor. Copy data and children, but not parent and sibling
@@ -602,7 +602,7 @@ std::string element::id() const
 	return result;
 }
 
-std::string element::attr(const std::string& qname) const
+std::string element::get_attribute(const std::string& qname) const
 {
 	std::string result;
 
@@ -613,7 +613,7 @@ std::string element::attr(const std::string& qname) const
 	return result;
 }
 
-void element::attr(const std::string& qname, const std::string& value)
+void element::set_attribute(const std::string& qname, const std::string& value)
 {
 	m_attributes.emplace(qname, value);
 }
@@ -712,7 +712,7 @@ void element::clear()
 	m_attributes.clear();
 }
 
-std::string element::content() const
+std::string element::get_content() const
 {
 	std::string result;
 
@@ -726,7 +726,7 @@ std::string element::content() const
 	return result;
 }
 
-void element::content(const std::string& s)
+void element::set_content(const std::string& s)
 {
 	// remove all existing text nodes (including cdata ones)
 	for (auto n = m_nodes.begin(); n != m_nodes.end(); ++n)
@@ -761,7 +761,7 @@ void element::add_text(const std::string& s)
 
 void element::set_text(const std::string& s)
 {
-	content(s);
+	set_content(s);
 }
 
 void element::flatten_text()

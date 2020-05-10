@@ -475,7 +475,7 @@ auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute
 	xml::element* wildcard = nullptr;
 	for (auto c: cases)
 	{
-		auto ca = c->attr(element->prefix_tag("case", ns()));
+		auto ca = c->get_attribute(element->prefix_tag("case", ns()));
 
 		if (ca == "*")
 			wildcard = c;
@@ -579,7 +579,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::eleme
 {
 	auto v = evaluate_el_attr(scope, attr->value());
 	for (auto vi: v)
-		node->attr(vi.first, vi.second);
+		node->set_attribute(vi.first, vi.second);
 
 	return AttributeAction::none;
 }
@@ -591,7 +591,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::el
 	auto s = attr->value();
 
 	process_el(scope, s);
-	node->attr(attr->name(), s);
+	node->set_attribute(attr->name(), s);
 
 	return AttributeAction::none;
 }
@@ -604,7 +604,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
 	auto s = attr->value();
 
 	if (evaluate_el(scope, s))
-		node->attr(attr->name(), attr->name());
+		node->set_attribute(attr->name(), attr->name());
 	else
 		node->attributes().erase(attr->name());
 

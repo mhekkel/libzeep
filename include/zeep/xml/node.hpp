@@ -184,19 +184,32 @@ class node
 };
 
 // --------------------------------------------------------------------
-/// A node containing a XML comment
+/// internal node just for storing text
 
-class comment : public node
+class node_with_text : public node
 {
   public:
-	comment() {}
-	comment(comment&& c) : m_text(std::move(c.m_text)) {}
-	comment(const std::string& text) : m_text(text) {}
+	node_with_text() {}
+	node_with_text(const std::string& s) : m_text(s) {}
 
 	virtual std::string str() const { return m_text; }
 
 	virtual std::string get_text() const { return m_text; }
 	virtual void set_text(const std::string& text) { m_text = text; }
+
+  protected:
+	std::string m_text;
+};
+
+// --------------------------------------------------------------------
+/// A node containing a XML comment
+
+class comment : public node_with_text
+{
+  public:
+	comment() {}
+	comment(comment&& c) : node_with_text(std::move(c.m_text)) {}
+	comment(const std::string& text) : node_with_text(text) {}
 
 	virtual bool equals(const node* n) const;
 
@@ -206,35 +219,28 @@ class comment : public node
   protected:
 
 	virtual void write(std::ostream& os, format_info fmt) const;
-
-  private:
-	std::string m_text;
 };
 
 // --------------------------------------------------------------------
 /// A node containing a XML processing instruction (like e.g. \<?php ?\>)
 
-class processing_instruction : public node
+class processing_instruction : public node_with_text
 {
   public:
 	processing_instruction() {}
 
 	processing_instruction(processing_instruction&& pi)
-		: m_target(std::move(pi.m_target))
-		, m_text(std::move(pi.m_text))
+		: node_with_text(std::move(pi.m_text))
+		, m_target(std::move(pi.m_target))
 	{}
 
 	processing_instruction(const std::string& target, const std::string& text)
-		: m_target(target), m_text(text) {}
+		: node_with_text(text), m_target(target) {}
 
 	virtual std::string get_qname() const { return m_target; }
-	virtual std::string str() const { return m_target + ' ' + m_text; }
 
 	std::string get_target() const { return m_target; }
 	void set_target(const std::string& target) { m_target = target; }
-
-	virtual std::string get_text() const { return m_text; }
-	void set_text(const std::string& text) { m_text = text; }
 
 	virtual bool equals(const node* n) const;
 
@@ -247,27 +253,21 @@ class processing_instruction : public node
 
   private:
 	std::string m_target;
-	std::string m_text;
 };
 
 // --------------------------------------------------------------------
 /// A node containing text.
 
-class text : public node
+class text : public node_with_text
 {
   public:
 	text() {}
 
 	text(text&& t)
-		: m_text(std::move(t.m_text)) {}
+		: node_with_text(std::move(t.m_text)) {}
 
 	text(const std::string& text)
-		: m_text(text) {}
-
-	virtual std::string str() const { return m_text; }
-
-	virtual std::string get_text() const { return m_text; }
-	virtual void set_text(const std::string& text) { m_text = text; }
+		: node_with_text(text) {}
 
 	void append(const std::string& text) { m_text.append(text); }
 
@@ -282,8 +282,6 @@ class text : public node
   protected:
 
 	virtual void write(std::ostream& os, format_info fmt) const;
-
-	std::string m_text;
 };
 
 // --------------------------------------------------------------------
@@ -295,11 +293,8 @@ class cdata : public text
 {
   public:
 	cdata() {}
-
 	cdata(cdata&& cd) : text(std::move(cd)) {}
-
-	cdata(const std::string& s)
-		: text(s) {}
+	cdata(const std::string& s)	: text(s) {}
 
 	virtual bool equals(const node* n) const;
 
@@ -1466,11 +1461,11 @@ class element : public node
 	void move_to_name_space(const std::string& prefix, const std::string& uri,
 		bool recursive, bool including_attributes);
 
-	std::string content() const;
-	void content(const std::string& content);
+	std::string get_content() const;
+	void set_content(const std::string& content);
 
-	std::string attr(const std::string& qname) const;
-	void attr(const std::string& qname, const std::string& value);
+	std::string get_attribute(const std::string& qname) const;
+	void set_attribute(const std::string& qname, const std::string& value);
 
 	/// The set_text method replaces any text node with the new text
 	virtual void set_text(const std::string& s);

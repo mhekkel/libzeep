@@ -97,8 +97,8 @@ bool run_test(const xml::element& test, fs::path base_dir)
 {
 	bool result = true;
 
-	fs::path input(base_dir / test.attr("URI"));
-	fs::path output(base_dir / test.attr("OUTPUT"));
+	fs::path input(base_dir / test.get_attribute("URI"));
+	fs::path output(base_dir / test.get_attribute("OUTPUT"));
 
 	++total_tests;
 	
@@ -128,15 +128,15 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	{
 		fs::current_path(input.parent_path());
 		
-		if (test.attr("TYPE") == "valid")
+		if (test.get_attribute("TYPE") == "valid")
 			result = run_valid_test(is, output);
-		else if (test.attr("TYPE") == "not-wf" or test.attr("TYPE") == "invalid")
+		else if (test.get_attribute("TYPE") == "not-wf" or test.get_attribute("TYPE") == "invalid")
 		{
 			bool failed = false;
 			try
 			{
 				xml::document doc;
-				doc.set_validating(test.attr("TYPE") == "invalid");
+				doc.set_validating(test.get_attribute("TYPE") == "invalid");
 				is >> doc;
 				++should_have_failed;
 				result = false;
@@ -144,7 +144,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			}
 			catch (zeep::xml::not_wf_exception& e)
 			{
-				if (test.attr("TYPE") != "not-wf")
+				if (test.get_attribute("TYPE") != "not-wf")
 				{
 					++wrong_exception;
 					throw zeep::exception(string("Wrong exception (should have been invalid):\n\t") + e.what());
@@ -156,7 +156,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			}
 			catch (zeep::xml::invalid_exception& e)
 			{
-				if (test.attr("TYPE") != "invalid")
+				if (test.get_attribute("TYPE") != "invalid")
 				{
 					++wrong_exception;
 					throw zeep::exception(string("Wrong exception (should have been not-wf):\n\t") + e.what());
@@ -194,7 +194,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 
 			if (VERBOSE and not failed)
 			{
-				if (test.attr("TYPE") == "not-wf")
+				if (test.get_attribute("TYPE") == "not-wf")
 					throw zeep::exception("document should have been not well formed");
 				else // or test.attr("TYPE") == "error" 
 					throw zeep::exception("document should have been invalid");
@@ -203,7 +203,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	}
 	catch (std::exception& e)
 	{
-		if (test.attr("TYPE") == "valid")
+		if (test.get_attribute("TYPE") == "valid")
 			++error_tests;
 		result = false;
 		error = e.what();
@@ -212,14 +212,14 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	if (VERBOSE or result == false)
 	{
 		cout << "-----------------------------------------------" << endl
-			 << "ID:             " << test.attr("ID") << endl
+			 << "ID:             " << test.get_attribute("ID") << endl
 			 << "FILE:           " << /*fs::system_complete*/(input) << endl
-			 << "TYPE:           " << test.attr("TYPE") << endl
-			 << "SECTION:        " << test.attr("SECTIONS") << endl
-			 << "EDITION:        " << test.attr("EDITION") << endl
-			 << "RECOMMENDATION: " << test.attr("RECOMMENDATION") << endl;
+			 << "TYPE:           " << test.get_attribute("TYPE") << endl
+			 << "SECTION:        " << test.get_attribute("SECTIONS") << endl
+			 << "EDITION:        " << test.get_attribute("EDITION") << endl
+			 << "RECOMMENDATION: " << test.get_attribute("RECOMMENDATION") << endl;
 		
-		istringstream s(test.content());
+		istringstream s(test.get_content());
 		for (;;)
 		{
 			string line;
@@ -269,11 +269,11 @@ void run_test_case(const xml::element& testcase, const string& id,
 	const string& type, int edition, fs::path base_dir, vector<string>& failed_ids)
 {
 	if (VERBOSE and id.empty())
-		cout << "Running testcase " << testcase.attr("PROFILE") << endl;
+		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
 
-	if (not testcase.attr("xml:base").empty())
+	if (not testcase.get_attribute("xml:base").empty())
 	{
-		base_dir /= testcase.attr("xml:base");
+		base_dir /= testcase.get_attribute("xml:base");
 
 		if (fs::exists(base_dir))
 			fs::current_path(base_dir);
@@ -289,12 +289,12 @@ void run_test_case(const xml::element& testcase, const string& id,
 
 	for (const xml::element* n: xml::xpath(path).evaluate<xml::element>(testcase))
 	{
-		if ((id.empty() or id == n->attr("ID")) and
-			(type.empty() or type == n->attr("TYPE")))
+		if ((id.empty() or id == n->get_attribute("ID")) and
+			(type.empty() or type == n->get_attribute("TYPE")))
 		{
 			if (edition != 0)
 			{
-				auto es = n->attr("EDITION");
+				auto es = n->get_attribute("EDITION");
 				if (not es.empty())
 				{
 					auto b = sregex_token_iterator(es.begin(), es.end(), ws_re, -1);
@@ -306,10 +306,10 @@ void run_test_case(const xml::element& testcase, const string& id,
 				}
 			}
 
-			if (fs::exists(base_dir / n->attr("URI")) and
+			if (fs::exists(base_dir / n->get_attribute("URI")) and
 				not run_test(*n, base_dir))
 			{
-				failed_ids.push_back(n->attr("ID"));
+				failed_ids.push_back(n->get_attribute("ID"));
 			}
 		}
 	}

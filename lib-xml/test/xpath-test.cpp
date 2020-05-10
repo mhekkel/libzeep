@@ -33,14 +33,14 @@ ostream& operator<<(ostream& os, const xml::node& n)
 bool run_test(const xml::element& test)
 {
 	cout << "----------------------------------------------------------" << endl
-		 << "ID: " << test.attr("ID")
+		 << "ID: " << test.get_attribute("ID")
 		 << endl
-		 << "xpath: " << test.attr("xpath") << endl
+		 << "xpath: " << test.get_attribute("xpath") << endl
 //		 << "data: " << test.content() << endl
 //		 << "expected-size: " << test.attr("expected-size") << endl
 		 << endl;
 
-	fs::path data_file = fs::current_path() / test.attr("data");
+	fs::path data_file = fs::current_path() / test.get_attribute("data");
 	if (not fs::exists(data_file))
 		throw zeep::exception("file does not exist");
 	
@@ -52,11 +52,11 @@ bool run_test(const xml::element& test)
 	if (VERBOSE)
 		cout << "test doc:" << endl << doc << endl;
 	
-	xml::xpath xp(test.attr("xpath"));
+	xml::xpath xp(test.get_attribute("xpath"));
 
 	xml::context context;
 	for (const xml::element* e: test.find("var"))
-		context.set(e->attr("name"), e->attr("value"));
+		context.set(e->get_attribute("name"), e->get_attribute("value"));
 	
 	xml::node_set ns = xp.evaluate<xml::node>(*doc.root(), context);
 
@@ -69,16 +69,16 @@ bool run_test(const xml::element& test)
 	
 	bool result = true;
 	
-	if (ns.size() != boost::lexical_cast<unsigned int>(test.attr("expected-size")))
+	if (ns.size() != boost::lexical_cast<unsigned int>(test.get_attribute("expected-size")))
 	{
 		cout << "incorrect number of nodes in returned node-set" << endl
-			 << "expected: " << test.attr("expected-size") << endl;
+			 << "expected: " << test.get_attribute("expected-size") << endl;
 
 		result = false;
 	}
 
-	string test_attr_name = test.attr("test-name");
-	string attr_test = test.attr("test-attr");
+	string test_attr_name = test.get_attribute("test-name");
+	string attr_test = test.get_attribute("test-attr");
 
 	if (not attr_test.empty())
 	{
@@ -91,7 +91,7 @@ bool run_test(const xml::element& test)
 			if (e == NULL)
 				continue;
 			
-			if (e->attr(test_attr_name) != attr_test)
+			if (e->get_attribute(test_attr_name) != attr_test)
 			{
 				cout << "expected attribute content is not found for node " << e->get_qname() << endl;
 				result = false;
@@ -127,7 +127,7 @@ void run_tests(const fs::path& file)
 	if (not dir.empty())
 		fs::current_path(dir);
 
-	string base = doc.front().attr("xml:base");
+	string base = doc.front().get_attribute("xml:base");
 	if (not base.empty())
 		fs::current_path(base);
 	

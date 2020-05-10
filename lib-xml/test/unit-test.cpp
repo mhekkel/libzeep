@@ -168,10 +168,10 @@ BOOST_AUTO_TEST_CASE(xml_container_and_iterators)
 
 	zx::element n("a");
 	e.insert(e.begin(), move(n));
-	e.back().content("aap ");
+	e.back().set_content("aap ");
 	
-	e.emplace_back("b").content("noot ");
-	e.emplace_back("c").content("mies");
+	e.emplace_back("b").set_content("noot ");
+	e.emplace_back("c").set_content("mies");
 
 	BOOST_TEST(e.size() == 3);
 	BOOST_TEST(not e.empty());
@@ -269,15 +269,15 @@ BOOST_AUTO_TEST_CASE(xml_iterators)
 {
 	zx::element e("test");
 	for (int i = 0; i < 10; ++i)
-		e.emplace_back("n").content(to_string(i));
+		e.emplace_back("n").set_content(to_string(i));
 
 	auto bi = e.begin();
 	auto ei = e.end();
 
 	for (int i = 0; i < 10; ++i)
 	{
-		BOOST_TEST((bi + i)->content() == to_string(i));
-		BOOST_TEST((ei - i - 1)->content() == to_string(9 - i));
+		BOOST_TEST((bi + i)->get_content() == to_string(i));
+		BOOST_TEST((ei - i - 1)->get_content() == to_string(9 - i));
 	}
 }
 
@@ -285,15 +285,15 @@ BOOST_AUTO_TEST_CASE(xml_iterators_2)
 {
 	zx::element e("test");
 	for (int i = 0; i < 10; ++i)
-		e.emplace_back("n").content(to_string(i));
+		e.emplace_back("n").set_content(to_string(i));
 
 	auto bi = e.begin();
 	auto ei = e.end();
 
 	for (int i = 0; i < 10; ++i)
 	{
-		BOOST_TEST((bi + i)->content() == to_string(i));
-		BOOST_TEST((ei - i - 1)->content() == to_string(9 - i));
+		BOOST_TEST((bi + i)->get_content() == to_string(i));
+		BOOST_TEST((ei - i - 1)->get_content() == to_string(9 - i));
 	}
 
 	std::vector<zx::node*> nodes;
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(xml_iterators_2)
 	{
 		zx::element* e = dynamic_cast<zx::element*>(nodes[i]);
 		BOOST_TEST(e != nullptr);
-		BOOST_TEST(e->content() == to_string(i));
+		BOOST_TEST(e->get_content() == to_string(i));
 	}
 }
 
