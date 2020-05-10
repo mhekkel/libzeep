@@ -31,7 +31,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 			if (request == envelope.end())
 				throw zeep::exception("Empty or invalid SOAP envelope passed");
 
-			if (request->ns() != m_ns)
+			if (request->get_ns() != m_ns)
 				throw zeep::exception("Invalid namespace for request");
 
 			std::string action = request->name();

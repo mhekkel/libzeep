@@ -40,10 +40,10 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	is >> indoc;
 	
 	stringstream s;
-	indoc.collapse_empty_tags(false);
-	indoc.suppress_comments(true);
-	indoc.escape_white_space(true);
-	indoc.wrap_prolog(false);
+	indoc.set_collapse_empty_tags(false);
+	indoc.set_suppress_comments(true);
+	indoc.set_escape_white_space(true);
+	indoc.set_wrap_prolog(false);
 	s << indoc;
 
 	string s1 = s.str();
@@ -86,7 +86,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 
 void dump(xml::element& e, int level = 0)
 {
-	cout << level << "> " << e.qname() << endl;
+	cout << level << "> " << e.get_qname() << endl;
 	for (auto& [name, ignore]: e.attributes())
 		cout << level << " (a)> " << name << endl;
 	for (auto& c: e)
@@ -136,7 +136,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			try
 			{
 				xml::document doc;
-				doc.validating(test.attr("TYPE") == "invalid");
+				doc.set_validating(test.attr("TYPE") == "invalid");
 				is >> doc;
 				++should_have_failed;
 				result = false;
@@ -336,7 +336,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 	
 	for (auto test: doc.find("//TESTCASES"))
 	{
-		if (test->qname() != "TESTCASES")
+		if (test->get_qname() != "TESTCASES")
 			continue;
 		run_test_case(*test, id, type, edition, base_dir, failed_ids);
 	}

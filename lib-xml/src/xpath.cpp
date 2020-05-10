@@ -1277,7 +1277,7 @@ object core_function_expression<CoreFunction::NamespaceUri>::evaluate(expression
 	if (n == nullptr)
 		throw exception("argument is not an element in function 'namespace-uri'");
 
-	return n->ns();
+	return n->get_ns();
 }
 
 template<>
@@ -1297,7 +1297,7 @@ object core_function_expression<CoreFunction::Name>::evaluate(expression_context
 	if (n == nullptr)
 		throw exception("argument is not an element in function 'name'");
 
-	return n->qname();
+	return n->get_qname();
 }
 
 template<>

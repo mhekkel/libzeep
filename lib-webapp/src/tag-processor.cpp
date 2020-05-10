@@ -76,10 +76,10 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 
 	if (text != nullptr)
 	{
-		std::string s = text->str();
+		std::string s = text->get_text();
 
 		if (process_el(scope, s))
-			text->str(s);
+			text->set_text(s);
 
 		return;
 	}
@@ -89,7 +89,7 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 		return;
 
 	// if node is one of our special nodes, we treat it here
-	if (e->ns() == m_ns)
+	if (e->get_ns() == m_ns)
 	{
 		xml::element* parent = e->parent();
 
@@ -102,7 +102,7 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 		catch (exception& ex)
 		{
 			parent->nodes().push_back(
-				xml::text("Error processing directive '" + e->qname() + "': " + ex.what()));
+				xml::text("Error processing directive '" + e->get_qname() + "': " + ex.what()));
 		}
 
 		try
@@ -157,7 +157,7 @@ void tag_processor_v1::process_include(xml::element *node, const scope& scope, f
 		throw exception("missing file attribute");
 
 	xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 	webapp.load_template((dir / file).string(), doc);
 
 	process_xml(&doc.front(), scope, (dir / file).parent_path(), webapp);
@@ -432,7 +432,7 @@ void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs:
 		throw exception("Missing var attribute in embed tag");
 
 	zeep::xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 	
 	std::istringstream os(xml);
 	os >> doc;

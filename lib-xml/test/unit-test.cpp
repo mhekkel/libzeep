@@ -112,17 +112,17 @@ BOOST_AUTO_TEST_CASE(xml_attributes_1)
 	for (auto& a: t.attributes())
 	{
 		BOOST_TEST(a.name() == "a");
-		BOOST_TEST(a.qname() == "m:a");
-		BOOST_TEST(a.ns() == "http://www.hekkelman.com");
+		BOOST_TEST(a.get_qname() == "m:a");
+		BOOST_TEST(a.get_ns() == "http://www.hekkelman.com");
 	}
 
 	for (auto a: t.attributes())
 	{
 		BOOST_TEST(a.name() == "a");
-		BOOST_TEST(a.qname() == "m:a");
+		BOOST_TEST(a.get_qname() == "m:a");
 
 		// the attribute was copied and thus lost namespace information
-		BOOST_TEST(a.ns() != "http://www.hekkelman.com");
+		BOOST_TEST(a.get_ns() != "http://www.hekkelman.com");
 	}
 }
 
@@ -360,19 +360,19 @@ BOOST_AUTO_TEST_CASE(xml_doc)
 	BOOST_TEST(doc4.size() == 1);
 
 	auto l1 = doc4.front();
-	BOOST_TEST(l1.qname() == "l1");
+	BOOST_TEST(l1.get_qname() == "l1");
 	BOOST_TEST(l1.size() == 1);
 
 	auto l2 = l1.front();
-	BOOST_TEST(l2.qname() == "l2");
+	BOOST_TEST(l2.get_qname() == "l2");
 	BOOST_TEST(l2.size() == 1);
 
 	auto l3 = l2.front();
-	BOOST_TEST(l3.qname() == "l3");
+	BOOST_TEST(l3.get_qname() == "l3");
 	BOOST_TEST(l3.size() == 1);
 
 	auto l4 = l3.front();
-	BOOST_TEST(l4.qname() == "l4");
+	BOOST_TEST(l4.get_qname() == "l4");
 	BOOST_TEST(l4.empty());
 
 	auto i = l3.find_first("./l4");
@@ -405,7 +405,7 @@ BOOST_AUTO_TEST_CASE(xml_xpath)
 
 	auto r = doc.find("//a");
 	BOOST_TEST(r.size() == 3);
-	BOOST_TEST(r.front()->qname() == "a");
+	BOOST_TEST(r.front()->get_qname() == "a");
 }
 
 BOOST_AUTO_TEST_CASE(xml_namespaces)
@@ -424,43 +424,43 @@ BOOST_AUTO_TEST_CASE(xml_namespaces)
 	auto& data = doc.front();
 	BOOST_TEST(data.parent() == &doc);
 	BOOST_TEST(data.name() == "data");
-	BOOST_TEST(data.ns().empty());
+	BOOST_TEST(data.get_ns().empty());
 
 	BOOST_TEST(data.empty() == false);
 	BOOST_TEST(data.begin() != data.end());
 
 	auto& div = data.front();
 	BOOST_TEST(div.name() == "div");
-	BOOST_TEST(div.ns().empty());
+	BOOST_TEST(div.get_ns().empty());
 	BOOST_TEST(div.parent() == &data);
 
 	auto& test0 = div.front();
 	BOOST_TEST(test0.parent() == &div);
 	BOOST_TEST(test0.name() == "test0");
-	BOOST_TEST(test0.qname() == "m:test0");
-	BOOST_TEST(test0.ns() == "http://www.hekkelman.com/libzeep/m2");
+	BOOST_TEST(test0.get_qname() == "m:test0");
+	BOOST_TEST(test0.get_ns() == "http://www.hekkelman.com/libzeep/m2");
 
 	auto& test1 = *(div.begin() + 1);
 	BOOST_TEST(test1.parent() == &div);
 	BOOST_TEST(test1.name() == "test1");
-	BOOST_TEST(test1.ns().empty());
+	BOOST_TEST(test1.get_ns().empty());
 
 	BOOST_TEST(test1.attributes().size() == 1);
 	auto& test1_if = *test1.attributes().begin();
 	BOOST_TEST(test1_if.name() == "if");
-	BOOST_TEST(test1_if.qname() == "m:if");
-	BOOST_TEST(test1_if.ns() == "http://www.hekkelman.com/libzeep/m2");
+	BOOST_TEST(test1_if.get_qname() == "m:if");
+	BOOST_TEST(test1_if.get_ns() == "http://www.hekkelman.com/libzeep/m2");
 	
 	auto& test2 = *(div.begin() + 2);
 	BOOST_TEST(test2.parent() == &div);
 	BOOST_TEST(test2.name() == "test2");
-	BOOST_TEST(test2.ns().empty());
+	BOOST_TEST(test2.get_ns().empty());
 
 	BOOST_TEST(test2.attributes().size() == 1);
 	auto& test2_unless = *test2.attributes().begin();
 	BOOST_TEST(test2_unless.name() == "unless");
-	BOOST_TEST(test2_unless.qname() == "m:unless");
-	BOOST_TEST(test2_unless.ns() == "http://www.hekkelman.com/libzeep/m2");
+	BOOST_TEST(test2_unless.get_qname() == "m:unless");
+	BOOST_TEST(test2_unless.get_ns() == "http://www.hekkelman.com/libzeep/m2");
 }
 
 BOOST_AUTO_TEST_CASE(xml_namespaces_2)
@@ -478,32 +478,32 @@ BOOST_AUTO_TEST_CASE(xml_namespaces_2)
 	auto& data = doc.front();
 	BOOST_TEST(data.parent() == &doc);
 	BOOST_TEST(data.name() == "data");
-	BOOST_TEST(data.ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(data.get_ns() == "http://www.hekkelman.com/libzeep");
 
 	BOOST_TEST(data.empty() == false);
 	BOOST_TEST(data.begin() != data.end());
 
 	auto& x = data.front();
 	BOOST_TEST(x.name() == "x");
-	BOOST_TEST(x.qname() == "x");
-	BOOST_TEST(x.ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(x.get_qname() == "x");
+	BOOST_TEST(x.get_ns() == "http://www.hekkelman.com/libzeep");
 	BOOST_TEST(x.parent() == &data);
 
 	auto ax = x.attributes().find("a");
 	BOOST_TEST(ax != x.attributes().end());
 	BOOST_TEST(ax->value() == "1");
-	BOOST_TEST(ax->ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(ax->get_ns() == "http://www.hekkelman.com/libzeep");
 
 	auto& y = x.front();
 	BOOST_TEST(y.parent() == &x);
 	BOOST_TEST(y.name() == "y");
-	BOOST_TEST(y.qname() == "y");
-	BOOST_TEST(y.ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(y.get_qname() == "y");
+	BOOST_TEST(y.get_ns() == "http://www.hekkelman.com/libzeep");
 
 	auto ay = y.attributes().find("a");
 	BOOST_TEST(ay != y.attributes().end());
 	BOOST_TEST(ay->value() == "2");
-	BOOST_TEST(ay->ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(ay->get_ns() == "http://www.hekkelman.com/libzeep");
 
 	zx::element data2("data", { { "xmlns", "http://www.hekkelman.com/libzeep" }});
 	auto& x2 = data2.emplace_back("x", { { "a", "1" } });
@@ -527,31 +527,31 @@ BOOST_AUTO_TEST_CASE(xml_namespaces_3)
 	auto& data = doc.front();
 	BOOST_TEST(data.parent() == &doc);
 	BOOST_TEST(data.name() == "data");
-	BOOST_TEST(data.ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(data.get_ns() == "http://www.hekkelman.com/libzeep");
 
 	BOOST_TEST(data.empty() == false);
 	BOOST_TEST(data.begin() != data.end());
 
 	auto& x = data.front();
 	BOOST_TEST(x.name() == "x");
-	BOOST_TEST(x.qname() == "x");
-	BOOST_TEST(x.ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(x.get_qname() == "x");
+	BOOST_TEST(x.get_ns() == "http://www.hekkelman.com/libzeep");
 	BOOST_TEST(x.parent() == &data);
 
 	auto ax = x.attributes().find("a");
 	BOOST_TEST(ax != x.attributes().end());
 	BOOST_TEST(ax->value() == "1");
-	BOOST_TEST(ax->ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(ax->get_ns() == "http://www.hekkelman.com/libzeep");
 
 	auto& y = x.front();
 	BOOST_TEST(y.parent() == &x);
 	BOOST_TEST(y.name() == "y");
-	BOOST_TEST(y.qname() == "y");
-	BOOST_TEST(y.ns() == "http://www.hekkelman.com/libzeep");
+	BOOST_TEST(y.get_qname() == "y");
+	BOOST_TEST(y.get_ns() == "http://www.hekkelman.com/libzeep");
 
 	auto ay = y.attributes().find("a:a");
 	BOOST_TEST(ay != y.attributes().end());
 	BOOST_TEST(ay->value() == "2");
-	BOOST_TEST(ay->ns() == "http://a.com/");
+	BOOST_TEST(ay->get_ns() == "http://a.com/");
 }
 

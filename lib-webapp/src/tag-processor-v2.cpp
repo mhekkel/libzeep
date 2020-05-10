@@ -98,7 +98,7 @@ void tag_processor_v2::post_process(xml::element* e, const scope& parentScope, f
 
 	for (auto ai = e->attributes().begin(); ai != e->attributes().end();)
 	{
-		if (ai->ns() == m_ns and ai->name() == "remove" and parent != nullptr)
+		if (ai->get_ns() == m_ns and ai->name() == "remove" and parent != nullptr)
 		{
 			scope sub(parentScope);
 			auto action = process_attr_remove(e, ai, sub, dir, webapp);
@@ -110,13 +110,13 @@ void tag_processor_v2::post_process(xml::element* e, const scope& parentScope, f
 			}
 		}
 
-		if (ai->ns() == m_ns)
+		if (ai->get_ns() == m_ns)
 			ai = e->attributes().erase(ai);
 		else
 			++ai;
 	}
 
-	if (e->ns() == m_ns and e->name() == "block" and parent != nullptr)
+	if (e->get_ns() == m_ns and e->name() == "block" and parent != nullptr)
 	{
 		for (auto& ci: e->nodes())
 			parent->nodes().insert(e, std::move(ci));
@@ -152,7 +152,7 @@ void tag_processor_v2::process_text(xml::text& text, const scope& scope)
 	assert(next != parent->nodes().end());
 	++next;
 
-	std::string s = text.str();
+	std::string s = text.get_text();
 
 	size_t b = 0;
 
@@ -187,7 +187,7 @@ void tag_processor_v2::process_text(xml::text& text, const scope& scope)
 			for (auto& n: foo.nodes())
 				parent->nodes().emplace(next, std::move(n));
 			
-			text.str(s.substr(0, i - 2));
+			text.set_text(s.substr(0, i - 2));
 
 			s = s.substr(j + 2);
 			b = 0;
@@ -200,7 +200,7 @@ void tag_processor_v2::process_text(xml::text& text, const scope& scope)
 		}
 	}
 
-	text.str(s);
+	text.set_text(s);
 }
 
 // --------------------------------------------------------------------
@@ -265,7 +265,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 		root = node->root();
 	else
 	{
-		doc.preserve_cdata(true);
+		doc.set_preserve_cdata(true);
 
 		bool loaded = false;
 
@@ -348,7 +348,7 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 
 			for (auto attr = attributes.begin(); attr != attributes.end(); ++attr)
 			{
-				if (attr->ns() != m_ns or attr->name() == "remove" or attr->name() == "ref" or attr->name() == "fragment")
+				if (attr->get_ns() != m_ns or attr->name() == "remove" or attr->name() == "ref" or attr->name() == "fragment")
 					continue;
 
 				AttributeAction action = AttributeAction::none;
@@ -382,7 +382,7 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 		}
 		catch (exception& ex)
 		{
-			parent->nodes().insert(e, xml::text("Error processing element '" + e->qname() + "': " + ex.what()));
+			parent->nodes().insert(e, xml::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
 			// parent->erase(e);
 		}
 
@@ -505,7 +505,7 @@ auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* 
 	std::regex kEachRx(R"(^\s*(\w+)\s*=\s*(.+)$)");
 
 	std::smatch m;
-	auto s = attr->str();
+	auto s = attr->value();
 
 	if (not std::regex_match(s, m, kEachRx))
 		throw std::runtime_error("Invalid attribute value for :with");
@@ -525,7 +525,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
 	std::smatch m;
-	auto s = attr->str();
+	auto s = attr->value();
 
 	if (not std::regex_match(s, m, kEachRx))
 		throw std::runtime_error("Invalid attribute value for :each");
@@ -561,7 +561,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 				});
 
 			xml::element clone(*node);
-			clone.attributes().erase(attr->qname());
+			clone.attributes().erase(attr->get_qname());
 
 			auto i = parent->emplace(node, std::move(clone)); // insert before processing, to assign namespaces
 			process_node(i, s, dir, webapp);
@@ -577,7 +577,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
 {
-	auto v = evaluate_el_attr(scope, attr->str());
+	auto v = evaluate_el_attr(scope, attr->value());
 	for (auto vi: v)
 		node->attr(vi.first, vi.second);
 
@@ -588,7 +588,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::eleme
 
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
 {
-	auto s = attr->str();
+	auto s = attr->value();
 
 	process_el(scope, s);
 	node->attr(attr->name(), s);
@@ -601,7 +601,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::el
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
 	xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
 {
-	auto s = attr->str();
+	auto s = attr->value();
 
 	if (evaluate_el(scope, s))
 		node->attr(attr->name(), attr->name());
@@ -627,7 +627,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 			if (text == nullptr)
 				continue;
 
-			std::string s = text->str();
+			std::string s = text->get_text();
 			std::string t;		
 
 			auto b = std::sregex_iterator(s.begin(), s.end(), r);
@@ -654,14 +654,20 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 
 			t.append(i, s.end());
 
-			text->str(t);
+			text->set_text(t);
 		}
 	}
 	else if (type != "none")
 	{
-		for (auto& text: node->nodes())
+		for (auto& n: node->nodes())
 		{
-			std::string s = text.str();
+			xml::text* text_p = dynamic_cast<xml::text*>(&n);
+			if (text_p == nullptr)
+				continue;
+			
+			auto& text = *text_p;
+
+			std::string s = text.get_text();
 			auto next = text.next();
 
 			size_t b = 0;
@@ -695,7 +701,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 					for (auto& n: subDoc.front().nodes())
 						node->nodes().emplace(next, std::move(n));
 					
-					text.str(s.substr(0, i - 2));
+					text.set_text(s.substr(0, i - 2));
 
 					s = s.substr(j + 2);
 					b = 0;
@@ -708,7 +714,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 				}
 			}
 
-			text.str(s);
+			text.set_text(s);
 		}
 	}
 
@@ -721,7 +727,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 {
 	AttributeAction result = AttributeAction::none;
 
-	auto s = attr->str();
+	auto s = attr->value();
 
 	auto o = evaluate_el(parentScope, s);
 	el::element params;
@@ -770,7 +776,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 		for (auto& f: e->attributes())
 		{
 			// the copy lost its namespace info
-			if (node->namespace_for_prefix(f.prefix()) != ns() or f.name() != "fragment")
+			if (node->namespace_for_prefix(f.get_prefix()) != ns() or f.name() != "fragment")
 				continue;
 
 			auto v = f.value();
@@ -856,7 +862,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
 {
-	auto mode = attr->str();
+	auto mode = attr->value();
 
 	AttributeAction result = AttributeAction::none;
 
@@ -892,7 +898,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 {
 	for (;;)
 	{
-		auto s = attr->str();
+		auto s = attr->value();
 
 		s = process_el_2(scope, s);
 
@@ -909,13 +915,13 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 			break;
 		}
 		
-		auto cs = c->str();
+		auto cs = c->value();
 		ba::trim(cs);
 
 		if (cs.empty())
-			c->str(s);
+			c->set_text(s);
 		else
-			c->str(cs + ' ' + s);
+			c->set_text(cs + ' ' + s);
 
 		break;
 	}
@@ -929,7 +935,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 {
 	for (;;)
 	{
-		auto s = attr->str();
+		auto s = attr->value();
 
 		s = process_el_2(scope, s);
 
@@ -949,19 +955,19 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 			break;
 		}
 		
-		auto cs = c->str();
+		auto cs = c->value();
 		ba::trim(cs);
 
 		if (cs.empty())
 		{
-			c->str(s);
+			c->set_text(s);
 			break;
 		}
 
 		if (cs.back() == ';')
-			c->str(cs + ' ' + s);
+			c->set_text(cs + ' ' + s);
 		else
-			c->str(cs + "; " + s);
+			c->set_text(cs + "; " + s);
 
 		break;
 	}

@@ -93,7 +93,7 @@ bool run_test(const xml::element& test)
 			
 			if (e->attr(test_attr_name) != attr_test)
 			{
-				cout << "expected attribute content is not found for node " << e->qname() << endl;
+				cout << "expected attribute content is not found for node " << e->get_qname() << endl;
 				result = false;
 			}
 		}
