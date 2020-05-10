@@ -282,7 +282,7 @@ void basic_webapp::handle_logout(const request& request, const scope& scope, rep
 void basic_webapp::create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep)
 {
 	xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 
 	try
 	{
@@ -601,7 +601,7 @@ void basic_webapp::load_template(const std::string& file, xml::document& doc)
 #endif
 	}
 
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 	*data >> doc;
 
 	if (not templateSelector.empty())
@@ -658,7 +658,7 @@ void basic_webapp::load_template(const std::string& file, xml::document& doc)
 void basic_webapp::create_reply_from_template(const std::string& file, const scope& scope, reply& reply)
 {
 	xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 
 	load_template(file, doc);
 
@@ -709,8 +709,8 @@ void basic_webapp::process_tags(xml::element* node, const scope& scope, std::set
 		if (not ns.is_namespace())
 			continue;
 
-		if (registeredNamespaces.count(ns.str()))
-			nss.insert(ns.str());
+		if (registeredNamespaces.count(ns.value()))
+			nss.insert(ns.value());
 	}
 
 	for (auto& ns: nss)

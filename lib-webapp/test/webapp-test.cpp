@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 	BOOST_CHECK(loginDoc.find_first("//input[@name='password']") != nullptr);
 	BOOST_CHECK(loginDoc.find_first("//input[@name='_csrf']") != nullptr);
 	if (loginDoc.find_first("//input[@name='_csrf']"))
-		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->attr("value"), csrf);
+		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->get_attribute("value"), csrf);
 
 	req.method = zh::method_type::POST;
 	req.uri = "/login";

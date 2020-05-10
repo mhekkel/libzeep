@@ -285,17 +285,17 @@ void reply::set_content(xml::document& doc)
 	std::stringstream s;
 
 	if (doc.front().name() != "html")
-		doc.write_doctype(false);
+		doc.set_write_doctype(false);
 
 	if (doc.is_html5())
 	{
-		doc.write_doctype(true);
-		doc.escape_double_quote(false);
+		doc.set_write_doctype(true);
+		doc.set_escape_double_quote(false);
 	}
-	else if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
-		doc.escape_double_quote(false);
+	else if (doc.child()->get_ns() == "http://www.w3.org/1999/xhtml")
+		doc.set_escape_double_quote(false);
 
-	doc.collapse_empty_tags(false);
+	doc.set_collapse_empty_tags(false);
 
 	s << doc;
 	
@@ -303,7 +303,7 @@ void reply::set_content(xml::document& doc)
 	
 	if (doc.is_html5())
 		contentType = "text/html; charset=utf-8";
-	else if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
+	else if (doc.child()->get_ns() == "http://www.w3.org/1999/xhtml")
 		contentType = "application/xhtml+xml; charset=utf-8";
 	else
 		contentType = "text/xml; charset=utf-8";

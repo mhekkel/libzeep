@@ -155,23 +155,23 @@ void node::parent(element* n)
 	m_parent = n;
 }
 
-std::string node::qname() const
+std::string node::get_qname() const
 {
 	return "";
 }
 
 std::string node::name() const
 {
-	std::string qn = qname();
+	std::string qn = get_qname();
 	std::string::size_type s = qn.find(':');
 	if (s != std::string::npos)
 		qn.erase(0, s + 1);
 	return qn;
 }
 
-std::string node::prefix() const
+std::string node::get_prefix() const
 {
-	std::string qn = qname();
+	std::string qn = get_qname();
 	std::string::size_type s = qn.find(':');
 
 	std::string p;
@@ -182,9 +182,9 @@ std::string node::prefix() const
 	return p;
 }
 
-std::string node::ns() const
+std::string node::get_ns() const
 {
-	std::string p = prefix();
+	std::string p = get_prefix();
 	return namespace_for_prefix(p);
 }
 
@@ -513,7 +513,7 @@ element::element(const std::string& qname, std::initializer_list<zeep::xml::attr
 	, m_attributes(*this)
 {
 	for (auto& a: attributes)
-		attr(a.qname(), a.value());
+		set_attribute(a.get_qname(), a.value());
 }
 
 // copy constructor. Copy data and children, but not parent and sibling
@@ -592,7 +592,7 @@ std::string element::id() const
 	
 	for (auto& a: m_attributes)
 	{
-		if (a.id())
+		if (a.is_id())
 		{
 			result = a.value();
 			break;
@@ -602,7 +602,7 @@ std::string element::id() const
 	return result;
 }
 
-std::string element::attr(const std::string& qname) const
+std::string element::get_attribute(const std::string& qname) const
 {
 	std::string result;
 
@@ -613,7 +613,7 @@ std::string element::attr(const std::string& qname) const
 	return result;
 }
 
-void element::attr(const std::string& qname, const std::string& value)
+void element::set_attribute(const std::string& qname, const std::string& value)
 {
 	m_attributes.emplace(qname, value);
 }
@@ -625,7 +625,7 @@ bool element::equals(const node* n) const
 
 	if (e != nullptr)
 	{
-		result = name() == e->name() and ns() == e->ns();
+		result = name() == e->name() and get_ns() == e->get_ns();
 
 		const node* a = m_nodes.m_head;;
 		const node* b = e->m_nodes.m_head;
@@ -712,7 +712,7 @@ void element::clear()
 	m_attributes.clear();
 }
 
-std::string element::content() const
+std::string element::get_content() const
 {
 	std::string result;
 
@@ -720,13 +720,13 @@ std::string element::content() const
 	{
 		auto t = dynamic_cast<const text*>(&n);
 		if (t != nullptr)
-			result += t->str();
+			result += t->get_text();
 	}
 
 	return result;
 }
 
-void element::content(const std::string& s)
+void element::set_content(const std::string& s)
 {
 	// remove all existing text nodes (including cdata ones)
 	for (auto n = m_nodes.begin(); n != m_nodes.end(); ++n)
@@ -761,8 +761,7 @@ void element::add_text(const std::string& s)
 
 void element::set_text(const std::string& s)
 {
-	m_nodes.clear();
-	add_text(s);
+	set_content(s);
 }
 
 void element::flatten_text()
@@ -787,7 +786,7 @@ void element::flatten_text()
 			continue;
 		}
 
-		tn->append(ntn->str());
+		tn->append(ntn->get_text());
 		m_nodes.erase(n->m_next);
 	}
 }
@@ -899,8 +898,8 @@ std::pair<std::string,bool> element::prefix_for_namespace(const std::string& uri
 		if (a.value() == uri)
 		{
 			found = true;
-			if (a.qname().length() > 6)
-				result = a.qname().substr(6);
+			if (a.get_qname().length() > 6)
+				result = a.get_qname().substr(6);
 			break;
 		}
 	}
@@ -929,7 +928,7 @@ void element::move_to_name_space(const std::string& prefix, const std::string& u
 			if (not a.is_namespace())
 				continue;
 			
-			if (a.qname().length() > 6 and a.qname().substr(6) == prefix)
+			if (a.get_qname().length() > 6 and a.get_qname().substr(6) == prefix)
 			{
 				set = true;
 				a.value(uri);
@@ -941,7 +940,7 @@ void element::move_to_name_space(const std::string& prefix, const std::string& u
 			m_attributes.emplace(prefix.empty() ? "xmlns" : "xmlns:" + prefix, uri);
 	}	
 
-	qname(prefix, name());
+	set_qname(prefix, name());
 
 	if (including_attributes)
 	{
@@ -953,7 +952,7 @@ void element::move_to_name_space(const std::string& prefix, const std::string& u
 			
 			auto p = prefix_for_namespace(attr.uri());
 			if (not p.second)
-				attr.qname("xmlns", p.first);
+				attr.set_qname("xmlns", p.first);
 		}
 
 		// ... and then the others, makes sure the namespaces are known
@@ -962,16 +961,16 @@ void element::move_to_name_space(const std::string& prefix, const std::string& u
 			if (attr.is_namespace())
 				continue;
 
-			auto ns = attr.ns();
+			auto ns = attr.get_ns();
 
 			if (ns.empty())
-				attr.qname(prefix + ':' + attr.name());
+				attr.set_qname(prefix + ':' + attr.name());
 			else
 			{
 				auto p = prefix_for_namespace(ns);
 				if (not p.second)
 					throw exception("Cannot move element to new namespace, namespace not found: " + ns);
-				attr.qname(p.first, attr.name());
+				attr.set_qname(p.first, attr.name());
 			}
 		}
 	}
@@ -1027,13 +1026,13 @@ void fix_namespaces(element& e, element& source, element& dest)
 		auto e = s.top();
 		s.pop();
 
-		auto p = e->prefix();
+		auto p = e->get_prefix();
 		if (not p.empty())
 		{
 			if (mapped.count(p))
 			{
 				if (mapped[p] != p)
-					e->qname(mapped[p], e->name());
+					e->set_qname(mapped[p], e->name());
 			}
 			else
 			{
@@ -1045,7 +1044,7 @@ void fix_namespaces(element& e, element& source, element& dest)
 				if (dp.second)
 				{
 					mapped[p] = dp.first;
-					e->qname(dp.first, e->name());
+					e->set_qname(dp.first, e->name());
 				}
 				else
 				{

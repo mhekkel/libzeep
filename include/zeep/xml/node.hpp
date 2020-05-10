@@ -81,20 +81,20 @@ class node
 	/// a prefix (that points to a namespace URI) and a local-name separated by a colon.
 	///
 	/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
-	virtual std::string qname() const;
-	virtual void qname(const std::string& qn)
+	virtual std::string get_qname() const;
+	virtual void set_qname(const std::string& qn)
 	{
 		assert(false);
 	}
 
-	virtual void qname(const std::string& prefix, const std::string& name)
+	virtual void set_qname(const std::string& prefix, const std::string& name)
 	{
-		qname(prefix.empty() ? name : prefix + ':' + name);
+		set_qname(prefix.empty() ? name : prefix + ':' + name);
 	}
 
 	virtual std::string name() const;   ///< The name for the node as parsed from the qname.
-	virtual std::string prefix() const; ///< The prefix for the node as parsed from the qname.
-	virtual std::string ns() const;		///< Returns the namespace URI for the node, if it can be resolved.
+	virtual std::string get_prefix() const; ///< The prefix for the node as parsed from the qname.
+	virtual std::string get_ns() const;		///< Returns the namespace URI for the node, if it can be resolved.
 
 	virtual std::string namespace_for_prefix(const std::string& prefix) const;
 	///< Return the namespace URI for a prefix
@@ -108,8 +108,8 @@ class node
 	/// return all content concatenated, including that of children.
 	virtual std::string str() const = 0;
 
-	/// both attribute and element implement str(const string&), others will throw
-	virtual void str(const std::string& value) { throw exception("cannot set str for this node");  }
+	/// Set text, what really happens depends on the type of the subclass implementing this method
+	virtual void set_text(const std::string& value) = 0;
 
 	// --------------------------------------------------------------------
 	// low level routines
@@ -119,9 +119,6 @@ class node
 	// All nodes should have a single root node
 	virtual element* root(); ///< The root node for this node
 	virtual const element* root() const; ///< The root node for this node
-
-	// virtual node* child()				{ return nullptr; }
-	// virtual const node* child() const	{ return nullptr; }
 
 	element* parent() { return m_parent; }				///< The parent node for this node
 	const element* parent() const { return m_parent; }	///< The parent node for this node
@@ -187,20 +184,32 @@ class node
 };
 
 // --------------------------------------------------------------------
-/// A node containing a XML comment
+/// internal node just for storing text
 
-class comment : public node
+class node_with_text : public node
 {
   public:
-	comment() {}
-	comment(comment&& c) : m_text(std::move(c.m_text)) {}
-	comment(const std::string& text) : m_text(text) {}
+	node_with_text() {}
+	node_with_text(const std::string& s) : m_text(s) {}
 
 	virtual std::string str() const { return m_text; }
 
-	virtual std::string text() const { return m_text; }
+	virtual std::string get_text() const { return m_text; }
+	virtual void set_text(const std::string& text) { m_text = text; }
 
-	void text(const std::string& text) { m_text = text; }
+  protected:
+	std::string m_text;
+};
+
+// --------------------------------------------------------------------
+/// A node containing a XML comment
+
+class comment : public node_with_text
+{
+  public:
+	comment() {}
+	comment(comment&& c) : node_with_text(std::move(c.m_text)) {}
+	comment(const std::string& text) : node_with_text(text) {}
 
 	virtual bool equals(const node* n) const;
 
@@ -210,35 +219,28 @@ class comment : public node
   protected:
 
 	virtual void write(std::ostream& os, format_info fmt) const;
-
-  private:
-	std::string m_text;
 };
 
 // --------------------------------------------------------------------
 /// A node containing a XML processing instruction (like e.g. \<?php ?\>)
 
-class processing_instruction : public node
+class processing_instruction : public node_with_text
 {
   public:
 	processing_instruction() {}
 
 	processing_instruction(processing_instruction&& pi)
-		: m_target(std::move(pi.m_target))
-		, m_text(std::move(pi.m_text))
+		: node_with_text(std::move(pi.m_text))
+		, m_target(std::move(pi.m_target))
 	{}
 
 	processing_instruction(const std::string& target, const std::string& text)
-		: m_target(target), m_text(text) {}
+		: node_with_text(text), m_target(target) {}
 
-	virtual std::string qname() const { return m_target; }
-	virtual std::string str() const { return m_target + ' ' + m_text; }
+	virtual std::string get_qname() const { return m_target; }
 
-	std::string target() const { return m_target; }
-	void target(const std::string& target) { m_target = target; }
-
-	virtual std::string text() const { return m_text; }
-	void text(const std::string& text) { m_text = text; }
+	std::string get_target() const { return m_target; }
+	void set_target(const std::string& target) { m_target = target; }
 
 	virtual bool equals(const node* n) const;
 
@@ -251,25 +253,21 @@ class processing_instruction : public node
 
   private:
 	std::string m_target;
-	std::string m_text;
 };
 
 // --------------------------------------------------------------------
 /// A node containing text.
 
-class text : public node
+class text : public node_with_text
 {
   public:
 	text() {}
 
 	text(text&& t)
-		: m_text(std::move(t.m_text)) {}
+		: node_with_text(std::move(t.m_text)) {}
 
 	text(const std::string& text)
-		: m_text(text) {}
-
-	virtual std::string str() const { return m_text; }
-	virtual void str(const std::string& text) { m_text = text; }
+		: node_with_text(text) {}
 
 	void append(const std::string& text) { m_text.append(text); }
 
@@ -284,8 +282,6 @@ class text : public node
   protected:
 
 	virtual void write(std::ostream& os, format_info fmt) const;
-
-	std::string m_text;
 };
 
 // --------------------------------------------------------------------
@@ -297,11 +293,8 @@ class cdata : public text
 {
   public:
 	cdata() {}
-
 	cdata(cdata&& cd) : text(std::move(cd)) {}
-
-	cdata(const std::string& s)
-		: text(s) {}
+	cdata(const std::string& s)	: text(s) {}
 
 	virtual bool equals(const node* n) const;
 
@@ -356,12 +349,12 @@ class attribute : public node
 	}
 
 	// using node::qname;
-	virtual std::string qname() const { return m_qname; }
-	virtual void qname(const std::string& qn) { m_qname = qn; }
+	virtual std::string get_qname() const { return m_qname; }
+	virtual void set_qname(const std::string& qn) { m_qname = qn; }
 
-	virtual void qname(const std::string& prefix, const std::string& name)
+	virtual void set_qname(const std::string& prefix, const std::string& name)
 	{
-		node::qname(prefix, name);
+		node::set_qname(prefix, name);
 	}
 
 	/// \b Is this attribute an xmlns attribute?
@@ -377,11 +370,12 @@ class attribute : public node
 	std::string uri() const;
 
 	virtual std::string str() const { return m_value; }
-	virtual void str(const std::string& value) { m_value = value; }
+
+	virtual void set_text(const std::string& value) { m_value = value; }
 
 	virtual bool equals(const node* n) const;
 
-	virtual bool id() const { return m_id; }
+	virtual bool is_id() const { return m_id; }
 
 	template<size_t N>
 	decltype(auto) get() const
@@ -1158,7 +1152,7 @@ class attribute_set : public basic_node_list<attribute>
 		const node_type* result = nullptr;
 		for (auto& a: *this)
 		{
-			if (a.qname() == key)
+			if (a.get_qname() == key)
 			{
 				result = &a;
 				break;
@@ -1181,7 +1175,7 @@ class attribute_set : public basic_node_list<attribute>
 
 	std::pair<iterator,bool> emplace(node_type&& a)
 	{
-		key_type key = a.qname();
+		key_type key = a.get_qname();
 		bool inserted = false;
 
 		auto i = find(key);
@@ -1260,10 +1254,10 @@ class element : public node
 
 	~element();
 
-	using node::qname;
+	using node::set_qname;
 
-	virtual std::string qname() const { return m_qname; }
-	virtual void qname(const std::string& qn) { m_qname = qn; }
+	virtual std::string get_qname() const { return m_qname; }
+	virtual void set_qname(const std::string& qn) { m_qname = qn; }
 
 	/// content of a xml:lang attribute of this element, or its nearest ancestor
 	virtual std::string lang() const;
@@ -1458,10 +1452,6 @@ class element : public node
 	friend class document;
 
 	virtual std::string str() const;
-	virtual void str(const std::string& value)
-	{
-		content(value);
-	}
 
 	virtual std::string namespace_for_prefix(const std::string& prefix) const;
 	virtual std::pair<std::string,bool> prefix_for_namespace(const std::string& uri) const;
@@ -1471,19 +1461,19 @@ class element : public node
 	void move_to_name_space(const std::string& prefix, const std::string& uri,
 		bool recursive, bool including_attributes);
 
-	std::string content() const;
-	void content(const std::string& content);
+	std::string get_content() const;
+	void set_content(const std::string& content);
 
-	std::string attr(const std::string& qname) const;
-	void attr(const std::string& qname, const std::string& value);
+	std::string get_attribute(const std::string& qname) const;
+	void set_attribute(const std::string& qname, const std::string& value);
+
+	/// The set_text method replaces any text node with the new text
+	virtual void set_text(const std::string& s);
 
 	/// The add_text method checks if the last added child is a text node,
 	/// and if so, it appends the string to this node's value. Otherwise,
 	/// it adds a new text node child with the new text.
 	void add_text(const std::string& s);
-
-	/// The set_text method replaces any text node with the new text
-	void set_text(const std::string& s);
 
 	/// To combine all adjecent child text nodes into one
 	void flatten_text();

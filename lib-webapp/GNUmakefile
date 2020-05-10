@@ -35,20 +35,20 @@ DEBUG               = 0
 MRC					?= mrc
 
 # Using resources should be the default
-ifeq ($(NO_RSRC),)
+ifeq ($(USE_RSRC),)
 ifeq ($(shell which $(MRC)),)
 $(warning "")
 $(warning "The executable mrc is not found in your path.")
 $(warning "Please consider installing it to enable compiled-in data resources.")
 $(warning "See https://github.com/mhekkel/mrc")
 $(warning "")
-	NO_RSRC = 1
+	USE_RSRC = 0
 else
-	NO_RSRC = 0
+	USE_RSRC = 1
 endif
 endif
 
-ifneq ($(NO_RSRC),1)
+ifneq ($(USE_RSRC),0)
 	DEFINES		+= WEBAPP_USES_RESOURCES
 endif
 
@@ -121,8 +121,10 @@ OBJECTS = \
 	$(OBJDIR)/utils.o \
 	$(OBJDIR)/webapp.o
 
-ifneq ($(NO_RSRC),1)
-	OBJECTS += $(OBJDIR)/webapp-rsrc.o
+ifneq ($(USE_RSRC),0)
+OBJECTS += \
+	$(OBJDIR)/webapp-rsrc.o \
+	$(OBJDIR)/test_rsrc.o
 endif
 
 HEADERS = \
@@ -179,8 +181,6 @@ src/mrsrc.h:
 
 $(OBJECTS:.o=.d):
 
-$(OBJDIR)/webapp-rsrc.o: src/mrsrc.h
-
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
 	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
@@ -192,12 +192,10 @@ dist-clean: clean
 
 # $(OBJDIR)/unit-test.d: $(OBJDIR)/unit-test.o
 
-$(OBJDIR)/test_rsrc.o:  test/fragment-file.xhtml
+$(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
 	mrc -o $@ $<
 
 webapp_PARAMS = 
-
-rsrc_webapp_FLAGS = -DWEBAPP_USES_RESOURCES
 
 ZEEP_LIBS = http xml el generic
 BOOST_LIBS = random program_options thread system
@@ -208,11 +206,7 @@ define TEST_template =
 
 $(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
 
-ifneq ($(NO_RSRC),1)
-$(1)_OBJECTS +=  $$(OBJDIR)/test_rsrc.o
-endif
-
-test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+test/$(1)-test: $$(OBJECTS) $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
 	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
@@ -224,7 +218,7 @@ endef
 
 TESTS = webapp processor
 
-ifneq ($(NO_RSRC),1)
+ifneq ($(USE_RSRC),0)
 TESTS += rsrc_webapp
 endif
 
