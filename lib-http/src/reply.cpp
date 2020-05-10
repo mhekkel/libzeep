@@ -9,6 +9,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 
 #include <iostream>
+#include <numeric>
 
 #include <zeep/http/reply.hpp>
 #include <zeep/xml/document.hpp>
@@ -134,7 +135,6 @@ reply::reply(const reply& rhs)
 	: m_version_major(rhs.m_version_major)
 	, m_version_minor(rhs.m_version_minor)
 	, m_status(rhs.m_status)
-	, m_status_line(rhs.m_status_line)
 	, m_headers(rhs.m_headers)
 	, m_content(rhs.m_content)
 	, m_data(nullptr)
@@ -152,7 +152,6 @@ void reply::clear()
 	m_data = nullptr;
 	
 	m_status = ok;
-	m_status_line = "OK";
 	m_headers.clear();
 	m_buffer.clear();
 	m_content.clear();
@@ -165,7 +164,6 @@ reply& reply::operator=(const reply& rhs)
 		m_version_major = rhs.m_version_major;
 		m_version_minor = rhs.m_version_minor;
 		m_status = rhs.m_status;
-		m_status_line = rhs.m_status_line;
 		m_headers = rhs.m_headers;
 		m_content = rhs.m_content;
 	}
@@ -378,33 +376,35 @@ void reply::set_content_type(
 	}
 }
 
-void reply::to_buffers(std::vector<boost::asio::const_buffer>& buffers)
+std::vector<boost::asio::const_buffer> reply::to_buffers() const
 {
+	std::vector<boost::asio::const_buffer> result;
+
 	m_status_line =
 		"HTTP/" + std::to_string(m_version_major) + '.' + std::to_string(m_version_minor) + ' ' + std::to_string(m_status) + ' ' + get_status_text(m_status) + kCRLF;
 	
-	buffers.push_back(boost::asio::buffer(m_status_line));
+	result.push_back(boost::asio::buffer(m_status_line));
 	
-	for (header& h: m_headers)
+	for (const header& h: m_headers)
 	{
-		buffers.push_back(boost::asio::buffer(h.name));
-		buffers.push_back(boost::asio::buffer(kNameValueSeparator));
-		buffers.push_back(boost::asio::buffer(h.value));
-		buffers.push_back(boost::asio::buffer(kCRLF));
+		result.push_back(boost::asio::buffer(h.name));
+		result.push_back(boost::asio::buffer(kNameValueSeparator));
+		result.push_back(boost::asio::buffer(h.value));
+		result.push_back(boost::asio::buffer(kCRLF));
 	}
 
-	buffers.push_back(boost::asio::buffer(kCRLF));
-	buffers.push_back(boost::asio::buffer(m_content));
+	result.push_back(boost::asio::buffer(kCRLF));
+	result.push_back(boost::asio::buffer(m_content));
+
+	return result;
 }
 
-bool reply::data_to_buffers(std::vector<boost::asio::const_buffer>& buffers)
+std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 {
-	bool result = false;
+	std::vector<boost::asio::const_buffer> result;
 	
 	if (m_data != nullptr)
 	{
-		result = true;
-		
 		const unsigned int kMaxChunkSize = 10240;
 		
 		if (m_buffer.size() < kMaxChunkSize)
@@ -419,9 +419,9 @@ bool reply::data_to_buffers(std::vector<boost::asio::const_buffer>& buffers)
 		{
 			if (n == 0)
 			{
-				buffers.push_back(boost::asio::buffer(kZERO));
-				buffers.push_back(boost::asio::buffer(kCRLF));
-				buffers.push_back(boost::asio::buffer(kCRLF));
+				result.push_back(boost::asio::buffer(kZERO));
+				result.push_back(boost::asio::buffer(kCRLF));
+				result.push_back(boost::asio::buffer(kCRLF));
 				delete m_data;
 				m_data = nullptr;
 			}
@@ -431,59 +431,24 @@ bool reply::data_to_buffers(std::vector<boost::asio::const_buffer>& buffers)
 				out << std::hex << n << '\r' << '\n';
 				out.flush();
 		
-				buffers.push_back(boost::asio::buffer(&m_buffer[kMaxChunkSize], m_buffer.size() - kMaxChunkSize));
-				buffers.push_back(boost::asio::buffer(&m_buffer[0], n));
-				buffers.push_back(boost::asio::buffer(kCRLF));
+				result.push_back(boost::asio::buffer(&m_buffer[kMaxChunkSize], m_buffer.size() - kMaxChunkSize));
+				result.push_back(boost::asio::buffer(&m_buffer[0], n));
+				result.push_back(boost::asio::buffer(kCRLF));
 			}
 		}
 		else
 		{
 			if (n > 0)
-				buffers.push_back(boost::asio::buffer(&m_buffer[0], n));
+				result.push_back(boost::asio::buffer(&m_buffer[0], n));
 			else
 			{
 				delete m_data;
 				m_data = nullptr;
-				result = false;
 			}
 		}
 	}
 
 	return result;
-}
-
-std::string reply::get_as_text()
-{
-	// for best performance, we pre calculate memory requirements and reserve that first
-	m_status_line =
-		"HTTP/" + std::to_string(m_version_major) + '.' + std::to_string(m_version_minor) + ' ' + std::to_string(m_status) + ' ' + get_status_text(m_status) + kCRLF;
-
-	std::string result;
-	result.reserve(get_size());
-	
-	result = m_status_line;
-	for (header& h: m_headers)
-	{
-		result += h.name;
-		result += ": ";
-		result += h.value;
-		result += "\r\n";
-	}
-
-	result += "\r\n";
-	result += m_content;
-	
-	return result;
-}
-
-size_t reply::get_size() const
-{
-	size_t size = m_status_line.length();
-	for (const header& h: m_headers)
-		size += h.name.length() + 2 + h.value.length() + 2;
-	size += 2 + m_content.length();
-	
-	return size;
 }
 
 reply reply::stock_reply(status_type status, const std::string& info)
@@ -554,20 +519,15 @@ reply reply::redirect(const std::string& location)
 	return result;
 }
 
-void reply::debug(std::ostream& os) const
+size_t reply::size() const
 {
-	os << "HTTP/" << m_version_major << '.' << m_version_minor << ' ' << m_status << ' ' << get_status_text(m_status) << std::endl;
-	for (const header& h: m_headers)
-		os << h.name << ": " << h.value << std::endl;
+	auto buffers = to_buffers();
+	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto& buffer) { return m + buffer.size(); });
 }
 
-std::ostream& operator<<(std::ostream& lhs, reply& rhs)
+std::ostream& operator<<(std::ostream& lhs, const reply& rhs)
 {
-	std::vector<boost::asio::const_buffer> buffers;
-
-	rhs.to_buffers(buffers);
-
-	for (auto& b: buffers)
+	for (auto& b: rhs.to_buffers())
 		lhs.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
 
 	return lhs;

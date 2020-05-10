@@ -162,6 +162,20 @@ BOOST_AUTO_TEST_CASE(j_8)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(j_9)
+{
+	json j;
+
+	zeep::serializer<json>::serialize(j, true);
+	BOOST_TEST(j.is_boolean());
+	BOOST_TEST(j == true);
+
+	zeep::serializer<json>::serialize(j, false);
+	BOOST_TEST(j.is_boolean());
+	BOOST_TEST(j == false);
+
+}
+
 // int main()
 // {
 // 	try

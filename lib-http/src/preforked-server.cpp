@@ -325,8 +325,7 @@ void preforked_server::handle_accept(const boost::system::error_code& ec)
 			
 			reply r = reply::stock_reply(service_unavailable);
 
-			std::vector<boost::asio::const_buffer> buffers;
-			r.to_buffers(buffers);
+			auto buffers = r.to_buffers();
 
 			try
 			{

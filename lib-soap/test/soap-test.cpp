@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(soap_1)
 
 	BOOST_TEST(rep.get_status() == 200);
 
-	string reptext = rep.get_as_text();
-	std::stringstream srep(reptext);
+	std::stringstream srep;
+	srep << rep;
 
 	std::string line;
 	while (getline(srep, line))
@@ -122,9 +122,8 @@ BOOST_AUTO_TEST_CASE(soap_2)
 
 	BOOST_TEST(rep.get_status() == 200);
 
-	string reptext = rep.get_as_text();
-cerr << reptext << endl;
-	std::stringstream srep(reptext);
+	std::stringstream srep;
+	srep << rep;
 
 	std::string line;
 	while (getline(srep, line))
@@ -173,9 +172,8 @@ BOOST_AUTO_TEST_CASE(soap_3)
 
 	BOOST_TEST(rep.get_status() == 200);
 
-	string reptext = rep.get_as_text();
-cerr << reptext << endl;
-	std::stringstream srep(reptext);
+	std::stringstream srep;
+	srep << rep;
 
 	std::string line;
 	while (getline(srep, line))
@@ -224,9 +222,8 @@ BOOST_AUTO_TEST_CASE(soap_3f)
 
 	BOOST_TEST(rep.get_status() == 500);
 
-	string reptext = rep.get_as_text();
-	std::stringstream srep(reptext);
-
+	std::stringstream srep;
+	srep << rep;
 
 	std::string line;
 	while (getline(srep, line))
