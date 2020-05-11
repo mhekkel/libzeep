@@ -11,9 +11,6 @@
 
 #include <map>
 
-#include <boost/range.hpp>
-#include <boost/cstdint.hpp>
-
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
 
@@ -131,7 +128,7 @@ class scope
 
 	scope& operator=(const scope& );
 
-	typedef std::map<std::string, object> data_map;
+	using data_map = std::map<std::string, object>;
 
 	data_map m_data;
 	scope *m_next;

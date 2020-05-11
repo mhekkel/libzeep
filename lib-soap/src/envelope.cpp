@@ -8,7 +8,8 @@
 #include <zeep/soap/envelope.hpp>
 // #include <zeep/xml/xpath.hpp>
 
-namespace zeep {
+namespace zeep::http::soap
+{
 
 envelope::envelope()
 	: m_request(nullptr)

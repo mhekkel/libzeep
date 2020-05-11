@@ -19,11 +19,7 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep
-{
-namespace xml
-{
-namespace doctype
+namespace zeep::xml::doctype
 {
 
 // --------------------------------------------------------------------
@@ -831,6 +827,4 @@ bool element::empty() const
 	return dynamic_cast<content_spec_empty *>(m_allowed) != nullptr;
 }
 
-} // namespace doctype
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml::doctype

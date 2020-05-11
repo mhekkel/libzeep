@@ -13,9 +13,7 @@
 #include <algorithm>
 #include <experimental/type_traits>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 
 class element;
@@ -59,5 +57,4 @@ class element_reference;
 template<typename,typename>
 struct element_serializer;
 
-}
 }

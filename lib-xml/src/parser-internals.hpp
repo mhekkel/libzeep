@@ -12,9 +12,7 @@
 #include <zeep/xml/character-classification.hpp>
 #include <zeep/exception.hpp>
 
-namespace zeep
-{
-namespace detail
+namespace zeep::detail
 {
 
 using zeep::unicode;
@@ -67,5 +65,4 @@ private:
 
 bool is_absolute_path(const std::string& s);
 
-}
 }

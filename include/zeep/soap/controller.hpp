@@ -19,14 +19,14 @@ namespace zeep::http
 class soap_controller : public controller
 {
   public:
-	soap_controller(const std::string& prefixPath, const std::string& ns)
-		: controller(prefixPath)
+	soap_controller(const std::string& prefix_path, const std::string& ns)
+		: controller(prefix_path)
 		, m_ns(ns)
 		, m_service("b")
 	{
-		while (m_prefixPath.front() == '/')
-			m_prefixPath.erase(0, 1);
-		m_location = m_prefixPath;
+		while (m_prefix_path.front() == '/')
+			m_prefix_path.erase(0, 1);
+		m_location = m_prefix_path;
 	}
 
     ~soap_controller()
@@ -58,7 +58,7 @@ class soap_controller : public controller
 	xml::element make_wsdl();
 
 	/// \brief Handle the SOAP request
-	virtual bool handle_request(request& req, reply& reply);
+	virtual bool handle_request(http::request& req, http::reply& reply);
 
   protected:
 
@@ -71,7 +71,7 @@ class soap_controller : public controller
 
         virtual ~mount_point_base() {}
 
-		virtual void call(const xml::element& request, reply& reply, const std::string& ns) = 0;
+		virtual void call(const xml::element& request, http::reply& reply, const std::string& ns) = 0;
 		virtual void collect_types(std::map<std::string,xml::element>& types, const std::string& ns) = 0;
 
 		std::string m_action;
@@ -84,7 +84,7 @@ class soap_controller : public controller
 	struct mount_point<Result(ControllerType::*)(Args...)> : mount_point_base
 	{
 		using Sig = Result(ControllerType::*)(Args...);
-		using ArgsTuple = std::tuple<typename std::remove_const<typename std::remove_reference<Args>::type>::type...>;
+		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
 		using Callback = std::function<Result(Args...)>;
  
 		static constexpr size_t N = sizeof...(Args);
@@ -130,30 +130,30 @@ class soap_controller : public controller
 		template<std::size_t I>
 		xml::element collect_type(std::map<std::string,xml::element>& types, const std::string& ns)
 		{
-			using type = typename std::tuple_element<I, ArgsTuple>::type;
+			using type = typename std::tuple_element_t<I, ArgsTuple>;
 			return xml::type_serializer<type>::schema(m_names[I], ns);
 		}
 
-		virtual void call(const xml::element& request, reply& reply, const std::string& ns)
+		virtual void call(const xml::element& request, http::reply& reply, const std::string& ns)
 		{
-			reply.set_status(ok);
+			reply.set_status(http::ok);
 
 			ArgsTuple args = collect_arguments(request, std::make_index_sequence<N>());
 			invoke<Result>(std::move(args), reply, ns);
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void<ResultType>::value, int> = 0>
-		void invoke(ArgsTuple&& args, reply& reply, const std::string& ns)
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
+		void invoke(ArgsTuple&& args, http::reply& reply, const std::string& ns)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
 			xml::element response(m_action + "Response");
 			response.move_to_name_space("m", ns, false, false);
-			reply.set_content(make_envelope(std::move(response)));
+			reply.set_content(soap::make_envelope(std::move(response)));
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void<ResultType>::value, int> = 0>
-		void invoke(ArgsTuple&& args, reply& reply, const std::string& ns)
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
+		void invoke(ArgsTuple&& args, http::reply& reply, const std::string& ns)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -164,7 +164,7 @@ class soap_controller : public controller
 			sr.serialize_element(result);
 			response.move_to_name_space("m", ns, true, true);
 			
-			auto envelope = make_envelope(std::move(response));
+			auto envelope = soap::make_envelope(std::move(response));
 
 			reply.set_content(std::move(envelope));
 		}
@@ -174,7 +174,7 @@ class soap_controller : public controller
 		{
 			xml::deserializer ds(request);
 
-			return std::make_tuple(get_parameter<typename std::tuple_element<I, ArgsTuple>::type>(ds, m_names[I])...);
+			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(ds, m_names[I])...);
 		}
 
 		template<typename T>

@@ -14,9 +14,7 @@
 
 #include <zeep/http/header.hpp>
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 enum class method_type
@@ -83,12 +81,11 @@ struct request
 	std::string local_address; ///< The address the request was received upon
 	unsigned short local_port; ///< The port number the request was received upon
 
-	boost::posix_time::ptime
-	timestamp() const { return m_timestamp; }
+	boost::posix_time::ptime get_timestamp() const { return m_timestamp; }
 
 	void clear(); ///< Reinitialises request and sets timestamp
 
-	float accept(const char* type) const; ///< Return the value in the Accept header for type
+	float get_accept(const char* type) const; ///< Return the value in the Accept header for type
 	bool keep_alive() const;			  ///< Check for Connection: keep-alive header
 
 	void set_header(const char* name, const std::string& value);
@@ -119,19 +116,19 @@ struct request
 		return result;
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		return static_cast<T>(std::stod(get_parameter(name, std::to_string(defaultValue))));
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_integral<T>::value and not std::is_same<T,bool>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T,bool>, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		return static_cast<T>(std::stol(get_parameter(name, std::to_string(defaultValue))));
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_same<T,bool>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		auto v = get_parameter(name, std::to_string(defaultValue));
@@ -162,11 +159,11 @@ struct request
 	void set_cookie(const char* name, const std::string& value);
 
 	/// Can be used in code that sends HTTP requests
-	void to_buffers(std::vector<boost::asio::const_buffer> &buffers);
-
-	void debug(std::ostream& os) const;
+	std::vector<boost::asio::const_buffer> to_buffers();
 
 	std::locale& get_locale() const;
+
+	friend std::iostream& operator<<(std::iostream& io, request& req);
 
   private:
 	std::tuple<std::string,bool> get_parameter_ex(const char* name) const;
@@ -176,7 +173,4 @@ struct request
 	mutable std::unique_ptr<std::locale> m_locale;
 };
 
-std::iostream& operator<<(std::iostream& io, request& req);
-
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http

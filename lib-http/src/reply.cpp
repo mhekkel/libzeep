@@ -5,8 +5,6 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/date_time/local_time/local_time.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 
 #include <iostream>
 #include <numeric>
@@ -14,12 +12,11 @@
 #include <zeep/http/reply.hpp>
 #include <zeep/xml/document.hpp>
 
-namespace io = boost::iostreams;
+namespace zeep::http
+{
 
-namespace zeep {
-namespace http {
-
-namespace detail {
+namespace detail
+{
 
 struct status_string
 {
@@ -427,9 +424,11 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 			}
 			else
 			{
-				io::filtering_ostream out(io::back_inserter(m_buffer));
-				out << std::hex << n << '\r' << '\n';
-				out.flush();
+				std::ostringstream os;
+				os << std::hex << n << '\r' << '\n';
+				os.flush();
+				auto s = os.str();
+				m_buffer.insert(m_buffer.end(), s.begin(), s.end());
 		
 				result.push_back(boost::asio::buffer(&m_buffer[kMaxChunkSize], m_buffer.size() - kMaxChunkSize));
 				result.push_back(boost::asio::buffer(&m_buffer[0], n));
@@ -533,5 +532,4 @@ std::ostream& operator<<(std::ostream& lhs, const reply& rhs)
 	return lhs;
 }
 
-}
 }

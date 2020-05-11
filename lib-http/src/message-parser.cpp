@@ -11,8 +11,8 @@
 #include <zeep/http/message-parser.hpp>
 #include <zeep/unicode_support.hpp>
 
-namespace zeep {
-namespace http {
+namespace zeep::http 
+{
 	
 namespace detail {
 
@@ -810,5 +810,4 @@ boost::tribool reply_parser::parse_initial_line(std::vector<header>& headers, st
 	return result;
 }
 
-} // http
-} // zeep
+} // zeep::http

@@ -8,7 +8,8 @@
 
 #include <string>
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 /// The header object contains the header lines as found in a
 /// HTTP Request. The lines are parsed into name / value pairs.
@@ -19,5 +20,4 @@ struct header
 	std::string	value;
 };
 	
-}
 }

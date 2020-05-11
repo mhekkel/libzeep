@@ -168,7 +168,7 @@ class basic_webapp
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 
-	typedef std::function<void(const request& request, const scope& scope, reply& reply)> handler_type;
+	using handler_type = std::function<void(const request& request, const scope& scope, reply& reply)>;
 
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
@@ -191,7 +191,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -199,7 +199,7 @@ class basic_webapp
 	template<class Class>
 	void mount_get(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -207,7 +207,7 @@ class basic_webapp
 	template<class Class>
 	void mount_post(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -215,7 +215,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -223,7 +223,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, realm, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -231,7 +231,7 @@ class basic_webapp
 	template<class Class>
 	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, realm, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -239,7 +239,7 @@ class basic_webapp
 	template<class Class>
 	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, realm, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -247,7 +247,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of<basic_webapp,Class>::value, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
 		mount(path, realm, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -318,7 +318,7 @@ class basic_webapp
 		handler_type handler;
 	};
 
-	typedef std::vector<mount_point> mount_point_list;
+	using mount_point_list = std::vector<mount_point>;
 
 	mount_point_list m_dispatch_table;
 	std::string m_ns;
@@ -336,14 +336,6 @@ class webapp_base : public http::server, public basic_webapp
 {
   public:
 
-	// template<typename... Args>
-	// webapp_base(Args... args)
-	// 	: m_loader(std::forward<Args>(args)...)
-	// {
-	// 	register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
-	// 	register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());
-	// }
-
 	webapp_base(const std::string& docroot = ".")
 		: m_loader(docroot)
 	{
@@ -355,7 +347,7 @@ class webapp_base : public http::server, public basic_webapp
 
 	void handle_request(request& req, reply& rep)
 	{
-		server::log() << req.uri;
+		server::get_log() << req.uri;
 		basic_webapp::handle_request(req, rep);
 	}
 

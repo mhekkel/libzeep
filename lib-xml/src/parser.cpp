@@ -24,9 +24,7 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 // #define url_hexdigit	"[[:digit:]a-fA-F]"
@@ -4113,5 +4111,4 @@ void parser::report_invalidation(const std::string& msg)
 		report_invalidation_handler(msg);
 }
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

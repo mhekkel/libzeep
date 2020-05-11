@@ -13,9 +13,7 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 thread_local el::element rest_controller::s_credentials;
@@ -65,10 +63,10 @@ bool rest_controller::handle_request(request& req, reply& rep)
 	if (p.front() == '/')
 		p.erase(0, 1);
 	
-	if (not ba::starts_with(p, m_prefixPath))
+	if (not ba::starts_with(p, m_prefix_path))
 		return false;
 
-	p.erase(0, m_prefixPath.length());
+	p.erase(0, m_prefix_path.length());
 	
 	if (p.front() == '/')
 		p.erase(0, 1);
@@ -121,8 +119,9 @@ bool rest_controller::handle_request(request& req, reply& rep)
 		break;
 	}
 
+	s_credentials.clear();
+
 	return result;
 }
 
-}
 }

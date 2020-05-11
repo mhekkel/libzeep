@@ -10,8 +10,8 @@
 
 #include <zeep/xml/character-classification.hpp>
 
-namespace zeep {
-namespace xml {
+namespace zeep::xml
+{
 
 // some very basic code to check the class of scanned characters
 
@@ -108,6 +108,5 @@ bool is_valid_public_id(const std::string& s)
 	return result;
 }
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml
 
