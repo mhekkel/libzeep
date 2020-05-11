@@ -6,10 +6,16 @@
 
 #pragma once
 
+/// \file
+/// Code for a preforked http server implementation
+
 #include <thread>
 #include <mutex>
 
+#include <zeep/config.hpp>
 #include <zeep/http/server.hpp>
+
+#if HTTP_SERVER_HAS_PREFORK
 
 /// preforked server support.
 /// A preforked server means you have a master process that listens to a port
@@ -45,7 +51,8 @@
 ///		t.join();
 ///
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 class preforked_server
 {
@@ -60,8 +67,6 @@ class preforked_server
 	virtual void run(const std::string& address, short port, int nr_of_threads);
 	virtual void start();			///< signal the thread it can start listening:
 	virtual void stop();			///< stop the running thread
-
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 
   private:
 
@@ -79,9 +84,8 @@ class preforked_server
 	int								m_fd;
 	int								m_pid;
 	std::mutex						m_lock;
-
-#endif
 };
 
 }
-}
+
+#endif

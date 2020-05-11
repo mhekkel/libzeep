@@ -21,9 +21,11 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
-namespace detail {
+namespace detail
+{
 
 // a thread specific logger
 
@@ -111,7 +113,7 @@ void server::handle_accept(boost::system::error_code ec)
 	}
 }
 
-std::ostream& server::log()
+std::ostream& server::get_log()
 {
 	if (detail::s_log.get() == NULL)
 		detail::s_log.reset(new std::ostringstream);
@@ -120,7 +122,7 @@ std::ostream& server::log()
 
 void server::handle_request(request& req, reply& rep)
 {
-	log() << req.uri;
+	get_log() << req.uri;
 	rep = reply::stock_reply(not_found);
 }
 
@@ -247,5 +249,4 @@ void server::log_request(const std::string& client,
 		std::cout << '"' << entry << '"' << std::endl;
 }
 
-}
 }

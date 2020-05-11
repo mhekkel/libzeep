@@ -4,6 +4,9 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
+/// \file
+/// Generic configuration file, contains defines and (probably obsolete) stuff for msvc
+
 #pragma once
 
 /// The http server implementation in libzeep can use a
@@ -14,11 +17,11 @@
 /// this and restart the client thereby guaranteeing a better
 /// uptime.
 
-#ifndef SOAP_SERVER_HAS_PREFORK
+#ifndef HTTP_SERVER_HAS_PREFORK
 #if defined(_MSC_VER)
-#define SOAP_SERVER_HAS_PREFORK 0
+#define HTTP_SERVER_HAS_PREFORK 0
 #else
-#define SOAP_SERVER_HAS_PREFORK 1
+#define HTTP_SERVER_HAS_PREFORK 1
 #endif
 #endif
 
@@ -30,9 +33,10 @@
 #define WEBAPP_USES_RESOURCES 0
 #endif
 
+/// The current version of libzeep
+
 #define LIBZEEP_VERSION_MAJOR 5
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 // see if we're using Visual C++, if so we have to include
 // some VC specific include files to make the standard C++
 // keywords work.
@@ -57,6 +61,5 @@
 #	pragma warning (disable : 4068)	// unknown pragma
 #	pragma warning (disable : 4996)	// stl copy()
 #	pragma warning (disable : 4800)	// BOOL conversion
-#endif
 
 #endif

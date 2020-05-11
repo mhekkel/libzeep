@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// the core of the libzeep XML library defining the main classes in the DOM API
+
 #include <cassert>
 
 #include <memory>
@@ -19,9 +22,7 @@
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 class node;
@@ -158,7 +159,6 @@ class node
 
 	virtual void write(std::ostream& os, format_info fmt) const = 0;
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
 
 	friend class element;
@@ -180,7 +180,6 @@ class node
 	element* m_parent = nullptr;
 	node* m_next = nullptr;
 	node* m_prev = nullptr;
-#endif
 };
 
 // --------------------------------------------------------------------
@@ -508,7 +507,7 @@ class iterator_impl
 
 	template<typename Iterator, std::enable_if_t<
 			not std::is_same_v<std::remove_const_t<typename Iterator::value_type>, element> and
-			std::is_base_of<value_type, typename Iterator::value_type>::value, int> = 0>
+			std::is_base_of_v<value_type, typename Iterator::value_type>, int> = 0>
 	iterator_impl(const Iterator& i)
 		: m_container(const_cast<container_type*>(i.m_container))
 		, m_current(i.m_current)
@@ -537,7 +536,7 @@ class iterator_impl
 	}
 
 	template<typename Iterator, std::enable_if_t<
-			std::is_base_of<value_type, typename Iterator::value_type>::value, int> = 0>
+			std::is_base_of_v<value_type, typename Iterator::value_type>, int> = 0>
 	iterator_impl& operator=(const Iterator& i)
 	{
 		m_container = i.m_container;
@@ -1480,9 +1479,6 @@ class element : public node
 	/// To combine all adjecent child text nodes into one
 	void flatten_text();
 
-	// name_space_set& name_spaces()						{ return m_name_spaces; }
-	// const name_space_set& name_spaces() const			{ return m_name_spaces; }
-
 	// xpath wrappers
 	// TODO: create recursive iterator and use it as return type here
 	element_set			find(const std::string& path) const				{ return find(path.c_str()); }
@@ -1491,22 +1487,14 @@ class element : public node
 	element_set			find(const char* path) const;
 	element*			find_first(const char* path) const;
 
-	/// debug routine
+	// debug routine
 	virtual void validate();
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
-
-	friend std::ostream& operator<<(std::ostream& os, const document& doc);
 
 	virtual node* clone() const;
 	virtual node* move();
 	virtual void write(std::ostream& os, format_info fmt) const;
-
-	size_t depth() const
-	{
-		return m_parent != nullptr ? m_parent->depth() + 1 : 0;
-	}
 
 	// bottleneck to validate insertions (e.g. document may have only one child element)
 	virtual node_iterator insert_impl(const_iterator pos, node* n)
@@ -1519,7 +1507,6 @@ class element : public node
 	std::string			m_qname;
 	node_list			m_nodes;
 	attribute_set		m_attributes;
-#endif
 };
 
 // --------------------------------------------------------------------
@@ -1561,8 +1548,7 @@ inline void iterator_impl<const element,node>::skip()
 void fix_namespaces(element& e, element& source, element& dest);
 
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml
 
 // --------------------------------------------------------------------
 // structured binding support

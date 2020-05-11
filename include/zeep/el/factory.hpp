@@ -5,6 +5,9 @@
 
 #pragma once
 
+/// \file
+/// factory classes for constructing zeep::el::element objects
+
 #include <cassert>
 #include <string>
 #include <memory>
@@ -16,11 +19,8 @@
 #include <codecvt>
 
 #include <zeep/el/element_fwd.hpp>
-#include <zeep/el/traits.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 namespace detail
 {
@@ -80,26 +80,6 @@ struct factory<value_type::string>
 
 		j.validate();
 	}
-
-
-	// template<typename J, typename T,
-	// 	std::enable_if_t<not std::is_same<T, typename J::string_type>::value, int> = 0>
-	// static void construct(J& j, const T& s)
-	// {
-	// 	j.m_type = value_type::string;
-	// 	j.m_data = j.template create<typename J::string_type>(s);
-	// 	j.validate();
-	// }
-
-	// template<typename J, typename T, size_t N,
-	// 	std::enable_if_t<std::is_same<T, typename J::string_type::value_type>::value, int> = 0>
-	// static void construct(J& j, const T(&a)[N])
-	// {
-	// 	j.m_type = value_type::string;
-	// 	j.m_data = j.template create<typename J::string_type>(a, a + N);
-	// 	j.validate();
-	// }
-
 };
 
 template<>
@@ -156,7 +136,7 @@ struct factory<value_type::array>
 	}
 
 	template<typename J, typename T,
-		typename std::enable_if_t<std::is_convertible<T, element>::value, int> = 0>
+		typename std::enable_if_t<std::is_convertible_v<T, element>, int> = 0>
 	static void construct(J& j, const std::vector<T>& arr)
 	{
 		j.m_type = value_type::array;
@@ -167,7 +147,7 @@ struct factory<value_type::array>
 	}
 
 	template<typename J, typename T, size_t N,
-		typename std::enable_if_t<std::is_convertible<T, J>::value, int> = 0>
+		typename std::enable_if_t<std::is_convertible_v<T, J>, int> = 0>
 	static void construct(J& j, const T(&arr)[N])
 	{
 		j.m_type = value_type::array;
@@ -198,7 +178,7 @@ struct factory<value_type::object>
 	}
 
     template<typename J, typename M,
-             std::enable_if_t<not std::is_same<M, typename J::object_type>::value, int> = 0>
+             std::enable_if_t<not std::is_same_v<M, typename J::object_type>, int> = 0>
     static void construct(J& j, const M& obj)
     {
         using std::begin;
@@ -210,6 +190,5 @@ struct factory<value_type::object>
     }
 };
 
-}
 }
 }

@@ -8,13 +8,11 @@
 
 #include <zeep/http/controller.hpp>
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 controller::controller(const std::string& prefixPath)
-	: m_prefixPath(prefixPath)
+	: m_prefix_path(prefixPath)
 {
 }
 
@@ -27,5 +25,4 @@ bool controller::handle_request(request& req, reply& rep)
 	return false;
 }
 
-}
 }

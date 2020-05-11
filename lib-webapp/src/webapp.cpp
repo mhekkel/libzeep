@@ -18,9 +18,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/iostreams/copy.hpp>
-#include <boost/random/random_device.hpp>
-
-#include <boost/format.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/character-classification.hpp>
@@ -597,7 +594,7 @@ void basic_webapp::load_template(const std::string& file, xml::document& doc)
 
 		throw exception((boost::format("error opening: %1% (%2%)") % (m_docroot / file) % msg).str());
 #else
-		throw exception((boost::format("error opening: %1% (%2%)") % (m_docroot / file) % strerror(errno)).str());
+		throw exception("error opening: " + m_docroot.string() + " (" + strerror(errno) + ")");
 #endif
 	}
 

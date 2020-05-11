@@ -3,66 +3,24 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-/*! \file zeep/serialize.hpp
+#pragma once
+
+/*! \file zeep/value_serializer.hpp
 	\brief File containing the common serialization code in libzeep
 
 	Serialization in libzeep is used by both the XML and the JSON sub libraries.
 	Code that is common is found here.
 */
 
-#pragma once
-
 #include <regex>
-#include <experimental/type_traits>
 
-#include <zeep/exception.hpp>
-
-#include <boost/serialization/nvp.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
-/** Serialization support in libzeep is split into generic to_string/from_string
- * routines for various basic types and specific complex type related routines
- * that are defined in the xml and el packages.
- */
+#include <zeep/exception.hpp>
 
-namespace zeep {
-
-template<typename T>
-class name_value_pair
+namespace zeep
 {
-  public:
-	name_value_pair(const char* name, T& value)
-		: m_name(name), m_value(value) {}
-	name_value_pair(const name_value_pair& other)
-		: m_name(other.m_name), m_value(const_cast<T&>(other.m_value)) {}
-
-	const char* name() const		{ return m_name; }
-	T&			value() 			{ return m_value; }
-	const T&	value() const		{ return m_value; }
-
-  private:
-	const char* m_name;
-	T&			m_value;
-};
-
-template<typename T>
-name_value_pair<T> make_nvp(const char* name, T& v)
-{
-	return name_value_pair<T>(name, v);
-}
-
-template<typename T>
-name_value_pair<T> make_attribute_nvp(const char* name, T& v)
-{
-	return name_value_pair<T>(name, v);
-}
-
-template<typename T>
-name_value_pair<T> make_element_nvp(const char* name, T& v)
-{
-	return name_value_pair<T>(name, v);
-}
 
 // --------------------------------------------------------------------
 /// \brief A template boilerplate for conversion of basic types to or 
@@ -183,6 +141,14 @@ struct value_serializer<double>
 	static double from_string(const std::string& value)		{ return std::stod(value); }
 };
 
+/// \brief value_serializer for enum values
+///
+/// This class is used to (de-)serialize enum values. To map enum
+/// values to a string you should use the singleton instance
+/// accessible through instance() and then call the operator()
+/// members assinging each of the enum values with their respective
+/// string.
+
 template<typename T>
 struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 {
@@ -236,7 +202,7 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 // --------------------------------------------------------------------
 // date/time support
 
-/// \brief to_stringr/from_stringr for boost::posix_time::ptime
+/// \brief to_string/from_string for boost::posix_time::ptime
 /// boost::posix_time::ptime values are always assumed to be UTC
 
 template<>
@@ -372,7 +338,7 @@ struct value_serializer<boost::posix_time::ptime>
 	}
 };
 
-/// \brief to_stringr/from_stringr for boost::gregorian::date
+/// \brief to_string/from_string for boost::gregorian::date
 /// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
 
 template<>
@@ -429,7 +395,7 @@ struct value_serializer<boost::gregorian::date>
 	}
 };
 
-/// \brief to_stringr/from_stringr for boost::posix_time::time_duration
+/// \brief to_string/from_string for boost::posix_time::time_duration
 /// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
 
 template<>

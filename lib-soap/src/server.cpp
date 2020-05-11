@@ -15,7 +15,8 @@
 namespace fs = std::filesystem;
 namespace ba = boost::algorithm;
 
-namespace zeep {
+namespace zeep
+{
 	
 inline std::string to_string(const std::filesystem::path& p)
 {

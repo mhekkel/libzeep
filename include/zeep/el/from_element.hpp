@@ -5,6 +5,9 @@
 
 #pragma once
 
+/// \file
+/// various implementations of the from_element function that return the data contained in a zeep::el::element (JSON) object
+
 #include <cassert>
 #include <string>
 #include <memory>
@@ -14,12 +17,9 @@
 #include <experimental/type_traits>
 
 #include <zeep/el/element_fwd.hpp>
-#include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 namespace detail
 {
@@ -33,7 +33,7 @@ void from_element(const E& e, std::nullptr_t& n)
 }
 
 template<typename E, typename T,
-    std::enable_if_t<std::is_arithmetic<T>::value and not std::is_same<T, bool>::value, int> = 0>
+    std::enable_if_t<std::is_arithmetic_v<T> and not std::is_same_v<T, bool>, int> = 0>
 void get_number(const E& e, T& v)
 {
     switch (e.type())
@@ -90,10 +90,10 @@ void from_element(const E& e, typename E::float_type& f)
 
 template<typename E, typename A,
     std::enable_if_t<
-        std::is_arithmetic<A>::value and
-        not std::is_same<A, typename E::boolean_type>::value and
-        not std::is_same<A, typename E::int_type>::value and
-        not std::is_same<A, typename E::float_type>::value, int> = 0>
+        std::is_arithmetic_v<A> and
+        not std::is_same_v<A, typename E::boolean_type> and
+        not std::is_same_v<A, typename E::int_type> and
+        not std::is_same_v<A, typename E::float_type>, int> = 0>
 void from_element(const E& e, A& v)
 {
     switch (e.type())
@@ -105,10 +105,10 @@ void from_element(const E& e, A& v)
     }
 }
 
-template<typename E, typename Enum, std::enable_if_t<std::is_enum<Enum>::value, int> = 0>
+template<typename E, typename Enum, std::enable_if_t<std::is_enum_v<Enum>, int> = 0>
 void from_element(const E& e, Enum &en)
 {
-    typename std::underlying_type<Enum>::type v;
+    typename std::underlying_type_t<Enum> v;
     get_number(e, v);
     en = static_cast<Enum>(v);
 }
@@ -161,7 +161,7 @@ void from_element_array_impl(const E& e, A& arr, priority_tag<0>)
 
 template<typename E, typename A,
     std::enable_if_t<
-        is_constructible_array_type<E, A>::value, int> = 0>
+        is_constructible_array_type_v<E, A>, int> = 0>
 void from_element(const E& e, A& arr)
 {
     if (not e.is_array())
@@ -184,6 +184,5 @@ namespace
     constexpr const auto& from_element = typename ::zeep::el::detail::from_element_fn{};
 }
 
-}
 }
 }

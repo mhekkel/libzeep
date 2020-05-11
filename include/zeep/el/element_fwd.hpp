@@ -5,6 +5,9 @@
 
 #pragma once
 
+/// \file
+/// forward declarations required for zeep::el::element, the JSON object in libzeep
+
 #include <cassert>
 #include <string>
 #include <memory>
@@ -13,9 +16,7 @@
 #include <algorithm>
 #include <experimental/type_traits>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 
 class element;
@@ -59,5 +60,4 @@ class element_reference;
 template<typename,typename>
 struct element_serializer;
 
-}
 }

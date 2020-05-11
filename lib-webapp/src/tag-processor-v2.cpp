@@ -21,9 +21,7 @@ namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 std::unordered_set<std::string> kFixedValueBooleanAttributes{
@@ -975,5 +973,4 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 	return AttributeAction::none;
 }
 
-}
 }

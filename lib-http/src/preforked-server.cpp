@@ -6,7 +6,7 @@
 
 #include <zeep/config.hpp>
 
-#if SOAP_SERVER_HAS_PREFORK
+#if HTTP_SERVER_HAS_PREFORK
 
 #include <iostream>
 #include <sstream>
@@ -21,7 +21,8 @@
 
 #include <sys/wait.h>
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 preforked_server::preforked_server(std::function<server*(void)> constructor)
 	: m_constructor(constructor)
@@ -200,7 +201,7 @@ void preforked_server::start()
 
 bool preforked_server::read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
-	typedef boost::asio::ip::tcp::socket::native_handle_type native_handle_type;
+	using native_handle_type = boost::asio::ip::tcp::socket::native_handle_type;
 
 #if __APPLE__
 	// macos is special...
@@ -264,7 +265,7 @@ bool preforked_server::read_socket_from_parent(int fd_socket, boost::asio::ip::t
 
 void preforked_server::write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket)
 {
-	typedef boost::asio::ip::tcp::socket::native_handle_type native_handle_type;
+	using native_handle_type = boost::asio::ip::tcp::socket::native_handle_type;
 	
 	struct msghdr msg;
 	union {
@@ -344,7 +345,6 @@ void preforked_server::handle_accept(const boost::system::error_code& ec)
 	}
 }
 
-}
 }
 
 #endif

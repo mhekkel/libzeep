@@ -19,9 +19,7 @@
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/document.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 // --------------------------------------------------------------------
@@ -436,5 +434,4 @@ document operator""_xml(const char* text, size_t length)
 
 }
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

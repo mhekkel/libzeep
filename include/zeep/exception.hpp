@@ -6,27 +6,31 @@
 
 #pragma once
 
+/// \file
+/// definition of zeep::exception, base class for exceptions thrown by libzeep
+
 #include <exception>
 #include <string>
 
 namespace zeep
 {
 
+/// \brief base class of the exceptions thrown by libzeep
 class exception : public std::exception
 {
-public:
+  public:
 	/// \brief Create an exception with vsprintf like parameters
 	exception(const char* message, ...);
 
+	/// \brief Create an exception with the message in \a message
 	exception(const std::string& message)
 		: m_message(message) {}
 
 	virtual ~exception() throw() {}
 
-	virtual const char *
-	what() const throw() { return m_message.c_str(); }
+	virtual const char* what() const throw() { return m_message.c_str(); }
 
-protected:
+  protected:
 	std::string m_message;
 };
 

@@ -6,6 +6,11 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::http::rest_controller class.
+/// Instances of this class take care of mapping member functions to
+/// REST calls automatically converting in- and output data
+
 #include <zeep/config.hpp>
 
 #include <filesystem>
@@ -17,17 +22,14 @@
 #include <zeep/http/authorization.hpp>
 #include <zeep/el/parser.hpp>
 
-namespace zeep
-{
-
-namespace http
+namespace zeep::http
 {
 
 class rest_controller : public controller
 {
   public:
-	rest_controller(const std::string& prefixPath, authentication_validation_base* auth = nullptr)
-		: controller(prefixPath), m_auth(auth)
+	rest_controller(const std::string& prefix_path, authentication_validation_base* auth = nullptr)
+		: controller(prefix_path), m_auth(auth)
 	{
 	}
     ~rest_controller();
@@ -92,7 +94,7 @@ class rest_controller : public controller
 	{
 		using Sig = Result(ControllerType::*)(Args...);
 		// using ArgsTuple = std::tuple<Args...>;
-		using ArgsTuple = std::tuple<typename std::remove_const<typename std::remove_reference<Args>::type>::type...>;
+		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
 		using Callback = std::function<Result(Args...)>;
         using json = el::element;
 
@@ -178,13 +180,13 @@ class rest_controller : public controller
 			}
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void<ResultType>::value, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply)
 		{
 			std::experimental::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void<ResultType>::value, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply)
 		{
 			set_reply(reply, std::experimental::apply(m_callback, std::forward<ArgsTuple>(args)));
@@ -199,7 +201,7 @@ class rest_controller : public controller
 		void set_reply(reply& rep, T&& v)
 		{
 			json e;
-			zeep::to_element(e, v);
+			zeep::el::to_element(e, v);
 			rep.set_content(e);
 		}
 
@@ -207,7 +209,7 @@ class rest_controller : public controller
 		ArgsTuple collect_arguments(const parameter_pack& params, std::index_sequence<I...>)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
-			return std::make_tuple(get_parameter<typename std::tuple_element<I, ArgsTuple>::type>(params, m_names[I])...);
+			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(params, m_names[I])...);
 		}
 
 		template<typename T, std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
@@ -266,8 +268,8 @@ class rest_controller : public controller
 		}
 
 		template<typename T, std::enable_if_t<
-			not (zeep::has_serialize<T, zeep::deserializer<json>>::value or
-				 std::is_enum<T>::value or
+			not (zeep::has_serialize_v<T, zeep::el::deserializer<json>> or
+				 std::is_enum_v<T> or
 				 std::is_same_v<T,bool> or
 				 std::is_same_v<T,file_param> or
 				 std::is_same_v<T,el::element>), int> = 0>
@@ -288,7 +290,7 @@ class rest_controller : public controller
 			}
 		}
 
-		template<typename T, std::enable_if_t<zeep::el::detail::has_from_element<T>::value and std::is_enum<T>::value, int> = 0>
+		template<typename T, std::enable_if_t<zeep::el::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
 			json v = params.get_parameter(name);
@@ -298,7 +300,7 @@ class rest_controller : public controller
 			return tv;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize<T, zeep::deserializer<json>>::value, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::el::deserializer<json>>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
 			json v;
@@ -386,7 +388,4 @@ class rest_controller : public controller
 	static thread_local el::element s_credentials;
 };
 
-
-} // namespace http
-
-} // namespace zeep
+} // namespace zeep::http

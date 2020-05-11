@@ -6,13 +6,14 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::xml::xpath class, implementing a XPath 1.0 compatible search facility
+
 #include <string>
 
 #include <zeep/xml/node.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 class document;
@@ -26,10 +27,8 @@ class document;
 class context
 {
   public:
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 	context();
 	virtual ~context();
-#endif
 
 	void set(const std::string& name, const std::string& value);
 	void set(const std::string& name, double value);
@@ -37,7 +36,6 @@ class context
 	template <typename T, std::enable_if_t<std::is_same_v<T, std::string> or std::is_same_v<T, double>, int> = 0>
 	T get(const std::string& name);
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
 	context(const context &);
 	context& operator=(const context &);
@@ -45,7 +43,6 @@ class context
 	friend class xpath;
 
 	struct context_imp* m_impl;
-#endif
 };
 
 // --------------------------------------------------------------------
@@ -60,9 +57,7 @@ class xpath
 	xpath(const xpath& rhs);
 	xpath& operator=(const xpath &);
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 	virtual ~xpath();
-#endif
 
 	/// evaluate returns a node_set. If you're only interested in zeep::xml::element
 	/// results, you should call the evaluate<element>() instantiation.
@@ -77,48 +72,14 @@ class xpath
 	template <typename NODE_TYPE>
 	std::list<NODE_TYPE*> evaluate(const node& root, context& ctxt) const;
 
-	// /// evaluate returns a node_set. If you're only interested in zeep::xml::element
-	// /// results, you should call the evaluate<element>() instantiation.
-	// template <typename NODE_TYPE, std::enable_if_t<std::is_same_v<NODE_TYPE,node> or std::is_same_v<NODE_TYPE, element>, int> = 0>
-	// std::list<NODE_TYPE*> evaluate(const node& root) const
-	// {
-	// 	context ctxt;
-	// 	return evaluate<NODE_TYPE>(root, ctxt);
-	// }
-
-	// /// The second evaluate method is used for xpaths that contain variables.
-	// template <typename NODE_TYPE, std::enable_if_t<std::is_same_v<NODE_TYPE,node> or std::is_same_v<NODE_TYPE, element>, int> = 0>
-	// std::list<NODE_TYPE*> evaluate(const node& root, context& ctxt) const;
-
 	/// Returns true if the \a n node matches the XPath
 	bool matches(const node* n) const;
 
 	/// debug routine, dumps the parse tree to stdout
 	void dump();
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
   private:
 	struct xpath_imp* m_impl;
-#endif
 };
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
-
-// --------------------------------------------------------------------
-
-// template <>
-// node_set xpath::evaluate<node>(const node& root) const;
-
-// template <>
-// element_set xpath::evaluate<element>(const node& root) const;
-
-// template <>
-// node_set xpath::evaluate<node>(const node& root, context& ctxt) const;
-
-// template <>
-// element_set xpath::evaluate<element>(const node& root, context& ctxt) const;
-
-#endif
-
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

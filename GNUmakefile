@@ -129,14 +129,7 @@ all: libraries test examples
 .PHONY: clean
 clean: $(ZEEP_LIB_PARTS:%=%_clean)
 	$(MAKE) -C examples clean
-	cd doc; bjam clean
-	rm -f $(DIST_NAME).tgz
-
-.PHONY: dist-clean
-dist-clean:
-	$(MAKE) -C lib dist-clean
-	$(MAKE) -C test dist-clean
-	$(MAKE) -C examples dist-clean
+	cd doc; test -x $(which b2) && b2 clean
 	rm -f $(DIST_NAME).tgz
 
 .PHONY: dist

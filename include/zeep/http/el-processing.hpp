@@ -9,10 +9,10 @@
 
 #pragma once
 
-#include <map>
+/// \file
+/// definition of the routines that can parse and interpret el (expression language) code in a web application context
 
-#include <boost/range.hpp>
-#include <boost/cstdint.hpp>
+#include <map>
 
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
@@ -131,7 +131,7 @@ class scope
 
 	scope& operator=(const scope& );
 
-	typedef std::map<std::string, object> data_map;
+	using data_map = std::map<std::string, object>;
 
 	data_map m_data;
 	scope *m_next;

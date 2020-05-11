@@ -5,6 +5,9 @@
 
 #pragma once
 
+/// \file
+/// generic iterator classes used by zeep::el::element
+
 #include <cassert>
 #include <string>
 #include <memory>
@@ -14,15 +17,12 @@
 #include <experimental/type_traits>
 
 #include <zeep/el/element_fwd.hpp>
-#include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
 #include <zeep/el/to_element.hpp>
 #include <zeep/el/from_element.hpp>
 #include <zeep/el/serializer.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 
 namespace detail
@@ -36,7 +36,7 @@ template<typename Iterator> class iteration_proxy_value;
 template<typename E>
 class iterator_impl
 {
-	friend iterator_impl<typename std::conditional<std::is_const<E>::value, typename std::remove_const<E>::type, const E>::type>;
+	friend iterator_impl<typename std::conditional_t<std::is_const_v<E>, typename std::remove_const_t<E>, const E>>;
 	friend E;
 	friend iteration_proxy<iterator_impl>;
 	friend iteration_proxy_value<iterator_impl>;
@@ -44,13 +44,13 @@ class iterator_impl
 	using iterator_category = std::bidirectional_iterator_tag;
 	using value_type = typename E::value_type;
 	using difference_type = typename E::difference_type;
-	using pointer = typename std::conditional<std::is_const<E>::value, typename E::const_pointer, typename E::pointer>::type;
-	using reference = typename std::conditional<std::is_const<E>::value, typename E::const_reference, typename E::reference>::type;
+	using pointer = typename std::conditional_t<std::is_const_v<E>, typename E::const_pointer, typename E::pointer>;
+	using reference = typename std::conditional_t<std::is_const_v<E>, typename E::const_reference, typename E::reference>;
 
 	using object_type = typename E::object_type;
 	using array_type = typename E::array_type;
 
-	static_assert(is_element<typename std::remove_const<E>::type>::value, "The iterator_impl template only accepts element classes");
+	static_assert(is_element_v<typename std::remove_const_t<E>>, "The iterator_impl template only accepts element classes");
 
 public:
 
@@ -415,8 +415,7 @@ template<typename Iterator> class iteration_proxy
 };
 
 } // detail
-} // el
-} // zeep
+} // zeep::el
 
 namespace std
 {

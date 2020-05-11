@@ -7,10 +7,10 @@
 #include <zeep/config.hpp>
 
 #ifdef NO_PREFORK
-#undef SOAP_SERVER_HAS_PREFORK
+#undef HTTP_SERVER_HAS_PREFORK
 #endif
 
-#if SOAP_SERVER_HAS_PREFORK
+#if HTTP_SERVER_HAS_PREFORK
 #include <zeep/http/preforked-server.hpp>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -23,7 +23,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time.hpp>
-#include <boost/optional.hpp>
 
 using namespace std;
 
@@ -119,8 +118,8 @@ enum Algorithm
 
 }
 
-namespace zeep {
-namespace xml {
+namespace zeep::xml
+{
 
 template<class Archive>
 struct struct_serializer<Archive,WSSearchNS::Hit>
@@ -335,7 +334,7 @@ void my_server::ForceStop(
 
 int main(int argc, const char* argv[])
 {
-#if 0 //SOAP_SERVER_HAS_PREFORK
+#if 0 //HTTP_SERVER_HAS_PREFORK
  	for (;;)
  	{
  		cout << "restarting server" << endl;

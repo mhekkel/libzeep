@@ -6,14 +6,15 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::xml::document class
+
 #include <zeep/config.hpp>
 #include <zeep/xml/character-classification.hpp>
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/serialize.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 /// zeep::xml::document is the class that contains a parsed XML file.
@@ -73,9 +74,7 @@ class document : public element
 	/// constructor will also validate the input using DTD's found in \a base_dir
 	document(std::istream& is, const std::string& base_dir);
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 	virtual ~document();
-#endif
 
 	/// options for parsing
 	/// validating uses a DTD if it is defined
@@ -159,7 +158,6 @@ class document : public element
 	virtual node* child()					{ return empty() ? nullptr : &front(); }
 	virtual const node* child() const		{ return empty() ? nullptr : &front(); }
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
 
 	virtual node_iterator insert_impl(const_iterator pos, node* n);
@@ -222,8 +220,6 @@ class document : public element
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::list<notation> m_notations;
 	size_t m_root_size_at_first_notation = 0;	// for processing instructions that occur before a notation
-
-#endif
 };
 
 namespace literals
@@ -232,8 +228,6 @@ namespace literals
 document operator""_xml(const char* text, size_t length);
 
 }
-
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template <typename T>
 void document::serialize(const char* name, const T& data)
@@ -255,7 +249,4 @@ void document::deserialize(const char* name, T& data)
 	sr.deserialize_element(name, data);
 }
 
-#endif
-
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

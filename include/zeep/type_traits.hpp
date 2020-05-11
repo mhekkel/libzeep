@@ -5,9 +5,12 @@
 
 #pragma once
 
+/// \file
+/// definition of various classes that help classify data used to select the correct conversion routines
+
 #include <experimental/type_traits>
 
-#include <zeep/serialize.hpp>
+#include <zeep/value_serializer.hpp>
 
 #ifndef __cpp_lib_experimental_detect
 // This code is copied from:
@@ -47,7 +50,7 @@ namespace std
 		};
 
 		template <template<class...> class Op, class... Args>
-		using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
+		using is_detected = typename detail::detector_v<nonesuch, void, Op, Args...>_t;
 		
 		template <template<class...> class Op, class... Args>
 		using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
@@ -113,9 +116,9 @@ template<typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type {};
 
 template<typename T, typename Archive>
-struct has_serialize<T, Archive, typename std::enable_if<std::is_class<T>::value>::type>
+struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
-	static constexpr bool value = std::experimental::is_detected<serialize_function,T,Archive>::value;
+	static constexpr bool value = std::experimental::is_detected_v<serialize_function,T,Archive>;
 };
 
 template<typename T, typename S>
@@ -126,23 +129,15 @@ struct is_serializable_type
 {
 	using value_type = std::remove_const_t<typename std::remove_reference_t<T>>;
 	static constexpr bool value =
-		std::experimental::is_detected<serialize_value_t,value_type>::value or
+		std::experimental::is_detected_v<serialize_value_t,value_type> or
 		has_serialize_v<value_type,S>;
 };
 
 template<typename T, typename S>
 inline constexpr bool is_serializable_type_v = is_serializable_type<T,S>::value;
 
-template<typename T, typename S>
-struct is_type_with_value_serializer
-{
-	using value_type = std::remove_const_t<typename std::remove_reference_t<T>>;
-	static constexpr bool value =
-		std::experimental::is_detected<serialize_value_t,value_type>::value;
-};
-
-template<typename T, typename S>
-inline constexpr bool is_type_with_value_serializer_v = is_type_with_value_serializer<T, S>::value;
+template<typename T>
+inline constexpr bool is_type_with_value_serializer_v = std::experimental::is_detected_v<serialize_value_t,T>;
 
 template<typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type {};
@@ -154,7 +149,7 @@ struct is_serializable_array_type<T, S,
 		std::experimental::is_detected_v<iterator_t, T> and
 		not std::experimental::is_detected_v<std_string_npos_t, T>>>
 {
-	static constexpr bool value = is_serializable_type<typename T::value_type,S>::value;
+	static constexpr bool value = is_serializable_type_v<typename T::value_type,S>;
 };
 
 template<typename T, typename S>

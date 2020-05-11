@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// definition of the base class zeep::http::controller, used by e.g. rest_controller and soap_controller
+
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>
 
@@ -21,14 +24,14 @@ class controller
 
 	virtual bool handle_request(request& req, reply& rep);
 
-	std::string prefix() const      { return m_prefixPath; }
+	std::string get_prefix() const      { return m_prefix_path; }
 
   protected:
 
 	controller(const controller&) = delete;
 	controller& operator=(const controller&) = delete;
 
-	std::string m_prefixPath;
+	std::string m_prefix_path;
 };
 
 } // namespace zeep::http
