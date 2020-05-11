@@ -12,6 +12,7 @@
 #include <map>
 #include <algorithm>
 #include <experimental/type_traits>
+#include <optional>
 
 #include <zeep/serialize.hpp>
 #include <zeep/type_traits.hpp>
@@ -21,17 +22,6 @@
 #include <zeep/el/to_element.hpp>
 #include <zeep/el/from_element.hpp>
 #include <zeep/el/traits.hpp>
-
-#if __has_include(<optional>)
-#include <optional>
-#elif __has_include(<experimental/optional>)
-#include <boost/optional.hpp>
-#elif __has_include(<boost/optional.hpp>)
-#include <boost/optional.hpp>
-namespace std { using boost::optional; }
-#else
-#error "No optional"
-#endif
 
 namespace zeep
 {

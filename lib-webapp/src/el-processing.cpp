@@ -124,7 +124,7 @@ enum class token_type
 
 struct interpreter
 {
-	typedef uint32_t unicode;
+	using unicode = uint32_t;
 
 	interpreter(const scope &scope)
 		: m_scope(scope) {}

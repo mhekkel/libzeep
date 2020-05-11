@@ -61,8 +61,6 @@ class preforked_server
 	virtual void start();			///< signal the thread it can start listening:
 	virtual void stop();			///< stop the running thread
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
-
   private:
 
 	void fork_child();
@@ -79,8 +77,6 @@ class preforked_server
 	int								m_fd;
 	int								m_pid;
 	std::mutex						m_lock;
-
-#endif
 };
 
 }

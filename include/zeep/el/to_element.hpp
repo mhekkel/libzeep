@@ -12,12 +12,11 @@
 #include <map>
 #include <algorithm>
 #include <experimental/type_traits>
+#include <optional>
 
 #include <zeep/el/element_fwd.hpp>
 #include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
-
-#include <boost/optional.hpp>
 
 namespace zeep
 {
@@ -136,7 +135,7 @@ void to_element(J& j, const J& obj)
 }
 
 template<typename T, std::enable_if_t<has_to_element<T>::value>>
-void to_element(element& j, const boost::optional<T>& v)
+void to_element(element& j, const std::optional<T>& v)
 {
 	if (v)
 		to_element(j, *v);

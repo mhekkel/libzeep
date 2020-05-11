@@ -13,10 +13,8 @@
 #include <zeep/http/server.hpp>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/locale.hpp>
 
 namespace ba = boost::algorithm;
-namespace bl = boost::locale;
 
 namespace zeep::http
 {

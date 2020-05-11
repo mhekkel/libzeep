@@ -23,7 +23,7 @@ namespace http
 class parser
 {
 public:
-	typedef std::tuple<boost::tribool, size_t> result_type;
+	using result_type = std::tuple<boost::tribool, size_t>;
 
 	virtual ~parser() {}
 

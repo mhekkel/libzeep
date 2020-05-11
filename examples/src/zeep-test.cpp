@@ -23,7 +23,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time.hpp>
-#include <boost/optional.hpp>
 
 using namespace std;
 

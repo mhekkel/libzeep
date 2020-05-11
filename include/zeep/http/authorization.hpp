@@ -49,7 +49,7 @@ struct authorization_stale_exception : public unauthorized_exception
 
 /// class to use in authentication
 struct auth_info;
-typedef std::list<auth_info> auth_info_list;
+using auth_info_list = std::list<auth_info>;
 
 // --------------------------------------------------------------------
 

@@ -6,12 +6,10 @@
 #include <cassert>
 #include <climits>
 #include <cstring>
+#include <random>
 
 #include <vector>
 #include <iostream>
-
-
-#include <boost/random/random_device.hpp>
 
 #include <zeep/crypto.hpp>
 
@@ -404,7 +402,7 @@ std::string decode_hex(const std::string& data)
 
 std::string random_hash()
 {
-	boost::random::random_device rng;
+	std::random_device rng;
 
 	union {
 		uint32_t data[4];

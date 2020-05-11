@@ -32,7 +32,6 @@
 
 #define LIBZEEP_VERSION_MAJOR 4
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 // see if we're using Visual C++, if so we have to include
 // some VC specific include files to make the standard C++
 // keywords work.
@@ -57,6 +56,5 @@
 #	pragma warning (disable : 4068)	// unknown pragma
 #	pragma warning (disable : 4996)	// stl copy()
 #	pragma warning (disable : 4800)	// BOOL conversion
-#endif
 
 #endif

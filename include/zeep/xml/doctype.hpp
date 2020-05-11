@@ -22,9 +22,9 @@ class attlist;
 class entity;
 class attribute;
 
-typedef std::vector<entity*> entity_list;
-typedef std::vector<element*> element_list;
-typedef std::vector<attribute*> attribute_list;
+using entity_list = std::vector<entity*>;
+using element_list = std::vector<element*>;
+using attribute_list = std::vector<attribute*>;
 
 // --------------------------------------------------------------------
 
@@ -34,11 +34,11 @@ enum class ContentSpecType { Empty, Any, Mixed, Children };
 // validation of elements is done by the validator classes
 
 struct content_spec_base;
-typedef content_spec_base* content_spec_ptr;
-typedef std::list<content_spec_ptr> content_spec_list;
+using content_spec_ptr = content_spec_base*;
+using content_spec_list = std::list<content_spec_ptr>;
 
 struct state_base;
-typedef state_base* state_ptr;
+using state_ptr = state_base*;
 
 class validator
 {

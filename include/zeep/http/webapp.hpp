@@ -167,7 +167,7 @@ class basic_webapp
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 
-	typedef std::function<void(const request& request, const scope& scope, reply& reply)> handler_type;
+	using handler_type = std::function<void(const request& request, const scope& scope, reply& reply)>;
 
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
@@ -317,7 +317,7 @@ class basic_webapp
 		handler_type handler;
 	};
 
-	typedef std::vector<mount_point> mount_point_list;
+	using mount_point_list = std::vector<mount_point>;
 
 	mount_point_list m_dispatch_table;
 	std::string m_ns;

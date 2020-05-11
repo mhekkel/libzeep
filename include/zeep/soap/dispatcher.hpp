@@ -32,8 +32,6 @@
 
 #include <type_traits>
 
-#include <boost/serialization/nvp.hpp>
-
 #include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/xml/serialize.hpp>
@@ -51,13 +49,13 @@ using namespace xml;
 template<typename T1, typename... T>
 struct result_type
 {
-	typedef typename result_type<T...>::type type;
+	using type = typename result_type<T...>::type;
 };
 
 template<typename T>
 struct result_type<T>
 {
-	typedef typename std::remove_reference<T>::type type;
+	using type = typename std::remove_reference<T>::type;
 };
 
 template<typename F>
@@ -82,7 +80,7 @@ struct invoker<void(A0, A1, A...)>
 	template<typename Function, typename Response, typename... Args>
 	static void invoke(Function f, ::zeep::xml::deserializer& d, const char** name, Response& response, Args... args)
 	{
-		typedef typename std::remove_const<typename std::remove_reference<A0>::type>::type argument_type;
+		using argument_type = typename std::remove_const<typename std::remove_reference<A0>::type>::type;
 
 		argument_type arg = {};
  		d.deserialize_element(*name, arg);
@@ -91,7 +89,7 @@ struct invoker<void(A0, A1, A...)>
 
 	static void collect_types(schema_creator& c, const char** name)
 	{
-		typedef typename std::remove_const<typename std::remove_reference<A0>::type>::type argument_type;
+		using argument_type = typename std::remove_const<typename std::remove_reference<A0>::type>::type;
 
 		argument_type arg = {};
 
@@ -124,7 +122,7 @@ struct handler_traits<void(Args...)>
 };
 
 // messages can be used by more than one action, so we need a way to avoid duplicates
-typedef std::map<std::string, element *> message_map;
+using message_map = std::map<std::string, element *>;
 
 struct handler_base
 {
@@ -150,8 +148,8 @@ template <typename Function> struct handler;
 template<typename... Args>
 struct handler<void(Args...)> : public handler_base
 {
-	typedef handler_traits<void(Args...)> handler_traits_type;
-	typedef typename handler_traits_type::result_type response_type;
+	using handler_traits_type = handler_traits<void(Args...)>;
+	using response_type = typename handler_traits_type::result_type;
 
 	static constexpr std::size_t name_count = sizeof...(Args);
 	typedef const char* names_type[name_count];
@@ -292,7 +290,7 @@ struct handler_factory<Class, void(Class::*)(Arguments...)>
 class dispatcher
 {
 public:
-	typedef std::vector<detail::handler_base *> handler_list;
+	using handler_list = std::vector<detail::handler_base *>;
 
 	dispatcher(const std::string& ns, const std::string& service)
 		: m_ns(ns), m_service(service) {}
@@ -306,8 +304,8 @@ public:
 	template <typename Class, typename Method>
 	void register_action(const char* action, Class* server, Method method, std::initializer_list<const char*> names)
 	{
-		typedef typename detail::handler_factory<Class, Method> handler_factory;
-		typedef typename handler_factory::handler_type handler_type;
+		using handler_factory = typename detail::handler_factory<Class, Method>;
+		using handler_type = typename handler_factory::handler_type;
 
 		m_handlers.push_back(new handler_type(action, handler_factory::create_callback(server, method), names));
 	}
