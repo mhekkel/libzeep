@@ -21,9 +21,7 @@
 #include <zeep/el/serializer.hpp>
 #include <zeep/el/iterator.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 
 class element
@@ -713,5 +711,4 @@ private:
 };
 
 } // detail
-} // el
-} // namespace zeep
+} // zeep::el

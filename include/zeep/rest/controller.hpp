@@ -199,7 +199,7 @@ class rest_controller : public controller
 		void set_reply(reply& rep, T&& v)
 		{
 			json e;
-			zeep::to_element(e, v);
+			zeep::el::to_element(e, v);
 			rep.set_content(e);
 		}
 
@@ -266,7 +266,7 @@ class rest_controller : public controller
 		}
 
 		template<typename T, std::enable_if_t<
-			not (zeep::has_serialize<T, zeep::deserializer<json>>::value or
+			not (zeep::has_serialize<T, zeep::el::deserializer<json>>::value or
 				 std::is_enum<T>::value or
 				 std::is_same_v<T,bool> or
 				 std::is_same_v<T,file_param> or
@@ -298,7 +298,7 @@ class rest_controller : public controller
 			return tv;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize<T, zeep::deserializer<json>>::value, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize<T, zeep::el::deserializer<json>>::value, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
 			json v;

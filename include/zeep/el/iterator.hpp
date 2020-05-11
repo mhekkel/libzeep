@@ -20,9 +20,7 @@
 #include <zeep/el/from_element.hpp>
 #include <zeep/el/serializer.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 
 namespace detail
@@ -415,8 +413,7 @@ template<typename Iterator> class iteration_proxy
 };
 
 } // detail
-} // el
-} // zeep
+} // zeep::el
 
 namespace std
 {

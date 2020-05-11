@@ -8,7 +8,6 @@
 
 using namespace std;
 using json = zeep::el::element;
-using my_opt = boost::optional<int>;
 
 using namespace zeep::el::literals;
 
@@ -33,7 +32,7 @@ struct MyPOD
 {
 	std::string				s;
 	int						i;
-	boost::optional<int>	o{13};
+	std::optional<int>		o{13};
 	std::vector<MyPOD2>		fp{2, MyPOD2()};
 
 	template<typename Archive>
@@ -166,11 +165,11 @@ BOOST_AUTO_TEST_CASE(j_9)
 {
 	json j;
 
-	zeep::serializer<json>::serialize(j, true);
+	zeep::el::serializer<json>::serialize(j, true);
 	BOOST_TEST(j.is_boolean());
 	BOOST_TEST(j == true);
 
-	zeep::serializer<json>::serialize(j, false);
+	zeep::el::serializer<json>::serialize(j, false);
 	BOOST_TEST(j.is_boolean());
 	BOOST_TEST(j == false);
 

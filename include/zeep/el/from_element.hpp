@@ -17,9 +17,7 @@
 #include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 namespace detail
 {
@@ -184,6 +182,5 @@ namespace
     constexpr const auto& from_element = typename ::zeep::el::detail::from_element_fn{};
 }
 
-}
 }
 }

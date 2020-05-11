@@ -18,9 +18,7 @@
 #include <zeep/el/element_fwd.hpp>
 #include <zeep/el/traits.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 namespace detail
 {
@@ -80,26 +78,6 @@ struct factory<value_type::string>
 
 		j.validate();
 	}
-
-
-	// template<typename J, typename T,
-	// 	std::enable_if_t<not std::is_same<T, typename J::string_type>::value, int> = 0>
-	// static void construct(J& j, const T& s)
-	// {
-	// 	j.m_type = value_type::string;
-	// 	j.m_data = j.template create<typename J::string_type>(s);
-	// 	j.validate();
-	// }
-
-	// template<typename J, typename T, size_t N,
-	// 	std::enable_if_t<std::is_same<T, typename J::string_type::value_type>::value, int> = 0>
-	// static void construct(J& j, const T(&a)[N])
-	// {
-	// 	j.m_type = value_type::string;
-	// 	j.m_data = j.template create<typename J::string_type>(a, a + N);
-	// 	j.validate();
-	// }
-
 };
 
 template<>
@@ -210,6 +188,5 @@ struct factory<value_type::object>
     }
 };
 
-}
 }
 }
