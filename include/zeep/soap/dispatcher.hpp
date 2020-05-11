@@ -36,7 +36,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/xml/serialize.hpp>
 
-namespace zeep::soap
+namespace zeep::http
 {
 
 namespace detail

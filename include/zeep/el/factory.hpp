@@ -5,6 +5,8 @@
 
 #pragma once
 
+/// \file factory classes for constructing zeep::el::element objects
+
 #include <cassert>
 #include <string>
 #include <memory>

@@ -5,6 +5,8 @@
 
 #pragma once
 
+/// \file definition of the serializer classes that help serialize data into and out of zeep::el::element (JSON) objects
+
 #include <cassert>
 #include <string>
 #include <memory>

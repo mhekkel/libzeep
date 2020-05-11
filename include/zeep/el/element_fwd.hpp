@@ -5,6 +5,8 @@
 
 #pragma once
 
+/// \file forward declarations required for zeep::el::element, the JSON object in libzeep
+
 #include <cassert>
 #include <string>
 #include <memory>

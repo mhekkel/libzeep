@@ -7,10 +7,10 @@
 #include <zeep/exception.hpp>
 #include <zeep/soap/controller.hpp>
 
-namespace zeep::soap
+namespace zeep::http
 {
 
-bool controller::handle_request(http::request& req, http::reply& reply)
+bool soap_controller::handle_request(http::request& req, http::reply& reply)
 {
 	bool result = false;
 
@@ -68,7 +68,7 @@ bool controller::handle_request(http::request& req, http::reply& reply)
 }
 
 /// \brief Create a WSDL based on the registered actions
-xml::element controller::make_wsdl()
+xml::element soap_controller::make_wsdl()
 {
 	// start by making the root node: wsdl:definitions
 

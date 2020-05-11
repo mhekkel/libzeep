@@ -13,14 +13,14 @@
 #include <zeep/xml/document.hpp>
 #include <zeep/soap/envelope.hpp>
 
-namespace zeep::soap
+namespace zeep::http
 {
 
-class controller : public zeep::http::controller
+class soap_controller : public controller
 {
   public:
-	controller(const std::string& prefix_path, const std::string& ns)
-		: zeep::http::controller(prefix_path)
+	soap_controller(const std::string& prefix_path, const std::string& ns)
+		: controller(prefix_path)
 		, m_ns(ns)
 		, m_service("b")
 	{
@@ -29,7 +29,7 @@ class controller : public zeep::http::controller
 		m_location = m_prefix_path;
 	}
 
-    ~controller()
+    ~soap_controller()
 	{
 		for (auto mp: m_mountpoints)
 			delete mp;
@@ -89,7 +89,7 @@ class controller : public zeep::http::controller
  
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* action, controller* owner, Sig sig)
+		mount_point(const char* action, soap_controller* owner, Sig sig)
 			: mount_point_base(action)
 		{
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
@@ -102,7 +102,7 @@ class controller : public zeep::http::controller
 		}
 
 		template<typename... Names>
-		mount_point(const char* action, controller* owner, Sig sig, Names... names)
+		mount_point(const char* action, soap_controller* owner, Sig sig, Names... names)
 			: mount_point(action, owner, sig)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");

@@ -5,6 +5,8 @@
 
 #pragma once
 
+/// \file various templated classes that help selecting the right conversion routines when (de-)serializing zeep::el::element (JSON) objects
+
 #include <cassert>
 #include <string>
 #include <memory>

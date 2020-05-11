@@ -9,6 +9,8 @@
 
 #pragma once
 
+/// \file definition of the routines that can parse and interpret el (expression language) code in a web application context
+
 #include <map>
 
 #include <zeep/http/request.hpp>

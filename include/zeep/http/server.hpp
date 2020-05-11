@@ -6,6 +6,8 @@
 
 #pragma once
 
+/// \file definition of the zeep::http::server class
+
 #include <thread>
 
 #include <boost/asio.hpp>

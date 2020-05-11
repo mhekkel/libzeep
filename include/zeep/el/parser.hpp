@@ -9,6 +9,8 @@
 
 #pragma once
 
+/// \file The definition of the JSON parser in libzeep
+
 #include <zeep/el/element.hpp>
 
 namespace zeep::el

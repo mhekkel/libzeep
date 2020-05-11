@@ -12,7 +12,7 @@
 #include <zeep/http/reply.hpp>
 #include <zeep/dispatcher.hpp>
 
-namespace zeep::soap
+namespace zeep
 {
 
 /// zeep::server inherits from zeep::http::server and zeep::dispatcher to do its work.
@@ -22,7 +22,7 @@ namespace zeep::soap
 /// If the server is behind a proxy, you'll also need to call set_location to specify the
 /// external address of your server.
 
-class server
+class soap_server
 	: public dispatcher,
 	  public http::server
 {
@@ -30,7 +30,7 @@ public:
 	/// The constructor takes two arguments
 	/// \param ns      The namespace as used for the WSDL and SOAP messages
 	/// \param service The service name for this server
-	server(const std::string& ns, const std::string& service);
+	soap_server(const std::string& ns, const std::string& service);
 
 	/// \brief Calls zeep::http::server and sets m_location if it wasn't already specified
 	virtual void bind(const std::string& address, unsigned short port);

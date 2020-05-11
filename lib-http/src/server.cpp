@@ -21,9 +21,11 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
-namespace detail {
+namespace detail
+{
 
 // a thread specific logger
 
@@ -247,5 +249,4 @@ void server::log_request(const std::string& client,
 		std::cout << '"' << entry << '"' << std::endl;
 }
 
-}
 }

@@ -8,6 +8,8 @@
 
 #pragma once
 
+/// \file definition of various classes that handle HTTP authentication
+
 #include <map>
 #include <mutex>
 

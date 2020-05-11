@@ -14,7 +14,7 @@ namespace zeep
 
 class exception : public std::exception
 {
-public:
+  public:
 	/// \brief Create an exception with vsprintf like parameters
 	exception(const char* message, ...);
 
@@ -26,7 +26,7 @@ public:
 	virtual const char *
 	what() const throw() { return m_message.c_str(); }
 
-protected:
+  protected:
 	std::string m_message;
 };
 

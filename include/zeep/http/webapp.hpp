@@ -9,6 +9,10 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::http::webapp class, a rich extension of the zeep::http::server class 
+/// that allows mapping of member functions to mount points in HTTP space.
+
 #include <map>
 #include <set>
 #include <string>

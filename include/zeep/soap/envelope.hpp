@@ -14,7 +14,7 @@
 /// Envelope is a wrapper around a SOAP envelope. Use it for
 /// input and output of correctly formatted SOAP messages.
 
-namespace zeep::soap
+namespace zeep::http
 {
 
 class envelope : public boost::noncopyable

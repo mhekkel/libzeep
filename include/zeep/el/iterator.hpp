@@ -5,6 +5,8 @@
 
 #pragma once
 
+/// \file generic iterator classes used by zeep::el::element
+
 #include <cassert>
 #include <string>
 #include <memory>

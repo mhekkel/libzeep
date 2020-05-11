@@ -22,9 +22,9 @@ struct TestStruct
 	}
 };
 
-struct my_test_controller : public zs::controller
+struct my_test_controller : public zs::soap_controller
 {
-	my_test_controller() : zs::controller("ws", "http://www.hekkelman.com/libzeep/soap")
+	my_test_controller() : zs::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
 	{
 		service("testService");
 

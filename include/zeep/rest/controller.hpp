@@ -6,6 +6,11 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::http::rest_controller class.
+/// Instances of this class take care of mapping member functions to
+/// REST calls automatically converting in- and output data
+
 #include <zeep/config.hpp>
 
 #include <filesystem>

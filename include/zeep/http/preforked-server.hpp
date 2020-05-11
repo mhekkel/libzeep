@@ -6,10 +6,15 @@
 
 #pragma once
 
+/// \file Code for a preforked http server implementation
+
 #include <thread>
 #include <mutex>
 
+#include <zeep/config.hpp>
 #include <zeep/http/server.hpp>
+
+#if HTTP_SERVER_HAS_PREFORK
 
 /// preforked server support.
 /// A preforked server means you have a master process that listens to a port
@@ -81,3 +86,5 @@ class preforked_server
 };
 
 }
+
+#endif
