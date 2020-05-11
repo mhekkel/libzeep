@@ -97,10 +97,10 @@ element::element(size_t cnt, const element& v)
 }
 
 element& element::operator=(element j) noexcept(
-		std::is_nothrow_move_constructible<value_type>::value and
-		std::is_nothrow_move_assignable<value_type>::value and
-		std::is_nothrow_move_constructible<element_data>::value and
-		std::is_nothrow_move_assignable<element_data>::value)
+		std::is_nothrow_move_constructible_v<value_type> and
+		std::is_nothrow_move_assignable_v<value_type> and
+		std::is_nothrow_move_constructible_v<element_data> and
+		std::is_nothrow_move_assignable_v<element_data>)
 {
 	j.validate();
 

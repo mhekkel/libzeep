@@ -67,10 +67,10 @@ struct is_iterator_traits<std::iterator_traits<T>>
 
   public:
     static constexpr auto value =
-        std::experimental::is_detected_v<value_type_t, traits> &&
-        std::experimental::is_detected_v<difference_type_t, traits> &&
-        std::experimental::is_detected_v<pointer_t, traits> &&
-        std::experimental::is_detected_v<iterator_category_t, traits> &&
+        std::experimental::is_detected_v<value_type_t, traits> and
+        std::experimental::is_detected_v<difference_type_t, traits> and
+        std::experimental::is_detected_v<pointer_t, traits> and
+        std::experimental::is_detected_v<iterator_category_t, traits> and
         std::experimental::is_detected_v<reference_t, traits>;
 };
 
@@ -81,7 +81,7 @@ template<typename T, typename = void>
 struct has_to_element : std::false_type {};
 
 template<typename T>
-struct has_to_element<T, std::enable_if_t<not is_element<T>::value>>
+struct has_to_element<T, std::enable_if_t<not is_element_v<T>>>
 {
 	using serializer = element_serializer<T, void>;
 	static constexpr bool value =
@@ -95,11 +95,11 @@ template<typename T, typename = void>
 struct has_from_element : std::false_type {};
 
 template<typename T>
-struct has_from_element<T, std::enable_if_t<not is_element<T>::value>>
+struct has_from_element<T, std::enable_if_t<not is_element_v<T>>>
 {
 	using serializer = element_serializer<T, void>;
 	static constexpr bool value =
-		std::experimental::is_detected_exact<void, from_element_function, serializer, const element&, T&>::value;
+		std::experimental::is_detected_exact_v<void, from_element_function, serializer, const element&, T&>;
 };
 
 template<typename T>
@@ -142,10 +142,10 @@ struct is_constructible_array_type<E, T,
 		is_complete_type_v<std::experimental::detected_t<value_type_t, T>> >>
 {
     static constexpr bool value =
-		not is_iterator_traits<std::iterator_traits<T>>::value and
+		not is_iterator_traits_v<std::iterator_traits<T>> and
 		(
-			std::is_same<typename T::value_type, typename E::array_type::value_type>::value or
-			has_from_element<typename T::value_type>::value
+			std::is_same_v<typename T::value_type, typename E::array_type::value_type> or
+			has_from_element_v<typename T::value_type>
 		);
 };
 
@@ -175,7 +175,7 @@ template<typename T, typename = void>
 struct is_compatible_type : std::false_type {};
 
 template<typename T>
-struct is_compatible_type<T, std::enable_if_t<is_complete_type<T>::value>>
+struct is_compatible_type<T, std::enable_if_t<is_complete_type_v<T>>>
 {
 	static constexpr bool value = has_to_element_v<T>;
 };
@@ -191,10 +191,10 @@ struct is_compatible_string_type : std::false_type {};
 template<typename E, typename T>
 struct is_compatible_string_type<E, T,
 	std::enable_if_t<
-		std::experimental::is_detected_exact<typename E::string_type::value_type, value_type_t, T>::value>>
+		std::experimental::is_detected_exact_v<typename E::string_type::value_type, value_type_t, T>>>
 {
 	static constexpr bool value =
-		std::is_constructible<typename E::string_type, T>::value;
+		std::is_constructible_v<typename E::string_type, T>;
 };
 
 template<typename E, typename T>
@@ -207,14 +207,14 @@ struct is_compatible_object_type : std::false_type {};
 
 template<typename J, typename T>
 struct is_compatible_object_type<J, T, std::enable_if_t<
-	std::experimental::is_detected<mapped_type_t, T>::value and
-	std::experimental::is_detected<key_type_t, T>::value>>
+	std::experimental::is_detected_v<mapped_type_t, T> and
+	std::experimental::is_detected_v<key_type_t, T>>>
 {
 	using map_t = typename J::object_type;
 	static constexpr bool value = 
-		std::is_constructible<typename J::object_type::key_type,typename map_t::key_type>::value and
-		(std::is_same<typename J::value_type,typename map_t::mapped_type>::value or
-			has_from_element<typename T::mapped_type>::value); 
+		std::is_constructible_v<typename J::object_type::key_type,typename map_t::key_type> and
+		(std::is_same_v<typename J::value_type,typename map_t::mapped_type> or
+			has_from_element_v<typename T::mapped_type>); 
 };
 
 template<typename J, typename T>
@@ -236,7 +236,7 @@ struct is_serializable_map_type<T, Archive,
 		std::is_same_v<typename T::key_type, std::string> and
 		(
 			detail::is_compatible_type_v<typename T::mapped_type> or
-		has_serialize_v<typename T::mapped_type, Archive>
+			has_serialize_v<typename T::mapped_type, Archive>
 		);
 };
 
@@ -253,7 +253,7 @@ template<typename T, typename Archive>
 struct is_serializable_optional_type<T, Archive,
 	std::enable_if_t<
 		std::experimental::is_detected_v<detail::value_type_t, T> and
-		std::is_same<has_value_or_result<T>,typename T::value_type>::value and
+		std::is_same_v<has_value_or_result<T>,typename T::value_type> and
 		not detail::is_compatible_string_type_v<typename Archive::element_type,T>>>
 {
 	static constexpr bool value =

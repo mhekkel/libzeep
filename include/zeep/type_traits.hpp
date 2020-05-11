@@ -113,7 +113,7 @@ template<typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type {};
 
 template<typename T, typename Archive>
-struct has_serialize<T, Archive, typename std::enable_if<std::is_class_v<T>>::type>
+struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
 	static constexpr bool value = std::experimental::is_detected_v<serialize_function,T,Archive>;
 };

@@ -15,7 +15,7 @@
 
 #include <zeep/el/element_fwd.hpp>
 #include <zeep/el/factory.hpp>
-#include <zeep/el/traits.hpp>
+#include <zeep/el/type_traits.hpp>
 
 namespace zeep::el
 {
@@ -80,7 +80,7 @@ void to_element(element& v, T i)
 template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
 void to_element(element& v, T e)
 {
-	using int_type = typename std::underlying_type<T>::type;
+	using int_type = typename std::underlying_type_t<T>;
 	factory<value_type::number_int>::construct(v, static_cast<int_type>(e));
 }
 

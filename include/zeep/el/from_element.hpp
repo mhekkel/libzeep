@@ -14,7 +14,6 @@
 #include <experimental/type_traits>
 
 #include <zeep/el/element_fwd.hpp>
-// #include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
 
 namespace zeep::el
@@ -106,7 +105,7 @@ void from_element(const E& e, A& v)
 template<typename E, typename Enum, std::enable_if_t<std::is_enum_v<Enum>, int> = 0>
 void from_element(const E& e, Enum &en)
 {
-    typename std::underlying_type<Enum>::type v;
+    typename std::underlying_type_t<Enum> v;
     get_number(e, v);
     en = static_cast<Enum>(v);
 }

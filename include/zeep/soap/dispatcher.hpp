@@ -49,13 +49,13 @@ using namespace xml;
 template<typename T1, typename... T>
 struct result_type
 {
-	using type = typename result_type<T...>::type;
+	using type = typename result_type_t<T...>;
 };
 
 template<typename T>
 struct result_type<T>
 {
-	using type = typename std::remove_reference<T>::type;
+	using type = typename std::remove_reference_t<T>;
 };
 
 template<typename F>
@@ -80,7 +80,7 @@ struct invoker<void(A0, A1, A...)>
 	template<typename Function, typename Response, typename... Args>
 	static void invoke(Function f, ::zeep::xml::deserializer& d, const char** name, Response& response, Args... args)
 	{
-		using argument_type = typename std::remove_const<typename std::remove_reference<A0>::type>::type;
+		using argument_type = typename std::remove_const_t<typename std::remove_reference_t<A0>>;
 
 		argument_type arg = {};
  		d.deserialize_element(*name, arg);
@@ -89,7 +89,7 @@ struct invoker<void(A0, A1, A...)>
 
 	static void collect_types(schema_creator& c, const char** name)
 	{
-		using argument_type = typename std::remove_const<typename std::remove_reference<A0>::type>::type;
+		using argument_type = typename std::remove_const_t<typename std::remove_reference_t<A0>>;
 
 		argument_type arg = {};
 
@@ -104,7 +104,7 @@ struct handler_traits;
 template<typename... Args>
 struct handler_traits<void(Args...)>
 {
-	typedef typename result_type<Args...>::type			result_type;
+	typedef typename result_type_t<Args...>			result_type;
 
 	static_assert(not std::is_reference_v<result_type>, "result type (last argument) should be a reference");
 

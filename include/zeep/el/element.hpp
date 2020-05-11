@@ -154,7 +154,7 @@ class element
 	element(element&& j);
 	element(const detail::element_reference& r);
 	template<typename T,
-		typename U = typename std::remove_cv<typename std::remove_reference<T>::type>::type,
+		typename U = typename std::remove_cv_t<typename std::remove_reference_t<T>>,
 		std::enable_if_t<not std::is_same_v<U,element> and detail::is_compatible_type_v<T>, int> = 0>
 	element(T&& v) noexcept(noexcept(element_serializer<U,void>::to_element(std::declval<element&>(), std::forward<T>(v))))
 	{
@@ -280,7 +280,7 @@ class element
 	}
 
 	template<typename Iterator,
-		typename std::enable_if<std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>, int>::type = 0>
+		typename std::enable_if_t<std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>, int> = 0>
 		Iterator erase(Iterator pos)
 	{
 		if (pos.m_obj != this)
@@ -321,7 +321,7 @@ class element
 	}
 
 	template<typename Iterator,
-		typename std::enable_if<std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>, int>::type = 0>
+		typename std::enable_if_t<std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>, int> = 0>
 		Iterator erase(Iterator first, Iterator last)
 	{
 		if (first.m_obj != this or last.m_obj != this)
@@ -611,20 +611,20 @@ public:
 
 	// access to data
 	// these return a pointer to the internal storage
-	template<typename P, typename std::enable_if<std::is_pointer_v<P>, int>::type = 0>
+	template<typename P, typename std::enable_if_t<std::is_pointer_v<P>, int> = 0>
 	auto get_ptr() noexcept -> decltype(std::declval<element&>().get_impl_ptr(std::declval<P>()))
 	{
 		return get_impl_ptr(static_cast<P>(nullptr));
 	}
 
-	template<typename P, typename std::enable_if<std::is_pointer_v<P> and std::is_const<typename std::remove_pointer<P>::type>::value, int>::type = 0>
+	template<typename P, typename std::enable_if_t<std::is_pointer_v<P> and std::is_const_v<typename std::remove_pointer_t<P>>, int> = 0>
 	constexpr auto get_ptr() const noexcept -> decltype(std::declval<element&>().get_impl_ptr(std::declval<P>()))
 	{
 		return get_impl_ptr(static_cast<P>(nullptr));
 	}
 
 	template<typename T,
-		typename U = typename std::remove_cv<typename std::remove_reference<T>::type>::type,
+		typename U = typename std::remove_cv_t<typename std::remove_reference_t<T>>,
 		std::enable_if_t<detail::is_compatible_type_v<T>, int> = 0>
 	T as() const noexcept(noexcept(element_serializer<U>::from_element(std::declval<const element&>(), std::declval<U&>())))
 	{

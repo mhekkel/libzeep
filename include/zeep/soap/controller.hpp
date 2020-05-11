@@ -84,7 +84,7 @@ class soap_controller : public controller
 	struct mount_point<Result(ControllerType::*)(Args...)> : mount_point_base
 	{
 		using Sig = Result(ControllerType::*)(Args...);
-		using ArgsTuple = std::tuple<typename std::remove_const<typename std::remove_reference<Args>::type>::type...>;
+		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
 		using Callback = std::function<Result(Args...)>;
  
 		static constexpr size_t N = sizeof...(Args);
@@ -130,7 +130,7 @@ class soap_controller : public controller
 		template<std::size_t I>
 		xml::element collect_type(std::map<std::string,xml::element>& types, const std::string& ns)
 		{
-			using type = typename std::tuple_element<I, ArgsTuple>::type;
+			using type = typename std::tuple_element_t<I, ArgsTuple>;
 			return xml::type_serializer<type>::schema(m_names[I], ns);
 		}
 
@@ -174,7 +174,7 @@ class soap_controller : public controller
 		{
 			xml::deserializer ds(request);
 
-			return std::make_tuple(get_parameter<typename std::tuple_element<I, ArgsTuple>::type>(ds, m_names[I])...);
+			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(ds, m_names[I])...);
 		}
 
 		template<typename T>

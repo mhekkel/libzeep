@@ -288,7 +288,7 @@ void to_element(J& e, T& v)
 template<typename J, typename T>
 void from_element(const J& e, T& v)
 {
-	deserializer<typename std::remove_cv<J>::type>::deserialize(e, v);
+	deserializer<typename std::remove_cv_t<J>>::deserialize(e, v);
 }
 
 namespace detail

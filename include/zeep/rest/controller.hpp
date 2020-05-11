@@ -92,7 +92,7 @@ class rest_controller : public controller
 	{
 		using Sig = Result(ControllerType::*)(Args...);
 		// using ArgsTuple = std::tuple<Args...>;
-		using ArgsTuple = std::tuple<typename std::remove_const<typename std::remove_reference<Args>::type>::type...>;
+		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
 		using Callback = std::function<Result(Args...)>;
         using json = el::element;
 
@@ -207,7 +207,7 @@ class rest_controller : public controller
 		ArgsTuple collect_arguments(const parameter_pack& params, std::index_sequence<I...>)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
-			return std::make_tuple(get_parameter<typename std::tuple_element<I, ArgsTuple>::type>(params, m_names[I])...);
+			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(params, m_names[I])...);
 		}
 
 		template<typename T, std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
@@ -266,7 +266,7 @@ class rest_controller : public controller
 		}
 
 		template<typename T, std::enable_if_t<
-			not (zeep::has_serialize<T, zeep::el::deserializer<json>>::value or
+			not (zeep::has_serialize_v<T, zeep::el::deserializer<json>> or
 				 std::is_enum_v<T> or
 				 std::is_same_v<T,bool> or
 				 std::is_same_v<T,file_param> or
@@ -298,7 +298,7 @@ class rest_controller : public controller
 			return tv;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize<T, zeep::el::deserializer<json>>::value, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::el::deserializer<json>>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
 			json v;
