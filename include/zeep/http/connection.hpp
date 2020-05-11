@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the zeep::http::connection class, that handles HTTP connections
+/// \file
+/// definition of the zeep::http::connection class, that handles HTTP connections
 
 #include <memory>
 

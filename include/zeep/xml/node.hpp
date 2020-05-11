@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// the core of the libzeep XML library defining the main classes in the DOM API
+
 #include <cassert>
 
 #include <memory>

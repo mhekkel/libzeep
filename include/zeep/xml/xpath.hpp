@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::xml::xpath class, implementing a XPath 1.0 compatible search facility
+
 #include <string>
 
 #include <zeep/xml/node.hpp>

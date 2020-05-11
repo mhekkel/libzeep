@@ -6,13 +6,16 @@
 
 #pragma once
 
+/// \file
+/// routines for classifying characters in an XML context
+
 #include <zeep/config.hpp>
 #include <zeep/unicode_support.hpp>
 
 #include <string>
-#include <tuple>
 
-namespace zeep::xml {
+namespace zeep::xml
+{
 
 /// some character classification routines
 

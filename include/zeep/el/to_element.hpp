@@ -5,7 +5,8 @@
 
 #pragma once
 
-/// \file various implementations of the to_element function that intializes a zeep::el::element object with some value
+/// \file
+/// various implementations of the to_element function that intializes a zeep::el::element object with some value
 
 #include <cassert>
 #include <string>

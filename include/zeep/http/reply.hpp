@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the zeep::http::reply class encapsulating a valid HTTP reply
+/// \file
+/// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
 #include <vector>
 #include <memory>

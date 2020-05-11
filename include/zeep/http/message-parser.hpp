@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
+/// \file
+/// definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
 
 #include <tuple>
 

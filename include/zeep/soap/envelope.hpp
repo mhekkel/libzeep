@@ -8,6 +8,9 @@
 
 #pragma once
 
+/// \file
+/// code for constructing SOAP envelopes
+
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
 

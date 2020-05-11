@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the abstract zeep::http::request_handler class
+/// \file
+/// definition of the abstract zeep::http::request_handler class
 
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>

@@ -6,13 +6,16 @@
 
 #pragma once
 
+/// \file
+/// definition of the serializer classes used to (de-)serialize XML data.
+
 #include <regex>
-#include <experimental/type_traits>
 #include <optional>
 
 #include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
-#include <zeep/serialize.hpp>
+#include <zeep/nvp.hpp>
+#include <zeep/value_serializer.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>

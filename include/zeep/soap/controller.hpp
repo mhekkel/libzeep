@@ -6,6 +6,11 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::http::soap_controller class.
+/// Instances of this class take care of mapping member functions to
+/// SOAP calls automatically converting in- and output data
+
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>

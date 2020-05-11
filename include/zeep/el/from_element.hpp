@@ -5,7 +5,8 @@
 
 #pragma once
 
-/// \file various implementations of the from_element function that return the data contained in a zeep::el::element (JSON) object
+/// \file
+/// various implementations of the from_element function that return the data contained in a zeep::el::element (JSON) object
 
 #include <cassert>
 #include <string>

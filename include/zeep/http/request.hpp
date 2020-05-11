@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the zeep::http::request class encapsulating a valid HTTP request
+/// \file
+/// definition of the zeep::http::request class encapsulating a valid HTTP request
 
 #include <vector>
 #include <istream>

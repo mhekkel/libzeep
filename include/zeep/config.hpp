@@ -4,7 +4,8 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-/// \file Generic configuration file, contains defines and (probably obsolete) stuff for msvc
+/// \file
+/// Generic configuration file, contains defines and (probably obsolete) stuff for msvc
 
 #pragma once
 
@@ -31,6 +32,8 @@
 #ifndef WEBAPP_USES_RESOURCES
 #define WEBAPP_USES_RESOURCES 0
 #endif
+
+/// The current version of libzeep
 
 #define LIBZEEP_VERSION_MAJOR 5
 

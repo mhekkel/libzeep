@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file Code for a preforked http server implementation
+/// \file
+/// Code for a preforked http server implementation
 
 #include <thread>
 #include <mutex>

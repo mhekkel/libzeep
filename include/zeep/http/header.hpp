@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the zeep::http::header class
+/// \file
+/// definition of the zeep::http::header class
 
 #include <string>
 

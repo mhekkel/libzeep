@@ -5,7 +5,8 @@
 
 #pragma once
 
-/// \file definition of the serializer classes that help serialize data into and out of zeep::el::element (JSON) objects
+/// \file
+/// definition of the serializer classes that help serialize data into and out of zeep::el::element (JSON) objects
 
 #include <cassert>
 #include <string>
@@ -16,7 +17,8 @@
 #include <experimental/type_traits>
 #include <optional>
 
-#include <zeep/serialize.hpp>
+#include <zeep/value_serializer.hpp>
+#include <zeep/nvp.hpp>
 #include <zeep/type_traits.hpp>
 
 #include <zeep/el/element_fwd.hpp>

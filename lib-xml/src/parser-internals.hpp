@@ -5,6 +5,9 @@
 
 #pragma once
 
+/// \file
+/// internal file, should not be used outside libzeep, I guess
+
 #include <cassert>
 #include <memory>
 #include <istream>

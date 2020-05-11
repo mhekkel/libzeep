@@ -6,12 +6,16 @@
 
 #pragma once
 
+/// \file
+/// various definitions of data types and routines used to work with Unicode encoded text
+
 #include <zeep/config.hpp>
 
 #include <string>
 #include <tuple>
 
-namespace zeep {
+namespace zeep
+{
 
 /// We use our own unicode type since wchar_t might be too small.
 /// This type should be able to contain a UCS4 encoded character.

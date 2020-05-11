@@ -5,7 +5,8 @@
 
 #pragma once
 
-/// \file Code for zeep::el::element, the JSON object in libzeep
+/// \file
+/// Code for zeep::el::element, the JSON object in libzeep
 
 #include <cassert>
 #include <string>

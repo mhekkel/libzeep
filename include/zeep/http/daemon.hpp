@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file 
+/// \file
+/// 
 /// Source code specifically for Unix/Linux.
 /// Utility routines to build daemon processes
 

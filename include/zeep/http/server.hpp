@@ -6,7 +6,8 @@
 
 #pragma once
 
-/// \file definition of the zeep::http::server class
+/// \file
+/// definition of the zeep::http::server class
 
 #include <thread>
 
