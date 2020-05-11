@@ -7,10 +7,10 @@
 #include <zeep/exception.hpp>
 #include <zeep/soap/controller.hpp>
 
-namespace zeep::soap
+namespace zeep::http
 {
 
-bool controller::handle_request(http::request& req, http::reply& reply)
+bool soap_controller::handle_request(request& req, reply& reply)
 {
 	bool result = false;
 
@@ -18,7 +18,7 @@ bool controller::handle_request(http::request& req, http::reply& reply)
 	while (p.front() == '/')
 		p.erase(0, 1);
 	
-	if (req.method == http::method_type::POST and p == m_prefix_path)
+	if (req.method == method_type::POST and p == m_prefix_path)
 	{
 		result = true;
 
@@ -49,26 +49,26 @@ bool controller::handle_request(http::request& req, http::reply& reply)
 		}
 		catch (const std::exception& e)
 		{
-			reply.set_content(make_fault(e));
-			reply.set_status(http::internal_server_error);
+			reply.set_content(soap::make_fault(e));
+			reply.set_status(internal_server_error);
 		}
-		catch (http::status_type& s)
+		catch (status_type& s)
 		{
-			reply.set_content(make_fault(get_status_description(s)));
+			reply.set_content(soap::make_fault(get_status_description(s)));
 			reply.set_status(s);
 		}
 	}
-	else if (req.method == http::method_type::GET and p == m_prefix_path + "/wsdl")
+	else if (req.method == method_type::GET and p == m_prefix_path + "/wsdl")
 	{
 		reply.set_content(make_wsdl());
-		reply.set_status(http::ok);
+		reply.set_status(ok);
 	}
 
 	return result;
 }
 
 /// \brief Create a WSDL based on the registered actions
-xml::element controller::make_wsdl()
+xml::element soap_controller::make_wsdl()
 {
 	// start by making the root node: wsdl:definitions
 

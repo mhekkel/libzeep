@@ -36,7 +36,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/xml/serialize.hpp>
 
-namespace zeep::soap
+namespace zeep::http::soap
 {
 
 namespace detail
@@ -419,5 +419,5 @@ public:
 	handler_list m_handlers;
 };
 
-} // namespace zeep::soap
+} // namespace zeep::http::soap
 

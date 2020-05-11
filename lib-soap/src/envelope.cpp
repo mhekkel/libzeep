@@ -8,7 +8,7 @@
 #include <zeep/soap/envelope.hpp>
 // #include <zeep/xml/xpath.hpp>
 
-namespace zeep::soap
+namespace zeep::http::soap
 {
 
 envelope::envelope()
