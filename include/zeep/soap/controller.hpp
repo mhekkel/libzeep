@@ -149,7 +149,7 @@ class soap_controller : public controller
 
 			xml::element response(m_action + "Response");
 			response.move_to_name_space("m", ns, false, false);
-			reply.set_content(make_envelope(std::move(response)));
+			reply.set_content(soap::make_envelope(std::move(response)));
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
@@ -164,7 +164,7 @@ class soap_controller : public controller
 			sr.serialize_element(result);
 			response.move_to_name_space("m", ns, true, true);
 			
-			auto envelope = make_envelope(std::move(response));
+			auto envelope = soap::make_envelope(std::move(response));
 
 			reply.set_content(std::move(envelope));
 		}

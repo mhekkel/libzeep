@@ -8,7 +8,6 @@ using namespace std;
 namespace z = zeep;
 namespace zx = zeep::xml;
 namespace zh = zeep::http;
-namespace zs = zeep::soap;
 
 struct TestStruct
 {
@@ -22,9 +21,9 @@ struct TestStruct
 	}
 };
 
-struct my_test_controller : public zs::soap_controller
+struct my_test_controller : public zh::soap_controller
 {
-	my_test_controller() : zs::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
+	my_test_controller() : zh::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
 	{
 		service("testService");
 
