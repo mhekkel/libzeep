@@ -178,13 +178,13 @@ class rest_controller : public controller
 			}
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void<ResultType>::value, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply)
 		{
 			std::experimental::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void<ResultType>::value, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply)
 		{
 			set_reply(reply, std::experimental::apply(m_callback, std::forward<ArgsTuple>(args)));
@@ -267,7 +267,7 @@ class rest_controller : public controller
 
 		template<typename T, std::enable_if_t<
 			not (zeep::has_serialize<T, zeep::el::deserializer<json>>::value or
-				 std::is_enum<T>::value or
+				 std::is_enum_v<T> or
 				 std::is_same_v<T,bool> or
 				 std::is_same_v<T,file_param> or
 				 std::is_same_v<T,el::element>), int> = 0>
@@ -288,7 +288,7 @@ class rest_controller : public controller
 			}
 		}
 
-		template<typename T, std::enable_if_t<zeep::el::detail::has_from_element<T>::value and std::is_enum<T>::value, int> = 0>
+		template<typename T, std::enable_if_t<zeep::el::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
 			json v = params.get_parameter(name);

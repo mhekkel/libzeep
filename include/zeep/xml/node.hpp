@@ -502,7 +502,7 @@ class iterator_impl
 
 	template<typename Iterator, std::enable_if_t<
 			not std::is_same_v<std::remove_const_t<typename Iterator::value_type>, element> and
-			std::is_base_of<value_type, typename Iterator::value_type>::value, int> = 0>
+			std::is_base_of_v<value_type, typename Iterator::value_type>, int> = 0>
 	iterator_impl(const Iterator& i)
 		: m_container(const_cast<container_type*>(i.m_container))
 		, m_current(i.m_current)
@@ -531,7 +531,7 @@ class iterator_impl
 	}
 
 	template<typename Iterator, std::enable_if_t<
-			std::is_base_of<value_type, typename Iterator::value_type>::value, int> = 0>
+			std::is_base_of_v<value_type, typename Iterator::value_type>, int> = 0>
 	iterator_impl& operator=(const Iterator& i)
 	{
 		m_container = i.m_container;

@@ -16,7 +16,6 @@
 #include <codecvt>
 
 #include <zeep/el/element_fwd.hpp>
-#include <zeep/el/traits.hpp>
 
 namespace zeep::el
 {
@@ -134,7 +133,7 @@ struct factory<value_type::array>
 	}
 
 	template<typename J, typename T,
-		typename std::enable_if_t<std::is_convertible<T, element>::value, int> = 0>
+		typename std::enable_if_t<std::is_convertible_v<T, element>, int> = 0>
 	static void construct(J& j, const std::vector<T>& arr)
 	{
 		j.m_type = value_type::array;
@@ -145,7 +144,7 @@ struct factory<value_type::array>
 	}
 
 	template<typename J, typename T, size_t N,
-		typename std::enable_if_t<std::is_convertible<T, J>::value, int> = 0>
+		typename std::enable_if_t<std::is_convertible_v<T, J>, int> = 0>
 	static void construct(J& j, const T(&arr)[N])
 	{
 		j.m_type = value_type::array;
@@ -176,7 +175,7 @@ struct factory<value_type::object>
 	}
 
     template<typename J, typename M,
-             std::enable_if_t<not std::is_same<M, typename J::object_type>::value, int> = 0>
+             std::enable_if_t<not std::is_same_v<M, typename J::object_type>, int> = 0>
     static void construct(J& j, const M& obj)
     {
         using std::begin;

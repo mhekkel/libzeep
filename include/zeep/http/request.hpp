@@ -119,19 +119,19 @@ struct request
 		return result;
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		return static_cast<T>(std::stod(get_parameter(name, std::to_string(defaultValue))));
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_integral<T>::value and not std::is_same<T,bool>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T,bool>, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		return static_cast<T>(std::stol(get_parameter(name, std::to_string(defaultValue))));
 	}
 
-	template<typename T, typename std::enable_if_t<std::is_same<T,bool>::value, int> = 0>
+	template<typename T, typename std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
 	T get_parameter(const char* name, const T& defaultValue) const ///< Return the named parameter
 	{
 		auto v = get_parameter(name, std::to_string(defaultValue));

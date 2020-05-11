@@ -142,7 +142,7 @@ class soap_controller : public controller
 			invoke<Result>(std::move(args), reply, ns);
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void<ResultType>::value, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply, const std::string& ns)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
@@ -152,7 +152,7 @@ class soap_controller : public controller
 			reply.set_content(make_envelope(std::move(response)));
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void<ResultType>::value, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply, const std::string& ns)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));

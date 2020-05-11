@@ -106,7 +106,7 @@ struct handler_traits<void(Args...)>
 {
 	typedef typename result_type<Args...>::type			result_type;
 
-	static_assert(not std::is_reference<result_type>::value, "result type (last argument) should be a reference");
+	static_assert(not std::is_reference_v<result_type>, "result type (last argument) should be a reference");
 
 	template<typename Function>
 	static void invoke(Function func, element* in, const char* names[], result_type& response)

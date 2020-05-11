@@ -14,7 +14,6 @@
 #include <experimental/type_traits>
 
 #include <zeep/el/element_fwd.hpp>
-#include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
 #include <zeep/el/to_element.hpp>
 #include <zeep/el/from_element.hpp>
@@ -156,7 +155,7 @@ class element
 	element(const detail::element_reference& r);
 	template<typename T,
 		typename U = typename std::remove_cv<typename std::remove_reference<T>::type>::type,
-		std::enable_if_t<not std::is_same<U,element>::value and detail::is_compatible_type<T>::value, int> = 0>
+		std::enable_if_t<not std::is_same_v<U,element> and detail::is_compatible_type_v<T>, int> = 0>
 	element(T&& v) noexcept(noexcept(element_serializer<U,void>::to_element(std::declval<element&>(), std::forward<T>(v))))
 	{
 		element_serializer<U,void>::to_element(*this, std::forward<T>(v));
@@ -166,10 +165,10 @@ class element
 	element(size_t cnt, const element& v);
 
 	element& operator=(element j) noexcept(
-        std::is_nothrow_move_constructible<value_type>::value and
-        std::is_nothrow_move_assignable<value_type>::value and
-        std::is_nothrow_move_constructible<element_data>::value and
-        std::is_nothrow_move_assignable<element_data>::value);
+        std::is_nothrow_move_constructible_v<value_type> and
+        std::is_nothrow_move_assignable_v<value_type> and
+        std::is_nothrow_move_constructible_v<element_data> and
+        std::is_nothrow_move_assignable_v<element_data>);
 
 	~element() noexcept;
 
@@ -281,7 +280,7 @@ class element
 	}
 
 	template<typename Iterator,
-		typename std::enable_if<std::is_same<Iterator, iterator>::value or std::is_same<Iterator, const_iterator>::value, int>::type = 0>
+		typename std::enable_if<std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>, int>::type = 0>
 		Iterator erase(Iterator pos)
 	{
 		if (pos.m_obj != this)
@@ -322,7 +321,7 @@ class element
 	}
 
 	template<typename Iterator,
-		typename std::enable_if<std::is_same<Iterator, iterator>::value or std::is_same<Iterator, const_iterator>::value, int>::type = 0>
+		typename std::enable_if<std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>, int>::type = 0>
 		Iterator erase(Iterator first, Iterator last)
 	{
 		if (first.m_obj != this or last.m_obj != this)
@@ -382,10 +381,10 @@ class element
 	}
 
 	void swap(reference other) noexcept (
-        std::is_nothrow_move_constructible<value_type>::value and
-        std::is_nothrow_move_assignable<value_type>::value and
-        std::is_nothrow_move_constructible<element_data>::value and
-        std::is_nothrow_move_assignable<element_data>::value
+        std::is_nothrow_move_constructible_v<value_type> and
+        std::is_nothrow_move_assignable_v<value_type> and
+        std::is_nothrow_move_constructible_v<element_data> and
+        std::is_nothrow_move_assignable_v<element_data>
     )
     {
         std::swap(m_type, other.m_type);
@@ -426,13 +425,13 @@ class element
 
 	friend bool operator==(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator==(const_reference& lhs, const T& rhs)
 	{
 		return lhs == element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator==(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) == rhs;
@@ -440,13 +439,13 @@ class element
 
 	friend bool operator!=(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator!=(const_reference& lhs, const T& rhs)
 	{
 		return lhs != element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator!=(const T& rhs, const_reference& lhs)
 	{
 		return element(lhs) == rhs;
@@ -454,13 +453,13 @@ class element
 
 	friend bool operator<(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator<(const_reference& lhs, const T& rhs)
 	{
 		return lhs < element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator<(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) < rhs;
@@ -471,13 +470,13 @@ class element
 		return not (rhs < lhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator<=(const_reference& lhs, const T& rhs)
 	{
 		return lhs <= element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator<=(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) <= rhs;
@@ -488,13 +487,13 @@ class element
 		return not (lhs <= rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator>(const_reference& lhs, const T& rhs)
 	{
 		return lhs > element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator>(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) > rhs;
@@ -505,13 +504,13 @@ class element
 		return not (lhs < rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator>=(const_reference& lhs, const T& rhs)
 	{
 		return lhs >= element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend bool operator>=(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) >= rhs;
@@ -523,13 +522,13 @@ class element
 
 	friend element operator+(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator+(const_reference& lhs, const T& rhs)
 	{
 		return lhs + element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator+(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) + rhs;
@@ -537,13 +536,13 @@ class element
 
 	friend element operator-(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator-(const_reference& lhs, const T& rhs)
 	{
 		return lhs - element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator-(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) - rhs;
@@ -551,13 +550,13 @@ class element
 
 	friend element operator*(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator*(const_reference& lhs, const T& rhs)
 	{
 		return lhs * element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator*(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) * rhs;
@@ -565,13 +564,13 @@ class element
 
 	friend element operator/(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator/(const_reference& lhs, const T& rhs)
 	{
 		return lhs / element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator/(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) / rhs;
@@ -579,13 +578,13 @@ class element
 
 	friend element operator%(const_reference& lhs, const_reference& rhs);
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator%(const_reference& lhs, const T& rhs)
 	{
 		return lhs % element(rhs);
 	}
 
-	template<typename T, std::enable_if_t<std::is_scalar<T>::value, int> = 0>
+	template<typename T, std::enable_if_t<std::is_scalar_v<T>, int> = 0>
 	friend element operator%(const T& lhs, const_reference& rhs)
 	{
 		return element(lhs) % rhs;
@@ -612,13 +611,13 @@ public:
 
 	// access to data
 	// these return a pointer to the internal storage
-	template<typename P, typename std::enable_if<std::is_pointer<P>::value, int>::type = 0>
+	template<typename P, typename std::enable_if<std::is_pointer_v<P>, int>::type = 0>
 	auto get_ptr() noexcept -> decltype(std::declval<element&>().get_impl_ptr(std::declval<P>()))
 	{
 		return get_impl_ptr(static_cast<P>(nullptr));
 	}
 
-	template<typename P, typename std::enable_if<std::is_pointer<P>::value and std::is_const<typename std::remove_pointer<P>::type>::value, int>::type = 0>
+	template<typename P, typename std::enable_if<std::is_pointer_v<P> and std::is_const<typename std::remove_pointer<P>::type>::value, int>::type = 0>
 	constexpr auto get_ptr() const noexcept -> decltype(std::declval<element&>().get_impl_ptr(std::declval<P>()))
 	{
 		return get_impl_ptr(static_cast<P>(nullptr));
@@ -626,10 +625,10 @@ public:
 
 	template<typename T,
 		typename U = typename std::remove_cv<typename std::remove_reference<T>::type>::type,
-		std::enable_if_t<detail::is_compatible_type<T>::value, int> = 0>
+		std::enable_if_t<detail::is_compatible_type_v<T>, int> = 0>
 	T as() const noexcept(noexcept(element_serializer<U>::from_element(std::declval<const element&>(), std::declval<U&>())))
 	{
-		static_assert(std::is_default_constructible<U>::value, "Type must be default constructible to use with get()");
+		static_assert(std::is_default_constructible_v<U>, "Type must be default constructible to use with get()");
 
 		U ret = {};
 		if (not is_null())
@@ -676,7 +675,7 @@ public:
 	element_reference(std::initializer_list<element_reference> init)
 		: m_owned(init), m_reference(&m_owned), m_rvalue(true) {}
 	
-    template <typename... Args, std::enable_if_t<std::is_constructible<element, Args...>::value, int> = 0>
+    template <typename... Args, std::enable_if_t<std::is_constructible_v<element, Args...>, int> = 0>
     element_reference(Args&& ... args)
         : m_owned(std::forward<Args>(args)...), m_reference(&m_owned), m_rvalue(true) {}
 

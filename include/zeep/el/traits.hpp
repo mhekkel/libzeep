@@ -11,67 +11,11 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <experimental/type_traits>
 
+#include <zeep/type_traits.hpp>
 #include <zeep/el/element_fwd.hpp>
 
-#ifndef __cpp_lib_experimental_detect
-// This code is copied from:
-// https://ld2015.scusa.lsu.edu/cppreference/en/cpp/experimental/is_detected.html
-
-namespace std
-{
-	template< class... >
-	using void_t = void;
-
-	namespace experimental
-	{
-		namespace detail
-		{
-			template <class Default, class AlwaysVoid,
-					template<class...> class Op, class... Args>
-			struct detector {
-			using value_t = false_type;
-			using type = Default;
-			};
-			
-			template <class Default, template<class...> class Op, class... Args>
-			struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
-			// Note that std::void_t is a C++17 feature
-			using value_t = true_type;
-			using type = Op<Args...>;
-			};
-		
-		} // namespace detail
-
-		struct nonesuch {
-
-			nonesuch() = delete;
-			~nonesuch() = delete;
-			nonesuch(nonesuch const&) = delete;
-			void operator=(nonesuch const&) = delete;
-		};
-
-		template <template<class...> class Op, class... Args>
-		using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
-		
-		template <template<class...> class Op, class... Args>
-		using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
-		
-		template <class Default, template<class...> class Op, class... Args>
-		using detected_or = detail::detector<Default, void, Op, Args...>;
-
-		template <class Expected, template <class...> class Op, class... Args>
-		using is_detected_exact = std::is_same<Expected, detected_t<Op, Args...>>;
-
-	}
-}
-
-#endif
-
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {
 namespace detail
 {
@@ -79,8 +23,8 @@ namespace detail
 template<typename> struct is_element : std::false_type {};
 template<> struct is_element<element> : std::true_type {};
 
-template <typename T, typename = void>
-struct is_iterator_traits : std::false_type {};
+template<typename T>
+inline constexpr bool is_element_v = is_element<T>::value;
 
 template <typename T>
 using mapped_type_t = typename T::mapped_type;
@@ -112,6 +56,9 @@ using to_element_function = decltype(T::to_element(std::declval<Args>()...));
 template <typename T, typename... Args>
 using from_element_function = decltype(T::from_element(std::declval<Args>()...));
 
+template <typename T, typename = void>
+struct is_iterator_traits : std::false_type {};
+
 template <typename T>
 struct is_iterator_traits<std::iterator_traits<T>>
 {
@@ -120,12 +67,15 @@ struct is_iterator_traits<std::iterator_traits<T>>
 
   public:
     static constexpr auto value =
-        std::experimental::is_detected<value_type_t, traits>::value &&
-        std::experimental::is_detected<difference_type_t, traits>::value &&
-        std::experimental::is_detected<pointer_t, traits>::value &&
-        std::experimental::is_detected<iterator_category_t, traits>::value &&
-        std::experimental::is_detected<reference_t, traits>::value;
+        std::experimental::is_detected_v<value_type_t, traits> &&
+        std::experimental::is_detected_v<difference_type_t, traits> &&
+        std::experimental::is_detected_v<pointer_t, traits> &&
+        std::experimental::is_detected_v<iterator_category_t, traits> &&
+        std::experimental::is_detected_v<reference_t, traits>;
 };
+
+template<typename T>
+inline constexpr bool is_iterator_traits_v = is_iterator_traits<T>::value;
 
 template<typename T, typename = void>
 struct has_to_element : std::false_type {};
@@ -135,8 +85,11 @@ struct has_to_element<T, std::enable_if_t<not is_element<T>::value>>
 {
 	using serializer = element_serializer<T, void>;
 	static constexpr bool value =
-		std::experimental::is_detected_exact<void, to_element_function, serializer, element&, T>::value;
+		std::experimental::is_detected_exact_v<void, to_element_function, serializer, element&, T>;
 };
+
+template<typename T>
+inline constexpr bool has_to_element_v = has_to_element<T>::value;
 
 template<typename T, typename = void>
 struct has_from_element : std::false_type {};
@@ -149,11 +102,17 @@ struct has_from_element<T, std::enable_if_t<not is_element<T>::value>>
 		std::experimental::is_detected_exact<void, from_element_function, serializer, const element&, T&>::value;
 };
 
+template<typename T>
+inline constexpr bool has_from_element_v = has_from_element<T>::value;
+
 template<typename T, typename = void>
 struct is_complete_type : std::false_type {};
 
 template<typename T>
 struct is_complete_type<T, decltype(void(sizeof(T)))> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_complete_type_v = is_complete_type<T>::value;
 
 template<typename T, typename = void>
 struct is_compatible_array_type : std::false_type {};
@@ -161,13 +120,16 @@ struct is_compatible_array_type : std::false_type {};
 template<typename T>
 struct is_compatible_array_type<T,
 	std::enable_if_t<
-		std::experimental::is_detected<value_type_t, T>::value and
-		std::experimental::is_detected<iterator_t, T>::value and
-		std::is_constructible<element, typename T::value_type>::value>>
+		std::experimental::is_detected_v<value_type_t, T> and
+		std::experimental::is_detected_v<iterator_t, T> and
+		std::is_constructible_v<element, typename T::value_type>>>
 {
     static constexpr bool value = true;
         // std::is_constructible_v<element, typename T::value_type>;
 };
+
+template<typename T>
+inline constexpr bool is_compatible_array_type_v = is_compatible_array_type<T>::value;
 
 template<typename E, typename T, typename = void>
 struct is_constructible_array_type : std::false_type {};
@@ -175,9 +137,9 @@ struct is_constructible_array_type : std::false_type {};
 template<typename E, typename T>
 struct is_constructible_array_type<E, T,
 	std::enable_if_t<
-		std::experimental::is_detected<value_type_t, T>::value and
-		std::experimental::is_detected<iterator_t, T>::value and
-		is_complete_type<std::experimental::detected_t<value_type_t, T>>::value >>
+		std::experimental::is_detected_v<value_type_t, T> and
+		std::experimental::is_detected_v<iterator_t, T> and
+		is_complete_type_v<std::experimental::detected_t<value_type_t, T>> >>
 {
     static constexpr bool value =
 		not is_iterator_traits<std::iterator_traits<T>>::value and
@@ -187,19 +149,25 @@ struct is_constructible_array_type<E, T,
 		);
 };
 
+template<typename E, typename T>
+inline constexpr bool is_constructible_array_type_v = is_constructible_array_type<E,T>::value;
+
 template<typename J, typename T, typename = void>
 struct is_object_type : std::false_type {};
 
 template<typename J, typename T>
 struct is_object_type<J, T, std::enable_if_t<
-	std::experimental::is_detected<mapped_type_t, T>::value and
-	std::experimental::is_detected<key_type_t, T>::value>>
+	std::experimental::is_detected_v<mapped_type_t, T> and
+	std::experimental::is_detected_v<key_type_t, T>>>
 {
 	using map_t = typename J::object_type;
 	static constexpr bool value = 
-		std::is_constructible<std::string,typename map_t::key_type>::value and
-		std::is_constructible<element,typename map_t::mapped_type>::value; 
+		std::is_constructible_v<std::string,typename map_t::key_type> and
+		std::is_constructible_v<element,typename map_t::mapped_type>; 
 };
+
+template<typename J, typename T>
+inline constexpr bool is_object_type_v = is_object_type<J,T>::value;
 
 // any compatible type
 
@@ -209,7 +177,7 @@ struct is_compatible_type : std::false_type {};
 template<typename T>
 struct is_compatible_type<T, std::enable_if_t<is_complete_type<T>::value>>
 {
-	static constexpr bool value = has_to_element<T>::value;
+	static constexpr bool value = has_to_element_v<T>;
 };
 
 template<typename T>
@@ -229,6 +197,9 @@ struct is_compatible_string_type<E, T,
 		std::is_constructible<typename E::string_type, T>::value;
 };
 
+template<typename E, typename T>
+inline constexpr bool is_compatible_string_type_v = is_compatible_string_type<E, T>::value;
+
 // compatible object
 
 template<typename J, typename T, typename = void>
@@ -246,6 +217,52 @@ struct is_compatible_object_type<J, T, std::enable_if_t<
 			has_from_element<typename T::mapped_type>::value); 
 };
 
-}
+template<typename J, typename T>
+inline constexpr bool is_compatible_object_type_v = is_compatible_object_type<J,T>::value;
+
+
+template<typename T, typename Archive, typename = void>
+struct is_serializable_map_type : std::false_type {};
+
+template<typename T, typename Archive>
+struct is_serializable_map_type<T, Archive,
+	std::enable_if_t<
+		std::experimental::is_detected_v<detail::mapped_type_t, T> and
+		std::experimental::is_detected_v<detail::key_type_t, T> and
+		std::experimental::is_detected_v<detail::iterator_t, T> and
+		not detail::is_compatible_string_type_v<typename Archive::element_type,T>>>
+{
+	static constexpr bool value =
+		std::is_same_v<typename T::key_type, std::string> and
+		(
+			detail::is_compatible_type_v<typename T::mapped_type> or
+		has_serialize_v<typename T::mapped_type, Archive>
+		);
+};
+
+template<typename T, typename Archive>
+inline constexpr bool is_serializable_map_type_v = is_serializable_map_type<T, Archive>::value;
+
+template<typename T>
+using has_value_or_result = decltype(std::declval<T>().value_or(std::declval<typename T::value_type&&>()));
+
+template<typename T, typename Archive, typename = void>
+struct is_serializable_optional_type : std::false_type {};
+
+template<typename T, typename Archive>
+struct is_serializable_optional_type<T, Archive,
+	std::enable_if_t<
+		std::experimental::is_detected_v<detail::value_type_t, T> and
+		std::is_same<has_value_or_result<T>,typename T::value_type>::value and
+		not detail::is_compatible_string_type_v<typename Archive::element_type,T>>>
+{
+	static constexpr bool value =
+		detail::is_compatible_type_v<typename T::value_type> or
+		has_serialize_v<typename T::value_type, Archive>;
+};
+
+template<typename T, typename Archive>
+inline constexpr bool is_serializable_optional_type_v = is_serializable_optional_type<T, Archive>::value;
+
 }
 }

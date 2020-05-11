@@ -14,7 +14,6 @@
 #include <experimental/type_traits>
 
 #include <zeep/el/element_fwd.hpp>
-#include <zeep/el/traits.hpp>
 #include <zeep/el/factory.hpp>
 #include <zeep/el/to_element.hpp>
 #include <zeep/el/from_element.hpp>
@@ -34,7 +33,7 @@ template<typename Iterator> class iteration_proxy_value;
 template<typename E>
 class iterator_impl
 {
-	friend iterator_impl<typename std::conditional<std::is_const<E>::value, typename std::remove_const<E>::type, const E>::type>;
+	friend iterator_impl<typename std::conditional<std::is_const_v<E>, typename std::remove_const<E>::type, const E>::type>;
 	friend E;
 	friend iteration_proxy<iterator_impl>;
 	friend iteration_proxy_value<iterator_impl>;
@@ -42,8 +41,8 @@ class iterator_impl
 	using iterator_category = std::bidirectional_iterator_tag;
 	using value_type = typename E::value_type;
 	using difference_type = typename E::difference_type;
-	using pointer = typename std::conditional<std::is_const<E>::value, typename E::const_pointer, typename E::pointer>::type;
-	using reference = typename std::conditional<std::is_const<E>::value, typename E::const_reference, typename E::reference>::type;
+	using pointer = typename std::conditional<std::is_const_v<E>, typename E::const_pointer, typename E::pointer>::type;
+	using reference = typename std::conditional<std::is_const_v<E>, typename E::const_reference, typename E::reference>::type;
 
 	using object_type = typename E::object_type;
 	using array_type = typename E::array_type;
