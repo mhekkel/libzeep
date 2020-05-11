@@ -5,8 +5,6 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/date_time/local_time/local_time.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 
 #include <iostream>
 #include <numeric>
@@ -14,12 +12,11 @@
 #include <zeep/http/reply.hpp>
 #include <zeep/xml/document.hpp>
 
-namespace io = boost::iostreams;
+namespace zeep::http
+{
 
-namespace zeep {
-namespace http {
-
-namespace detail {
+namespace detail
+{
 
 struct status_string
 {
@@ -285,17 +282,17 @@ void reply::set_content(xml::document& doc)
 	std::stringstream s;
 
 	if (doc.front().name() != "html")
-		doc.write_doctype(false);
+		doc.set_write_doctype(false);
 
 	if (doc.is_html5())
 	{
-		doc.write_doctype(true);
-		doc.escape_double_quote(false);
+		doc.set_write_doctype(true);
+		doc.set_escape_double_quote(false);
 	}
-	else if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
-		doc.escape_double_quote(false);
+	else if (doc.child()->get_ns() == "http://www.w3.org/1999/xhtml")
+		doc.set_escape_double_quote(false);
 
-	doc.collapse_empty_tags(false);
+	doc.set_collapse_empty_tags(false);
 
 	s << doc;
 	
@@ -303,7 +300,7 @@ void reply::set_content(xml::document& doc)
 	
 	if (doc.is_html5())
 		contentType = "text/html; charset=utf-8";
-	else if (doc.child()->ns() == "http://www.w3.org/1999/xhtml")
+	else if (doc.child()->get_ns() == "http://www.w3.org/1999/xhtml")
 		contentType = "application/xhtml+xml; charset=utf-8";
 	else
 		contentType = "text/xml; charset=utf-8";
@@ -427,9 +424,11 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 			}
 			else
 			{
-				io::filtering_ostream out(io::back_inserter(m_buffer));
-				out << std::hex << n << '\r' << '\n';
-				out.flush();
+				std::ostringstream os;
+				os << std::hex << n << '\r' << '\n';
+				os.flush();
+				auto s = os.str();
+				m_buffer.insert(m_buffer.end(), s.begin(), s.end());
 		
 				result.push_back(boost::asio::buffer(&m_buffer[kMaxChunkSize], m_buffer.size() - kMaxChunkSize));
 				result.push_back(boost::asio::buffer(&m_buffer[0], n));
@@ -533,5 +532,4 @@ std::ostream& operator<<(std::ostream& lhs, const reply& rhs)
 	return lhs;
 }
 
-}
 }

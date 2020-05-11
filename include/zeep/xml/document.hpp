@@ -11,9 +11,7 @@
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/serialize.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 /// zeep::xml::document is the class that contains a parsed XML file.
@@ -73,49 +71,47 @@ class document : public element
 	/// constructor will also validate the input using DTD's found in \a base_dir
 	document(std::istream& is, const std::string& base_dir);
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 	virtual ~document();
-#endif
 
 	/// options for parsing
 	/// validating uses a DTD if it is defined
-	bool validating() const								{ return m_validating; }
-	void validating(bool validate)						{ m_validating = validate; }
+	bool is_validating() const								{ return m_validating; }
+	void set_validating(bool validate)						{ m_validating = validate; }
 
 	/// preserve cdata, preserves CDATA sections instead of converting them
 	/// into text nodes.
-	bool preserve_cdata() const							{ return m_preserve_cdata; }
-	void preserve_cdata(bool p)							{ m_preserve_cdata = p; }
+	bool preserves_cdata() const							{ return m_preserve_cdata; }
+	void set_preserve_cdata(bool p)							{ m_preserve_cdata = p; }
 
-	bool collapse_empty_tags() const					{ return m_fmt.collapse_tags; }
-	void collapse_empty_tags(bool c)					{ m_fmt.collapse_tags = c; }
+	bool collapses_empty_tags() const						{ return m_fmt.collapse_tags; }
+	void set_collapse_empty_tags(bool c)					{ m_fmt.collapse_tags = c; }
 
-	bool suppress_comments() const						{ return m_fmt.suppress_comments; }
-	void suppress_comments(bool s)						{ m_fmt.suppress_comments = s; }
+	bool suppresses_comments() const						{ return m_fmt.suppress_comments; }
+	void set_suppress_comments(bool s)						{ m_fmt.suppress_comments = s; }
 
-	bool escape_white_space() const						{ return m_fmt.escape_white_space; }
-	void escape_white_space(bool e)						{ m_fmt.escape_white_space = e; }
+	bool escapes_white_space() const						{ return m_fmt.escape_white_space; }
+	void set_escape_white_space(bool e)						{ m_fmt.escape_white_space = e; }
 
-	bool escape_double_quote() const					{ return m_fmt.escape_double_quote; }
-	void escape_double_quote(bool e)					{ m_fmt.escape_double_quote = e; }
+	bool escapes_double_quote() const						{ return m_fmt.escape_double_quote; }
+	void set_escape_double_quote(bool e)					{ m_fmt.escape_double_quote = e; }
 
-	bool wrap_prolog() const							{ return m_wrap_prolog; }
-	void wrap_prolog(bool w)							{ m_wrap_prolog = w; }
+	bool wraps_prolog() const								{ return m_wrap_prolog; }
+	void set_wrap_prolog(bool w)							{ m_wrap_prolog = w; }
 
 	/// Get the doctype as parsed
-	doc_type doctype() const							{ return m_doctype; }
+	doc_type get_doctype() const							{ return m_doctype; }
 
 	/// Set the doctype to write out
-	void doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
+	void set_doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
 	{
-		doctype({root, pubid, dtd});
+		set_doctype({root, pubid, dtd});
 	}
 
 	/// Set the doctype to write out
-	void doctype(const doc_type& doctype)				{ m_doctype = doctype; m_write_doctype = true; }
+	void set_doctype(const doc_type& doctype)				{ m_doctype = doctype; m_write_doctype = true; }
 
-	bool write_doctype() const							{ return m_write_doctype; }
-	void write_doctype(bool f)							{ m_write_doctype = f; }
+	bool writes_doctype() const								{ return m_write_doctype; }
+	void set_write_doctype(bool f)							{ m_write_doctype = f; }
 
 	/// Check the doctype to see if this is supposed to be HTML5
 	bool is_html5() const;
@@ -139,7 +135,7 @@ class document : public element
 
 	/// If you want to validate the document using DTD files stored on disk, you can specifiy this directory prior to reading
 	/// the document.
-	void base_dir(const std::string& path);
+	void set_base_dir(const std::string& path);
 
 	template<typename Callback>
 	void entity_loader(Callback&& cb)
@@ -147,11 +143,11 @@ class document : public element
 		m_external_entity_ref_loader = cb;
 	}
 
-	encoding_type encoding() const;   ///< The text encoding as detected in the input.
-	void encoding(encoding_type enc); ///< The text encoding to use for output
+	encoding_type get_encoding() const;   ///< The text encoding as detected in the input.
+	void set_encoding(encoding_type enc); ///< The text encoding to use for output
 
-	float version() const;			///< XML version, should be either 1.0 or 1.1
-	void version(float v);			///< XML version, should be either 1.0 or 1.1
+	float get_version() const;			///< XML version, should be either 1.0 or 1.1
+	void set_version(float v);			///< XML version, should be either 1.0 or 1.1
 
 	virtual element* root()					{ return this; }
 	virtual const element* root() const		{ return this; }
@@ -159,7 +155,6 @@ class document : public element
 	virtual node* child()					{ return empty() ? nullptr : &front(); }
 	virtual const node* child() const		{ return empty() ? nullptr : &front(); }
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
   protected:
 
 	virtual node_iterator insert_impl(const_iterator pos, node* n);
@@ -222,8 +217,6 @@ class document : public element
 	std::vector<std::pair<std::string, std::string>> m_namespaces;
 	std::list<notation> m_notations;
 	size_t m_root_size_at_first_notation = 0;	// for processing instructions that occur before a notation
-
-#endif
 };
 
 namespace literals
@@ -232,8 +225,6 @@ namespace literals
 document operator""_xml(const char* text, size_t length);
 
 }
-
-#ifndef LIBZEEP_DOXYGEN_INVOKED
 
 template <typename T>
 void document::serialize(const char* name, const T& data)
@@ -255,7 +246,4 @@ void document::deserialize(const char* name, T& data)
 	sr.deserialize_element(name, data);
 }
 
-#endif
-
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

@@ -19,11 +19,7 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep
-{
-namespace xml
-{
-namespace doctype
+namespace zeep::xml::doctype
 {
 
 // --------------------------------------------------------------------
@@ -441,15 +437,13 @@ bool state_choice::allow_empty()
 
 // --------------------------------------------------------------------
 
-int validator::s_next_nr = 1;
-
 validator::validator(content_spec_ptr allowed)
-	: m_state(allowed->create_state()), m_allowed(allowed), m_nr(s_next_nr++), m_done(m_state->allow_empty())
+	: m_state(allowed->create_state()), m_allowed(allowed), m_done(m_state->allow_empty())
 {
 }
 
 validator::validator(const element* e)
-	: m_allowed(e ? e->allowed() : nullptr), m_nr(s_next_nr++)
+	: m_allowed(e ? e->get_allowed() : nullptr)
 {
 	if (m_allowed == nullptr)
 	{
@@ -480,18 +474,9 @@ bool validator::done()
 	return m_done;
 }
 
-ContentSpecType validator::content_spec() const
+ContentSpecType validator::get_content_spec() const
 {
-	return m_allowed ? m_allowed->content_spec() : ContentSpecType::Any;
-}
-
-std::ostream& operator<<(std::ostream& lhs, validator& rhs)
-{
-	lhs << " +++ " << rhs.m_nr << " == ";
-
-	if (rhs.m_allowed)
-		rhs.m_allowed->print(lhs);
-	return lhs;
+	return m_allowed ? m_allowed->get_content_spec() : ContentSpecType::Any;
 }
 
 // --------------------------------------------------------------------
@@ -501,11 +486,6 @@ state_ptr content_spec_any::create_state() const
 	return new state_any();
 }
 
-void content_spec_any::print(std::ostream& os)
-{
-	os << "ANY";
-}
-
 // --------------------------------------------------------------------
 
 state_ptr content_spec_empty::create_state() const
@@ -513,21 +493,11 @@ state_ptr content_spec_empty::create_state() const
 	return new state_empty();
 }
 
-void content_spec_empty::print(std::ostream& os)
-{
-	os << "EMPTY";
-}
-
 // --------------------------------------------------------------------
 
 state_ptr content_spec_element::create_state() const
 {
 	return new state_element(m_name);
-}
-
-void content_spec_element::print(std::ostream& os)
-{
-	os << m_name;
 }
 
 // --------------------------------------------------------------------
@@ -553,12 +523,6 @@ state_ptr content_spec_repeated::create_state() const
 	}
 }
 
-void content_spec_repeated::print(std::ostream& os)
-{
-	m_allowed->print(os);
-	os << m_repetition;
-}
-
 bool content_spec_repeated::element_content() const
 {
 	return m_allowed->element_content();
@@ -580,18 +544,6 @@ void content_spec_seq::add(content_spec_ptr a)
 state_ptr content_spec_seq::create_state() const
 {
 	return new state_seq(m_allowed);
-}
-
-void content_spec_seq::print(std::ostream& os)
-{
-	os << '(';
-	for (content_spec_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
-	{
-		(*s)->print(os);
-		if (boost::next(s) != m_allowed.end())
-			os << ", ";
-	}
-	os << ')';
 }
 
 bool content_spec_seq::element_content() const
@@ -624,26 +576,6 @@ void content_spec_choice::add(content_spec_ptr a)
 state_ptr content_spec_choice::create_state() const
 {
 	return new state_choice(m_allowed, m_mixed);
-}
-
-void content_spec_choice::print(std::ostream& os)
-{
-	os << '(';
-
-	if (m_mixed)
-	{
-		os << "#PCDATA";
-		if (not m_allowed.empty())
-			os << "|";
-	}
-
-	for (content_spec_list::iterator s = m_allowed.begin(); s != m_allowed.end(); ++s)
-	{
-		(*s)->print(os);
-		if (boost::next(s) != m_allowed.end())
-			os << "|";
-	}
-	os << ')';
 }
 
 bool content_spec_choice::element_content() const
@@ -839,7 +771,7 @@ bool attribute::is_unparsed_entity(const std::string& s, const entity_list& l) c
 
 	entity_list::const_iterator i = std::find_if(l.begin(), l.end(), [s](auto e) { return e->name() == s; });
 	if (i != l.end())
-		result = (*i)->parsed() == false;
+		result = (*i)->is_parsed() == false;
 
 	return result;
 }
@@ -895,11 +827,4 @@ bool element::empty() const
 	return dynamic_cast<content_spec_empty *>(m_allowed) != nullptr;
 }
 
-bool element::element_content() const
-{
-	return m_allowed != nullptr and m_allowed->element_content();
-}
-
-} // namespace doctype
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml::doctype

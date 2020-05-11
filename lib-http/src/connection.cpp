@@ -10,7 +10,6 @@
 #include <functional>
 
 #include <boost/asio.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <zeep/http/connection.hpp>
 
@@ -33,8 +32,7 @@ void connection::start()
 {
 	m_request = request();	// reset
 	
-	m_request.local_address =
-		boost::lexical_cast<std::string>(m_socket.local_endpoint().address());
+	m_request.local_address = m_socket.local_endpoint().address().to_string();
 	m_request.local_port = m_socket.local_endpoint().port();
 	
 	m_socket.async_read_some(boost::asio::buffer(m_buffer),

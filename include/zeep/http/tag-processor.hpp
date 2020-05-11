@@ -10,10 +10,7 @@
 #include <zeep/xml/document.hpp>
 #include <zeep/http/el-processing.hpp>
 
-namespace zeep
-{
-
-namespace http
+namespace zeep::http
 {
 
 class basic_webapp;
@@ -142,5 +139,4 @@ class tag_processor_v2 : public tag_processor
 	std::map<std::string, attr_handler> m_attr_handlers;
 };
 
-}
 }

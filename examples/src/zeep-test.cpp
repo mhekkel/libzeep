@@ -23,7 +23,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time.hpp>
-#include <boost/optional.hpp>
 
 using namespace std;
 
@@ -119,8 +118,8 @@ enum Algorithm
 
 }
 
-namespace zeep {
-namespace xml {
+namespace zeep::xml
+{
 
 template<class Archive>
 struct struct_serializer<Archive,WSSearchNS::Hit>

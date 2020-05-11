@@ -14,7 +14,7 @@
 /// Envelope is a wrapper around a SOAP envelope. Use it for
 /// input and output of correctly formatted SOAP messages.
 
-namespace zeep
+namespace zeep::soap
 {
 
 class envelope : public boost::noncopyable
@@ -57,4 +57,4 @@ xml::element make_fault(const std::string& message);
 /// \return   A new xml::element object containing the fault envelope.
 xml::element make_fault(const std::exception& ex);
 
-} // namespace zeep
+} // namespace zeep::soap

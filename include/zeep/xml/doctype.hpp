@@ -12,11 +12,7 @@
 #include <vector>
 #include <list>
 
-namespace zeep
-{
-namespace xml
-{
-namespace doctype
+namespace zeep::xml::doctype
 {
 // --------------------------------------------------------------------
 // doctype support with full validation.
@@ -26,9 +22,9 @@ class attlist;
 class entity;
 class attribute;
 
-typedef std::vector<entity*> entity_list;
-typedef std::vector<element*> element_list;
-typedef std::vector<attribute*> attribute_list;
+using entity_list = std::vector<entity*>;
+using element_list = std::vector<element*>;
+using attribute_list = std::vector<attribute*>;
 
 // --------------------------------------------------------------------
 
@@ -38,11 +34,11 @@ enum class ContentSpecType { Empty, Any, Mixed, Children };
 // validation of elements is done by the validator classes
 
 struct content_spec_base;
-typedef content_spec_base* content_spec_ptr;
-typedef std::list<content_spec_ptr> content_spec_list;
+using content_spec_ptr = content_spec_base*;
+using content_spec_list = std::list<content_spec_ptr>;
 
 struct state_base;
-typedef state_base* state_ptr;
+using state_ptr = state_base*;
 
 class validator
 {
@@ -56,18 +52,13 @@ class validator
 	~validator();
 
 	bool allow(const std::string& name);
-	ContentSpecType content_spec() const;
+	ContentSpecType get_content_spec() const;
 	bool done();
 
-	bool operator()(const std::string& name) { return allow(name); }
-
   private:
-	friend std::ostream& operator<<(std::ostream& lhs, validator& rhs);
 
 	state_ptr m_state;
 	content_spec_ptr m_allowed;
-	int m_nr;
-	static int s_next_nr;
 	bool m_done;
 };
 
@@ -83,9 +74,7 @@ struct content_spec_base
 	virtual state_ptr create_state() const = 0;
 	virtual bool element_content() const { return false; }
 
-	ContentSpecType content_spec() const	{ return m_content_spec; }
-
-	virtual void print(std::ostream& os) = 0;
+	ContentSpecType get_content_spec() const	{ return m_content_spec; }
 
   protected:
 
@@ -100,7 +89,6 @@ struct content_spec_any : public content_spec_base
 	content_spec_any() : content_spec_base(ContentSpecType::Any) {}
 
 	virtual state_ptr create_state() const;
-	virtual void print(std::ostream& os);
 };
 
 struct content_spec_empty : public content_spec_base
@@ -108,7 +96,6 @@ struct content_spec_empty : public content_spec_base
 	content_spec_empty() : content_spec_base(ContentSpecType::Empty) {}
 
 	virtual state_ptr create_state() const;
-	virtual void print(std::ostream& os);
 };
 
 struct content_spec_element : public content_spec_base
@@ -119,15 +106,13 @@ struct content_spec_element : public content_spec_base
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const { return true; }
 
-	virtual void print(std::ostream& os);
-
 	std::string m_name;
 };
 
 struct content_spec_repeated : public content_spec_base
 {
 	content_spec_repeated(content_spec_ptr allowed, char repetion)
-		: content_spec_base(allowed->content_spec()), m_allowed(allowed), m_repetition(repetion)
+		: content_spec_base(allowed->get_content_spec()), m_allowed(allowed), m_repetition(repetion)
 	{
 		assert(allowed);
 	}
@@ -137,8 +122,6 @@ struct content_spec_repeated : public content_spec_base
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const;
 
-	virtual void print(std::ostream& os);
-
 	content_spec_ptr m_allowed;
 	char m_repetition;
 };
@@ -146,15 +129,13 @@ struct content_spec_repeated : public content_spec_base
 struct content_spec_seq : public content_spec_base
 {
 	content_spec_seq(content_spec_ptr a)
-		: content_spec_base(a->content_spec()) { add(a); }
+		: content_spec_base(a->get_content_spec()) { add(a); }
 	~content_spec_seq();
 
 	void add(content_spec_ptr a);
 
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const;
-
-	virtual void print(std::ostream& os);
 
 	content_spec_list m_allowed;
 };
@@ -164,15 +145,13 @@ struct content_spec_choice : public content_spec_base
 	content_spec_choice(bool mixed)
 		: content_spec_base(mixed ? ContentSpecType::Mixed : ContentSpecType::Children), m_mixed(mixed) {}
 	content_spec_choice(content_spec_ptr a, bool mixed)
-		: content_spec_base(mixed ? ContentSpecType::Mixed : a->content_spec()), m_mixed(mixed) { add(a); }
+		: content_spec_base(mixed ? ContentSpecType::Mixed : a->get_content_spec()), m_mixed(mixed) { add(a); }
 	~content_spec_choice();
 
 	void add(content_spec_ptr a);
 
 	virtual state_ptr create_state() const;
 	virtual bool element_content() const;
-
-	virtual void print(std::ostream& os);
 
 	content_spec_list m_allowed;
 	bool m_mixed;
@@ -205,7 +184,7 @@ enum class AttributeDefault
 
 class attribute
 {
-public:
+  public:
 	attribute(const std::string& name, AttributeType type)
 		: m_name(name), m_type(type), m_default(AttributeDefault::None), m_external(false) {}
 
@@ -230,10 +209,10 @@ public:
 	AttributeDefault get_default_type() const { return m_default; }
 	const std::vector<std::string>& get_enums() const { return m_enum; }
 
-	void external(bool external) { m_external = external; }
-	bool external() const { return m_external; }
+	void set_external(bool external) { m_external = external; }
+	bool is_external() const { return m_external; }
 
-private:
+  private:
 	// routines used to check _and_ reformat attribute value strings
 	bool is_name(std::string& s) const;
 	bool is_names(std::string& s) const;
@@ -254,14 +233,16 @@ private:
 
 class element
 {
-public:
+  public:
 	element(const element &) = delete;
 	element& operator=(const element &) = delete;
 
 	element(const std::string& name, bool declared, bool external)
-		: m_name(name), m_allowed(nullptr), m_declared(declared), m_external(external) {}
+		: m_name(name), m_allowed(nullptr), m_declared(declared) {}
 
 	~element();
+
+	const attribute_list& get_attributes() const { return m_attlist; }
 
 	void add_attribute(attribute* attr);
 
@@ -269,58 +250,46 @@ public:
 
 	const std::string& name() const { return m_name; }
 
-	const attribute_list& attributes() const { return m_attlist; }
-
-	void set_allowed(content_spec_ptr allowed);
-
-	void declared(bool declared) { m_declared = declared; }
-	bool declared() const { return m_declared; }
-
-	void external(bool external) { m_external = external; }
-	bool external() const { return m_external; }
+	bool is_declared() const { return m_declared; }
 
 	bool empty() const;
-	bool element_content() const;
 
-	ContentSpecType content_spec() const { return m_allowed->content_spec(); }
+	void set_allowed(content_spec_ptr allowed);
+	content_spec_ptr get_allowed() const { return m_allowed; }
 
-	content_spec_ptr allowed() const { return m_allowed; }
-
-private:
+  private:
 	std::string m_name;
 	attribute_list m_attlist;
 	content_spec_ptr m_allowed;
-	bool m_declared, m_external;
+	bool m_declared;
 };
 
 // --------------------------------------------------------------------
 
 class entity
 {
-public:
+  public:
 	entity(const entity &) = delete;
 	entity& operator=(const entity &) = delete;
 
 	const std::string& name() const { return m_name; }
-	const std::string& replacement() const { return m_replacement; }
-	const std::string& path() const { return m_path; }
-	bool parameter() const { return m_parameter; }
+	const std::string& get_replacement() const { return m_replacement; }
+	const std::string& get_path() const { return m_path; }
 
-	bool parsed() const { return m_parsed; }
-	void parsed(bool parsed) { m_parsed = parsed; }
+	bool is_parsed() const { return m_parsed; }
 
-	const std::string& ndata() const { return m_ndata; }
-	void ndata(const std::string& ndata) { m_ndata = ndata; }
+	const std::string& get_ndata() const { return m_ndata; }
+	void set_ndata(const std::string& ndata) { m_ndata = ndata; }
 
-	bool external() const { return m_external; }
+	bool is_external() const { return m_external; }
 
-	bool externally_defined() const { return m_externally_defined; }
-	void externally_defined(bool externally_defined)
+	bool is_externally_defined() const { return m_externally_defined; }
+	void set_externally_defined(bool externally_defined)
 	{
 		m_externally_defined = externally_defined;
 	}
 
-protected:
+  protected:
 	entity(const std::string& name, const std::string& replacement,
 		   bool external, bool parsed)
 		: m_name(name), m_replacement(replacement), m_parameter(false), m_parsed(parsed), m_external(external), m_externally_defined(false) {}
@@ -341,7 +310,7 @@ protected:
 
 class general_entity : public entity
 {
-public:
+  public:
 	general_entity(const std::string& name, const std::string& replacement,
 				   bool external = false, bool parsed = true)
 		: entity(name, replacement, external, parsed) {}
@@ -349,12 +318,10 @@ public:
 
 class parameter_entity : public entity
 {
-public:
+  public:
 	parameter_entity(const std::string& name, const std::string& replacement,
 					 const std::string& path)
 		: entity(name, replacement, path) {}
 };
 
-} // namespace doctype
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml::doctype

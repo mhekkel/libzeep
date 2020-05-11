@@ -19,9 +19,7 @@
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/document.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 // --------------------------------------------------------------------
@@ -193,7 +191,7 @@ void document::write(std::ostream& os, format_info fmt) const
 
 	if (not m_notations.empty() or m_write_doctype)
 	{
-		os << "<!DOCTYPE " << (empty() ? "" : front().qname());
+		os << "<!DOCTYPE " << (empty() ? "" : front().get_qname());
 		if (m_write_doctype and not m_doctype.m_dtd.empty())
 		{
 			if (m_doctype.m_pubid.empty())
@@ -425,7 +423,7 @@ namespace literals
 document operator""_xml(const char* text, size_t length)
 {
 	zeep::xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 
 	zeep::char_streambuf buffer(text, length);
 	std::istream is(&buffer);
@@ -436,5 +434,4 @@ document operator""_xml(const char* text, size_t length)
 
 }
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

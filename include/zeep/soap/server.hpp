@@ -12,7 +12,7 @@
 #include <zeep/http/reply.hpp>
 #include <zeep/dispatcher.hpp>
 
-namespace zeep
+namespace zeep::soap
 {
 
 /// zeep::server inherits from zeep::http::server and zeep::dispatcher to do its work.

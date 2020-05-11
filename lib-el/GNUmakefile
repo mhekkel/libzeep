@@ -105,8 +105,7 @@ HEADERS = \
 	zeep/el/iterator.hpp \
 	zeep/el/parser.hpp \
 	zeep/el/serializer.hpp \
-	zeep/el/to_element.hpp \
-	zeep/el/traits.hpp
+	zeep/el/to_element.hpp
 
 $(STATIC_LIB): $(OBJECTS)
 	ar rc $@ $(OBJECTS)

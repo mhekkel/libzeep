@@ -12,30 +12,31 @@
 
 #include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
+#include <zeep/serialize.hpp>
 
-#include <boost/serialization/nvp.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
 #include <zeep/type_traits.hpp>
 
-namespace zeep::xml {
+namespace zeep::xml
+{
 
 struct serializer;
 struct deserializer;
 
 template<typename T>
-struct element_nvp : public boost::serialization::nvp<T>
+struct element_nvp : public name_value_pair<T>
 {
-	explicit element_nvp(const char* name, T& v) : boost::serialization::nvp<T>(name, v) {}
-	element_nvp(const element_nvp& rhs) : boost::serialization::nvp<T>(rhs) {}
+	explicit element_nvp(const char* name, T& v) : name_value_pair<T>(name, v) {}
+	element_nvp(const element_nvp& rhs) : name_value_pair<T>(rhs) {}
 };
 
 template<typename T>
-struct attribute_nvp : public boost::serialization::nvp<T>
+struct attribute_nvp : public name_value_pair<T>
 {
-	explicit attribute_nvp(const char* name, T& v) : boost::serialization::nvp<T>(name, v) {}
-	attribute_nvp(const attribute_nvp& rhs) : boost::serialization::nvp<T>(rhs) {}
+	explicit attribute_nvp(const char* name, T& v) : name_value_pair<T>(name, v) {}
+	attribute_nvp(const attribute_nvp& rhs) : name_value_pair<T>(rhs) {}
 };
 
 template<typename T>
@@ -65,7 +66,7 @@ struct serializer
 	serializer(element& node) : m_node(node) {}
 
 	template<typename T>
-	serializer& operator&(const boost::serialization::nvp<T>& rhs)
+	serializer& operator&(const name_value_pair<T>& rhs)
 	{
 		return serialize_element(rhs.name(), rhs.value());
 	}
@@ -101,7 +102,7 @@ struct deserializer
 	deserializer(const element& node) : m_node(node) {}
 
 	template<typename T>
-	deserializer& operator&(const boost::serialization::nvp<T>& rhs)
+	deserializer& operator&(const name_value_pair<T>& rhs)
 	{
 		return deserialize_element(rhs.name(), rhs.value());
 	}
@@ -130,9 +131,7 @@ struct deserializer
 	const element& m_node;
 };
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
-typedef std::map<std::string,element> type_map;
-#endif
+using type_map = std::map<std::string,element>;
 
 /// schema_creator is used by zeep::dispatcher to create schema files.
 
@@ -142,7 +141,7 @@ struct schema_creator
 		: m_node(node), m_types(types) {}
 		
 	template<typename T>
-	schema_creator& operator&(const boost::serialization::nvp<T>& rhs)
+	schema_creator& operator&(const name_value_pair<T>& rhs)
 	{
 		return add_element(rhs.name(), rhs.value());
 	}
@@ -175,7 +174,7 @@ struct schema_creator
 template<typename T, typename = void>
 struct type_serializer
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using value_serializer_type = value_serializer<value_type>;
 
 	static constexpr const char* type_name() { return value_serializer_type::type_name(); }
@@ -195,9 +194,9 @@ struct type_serializer
 		assert(name);
 
 		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			n.content(value_serializer_type::to_string(value));
+			n.set_content(value_serializer_type::to_string(value));
 		else
-			n.emplace_back(name).content(value_serializer_type::to_string(value));
+			n.emplace_back(name).set_content(value_serializer_type::to_string(value));
 	}
 
 	static void deserialize_child(const element& n, const char* name, value_type& value)
@@ -207,12 +206,12 @@ struct type_serializer
 		value = {};
 
 		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			value = value_serializer_type::from_string(n.content());
+			value = value_serializer_type::from_string(n.get_content());
 		else
 		{
 			auto e = std::find_if(n.begin(), n.end(), [name](auto& e) { return e.name() == name; });
 			if (e != n.end())
-				value = value_serializer_type::from_string(e->content());
+				value = value_serializer_type::from_string(e->get_content());
 		}
 	}
 
@@ -274,8 +273,8 @@ struct type_serializer<T[N]>
 	static element schema(const std::string& name, const std::string& prefix)
 	{
 		element result = type_serializer_type::schema(name, prefix);
-		result.attr("minOccurs", std::to_string(N));
-		result.attr("maxOccurs", std::to_string(N));
+		result.set_attribute("minOccurs", std::to_string(N));
+		result.set_attribute("maxOccurs", std::to_string(N));
 		return result;
 	}
 
@@ -308,9 +307,9 @@ struct type_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 		assert(name);
 
 		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			n.content(value_serializer_type::to_string(value));
+			n.set_content(value_serializer_type::to_string(value));
 		else
-			n.emplace_back(name).content(value_serializer_type::to_string(value));
+			n.emplace_back(name).set_content(value_serializer_type::to_string(value));
 	}
 
 	static void deserialize_child(const element& n, const char* name, value_type& value)
@@ -320,12 +319,12 @@ struct type_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 		value = value_type();
 
 		if (std::strlen(name) == 0 or std::strcmp(name, ".") == 0)
-			value = value_serializer_type::from_string(n.content());
+			value = value_serializer_type::from_string(n.get_content());
 		else
 		{
 			auto e = std::find_if(n.begin(), n.end(), [name](auto& e) { return e.name() == name; });
 			if (e != n.end())
-				value = value_serializer_type::from_string(e->content());
+				value = value_serializer_type::from_string(e->get_content());
 		}
 	}
 
@@ -368,7 +367,7 @@ struct type_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 template<typename T>
 struct type_serializer<T, std::enable_if_t<has_serialize_v<T,serializer>>>
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 
 	// the name of this type
 	std::string m_type_name;
@@ -506,7 +505,7 @@ template<> struct priority_tag<0> {};
 template<typename T>
 struct type_serializer<T, std::enable_if_t<is_serializable_array_type_v<T,serializer>>>
 {
-	using container_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using container_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using value_type = value_type_t<container_type>;
 	using type_serializer_type = type_serializer<value_type>;
 
@@ -593,7 +592,7 @@ struct type_serializer<T, std::enable_if_t<is_serializable_array_type_v<T,serial
 template<typename T>
 serializer& serializer::serialize_element(const T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
 	type_serializer::serialize_child(m_node, "", value);
@@ -604,7 +603,7 @@ serializer& serializer::serialize_element(const T& value)
 template<typename T>
 serializer& serializer::serialize_element(const char* name, const T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
 	type_serializer::serialize_child(m_node, name, value);
@@ -615,7 +614,7 @@ serializer& serializer::serialize_element(const char* name, const T& value)
 template<typename T>
 serializer& serializer::serialize_attribute(const char* name, const T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
 	m_node.attributes().emplace(name, type_serializer::serialize_value(value));
@@ -626,7 +625,7 @@ serializer& serializer::serialize_attribute(const char* name, const T& value)
 template<typename T>
 deserializer& deserializer::deserialize_element(T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 	
 	type_serializer::deserialize_child(m_node, "", value);
@@ -637,7 +636,7 @@ deserializer& deserializer::deserialize_element(T& value)
 template<typename T>
 deserializer& deserializer::deserialize_element(const char* name, T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 	
 	type_serializer::deserialize_child(m_node, name, value);
@@ -648,10 +647,10 @@ deserializer& deserializer::deserialize_element(const char* name, T& value)
 template<typename T>
 deserializer& deserializer::deserialize_attribute(const char* name, T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 
-	std::string attr = m_node.attr(name);
+	std::string attr = m_node.get_attribute(name);
 	if (not attr.empty())
 		value = type_serializer::deserialize_value(attr);
 
@@ -661,7 +660,7 @@ deserializer& deserializer::deserialize_attribute(const char* name, T& value)
 template<typename T>
 schema_creator& schema_creator::add_element(const char* name, const T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type, serializer>;
 	
 	m_node.emplace(type_serializer::schema(name, m_prefix));
@@ -678,7 +677,7 @@ schema_creator& schema_creator::add_element(const char* name, const T& value)
 template<typename T>
 schema_creator& schema_creator::add_attribute(const char* name, const T& value)
 {
-	using value_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
 	
 	std::string type_name = type_serializer::type_name();

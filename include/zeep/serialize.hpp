@@ -17,7 +17,6 @@
 
 #include <zeep/exception.hpp>
 
-#include <boost/serialization/nvp.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
@@ -34,12 +33,10 @@ class name_value_pair
   public:
 	name_value_pair(const char* name, T& value)
 		: m_name(name), m_value(value) {}
-	name_value_pair(const name_value_pair& other)
-		: m_name(other.m_name), m_value(const_cast<T&>(other.m_value)) {}
 
 	const char* name() const		{ return m_name; }
-	T&			value() 			{ return m_value; }
-	const T&	value() const		{ return m_value; }
+	T&			value() const		{ return m_value; }
+	const T&	const_value() const	{ return m_value; }
 
   private:
 	const char* m_name;
@@ -236,7 +233,7 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 // --------------------------------------------------------------------
 // date/time support
 
-/// \brief to_stringr/from_stringr for boost::posix_time::ptime
+/// \brief to_string/from_string for boost::posix_time::ptime
 /// boost::posix_time::ptime values are always assumed to be UTC
 
 template<>
@@ -372,7 +369,7 @@ struct value_serializer<boost::posix_time::ptime>
 	}
 };
 
-/// \brief to_stringr/from_stringr for boost::gregorian::date
+/// \brief to_string/from_string for boost::gregorian::date
 /// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
 
 template<>
@@ -429,7 +426,7 @@ struct value_serializer<boost::gregorian::date>
 	}
 };
 
-/// \brief to_stringr/from_stringr for boost::posix_time::time_duration
+/// \brief to_string/from_string for boost::posix_time::time_duration
 /// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
 
 template<>

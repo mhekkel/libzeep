@@ -13,9 +13,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/xml/character-classification.hpp>
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 namespace detail
@@ -39,7 +37,7 @@ struct attr
 
 class invalid_exception : public zeep::exception
 {
-public:
+  public:
 	invalid_exception(const std::string& msg) : exception(msg) {}
 	~invalid_exception() throw() {}
 };
@@ -52,7 +50,7 @@ public:
 
 class not_wf_exception : public zeep::exception
 {
-public:
+  public:
 	not_wf_exception(const std::string& msg) : exception(msg) {}
 	~not_wf_exception() throw() {}
 };
@@ -62,11 +60,10 @@ public:
 
 class parser
 {
-public:
-#ifndef LIBZEEP_DOXYGEN_INVOKED
-	typedef detail::attr attr_type;
-	typedef std::list<detail::attr> attr_list_type;
-#endif
+  public:
+
+	using attr_type = detail::attr;
+	using attr_list_type = std::list<detail::attr>;
 
 	parser(std::istream& is);
 	parser(const std::string& s);
@@ -90,8 +87,7 @@ public:
 
 	void parse(bool validate);
 
-#ifndef LIBZEEP_DOXYGEN_INVOKED
-protected:
+  protected:
 	friend struct parser_imp;
 
 	virtual void xml_decl(encoding_type encoding, bool standalone, float version);
@@ -128,8 +124,6 @@ protected:
 
 	struct parser_imp *m_impl;
 	std::istream *m_istream;
-#endif
 };
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

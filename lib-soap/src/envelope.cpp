@@ -8,7 +8,8 @@
 #include <zeep/soap/envelope.hpp>
 // #include <zeep/xml/xpath.hpp>
 
-namespace zeep {
+namespace zeep::soap
+{
 
 envelope::envelope()
 	: m_request(nullptr)
@@ -46,10 +47,10 @@ xml::element make_fault(const std::string& what)
 	xml::element fault("soap:Fault");
 	
 	auto& faultCode = fault.emplace_back("faultcode");
-	faultCode.content("soap:Server");
+	faultCode.set_content("soap:Server");
 	
 	auto& faultString(fault.emplace_back("faultstring"));
-	faultString.content(what);
+	faultString.set_content(what);
 
 	return make_envelope(std::move(fault));
 }

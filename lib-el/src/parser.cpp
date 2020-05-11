@@ -14,17 +14,11 @@
 
 #include <stack>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/exception.hpp>
-// #include <zeep/xml/parser.hpp>
-// #include <zeep/xml/doctype.hpp>
 #include <zeep/unicode_support.hpp>
 #include <zeep/el/element.hpp>
 
 #include <zeep/el/parser.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::el
 {

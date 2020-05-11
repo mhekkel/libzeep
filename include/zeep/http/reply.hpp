@@ -15,7 +15,8 @@
 #include <zeep/xml/document.hpp>
 #include <zeep/el/element.hpp>
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 /// Various predefined HTTP status codes
 
@@ -138,5 +139,4 @@ class reply
 	mutable std::string m_status_line;
 };
 
-}
 }

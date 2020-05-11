@@ -17,9 +17,7 @@ namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------
@@ -76,10 +74,10 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 
 	if (text != nullptr)
 	{
-		std::string s = text->str();
+		std::string s = text->get_text();
 
 		if (process_el(scope, s))
-			text->str(s);
+			text->set_text(s);
 
 		return;
 	}
@@ -89,7 +87,7 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 		return;
 
 	// if node is one of our special nodes, we treat it here
-	if (e->ns() == m_ns)
+	if (e->get_ns() == m_ns)
 	{
 		xml::element* parent = e->parent();
 
@@ -102,7 +100,7 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 		catch (exception& ex)
 		{
 			parent->nodes().push_back(
-				xml::text("Error processing directive '" + e->qname() + "': " + ex.what()));
+				xml::text("Error processing directive '" + e->get_qname() + "': " + ex.what()));
 		}
 
 		try
@@ -149,7 +147,7 @@ void tag_processor_v1::process_tag(const std::string& tag, xml::element *node, c
 void tag_processor_v1::process_include(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
 	// an include directive, load file and include resulting content
-	std::string file = node->attr("file");
+	std::string file = node->get_attribute("file");
 
 	process_el(scope, file);
 
@@ -157,7 +155,7 @@ void tag_processor_v1::process_include(xml::element *node, const scope& scope, f
 		throw exception("missing file attribute");
 
 	xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 	webapp.load_template((dir / file).string(), doc);
 
 	process_xml(&doc.front(), scope, (dir / file).parent_path(), webapp);
@@ -168,7 +166,7 @@ void tag_processor_v1::process_include(xml::element *node, const scope& scope, f
 
 void tag_processor_v1::process_if(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	std::string test = node->attr("test");
+	std::string test = node->get_attribute("test");
 	if (evaluate_el(scope, test))
 	{
 		auto parent = node->parent();
@@ -186,11 +184,11 @@ void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, f
 {
 	using el::detail::value_type;
 
-	object collection = scope[node->attr("collection")];
+	object collection = scope[node->get_attribute("collection")];
 	if (collection.type() == value_type::string or collection.type() == value_type::null)
-		collection = evaluate_el(scope, node->attr("collection"));
+		collection = evaluate_el(scope, node->get_attribute("collection"));
 
-	std::string var = node->attr("var");
+	std::string var = node->get_attribute("var");
 	if (var.empty())
 		throw exception("missing var attribute in mrs:iterate");
 
@@ -212,10 +210,10 @@ void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, f
 
 void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	object b = evaluate_el(scope, node->attr("begin"));
-	object e = evaluate_el(scope, node->attr("end"));
+	object b = evaluate_el(scope, node->get_attribute("begin"));
+	object e = evaluate_el(scope, node->get_attribute("end"));
 
-	std::string var = node->attr("var");
+	std::string var = node->get_attribute("var");
 	if (var.empty())
 		throw exception("missing var attribute in mrs:iterate");
 
@@ -245,8 +243,8 @@ protected:
 
 void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	std::string number = node->attr("n");
-	std::string format = node->attr("f");
+	std::string number = node->get_attribute("n");
+	std::string format = node->get_attribute("f");
 
 	if (format == "#,##0B") // bytes, convert to a human readable form
 	{
@@ -290,16 +288,16 @@ void tag_processor_v1::process_options(xml::element *node, const scope& scope, f
 {
 	using ::zeep::el::detail::value_type;
 
-	object collection = scope[node->attr("collection")];
+	object collection = scope[node->get_attribute("collection")];
 	if (collection.type() == value_type::string or collection.type() == value_type::null)
-		collection = evaluate_el(scope, node->attr("collection"));
+		collection = evaluate_el(scope, node->get_attribute("collection"));
 
 	if (collection.is_array())
 	{
-		std::string value = node->attr("value");
-		std::string label = node->attr("label");
+		std::string value = node->get_attribute("value");
+		std::string label = node->get_attribute("label");
 
-		std::string selected = node->attr("selected");
+		std::string selected = node->get_attribute("selected");
 		if (not selected.empty())
 			process_el(scope, selected);
 
@@ -309,16 +307,16 @@ void tag_processor_v1::process_options(xml::element *node, const scope& scope, f
 
 			if (not(value.empty() or label.empty()))
 			{
-				option.attr("value", o[value].as<std::string>());
+				option.set_attribute("value", o[value].as<std::string>());
 				if (selected == o[value].as<std::string>())
-					option.attr("selected", "selected");
+					option.set_attribute("selected", "selected");
 				option.add_text(o[label].as<std::string>());
 			}
 			else
 			{
-				option.attr("value", o.as<std::string>());
+				option.set_attribute("value", o.as<std::string>());
 				if (selected == o.as<std::string>())
-					option.attr("selected", "selected");
+					option.set_attribute("selected", "selected");
 				option.add_text(o.as<std::string>());
 			}
 
@@ -331,19 +329,19 @@ void tag_processor_v1::process_options(xml::element *node, const scope& scope, f
 
 void tag_processor_v1::process_option(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	std::string value = node->attr("value");
+	std::string value = node->get_attribute("value");
 	if (not value.empty())
 		process_el(scope, value);
 
-	std::string selected = node->attr("selected");
+	std::string selected = node->get_attribute("selected");
 	if (not selected.empty())
 		process_el(scope, selected);
 
 	zeep::xml::element option("option");
 
-	option.attr("value", value);
+	option.set_attribute("value", value);
 	if (selected == value)
-		option.attr("selected", "selected");
+		option.set_attribute("selected", "selected");
 
 	auto parent = node->parent();
 	assert(parent);
@@ -358,20 +356,20 @@ void tag_processor_v1::process_option(xml::element *node, const scope& scope, fs
 
 void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	std::string name = node->attr("name");
+	std::string name = node->get_attribute("name");
 	if (not name.empty())
 		process_el(scope, name);
 
 	bool checked = false;
-	if (evaluate_el(scope, node->attr("checked")))
+	if (evaluate_el(scope, node->get_attribute("checked")))
 		checked = true;
 
 	zeep::xml::element checkbox("input");
-	checkbox.attr("type", "checkbox");
-	checkbox.attr("name", name);
-	checkbox.attr("value", "true");
+	checkbox.set_attribute("type", "checkbox");
+	checkbox.set_attribute("name", name);
+	checkbox.set_attribute("value", "true");
 	if (checked)
-		checkbox.attr("checked", "true");
+		checkbox.set_attribute("checked", "true");
 
 	auto parent = node->parent();
 	assert(parent);
@@ -426,13 +424,13 @@ void tag_processor_v1::process_param(xml::element *node, const scope& scope, fs:
 void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
 	// an embed directive, load xml from attribute and include parsed content
-	std::string xml = scope[node->attr("var")].as<std::string>();
+	std::string xml = scope[node->get_attribute("var")].as<std::string>();
 
 	if (xml.empty())
 		throw exception("Missing var attribute in embed tag");
 
 	zeep::xml::document doc;
-	doc.preserve_cdata(true);
+	doc.set_preserve_cdata(true);
 	
 	std::istringstream os(xml);
 	os >> doc;
@@ -445,7 +443,4 @@ void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs:
 
 // --------------------------------------------------------------------
 
-
-
-}
 }

@@ -10,9 +10,7 @@
 
 #include <zeep/el/element.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {	
 
 /// empty factory with a certain type
@@ -97,10 +95,10 @@ element::element(size_t cnt, const element& v)
 }
 
 element& element::operator=(element j) noexcept(
-		std::is_nothrow_move_constructible<value_type>::value and
-		std::is_nothrow_move_assignable<value_type>::value and
-		std::is_nothrow_move_constructible<element_data>::value and
-		std::is_nothrow_move_assignable<element_data>::value)
+		std::is_nothrow_move_constructible_v<value_type> and
+		std::is_nothrow_move_assignable_v<value_type> and
+		std::is_nothrow_move_constructible_v<element_data> and
+		std::is_nothrow_move_assignable_v<element_data>)
 {
 	j.validate();
 
@@ -885,5 +883,5 @@ std::ostream& operator<<(std::ostream& os, const element& v)
 
 	return os;
 }
-}
-} // namespace zeep
+
+} // namespace zeep::el

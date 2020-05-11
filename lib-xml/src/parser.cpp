@@ -24,9 +24,7 @@
 
 namespace ba = boost::algorithm;
 
-namespace zeep
-{
-namespace xml
+namespace zeep::xml
 {
 
 // #define url_hexdigit	"[[:digit:]a-fA-F]"
@@ -945,7 +943,7 @@ const doctype::entity& parser_imp::get_general_entity(const std::string& name) c
 	if (e == m_general_entities.end())
 		not_well_formed("undefined entity reference '" + name + "'");
 
-	if ((*e)->external() and m_standalone)
+	if ((*e)->is_external() and m_standalone)
 		not_valid("Document cannot be standalone since entity " + name + " is defined externally");
 
 	return **e;
@@ -1953,14 +1951,14 @@ void parser_imp::doctypedecl()
 
 	for (const doctype::entity *e : m_general_entities)
 	{
-		if (e->parsed() == false and m_notations.count(e->ndata()) == 0)
-			not_valid("Undefined NOTATION '" + e->ndata() + "'");
+		if (e->is_parsed() == false and m_notations.count(e->get_ndata()) == 0)
+			not_valid("Undefined NOTATION '" + e->get_ndata() + "'");
 	}
 
 	// and the notations in the doctype attlists
 	for (const doctype::element *element : m_doctype)
 	{
-		for (const doctype::attribute *attr : element->attributes())
+		for (const doctype::attribute *attr : element->get_attributes())
 		{
 			if (attr->get_type() != doctype::AttributeType::Notation)
 				continue;
@@ -1978,7 +1976,7 @@ void parser_imp::pereference()
 {
 	const doctype::entity& e = get_parameter_entity(m_token);
 
-	push_data_source(new parameter_entity_data_source(e.replacement(), e.path()), true);
+	push_data_source(new parameter_entity_data_source(e.get_replacement(), e.get_path()), true);
 
 	match(XMLToken::PEReference);
 }
@@ -2030,7 +2028,7 @@ void parser_imp::declsep()
 
 			match(XMLToken::PEReference);
 
-			push_data_source(new parameter_entity_data_source(e.replacement(), e.path()), false);
+			push_data_source(new parameter_entity_data_source(e.get_replacement(), e.get_path()), false);
 
 			m_lookahead = get_next_token();
 			extsubset();
@@ -2250,10 +2248,8 @@ void parser_imp::element_decl()
 
 	if (e == m_doctype.end())
 		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_in_external_dtd));
-	else if ((*e)->declared())
+	else if ((*e)->is_declared())
 		not_valid("duplicate element declaration for element '" + name + "'");
-	else
-		(*e)->external(m_in_external_dtd);
 
 	match(XMLToken::Name);
 	s(true);
@@ -2572,10 +2568,10 @@ void parser_imp::general_entity_decl()
 		m_general_entities.push_back(new doctype::general_entity(name, value, external, parsed));
 
 		if (not parsed)
-			m_general_entities.back()->ndata(ndata);
+			m_general_entities.back()->set_ndata(ndata);
 
 		if (m_in_external_dtd)
-			m_general_entities.back()->externally_defined(true);
+			m_general_entities.back()->set_externally_defined(true);
 	}
 }
 
@@ -2767,13 +2763,13 @@ void parser_imp::attlist_decl()
 
 		if (attribute->get_type() == doctype::AttributeType::ID)
 		{
-			const doctype::attribute_list& atts = (*dte)->attributes();
+			const doctype::attribute_list& atts = (*dte)->get_attributes();
 			if (std::find_if(atts.begin(), atts.end(),
 							 [](auto a) { return a->get_type() == doctype::AttributeType::ID; }) != atts.end())
 				not_valid("only one attribute per element can have the ID type");
 		}
 
-		attribute->external(m_in_external_dtd);
+		attribute->set_external(m_in_external_dtd);
 		// attribute->version(m_version);
 		(*dte)->add_attribute(attribute.release());
 	}
@@ -3063,7 +3059,7 @@ void parser_imp::parse_parameter_entity_declaration(std::string& s)
 			if (c == ';')
 			{
 				const doctype::entity& e = get_parameter_entity(name);
-				result += e.replacement();
+				result += e.get_replacement();
 				state = 0;
 			}
 			else if (is_name_char(c))
@@ -3222,7 +3218,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 			if (c == ';')
 			{
 				const doctype::entity& e = get_parameter_entity(name);
-				result += e.replacement();
+				result += e.get_replacement();
 				state = 0;
 			}
 			else if (is_name_char(c))
@@ -3372,13 +3368,13 @@ std::string parser_imp::normalize_attribute_value()
 
 					const doctype::entity& e = get_general_entity(name);
 
-					if (e.external())
+					if (e.is_external())
 						not_well_formed("attribute value may not contain external entity reference");
 
-					if (e.externally_defined() and m_standalone)
+					if (e.is_externally_defined() and m_standalone)
 						not_well_formed("document marked as standalone but an external entity is referenced");
 
-					push_data_source(new entity_data_source(e.replacement(), m_source.top()->base()), false);
+					push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
 
 					std::string replacement = normalize_attribute_value();
 					result += replacement;
@@ -3442,7 +3438,7 @@ void parser_imp::element(doctype::validator& valid)
 	std::string name = m_token;
 	match(XMLToken::Name);
 
-	if (not valid(name))
+	if (not valid.allow(name))
 		not_valid("element '" + name + "' not expected at this position");
 	
 	const doctype::element *dte = get_element(name);
@@ -3564,7 +3560,7 @@ void parser_imp::element(doctype::validator& valid)
 						not_valid("invalid value ('" + attr_value + "') for attribute " + attr_name + "");
 				}
 
-				if (m_validating and m_standalone and dta->external() and v != attr_value)
+				if (m_validating and m_standalone and dta->is_external() and v != attr_value)
 					not_valid("attribute value modified as a result of an external defined attlist declaration, which is not valid in a standalone document");
 
 				if (dta->get_type() == doctype::AttributeType::ID)
@@ -3650,7 +3646,7 @@ void parser_imp::element(doctype::validator& valid)
 	// add missing attributes
 	if (dte != nullptr)
 	{
-		for (const doctype::attribute *dta : dte->attributes())
+		for (const doctype::attribute *dta : dte->get_attributes())
 		{
 			std::string attr_name = dta->name();
 
@@ -3669,7 +3665,7 @@ void parser_imp::element(doctype::validator& valid)
 			}
 			else if (not defValue.empty() and attr == attrs.end())
 			{
-				if (m_validating and m_standalone and dta->external())
+				if (m_validating and m_standalone and dta->is_external())
 					not_valid("default value for attribute defined in external declaration which is not allowed in a standalone document");
 
 				detail::attr attr;
@@ -3751,7 +3747,7 @@ void parser_imp::element(doctype::validator& valid)
 
 void parser_imp::content(doctype::validator& valid)
 {
-	if (valid.content_spec() == doctype::ContentSpecType::Empty and m_lookahead != XMLToken::ETag)
+	if (valid.get_content_spec() == doctype::ContentSpecType::Empty and m_lookahead != XMLToken::ETag)
 		not_valid("Content is not allowed in an element declared to be EMPTY");
 
 	do
@@ -3760,18 +3756,18 @@ void parser_imp::content(doctype::validator& valid)
 		{
 			case XMLToken::Content:
 			case XMLToken::Space:
-				if (valid.content_spec() == doctype::ContentSpecType::Empty)
+				if (valid.get_content_spec() == doctype::ContentSpecType::Empty)
 					not_valid("character data not allowed in EMPTY element");
-				else if (valid.content_spec() == doctype::ContentSpecType::Children and m_lookahead == XMLToken::Content)
+				else if (valid.get_content_spec() == doctype::ContentSpecType::Children and m_lookahead == XMLToken::Content)
 					not_valid("character data '" + m_token + "' not allowed in element");
 				m_parser.character_data(m_token);
 				match(m_lookahead);
 				break;
 
 			case XMLToken::CharRef:
-				if (valid.content_spec() == doctype::ContentSpecType::Empty)
+				if (valid.get_content_spec() == doctype::ContentSpecType::Empty)
 					not_valid("data not allowed in EMPTY element");
-				else if (valid.content_spec() == doctype::ContentSpecType::Children and is_space(m_token))
+				else if (valid.get_content_spec() == doctype::ContentSpecType::Children and is_space(m_token))
 					not_valid("Element may not contain reference to space");
 				m_parser.character_data(m_token);
 				match(m_lookahead);
@@ -3786,20 +3782,20 @@ void parser_imp::content(doctype::validator& valid)
 
 				const doctype::entity& e = get_general_entity(m_token);
 
-				if (e.externally_defined() and m_standalone)
+				if (e.is_externally_defined() and m_standalone)
 					not_well_formed("document marked as standalone but an external entity is referenced");
 
-				if (not e.parsed())
+				if (not e.is_parsed())
 					not_well_formed("content has a general entity reference to an unparsed entity");
 
-				push_data_source(new entity_data_source(e.replacement(), m_source.top()->base()), false);
+				push_data_source(new entity_data_source(e.get_replacement(), m_source.top()->base()), false);
 
 				m_lookahead = get_next_content();
 
-				save_state in_external_dtd(m_in_external_dtd, e.externally_defined());
+				save_state in_external_dtd(m_in_external_dtd, e.is_externally_defined());
 
 				// a children production may not contain references to spaces
-				if (m_lookahead == XMLToken::Space and valid.content_spec() == doctype::ContentSpecType::Children)
+				if (m_lookahead == XMLToken::Space and valid.get_content_spec() == doctype::ContentSpecType::Children)
 				{
 					auto space = m_token;
 					match(m_lookahead);
@@ -3836,13 +3832,13 @@ void parser_imp::content(doctype::validator& valid)
 				break;
 
 			case XMLToken::CDSect:
-				if (valid.content_spec() != doctype::ContentSpecType::Mixed and valid.content_spec() != doctype::ContentSpecType::Any)
+				if (valid.get_content_spec() != doctype::ContentSpecType::Mixed and valid.get_content_spec() != doctype::ContentSpecType::Any)
 					not_valid("character data '" + m_token + "' not allowed in element");
 
 				m_parser.start_cdata_section();
 				m_parser.character_data(m_token);
 
-				if (is_space(m_token) and valid.content_spec() == doctype::ContentSpecType::Children)
+				if (is_space(m_token) and valid.get_content_spec() == doctype::ContentSpecType::Children)
 					not_valid("Element may not contain CDATA section containing only space");
 
 				m_parser.end_cdata_section();
@@ -4115,5 +4111,4 @@ void parser::report_invalidation(const std::string& msg)
 		report_invalidation_handler(msg);
 }
 
-} // namespace xml
-} // namespace zeep
+} // namespace zeep::xml

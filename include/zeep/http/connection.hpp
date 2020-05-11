@@ -13,9 +13,7 @@
 #include <zeep/http/message-parser.hpp>
 #include <zeep/http/request-handler.hpp>
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 /// The HTTP server implementation of libzeep is inspired by the example code
@@ -24,7 +22,7 @@ namespace http
 class connection
 	: public std::enable_shared_from_this<connection>
 {
-public:
+  public:
 	connection(connection &) = delete;
 	connection& operator=(connection &) = delete;
 
@@ -35,8 +33,7 @@ public:
 	void handle_read(boost::system::error_code ec, size_t bytes_transferred);
 	void handle_write(boost::system::error_code ec, size_t bytes_transferred);
 
-	boost::asio::ip::tcp::socket &
-	get_socket() { return m_socket; }
+	boost::asio::ip::tcp::socket& get_socket() { return m_socket; }
 
 private:
 	boost::asio::ip::tcp::socket m_socket;
@@ -47,5 +44,4 @@ private:
 	reply m_reply;
 };
 
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http
