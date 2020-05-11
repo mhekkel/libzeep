@@ -17,11 +17,15 @@
 namespace zeep
 {
 
+/// \brief typedef of our own unicode type
+/// 
 /// We use our own unicode type since wchar_t might be too small.
 /// This type should be able to contain a UCS4 encoded character.
 using unicode = char32_t;
 
-/// the supported encodings. Perhaps we should extend this list a bit?
+/// \brief the (admittedly limited) set of supported text encodings in libzeep
+/// 
+/// these are the supported encodings. Perhaps we should extend this list a bit?
 enum class encoding_type
 {
 	ASCII,			///< 7-bit ascii 
@@ -31,6 +35,7 @@ enum class encoding_type
 	ISO88591		///< Default single byte encoding, is a subset of utf-8
 };
 
+/// \brief utf-8 is not single byte e.g.
 constexpr bool is_single_byte_encoding(encoding_type enc)
 {
 	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
