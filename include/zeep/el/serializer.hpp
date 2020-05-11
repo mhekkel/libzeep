@@ -129,10 +129,6 @@ struct serializer
 	template<typename T>
 	void serialize(const char* name, const T& data)
 	{
-		// element_type j;
-		// zeep::el::detail::to_element(j, data);
-		// m_elem.emplace(std::make_pair(name, std::move(j)));
-
 		using serializer_impl = serializer_impl<T>;
 
 		element_type e;
@@ -159,7 +155,7 @@ struct deserializer
 	struct deserializer_impl {};
 
 	template<typename T>
-	struct deserializer_impl<T, std::enable_if_t<is_type_with_value_serializer_v<T>>>
+	struct deserializer_impl<T, std::enable_if_t<not detail::is_compatible_type_v<T> and is_type_with_value_serializer_v<T>>>
 	{
 		using value_serializer = zeep::value_serializer<T>;
 

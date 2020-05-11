@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE WebApp_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include <boost/random/random_device.hpp>
+#include <random>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/exception.hpp>
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(webapp_3)
 
 	auto nonce = m[1].str();
 
-	boost::random::random_device rng;
+	std::random_device rng;
 	auto nc = "1";
 
 	auto ha1 = validator->get_hashed_password("scott");

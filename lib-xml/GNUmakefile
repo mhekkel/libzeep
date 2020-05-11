@@ -164,9 +164,8 @@ clean:
 parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml
 xpath_PARAMS = XPath-Test-Suite/xpath-tests.xml
 
-
 ZEEP_LIBS = generic
-BOOST_LIBS = program_options system
+BOOST_LIBS = program_options
 
 define TEST_template =
 

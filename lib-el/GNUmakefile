@@ -169,7 +169,7 @@ dist-clean: clean
 json_PARAMS = 
 
 ZEEP_LIBS = xml el generic
-BOOST_LIBS = random program_options thread system
+BOOST_LIBS = 
 
 define TEST_template =
 

@@ -34,7 +34,7 @@ CXXFLAGS			+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(P
 LDFLAGS				+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PACKAGES) --static )
 endif
 
-BOOST_LIBS          = system thread filesystem regex random program_options date_time
+BOOST_LIBS          = date_time
 BOOST_LIBS          := $(BOOST_LIBS:%=-lboost_%)
 
 ZEEP_LIB_NAMES		?= rest webapp http xml el generic
