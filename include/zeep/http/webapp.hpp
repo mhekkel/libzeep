@@ -335,14 +335,6 @@ class webapp_base : public http::server, public basic_webapp
 {
   public:
 
-	// template<typename... Args>
-	// webapp_base(Args... args)
-	// 	: m_loader(std::forward<Args>(args)...)
-	// {
-	// 	register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
-	// 	register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());
-	// }
-
 	webapp_base(const std::string& docroot = ".")
 		: m_loader(docroot)
 	{
@@ -354,7 +346,7 @@ class webapp_base : public http::server, public basic_webapp
 
 	void handle_request(request& req, reply& rep)
 	{
-		server::log() << req.uri;
+		server::get_log() << req.uri;
 		basic_webapp::handle_request(req, rep);
 	}
 

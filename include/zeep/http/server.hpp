@@ -13,9 +13,7 @@
 #include <zeep/http/request-handler.hpp>
 #include <zeep/http/controller.hpp>
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 /// The libzeep HTTP server implementation. Based on code found in boost::asio.
@@ -24,13 +22,16 @@ class connection;
 
 class server : public request_handler
 {
-public:
+  public:
 	server();
+
+	server(const server&) = delete;
+	server& operator=(const server&) = delete;
 
 	/// Add controllers
 	void add_controller(controller* c);
 
-	/// Bind the server to \a address and \a port
+	/// Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address,
 					  unsigned short port);
 
@@ -41,18 +42,18 @@ public:
 	virtual void stop();
 
 	/// to extend the log entry for a current request, use this ostream:
-	static std::ostream& log();
+	static std::ostream& get_log();
 
 	/// log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
-	void log_forwarded(bool v) { m_log_forwarded = v; }
+	void set_log_forwarded(bool v) { m_log_forwarded = v; }
 
-	std::string address() const { return m_address; }
-	unsigned short port() const { return m_port; }
+	std::string get_address() const { return m_address; }
+	unsigned short get_port() const { return m_port; }
 
 	/// get_io_service has to be public since we need it to call notify_fork from child code
 	boost::asio::io_service& get_io_service() { return m_io_service; }
 
-protected:
+  protected:
 	virtual void handle_request(request& req, reply& rep);
 
 	/// the default entry logger
@@ -64,9 +65,6 @@ protected:
 
 private:
 	friend class preforked_server_base;
-
-	server(const server&);
-	server& operator=(const server&);
 
 	virtual void handle_request(boost::asio::ip::tcp::socket& socket,
 								request& req, reply& rep);
@@ -83,5 +81,4 @@ private:
 	std::list<controller*> m_controllers;
 };
 
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http

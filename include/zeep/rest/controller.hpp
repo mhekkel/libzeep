@@ -17,17 +17,14 @@
 #include <zeep/http/authorization.hpp>
 #include <zeep/el/parser.hpp>
 
-namespace zeep
-{
-
-namespace http
+namespace zeep::http
 {
 
 class rest_controller : public controller
 {
   public:
-	rest_controller(const std::string& prefixPath, authentication_validation_base* auth = nullptr)
-		: controller(prefixPath), m_auth(auth)
+	rest_controller(const std::string& prefix_path, authentication_validation_base* auth = nullptr)
+		: controller(prefix_path), m_auth(auth)
 	{
 	}
     ~rest_controller();
@@ -386,7 +383,4 @@ class rest_controller : public controller
 	static thread_local el::element s_credentials;
 };
 
-
-} // namespace http
-
-} // namespace zeep
+} // namespace zeep::http

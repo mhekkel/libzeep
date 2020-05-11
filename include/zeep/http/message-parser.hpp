@@ -13,23 +13,21 @@
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 /// An HTTP message parser with support for Transfer-Encoding: Chunked
 
 class parser
 {
-public:
+  public:
 	using result_type = std::tuple<boost::tribool, size_t>;
 
 	virtual ~parser() {}
 
 	virtual void reset();
 
-	bool parsing_content() const { return m_parsing_content; }
+	bool is_parsing_content() const { return m_parsing_content; }
 
 	typedef boost::tribool (parser::*state_parser)(std::vector<header>& headers, std::string& payload, char ch);
 
@@ -38,7 +36,7 @@ public:
 	boost::tribool parse_footer(std::vector<header>& headers, std::string& payload, char ch);
 	boost::tribool parse_content(std::vector<header>& headers, std::string& payload, char ch);
 
-protected:
+  protected:
 	parser();
 
 	state_parser m_parser;
@@ -54,7 +52,7 @@ protected:
 
 class request_parser : public parser
 {
-public:
+  public:
 	request_parser();
 	result_type parse(request& req, const char* text, size_t length);
 	result_type parse_header(request& req, const char* text, size_t length);
@@ -67,13 +65,13 @@ public:
 	boost::tribool parse_content(request& req, std::streambuf& text);
 	boost::tribool parse_content(request& req, std::streambuf& text, std::streambuf& sink);
 
-private:
+  private:
 	boost::tribool parse_initial_line(std::vector<header>& headers, std::string& payload, char ch);
 };
 
 class reply_parser : public parser
 {
-public:
+  public:
 	reply_parser();
 	result_type parse(reply& req, const char* text, size_t length);
 	result_type parse_header(reply& req, const char* text, size_t length);
@@ -85,12 +83,11 @@ public:
 
 	virtual void reset();
 
-private:
+  private:
 	boost::tribool parse_initial_line(std::vector<header>& headers, std::string& payload, char ch);
 
 	int m_status;
 	std::string m_status_line;
 };
 
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http

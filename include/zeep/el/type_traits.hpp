@@ -15,9 +15,7 @@
 #include <zeep/type_traits.hpp>
 #include <zeep/el/element_fwd.hpp>
 
-namespace zeep::el
-{
-namespace detail
+namespace zeep::el::detail
 {
 
 template<typename> struct is_element : std::false_type {};
@@ -50,12 +48,6 @@ using reference_t = typename T::reference;
 template <typename T>
 using pointer_t = typename T::pointer;
 
-template <typename T, typename... Args>
-using to_element_function = decltype(T::to_element(std::declval<Args>()...));
-
-template <typename T, typename... Args>
-using from_element_function = decltype(T::from_element(std::declval<Args>()...));
-
 template <typename T, typename = void>
 struct is_iterator_traits : std::false_type {};
 
@@ -76,6 +68,12 @@ struct is_iterator_traits<std::iterator_traits<T>>
 
 template<typename T>
 inline constexpr bool is_iterator_traits_v = is_iterator_traits<T>::value;
+
+template <typename T, typename... Args>
+using to_element_function = decltype(T::to_element(std::declval<Args>()...));
+
+template <typename T, typename... Args>
+using from_element_function = decltype(T::from_element(std::declval<Args>()...));
 
 template<typename T, typename = void>
 struct has_to_element : std::false_type {};
@@ -106,15 +104,6 @@ template<typename T>
 inline constexpr bool has_from_element_v = has_from_element<T>::value;
 
 template<typename T, typename = void>
-struct is_complete_type : std::false_type {};
-
-template<typename T>
-struct is_complete_type<T, decltype(void(sizeof(T)))> : std::true_type {};
-
-template<typename T>
-inline constexpr bool is_complete_type_v = is_complete_type<T>::value;
-
-template<typename T, typename = void>
 struct is_compatible_array_type : std::false_type {};
 
 template<typename T>
@@ -122,11 +111,7 @@ struct is_compatible_array_type<T,
 	std::enable_if_t<
 		std::experimental::is_detected_v<value_type_t, T> and
 		std::experimental::is_detected_v<iterator_t, T> and
-		std::is_constructible_v<element, typename T::value_type>>>
-{
-    static constexpr bool value = true;
-        // std::is_constructible_v<element, typename T::value_type>;
-};
+		std::is_constructible_v<element, typename T::value_type>>> : std::true_type {};
 
 template<typename T>
 inline constexpr bool is_compatible_array_type_v = is_compatible_array_type<T>::value;
@@ -264,5 +249,4 @@ struct is_serializable_optional_type<T, Archive,
 template<typename T, typename Archive>
 inline constexpr bool is_serializable_optional_type_v = is_serializable_optional_type<T, Archive>::value;
 
-}
 }

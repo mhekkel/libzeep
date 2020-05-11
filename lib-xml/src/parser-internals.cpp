@@ -15,9 +15,7 @@
 
 #include "parser-internals.hpp"
 
-namespace zeep
-{
-namespace detail
+namespace zeep::detail
 {
 
 bool is_absolute_path(const std::string& s)
@@ -40,5 +38,4 @@ bool is_absolute_path(const std::string& s)
 	return result;
 }
 
-} // namespace detail
-}
+} // namespace

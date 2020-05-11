@@ -17,9 +17,7 @@
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 // -----------------------------------------------------------------------
@@ -103,5 +101,4 @@ std::istream* rsrc_loader::load_file(const std::string& file, std::error_code& e
 	return result;
 }
 
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http

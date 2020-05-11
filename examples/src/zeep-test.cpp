@@ -118,8 +118,8 @@ enum Algorithm
 
 }
 
-namespace zeep {
-namespace xml {
+namespace zeep::xml
+{
 
 template<class Archive>
 struct struct_serializer<Archive,WSSearchNS::Hit>

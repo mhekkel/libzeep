@@ -35,7 +35,7 @@ void request::clear()
 	local_port = 0;
 }
 
-float request::accept(const char* type) const
+float request::get_accept(const char* type) const
 {
 	float result = 1.0f;
 
@@ -726,41 +726,36 @@ const char
 		kCRLF[] = { '\r', '\n' };
 }
 
-void request::to_buffers(std::vector<boost::asio::const_buffer>& buffers)
+std::vector<boost::asio::const_buffer> request::to_buffers()
 {
+	std::vector<boost::asio::const_buffer> result;
+
 	m_request_line = get_request_line();
-	buffers.push_back(boost::asio::buffer(m_request_line));
-	buffers.push_back(boost::asio::buffer(kCRLF));
+	result.push_back(boost::asio::buffer(m_request_line));
+	result.push_back(boost::asio::buffer(kCRLF));
 	
 	for (header& h: headers)
 	{
-		buffers.push_back(boost::asio::buffer(h.name));
-		buffers.push_back(boost::asio::buffer(kNameValueSeparator));
-		buffers.push_back(boost::asio::buffer(h.value));
-		buffers.push_back(boost::asio::buffer(kCRLF));
+		result.push_back(boost::asio::buffer(h.name));
+		result.push_back(boost::asio::buffer(kNameValueSeparator));
+		result.push_back(boost::asio::buffer(h.value));
+		result.push_back(boost::asio::buffer(kCRLF));
 	}
 
-	buffers.push_back(boost::asio::buffer(kCRLF));
-	buffers.push_back(boost::asio::buffer(payload));
+	result.push_back(boost::asio::buffer(kCRLF));
+	result.push_back(boost::asio::buffer(payload));
+
+	return result;
 }
 
 std::iostream& operator<<(std::iostream& io, request& req)
 {
-	std::vector<boost::asio::const_buffer> buffers;
-
-	req.to_buffers(buffers);
+	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
 
 	for (auto& b: buffers)
 		io.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
 
 	return io;
-}
-
-void request::debug(std::ostream& os) const
-{
-	os << get_request_line() << std::endl;
-	for (const header& h: headers)
-		os << h.name << ": " << h.value << std::endl;
 }
 
 } // zeep::http

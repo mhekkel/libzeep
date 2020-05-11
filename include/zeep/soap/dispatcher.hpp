@@ -36,9 +36,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/xml/serialize.hpp>
 
-namespace zeep
-{
-namespace soap
+namespace zeep::soap
 {
 
 namespace detail
@@ -319,7 +317,7 @@ public:
 	/// \brief Dispatch a SOAP message and return the result
 	xml::element* dispatch(const std::string& action, xml::element* in)
 	{
-		if (in->ns() != m_ns)
+		if (in->get_ns() != m_ns)
 			throw exception("Invalid request, no match for namespace");
 
 		handler_list::iterator cb = std::find_if(
@@ -421,6 +419,5 @@ public:
 	handler_list m_handlers;
 };
 
-} // namespace soap
-} // namespace zeep
+} // namespace zeep::soap
 

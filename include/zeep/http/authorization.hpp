@@ -25,9 +25,10 @@ namespace zeep::http
 
 /// when using authentication, this exception is thrown for unauthorized access
 
-struct unauthorized_exception : public std::exception
+struct unauthorized_exception : public zeep::exception
 {
 	unauthorized_exception(const std::string &realm)
+		: exception("unauthorized")
 	{
 		std::string::size_type n = realm.length();
 		if (n > sizeof(m_realm) - 1)
@@ -35,8 +36,6 @@ struct unauthorized_exception : public std::exception
 		realm.copy(m_realm, n);
 		m_realm[n] = 0;
 	}
-
-	virtual const char *what() const noexcept { return "unauthorized"; }
 
 	char m_realm[256]; ///< Realm for which the authorization failed
 };
@@ -87,7 +86,7 @@ class authentication_validation_base
 
 class digest_authentication_validation : public authentication_validation_base
 {
-public:
+  public:
 	digest_authentication_validation(const std::string& realm);
 	~digest_authentication_validation();
 
@@ -100,7 +99,7 @@ public:
 	/// result should be the MD5 hash of the string username + ':' + realm + ':' + password
 	virtual std::string get_hashed_password(const std::string &username) = 0;
 
-private:
+  private:
 	auth_info_list m_auth_info;
 	std::mutex m_auth_mutex;
 };
@@ -109,7 +108,7 @@ private:
 
 class simple_digest_authentication_validation : public digest_authentication_validation
 {
-public:
+  public:
 	struct user_password_pair
 	{
 		std::string username, password;
@@ -118,7 +117,7 @@ public:
 	simple_digest_authentication_validation(const std::string &realm, std::initializer_list<user_password_pair> validUsers);
 	virtual std::string get_hashed_password(const std::string &username);
 
-private:
+  private:
 	std::map<std::string, std::string> m_user_hashes;
 };
 
@@ -132,7 +131,7 @@ private:
 
 class jws_authentication_validation_base : public authentication_validation_base
 {
-public:
+  public:
 	/// \brief constructor
 	///
 	/// \param realm  The unique string that should be put in the 'sub' field
@@ -152,7 +151,7 @@ public:
 		return true;
 	}
 
-private:
+  private:
 	std::string m_sub, m_secret;
 };
 
@@ -160,7 +159,7 @@ private:
 
 class simple_jws_authentication_validation : public jws_authentication_validation_base
 {
-public:
+  public:
 	struct user_password_pair
 	{
 		std::string username, password;
@@ -171,7 +170,7 @@ public:
 
 	virtual el::element validate_username_password(const std::string &username, const std::string &password);
 
-private:
+  private:
 	std::map<std::string, std::string> m_user_hashes;
 };
 

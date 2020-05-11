@@ -10,9 +10,7 @@
 
 #include <zeep/el/element.hpp>
 
-namespace zeep
-{
-namespace el
+namespace zeep::el
 {	
 
 /// empty factory with a certain type
@@ -885,5 +883,5 @@ std::ostream& operator<<(std::ostream& os, const element& v)
 
 	return os;
 }
-}
-} // namespace zeep
+
+} // namespace zeep::el

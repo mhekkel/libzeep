@@ -45,7 +45,8 @@
 ///		t.join();
 ///
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 class preforked_server
 {
@@ -79,5 +80,4 @@ class preforked_server
 	std::mutex						m_lock;
 };
 
-}
 }

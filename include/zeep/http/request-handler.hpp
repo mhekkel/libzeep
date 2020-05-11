@@ -9,19 +9,16 @@
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>
 
-namespace zeep
-{
-namespace http
+namespace zeep::http
 {
 
 /// Simply an interface
 
 class request_handler
 {
-public:
+  public:
 	virtual void handle_request(boost::asio::ip::tcp::socket& socket,
 								request& req, reply& reply) = 0;
 };
 
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http
