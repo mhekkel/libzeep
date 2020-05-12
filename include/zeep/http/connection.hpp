@@ -38,7 +38,7 @@ class connection
 
 	boost::asio::ip::tcp::socket& get_socket() { return m_socket; }
 
-private:
+  private:
 	boost::asio::ip::tcp::socket m_socket;
 	request_parser m_request_parser;
 	request_handler& m_request_handler;

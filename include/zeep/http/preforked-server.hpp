@@ -17,7 +17,11 @@
 
 #if HTTP_SERVER_HAS_PREFORK
 
-/// preforked server support.
+namespace zeep::http
+{
+
+/// \brief class to create a preforked HTTP server
+///
 /// A preforked server means you have a master process that listens to a port
 /// and whenever a request comes in, the socket is passed to a client. This
 /// client will then process the request.
@@ -34,56 +38,60 @@
 /// constructs your server class in the child process.
 ///
 /// Example:
-///
+/// \code{.cpp}
 ///		class my_server {
-///						my_server(const string& my_param);
+///     public:
+///		  my_server(const string& my_param);
+///
 ///		....
 ///
-///		zeep::http::preforked_server\<my_server\> server(
-///         [=]() -> zeep::http::server* { return new my_server("my param value"); }
+///		zeep::http::preforked_server<my_server> server(
+///         []() { return new my_server("my param value"); }
 ///     );
-///		boost::thread t(
-///			server.run("0.0.0.0", 10333, 2);	// all addresses, port 10333 and two listener threads
+///
+///     // all addresses, port 10333 and two listener threads
+///		std::thread t(std::bind(&zeep::http::preforked_server::run, &server, "0.0.0.0", 10333, 2));
 ///
 ///		... // wait for signal to stop
 ///     
 ///		server.stop();
 ///		t.join();
-///
-
-namespace zeep::http
-{
+/// \endcode
 
 class preforked_server
 {
   public:
-	preforked_server(const preforked_server&) = delete;
-	preforked_server& operator=(const preforked_server&) = delete;
+    preforked_server(const preforked_server&) = delete;
+    preforked_server& operator=(const preforked_server&) = delete;
 
-	preforked_server(std::function<server*(void)> server_factory);
-	virtual ~preforked_server();
+    /// \brief constructor
+    ///
+    /// The constructor takes one argument, a function object that creates 
+    /// a server class instance.
+    preforked_server(std::function<server*(void)> server_factory);
+    virtual ~preforked_server();
 
-	/// forks child and starts listening, should be a separate thread
-	virtual void run(const std::string& address, short port, int nr_of_threads);
-	virtual void start();			///< signal the thread it can start listening:
-	virtual void stop();			///< stop the running thread
+    /// \brief forks child and starts listening, should be a separate thread
+    virtual void run(const std::string& address, short port, int nr_of_threads);
+    virtual void start();			///< signal the thread it can start listening:
+    virtual void stop();			///< stop the running thread
 
   private:
 
-	void fork_child();
+    void fork_child();
 
-	static bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket);
-	static void write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket);
+    static bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket);
+    static void write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket);
 
-	void handle_accept(const boost::system::error_code& ec);
+    void handle_accept(const boost::system::error_code& ec);
 
-	std::function<server*(void)>	m_constructor;
-	boost::asio::io_service			m_io_service;
-	boost::asio::ip::tcp::acceptor	m_acceptor;
-	boost::asio::ip::tcp::socket	m_socket;
-	int								m_fd;
-	int								m_pid;
-	std::mutex						m_lock;
+    std::function<server*(void)>	m_constructor;
+    boost::asio::io_service			m_io_service;
+    boost::asio::ip::tcp::acceptor	m_acceptor;
+    boost::asio::ip::tcp::socket	m_socket;
+    int								m_fd;
+    int								m_pid;
+    std::mutex						m_lock;
 };
 
 }

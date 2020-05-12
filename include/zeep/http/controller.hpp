@@ -15,15 +15,29 @@
 namespace zeep::http
 {
 
+/// \brief A base class for controllers, classes that handle a request
+///
+/// This concept is inspired by the Spring way of delegating the work to
+/// controller classes. In libzeep there are two major implementations of
+/// controllers: zeep::http::rest_controller and zeep::http::soap_controller
+///
+/// There can be multiple controllers in a web application, each is connected
+/// to a certain prefix-path. This is the leading part of the request URI.
+
 class controller
 {
   public:
-	controller(const std::string& prefixPath);
+	/// \brief constructor
+	///
+	/// \param prefix_path  The prefix path this controller is bound to
+
+	controller(const std::string& prefix_path);
 
 	virtual ~controller();
 
 	virtual bool handle_request(request& req, reply& rep);
 
+	/// \brief returns the defined prefix path
 	std::string get_prefix() const      { return m_prefix_path; }
 
   protected:

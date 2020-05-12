@@ -34,10 +34,12 @@ namespace zeep::http
 {
 
 // -----------------------------------------------------------------------
+/// \brief abstract base class for a resource loader
+///
 /// A resource loader is used to fetch the resources a webapp can serve
 /// This is an abstract base class, use either file_loader to load files
 /// from a 'docroot' directory or rsrc_loader to load files from compiled in
-/// resources.
+/// resources. (See https://github.com/mhekkel/mrc for more info on resources)
 
 class resource_loader
 {
@@ -47,10 +49,10 @@ class resource_loader
 	resource_loader(const resource_loader&) = delete;
 	resource_loader& operator=(const resource_loader&) = delete;
 
-	/// return last_write_time of \a file
+	/// \brief return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept = 0;
 
-	// basic loader, returns error in ec if file was not found
+	/// \brief basic loader, returns error in ec if file was not found
 	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept = 0;
 
   protected:
@@ -58,18 +60,23 @@ class resource_loader
 };
 
 // -----------------------------------------------------------------------
-/// Load the resources from disk
+/// \brief actual implementation of a zeep::http::resource_loader that loads files from disk
+/// 
+/// Load the resources from the directory specified in the docroot constructor parameter.
 
 class file_loader : public resource_loader
 {
   public:
+	/// \brief constructor
+	///
+	/// \param docroot	Path to the directory where the 'resources' are located
 	file_loader(const std::filesystem::path& docroot = ".")
 		: resource_loader(), m_docroot(docroot) {}
 	
-	/// return last_write_time of \a file
+	/// \brief return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;
 
-	// basic loader, returns error in ec if file was not found
+	/// \brief basic loader, returns error in ec if file was not found
 	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept;
 
   private:
@@ -77,17 +84,22 @@ class file_loader : public resource_loader
 };
 
 // -----------------------------------------------------------------------
-/// Load the resources from rsrc created with mrc (see https://github.com/mhekkel/mrc )
+/// \brief actual implementation of a zeep::http::resource_loader that loads resources from memory
+/// 
+/// Load the resources from resource data created with mrc (see https://github.com/mhekkel/mrc )
 
 class rsrc_loader : public resource_loader
 {
   public:
-	rsrc_loader(const std::string& docroot);
+	/// \brief constructor
+	/// 
+	/// The parameter is not used
+	rsrc_loader(const std::string&);
 	
-	/// return last_write_time of \a file
+	/// \brief return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;
 
-	// basic loader, returns error in ec if file was not found
+	/// \brief basic loader, returns error in ec if file was not found
 	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept;
 
   private:
@@ -96,6 +108,8 @@ class rsrc_loader : public resource_loader
 
 // --------------------------------------------------------------------
 
+/// \brief base class for a webapp
+///
 /// basic_webapp is used to create XHTML web pages based on the contents of a
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.
@@ -107,38 +121,64 @@ class basic_webapp
 
 	virtual ~basic_webapp();
 
+	/// \brief set the docroot for a webapp
 	virtual void set_docroot(const std::filesystem::path& docroot);
+
+	/// \brief get the current docroot of the webapp
 	std::filesystem::path get_docroot() const { return m_docroot; }
 
-	/// Set the authentication handler, basic_webapp takes ownership.
+	/// \brief Set the authentication handler
+	///
+	/// basic_webapp takes ownership.
 	/// \param authenticator	The object that will the authentication 
 	/// \param login			If true, this class will handle a POST to /login with username/password
 	void set_authenticator(authentication_validation_base* authenticator, bool login = false);
 
-	/// Create an error reply for the error containing a validation header
+	/// \brief Create an error reply for the error containing a validation header
+	///
+	/// When a authentication violation is encountered, this function is called to generate
+	/// the appropriate reply.
+	/// \param req		The request that triggered this call
+	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
+	/// \param realm	The name of the protected area, might be shown to the user
+	/// \param rep		Write the reply in this object
 	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep);
 
-	/// Create an error reply for the error
+	/// \brief Create an error reply for the error
+	///
+	/// An error should be returned with HTTP status code \a status. This method will create a default error page.
+	/// \param req		The request that triggered this call
+	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
+	/// \param realm	The name of the protected area, might be shown to the user
+	/// \param rep		Write the reply in this object
 	virtual void create_error_reply(const request& req, status_type status, reply& rep);
 
-	/// Create an error reply for the error with an additional message for the user
+	/// \brief Create an error reply for the error with an additional message for the user
+	///
+	/// An error should be returned with HTTP status code \a status and additional information \a message.
+	/// This method will create a default error page.
+	/// \param req		The request that triggered this call
+	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
+	/// \param realm	The name of the protected area, might be shown to the user
+	/// \param rep		Write the reply in this object
 	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
 
-	/// Dispatch and handle the request
+	/// \brief Dispatch and handle the request
 	virtual void handle_request(request& req, reply& rep);
 
 	// --------------------------------------------------------------------
 	// tag processor support
 
-	/// process all the tags in this node
+	/// \brief process all the tags in this node
 	virtual void process_tags(xml::node* node, const scope& scope);
 
-	/// CSRF token
+	/// \brief get the CSRF token in the request \a req
 	std::string get_csrf_token(const request& req) const
 	{
 		return req.get_cookie("csrf-token");
 	}
 
+	/// \brief get the CSRF token from the request burried in \a scope
 	std::string get_csrf_token(const scope& scope) const
 	{
 		return get_csrf_token(scope.get_request());
@@ -148,19 +188,19 @@ class basic_webapp
 
 	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
 
-	/// process only the tags with the specified namespace prefixes
+	/// \brief process only the tags with the specified namespace prefixes
 	virtual void process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces);
 
   public:
 
-	/// Use to register a new tag_processor and couple it to a namespace
+	/// \brief Use to register a new tag_processor and couple it to a namespace
 	template<typename TagProcessor>
 	void register_tag_processor(const std::string& ns)
 	{
 		m_tag_processor_creators.emplace(ns, [](const std::string& ns) { return new TagProcessor(ns.c_str()); });
 	}
 
-	/// Create a tag_processor
+	/// \brief Create a tag_processor
 	tag_processor* create_tag_processor(const std::string& ns) const
 	{
 		return m_tag_processor_creators.at(ns)(ns);
@@ -176,21 +216,22 @@ class basic_webapp
 
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
+	/// \code{.cpp}
 	///
 	///   mount("page", boost::bind(&page_handler, this, _1, _2, _3));
-	///
+	/// \endcode
 	/// Where page_handler is defined as:
-	///
+	/// \code{.cpp}
 	/// void session_server::page_handler(const request& request, const scope& scope, reply& reply);
-	///
+	/// \endcode
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
-	/// Supported operators are *, ** and ?. As an addition curly bracketed optional elements are allowed
-	/// Also, patterns ending in / are interpreted as ending in /**
+	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
+	/// Also, patterns ending in / are interpreted as ending in /\*\*
 	/// 
-	/// e.g.
-	/// **/*.js           matches x.js, a/b/c.js, etc
-	/// {css,scripts}/    matches css/1/first.css and scripts/index.js
-
+	/// path             | matches                                     
+	/// ---------------- | --------------------------------------------
+	/// `**``/``*.js`     | matches x.js, a/b/c.js, etc                 
+	/// `{css,scripts}/` | matches css/1/first.css and scripts/index.js
 
 	template<class Class>
 	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
@@ -284,26 +325,26 @@ class basic_webapp
 		}
 	}
 
-	/// Default handlers for serving files out of our doc root
+	/// \brief Default handler for serving files out of our doc root
 	virtual void handle_file(const request& request, const scope& scope, reply& reply);
 
   public:
 
-	/// return last_write_time of \a file
+	/// \brief return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept = 0;
 
-	// basic loader, returns error in ec if file was not found
+	/// \brief return error in ec if file was not found
 	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept = 0;
 
   public:
 
-	/// Use load_template to fetch the XHTML template file
+	/// \brief Use load_template to fetch the XHTML template file
 	virtual void load_template(const std::string& file, xml::document& doc);
 
-	/// create a reply based on a template
+	/// \brief create a reply based on a template
 	virtual void create_reply_from_template(const std::string& file, const scope& scope, reply& reply);
 
-	/// Initialize the scope object
+	/// \brief Initialize the scope object
 	virtual void init_scope(scope& scope);
 
   protected:

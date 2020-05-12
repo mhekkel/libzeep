@@ -21,8 +21,9 @@ class basic_webapp;
 // --------------------------------------------------------------------
 //
 
-/// Base class for tag_processor. Note that this class should be light
-/// in construction, we create it every time a page is rendered.
+/// \brief Abstract base class for tag_processor. 
+///
+/// Note that this class should be light in construction, we create it every time a page is rendered.
 
 class tag_processor
 {
@@ -32,11 +33,21 @@ class tag_processor
 
 	virtual ~tag_processor() = default;
 
-	/// process xml parses the XHTML and fills in the special tags and evaluates the el constructs
+	/// \brief process xml parses the XHTML and fills in the special tags and evaluates the el constructs
+	///
+	/// This function is called to modify the xml tree in \a node
+	///
+	/// \param node		The XML zeep::xml::node (element) to manipulate
+	/// \param scope	The zeep::http::scope containing the variables and request
+	/// \param dir		The path to the docroot, the directory containing the XHTML templates
+	/// \param webapp	The instance of webapp that called this function
 	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_webapp& webapp) = 0;
 
   protected:
 
+	/// \brief constructor
+	///
+	/// \param ns	Then XML namespace for the tags and attributes that are processed by this tag_processor 
 	tag_processor(const char* ns)
 		: m_ns(ns) {}
 
@@ -45,17 +56,22 @@ class tag_processor
 
 // --------------------------------------------------------------------
 
-/// At tag_processor compatible with the old version of libzeep. Works
+/// \brief A tag_processor compatible with the old version of libzeep. Works
 /// on tags only, not on attributes. Also parses any occurrence of ${}.
 /// For newer code, please consider using the v2 version only.
 
 class tag_processor_v1 : public tag_processor
 {
   public:
+	/// \brief default namespace for this processor
 	static constexpr const char* ns() { return "http://www.hekkelman.com/libzeep/m1"; }
 
+	/// \brief constructor
+	///
+	/// By default the namespace for the v1 processor is the one in ns()
 	tag_processor_v1(const char* ns = tag_processor_v1::ns());
 
+	/// \brief actual implementation of the tag processing.
 	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_webapp& webapp);
 
   protected:
@@ -82,16 +98,23 @@ class tag_processor_v1 : public tag_processor
 
 // --------------------------------------------------------------------
 
+/// \brief version two of the tag_processor in libzeep
+///
 /// This is the new tag_processor. It is designed to look a bit like
 /// Thymeleaf (https://www.thymeleaf.org/)
 /// This processor works on attributes mostly, but can process inline
 /// el constructs as well.
+///
+/// The documentention contains a section describing all the
+/// xml tags and attributes this processor handles.
 
 class tag_processor_v2 : public tag_processor
 {
   public:
+	/// \brief default namespace for this processor
 	static constexpr const char* ns() { return "http://www.hekkelman.com/libzeep/m2"; }
 
+	/// \brief each handler returns a code telling the processor what to do with the node
 	enum class AttributeAction
 	{
 		none, remove, replace
@@ -99,11 +122,13 @@ class tag_processor_v2 : public tag_processor
 
 	using attr_handler = std::function<AttributeAction(xml::element*, xml::attribute*, scope&, std::filesystem::path, basic_webapp& webapp)>;
 
+	/// \brief constructor with default namespace
 	tag_processor_v2(const char* ns = tag_processor_v2::ns());
 
-	/// process xml parses the XHTML and fills in the special tags and evaluates the el constructs
+	/// \brief process xml parses the XHTML and fills in the special tags and evaluates the el constructs
 	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_webapp& webapp);
 
+	/// \brief It is possible to extend this processor with custom handlers
 	void register_attr_handler(const std::string& attr, attr_handler&& handler)
 	{
 		m_attr_handlers.emplace(attr, std::forward<attr_handler>(handler));

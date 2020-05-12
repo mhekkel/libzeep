@@ -9,7 +9,7 @@
 	This document contains the reference
 ]
 
-[chapter Reference
+[reference Reference
     [quickbook 1.7]
     [id libzeep.ref]
 ]

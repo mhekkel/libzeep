@@ -27,7 +27,6 @@ namespace zeep::http
 using object = ::zeep::el::element;
 
 class scope;
-/// This zeep::http::el::object class is a bridge to the `el` expression language.
 
 /// \brief Process the text in \a text and return `true` if the result is
 ///        not empty, zero or false.
@@ -58,15 +57,6 @@ std::string process_el_2(const scope& scope, const std::string& text);
 /// \param result The result of the script
 object evaluate_el(const scope& scope, const std::string& text);
 
-// /// \brief Process the text in \a text and replace it with the result
-// ///
-// ///	The expressions found in \a text are processed and the output of
-// /// 				the processing is used as a replacement value for the expressions.
-// /// \param scope  The scope for the el scripts
-// /// \param text   The text optionally containing el scripts.
-// /// \return       Returns true if \a text was changed.
-// bool evaluate_el(const scope& scope, const std::string& text);
-
 /// \brief Process the text in \a text and return a list of name/value pairs
 ///
 ///	The expressions found in \a text are processed and the result is
@@ -91,35 +81,80 @@ bool evaluate_el_assert(const scope& scope, const std::string& text);
 
 // --------------------------------------------------------------------
 
+/// \brief The class that stores variables for the current scope
+///
+/// When processing tags and in expression language constructs we use
+/// variables. These are stored in scope instances.
+
 class scope
 {
   public:
+
+	/// \brief simple constructor, used where there's no request available
 	scope();
+
+	/// \brief constructor used in a HTTP request context
+	///
+	/// \param req	The incomming HTTP request
 	scope(const http::request& req);
+
+	/// \brief chaining constructor
+	///
+	/// Scopes can be nested, introducing new namespaces
+	/// \param next	The next scope up the chain.
 	explicit scope(const scope& next);
 
+	/// \brief put variable in the scope with \a name and \a value
 	template <typename T>
 	void put(const std::string& name, const T& value);
 
+	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
 	template <typename ForwardIterator>
 	void put(const std::string& name, ForwardIterator begin, ForwardIterator end);
 
+	/// \brief return variable with \a name 
+	///
+	/// \param name				The name of the variable to return
+	/// \param includeSelected	If this is true, and the variable was not found as a regular variable
+	///							in the current scope, the selected objects will be search for members
+	///							with \a name This is used by the tag processing lib v2 in _z2:object_
+	/// \return					The value found or null if there was no such variable.
 	const object& lookup(const std::string& name, bool includeSelected = false) const;
+
+	/// \brief return variable with \a name 
 	const object& operator[](const std::string& name) const;
 
+	/// \brief return variable with \a name 
+	///
+	/// \param name				The name of the variable to return
+	/// \param includeSelected	If this is true, and the variable was not found as a regular variable
+	///							in the current scope, the selected objects will be search for members
+	///							with \a name This is used by the tag processing lib v2 in _z2:object_
+	/// \return					The value found or null if there was no such variable.
 	object& lookup(const std::string& name);
+
+	/// \brief return variable with \a name 
 	object& operator[](const std::string& name);
 
+	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
 	const http::request& get_request() const;
 
-    // current selected object
+    /// \brief select object \a o , used in z2:object constructs
     void select_object(const object& o);
 
-	// a nodeset for a selector, cached to avoid recusive expansion
+	/// \brief a nodeset for a selector, cached to avoid recusive expansion
+	///
+	/// In tag processors it is sometimes needed to take a selection of zeep::xml::nodes
+	/// and reuse these, as a copy when inserting templates e.g.
 	using node_set_type = std::vector<std::unique_ptr<xml::node>>;
 
+	/// \brief return the node_set_type with name \a name
 	node_set_type get_nodeset(const std::string& name) const;
+
+	/// \brief store node_set_type \a nodes with name \a name
 	void set_nodeset(const std::string& name, node_set_type&& nodes);
+
+	/// \brief return whether a node_set with name \a name is stored
 	bool has_nodeset(const std::string& name) const
 	{
 		return m_nodesets.count(name) or (m_next != nullptr and m_next->has_nodeset(name));

@@ -52,6 +52,10 @@ std::string get_status_text(status_type status);
 /// Return the string describing the status_type in more detail
 std::string get_status_description(status_type status);
 
+/// \brief the class containing all to generate a HTTP reply
+///
+/// Create a HTTP reply, should be either HTTP 1.0 or 1.1
+
 class reply
 {
   public:
@@ -103,11 +107,14 @@ class reply
 	void set_content(std::istream* data,
 									 const std::string& contentType);
 
+	/// return the content, only useful if the content was set with
+	/// some constant string data. 
 	std::string get_content() const
 	{
 		return m_content;
 	}
 
+	/// return the content of the reply as an array of boost::asio::const_buffer objects
 	std::vector<boost::asio::const_buffer> to_buffers() const;
 
 	/// for istream data, if the returned buffer array is empty, the data is done
@@ -126,6 +133,7 @@ class reply
 	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
 	size_t size() const;
 
+	/// for debugging
 	friend std::ostream& operator<<(std::ostream& os, const reply& rep);
 
   private:

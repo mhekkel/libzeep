@@ -27,14 +27,10 @@
 [def __document__child__ [memberref zeep::xml::document::child `child`]]
 [def __element__ [classref zeep::xml::element `element`]]
 
-
 [include introduction.qbk]
 [include lib-generic.qbk]
 [include lib-xml.qbk]
-
-
 [include reference.qbk]
-
 
 [/
 

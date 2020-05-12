@@ -19,9 +19,9 @@
 namespace zeep::http
 {
 
-/// The libzeep HTTP server implementation. Based on code found in boost::asio.
-
 class connection;
+
+/// \brief The libzeep HTTP server implementation. Based on code found in boost::asio.
 
 class server : public request_handler
 {
@@ -31,42 +31,57 @@ class server : public request_handler
 	server(const server&) = delete;
 	server& operator=(const server&) = delete;
 
-	/// Add controllers
+	/// \brief Add controller to the list of controllers
+	///
+	/// When a request is received, the list of controllers get a chance
+	/// of handling it, in the order of which they were added to this server.
+	/// If none of the controller handle the request the default handle_request
+	/// will be called.
 	void add_controller(controller* c);
 
-	/// Bind the server to address \a address and port \a port
+	/// \brief Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address,
 					  unsigned short port);
 
 	virtual ~server();
 
+	/// \brief Run as many as \a nr_of_threads threads simultaneously
 	virtual void run(int nr_of_threads);
 
+	/// \brief Stop all threads and stop listening
 	virtual void stop();
 
-	/// to extend the log entry for a current request, use this ostream:
+	/// \brief to extend the log entry for a current request, use this ostream:
 	static std::ostream& get_log();
 
-	/// log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
+	/// \brief log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
 	void set_log_forwarded(bool v) { m_log_forwarded = v; }
 
+	/// \brief returns the address as specified in bind
 	std::string get_address() const { return m_address; }
+
+	/// \brief returns the port as specified in bind
 	unsigned short get_port() const { return m_port; }
 
-	/// get_io_service has to be public since we need it to call notify_fork from child code
+	/// \brief get_io_service has to be public since we need it to call notify_fork from child code
 	boost::asio::io_service& get_io_service() { return m_io_service; }
 
   protected:
+
+	/// \brief this will be called when none of the controllers has intercepted the request
+	///
+	/// subclasses should implement this to do something useful since the default is to return
+	/// the HTTP not_found result;
 	virtual void handle_request(request& req, reply& rep);
 
-	/// the default entry logger
+	/// \brief the default entry logger
 	virtual void log_request(const std::string& client,
 							 const request& req, const reply& rep,
 							 const boost::posix_time::ptime& start,
 							 const std::string& referer, const std::string& userAgent,
 							 const std::string& entry);
 
-private:
+  private:
 	friend class preforked_server_base;
 
 	virtual void handle_request(boost::asio::ip::tcp::socket& socket,
