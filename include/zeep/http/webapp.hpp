@@ -106,10 +106,12 @@ class basic_webapp
 	virtual void set_docroot(const std::filesystem::path& docroot);
 	std::filesystem::path get_docroot() const { return m_docroot; }
 
-	/// Set the authentication handler, basic_webapp takes ownership.
+	/// \brief Add a new authentication handler
+	///
+	/// basic_webapp takes ownership.
 	/// \param authenticator	The object that will the authentication 
-	/// \param login			If true, this class will handle a POST to /login with username/password
-	void set_authenticator(authentication_validation_base* authenticator, bool login = false);
+	/// \param login			If true, handlers will be added for /logout and GET and POST /login
+	void add_authenticator(authentication_validation_base* authenticator, bool login = false);
 
 	/// Create an error reply for the error containing a validation header
 	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep);
@@ -166,7 +168,7 @@ class basic_webapp
 
   public:
 
-	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
+	/// \brief webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 
 	using handler_type = std::function<void(const request& request, const scope& scope, reply& reply)>;
 
@@ -188,6 +190,7 @@ class basic_webapp
 	/// {css,scripts}/    matches css/1/first.css and scripts/index.js
 
 
+	/// \brief mount a callback on URI path \a path for any HTTP method
 	template<class Class>
 	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -196,6 +199,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for HTTP GET method
 	template<class Class>
 	void mount_get(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -204,6 +208,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for HTTP POST method
 	template<class Class>
 	void mount_post(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -212,6 +217,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for HTTP method \a method
 	template<class Class>
 	void mount(const std::string& path, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -220,6 +226,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for any HTTP method, and enforce authentication specified by \a realm
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -228,6 +235,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for HTTP method GET, and enforce authentication specified by \a realm
 	template<class Class>
 	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -236,6 +244,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for HTTP method POST, and enforce authentication specified by \a realm
 	template<class Class>
 	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -244,6 +253,7 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a callback on URI path \a path for the HTTP method \a method, and enforce authentication specified by \a realm
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
@@ -252,12 +262,13 @@ class basic_webapp
 			{ (server->*callback)(request, scope, reply); });
 	}
 
+	/// \brief mount a handler on URI path \a path for HTTP method \a method
 	void mount(const std::string& path, method_type method, handler_type handler)
 	{
 		mount(path, "", method, std::move(handler));
 	}
 
-	/// version of mount that requires authentication
+	/// \brief mount a handler on URI path \a path for HTTP method \a method, and enforce authentication specified by \a realm
 	void mount(const std::string& path, const std::string& realm, method_type method, handler_type handler)
 	{
 		auto mp = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
@@ -304,8 +315,19 @@ class basic_webapp
 
   protected:
 
+	/// \brief default GET login handler, will simply return the login page
+	///
+	/// This is the default handler for `GET /login`. If you want to provide a custom login
+	/// page, you have to override this method.
 	virtual void handle_get_login(const request& request, const scope& scope, reply& reply);
+
+	/// \brief default POST login handler, will process the credentials from the form in the login page
+	///
+	/// This is the default handler for `POST /login`. If you want to provide a custom login
+	/// procedure, you have to override this method.
 	virtual void handle_post_login(const request& request, const scope& scope, reply& reply);
+
+	/// \brief default logout handler, will return a redirect to the base URL and remove the authentication Cookie
 	virtual void handle_logout(const request& request, const scope& scope, reply& reply);
 
   private:
@@ -324,7 +346,7 @@ class basic_webapp
 	std::string m_ns;
 	std::filesystem::path m_docroot;
 
-	std::unique_ptr<authentication_validation_base> m_authenticator;
+	std::vector<authentication_validation_base*> m_authentication_validators;
 };
 
 // --------------------------------------------------------------------

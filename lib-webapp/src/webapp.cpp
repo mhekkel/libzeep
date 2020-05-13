@@ -68,11 +68,13 @@ basic_webapp::basic_webapp()
 
 basic_webapp::~basic_webapp()
 {
+	for (auto a: m_authentication_validators)
+		delete a;
 }
 
-void basic_webapp::set_authenticator(authentication_validation_base* authenticator, bool login)
+void basic_webapp::add_authenticator(authentication_validation_base* authenticator, bool login)
 {
-	m_authenticator.reset(authenticator);
+	m_authentication_validators.push_back(authenticator);
 
 	if (login)
 	{
@@ -158,32 +160,38 @@ void basic_webapp::handle_request(request& req, reply& rep)
 
 			el::element credentials;
 
-			if (m_authenticator)
-			{
-				credentials = m_authenticator->validate_authentication(req);
-
-				if (credentials)
-				{
-					if (credentials.is_string())
-						req.username = credentials.as<std::string>();
-					else if (credentials.is_object())
-						req.username = credentials["username"].as<std::string>();
-
-					scope.put("credentials", credentials);
-				}
-			}
-
 			// Do authentication here, if needed
 			if (not handler->realm.empty())
 			{
-				if (not m_authenticator)
-					throw std::logic_error("No authenticator provided but handler contains a realm");
+				auto avi = std::find_if(m_authentication_validators.begin(), m_authentication_validators.end(),
+					[handler](auto av) { return av->get_realm() == handler->realm; });
 
-				if (m_authenticator->get_realm() != handler->realm)
-					throw std::logic_error("Invalid realm for handler/authenticator");
+				if (avi == m_authentication_validators.end())	// logic error
+					throw std::logic_error("No authenticator provided for realm " + handler->realm);
+
+				credentials = (*avi)->validate_authentication(req);
 
 				if (not credentials)
 					throw unauthorized_exception(handler->realm);
+			}
+			else	// not a protected area, but see if there's a valid login anyway
+			{
+				for (auto av: m_authentication_validators)
+				{
+					credentials = av->validate_authentication(req);
+					if (credentials)
+						break;
+				}
+			}
+
+			if (credentials)
+			{
+				if (credentials.is_string())
+					req.username = credentials.as<std::string>();
+				else if (credentials.is_object())
+					req.username = credentials["username"].as<std::string>();
+
+				scope.put("credentials", credentials);
 			}
 
 			handler->handler(req, scope, rep);
@@ -244,9 +252,9 @@ void basic_webapp::handle_post_login(const request& request, const scope& scope,
 		auto username = request.get_parameter("username");
 		auto password = request.get_parameter("password");
 
-		if (m_authenticator)
+		for (auto av: m_authentication_validators)
 		{
-			auto credentials = m_authenticator->validate_username_password(username, password);
+			auto credentials = av->validate_username_password(username, password);
 			if (credentials)
 			{
 				auto uri = request.get_parameter("uri");
@@ -256,9 +264,10 @@ void basic_webapp::handle_post_login(const request& request, const scope& scope,
 					reply = reply::redirect(uri);
 
 				credentials["iat"] = std::to_string(std::time(nullptr));
-				credentials["sub"] = m_authenticator->get_realm();
+				credentials["sub"] = av->get_realm();
 
-				m_authenticator->add_authorization_headers(reply, credentials);
+				av->add_authorization_headers(reply, credentials);
+				break;
 			}
 		}
 		break;
@@ -343,8 +352,13 @@ void basic_webapp::create_unauth_reply(const request& req, bool stale, const std
 	rep.set_content(doc);
 	rep.set_status(unauthorized);
 
-	if (m_authenticator)
-		m_authenticator->add_challenge_headers(rep, stale);
+	for (auto av: m_authentication_validators)
+	{
+		if (av->get_realm() != realm)
+			continue;
+		
+		av->add_challenge_headers(rep, stale);
+	}
 }
 
 void basic_webapp::create_error_reply(const request& req, status_type status, reply& rep)
