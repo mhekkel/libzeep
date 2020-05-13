@@ -5,8 +5,6 @@
  Distributed under the Boost Software License, Version 1.0.
     (See accompanying file LICENSE_1_0.txt or copy at
           http://www.boost.org/LICENSE_1_0.txt)
-
-    This document is for libzeep-generic
 ]
 
 [chapter XML
@@ -69,7 +67,7 @@ For conversion of enum's you can use the __value_serializer__ specialization for
 
 [section:xpath XPath 1.0]
 
-Libzeep comes with a [@http://www.w3.org/TR/xpath/ XPath 1.0] implementation. You can use this to locate elements in a DOM tree easily. For a complete description of the XPath specification you should read the documentation at e.g. [@http://www.w3.org/TR/xpath/] or [@http://www.w3schools.com/xpath/default.asp].
+Libzeep comes with a [@http://www.w3.org/TR/xpath/ XPath 1.0] implementation. You can use this to locate elements in a DOM tree easily. For a complete description of the XPath specification you should read the documentation at e.g. [@http://www.w3.org/TR/xpath/] or [@https://www.w3schools.com/xml/xpath_intro.asp].
 
 The way it works in libzeep is that you can call `find()` on an __element__ object and it will return a `zeep::xml::element_set` object which is actually a `std::list` of __element__ pointers of the elements that conform to the specification in XPath passed as parameter to `find()`. An alternative method `find_first()` can be used to return only the first element.
 
@@ -79,23 +77,10 @@ An example where we look for the first person in our test file with the lastname
 
 [heading variables]
 
-XPath constructs can reference variables. This is particularly useful if you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is. In that case, suppose the __document__ doc contains:
-[teletype]
+XPath constructs can reference variables. This is particularly useful if you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is. See the following example.
 
-	<bar xmlns:z="https://www.hekkelman.com/libzeep">
-		<z:foo>foei</z:foo>
-	</bar>
+[import ./examples/xpath-sample.cpp]
+[xpath_example]
 
-And you would like to have the foo element:
-
-[c++]
-
-	zeep::xml::context ctx;
-	ctx.set("ns", "https://www.hekkelman.com/libzeep");
-
-	for (auto n: doc.find(R"(//attribute::*[namespace-uri() = $ns and local-name() = 'foo'])"))
-	{
-		...
-	}
 
 [endsect]
