@@ -9,7 +9,7 @@
     This document is for libzeep-generic
 ]
 
-[chapter JSON
+[chapter REST
     [quickbook 1.7]
     [id libzeep.el]
 ]

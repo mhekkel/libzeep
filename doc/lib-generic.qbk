@@ -14,7 +14,7 @@
     [id libzeep.generic]
 ]
 
-[section:descr The libzeep-generic library]
+[section:descr Introduction]
 
 Originally libzeep came as a single library. But if you only need the XML functionality it might not be very useful to include all the networking code for the HTTP server. And so the libraries were split into modules that can be used independently from each other. But some of the routines were used by all other libraries and thus a generic library was added for just those.
 

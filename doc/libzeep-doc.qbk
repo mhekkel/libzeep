@@ -41,6 +41,10 @@
 [include lib-generic.qbk]
 [include lib-xml.qbk]
 [include lib-el.qbk]
+[include lib-http.qbk]
+[include lib-webapp.qbk]
+[include lib-rest.qbk]
+[include lib-soap.qbk]
 [include reference.qbk]
 
 [/

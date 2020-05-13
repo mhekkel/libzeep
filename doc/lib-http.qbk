@@ -9,13 +9,12 @@
     This document is for libzeep-generic
 ]
 
-[chapter JSON
+[chapter HTTP
     [quickbook 1.7]
     [id libzeep.el]
 ]
 
 [section:descr Introduction]
 
-This library is called el since the objects were originally only used in the expression language implementation of the web application module.
 
 [endsect:descr]
