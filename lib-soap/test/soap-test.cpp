@@ -25,7 +25,7 @@ struct my_test_controller : public zh::soap_controller
 {
 	my_test_controller() : zh::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
 	{
-		service("testService");
+		set_service("testService");
 
 		map_action("Test", &my_test_controller::test_method_1, "x");
 		map_action("Test2", &my_test_controller::test_method_2, "s");

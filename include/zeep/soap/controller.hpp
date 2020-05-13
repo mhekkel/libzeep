@@ -21,9 +21,23 @@
 namespace zeep::http
 {
 
+/// \brief class that helps with handling SOAP requests
+///
+/// This controller will handle SOAP requests automatically handing the packing
+/// and unpacking of XML envelopes.
+///
+/// To use this, create a subclass and add some methods that should be exposed.
+/// Then _map_ these methods on a path that optionally contains parameter values.
+///
+/// See the chapter on SOAP controllers in the documention for more information.
+
 class soap_controller : public controller
 {
   public:
+	/// \brief constructor
+	///
+	/// \param prefix_path	This is the leading part of the request URI for each mount point
+	/// \param ns			This is the XML Namespace for our SOAP calls
 	soap_controller(const std::string& prefix_path, const std::string& ns)
 		: controller(prefix_path)
 		, m_ns(ns)
@@ -40,18 +54,22 @@ class soap_controller : public controller
 			delete mp;
 	}
 
-	/// \b Set the external address at which this service is visible
-	void location(const std::string& location)
+	/// \brief Set the external address at which this service is visible
+	void set_location(const std::string& location)
 	{
 		m_location = location;
 	}
 
 	/// \brief Set the service name
-	void service(const std::string& service)
+	void set_service(const std::string& service)
 	{
 		m_service = service;
 	}
 
+	/// \brief map a SOAP action to \a callback using \a names for mapping the arguments
+	///
+	/// The method in \a callback should be a method of the derived class having as many
+	/// arguments as the number of specified \a names.
 	template<typename Callback, typename... ArgNames>
 	void map_action(const char* actionName, Callback callback, ArgNames... names)
 	{

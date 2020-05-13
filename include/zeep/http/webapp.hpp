@@ -218,7 +218,7 @@ class basic_webapp
 	/// Usually called like this:
 	/// \code{.cpp}
 	///
-	///   mount("page", boost::bind(&page_handler, this, _1, _2, _3));
+	///   mount("page", std::bind(&page_handler, this, _1, _2, _3));
 	/// \endcode
 	/// Where page_handler is defined as:
 	/// \code{.cpp}

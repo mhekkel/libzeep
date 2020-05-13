@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(webapp_3)
 		{ "scott", "tiger" }
 	});
 
-	app.set_authenticator(validator, "mijn-realm");
+	app.add_authenticator(validator, "mijn-realm");
 	app.mount("test", "mijn-realm", &my_webapp::handle_test);
 
 	zh::request req;
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 		{ "scott", "tiger" }
 	});
 
-	app.set_authenticator(validator, true);
+	app.add_authenticator(validator, true);
 	app.mount("test", "mijn-realm", &my_webapp::handle_test);
 
 	zh::request req;
