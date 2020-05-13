@@ -40,6 +40,7 @@
 [include introduction.qbk]
 [include lib-generic.qbk]
 [include lib-xml.qbk]
+[include lib-el.qbk]
 [include reference.qbk]
 
 [/
