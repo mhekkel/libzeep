@@ -50,25 +50,25 @@ unicode pop_last_char(std::string& s);
 template<typename Iter>
 std::tuple<unicode,Iter> get_first_char(Iter ptr);
 
-/// our own implementation of iequals: compares \a a with \a b case-insensitive
+/// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 bool iequals(const std::string& a, const std::string& b);
 
-/// Maybe not the correct location, but here's a to_string equivalent returning a hexadecimal representation.
+/// \brief Maybe not the correct location, but here's a to_string equivalent returning a hexadecimal representation.
 std::string to_hex(int i);
 
-/// Decode a URL using the RFC rules
+/// \brief Decode a URL using the RFC rules
 /// \param s  The URL that needs to be decoded
 /// \return	  The decoded URL
 std::string decode_url(const std::string& s);
 
-/// Encode a URL using the RFC rules
+/// \brief Encode a URL using the RFC rules
 /// \param s  The URL that needs to be encoded
 /// \return	  The encoded URL
 std::string encode_url(const std::string& s);
 
 // inlines
 
-/// Append a single unicode character to an utf-8 string
+/// \brief Append a single unicode character to an utf-8 string
 inline void append(std::string& s, unicode uc)
 {
 	if (uc < 0x080)
@@ -102,6 +102,7 @@ inline void append(std::string& s, unicode uc)
 	}
 }
 
+/// \brief remove the last unicode character from an utf-8 string
 inline unicode pop_last_char(std::string& s)
 {
 	unicode result = 0;
@@ -142,6 +143,7 @@ inline unicode pop_last_char(std::string& s)
 }
 
 // this code only works if the input is valid utf-8
+/// \brief return the first unicode and the advanced pointer from a string
 template<typename Iter>
 std::tuple<unicode,Iter> get_first_char(Iter ptr)
 {

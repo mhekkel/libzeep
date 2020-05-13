@@ -15,31 +15,87 @@
 ]
 
 [section:descr The libzeep-xml library]
+
 The core of this library is a validating XML parser with DTD processing and all. On top of this are implemented an API for manipulating XML data in a DOM like fashion and a serialization API. As a bonus there's also an XPath implementation, albeit this is limited to XPath 1.0.
 
 [endsect:descr]
 
 [section:api The API]
+
 libzeep uses a modern C++ way of accessing and manipulating data. To give an idea have a look at the following code.
 
 [import ./examples/synopsis-xml.cpp]
 [synopsis_xml_main]
 
-[endsect:api]
+[heading XML nodes]
 
+The class __node__ is the base class for all classes in the DOM API. The class is not copy constructable and subclasses use move semantics to offer a simple API while still being memory and performance efficient. Nodes can have siblings and a parent but no children.
+
+The class __element__ is the main class, it implements a full XML node with child nodes and attributes. The children are stored as a linked list and same goes for the attributes.
+
+The class __text__ contains the text between XML elements. A __cdata__ class is derived from __text__ and other possible child nodes for an XML element are __processing_instruction__ and __comment__.
+
+XML elements also contain attributes, stored in the __attribute__ class. Namespace information is stored in these attributes as well.
+
+The class __document__ derives from __element__. Documents can load from and write to files and of course document can have only one child element.
+
+[endsect:api]
 
 [section:ser Serialization]
 
+An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
+
+[import ./examples/serialize-xml.cpp]
+[synopsis_xml_serialize]
+
+[heading attributes]
+
+Suppose you want to serialize a value into a XML attribute, you would have to replace `zeep::make_nvp` with `zeep::make_attribute_nvp`.
+
+[heading custom types]
+
+What happens during serialization is deconstruction of structured data types into parts that can be converted into text strings. For this final conversion there are __value_serializer__ helper classes. __value_serializer__ is a template and specializations for the default types are given in `<zeep/value_serializer.hpp>`. You can create your own specializations for this class for custom data types, look at the one for `boost::posix_time::ptime` for inspiration.
+
+[heading enums]
+
+For conversion of enum's you can use the __value_serializer__ specialization for enums: [c++]
+
+	enum class MyEnum { FOO, BAR };
+	__value_serializer__<MyEnum>::instance()
+		("foo", MyEnum::FOO)
+		("bar", MyEnum::BAR);
 
 [endsect:ser]
 
+[section:xpath XPath 1.0]
 
-[section:xpath XPath]
+Libzeep comes with a [@http://www.w3.org/TR/xpath/ XPath 1.0] implementation. You can use this to locate elements in a DOM tree easily. For a complete description of the XPath specification you should read the documentation at e.g. [@http://www.w3.org/TR/xpath/] or [@http://www.w3schools.com/xpath/default.asp].
 
+The way it works in libzeep is that you can call `find()` on an __element__ object and it will return a `zeep::xml::element_set` object which is actually a `std::list` of __element__ pointers of the elements that conform to the specification in XPath passed as parameter to `find()`. An alternative method `find_first()` can be used to return only the first element.
 
-[endsect:xpath]
+An example where we look for the first person in our test file with the lastname Jones:
 
-[section:parser The parser]
+	__element__* jones = doc.child()->find_first("//person[lastname='Jones']");
 
+[heading variables]
 
-[endsect:parser]
+XPath constructs can reference variables. This is particularly useful if you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is. In that case, suppose the __document__ doc contains:
+[teletype]
+
+	<bar xmlns:z="https://www.hekkelman.com/libzeep">
+		<z:foo>foei</z:foo>
+	</bar>
+
+And you would like to have the foo element:
+
+[c++]
+
+	zeep::xml::context ctx;
+	ctx.set("ns", "https://www.hekkelman.com/libzeep");
+
+	for (auto n: doc.find(R"(//attribute::*[namespace-uri() = $ns and local-name() = 'foo'])"))
+	{
+		...
+	}
+
+[endsect]

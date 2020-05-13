@@ -26,6 +26,16 @@
 [def __document__ [classref zeep::xml::document `zeep::xml::document`]]
 [def __document__child__ [memberref zeep::xml::document::child `child`]]
 [def __element__ [classref zeep::xml::element `element`]]
+[def __node__ [classref zeep::xml::node `zeep::xml::node`]]
+[def __element__ [classref zeep::xml::element `zeep::xml::element`]]
+[def __text__ [classref zeep::xml::text `zeep::xml::text`]]
+[def __cdata__ [classref zeep::xml::cdata `zeep::xml::cdata`]]
+[def __comment__ [classref zeep::xml::comment `zeep::xml::comment`]]
+[def __zeep_serializer__ [classref zeep::xml::serializer `zeep::xml::serializer`]]
+[def __processing_instruction__ [classref zeep::xml::processing_instruction `zeep::xml::processing_instruction`]]
+[def __preforked_server__ [classref zeep::http::preforked_server]]
+[def __char_streambuf__ [classref zeep::char_streambuf]]
+[def __value_serializer__ [classref zeep::value_serializer `zeep::value_serializer`]]
 
 [include introduction.qbk]
 [include lib-generic.qbk]
@@ -33,181 +43,6 @@
 [include reference.qbk]
 
 [/
-
-[article libzeep
-	[quickbook 1.5]
-	[version 3.0]
-	[copyright 2012-2019 Maarten L. Hekkelman]
-	[license
-		Distributed under the Boost Software License, Version 1.0.
-		(See accompanying file LICENSE_1_0.txt or copy at
-		[@http://www.boost.org/LICENSE_1_0.txt])
-	]
-	[authors [Hekkelman, Maarten L.]]
-]
-
-[/ [def __node__ [classref zeep::xml::node `zeep::xml::node`]]
-[def __element__ [classref zeep::xml::element `zeep::xml::element`]]
-[def __attribute__ [classref zeep::xml::attribute `zeep::xml::attribute`]]
-[def __document__ [classref zeep::xml::document `zeep::xml::document`]]
-[def __serializer__ [classref zeep::xml::serializer `zeep::xml::serializer`]]
-[def __deserializer__ [classref zeep::xml::deserializer `zeep::xml::deserializer`]]
-[def __http_server__ [classref zeep::http::server `zeep::http::server`]]
-[def __http_request__ [classref zeep::http::request `zeep::http::request`]]
-[def __http_reply__ [classref zeep::http::reply `zeep::http::reply`]]
-[def __soap_server__ [classref zeep::server `zeep::server`]]
-[def __webapp__ [classref zeep::http::webapp `zeep::http::webapp`]]
-[def __add_processor__ [memberref zeep::http::basic_webapp::add_processor `zeep::http::basic_webapp::add_processor`]]
-[def __el_scope__ [classref zeep::http::el::scope `zeep::http::el::scope`]]
-[def __el_object__ [classref zeep::http::el::object `zeep::http::el::object`]]
-[def __rest_controller__ [classref zeep::http::rest_controller `zeep::http::rest_controller`]]
-]
-
-
-
-[section:overview Overview]
-
-Libzeep is packaged as one library, but actually contains two different libraries. The first part of libzeep consists of code to read, manipulate and write XML. It contains a validating XML parser, an XPath implementation to query a DOM tree, code to serialize objects into and out of XML and finally it contains an XML writing module.
-
-The second part of libzeep is targeted to writing SOAP and REST servers as well as full web applications using C++. There is a simple HTTP server implementation, code to create SOAP and REST servers out of existing C++ objects and there is code to create complete web applications that work a bit like popular Java web application frameworks. The libzeep web application framework turns page templates consisting of XHTML with custom tags and a custom script language into HTML.
-
-[endsect]
-
-[section:intro Introduction]
-
-[section:xml XML Parser]
-
-Libzeep comes with a validating XML parser. Using this parser is as simple as writing:
-
-	#include <zeep/xml/document.hpp>
-	#include <fstream>
-	
-	int main()
-	{
-		std::ifstream file("test.xml");
-		__document__ doc(file);
-		...
-	}
-
-This will parse the file =text.xml= and create an object `doc` containing the DOM tree. To traverse this tree you can use the various member functions of doc which derives from the generic __container__ class. Siblings in the DOM tree are stored as linked lists and some elements can have children. To make life easier, you can iterate over elements using STL iterators.
-
-Suppose our =test.xml= file contains the following XML:[teletype]
-
-	<persons>
-		<person>
-			<firstname>John</firstname>
-			<lastname>Doe</lastname>
-		</person>
-		<person>
-			<firstname>Jane</firstname>
-			<lastname>Jones</lastname>
-		</person>
-	</persons>
-
-You could print out the file like this:[c++]
-
-	// a document contains at most one child node
-	__element__* persons = doc.child();
-
-	// begin/end will return iterators to elements
-	for (__container__::iterator person = persons->begin(); person != persons->end(); ++person)
-	{
-		for (__container__::iterator name = (*person)->begin(); name != (*person)->end(); ++name)
-			std::cout << (*name)->name() << " = " << (*name)->content() << std::endl;
-	}
-
-Of course, using the new for loop construct, this code would be much more readable:
-
-	for (auto person : *persons)
-	{
-		for (auto name : *person)
-			std::cout << name->name() << " = " << name->content() << std::endl;
-	}
-		
-But if your compiler does not support that syntax, you can always use `boost::range` instead:
-
-	BOOST_FOREACH (__element__* person, *persons)
-	{
-		BOOST_FOREACH (__element__* name, *person)
-			std::cout << name->name() << " = " << name->content() << std::endl;
-	}
-
-Accessing attributes is done using the member function `element::get_attribute()`.
-
-[endsect]
-
-[section:xml_serialization XML Serialization]
-
-An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
-
-	#include <zeep/xml/document.hpp>
-	#include <zeep/xml/serialize.hpp>
-	#include <vector>
-	#include <fstream>
-	
-	struct Person
-	{
-		std::string firstname;
-		std::string lastname;
-	
-		template<class Archive>
-		void serialize(Archive& ar, const unsigned int version)
-		{
-			ar & BOOST_SERIALIZATION_NVP(firstname) & BOOST_SERIALIZATION_NVP(lastname);
-		}
-	};
-	
-	int main()
-	{
-		std::ifstream file("test.xml");
-		__document__ doc(file);
-		
-		__deserializer__ ds(doc.child());
-		std::vector<Person> person;
-		
-		// the variable name person must be the same as the name of the XML element person
-		ds & BOOST_SERIALIZATION_NVP(person);
-		
-		// alternative is to use which allows another variable name:
-		// ds & boost::serialization::make_nvp("person", person);
-	}
-
-Since libzeep 3.0 we can reduce the code required.
-
-	int main()
-	{
-		std::ifstream file("test.xml");
-		__document__ doc(file);
-		
-		std::vector<Person> persons;
-		
-		// New way of deserializing persons
-		doc.deserialize("persons", persons);
-	}
-
-And to write out the persons, we do something similar.
-
-	__document__ doc;
-	doc.serialize("persons", persons);
-	
-	std::ofstream file("test-out.xml");
-	file << doc;
-
-To find out more about serialization, look at the reference for __serializer__
-
-[endsect]
-
-[section:xpath XPath 1.0]
-
-Libzeep comes with a [@http://www.w3.org/TR/xpath/ XPath 1.0] implementation. You can use this to locate elements in a DOM tree easily. For a complete description of the XPath specification you should read the documentation at e.g. [@http://www.w3.org/TR/xpath/] or [@http://www.w3schools.com/xpath/default.asp].
-
-The way it works in libzeep is that you can call `find()` on an __element__ object and it will return a zeep::xml::element_set object which is actually a `std::list` of __element__ pointers of the elements that conform to the specification in XPath passed as parameter to `find()`. An alternative method `find_first()` can be used to return only the first element.
-
-An example where we look for the first person in our test file with the lastname Jones:
-
-	__element__* jones = doc.child()->find_first("//person[lastname='Jones']");
-
-[endsect]
 
 [section:http HTTP Server]
 

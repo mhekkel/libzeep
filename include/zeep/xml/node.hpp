@@ -42,6 +42,22 @@ using element_set = std::list<element*>;
 
 // --------------------------------------------------------------------
 
+/// \brief specification of how XML data should be written out
+struct format_info
+{
+	bool indent = false;
+	bool indent_attributes = false;
+	bool collapse_tags = true;
+	bool suppress_comments = false;
+	bool escape_white_space = false;
+	bool escape_double_quote = true;
+	size_t indent_width = 0;
+	size_t indent_level = 0;
+	float version = 1.0f;
+};
+
+// --------------------------------------------------------------------
+
 /// Node is the abstract base class for all data contained in zeep XML documents.
 /// The DOM tree consists of nodes that are linked to each other, each
 /// node can have a parent and siblings pointed to by the next and
@@ -143,19 +159,6 @@ class node
 	/// in contrast with clone the data is moved from this node to the cloned
 	/// node. This node will be empty afterwards.
 	virtual node* move() = 0;
-
-	struct format_info
-	{
-		bool indent = false;
-		bool indent_attributes = false;
-		bool collapse_tags = true;
-		bool suppress_comments = false;
-		bool escape_white_space = false;
-		bool escape_double_quote = true;
-		size_t indent_width = 0;
-		size_t indent_level = 0;
-		float version = 1.0f;
-	};
 
 	virtual void write(std::ostream& os, format_info fmt) const = 0;
 

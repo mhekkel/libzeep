@@ -15,7 +15,62 @@
 ]
 
 [section:descr The libzeep-generic library]
-This is the descripion of the generic library.
+
+Originally libzeep came as a single library. But if you only need the XML functionality it might not be very useful to include all the networking code for the HTTP server. And so the libraries were split into modules that can be used independently from each other. But some of the routines were used by all other libraries and thus a generic library was added for just those.
+
+[heading The configuration file]
+
+In the file `<zeep/config.hpp>` you can find a couple of flags that influence what parts of libzeep should be left out. The first is to enable building a __preforked_server__ class, probably only useful in a UNIX context.
+
+The other flag allows the compilation of code that uses resources. Resources in a libzeep context are a bit different from their counterparts in MacOS and Windows. Libzeep uses `mrc` to bundle resources in an executable. Especially for small web applications this makes installation very easy at the cost of configurability. See [@https://github.com/mhekkel/mrc github pages for mrc] for more information.
+
+[section:crypto Cryptographic routines]
+
+A limited number of cryptographic routines are available in `<zeep/crypto.hpp>`. These can be divided in the following categories:
+
+[heading Encoding]
+
+The functions encode and decode functions take a std::string and return the encoded or decoded content. There are three encoding schemes, `hex`, `base64` and `base64url`. The latter is simply `base64` but with a different characterset and without the trailing `=` characters allowing their use in a URL.
+
+[heading Hashing]
+
+There are three hash algorithm implementations. These are `md5`, `sha1` and `sha256`. All of them take a std::string and return a std::string with the resulting hash. Note that these strings are not human readable and may contain null characters. Therefore you need the encoding routines to convert a hash into something you can print to the screen e.g.
+
+[heading HMac]
+
+Hashed message authentication codes can be calculated using the available hash functions. Again, these functions take std::string parameters for the message and the key. The result is again a binary std::string.
+
+[heading Key derivation]
+
+Two key derivation routines are on offer, both of them PBKDF2, one using HMAC SHA1 and the other HMAC SHA256.
+
+[endsect:crypto]
+
+[section:streambuf character array streambuf]
+
+Sometimes it is very convenient to have a `std::istream` reading from a `const char*` buffer, the class __char_streambuf__ allows you to do just that.
+
+[c++]
+
+	auto sb = zeep::char_streambuf("Hello, world!");
+	auto is = std::istream(&sb);
+
+	std::string line;
+	std::getline(is, line);
+
+[endsect:streambuf]
+
+[section:unicode Unicode/text support]
+
+Various simple routines used when working with Unicode text.
+
+[endsect:unicode]
+
+[section:serialization Serialization support]
+
+Originally, libzeep could only serialize XML. Later, with the addition of a JSON library with its own serialization ideas, the two were merged somewhat and the overlapping code ended up here.
+
+[endsect:serialization]
 
 [endsect:descr]
 

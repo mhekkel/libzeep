@@ -118,7 +118,6 @@ class rest_controller : public controller
 		// using ArgsTuple = std::tuple<Args...>;
 		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
 		using Callback = std::function<Result(Args...)>;
-        using json = el::element;
 
 		static constexpr size_t N = sizeof...(Args);
 
@@ -185,7 +184,7 @@ class rest_controller : public controller
 		{
 			try
 			{
-				json message("ok");
+				el::element message("ok");
 				reply.set_content(message);
 				reply.set_status(ok);
 
@@ -194,7 +193,7 @@ class rest_controller : public controller
 			}
 			catch (const std::exception& e)
 			{
-				json message;
+				el::element message;
 				message["error"] = e.what();
 
 				reply.set_content(message);
@@ -222,8 +221,8 @@ class rest_controller : public controller
 		template<typename T>
 		void set_reply(reply& rep, T&& v)
 		{
-			json e;
-			zeep::el::to_element(e, v);
+			el::element e;
+			to_element(e, v);
 			rep.set_content(e);
 		}
 
@@ -290,7 +289,7 @@ class rest_controller : public controller
 		}
 
 		template<typename T, std::enable_if_t<
-			not (zeep::has_serialize_v<T, zeep::el::deserializer<json>> or
+			not (zeep::has_serialize_v<T, zeep::el::deserializer<el::element>> or
 				 std::is_enum_v<T> or
 				 std::is_same_v<T,bool> or
 				 std::is_same_v<T,file_param> or
@@ -315,17 +314,17 @@ class rest_controller : public controller
 		template<typename T, std::enable_if_t<zeep::el::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
-			json v = params.get_parameter(name);
+			el::element v = params.get_parameter(name);
 
 			T tv;
 			from_element(v, tv);
 			return tv;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::el::deserializer<json>>, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::el::deserializer<el::element>>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
-			json v;
+			el::element v;
 
 			if (params.m_req.get_header("content-type") == "application/json")
 				zeep::el::parse_json(params.m_req.payload, v);

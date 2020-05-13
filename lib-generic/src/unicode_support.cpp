@@ -10,7 +10,8 @@
 
 #include <zeep/unicode_support.hpp>
 
-namespace zeep {
+namespace zeep
+{
 
 bool iequals(const std::string& a, const std::string& b)
 {
