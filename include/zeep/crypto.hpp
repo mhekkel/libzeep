@@ -4,11 +4,12 @@
 //            http://www.boost.org/LICENSE_1_0.txt)
 //
 // --------------------------------------------------------------------
-//
-// This file contains an interface to the crypto related routines used
-// throughout libzeep.
 
 #pragma once
+
+/// \file
+/// This file contains an interface to the crypto related routines used
+/// throughout libzeep.
 
 namespace zeep
 {

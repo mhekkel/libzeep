@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// various classes and definitions for handling and using XML DOCTYPE definitions
+
 #include <zeep/config.hpp>
 
 #include <set>

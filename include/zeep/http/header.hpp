@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// definition of the zeep::http::header class
+
 #include <string>
 
 namespace zeep::http

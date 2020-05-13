@@ -5,9 +5,12 @@
 
 #pragma once
 
+/// \file
+/// definition of various classes that help classify data used to select the correct conversion routines
+
 #include <experimental/type_traits>
 
-#include <zeep/serialize.hpp>
+#include <zeep/value_serializer.hpp>
 
 #ifndef __cpp_lib_experimental_detect
 // This code is copied from:

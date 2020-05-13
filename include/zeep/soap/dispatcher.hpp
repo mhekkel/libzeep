@@ -30,6 +30,9 @@
 
 #pragma once
 
+/// \file
+/// this file contains code that should be moved into soap_controller
+
 #include <type_traits>
 
 #include <zeep/xml/node.hpp>

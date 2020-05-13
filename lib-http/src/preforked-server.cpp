@@ -6,7 +6,7 @@
 
 #include <zeep/config.hpp>
 
-#if SOAP_SERVER_HAS_PREFORK
+#if HTTP_SERVER_HAS_PREFORK
 
 #include <iostream>
 #include <sstream>
@@ -21,7 +21,8 @@
 
 #include <sys/wait.h>
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 preforked_server::preforked_server(std::function<server*(void)> constructor)
 	: m_constructor(constructor)
@@ -344,7 +345,6 @@ void preforked_server::handle_accept(const boost::system::error_code& ec)
 	}
 }
 
-}
 }
 
 #endif

@@ -1,12 +1,12 @@
 [/
-	Documentation for libzeep version 5.0
+    Documentation for libzeep version 5.0
 
           Copyright Maarten L. Hekkelman, 2020
  Distributed under the Boost Software License, Version 1.0.
     (See accompanying file LICENSE_1_0.txt or copy at
           http://www.boost.org/LICENSE_1_0.txt)
 
-	This document is for libzeep-generic
+    This document is for libzeep-generic
 ]
 
 [chapter XML
@@ -14,9 +14,32 @@
     [id libzeep.xml]
 ]
 
-
 [section:descr The libzeep-xml library]
-This is the descripion of the generic library.
+The core of this library is a validating XML parser with DTD processing and all. On top of this are implemented an API for manipulating XML data in a DOM like fashion and a serialization API. As a bonus there's also an XPath implementation, albeit this is limited to XPath 1.0.
 
 [endsect:descr]
 
+[section:api The API]
+libzeep uses a modern C++ way of accessing and manipulating data. To give an idea have a look at the following code.
+
+[import ./examples/synopsis-xml.cpp]
+[synopsis_xml_main]
+
+[endsect:api]
+
+
+[section:ser Serialization]
+
+
+[endsect:ser]
+
+
+[section:xpath XPath]
+
+
+[endsect:xpath]
+
+[section:parser The parser]
+
+
+[endsect:parser]

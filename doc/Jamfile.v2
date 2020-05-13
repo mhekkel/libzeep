@@ -1,15 +1,14 @@
-using quickbook : /usr/local/bin/quickbook ;
-using doxygen ;
 
 doxygen autodoc
     :
         [ glob ../include/zeep/*.hpp ]
+        [ glob ../include/zeep/xml/*.hpp ]
         [ glob ../include/zeep/el/*.hpp ]
         [ glob ../include/zeep/http/*.hpp ]
         [ glob ../include/zeep/rest/*.hpp ]
         [ glob ../include/zeep/soap/*.hpp ]
-        [ glob ../include/zeep/xml/*.hpp ]
     :
+		<doxygen:param>"PREDEFINED=\"HTTP_SERVER_HAS_PREFORK\""
         <doxygen:param>HIDE_UNDOC_MEMBERS=YES
         <doxygen:param>EXTRACT_PRIVATE=NO
         <doxygen:param>ENABLE_PREPROCESSING=YES
@@ -17,6 +16,9 @@ doxygen autodoc
         <doxygen:param>EXPAND_ONLY_PREDEF=YES
         <doxygen:param>SEARCH_INCLUDES=YES
         <doxygen:param>INCLUDE_PATH=$(BOOST_ROOT)
+		<doxygen:param>FULL_PATH_NAMES=YES
+		<doxygen:param>STRIP_FROM_PATH=../include
+		<doxygen:params>SORT_MEMBER_DOCS=NO
     ;
 
 xml libzeep-doc : libzeep-doc.qbk ;
@@ -32,7 +34,7 @@ boostbook standalone
         <xsl:param>nav.layout=none
         <dependency>css
         <dependency>images
-        <xsl:param>boost.root=http://www.hekkelman.com/libzeep/
+        <xsl:param>boost.root="http://www.hekkelman.com/libzeep/"
         <xsl:param>html.stylesheet=css/zeep.css
         <xsl:param>img.src.path=images/
         <xsl:param>boost.graphics.root=images/
@@ -43,8 +45,10 @@ boostbook standalone
 install css : [ glob ./css/*.css ]
     : <location>html/css ;
 
-install images : [ glob ./images/*.png ]
-    : <location>html/images ;
+install images
+	: [ glob images/*.png ]
+	  [ glob images/callouts/*.png ]
+    : <location>html/images <install-source-root>images ;
 
 explicit css ;
 

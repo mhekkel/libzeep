@@ -4,6 +4,9 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
+/// \file
+/// Generic configuration file, contains defines and (probably obsolete) stuff for msvc
+
 #pragma once
 
 /// The http server implementation in libzeep can use a
@@ -14,11 +17,11 @@
 /// this and restart the client thereby guaranteeing a better
 /// uptime.
 
-#ifndef SOAP_SERVER_HAS_PREFORK
+#ifndef HTTP_SERVER_HAS_PREFORK
 #if defined(_MSC_VER)
-#define SOAP_SERVER_HAS_PREFORK 0
+#define HTTP_SERVER_HAS_PREFORK 0
 #else
-#define SOAP_SERVER_HAS_PREFORK 1
+#define HTTP_SERVER_HAS_PREFORK 1
 #endif
 #endif
 
@@ -29,6 +32,8 @@
 #ifndef WEBAPP_USES_RESOURCES
 #define WEBAPP_USES_RESOURCES 0
 #endif
+
+/// The current version of libzeep
 
 #define LIBZEEP_VERSION_MAJOR 5
 

@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// the core of the libzeep XML library defining the main classes in the DOM API
+
 #include <cassert>
 
 #include <memory>
@@ -265,6 +268,7 @@ class text : public node_with_text
 	text(const std::string& text)
 		: node_with_text(text) {}
 
+	/// \brief append \a text to the stored text
 	void append(const std::string& text) { m_text.append(text); }
 
 	virtual bool equals(const node* n) const;
@@ -344,7 +348,6 @@ class attribute : public node
 		return m_qname < ns.m_qname;
 	}
 
-	// using node::qname;
 	virtual std::string get_qname() const { return m_qname; }
 	virtual void set_qname(const std::string& qn) { m_qname = qn; }
 
@@ -371,6 +374,7 @@ class attribute : public node
 
 	virtual bool equals(const node* n) const;
 
+	/// \brief returns whether this attribute is an ID attribute, as defined in an accompanying DTD
 	virtual bool is_id() const { return m_id; }
 
 	template<size_t N>
@@ -399,11 +403,12 @@ class attribute : public node
 };
 
 // --------------------------------------------------------------------
-// generic iterator class.
-// We have three container classes (node_list specializations)
-// Two are for attributes and name_spaces. The last is the
-// node_list for nodes in elements. However, this list can
-// present itself as node_list for elements.
+/// \brief generic iterator class.
+///
+/// We have two container classes (node_list specializations)
+/// One is for attributes and name_spaces. The other is the
+/// node_list for nodes in elements. However, this list can
+/// present itself as node_list for elements.
 
 template<typename NodeType, typename ContainerNodeType = std::remove_const_t<NodeType>>
 class iterator_impl
@@ -1081,7 +1086,7 @@ class node_list : public basic_node_list<node>
 };
 
 // --------------------------------------------------------------------
-// set of attributes of name_spaces. Is a node_list but with a set interface
+/// set of attributes of name_spaces. Is a node_list but with a set interface
 
 class attribute_set : public basic_node_list<attribute>
 {

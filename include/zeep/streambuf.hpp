@@ -5,6 +5,9 @@
 
 #pragma once
 
+/// \file
+/// A simple std::streambuf implementation that wraps around const char* data.
+
 #include <zeep/config.hpp>
 
 #include <streambuf>
@@ -21,7 +24,11 @@ namespace zeep
 class char_streambuf : public std::streambuf
 {
   public:
+
+	/// \brief constructor taking a \a buffer and a \a length
 	char_streambuf(const char* buffer, size_t length);
+
+	/// \brief constructor taking a \a buffer using the standard strlen to determine the length
 	explicit char_streambuf(const char* buffer);
 
 	char_streambuf(const char_streambuf&) = delete;

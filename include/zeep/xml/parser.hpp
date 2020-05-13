@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// \file
+/// definition of the libzeep XML parser, a recursive descent parser
+
 #include <functional>
 #include <list>
 
