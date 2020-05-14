@@ -19,9 +19,7 @@
 #include <zeep/el/element_fwd.hpp>
 #include <zeep/el/factory.hpp>
 
-namespace zeep::el
-{
-namespace detail
+namespace zeep::el::detail
 {
 
 template<typename E>
@@ -184,5 +182,4 @@ namespace
     constexpr const auto& from_element = typename ::zeep::el::detail::from_element_fn{};
 }
 
-}
 }

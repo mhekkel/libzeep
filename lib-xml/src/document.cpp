@@ -167,7 +167,7 @@ std::istream& operator>>(std::istream& is, document& doc)
 
 void document::write(std::ostream& os, format_info fmt) const
 {
-	if (m_version > 1.0f)
+	if (m_version > 1.0f or m_write_xml_decl)
 	{
 		assert(m_encoding == encoding_type::UTF8);
 

@@ -104,6 +104,10 @@ class node
 		assert(false);
 	}
 
+	/// \brief set the qname with two parameters, if \a prefix is empty the qname will be simply \a name
+	/// otherwise the name will be `prefix:name`
+	/// \param prefix	The namespace prefix to use
+	/// \param name		The actual name to use
 	virtual void set_qname(const std::string& prefix, const std::string& name)
 	{
 		set_qname(prefix.empty() ? name : prefix + ':' + name);
@@ -160,6 +164,9 @@ class node
 	/// node. This node will be empty afterwards.
 	virtual node* move() = 0;
 
+	/// \brief low level routine for writing out XML
+	///
+	/// This method is usually called by operator<<(std::ostream&, zeep::xml::document&)
 	virtual void write(std::ostream& os, format_info fmt) const = 0;
 
   protected:
@@ -186,7 +193,7 @@ class node
 };
 
 // --------------------------------------------------------------------
-/// internal node just for storing text
+/// internal node base class for storing text
 
 class node_with_text : public node
 {
@@ -194,9 +201,13 @@ class node_with_text : public node
 	node_with_text() {}
 	node_with_text(const std::string& s) : m_text(s) {}
 
+	/// \brief return the text content
 	virtual std::string str() const { return m_text; }
 
+	/// \brief return the text content, same as str()
 	virtual std::string get_text() const { return m_text; }
+
+	/// \brief set the text content
 	virtual void set_text(const std::string& text) { m_text = text; }
 
   protected:
@@ -213,6 +224,7 @@ class comment : public node_with_text
 	comment(comment&& c) : node_with_text(std::move(c.m_text)) {}
 	comment(const std::string& text) : node_with_text(text) {}
 
+	/// \brief compare nodes for equality
 	virtual bool equals(const node* n) const;
 
 	virtual node* clone() const;
@@ -236,14 +248,24 @@ class processing_instruction : public node_with_text
 		, m_target(std::move(pi.m_target))
 	{}
 
+	/// \brief constructor with parameters
+	///
+	/// This constructs a processing instruction with the specified parameters
+	/// \param target	The target, this will follow the <? characters, e.g. `php` will generate <?php ... ?>
+	/// \param text		The text inside this node, e.g. the PHP code.
 	processing_instruction(const std::string& target, const std::string& text)
 		: node_with_text(text), m_target(target) {}
 
+	/// \brief return the qname which is the same as the target in this case
 	virtual std::string get_qname() const { return m_target; }
 
+	/// \brief return the target
 	std::string get_target() const { return m_target; }
+
+	/// \brief set the target
 	void set_target(const std::string& target) { m_target = target; }
 
+	/// \brief compare nodes for equality
 	virtual bool equals(const node* n) const;
 
 	virtual node* clone() const;
@@ -274,6 +296,7 @@ class text : public node_with_text
 	/// \brief append \a text to the stored text
 	void append(const std::string& text) { m_text.append(text); }
 
+	/// \brief compare nodes for equality
 	virtual bool equals(const node* n) const;
 
 	/// \brief returns true if this text contains only whitespace characters
@@ -299,6 +322,7 @@ class cdata : public text
 	cdata(cdata&& cd) : text(std::move(cd)) {}
 	cdata(const std::string& s)	: text(s) {}
 
+	/// \brief compare nodes for equality
 	virtual bool equals(const node* n) const;
 
 	virtual node* clone() const;
@@ -359,7 +383,7 @@ class attribute : public node
 		node::set_qname(prefix, name);
 	}
 
-	/// \b Is this attribute an xmlns attribute?
+	/// \brief Is this attribute an xmlns attribute?
 	bool is_namespace() const
 	{
 		return m_qname.compare(0, 5, "xmlns") == 0 and (m_qname[5] == 0 or m_qname[5] == ':');
@@ -368,18 +392,20 @@ class attribute : public node
 	std::string value() const { return m_value; }
 	void value(const std::string& v) { m_value = v; }
 
-	/// \b same as value, but checks to see if this really is a namespace attribute
+	/// \brief same as value, but checks to see if this really is a namespace attribute
 	std::string uri() const;
 
 	virtual std::string str() const { return m_value; }
 
 	virtual void set_text(const std::string& value) { m_value = value; }
 
+	/// \brief compare nodes for equality
 	virtual bool equals(const node* n) const;
 
 	/// \brief returns whether this attribute is an ID attribute, as defined in an accompanying DTD
 	virtual bool is_id() const { return m_id; }
 
+	/// \brief support for structured binding
 	template<size_t N>
 	decltype(auto) get() const
 	{
@@ -408,10 +434,10 @@ class attribute : public node
 // --------------------------------------------------------------------
 /// \brief generic iterator class.
 ///
-/// We have two container classes (node_list specializations)
-/// One is for attributes and name_spaces. The other is the
-/// node_list for nodes in elements. However, this list can
-/// present itself as node_list for elements.
+/// We can have iterators that point to nodes, elements and attributes.
+/// Iterating over nodes is simply following next/prev. But iterating
+/// elements is a bit more difficult, since you then have to skip nodes
+/// in between that are not an element, like comments or text.
 
 template<typename NodeType, typename ContainerNodeType = std::remove_const_t<NodeType>>
 class iterator_impl
@@ -437,6 +463,7 @@ class iterator_impl
 
 	iterator_impl(const iterator_impl& i) = default;
 
+	/// \brief copy constructor, kind of
 	template<typename OtherNodeType, typename OtherContainerNodeType>
 	iterator_impl(const iterator_impl<OtherNodeType, OtherContainerNodeType>& i)
 		: m_container(i.m_container)
@@ -448,7 +475,7 @@ class iterator_impl
 			m_at_end = true;
 	}
 
-	// create iterator pointing to begin of parent element
+	/// \brief create iterator pointing to begin of parent element
 	iterator_impl(const container_type& container)
 		: m_container(&container), m_at_end(false)
 	{
@@ -459,7 +486,7 @@ class iterator_impl
 		m_at_end = m_current == nullptr;
 	}
 
-	// create iterator pointing to end of parent element
+	/// \brief create iterator pointing to end of parent element
 	iterator_impl(const container_type& container, node_type* current)
 		: m_container(&container), m_current(const_cast<std::remove_cv_t<node_type>*>(current)), m_at_end(true)
 	{
@@ -478,6 +505,7 @@ class iterator_impl
 #endif
 	}
 
+	/// \brief constructor taking a node pointer
 	iterator_impl(node_type* current)
 		: m_container(&current->parent()->nodes())
 		, m_current(const_cast<std::remove_const_t<node_type>*>(current))
@@ -684,7 +712,13 @@ template<> void iterator_impl<element,node>::skip();
 template<> void iterator_impl<const element,node>::skip();
 
 // --------------------------------------------------------------------
-// basic_node_list, a base class for containers of nodes
+/// \brief basic_node_list, a base class for containers of nodes
+///
+/// We have two container classes (node_list specializations)
+/// One is for attributes and name_spaces. The other is the
+/// node_list for nodes in elements. However, this list can
+/// present itself as node_list for elements hiding all other
+/// node types.
 
 template<typename NodeType>
 class basic_node_list
@@ -772,6 +806,7 @@ class basic_node_list
 			n.m_parent = &l.m_element;
 	}
 
+	/// \brief sort the (direct) nodes in this list using \a comp as comparator
 	template<typename Compare>
 	void sort(Compare comp)
 	{
@@ -897,7 +932,7 @@ class basic_node_list
 };
 
 // --------------------------------------------------------------------
-// node_list
+/// \brief implementation of basic_node_list for node objects
 
 class node_list : public basic_node_list<node>
 {
@@ -1089,7 +1124,7 @@ class node_list : public basic_node_list<node>
 };
 
 // --------------------------------------------------------------------
-/// set of attributes of name_spaces. Is a node_list but with a set interface
+/// \brief set of attributes and name_spaces. Is a node_list but with a set interface
 
 class attribute_set : public basic_node_list<attribute>
 {
@@ -1143,14 +1178,16 @@ class attribute_set : public basic_node_list<attribute>
 		return *this;
 	}
 
-
+	/// \brief attribute_set is a bit like a std::map and the key type is a std::string
 	using key_type = std::string;
 
+	/// \brief return true if the attribute with name \a key is defined
 	bool contains(const key_type& key) const
 	{
 		return find(key) != nullptr;
 	}
 
+	/// \brief return const_iterator to the attribute with name \a key
 	const_iterator find(const key_type& key) const
 	{
 		const node_type* result = nullptr;
@@ -1165,11 +1202,13 @@ class attribute_set : public basic_node_list<attribute>
 		return const_iterator(*this, result);
 	}
 
+	/// \brief return iterator to the attribute with name \a key
 	iterator find(const key_type& key)
 	{
 		return const_cast<const attribute_set&>(*this).find(key);
 	}
 
+	/// \brief emplace a newly constructed attribute with argumenst \a args
 	template<typename... Args>
 	std::pair<iterator,bool> emplace(Args... args)
 	{
@@ -1177,6 +1216,9 @@ class attribute_set : public basic_node_list<attribute>
 		return emplace(std::move(a));
 	}
 
+	/// \brief emplace an attribute move constructed from \a a
+	/// \return returns a std::pair with an iterator pointing to the inserted attribute
+	/// and a boolean indicating if this attribute was inserted instead of replaced.
 	std::pair<iterator,bool> emplace(node_type&& a)
 	{
 		key_type key = a.get_qname();
@@ -1194,11 +1236,13 @@ class attribute_set : public basic_node_list<attribute>
 		return std::make_pair(i, inserted);
 	}
 
+	/// \brief remove attribute at position \a pos
 	iterator erase(const_iterator pos)
 	{
 		return node_list::erase_impl(pos);
 	}
 
+	/// \brief remove attributes between \a first and \a last
 	iterator erase(iterator first, iterator last)
 	{
 		while (first != last)
@@ -1212,6 +1256,7 @@ class attribute_set : public basic_node_list<attribute>
 		return last;
 	}
 
+	/// \brief remove attribute with name \a key
 	size_type erase(const key_type key)
 	{
 		size_type result = 0;
@@ -1226,6 +1271,8 @@ class attribute_set : public basic_node_list<attribute>
 };
 
 // --------------------------------------------------------------------
+/// \brief the element class modelling a XML element
+///
 /// element is the most important zeep::xml::node object. It encapsulates a
 /// XML element as found in the XML document. It has a qname, can have children,
 /// attributes and a namespace.
@@ -1250,6 +1297,8 @@ class element : public node
 
 	element();
 	element(const std::string& qname);
+
+	/// \brief constructor taking a \a qname and a list of \a attributes
 	element(const std::string& qname, std::initializer_list<attribute> attributes);
 	element(const element& e);
 	element(element&& e);
@@ -1304,13 +1353,13 @@ class element : public node
 	using node_iterator = node_list::iterator;
 	using const_node_iterator = node_list::const_iterator;
 
-	// insert a copy of e
+	/// \brief insert a copy of \a e
 	void insert(const_iterator pos, const element& e)
 	{
 		emplace(pos, e);
 	}
 
-	// insert a copy of e, moving its data
+	/// \brief insert a copy of \a e at position \a pos, moving its data
 	void insert(const_iterator pos, element&& e)
 	{
 		emplace(pos, std::forward<element>(e));
@@ -1318,6 +1367,7 @@ class element : public node
 
 	// iterator insert(const_iterator pos, size_t count, const value_type& n);
 
+	/// \brief insert copies of the nodes from \a first to \a last at position \a pos
 	template<typename InputIter>
 	iterator insert(const_iterator pos, InputIter first, InputIter last)
 	{
@@ -1327,11 +1377,13 @@ class element : public node
 		return begin() + offset;
 	}
 
+	/// \brief insert copies of the nodes in \a nodes at position \a pos
 	iterator insert(const_iterator pos, std::initializer_list<element> nodes)
 	{
 		return insert(pos, nodes.begin(), nodes.end());
 	}
 
+	/// \brief insert the data of node \a n at position \a pos, using move semantics
 	template<typename N, std::enable_if_t<
 		std::is_same_v<std::remove_reference_t<N>, text> or
 		std::is_same_v<std::remove_reference_t<N>, cdata> or
@@ -1343,6 +1395,7 @@ class element : public node
 		return insert_impl(pos, new N(std::forward<N>(n)));
 	}
 
+	/// \brief emplace a newly constructed element at \a pos using argument \a arg
 	template<typename Arg>
 	inline iterator emplace(const_iterator pos, Arg&& arg)
 	{
@@ -1353,12 +1406,14 @@ class element : public node
 		return insert_impl(pos, new element(std::forward<Arg>(arg)));
 	}
 
+	/// \brief emplace a newly constructed element at \a pos using arguments \a args
 	template<typename... Args>
 	inline iterator emplace(const_iterator pos, Args&&... args)
 	{
 		return insert_impl(pos, new element(std::forward<Args>(args)...));
 	}
 
+	/// \brief emplace a newly constructed element at \a pos using name \a name and attributes \a attrs
 	inline iterator emplace(const_iterator pos, const std::string& name,
 		std::initializer_list<attribute> attrs)
 	{
@@ -1366,12 +1421,14 @@ class element : public node
 			std::forward<std::initializer_list<attribute>>(attrs)));
 	}
 
+	/// \brief emplace an element at the front using arguments \a args
 	template<typename... Args>
 	inline element& emplace_front(Args&&... args)
 	{
 		return *emplace(begin(), std::forward<Args>(args)...);
 	}
 
+	/// \brief emplace a newly constructed element at the front using name \a name and attributes \a attrs
 	inline element& emplace_front(const std::string& name,
 		std::initializer_list<attribute> attrs)
 	{
@@ -1379,12 +1436,14 @@ class element : public node
 			std::forward<std::initializer_list<attribute>>(attrs));
 	}
 
+	/// \brief emplace an element at the back using arguments \a args
 	template<typename... Args>
 	inline element& emplace_back(Args&&... args)
 	{
 		return *emplace(end(), std::forward<Args>(args)...);
 	}
 
+	/// \brief emplace a newly constructed element at the back using name \a name and attributes \a attrs
 	inline element& emplace_back(const std::string& name,
 		std::initializer_list<attribute> attrs)
 	{
@@ -1392,11 +1451,13 @@ class element : public node
 			std::forward<std::initializer_list<attribute>>(attrs));
 	}
 
+	/// \brief erase the node at \a pos
 	inline iterator erase(const_node_iterator pos)
 	{
 		return m_nodes.erase_impl(pos);
 	}
 
+	/// \brief erase the nodes from \a first to \a last
 	iterator erase(iterator first, iterator last)
 	{
 		while (first != last)
@@ -1410,68 +1471,98 @@ class element : public node
 		return last;
 	}
 
+	/// \brief erase the first node
 	inline void pop_front()
 	{
 		erase(begin());
 	}
 
+	/// \brief erase the last node
 	inline void pop_back()
 	{
 		erase(end() - 1);
 	}
 
+	/// \brief move the element \a e to the front of this element.
 	inline void push_front(element&& e)
 	{
 		emplace(begin(), std::forward<element>(e));
 	}
 
+	/// \brief copy the element \a e to the front of this element.
 	inline void push_front(const element& e)
 	{
 		emplace(begin(), e);
 	}
 
+	/// \brief move the element \a e to the back of this element.
 	inline void push_back(element&& e)
 	{
 		emplace(end(), std::forward<element>(e));
 	}
 
+	/// \brief copy the element \a e to the back of this element.
 	inline void push_back(const element& e)
 	{
 		emplace(end(), e);
 	}
 
+	/// \brief remove all nodes
 	void clear();
+
 	size_t size() const			{ return std::distance(begin(), end()); }
 	bool empty() const			{ return size() == 0; }
 
 	// --------------------------------------------------------------------
 	// attribute support
 
+	/// \brief return the set of attributes for this element
 	attribute_set& attributes()								{ return m_attributes; }
+
+	/// \brief return the set of attributes for this element
 	const attribute_set& attributes() const					{ return m_attributes; }
 
 	// --------------------------------------------------------------------
 
+	/// \brief write the element to \a os
 	friend std::ostream& operator<<(std::ostream& os, const element& e);
 	friend class document;
 
+	/// \brief will return the concatenation of str() from all child nodes
 	virtual std::string str() const;
 
+	/// \brief return the URI of the namespace for \a prefix
 	virtual std::string namespace_for_prefix(const std::string& prefix) const;
+
+	/// \brief return the prefix for the XML namespace with uri \a uri.
+	/// \return The result is a pair of a std::string containing the actual prefix value
+	/// and a boolean indicating if the namespace was found at all, needed since empty prefixes
+	/// are allowed.
 	virtual std::pair<std::string,bool> prefix_for_namespace(const std::string& uri) const;
 
-	/// move this element and optionally everyting beneath it to the 
-	/// specified namespace/prefix
+	/// \brief move this element and optionally everyting beneath it to the 
+	///        specified namespace/prefix
+	///
+	/// \param prefix				The new prefix name
+	/// \param uri					The new namespace uri
+	/// \param recursive			Apply this to the child nodes as well
+	/// \param including_attributes	Move the attributes to this new namespace as well
 	void move_to_name_space(const std::string& prefix, const std::string& uri,
 		bool recursive, bool including_attributes);
 
+	/// \brief return the concatenation of the content of all enclosed zeep::xml::text nodes
 	std::string get_content() const;
+
+	/// \brief replace all existing child text nodes with a new single text node containing \a content
 	void set_content(const std::string& content);
 
+	/// \brief return the value of attribute name \a qname or the empty string if not found
 	std::string get_attribute(const std::string& qname) const;
+
+	/// \brief set the value of attribute named \a qname to the value \a value
 	void set_attribute(const std::string& qname, const std::string& value);
 
-	/// The set_text method replaces any text node with the new text
+	/// \brief The set_text method replaces any text node with the new text (call set_content)
 	virtual void set_text(const std::string& s);
 
 	/// The add_text method checks if the last added child is a text node,
@@ -1482,12 +1573,35 @@ class element : public node
 	/// To combine all adjecent child text nodes into one
 	void flatten_text();
 
-	// xpath wrappers
-	// TODO: create recursive iterator and use it as return type here
+	/// xpath wrappers
+	/// TODO: create recursive iterator and use it as return type here
+
+	/// \brief return the elements that match XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
 	element_set			find(const std::string& path) const				{ return find(path.c_str()); }
+
+	/// \brief return the first element that matches XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
 	element*			find_first(const std::string& path) const		{ return find_first(path.c_str()); }
 
+	/// \brief return the elements that match XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
 	element_set			find(const char* path) const;
+
+	/// \brief return the first element that matches XPath \a path.
+	///
+	/// If you need to find other classes than xml::element, of if your XPath
+	/// contains variables, you should create a zeep::xml::xpath object and use
+	/// its evaluate method.
 	element*			find_first(const char* path) const;
 
 	// debug routine

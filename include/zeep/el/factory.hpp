@@ -20,9 +20,7 @@
 
 #include <zeep/el/element_fwd.hpp>
 
-namespace zeep::el
-{
-namespace detail
+namespace zeep::el::detail
 {
 
 // Factory class to construct elements 
@@ -190,5 +188,4 @@ struct factory<value_type::object>
     }
 };
 
-}
 }
