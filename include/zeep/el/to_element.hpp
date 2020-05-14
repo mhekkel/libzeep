@@ -20,9 +20,7 @@
 #include <zeep/el/factory.hpp>
 #include <zeep/el/type_traits.hpp>
 
-namespace zeep::el
-{
-namespace detail
+namespace zeep::el::detail
 {
 
 template<typename T, std::enable_if_t<std::is_same_v<T, bool>, int> = 0>
@@ -142,6 +140,5 @@ void to_element(element& j, const std::optional<T>& v)
 }
 
 
-} // detail
-} // zeep::el
+} // zeep::el::detail
 

@@ -842,7 +842,7 @@ std::ostream& operator<<(std::ostream& os, const element& e)
 	auto flags = os.flags({});
 	auto width = os.width(0);
 
-	element::format_info fmt;
+	format_info fmt;
 	fmt.indent = width > 0;
 	fmt.indent_width = width;
 	fmt.indent_attributes = flags & std::ios_base::left;

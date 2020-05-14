@@ -113,6 +113,9 @@ class document : public element
 	/// Set the doctype to write out
 	void set_doctype(const doc_type& doctype)				{ m_doctype = doctype; m_write_doctype = true; }
 
+	bool writes_xml_decl() const							{ return m_write_xml_decl; }
+	void set_write_xml_decl(bool w)							{ m_write_xml_decl = w; }
+
 	bool writes_doctype() const								{ return m_write_doctype; }
 	void set_write_doctype(bool f)							{ m_write_doctype = f; }
 
@@ -140,8 +143,10 @@ class document : public element
 	/// the document.
 	void set_base_dir(const std::string& path);
 
+	/// If you want to be able to load external documents other than trying to read them from disk
+	/// you can set a callback here.
 	template<typename Callback>
-	void entity_loader(Callback&& cb)
+	void set_entity_loader(Callback&& cb)
 	{
 		m_external_entity_ref_loader = cb;
 	}
@@ -205,6 +210,7 @@ class document : public element
 	bool m_standalone;
 	bool m_wrap_prolog = true;
 	bool m_write_doctype = false;
+	bool m_write_xml_decl = false;
 
 	format_info m_fmt;
 
