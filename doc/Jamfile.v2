@@ -34,7 +34,7 @@ boostbook standalone
         <xsl:param>nav.layout=none
         <dependency>css
         <dependency>images
-        <xsl:param>boost.root="http://www.hekkelman.com/libzeep/"
+        <xsl:param>boost.root="https://www.hekkelman.com/libzeep-doc/include/"
         <xsl:param>html.stylesheet=css/zeep.css
         <xsl:param>img.src.path=images/
         <xsl:param>boost.graphics.root=images/

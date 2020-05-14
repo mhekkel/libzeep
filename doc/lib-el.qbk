@@ -14,6 +14,16 @@
 
 [section:descr Introduction]
 
-This library is called el since the objects were originally only used in the expression language implementation of the web application module.
+The web application code for libzeep contained an implementation of [@https://en.wikipedia.org/wiki/Unified_Expression_Language expression language], a simple language used in the HTML templates. The variables in this language look and act a bit like objects in JavaScript. And then REST support was added and more support for [@https://www.json.org/ JSON] was needed.
+
+For C++ there is already a very good JSON library available from [@https://github.com/nlohmann/json Niels Lohmann]. I tried to use this initially, but it didn't fit well into the rest of libzeep. Still I liked the way it worked and so I tried to create something that is source code compatible.
+
+This library provides code to parse and write JSON. It stores the data in an efficient way, allows easy manipulation and also can use the same mechanism of serialization as the XML library.
 
 [endsect:descr]
+
+[section:elem The JSON element]
+
+The main data structure in this library is __el_element__.
+
+[endsect:elem]

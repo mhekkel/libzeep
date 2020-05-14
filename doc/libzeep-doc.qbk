@@ -37,6 +37,8 @@
 [def __char_streambuf__ [classref zeep::char_streambuf]]
 [def __value_serializer__ [classref zeep::value_serializer `zeep::value_serializer`]]
 
+[def __el_element__ [classref zeep::el::element `zeep::el::element`]]
+
 [include introduction.qbk]
 [include lib-generic.qbk]
 [include lib-xml.qbk]

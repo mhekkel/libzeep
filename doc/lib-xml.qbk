@@ -77,7 +77,7 @@ An example where we look for the first person in our test file with the lastname
 
 [heading variables]
 
-XPath constructs can reference variables. This is particularly useful if you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is. See the following example.
+XPath constructs can reference variables. As an example, suppose you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is, you could do something like this:
 
 [import ./examples/xpath-sample.cpp]
 [xpath_example]
