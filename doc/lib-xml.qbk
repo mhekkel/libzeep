@@ -37,6 +37,35 @@ XML elements also contain attributes, stored in the __attribute__ class. Namespa
 
 The class __document__ derives from __element__. Documents can load from and write to files and of course document can have only one child element.
 
+[heading streaming I/O]
+
+You can use std::iostream to read and write __document__ objects. Reading is as simple as:
+
+	zeep::xml::document doc;
+	std::cin >> doc;
+
+This will not validate the XML using the DTD by default. If you do want to validate and process the DTD, you have to specify where to find this DTD and other external entities. You can either use [memberref zeep::xml::document::set_base_dir `set_base_dir`] or you can specify an entity_loader using [memberref zeep::xml::document::set_entity_loader `set_entity_loader`]
+
+As an example, take the following DTD file[teletype]
+
+	<!ELEMENT foo (bar)>
+	<!ELEMENT bar (#PCDATA)>
+	<!ENTITY hello "Hello, world!">
+
+And an XML document containing[teletype]
+
+	<?xml version="1.0" encoding="UTF-8" ?>
+	<!DOCTYPE foo SYSTEM "sample.dtd">
+	<foo>
+		<bar>&hello;</bar>
+	</foo>
+
+When we want to see the `&hello;` entity replaced with `'Hello, world!'` as specified in the DTD, we need to provide a way to load this DTD. To do this, look at the following code. Of course, in this example a simple call to [memberref zeep::xml::document::set_base_dir `set_base_dir`] would have been sufficient.
+
+[import ./examples/validating-xml-sample.cpp]
+[xml_validation_sample]
+
+
 [endsect:api]
 
 [section:ser Serialization]
