@@ -84,27 +84,44 @@ class document : public element
 	/// preserve cdata, preserves CDATA sections instead of converting them
 	/// into text nodes.
 	bool preserves_cdata() const							{ return m_preserve_cdata; }
+
+	/// \brief if \a p is true, the CDATA sections will be preserved when parsing XML, if \a p is false, the content of the CDATA will be treated as text
 	void set_preserve_cdata(bool p)							{ m_preserve_cdata = p; }
 
+	/// \brief collapse means replacing e.g. `<foo></foo>` with `<foo/>`
 	bool collapses_empty_tags() const						{ return m_fmt.collapse_tags; }
+
+	/// \brief if \a c is true, empty tags will be replaced, i.e. write `<foo/>` instead of `<foo></foo>`
 	void set_collapse_empty_tags(bool c)					{ m_fmt.collapse_tags = c; }
 
+	/// \brief whether to write out comments
 	bool suppresses_comments() const						{ return m_fmt.suppress_comments; }
+
+	/// \brief if \a s is true, comments will not be written
 	void set_suppress_comments(bool s)						{ m_fmt.suppress_comments = s; }
 
+	/// \brief whether to escape white space
 	bool escapes_white_space() const						{ return m_fmt.escape_white_space; }
+
+	/// \brief if \a e is true, white space will be written as XML entities
 	void set_escape_white_space(bool e)						{ m_fmt.escape_white_space = e; }
 
+	/// \brief whether to escape double quotes
 	bool escapes_double_quote() const						{ return m_fmt.escape_double_quote; }
+
+	/// \brief if \a e is true, double quotes will be written as &quot;
 	void set_escape_double_quote(bool e)					{ m_fmt.escape_double_quote = e; }
 
+	/// \brief whether to place a newline after a prolog
 	bool wraps_prolog() const								{ return m_wrap_prolog; }
+
+	/// \brief if \a w is true, a newline will be written after the XML prolog
 	void set_wrap_prolog(bool w)							{ m_wrap_prolog = w; }
 
-	/// Get the doctype as parsed
+	/// \brief Get the doctype as parsed
 	doc_type get_doctype() const							{ return m_doctype; }
 
-	/// Set the doctype to write out
+	/// \brief Set the doctype to write out
 	void set_doctype(const std::string& root, const std::string& pubid, const std::string& dtd)
 	{
 		set_doctype({root, pubid, dtd});
@@ -113,25 +130,32 @@ class document : public element
 	/// Set the doctype to write out
 	void set_doctype(const doc_type& doctype)				{ m_doctype = doctype; m_write_doctype = true; }
 
+	/// \brief whether to write a XML prolog
 	bool writes_xml_decl() const							{ return m_write_xml_decl; }
+
+	/// \brief if \a w is true, an XML prolog will be written
 	void set_write_xml_decl(bool w)							{ m_write_xml_decl = w; }
 
+	/// \brief whether to write a DOCTYPE
 	bool writes_doctype() const								{ return m_write_doctype; }
+
+	/// \brief if \a f is true a DOCTYPE will be written
 	void set_write_doctype(bool f)							{ m_write_doctype = f; }
 
-	/// Check the doctype to see if this is supposed to be HTML5
+	/// \brief Check the doctype to see if this is supposed to be HTML5
 	bool is_html5() const;
 
-	/// Write out the document
+	/// \brief Write out the document
 	friend std::ostream& operator<<(std::ostream& os, const document& doc);
 
-	/// Using operator>> is an alternative for calling rhs.read(lhs);
+	/// \brief Read in a document
 	friend std::istream& operator>>(std::istream& is, document& doc);
 
-	/// Serialization support
+	/// \brief Serialization support
 	template <typename T>
 	void serialize(const char* name, const T& data); ///< Serialize \a data into a document containing \a name as root node
 
+	/// \brief Serialization support
 	template <typename T>
 	void deserialize(const char* name, T& data); ///< Deserialize root node with name \a name into \a data.
 
