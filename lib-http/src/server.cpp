@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <locale>
+#include <mutex>
 #include <thread>
 
 #include <zeep/http/server.hpp>
