@@ -10,7 +10,7 @@ using namespace std;
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
-zeep::http::basic_webapp& dummy_webapp = *(new zeep::http::file_based_webapp());
+zeep::http::basic_html_controller& dummy_webapp = *(new zeep::http::file_based_webapp());
 
 void process_and_compare(zeep::xml::document& a, zeep::xml::document& b, const zeep::http::scope& scope = {})
 {

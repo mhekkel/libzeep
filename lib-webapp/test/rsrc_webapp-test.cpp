@@ -11,7 +11,7 @@ using namespace std;
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
-zeep::http::basic_webapp& dummy_webapp = *(new zeep::http::webapp());
+zeep::http::basic_html_controller& dummy_webapp = *(new zeep::http::webapp());
 
 BOOST_AUTO_TEST_CASE(test_22)
 {

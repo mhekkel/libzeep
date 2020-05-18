@@ -62,29 +62,29 @@ std::istream* file_loader::load_file(const std::string& file, std::error_code& e
 // --------------------------------------------------------------------
 //
 
-basic_webapp::basic_webapp()
+basic_html_controller::basic_html_controller()
 {
 }
 
-basic_webapp::~basic_webapp()
+basic_html_controller::~basic_html_controller()
 {
 	for (auto a: m_authentication_validators)
 		delete a;
 }
 
-void basic_webapp::add_authenticator(authentication_validation_base* authenticator, bool login)
+void basic_html_controller::add_authenticator(authentication_validation_base* authenticator, bool login)
 {
 	m_authentication_validators.push_back(authenticator);
 
 	if (login)
 	{
-		mount_get("login", &basic_webapp::handle_get_login);
-		mount_post("login", &basic_webapp::handle_post_login);
-		mount("logout", &basic_webapp::handle_logout);
+		mount_get("login", &basic_html_controller::handle_get_login);
+		mount_post("login", &basic_html_controller::handle_post_login);
+		mount("logout", &basic_html_controller::handle_logout);
 	}
 }
 
-void basic_webapp::handle_request(request& req, reply& rep)
+bool basic_html_controller::handle_request(request& req, reply& rep)
 {
 	std::string uri = req.uri;
 
@@ -230,13 +230,13 @@ void basic_webapp::handle_request(request& req, reply& rep)
 		});
 }
 
-void basic_webapp::handle_get_login(const request& request, const scope& scope, reply& reply)
+void basic_html_controller::handle_get_login(const request& request, const scope& scope, reply& reply)
 {
 	create_unauth_reply(request, false, "", reply);
 	reply.set_status(ok);
 }
 
-void basic_webapp::handle_post_login(const request& request, const scope& scope, reply& reply)
+void basic_html_controller::handle_post_login(const request& request, const scope& scope, reply& reply)
 {
 	reply = reply::stock_reply(unauthorized);
 
@@ -277,7 +277,7 @@ void basic_webapp::handle_post_login(const request& request, const scope& scope,
 		create_unauth_reply(request, false, "", reply);
 }
 
-void basic_webapp::handle_logout(const request& request, const scope& scope, reply& reply)
+void basic_html_controller::handle_logout(const request& request, const scope& scope, reply& reply)
 {
 	reply = reply::redirect("/");
 	reply.set_cookie("access_token", "", {
@@ -285,7 +285,7 @@ void basic_webapp::handle_logout(const request& request, const scope& scope, rep
 	});
 }
 
-void basic_webapp::create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep)
+void basic_html_controller::create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep)
 {
 	xml::document doc;
 	doc.set_preserve_cdata(true);
@@ -361,12 +361,12 @@ void basic_webapp::create_unauth_reply(const request& req, bool stale, const std
 	}
 }
 
-void basic_webapp::create_error_reply(const request& req, status_type status, reply& rep)
+void basic_html_controller::create_error_reply(const request& req, status_type status, reply& rep)
 {
 	create_error_reply(req, status, "", rep);
 }
 
-void basic_webapp::create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
+void basic_html_controller::create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
 {
 	scope scope(req);
 
@@ -459,7 +459,7 @@ body, html {
 	rep.set_status(status);
 }
 
-void basic_webapp::handle_file(const zeep::http::request& request,
+void basic_html_controller::handle_file(const zeep::http::request& request,
 	const scope& scope, zeep::http::reply& reply)
 {
 	using namespace boost::local_time;
@@ -479,7 +479,7 @@ void basic_webapp::handle_file(const zeep::http::request& request,
 	std::string ifModifiedSince;
 	for (const zeep::http::header& h : request.headers)
 	{
-		if (ba::iequals(h.name, "If-Modified-Since"))
+		if (iequals(h.name, "If-Modified-Since"))
 		{
 			local_date_time modifiedSince(local_sec_clock::local_time(time_zone_ptr()));
 
@@ -547,12 +547,12 @@ void basic_webapp::handle_file(const zeep::http::request& request,
 	reply.set_header("Last-Modified", s.str());
 }
 
-void basic_webapp::set_docroot(const fs::path& path)
+void basic_html_controller::set_docroot(const fs::path& path)
 {
 	m_docroot = path;
 }
 
-void basic_webapp::load_template(const std::string& file, xml::document& doc)
+void basic_html_controller::load_template(const std::string& file, xml::document& doc)
 {
 	std::string templateSelector, templateFile = file;
 
@@ -666,7 +666,7 @@ void basic_webapp::load_template(const std::string& file, xml::document& doc)
 	}
 }
 
-void basic_webapp::create_reply_from_template(const std::string& file, const scope& scope, reply& reply)
+void basic_html_controller::create_reply_from_template(const std::string& file, const scope& scope, reply& reply)
 {
 	xml::document doc;
 	doc.set_preserve_cdata(true);
@@ -678,11 +678,11 @@ void basic_webapp::create_reply_from_template(const std::string& file, const sco
 	reply.set_content(doc);
 }
 
-void basic_webapp::init_scope(scope& scope)
+void basic_html_controller::init_scope(scope& scope)
 {
 }
 
-void basic_webapp::process_tags(xml::node* node, const scope& scope)
+void basic_html_controller::process_tags(xml::node* node, const scope& scope)
 {
 	// only process elements
 	if (dynamic_cast<xml::element*>(node) == nullptr)
@@ -711,7 +711,7 @@ void basic_webapp::process_tags(xml::node* node, const scope& scope)
 	}
 }
 
-void basic_webapp::process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces)
+void basic_html_controller::process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces)
 {
 	std::set<std::string> nss;
 

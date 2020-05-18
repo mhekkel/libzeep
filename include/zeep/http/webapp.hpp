@@ -110,16 +110,16 @@ class rsrc_loader : public resource_loader
 
 /// \brief base class for a webapp
 ///
-/// basic_webapp is used to create XHTML web pages based on the contents of a
+/// basic_html_controller is used to create XHTML web pages based on the contents of a
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.
 
-class basic_webapp
+class basic_html_controller
 {
   public:
-	basic_webapp();
+	basic_html_controller();
 
-	virtual ~basic_webapp();
+	virtual ~basic_html_controller();
 
 	/// \brief set the docroot for a webapp
 	virtual void set_docroot(const std::filesystem::path& docroot);
@@ -129,7 +129,7 @@ class basic_webapp
 
 	/// \brief Add a new authentication handler
 	///
-	/// basic_webapp takes ownership.
+	/// basic_html_controller takes ownership.
 	/// \param authenticator	The object that will the authentication 
 	/// \param login			If true, handlers will be added for /logout and GET and POST /login
 	void add_authenticator(authentication_validation_base* authenticator, bool login = false);
@@ -163,7 +163,7 @@ class basic_webapp
 	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
 
 	/// \brief Dispatch and handle the request
-	virtual void handle_request(request& req, reply& rep);
+	virtual bool handle_request(request& req, reply& rep);
 
 	// --------------------------------------------------------------------
 	// tag processor support
@@ -236,7 +236,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -245,7 +245,7 @@ class basic_webapp
 	template<class Class>
 	void mount_get(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -254,7 +254,7 @@ class basic_webapp
 	template<class Class>
 	void mount_post(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -263,7 +263,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -272,7 +272,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -281,7 +281,7 @@ class basic_webapp
 	template<class Class>
 	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -290,7 +290,7 @@ class basic_webapp
 	template<class Class>
 	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -299,7 +299,7 @@ class basic_webapp
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_webapp,Class>, "This call can only be used for methods in classes derived from basic_webapp");
+		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -392,28 +392,22 @@ class basic_webapp
 };
 
 // --------------------------------------------------------------------
-/// webapp is derived from both zeep::http::server and basic_webapp, it is used to create
+/// webapp is derived from both zeep::http::server and basic_html_controller, it is used to create
 /// interactive web applications.
 
 template<typename Loader>
-class webapp_base : public http::server, public basic_webapp
+class html_controller_base : public http::controller, public basic_html_controller
 {
   public:
 
-	webapp_base(const std::string& docroot = ".")
-		: m_loader(docroot)
+	html_controller_base(const std::string& prefix_path, const std::string& docroot = ".")
+		: http::controller(prefix_path), m_loader(docroot)
 	{
 		register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
 		register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());
 	}
 
-	virtual ~webapp_base() {}
-
-	void handle_request(request& req, reply& rep)
-	{
-		server::get_log() << req.uri;
-		basic_webapp::handle_request(req, rep);
-	}
+	virtual ~html_controller_base() {}
 
 	/// return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept
@@ -431,13 +425,13 @@ class webapp_base : public http::server, public basic_webapp
 	Loader m_loader;
 };
 
-using file_based_webapp = webapp_base<file_loader>;
-using rsrc_based_webapp = webapp_base<rsrc_loader>;
+using file_based_webapp = html_controller_base<file_loader>;
+using rsrc_based_html_controller = html_controller_base<rsrc_loader>;
 
 #if WEBAPP_USES_RESOURCES
-using webapp = rsrc_based_webapp;
+using html_controller = rsrc_based_webapp;
 #else
-using webapp = file_based_webapp;
+using html_controller = file_based_webapp;
 #endif
 
 } // namespace http::zeep

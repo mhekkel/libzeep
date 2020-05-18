@@ -21,7 +21,11 @@ namespace zeep::http
 
 class connection;
 
-/// \brief The libzeep HTTP server implementation. Based on code found in boost::asio.
+/// \brief The libzeep HTTP server implementation. Originally ased on example code found in boost::asio.
+///
+/// The server class is a simple, stand alone HTTP server. Call bind to make it listen to an address/port
+/// combination. Add controller classes to do the actual work. These controllers will be tried in the order
+/// at which they were added to see if they want to process a request.
 
 class server : public request_handler
 {
@@ -35,8 +39,7 @@ class server : public request_handler
 	///
 	/// When a request is received, the list of controllers get a chance
 	/// of handling it, in the order of which they were added to this server.
-	/// If none of the controller handle the request the default handle_request
-	/// will be called.
+	/// If none of the controller handle the request the not_found error is returned.
 	void add_controller(controller* c);
 
 	/// \brief Bind the server to address \a address and port \a port
@@ -68,18 +71,12 @@ class server : public request_handler
 
   protected:
 
-	/// \brief this will be called when none of the controllers has intercepted the request
-	///
-	/// subclasses should implement this to do something useful since the default is to return
-	/// the HTTP not_found result;
-	virtual void handle_request(request& req, reply& rep);
-
 	/// \brief the default entry logger
 	virtual void log_request(const std::string& client,
 							 const request& req, const reply& rep,
 							 const boost::posix_time::ptime& start,
 							 const std::string& referer, const std::string& userAgent,
-							 const std::string& entry);
+							 const std::string& entry) noexcept;
 
   private:
 	friend class preforked_server_base;

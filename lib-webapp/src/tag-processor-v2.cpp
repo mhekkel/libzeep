@@ -78,7 +78,7 @@ tag_processor_v2::tag_processor_v2(const char* ns)
 	// register_attr_handler("remove",  std::bind(&tag_processor_v2::process_attr_remove,	this, _1, _2, _3, _4, _5));
 }
 
-void tag_processor_v2::process_xml(xml::node* node, const scope& parentScope, fs::path dir, basic_webapp& webapp)
+void tag_processor_v2::process_xml(xml::node* node, const scope& parentScope, fs::path dir, basic_html_controller& webapp)
 {
 	process_node(node, parentScope, dir, webapp);
 
@@ -90,7 +90,7 @@ void tag_processor_v2::process_xml(xml::node* node, const scope& parentScope, fs
 // --------------------------------------------------------------------
 // post processing: remove blocks, remove attributes with ns = ns(), process remove 
 
-void tag_processor_v2::post_process(xml::element* e, const scope& parentScope, fs::path dir, basic_webapp& webapp)
+void tag_processor_v2::post_process(xml::element* e, const scope& parentScope, fs::path dir, basic_html_controller& webapp)
 {
 	auto parent = e->parent();
 
@@ -204,7 +204,7 @@ void tag_processor_v2::process_text(xml::text& text, const scope& scope)
 // --------------------------------------------------------------------
 
 std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
-	xml::element* node, fs::path dir, basic_webapp& webapp, const json::element& spec, const scope& scope)
+	xml::element* node, fs::path dir, basic_html_controller& webapp, const json::element& spec, const scope& scope)
 {
 	if (spec.contains("is-node-set") and spec["is-node-set"])
 		return scope.get_nodeset(spec["node-set-name"].as<std::string>());
@@ -248,7 +248,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 }
 
 std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
-	xml::element* node, fs::path dir, basic_webapp& webapp, const std::string& file, const std::string& selector, bool byID)
+	xml::element* node, fs::path dir, basic_html_controller& webapp, const std::string& file, const std::string& selector, bool byID)
 {
 	xml::context ctx;
 	ctx.set("ns", ns());
@@ -319,7 +319,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 
 // -----------------------------------------------------------------------
 
-void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, std::filesystem::path dir, basic_webapp& webapp)
+void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	for (;;)
 	{
@@ -405,14 +405,14 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_webapp& webapp, bool unless) ->AttributeAction
+auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_html_controller& webapp, bool unless) ->AttributeAction
 {
 	return ((not evaluate_el(scope, attr->value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_assert(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_webapp& webapp) ->AttributeAction
+auto tag_processor_v2::process_attr_assert(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_html_controller& webapp) ->AttributeAction
 {
 	if (not evaluate_el_assert(scope, attr->value()))
 		throw zeep::exception("Assertion failed for '" + attr->value() + "'");
@@ -421,7 +421,7 @@ auto tag_processor_v2::process_attr_assert(xml::element* element, xml::attribute
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_webapp& webapp, bool escaped) ->AttributeAction
+auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_html_controller& webapp, bool escaped) ->AttributeAction
 {
 	json::element obj = evaluate_el(scope, attr->value());
 
@@ -457,7 +457,7 @@ auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* 
 
 // --------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_webapp& webapp) -> AttributeAction
+auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_html_controller& webapp) -> AttributeAction
 {
 	auto vo = evaluate_el(scope, attr->value());
 	std::string v;
@@ -498,7 +498,7 @@ auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_webapp& webapp) -> AttributeAction
+auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_html_controller& webapp) -> AttributeAction
 {
 	std::regex kEachRx(R"(^\s*(\w+)\s*=\s*(.+)$)");
 
@@ -518,7 +518,7 @@ auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* 
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
@@ -573,7 +573,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	auto v = evaluate_el_attr(scope, attr->value());
 	for (auto vi: v)
@@ -584,7 +584,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::eleme
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	auto s = attr->value();
 
@@ -597,7 +597,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::el
 // --------------------------------------------------------------------
 
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
-	xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+	xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	auto s = attr->value();
 
@@ -611,7 +611,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	auto type = attr->value();
 
@@ -721,7 +721,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::element* node, xml::attribute* attr, scope& parentScope, std::filesystem::path dir, basic_webapp& webapp, TemplateIncludeAction tia)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::element* node, xml::attribute* attr, scope& parentScope, std::filesystem::path dir, basic_html_controller& webapp, TemplateIncludeAction tia)
 {
 	AttributeAction result = AttributeAction::none;
 
@@ -858,7 +858,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	auto mode = attr->value();
 
@@ -892,7 +892,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::ele
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	for (;;)
 	{
@@ -929,7 +929,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_webapp& webapp)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_html_controller& webapp)
 {
 	for (;;)
 	{

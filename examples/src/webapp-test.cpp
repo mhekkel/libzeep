@@ -17,7 +17,7 @@ namespace zh = zeep::http;
 namespace el = zeep::json;
 namespace fs = std::filesystem;
 
-class my_webapp : public zh::webapp
+class my_webapp : public zh::html_controller
 {
   public:
 	my_webapp();

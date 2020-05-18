@@ -121,16 +121,23 @@ std::ostream& server::get_log()
 	return *detail::s_log;
 }
 
-void server::handle_request(request& req, reply& rep)
-{
-	get_log() << req.uri;
-	rep = reply::stock_reply(not_found);
-}
-
 void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
 {
 	using namespace boost::posix_time;
-	
+
+	// std::string csrf = req.get_cookie("csrf-token");
+	// bool csrf_is_new = csrf.empty();
+
+	// if (csrf_is_new)
+	// {
+	// 	csrf = encode_base64url(random_hash());
+	// 	req.set_cookie("csrf-token", csrf);
+	// }
+
+
+	// we're pessimistic
+	rep = reply::stock_reply(not_found);
+
 	detail::s_log.reset(new std::ostringstream);
 	ptime start = second_clock::local_time();
 	
@@ -138,7 +145,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 	
 	for (const header& h: req.headers)
 	{
-		if (m_log_forwarded and ba::iequals(h.name, "X-Forwarded-For"))
+		if (m_log_forwarded and iequals(h.name, "X-Forwarded-For"))
 		{
 			client = h.value;
 			std::string::size_type comma = client.rfind(',');
@@ -149,11 +156,11 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 				client = client.substr(comma + 1, std::string::npos);
 			}
 		}
-		else if (ba::iequals(h.name, "Referer"))
+		else if (iequals(h.name, "Referer"))
 			referer = h.value;
-		else if (ba::iequals(h.name, "User-Agent"))
+		else if (iequals(h.name, "User-Agent"))
 			userAgent = h.value;
-		else if (ba::iequals(h.name, "Accept"))
+		else if (iequals(h.name, "Accept"))
 			accept = h.value;
 	}
 	
@@ -175,20 +182,18 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 		}
 
 		// do the actual work.
-		bool handled = false;
-
 		for (auto c: m_controllers)
 		{
 			if (c->handle_request(req, rep))
-			{
-				handled = true;
 				break;
-			}
+		}
+		
+		if (req.method == method_type::HEAD)
+		{
+			rep.set_content("", rep.get_content_type());
+			// csrf_is_new = false;
 		}
 
-		if (not handled)
-			handle_request(req, rep);
-		
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
 			not ba::contains(accept, "application/xhtml+xml") and
@@ -210,45 +215,45 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 		rep = reply::stock_reply(internal_server_error);
 	}
 
-	try
-	{
-		log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
-	}
-	catch (...) {}
+	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
 }
 
 void server::log_request(const std::string& client,
 	const request& req, const reply& rep,
 	const boost::posix_time::ptime& start,
 	const std::string& referer, const std::string& userAgent,
-	const std::string& entry)
+	const std::string& entry) noexcept
 {
-	// protect the output stream from garbled log messages
-	std::unique_lock<std::mutex> lock(detail::s_log_lock);
+	try
+	{
+		// protect the output stream from garbled log messages
+		std::unique_lock<std::mutex> lock(detail::s_log_lock);
 
-	using namespace boost::local_time;
+		using namespace boost::local_time;
 
-	local_date_time start_local(start, time_zone_ptr());
+		local_date_time start_local(start, time_zone_ptr());
 
-	std::string username = req.username;
-	if (username.empty())
-		username = "-";
+		std::string username = req.username;
+		if (username.empty())
+			username = "-";
 
-	std::cout << client << ' '
-		 << "-" << ' '
-		 << username << ' '
-		 << start_local << ' '
-		 << '"' << to_string(req.method) << ' ' << req.uri << ' '
-				<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
-		 << rep.get_status() << ' '
-		 << rep.size() << ' '
-		 << '"' << referer << '"' << ' '
-		 << '"' << userAgent << '"' << ' ';
-	
-	if (entry.empty())
-		std::cout << '-' << std::endl;
-	else
-		std::cout << '"' << entry << '"' << std::endl;
+		std::cout << client << ' '
+			<< "-" << ' '
+			<< username << ' '
+			<< start_local << ' '
+			<< '"' << to_string(req.method) << ' ' << req.uri << ' '
+					<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
+			<< rep.get_status() << ' '
+			<< rep.size() << ' '
+			<< '"' << referer << '"' << ' '
+			<< '"' << userAgent << '"' << ' ';
+		
+		if (entry.empty())
+			std::cout << '-' << std::endl;
+		else
+			std::cout << '"' << entry << '"' << std::endl;
+	}
+	catch (...) {}
 }
 
 }
