@@ -130,4 +130,6 @@ XPath constructs can reference variables. As an example, suppose you need to fin
 [xpath_example]
 
 
+[note Please note that the evaluation of an XPath returns pointers to XML nodes. Of course these are only valid as long as you do not modify the the document in which they are contained.]
+
 [endsect]

@@ -197,3 +197,8 @@ BOOST_AUTO_TEST_CASE(j_9)
 	BOOST_TEST(j == 1);
 
 }
+
+BOOST_AUTO_TEST_CASE(j_10)
+{
+	static_assert(std::is_constructible<json, const char*>::value, "oi");
+}
