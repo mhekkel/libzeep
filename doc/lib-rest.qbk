@@ -9,7 +9,7 @@
 
 [chapter REST
     [quickbook 1.7]
-    [id libzeep.el]
+    [id libzeep.rest]
 ]
 
 [section:descr Introduction]

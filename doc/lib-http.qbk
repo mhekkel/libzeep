@@ -9,10 +9,32 @@
 
 [chapter HTTP
     [quickbook 1.7]
-    [id libzeep.el]
+    [id libzeep.http]
 ]
+
+[def __http_server__ [classref zeep::http::server `zeep::http::server`]]
+[def __request__ [classref zeep::http::request `request`]]
+[def __reply__ [classref zeep::http::reply `reply`]]
+[def __header__ [classref zeep::http::header `header`]]
+
 
 [section:descr Introduction]
 
+The http library in libzeep contains a simple HTTP server implementation. This implementation leans heavily on an example in the boost::asio library. There are a few notable addtions though that make this library more useful in a web application context.
+
+The __http_server__ class can be used 
 
 [endsect:descr]
+
+[section:data-types Data types]
+
+An implementation of the HTTP standard will need various data types. There are [classref zeep::http::request HTTP `requests`] and [classref zeep::http::reply HTTP `replies`]. And these contain [classref zeep::http::header HTTP `headers`] but also predefined [enumref zeep::http::method_type `method_type`s].
+
+The HTTP specification for __request__ and __reply__ are sufficiently similar to allow for a common [classref zeep::http::parser message parsing class]. The parser for requests supports [@https://en.wikipedia.org/wiki/Chunked_transfer_encoding chunked transfer encoding].
+
+[heading request]
+
+
+
+
+[endsect:data-types]

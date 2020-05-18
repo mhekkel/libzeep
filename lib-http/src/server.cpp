@@ -157,8 +157,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			accept = h.value;
 	}
 	
-	try		// asking for the remote endpoint address failed sometimes
-			// causing aborting exceptions, so I moved it here.
+	try
 	{
 		// shortcut, check for supported method
 		if (req.method != method_type::GET and req.method != method_type::POST and req.method != method_type::PUT and
@@ -167,6 +166,8 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			throw bad_request;
 		}
 
+		// asking for the remote endpoint address failed sometimes
+		// causing aborting exceptions, so I moved it here.
 		if (client.empty())
 		{
 			boost::asio::ip::address addr = socket.remote_endpoint().address();

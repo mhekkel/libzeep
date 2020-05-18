@@ -9,7 +9,7 @@
 
 [chapter SOAP
     [quickbook 1.7]
-    [id libzeep.el]
+    [id libzeep.soap]
 ]
 
 [section:descr Introduction]

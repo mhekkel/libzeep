@@ -148,7 +148,6 @@ class basic_webapp
 	///
 	/// An error should be returned with HTTP status code \a status. This method will create a default error page.
 	/// \param req		The request that triggered this call
-	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
 	/// \param realm	The name of the protected area, might be shown to the user
 	/// \param rep		Write the reply in this object
 	virtual void create_error_reply(const request& req, status_type status, reply& rep);
@@ -158,8 +157,8 @@ class basic_webapp
 	/// An error should be returned with HTTP status code \a status and additional information \a message.
 	/// This method will create a default error page.
 	/// \param req		The request that triggered this call
-	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
-	/// \param realm	The name of the protected area, might be shown to the user
+	/// \param status	The error that triggered this call
+	/// \param message	The message describing the error
 	/// \param rep		Write the reply in this object
 	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
 

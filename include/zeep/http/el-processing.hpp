@@ -54,7 +54,7 @@ std::string process_el_2(const scope& scope, const std::string& text);
 /// in \a result.
 /// \param scope  The scope for this el script
 /// \param text   The el script
-/// \param result The result of the script
+/// \result		  The result of the script
 object evaluate_el(const scope& scope, const std::string& text);
 
 /// \brief Process the text in \a text and return a list of name/value pairs

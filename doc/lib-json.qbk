@@ -30,7 +30,7 @@ The main data structure in this library is __json_element__, this is the represe
 [synopsis_json_main]
 
 
-[heading STL]
+[heading STL-like interface]
 
 The __json_element__ class acts as an STL container, see the class reference for more information. But to give you an idea:
 

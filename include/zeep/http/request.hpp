@@ -21,6 +21,9 @@ namespace zeep::http
 {
 
 /// \brief The supported HTTP methods in libzeep, admittedly a bit limited
+///
+/// The supported HTTP methods. This is a subset of what should perhaps be
+/// available.
 enum class method_type
 {
 	UNDEFINED, OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT
