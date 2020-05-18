@@ -19,21 +19,19 @@ void test_stl()
     j.push_back(4);
     j.emplace_back("five");
 
-    std::cout << j << std::endl;
-
-    static_assert(std::is_constructible<zeep::el::element, const char*>::value, "oi");
+    assert(j == R"([ 1, 2, 3, 4, "five" ])"_json);
 
     /*<< Now make j an object, this will erase the data and initialize a new object >>*/
     j = zeep::el::element::object({ { "a", true }, { "b", "2" } });
-    j.emplace("c", 1);
+    j.emplace("c", 3);
 
-    std::cout << j << std::endl;
+    assert(j == R"({ "a": true, "b": "2", "c": 3 })"_json);
 //]
 }
 
-//[ synopsis_el_main
-int main()
+void construct()
 {
+//[ synopsis_el_main
     using namespace zeep::el::literals; 
     using json = zeep::el::element;
 
@@ -72,9 +70,12 @@ int main()
     std::cout << j2 << std::endl;
 
     assert(j1 == j2);
+//]
+}
 
+int main()
+{
+    construct();
     test_stl();
-
     return 0;
 }
-//]
