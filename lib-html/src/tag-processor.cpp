@@ -8,16 +8,16 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 
-#include <zeep/http/webapp.hpp>
+#include <zeep/html/controller.hpp>
 #include <zeep/xml/character-classification.hpp>
-#include <zeep/http/el-processing.hpp>
-#include <zeep/http/tag-processor.hpp>
+#include <zeep/html/el-processing.hpp>
+#include <zeep/html/tag-processor.hpp>
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep::http
+namespace zeep::html
 {
 
 // --------------------------------------------------------------------
@@ -68,7 +68,7 @@ bool tag_processor_v1::process_el(const scope& scope, std::string& s)
 	return replaced;
 }
 
-void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	xml::text* text = dynamic_cast<xml::text*>(node);
 
@@ -95,7 +95,7 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 		{
 			auto nested(scope);
 
-			process_tag(e->name(), e, scope, dir, webapp);
+			process_tag(e->name(), e, scope, dir, controller);
 		}
 		catch (exception& ex)
 		{
@@ -124,27 +124,27 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 
 		std::vector<xml::element*> nodes{ e->begin(), e->end() };
 		for (auto n: nodes)
-			process_xml(n, scope, dir, webapp);
+			process_xml(n, scope, dir, controller);
 	}
 }
 
-void tag_processor_v1::process_tag(const std::string& tag, xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_tag(const std::string& tag, xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
-		 if (tag == "include")	process_include(node, scope, dir, webapp);
-	else if (tag == "if")		process_if(node, scope, dir, webapp);
-	else if (tag == "iterate")	process_iterate(node, scope, dir, webapp);
-	else if (tag == "for")		process_for(node, scope, dir, webapp);
-	else if (tag == "number")	process_number(node, scope, dir, webapp);
-	else if (tag == "options")	process_options(node, scope, dir, webapp);
-	else if (tag == "option")	process_option(node, scope, dir, webapp);
-	else if (tag == "checkbox")	process_checkbox(node, scope, dir, webapp);
-	// else if (tag == "url")		process_url(node, scope, dir, webapp);
-	else if (tag == "param")	process_param(node, scope, dir, webapp);
-	else if (tag == "embed")	process_embed(node, scope, dir, webapp);
+		 if (tag == "include")	process_include(node, scope, dir, controller);
+	else if (tag == "if")		process_if(node, scope, dir, controller);
+	else if (tag == "iterate")	process_iterate(node, scope, dir, controller);
+	else if (tag == "for")		process_for(node, scope, dir, controller);
+	else if (tag == "number")	process_number(node, scope, dir, controller);
+	else if (tag == "options")	process_options(node, scope, dir, controller);
+	else if (tag == "option")	process_option(node, scope, dir, controller);
+	else if (tag == "checkbox")	process_checkbox(node, scope, dir, controller);
+	// else if (tag == "url")		process_url(node, scope, dir, controller);
+	else if (tag == "param")	process_param(node, scope, dir, controller);
+	else if (tag == "embed")	process_embed(node, scope, dir, controller);
 	else throw exception("unimplemented <m1:" + tag + "> tag");
 }
 
-void tag_processor_v1::process_include(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_include(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	// an include directive, load file and include resulting content
 	std::string file = node->get_attribute("file");
@@ -156,15 +156,15 @@ void tag_processor_v1::process_include(xml::element *node, const scope& scope, f
 
 	xml::document doc;
 	doc.set_preserve_cdata(true);
-	webapp.load_template((dir / file).string(), doc);
+	controller.load_template((dir / file).string(), doc);
 
-	process_xml(&doc.front(), scope, (dir / file).parent_path(), webapp);
+	process_xml(&doc.front(), scope, (dir / file).parent_path(), controller);
 
 	auto parent = node->parent();
 	parent->insert(node, std::move(doc.front()));
 }
 
-void tag_processor_v1::process_if(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_if(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	std::string test = node->get_attribute("test");
 	if (evaluate_el(scope, test))
@@ -175,12 +175,12 @@ void tag_processor_v1::process_if(xml::element *node, const scope& scope, fs::pa
 		for (auto& c: *node)
 		{
 			auto copy = parent->emplace(node, std::move(c)); // insert before processing, to assign namespaces
-			process_xml(copy, scope, dir, webapp);
+			process_xml(copy, scope, dir, controller);
 		}
 	}
 }
 
-void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	using json::detail::value_type;
 
@@ -203,12 +203,12 @@ void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, f
 		for (auto& c: *node)
 		{
 			auto i = parent->emplace(node, c); // insert before processing, to assign namespaces
-			process_xml(&*i, s, dir, webapp);
+			process_xml(&*i, s, dir, controller);
 		}
 	}
 }
 
-void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	object b = evaluate_el(scope, node->get_attribute("begin"));
 	object e = evaluate_el(scope, node->get_attribute("end"));
@@ -228,7 +228,7 @@ void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::p
 		for (auto& c: *node)
 		{
 			auto i = parent->emplace(node, c); // insert before processing, to assign namespaces
-			process_xml(i, s, dir, webapp);
+			process_xml(i, s, dir, controller);
 		}
 	}
 }
@@ -241,7 +241,7 @@ protected:
 	//	char_type do_decimal_point() const	{ return dsp; }
 };
 
-void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	std::string number = node->get_attribute("n");
 	std::string format = node->get_attribute("f");
@@ -284,7 +284,7 @@ void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs
 	parent->nodes().emplace(node, zeep::xml::text(number));
 }
 
-void tag_processor_v1::process_options(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_options(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	using ::zeep::json::detail::value_type;
 
@@ -327,7 +327,7 @@ void tag_processor_v1::process_options(xml::element *node, const scope& scope, f
 	}
 }
 
-void tag_processor_v1::process_option(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_option(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	std::string value = node->get_attribute("value");
 	if (not value.empty())
@@ -350,11 +350,11 @@ void tag_processor_v1::process_option(xml::element *node, const scope& scope, fs
 	for (auto& c: *node)
 	{
 		auto i = option.emplace(option.end(), c);
-		process_xml(i, scope, dir, webapp);
+		process_xml(i, scope, dir, controller);
 	}
 }
 
-void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	std::string name = node->get_attribute("name");
 	if (not name.empty())
@@ -378,11 +378,11 @@ void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, 
 	for (auto& c: *node)
 	{
 		auto i = checkbox.emplace(checkbox.end(), c);
-		process_xml(i, scope, dir, webapp);
+		process_xml(i, scope, dir, controller);
 	}
 }
 
-void tag_processor_v1::process_url(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_url(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	// std::string var = node->get_attr("var");
 
@@ -416,12 +416,12 @@ void tag_processor_v1::process_url(xml::element *node, const scope& scope, fs::p
 	// s.put(var, url);
 }
 
-void tag_processor_v1::process_param(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_param(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	throw exception("Invalid XML, cannot have a stand-alone mrs:param element");
 }
 
-void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& webapp)
+void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs::path dir, basic_html_controller& controller)
 {
 	// an embed directive, load xml from attribute and include parsed content
 	std::string xml = scope[node->get_attribute("var")].as<std::string>();
@@ -438,7 +438,7 @@ void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs:
 	auto parent = node->parent();
 	auto i = parent->emplace(node, std::move(doc.front()));
 
-	process_xml(i, scope, dir, webapp);
+	process_xml(i, scope, dir, controller);
 }
 
 // --------------------------------------------------------------------

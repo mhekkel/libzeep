@@ -23,9 +23,9 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/server.hpp>
-#include <zeep/http/el-processing.hpp>
-#include <zeep/http/tag-processor.hpp>
 #include <zeep/http/authorization.hpp>
+#include <zeep/html/el-processing.hpp>
+#include <zeep/html/tag-processor.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -132,7 +132,7 @@ class basic_html_controller
 	/// basic_html_controller takes ownership.
 	/// \param authenticator	The object that will the authentication 
 	/// \param login			If true, handlers will be added for /logout and GET and POST /login
-	void add_authenticator(authentication_validation_base* authenticator, bool login = false);
+	void add_authenticator(http::authentication_validation_base* authenticator, bool login = false);
 
 	/// \brief Create an error reply for the error containing a validation header
 	///
@@ -142,7 +142,7 @@ class basic_html_controller
 	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
 	/// \param realm	The name of the protected area, might be shown to the user
 	/// \param rep		Write the reply in this object
-	virtual void create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep);
+	virtual void create_unauth_reply(const http::request& req, bool stale, const std::string& realm, http::reply& reply);
 
 	/// \brief Create an error reply for the error
 	///
@@ -150,7 +150,7 @@ class basic_html_controller
 	/// \param req		The request that triggered this call
 	/// \param realm	The name of the protected area, might be shown to the user
 	/// \param rep		Write the reply in this object
-	virtual void create_error_reply(const request& req, status_type status, reply& rep);
+	virtual void create_error_reply(const http::request& req, http::status_type status, http::reply& reply);
 
 	/// \brief Create an error reply for the error with an additional message for the user
 	///
@@ -160,10 +160,10 @@ class basic_html_controller
 	/// \param status	The error that triggered this call
 	/// \param message	The message describing the error
 	/// \param rep		Write the reply in this object
-	virtual void create_error_reply(const request& req, status_type status, const std::string& message, reply& rep);
+	virtual void create_error_reply(const http::request& req, http::status_type status, const std::string& message, http::reply& reply);
 
 	/// \brief Dispatch and handle the request
-	virtual bool handle_request(request& req, reply& rep);
+	virtual bool handle_request(http::request& req, http::reply& reply);
 
 	// --------------------------------------------------------------------
 	// tag processor support
@@ -172,7 +172,7 @@ class basic_html_controller
 	virtual void process_tags(xml::node* node, const scope& scope);
 
 	/// \brief get the CSRF token in the request \a req
-	std::string get_csrf_token(const request& req) const
+	std::string get_csrf_token(const http::request& req) const
 	{
 		return req.get_cookie("csrf-token");
 	}
@@ -211,7 +211,7 @@ class basic_html_controller
 
 	/// \brief webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 
-	using handler_type = std::function<void(const request& request, const scope& scope, reply& reply)>;
+	using handler_type = std::function<void(const http::request& request, const scope& scope, http::reply& reply)>;
 
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
@@ -221,7 +221,7 @@ class basic_html_controller
 	/// \endcode
 	/// Where page_handler is defined as:
 	/// \code{.cpp}
-	/// void session_server::page_handler(const request& request, const scope& scope, reply& reply);
+	/// void session_server::page_handler(const http::request& request, const scope& scope, http::reply& reply);
 	/// \endcode
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
 	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
@@ -234,89 +234,89 @@ class basic_html_controller
 
 	/// \brief mount a callback on URI path \a path for any HTTP method
 	template<class Class>
-	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, http::method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP GET method
 	template<class Class>
-	void mount_get(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount_get(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, http::method_type::GET, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP POST method
 	template<class Class>
-	void mount_post(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount_post(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, http::method_type::POST, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP method \a method
 	template<class Class>
-	void mount(const std::string& path, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount(const std::string& path, http::method_type method, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, method, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for any HTTP method, and enforce authentication specified by \a realm
 	template<class Class>
-	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, realm, http::method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP method GET, and enforce authentication specified by \a realm
 	template<class Class>
-	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, realm, http::method_type::GET, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP method POST, and enforce authentication specified by \a realm
 	template<class Class>
-	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, realm, http::method_type::POST, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for the HTTP method \a method, and enforce authentication specified by \a realm
 	template<class Class>
-	void mount(const std::string& path, const std::string& realm, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
+	void mount(const std::string& path, const std::string& realm, http::method_type method, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
 		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
+		mount(path, realm, method, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a handler on URI path \a path for HTTP method \a method
-	void mount(const std::string& path, method_type method, handler_type handler)
+	void mount(const std::string& path, http::method_type method, handler_type handler)
 	{
 		mount(path, "", method, std::move(handler));
 	}
 
 	/// \brief mount a handler on URI path \a path for HTTP method \a method, and enforce authentication specified by \a realm
-	void mount(const std::string& path, const std::string& realm, method_type method, handler_type handler)
+	void mount(const std::string& path, const std::string& realm, http::method_type method, handler_type handler)
 	{
 		auto mp = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
 			[path, method](auto& mp)
 			{
-				return mp.path == path and (mp.method == method or mp.method == method_type::UNDEFINED or method == method_type::UNDEFINED);
+				return mp.path == path and (mp.method == method or mp.method == http::method_type::UNDEFINED or method == http::method_type::UNDEFINED);
 			});
 
 		if (mp == m_dispatch_table.end())
@@ -327,14 +327,14 @@ class basic_html_controller
 				throw std::logic_error("realms not equal");
 
 			if (mp->method != method)
-				throw std::logic_error("cannot mix method_type::UNDEFINED with something else");
+				throw std::logic_error("cannot mix http::method_type::UNDEFINED with something else");
 
 			mp->handler = handler;
 		}
 	}
 
 	/// \brief Default handler for serving files out of our doc root
-	virtual void handle_file(const request& request, const scope& scope, reply& reply);
+	virtual void handle_file(const http::request& request, const scope& scope, http::reply& reply);
 
   public:
 
@@ -350,7 +350,7 @@ class basic_html_controller
 	virtual void load_template(const std::string& file, xml::document& doc);
 
 	/// \brief create a reply based on a template
-	virtual void create_reply_from_template(const std::string& file, const scope& scope, reply& reply);
+	virtual void create_reply_from_template(const std::string& file, const scope& scope, http::reply& reply);
 
 	/// \brief Initialize the scope object
 	virtual void init_scope(scope& scope);
@@ -361,16 +361,16 @@ class basic_html_controller
 	///
 	/// This is the default handler for `GET /login`. If you want to provide a custom login
 	/// page, you have to override this method.
-	virtual void handle_get_login(const request& request, const scope& scope, reply& reply);
+	virtual void handle_get_login(const http::request& request, const scope& scope, http::reply& reply);
 
 	/// \brief default POST login handler, will process the credentials from the form in the login page
 	///
 	/// This is the default handler for `POST /login`. If you want to provide a custom login
 	/// procedure, you have to override this method.
-	virtual void handle_post_login(const request& request, const scope& scope, reply& reply);
+	virtual void handle_post_login(const http::request& request, const scope& scope, http::reply& reply);
 
 	/// \brief default logout handler, will return a redirect to the base URL and remove the authentication Cookie
-	virtual void handle_logout(const request& request, const scope& scope, reply& reply);
+	virtual void handle_logout(const http::request& request, const scope& scope, http::reply& reply);
 
   private:
 
@@ -378,7 +378,7 @@ class basic_html_controller
 	{
 		std::string path;
 		std::string realm;
-		method_type method;
+		http::method_type method;
 		handler_type handler;
 	};
 
@@ -388,7 +388,7 @@ class basic_html_controller
 	std::string m_ns;
 	std::filesystem::path m_docroot;
 
-	std::vector<authentication_validation_base*> m_authentication_validators;
+	std::vector<http::authentication_validation_base*> m_authentication_validators;
 };
 
 // --------------------------------------------------------------------
@@ -428,10 +428,12 @@ class html_controller_base : public http::controller, public basic_html_controll
 using file_based_webapp = html_controller_base<file_loader>;
 using rsrc_based_html_controller = html_controller_base<rsrc_loader>;
 
+/// \brief the actual definition of zeep::html::controller
+
 #if WEBAPP_USES_RESOURCES
-using html_controller = rsrc_based_webapp;
+using controller = rsrc_based_html_controller;
 #else
-using html_controller = file_based_webapp;
+using controller = file_based_html_controller;
 #endif
 
 } // namespace http::zeep

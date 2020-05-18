@@ -12,7 +12,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "utils.hpp"
+#include <zeep/utils.hpp>
 
 namespace fs = std::filesystem;
 namespace ba = boost::algorithm;
@@ -405,7 +405,7 @@ void expand_group(const std::string& pattern, std::vector<std::string>& expanded
 
 }
 
-namespace zeep::http
+namespace zeep
 {
 
 std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)

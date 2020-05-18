@@ -3,7 +3,7 @@
 #define BOOST_TEST_MODULE Processor_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include <zeep/http/webapp.hpp>
+#include <zeep/html/controller.hpp>
 #include <zeep/http/el-processing.hpp>
 
 using namespace std;

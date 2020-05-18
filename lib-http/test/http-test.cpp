@@ -9,7 +9,7 @@
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/message-parser.hpp>
 #include <zeep/streambuf.hpp>
-#include <zeep/http/webapp.hpp>
+#include <zeep/html/controller.hpp>
 
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>

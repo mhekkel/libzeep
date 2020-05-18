@@ -21,7 +21,7 @@
 
 #include <zeep/xml/node.hpp>
 
-namespace zeep::http
+namespace zeep::html
 {
 
 using object = ::zeep::json::element;

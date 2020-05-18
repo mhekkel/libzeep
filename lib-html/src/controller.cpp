@@ -19,21 +19,20 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/iostreams/copy.hpp>
 
-#include <zeep/http/webapp.hpp>
-#include <zeep/xml/character-classification.hpp>
-#include <zeep/http/el-processing.hpp>
 #include <zeep/crypto.hpp>
-#include <zeep/http/webapp.hpp>
+#include <zeep/utils.hpp>
+#include <zeep/xml/character-classification.hpp>
 #include <zeep/xml/xpath.hpp>
-
-#include "utils.hpp"
+#include <zeep/html/controller.hpp>
+#include <zeep/html/el-processing.hpp>
+#include <zeep/html/controller.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep::http
+namespace zeep::html
 {
 
 // --------------------------------------------------------------------
@@ -72,7 +71,7 @@ basic_html_controller::~basic_html_controller()
 		delete a;
 }
 
-void basic_html_controller::add_authenticator(authentication_validation_base* authenticator, bool login)
+void basic_html_controller::add_authenticator(http::authentication_validation_base* authenticator, bool login)
 {
 	m_authentication_validators.push_back(authenticator);
 
@@ -84,7 +83,7 @@ void basic_html_controller::add_authenticator(authentication_validation_base* au
 	}
 }
 
-bool basic_html_controller::handle_request(request& req, reply& rep)
+bool basic_html_controller::handle_request(http::request& req, http::reply& rep)
 {
 	std::string uri = req.uri;
 
@@ -101,7 +100,7 @@ bool basic_html_controller::handle_request(request& req, reply& rep)
 	{
 		// start by sanitizing the request's URI, first parse the parameters
 		std::string ps = req.payload;
-		if (req.method != method_type::POST)
+		if (req.method != http::method_type::POST)
 		{
 			std::string::size_type d = uri.find('?');
 			if (d != std::string::npos)
@@ -139,18 +138,18 @@ bool basic_html_controller::handle_request(request& req, reply& rep)
 			{
 				// return m.path == uri and
 				return glob_match(uri, m.path) and
-					(	method == method_type::HEAD or
-						method == method_type::OPTIONS or
+					(	method == http::method_type::HEAD or
+						method == http::method_type::OPTIONS or
 						m.method == method or
-						m.method == method_type::UNDEFINED);
+						m.method == http::method_type::UNDEFINED);
 			});
 
 		if (handler == m_dispatch_table.end())
-			throw not_found;
+			throw http::not_found;
 
-		if (req.method == method_type::OPTIONS)
+		if (req.method == http::method_type::OPTIONS)
 		{
-			rep = reply::stock_reply(ok);
+			rep = http::reply::stock_reply(http::ok);
 			rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");
 			rep.set_content("", "text/plain");
 		}
@@ -172,7 +171,7 @@ bool basic_html_controller::handle_request(request& req, reply& rep)
 				credentials = (*avi)->validate_authentication(req);
 
 				if (not credentials)
-					throw unauthorized_exception(handler->realm);
+					throw http::unauthorized_exception(handler->realm);
 			}
 			else	// not a protected area, but see if there's a valid login anyway
 			{
@@ -196,29 +195,29 @@ bool basic_html_controller::handle_request(request& req, reply& rep)
 
 			handler->handler(req, scope, rep);
 
-			if (req.method == method_type::HEAD)
+			if (req.method == http::method_type::HEAD)
 			{
 				rep.set_content("", rep.get_content_type());
 				csrf_is_new = false;
 			}
 		}
 	}
-	catch (authorization_stale_exception& e)
+	catch (http::authorization_stale_exception& e)
 	{
 		create_unauth_reply(req, true, e.m_realm, rep);
 	}
-	catch (unauthorized_exception& e)
+	catch (http::unauthorized_exception& e)
 	{
 		create_unauth_reply(req, false, e.m_realm, rep);
 	}
-	catch (status_type& s)
+	catch (http::status_type& s)
 	{
 		create_error_reply(req, s, rep);
 		csrf_is_new = false;
 	}
 	catch (std::exception& e)
 	{
-		create_error_reply(req, internal_server_error, e.what(), rep);
+		create_error_reply(req, http::internal_server_error, e.what(), rep);
 		csrf_is_new = false;
 	}
 
@@ -228,17 +227,20 @@ bool basic_html_controller::handle_request(request& req, reply& rep)
 			{ "SameSite", "Lax" },
 			{ "Path", "/" }
 		});
+
+	#warning("hier moet nog iets komen")
+	return true;
 }
 
-void basic_html_controller::handle_get_login(const request& request, const scope& scope, reply& reply)
+void basic_html_controller::handle_get_login(const http::request& request, const scope& scope, http::reply& reply)
 {
 	create_unauth_reply(request, false, "", reply);
-	reply.set_status(ok);
+	reply.set_status(http::ok);
 }
 
-void basic_html_controller::handle_post_login(const request& request, const scope& scope, reply& reply)
+void basic_html_controller::handle_post_login(const http::request& request, const scope& scope, http::reply& reply)
 {
-	reply = reply::stock_reply(unauthorized);
+	reply = http::reply::stock_reply(http::unauthorized);
 
 	for (;;)
 	{
@@ -259,9 +261,9 @@ void basic_html_controller::handle_post_login(const request& request, const scop
 			{
 				auto uri = request.get_parameter("uri");
 				if (uri.empty())
-					reply = reply::redirect("/");
+					reply = http::reply::redirect("/");
 				else
-					reply = reply::redirect(uri);
+					reply = http::reply::redirect(uri);
 
 				credentials["iat"] = std::to_string(std::time(nullptr));
 				credentials["sub"] = av->get_realm();
@@ -273,19 +275,19 @@ void basic_html_controller::handle_post_login(const request& request, const scop
 		break;
 	}
 
-	if (reply.get_status() == unauthorized)
+	if (reply.get_status() == http::unauthorized)
 		create_unauth_reply(request, false, "", reply);
 }
 
-void basic_html_controller::handle_logout(const request& request, const scope& scope, reply& reply)
+void basic_html_controller::handle_logout(const http::request& request, const scope& scope, http::reply& reply)
 {
-	reply = reply::redirect("/");
+	reply = http::reply::redirect("/");
 	reply.set_cookie("access_token", "", {
 		{ "Max-Age", "0" }
 	});
 }
 
-void basic_html_controller::create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep)
+void basic_html_controller::create_unauth_reply(const http::request& req, bool stale, const std::string& realm, http::reply& rep)
 {
 	xml::document doc;
 	doc.set_preserve_cdata(true);
@@ -350,7 +352,7 @@ void basic_html_controller::create_unauth_reply(const request& req, bool stale, 
 
 	process_tags(doc.child(), scope);
 	rep.set_content(doc);
-	rep.set_status(unauthorized);
+	rep.set_status(http::unauthorized);
 
 	for (auto av: m_authentication_validators)
 	{
@@ -361,12 +363,12 @@ void basic_html_controller::create_unauth_reply(const request& req, bool stale, 
 	}
 }
 
-void basic_html_controller::create_error_reply(const request& req, status_type status, reply& rep)
+void basic_html_controller::create_error_reply(const http::request& req, http::status_type status, http::reply& rep)
 {
 	create_error_reply(req, status, "", rep);
 }
 
-void basic_html_controller::create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
+void basic_html_controller::create_error_reply(const http::request& req, http::status_type status, const std::string& message, http::reply& rep)
 {
 	scope scope(req);
 
@@ -394,7 +396,7 @@ void basic_html_controller::create_error_reply(const request& req, status_type s
 	}
 	catch(const std::exception& e)
 	{
-		using namespace zeep::xml::literals;
+		using namespace xml::literals;
 
 		auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:z="http://www.hekkelman.com/libzeep/m2" xml:lang="en" lang="en">
@@ -459,8 +461,7 @@ body, html {
 	rep.set_status(status);
 }
 
-void basic_html_controller::handle_file(const zeep::http::request& request,
-	const scope& scope, zeep::http::reply& reply)
+void basic_html_controller::handle_file(const http::request& request, const scope& scope, http::reply& reply)
 {
 	using namespace boost::local_time;
 	using namespace boost::posix_time;
@@ -470,14 +471,14 @@ void basic_html_controller::handle_file(const zeep::http::request& request,
 
 	if (ec)
 	{
-		reply = zeep::http::reply::stock_reply(not_found);
+		reply = http::reply::stock_reply(http::not_found);
 		return;
 	}
 
 	auto lastWriteTime = decltype(ft)::clock::to_time_t(ft);
 
 	std::string ifModifiedSince;
-	for (const zeep::http::header& h : request.headers)
+	for (const http::header& h : request.headers)
 	{
 		if (iequals(h.name, "If-Modified-Since"))
 		{
@@ -494,7 +495,7 @@ void basic_html_controller::handle_file(const zeep::http::request& request,
 
 			if (fileDate <= modifiedSince)
 			{
-				reply = zeep::http::reply::stock_reply(zeep::http::not_modified);
+				reply = http::reply::stock_reply(http::not_modified);
 				return;
 			}
 
@@ -507,7 +508,7 @@ void basic_html_controller::handle_file(const zeep::http::request& request,
 	std::unique_ptr<std::istream> in(load_file(file, ec));
 	if (ec)
 	{
-		reply = zeep::http::reply::stock_reply(not_found);
+		reply = http::reply::stock_reply(http::not_found);
 		return;
 	}
 
@@ -666,7 +667,7 @@ void basic_html_controller::load_template(const std::string& file, xml::document
 	}
 }
 
-void basic_html_controller::create_reply_from_template(const std::string& file, const scope& scope, reply& reply)
+void basic_html_controller::create_reply_from_template(const std::string& file, const scope& scope, http::reply& reply)
 {
 	xml::document doc;
 	doc.set_preserve_cdata(true);

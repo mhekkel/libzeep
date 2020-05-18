@@ -18,7 +18,7 @@
 #include <zeep/xml/document.hpp>
 #include <zeep/soap/envelope.hpp>
 
-namespace zeep::http
+namespace zeep::soap
 {
 
 /// \brief class that helps with handling SOAP requests
@@ -31,15 +31,15 @@ namespace zeep::http
 ///
 /// See the chapter on SOAP controllers in the documention for more information.
 
-class soap_controller : public controller
+class controller : public http::controller
 {
   public:
 	/// \brief constructor
 	///
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	soap_controller(const std::string& prefix_path, const std::string& ns)
-		: controller(prefix_path)
+	controller(const std::string& prefix_path, const std::string& ns)
+		: http::controller(prefix_path)
 		, m_ns(ns)
 		, m_service("b")
 	{
@@ -48,7 +48,7 @@ class soap_controller : public controller
 		m_location = m_prefix_path;
 	}
 
-    ~soap_controller()
+    ~controller()
 	{
 		for (auto mp: m_mountpoints)
 			delete mp;
@@ -112,7 +112,7 @@ class soap_controller : public controller
  
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* action, soap_controller* owner, Sig sig)
+		mount_point(const char* action, controller* owner, Sig sig)
 			: mount_point_base(action)
 		{
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
@@ -125,7 +125,7 @@ class soap_controller : public controller
 		}
 
 		template<typename... Names>
-		mount_point(const char* action, soap_controller* owner, Sig sig, Names... names)
+		mount_point(const char* action, controller* owner, Sig sig, Names... names)
 			: mount_point(action, owner, sig)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");

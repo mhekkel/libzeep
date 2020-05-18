@@ -117,7 +117,7 @@ HEADERS = \
 	zeep/http/request.hpp \
 	zeep/http/server.hpp \
 	zeep/http/tag-processor.hpp \
-	zeep/http/webapp.hpp
+	zeep/html/controller.hpp
 
 $(STATIC_LIB): $(OBJECTS)
 	ar rc $@ $(OBJECTS)
@@ -154,7 +154,7 @@ install-libs: $(SHARED_LIB)
 	$(LD_CONFIG) -n $(LIBDIR)
 
 install-dev: $(STATIC_LIB)
-	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
+	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/html/controller
 	for f in $(HEADERS); do install ../include/$$f $(INCDIR)/$$f; done
 	install $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB_NAME)
 	strip -SX $(LIBDIR)/$(STATIC_LIB_NAME)

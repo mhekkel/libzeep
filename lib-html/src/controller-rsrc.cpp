@@ -10,14 +10,14 @@
 #include <zeep/config.hpp>
 
 #include <zeep/streambuf.hpp>
-#include <zeep/http/webapp.hpp>
+#include <zeep/html/controller.hpp>
 
 #include "mrsrc.h"
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
-namespace zeep::http
+namespace zeep::html
 {
 
 // -----------------------------------------------------------------------

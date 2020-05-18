@@ -22,7 +22,7 @@
 #include <zeep/http/authorization.hpp>
 #include <zeep/json/parser.hpp>
 
-namespace zeep::http
+namespace zeep::rest
 {
 
 /// \brief class that helps with handling REST requests
@@ -34,7 +34,7 @@ namespace zeep::http
 ///
 /// See the chapter on REST controllers in the documention for more information.
 
-class rest_controller : public controller
+class controller : public http::controller
 {
   public:
 
@@ -44,20 +44,20 @@ class rest_controller : public controller
 	/// \param auth			Optionally protect these REST calls with a authentication validator.
 	///						This validator should also be added to the web_app that will contain
 	///						this controller.
-	rest_controller(const std::string& prefix_path, authentication_validation_base* auth = nullptr)
-		: controller(prefix_path), m_auth(auth)
+	controller(const std::string& prefix_path, http::authentication_validation_base* auth = nullptr)
+		: http::controller(prefix_path), m_auth(auth)
 	{
 	}
 
-    ~rest_controller();
+    ~controller();
 
 	/// \brief will do the hard work
-	virtual bool handle_request(request& req, reply& rep);
+	virtual bool handle_request(http::request& req, http::reply& rep);
 
   protected:
 
 	/// \brief validate \a req in combination with \a realm and create a JSON error message in \a rep in case of failure
-	virtual bool validate_request(request& req, reply& rep, const std::string& realm);
+	virtual bool validate_request(http::request& req, http::reply& rep, const std::string& realm);
 
 	/// \brief Return the credentials for the current call, is valid only when inside a `handle_request`
 	virtual json::element& get_credentials()
@@ -65,12 +65,12 @@ class rest_controller : public controller
 		return s_credentials;
 	}
 
-	using param = header;
+	using param = http::header;
 
 	/// \brief helper class for pulling parameter values out of the request
 	struct parameter_pack
 	{
-		parameter_pack(const request& req) : m_req(req) {}
+		parameter_pack(const http::request& req) : m_req(req) {}
 
 		std::string get_parameter(const char* name) const
 		{
@@ -82,27 +82,27 @@ class rest_controller : public controller
 				return m_req.get_parameter(name);
 		}
 
-		file_param get_file_parameter(const char* name) const
+		http::file_param get_file_parameter(const char* name) const
 		{
 			return m_req.get_file_parameter(name);
 		}
 
-		const request& m_req;
+		const http::request& m_req;
 		std::vector<param> m_path_parameters;
 	};
 
 	/// \brief abstract base class for mount points
 	struct mount_point_base
 	{
-		mount_point_base(const char* path, method_type method, const std::string& realm)
+		mount_point_base(const char* path, http::method_type method, const std::string& realm)
 			: m_path(path), m_method(method), m_realm(realm) {}
 
         virtual ~mount_point_base() {}
 
-		virtual void call(const parameter_pack& params, reply& reply) = 0;
+		virtual void call(const parameter_pack& params, http::reply& reply) = 0;
 
 		std::string m_path;
-		method_type m_method;
+		http::method_type m_method;
 		std::string m_realm;
 		std::regex m_rx;
 		std::vector<std::string> m_path_params;
@@ -121,7 +121,7 @@ class rest_controller : public controller
 
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* path, method_type method, const std::string& realm, rest_controller* owner, Sig sig)
+		mount_point(const char* path, http::method_type method, const std::string& realm, controller* owner, Sig sig)
 			: mount_point_base(path, method, realm)
 		{
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
@@ -134,7 +134,7 @@ class rest_controller : public controller
 		}
 
 		template<typename... Names>
-		mount_point(const char* path, method_type method, const std::string& realm, rest_controller* owner, Sig sig, Names... names)
+		mount_point(const char* path, http::method_type method, const std::string& realm, controller* owner, Sig sig, Names... names)
 			: mount_point(path, method, realm, owner, sig)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
@@ -180,13 +180,13 @@ class rest_controller : public controller
 			m_rx.assign(ps);
 		}
 
-		virtual void call(const parameter_pack& params, reply& reply)
+		virtual void call(const parameter_pack& params, http::reply& reply)
 		{
 			try
 			{
 				json::element message("ok");
 				reply.set_content(message);
-				reply.set_status(ok);
+				reply.set_status(http::ok);
 
 				ArgsTuple args = collect_arguments(params, std::make_index_sequence<N>());
 				invoke<Result>(std::move(args), reply);
@@ -197,29 +197,29 @@ class rest_controller : public controller
 				message["error"] = e.what();
 
 				reply.set_content(message);
-				reply.set_status(internal_server_error);
+				reply.set_status(http::internal_server_error);
 			}
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple&& args, reply& reply)
+		void invoke(ArgsTuple&& args, http::reply& reply)
 		{
 			std::experimental::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple&& args, reply& reply)
+		void invoke(ArgsTuple&& args, http::reply& reply)
 		{
 			set_reply(reply, std::experimental::apply(m_callback, std::forward<ArgsTuple>(args)));
 		}
 
-		void set_reply(reply& rep, std::filesystem::path v)
+		void set_reply(http::reply& rep, std::filesystem::path v)
 		{
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
 		}
 
 		template<typename T>
-		void set_reply(reply& rep, T&& v)
+		void set_reply(http::reply& rep, T&& v)
 		{
 			json::element e;
 			to_element(e, v);
@@ -252,10 +252,10 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<std::is_same_v<T,file_param>, int> = 0>
-		file_param get_parameter(const parameter_pack& params, const char* name)
+		template<typename T, std::enable_if_t<std::is_same_v<T,http::file_param>, int> = 0>
+		http::file_param get_parameter(const parameter_pack& params, const char* name)
 		{
-			file_param result;
+			http::file_param result;
 
 			try
 			{
@@ -292,7 +292,7 @@ class rest_controller : public controller
 			not (zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or
 				 std::is_enum_v<T> or
 				 std::is_same_v<T,bool> or
-				 std::is_same_v<T,file_param> or
+				 std::is_same_v<T,http::file_param> or
 				 std::is_same_v<T,json::element>), int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
@@ -366,14 +366,14 @@ class rest_controller : public controller
 
 	/// \brief map \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Callback, typename... ArgNames>
-	void map_request(const char* mountPoint, method_type method, Callback callback, ArgNames... names)
+	void map_request(const char* mountPoint, http::method_type method, Callback callback, ArgNames... names)
 	{
 		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, "", this, callback, names...));
 	}
 
 	/// \brief map \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
 	template<typename Callback, typename... ArgNames>
-	void map_request(const char* mountPoint, method_type method, const std::string& realm, Callback callback, ArgNames... names)
+	void map_request(const char* mountPoint, http::method_type method, const std::string& realm, Callback callback, ArgNames... names)
 	{
 		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, realm, this, callback, names...));
 	}
@@ -382,62 +382,62 @@ class rest_controller : public controller
 	template<typename Callback, typename... ArgNames>
 	void map_post_request(const char* mountPoint, Callback callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::POST, callback, names...);
+		map_request(mountPoint, http::method_type::POST, callback, names...);
 	}
 
 	/// \brief map a POST to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
 	template<typename Callback, typename... ArgNames>
 	void map_post_request(const char* mountPoint, const std::string& realm, Callback callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::POST, realm, callback, names...);
+		map_request(mountPoint, http::method_type::POST, realm, callback, names...);
 	}
 
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_put_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::PUT, callback, names...);
+		map_request(mountPoint, http::method_type::PUT, callback, names...);
 	}
 
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
 	template<typename Sig, typename... ArgNames>
 	void map_put_request(const char* mountPoint, const std::string& realm, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::PUT, realm, callback, names...);
+		map_request(mountPoint, http::method_type::PUT, realm, callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_get_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::GET, callback, names...);
+		map_request(mountPoint, http::method_type::GET, callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
 	template<typename Sig, typename... ArgNames>
 	void map_get_request(const char* mountPoint, const std::string& realm, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::GET, realm, callback, names...);
+		map_request(mountPoint, http::method_type::GET, realm, callback, names...);
 	}
 
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_delete_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::DELETE, callback, names...);
+		map_request(mountPoint, http::method_type::DELETE, callback, names...);
 	}
 
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
 	template<typename Sig, typename... ArgNames>
 	void map_delete_request(const char* mountPoint, const std::string& realm, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::DELETE, realm, callback, names...);
+		map_request(mountPoint, http::method_type::DELETE, realm, callback, names...);
 	}
 
   private:
 
 	std::list<mount_point_base*> m_mountpoints;
-	authentication_validation_base* m_auth = nullptr;
+	http::authentication_validation_base* m_auth = nullptr;
 
 	// keep track of current user accessing this API
 	static thread_local json::element s_credentials;
