@@ -87,6 +87,37 @@ element::element(initializer_list_t init)
 	}
 }
 
+element element::object(initializer_list_t init)
+{
+	bool isAnObject = std::all_of(init.begin(), init.end(), [](auto& ref)
+		{ return ref->is_array() and ref->m_data.m_array->size() == 2 and ref->m_data.m_array->front().is_string(); });
+
+	if (not isAnObject)
+		throw std::invalid_argument("Cannot create an object from this initializer list");
+
+	element result(value_type::object);
+	for (auto& ref: init)
+	{
+		auto element = ref.data();
+		result.m_data.m_object->emplace(
+			std::move(*element.m_data.m_array->front().m_data.m_string),
+			std::move(element.m_data.m_array->back())
+		);
+	}
+
+	return result;
+}
+
+element element::array(initializer_list_t init)
+{
+	element result;
+	
+	result.m_data.m_array = create<array_type>(init.begin(), init.end());
+	result.m_type = value_type::array;
+
+	return result;
+}
+
 element::element(size_t cnt, const element& v)
 	: m_type(value_type::array)
 {
@@ -428,7 +459,7 @@ bool operator==(element::const_reference& lhs, element::const_reference& rhs)
 			case value_type::number_int:	return lhs.m_data.m_int == rhs.m_data.m_int;
 			case value_type::number_float:	return lhs.m_data.m_float == rhs.m_data.m_float;
 			case value_type::boolean:		return lhs.m_data.m_boolean == rhs.m_data.m_boolean;
-			default: break;
+			case value_type::null:			return true;
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs_type == value_type::number_int)

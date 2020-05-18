@@ -521,7 +521,7 @@ reply reply::redirect(const std::string& location)
 size_t reply::size() const
 {
 	auto buffers = to_buffers();
-	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto& buffer) { return m + buffer.size(); });
+	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto& buffer) { return m + boost::asio::buffer_size(buffer); });
 }
 
 std::ostream& operator<<(std::ostream& lhs, const reply& rhs)
