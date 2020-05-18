@@ -38,13 +38,13 @@ This is an implementation of a JSON library. I've attempted to make it source co
 
 This library contains a web server implementation. There's also code to create daemon processes and run a preforked webserver.
 
-[heading:webapp libzeep-webapp]
+[heading:html libzeep-html]
 
-The webapp library builds on libzeep-http and offers a way to create dynamic webapplications with full templating support. The design mimics a bit [@https://spring.io Spring] in combination with [@https://www.thymeleaf.org/ Thymeleaf]. The template language implementation attempts to be source code compatible with Thymeleaf.
+The html library builds on libzeep-http and offers a way to create dynamic htmllications with full templating support. The design mimics a bit [@https://spring.io Spring] in combination with [@https://www.thymeleaf.org/ Thymeleaf]. The template language implementation attempts to be source code compatible with Thymeleaf.
 
 [heading:rest libzeep-rest]
 
-Building on libzeep-webapp, this library offers the ability to create controllers that process REST requests. The translation of HTTP parameters and HTTP form content into function variables as well as translation from result types into JSON is fully automatic.
+Building on libzeep-html, this library offers the ability to create controllers that process REST requests. The translation of HTTP parameters and HTTP form content into function variables as well as translation from result types into JSON is fully automatic.
 
 [heading:soap libzeep-soap]
 

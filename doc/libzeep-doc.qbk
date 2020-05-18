@@ -44,7 +44,7 @@
 [include lib-xml.qbk]
 [include lib-json.qbk]
 [include lib-http.qbk]
-[include lib-webapp.qbk]
+[include lib-html.qbk]
 [include lib-rest.qbk]
 [include lib-soap.qbk]
 [include reference.qbk]
@@ -363,7 +363,7 @@ be taken from there.
 
 [endsect]
 
-[section:webapp Creating a Web Application]
+[section:html Creating a Web Application]
 
 [section:intro Introduction]
 
@@ -402,12 +402,12 @@ this file as =hello.xhtml=.[teletype]
 
 This is a very simple, strict XHTML 1.1 file. We will serve it with our server:[c++]
 
-	#include <zeep/http/webapp.hpp>
+	#include <zeep/http/html.hpp>
 	#include <functional>
 	
 	using namespace std;
 	
-	class MyWebApp : public __webapp__
+	class MyWebApp : public __html__
 	{
 	  public:
 	    MyWebApp();
@@ -466,16 +466,16 @@ and back. Save the following file as =form.xhtml=.[teletype]
 	</html>
 
 We add the zeep prefix to our html tag, it has the value ="http://www.cmbi.ru.nl/libzeep/ml"=
-which is the same as the default value for the `ns` parameter in the __webapp__ constructor.
+which is the same as the default value for the `ns` parameter in the __html__ constructor.
 Note that the input tag has an attribute with value '${data}'. This is a piece of
 expression language script. This will be explained below:[c++]
 
-	#include <zeep/http/webapp.hpp>
-	#include <zeep/http/webapp/el.hpp>
+	#include <zeep/http/html.hpp>
+	#include <zeep/http/html/el.hpp>
 	
 	using namespace std;
 	
-	class MyWebApp : public __webapp__
+	class MyWebApp : public __html__
 	{
 	  public:
 	    MyWebApp();
@@ -565,7 +565,7 @@ The method `create_reply_from_template` takes the name of a template file and a 
 to generate the output XHTML. We've already seen that `el` scripts are processed by
 this method. But there is more, several special tags in the template are processed in
 a special way. These tags are in a separate XML namespace. You can change this name space
-using the `ns` parameter in the __webapp__ constructor, the default is =http://www.cmbi.ru.nl/libzeep/ml=.
+using the `ns` parameter in the __html__ constructor, the default is =http://www.cmbi.ru.nl/libzeep/ml=.
 
 In the template for the form example above you might have noticed the =<zeep:if>= tag.
 This tag takes one attribute called `test` and the value of this tag is interpreted as

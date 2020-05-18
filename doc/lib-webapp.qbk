@@ -9,7 +9,7 @@
 
 [chapter Web applications
     [quickbook 1.7]
-    [id libzeep.webapp]
+    [id libzeep.html]
 ]
 
 [section:descr Introduction]
