@@ -63,7 +63,7 @@ VERSION_MAJOR       = 4.0
 VERSION_MINOR       = 0
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 
-LIB_NAME			= libzeep-webapp
+LIB_NAME			= libzeep-html
 
 DIST_NAME           = $(LIB_NAME)$(VERSION)
 SO_NAME             = $(LIB_NAME).so.$(VERSION_MAJOR)

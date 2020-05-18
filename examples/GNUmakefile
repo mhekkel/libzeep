@@ -37,7 +37,7 @@ endif
 BOOST_LIBS          = date_time
 BOOST_LIBS          := $(BOOST_LIBS:%=-lboost_%)
 
-ZEEP_LIB_NAMES		?= rest webapp http xml el generic
+ZEEP_LIB_NAMES		?= rest html http xml el generic
 ZEEP_LIBS			:= $(ZEEP_LIB_NAMES:%=-lzeep-%)
 
 LIBS				+= m rt stdc++fs
@@ -64,7 +64,7 @@ endif
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-TEST_APPS = zeep-test webapp-test processor-tester
+TEST_APPS = zeep-test html-test processor-tester
 
 OBJECTS = $(TEST_APPS:%=$(OBJDIR)/%.o)
 	
