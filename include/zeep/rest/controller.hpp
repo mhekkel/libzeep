@@ -20,7 +20,7 @@
 
 #include <zeep/http/controller.hpp>
 #include <zeep/http/authorization.hpp>
-#include <zeep/el/parser.hpp>
+#include <zeep/json/parser.hpp>
 
 namespace zeep::http
 {
@@ -60,7 +60,7 @@ class rest_controller : public controller
 	virtual bool validate_request(request& req, reply& rep, const std::string& realm);
 
 	/// \brief Return the credentials for the current call, is valid only when inside a `handle_request`
-	virtual el::element& get_credentials()
+	virtual json::element& get_credentials()
 	{
 		return s_credentials;
 	}
@@ -184,7 +184,7 @@ class rest_controller : public controller
 		{
 			try
 			{
-				el::element message("ok");
+				json::element message("ok");
 				reply.set_content(message);
 				reply.set_status(ok);
 
@@ -193,7 +193,7 @@ class rest_controller : public controller
 			}
 			catch (const std::exception& e)
 			{
-				el::element message;
+				json::element message;
 				message["error"] = e.what();
 
 				reply.set_content(message);
@@ -221,7 +221,7 @@ class rest_controller : public controller
 		template<typename T>
 		void set_reply(reply& rep, T&& v)
 		{
-			el::element e;
+			json::element e;
 			to_element(e, v);
 			rep.set_content(e);
 		}
@@ -270,14 +270,14 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<std::is_same_v<T,el::element>, int> = 0>
-		el::element get_parameter(const parameter_pack& params, const char* name)
+		template<typename T, std::enable_if_t<std::is_same_v<T,json::element>, int> = 0>
+		json::element get_parameter(const parameter_pack& params, const char* name)
 		{
-			el::element result;
+			json::element result;
 
 			try
 			{
-				el::parse_json(params.get_parameter(name), result);
+				json::parse_json(params.get_parameter(name), result);
 			}
 			catch (const std::exception& e)
 			{
@@ -289,11 +289,11 @@ class rest_controller : public controller
 		}
 
 		template<typename T, std::enable_if_t<
-			not (zeep::has_serialize_v<T, zeep::el::deserializer<el::element>> or
+			not (zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or
 				 std::is_enum_v<T> or
 				 std::is_same_v<T,bool> or
 				 std::is_same_v<T,file_param> or
-				 std::is_same_v<T,el::element>), int> = 0>
+				 std::is_same_v<T,json::element>), int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
 			try
@@ -311,25 +311,25 @@ class rest_controller : public controller
 			}
 		}
 
-		template<typename T, std::enable_if_t<zeep::el::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
+		template<typename T, std::enable_if_t<zeep::json::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
-			el::element v = params.get_parameter(name);
+			json::element v = params.get_parameter(name);
 
 			T tv;
 			from_element(v, tv);
 			return tv;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::el::deserializer<el::element>>, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name)
 		{
-			el::element v;
+			json::element v;
 
 			if (params.m_req.get_header("content-type") == "application/json")
-				zeep::el::parse_json(params.m_req.payload, v);
+				zeep::json::parse_json(params.m_req.payload, v);
 			else
-				zeep::el::parse_json(params.get_parameter(name), v);
+				zeep::json::parse_json(params.get_parameter(name), v);
 
 			T tv;
 			from_element(v, tv);
@@ -440,7 +440,7 @@ class rest_controller : public controller
 	authentication_validation_base* m_auth = nullptr;
 
 	// keep track of current user accessing this API
-	static thread_local el::element s_credentials;
+	static thread_local json::element s_credentials;
 };
 
 } // namespace zeep::http

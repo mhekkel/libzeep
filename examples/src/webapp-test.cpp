@@ -14,7 +14,7 @@
 
 using namespace std;
 namespace zh = zeep::http;
-namespace el = zeep::el;
+namespace el = zeep::json;
 namespace fs = std::filesystem;
 
 class my_webapp : public zh::webapp
@@ -23,10 +23,10 @@ class my_webapp : public zh::webapp
 	my_webapp();
 	
 	virtual string get_hashed_password(const string& username, const string& realm);
-	void welcome(const zh::request& request, const el::scope& scope, zh::reply& reply);
-	void status(const zh::request& request, const el::scope& scope, zh::reply& reply);
-	void error(const zh::request& request, const el::scope& scope, zh::reply& reply);
-	void handle_file(const zh::request& request, const el::scope& scope, zh::reply& reply);
+	void welcome(const zh::request& request, const json::scope& scope, zh::reply& reply);
+	void status(const zh::request& request, const json::scope& scope, zh::reply& reply);
+	void error(const zh::request& request, const json::scope& scope, zh::reply& reply);
+	void handle_file(const zh::request& request, const json::scope& scope, zh::reply& reply);
 };
 
 my_webapp::my_webapp()
@@ -51,20 +51,20 @@ string my_webapp::get_hashed_password(const string& username, const string& real
 	return ha1;
 }
 
-void my_webapp::welcome(const zh::request& request, const el::scope& scope, zh::reply& reply)
+void my_webapp::welcome(const zh::request& request, const json::scope& scope, zh::reply& reply)
 {
 	create_reply_from_template("index.html", scope, reply);
 }
 
-void my_webapp::status(const zh::request& request, const el::scope& scope, zh::reply& reply)
+void my_webapp::status(const zh::request& request, const json::scope& scope, zh::reply& reply)
 {
 	// put the http headers in the scope
 	
-	el::scope sub(scope);
-	vector<el::object> headers;
+	json::scope sub(scope);
+	vector<json::object> headers;
 	for (const zh::header& h: request.headers)
 	{
-		el::object header;
+		json::object header;
 		header["name"] = h.name;
 		header["value"] = h.value;
 		headers.push_back(header);	
@@ -74,11 +74,11 @@ void my_webapp::status(const zh::request& request, const el::scope& scope, zh::r
 	create_reply_from_template("status.html", sub, reply);
 }
 
-void my_webapp::error(const zh::request& request, const el::scope& scope, zh::reply& reply)
+void my_webapp::error(const zh::request& request, const json::scope& scope, zh::reply& reply)
 {
-	el::scope sub(scope);
+	json::scope sub(scope);
 	
-	el::object error;
+	json::object error;
 	error["nr"] = request.get_parameter("err");
 	error["head"] = "Test of error page";
 	error["message"] = "A test of the error page is being looked at";
@@ -88,7 +88,7 @@ void my_webapp::error(const zh::request& request, const el::scope& scope, zh::re
 	create_reply_from_template("error.html", sub, reply);
 }
 
-void my_webapp::handle_file(const zh::request& request, const el::scope& scope, zh::reply& reply)
+void my_webapp::handle_file(const zh::request& request, const json::scope& scope, zh::reply& reply)
 {
 	fs::path file = get_docroot() / scope["baseuri"].as<string>();
 	

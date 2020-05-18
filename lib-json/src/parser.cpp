@@ -16,11 +16,11 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/unicode_support.hpp>
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
-#include <zeep/el/parser.hpp>
+#include <zeep/json/parser.hpp>
 
-namespace zeep::el
+namespace zeep::json
 {
 
 class json_parser
@@ -31,7 +31,7 @@ class json_parser
 	{
 	}
 
-	void parse(el::element& object);
+	void parse(json::element& object);
 
   private:
 
@@ -75,9 +75,9 @@ class json_parser
 
 	void match(token_t expected);
 
-	void parse_value(el::element& e);
-	void parse_object(el::element& e);
-	void parse_array(el::element& e);
+	void parse_value(json::element& e);
+	void parse_object(json::element& e);
+	void parse_array(json::element& e);
 
 	uint8_t get_next_byte();
 	unicode get_next_unicode();
@@ -543,7 +543,7 @@ void json_parser::match(token_t expected)
 	m_lookahead = get_next_token();
 }
 
-void json_parser::parse_value(el::element& e)
+void json_parser::parse_value(json::element& e)
 {
 	switch (m_lookahead)
 	{
@@ -596,7 +596,7 @@ void json_parser::parse_value(el::element& e)
 	}
 }
 
-void json_parser::parse_object(el::element& e)
+void json_parser::parse_object(json::element& e)
 {
 	for (;;)
 	{
@@ -607,7 +607,7 @@ void json_parser::parse_object(el::element& e)
 		match(token_t::String);
 		match(token_t::Colon);
 
-		el::element v;
+		json::element v;
 		parse_value(v);
 		e.emplace(name, v);
 
@@ -618,14 +618,14 @@ void json_parser::parse_object(el::element& e)
 	}
 }
 
-void json_parser::parse_array(el::element& e)
+void json_parser::parse_array(json::element& e)
 {
 	for (;;)
 	{
 		if (m_lookahead == token_t::RightBracket or m_lookahead == token_t::Eof)
 			break;
 		
-		el::element v;
+		json::element v;
 		parse_value(v);
 		e.emplace_back(v);
 
@@ -636,7 +636,7 @@ void json_parser::parse_array(el::element& e)
 	}
 }
 
-void json_parser::parse(el::element& obj)
+void json_parser::parse(json::element& obj)
 {
 	m_lookahead = get_next_token();
 	parse_value(obj);

@@ -158,7 +158,7 @@ void basic_webapp::handle_request(request& req, reply& rep)
 		{
 			// check for the presence of a access_token
 
-			el::element credentials;
+			json::element credentials;
 
 			// Do authentication here, if needed
 			if (not handler->realm.empty())

@@ -263,7 +263,7 @@ bool reply::keep_alive() const
 	return result;
 }
 
-void reply::set_content(const el::element& json)
+void reply::set_content(const json::element& json)
 {
 	std::ostringstream s;
 	s << json;

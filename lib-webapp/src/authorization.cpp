@@ -15,7 +15,7 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/authorization.hpp>
-#include <zeep/el/parser.hpp>
+#include <zeep/json/parser.hpp>
 
 namespace pt = boost::posix_time;
 
@@ -25,7 +25,7 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
-el::element authentication_validation_base::validate_username_password(const std::string &username, const std::string &password)
+json::element authentication_validation_base::validate_username_password(const std::string &username, const std::string &password)
 {
 	return {};
 }
@@ -119,7 +119,7 @@ void digest_authentication_validation::add_challenge_headers(reply& rep, bool st
 	rep.set_header("WWW-Authenticate", challenge);
 }
 
-el::element digest_authentication_validation::validate_authentication(const request& req)
+json::element digest_authentication_validation::validate_authentication(const request& req)
 {
 	std::string authorization = req.get_header("Authorization");
 
@@ -198,9 +198,9 @@ std::string simple_digest_authentication_validation::get_hashed_password(const s
 
 // --------------------------------------------------------------------
 
-el::element jws_authentication_validation_base::validate_authentication(const request& req)
+json::element jws_authentication_validation_base::validate_authentication(const request& req)
 {
-	el::element result;
+	json::element result;
 
 	for (;;)
 	{
@@ -216,10 +216,10 @@ el::element jws_authentication_validation_base::validate_authentication(const re
 		if (not std::regex_match(access_token, m, rx))
 			break;
 		
-		el::element JOSEHeader;
-		el::parse_json(decode_base64url(m[1].str()), JOSEHeader);
+		json::element JOSEHeader;
+		json::parse_json(decode_base64url(m[1].str()), JOSEHeader);
 
-		const el::element kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
+		const json::element kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
 
 		if (JOSEHeader != kJOSEHeader)
 			break;
@@ -230,16 +230,16 @@ el::element jws_authentication_validation_base::validate_authentication(const re
 		if (sig != m[3].str())
 			break;
 
-		el::parse_json(decode_base64url(m[2].str()), result);
+		json::parse_json(decode_base64url(m[2].str()), result);
 		break;
 	}
 
 	return result;
 }
 
-void jws_authentication_validation_base::add_authorization_headers(reply& rep, const el::element& credentials)
+void jws_authentication_validation_base::add_authorization_headers(reply& rep, const json::element& credentials)
 {
-	using namespace el::literals;
+	using namespace json::literals;
 
 	auto JOSEHeader = R"({
 		"typ": "JWT",
@@ -266,9 +266,9 @@ simple_jws_authentication_validation::simple_jws_authentication_validation(const
 		m_user_hashes.emplace(std::make_pair(user.username, user.password));
 }
 
-el::element simple_jws_authentication_validation::validate_username_password(const std::string& username, const std::string& password)
+json::element simple_jws_authentication_validation::validate_username_password(const std::string& username, const std::string& password)
 {
-	el::element result;
+	json::element result;
 
 	auto h = m_user_hashes.find(username);
 	if (h != m_user_hashes.end())

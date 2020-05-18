@@ -178,7 +178,7 @@ dist-clean: clean
 
 http_PARAMS = 
 
-ZEEP_LIBS = xml el generic
+ZEEP_LIBS = xml json generic
 BOOST_LIBS = system
 
 define TEST_template =

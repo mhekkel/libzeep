@@ -7,7 +7,7 @@
 
 using namespace std;
 
-using json = zeep::el::element;
+using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
 zeep::http::basic_webapp& dummy_webapp = *(new zeep::http::file_based_webapp());
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(test_2)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("b", zeep::el::element{ "a", "b", "c"});
+	scope.put("b", zeep::json::element{ "a", "b", "c"});
  
 	process_and_compare(doc, doc_test, scope);
 }
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(test_6)
 	zeep::http::scope scope;
 	scope.put("x", "\"<b>'hallo, wereld!'</b>\"");
 	scope.put("y", "Een \"moeilijke\" string");
-	scope.put("a", zeep::el::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c"});
  
 	process_and_compare(doc, doc_test, scope);
 }
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(test_8)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::el::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c"});
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(test_8a)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::el::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c"});
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(test_9)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::el::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c"});
 
 	process_and_compare(doc, doc_test, scope);
 }

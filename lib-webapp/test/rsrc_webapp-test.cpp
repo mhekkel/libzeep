@@ -8,7 +8,7 @@
 
 using namespace std;
 
-using json = zeep::el::element;
+using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
 zeep::http::basic_webapp& dummy_webapp = *(new zeep::http::webapp());

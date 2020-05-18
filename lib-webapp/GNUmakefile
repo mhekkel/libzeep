@@ -197,7 +197,7 @@ $(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
 
 webapp_PARAMS = 
 
-ZEEP_LIBS = http xml el generic
+ZEEP_LIBS = http xml json generic
 BOOST_LIBS = system
 
 define TEST_template =

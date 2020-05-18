@@ -141,7 +141,7 @@ class tag_processor_v2 : public tag_processor
 	void post_process(xml::element* e, const scope& parentScope, std::filesystem::path dir, basic_webapp& webapp);
 
 	// std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_webapp& webapp, const std::string& spec, const scope& scope);
-	std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_webapp& webapp, const el::element& spec, const scope& scope);
+	std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_webapp& webapp, const json::element& spec, const scope& scope);
 	std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_webapp& webapp, const std::string& file, const std::string& selector, bool byID);
 
 	// virtual void process_node_attr(xml::node* node, const scope& scope, std::filesystem::path dir);

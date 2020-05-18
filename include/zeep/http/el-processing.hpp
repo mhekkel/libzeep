@@ -17,14 +17,14 @@
 #include <zeep/http/request.hpp>
 #include <zeep/exception.hpp>
 
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
 #include <zeep/xml/node.hpp>
 
 namespace zeep::http
 {
 
-using object = ::zeep::el::element;
+using object = ::zeep::json::element;
 
 class scope;
 

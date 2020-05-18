@@ -165,7 +165,7 @@ dist-clean: clean
 
 json_PARAMS = 
 
-ZEEP_LIBS = xml el generic
+ZEEP_LIBS = xml generic
 BOOST_LIBS = 
 
 define TEST_template =

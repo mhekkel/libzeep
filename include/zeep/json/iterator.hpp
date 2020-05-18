@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// generic iterator classes used by zeep::el::element
+/// generic iterator classes used by zeep::json::element
 
 #include <cassert>
 #include <string>
@@ -16,13 +16,13 @@
 #include <algorithm>
 #include <experimental/type_traits>
 
-#include <zeep/el/element_fwd.hpp>
-#include <zeep/el/factory.hpp>
-#include <zeep/el/to_element.hpp>
-#include <zeep/el/from_element.hpp>
-#include <zeep/el/serializer.hpp>
+#include <zeep/json/element_fwd.hpp>
+#include <zeep/json/factory.hpp>
+#include <zeep/json/to_element.hpp>
+#include <zeep/json/from_element.hpp>
+#include <zeep/json/serializer.hpp>
 
-namespace zeep::el
+namespace zeep::json
 {
 
 namespace detail
@@ -355,7 +355,7 @@ template<typename Iterator> class iteration_proxy_value
 		assert(m_anchor.m_obj != nullptr);
 		switch (m_anchor.m_obj->m_type)
 		{
-			case ::zeep::el::detail::value_type::array:
+			case ::zeep::json::detail::value_type::array:
 				if (m_index != m_index_last)
 				{
 					m_index_str = std::to_string(m_index);
@@ -364,7 +364,7 @@ template<typename Iterator> class iteration_proxy_value
 				return m_index_str;
 				break;
 			
-			case ::zeep::el::detail::value_type::object:
+			case ::zeep::json::detail::value_type::object:
 				return m_anchor.key();
 			
 			default:
@@ -415,33 +415,33 @@ template<typename Iterator> class iteration_proxy
 };
 
 } // detail
-} // zeep::el
+} // zeep::json
 
 namespace std
 {
 template <typename IteratorType>
-struct tuple_size<::zeep::el::detail::iteration_proxy_value<IteratorType>>
+struct tuple_size<::zeep::json::detail::iteration_proxy_value<IteratorType>>
             : public std::integral_constant<std::size_t, 2> {};
 
 template<typename IteratorType>
-struct tuple_element<0, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
+struct tuple_element<0, ::zeep::json::detail::iteration_proxy_value<IteratorType >>
 {
-	using proxy_type = typename ::zeep::el::detail::iteration_proxy_value<IteratorType>;
+	using proxy_type = typename ::zeep::json::detail::iteration_proxy_value<IteratorType>;
 	using type = decltype(std::declval<proxy_type>().key());
 };
 
 template<typename IteratorType>
-struct tuple_element<1, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
+struct tuple_element<1, ::zeep::json::detail::iteration_proxy_value<IteratorType >>
 {
-	using proxy_type = typename ::zeep::el::detail::iteration_proxy_value<IteratorType>;
+	using proxy_type = typename ::zeep::json::detail::iteration_proxy_value<IteratorType>;
 	using type = decltype(std::declval<proxy_type>().value());
 };
 
 // template <std::size_t N, typename IteratorType>
-// struct tuple_element<N, ::zeep::el::detail::iteration_proxy_value<IteratorType >>
+// struct tuple_element<N, ::zeep::json::detail::iteration_proxy_value<IteratorType >>
 // {
 //   public:
-// 	using proxy_type = typename ::zeep::el::detail::iteration_proxy_value<IteratorType>;
+// 	using proxy_type = typename ::zeep::json::detail::iteration_proxy_value<IteratorType>;
 //     using type = decltype(std::declval<proxy_type>().get<N>());
 // };
 

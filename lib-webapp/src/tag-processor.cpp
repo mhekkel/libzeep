@@ -182,7 +182,7 @@ void tag_processor_v1::process_if(xml::element *node, const scope& scope, fs::pa
 
 void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	using el::detail::value_type;
+	using json::detail::value_type;
 
 	object collection = scope[node->get_attribute("collection")];
 	if (collection.type() == value_type::string or collection.type() == value_type::null)
@@ -286,7 +286,7 @@ void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs
 
 void tag_processor_v1::process_options(xml::element *node, const scope& scope, fs::path dir, basic_webapp& webapp)
 {
-	using ::zeep::el::detail::value_type;
+	using ::zeep::json::detail::value_type;
 
 	object collection = scope[node->get_attribute("collection")];
 	if (collection.type() == value_type::string or collection.type() == value_type::null)

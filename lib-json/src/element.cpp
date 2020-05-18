@@ -8,9 +8,9 @@
 
 #include <cmath>
 
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
-namespace zeep::el
+namespace zeep::json
 {	
 
 /// empty factory with a certain type
@@ -915,4 +915,4 @@ std::ostream& operator<<(std::ostream& os, const element& v)
 	return os;
 }
 
-} // namespace zeep::el
+} // namespace zeep::json

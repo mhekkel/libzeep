@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// various templated classes that help selecting the right conversion routines when (de-)serializing zeep::el::element (JSON) objects
+/// various templated classes that help selecting the right conversion routines when (de-)serializing zeep::json::element (JSON) objects
 
 #include <cassert>
 #include <string>
@@ -16,9 +16,9 @@
 #include <algorithm>
 
 #include <zeep/type_traits.hpp>
-#include <zeep/el/element_fwd.hpp>
+#include <zeep/json/element_fwd.hpp>
 
-namespace zeep::el::detail
+namespace zeep::json::detail
 {
 
 template<typename> struct is_element : std::false_type {};
