@@ -167,6 +167,9 @@ class element
 	element(initializer_list_t init);
 	element(size_t cnt, const element& v);
 
+	static element object(initializer_list_t init = {});
+	static element array(initializer_list_t init = {});
+
 	element& operator=(element j) noexcept(
         std::is_nothrow_move_constructible_v<value_type> and
         std::is_nothrow_move_assignable_v<value_type> and
@@ -668,7 +671,7 @@ namespace detail
 
 class element_reference
 {
-public:
+  public:
 	element_reference(element&& value)
 		: m_owned(std::move(value)), m_reference(&m_owned), m_rvalue(true) {}
 
@@ -678,11 +681,10 @@ public:
 	element_reference(std::initializer_list<element_reference> init)
 		: m_owned(init), m_reference(&m_owned), m_rvalue(true) {}
 	
-    template <typename... Args, std::enable_if_t<std::is_constructible_v<element, Args...>, int> = 0>
+    template <typename... Args, std::enable_if_t<std::is_constructible<element, Args...>::value, int> = 0>
     element_reference(Args&& ... args)
         : m_owned(std::forward<Args>(args)...), m_reference(&m_owned), m_rvalue(true) {}
 
-    // class should be movable only
     element_reference(element_reference&&) = default;
     element_reference(const element_reference&) = delete;
     element_reference& operator=(const element_reference&) = delete;
@@ -706,7 +708,7 @@ public:
         return static_cast<element const*>(m_reference);
     }
 
-private:
+  private:
 	element m_owned;
 	element* m_reference = nullptr;
 	bool m_rvalue;
