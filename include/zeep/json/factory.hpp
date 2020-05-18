@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// factory classes for constructing zeep::el::element objects
+/// factory classes for constructing zeep::json::element objects
 
 #include <cassert>
 #include <string>
@@ -18,9 +18,9 @@
 #include <locale>
 #include <codecvt>
 
-#include <zeep/el/element_fwd.hpp>
+#include <zeep/json/element_fwd.hpp>
 
-namespace zeep::el::detail
+namespace zeep::json::detail
 {
 
 // Factory class to construct elements 

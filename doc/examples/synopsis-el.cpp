@@ -3,26 +3,26 @@
 #include <iostream>
 #include <cassert>
 
-#include <zeep/el/element.hpp>
-#include <zeep/el/parser.hpp>
+#include <zeep/json/element.hpp>
+#include <zeep/json/parser.hpp>
 
 void test_stl()
 {
-    using namespace zeep::el::literals; 
-    using json = zeep::el::element;
+    using namespace zeep::json::literals; 
+    using json = zeep::json::element;
 
 //[ stl_interface
     json j;
 
     /*<< Make j an array >>*/
-    j = zeep::el::element::array({ 1, 2, 3 });
+    j = zeep::json::element::array({ 1, 2, 3 });
     j.push_back(4);
     j.emplace_back("five");
 
     assert(j == R"([ 1, 2, 3, 4, "five" ])"_json);
 
     /*<< Now make j an object, this will erase the data and initialize a new object >>*/
-    j = zeep::el::element::object({ { "a", true }, { "b", "2" } });
+    j = zeep::json::element::object({ { "a", true }, { "b", "2" } });
     j.emplace("c", 3);
 
     assert(j == R"({ "a": true, "b": "2", "c": 3 })"_json);
@@ -32,8 +32,8 @@ void test_stl()
 void construct()
 {
 //[ synopsis_el_main
-    using namespace zeep::el::literals; 
-    using json = zeep::el::element;
+    using namespace zeep::json::literals; 
+    using json = zeep::json::element;
 
     json j1;
 

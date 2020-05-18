@@ -12,17 +12,17 @@
 /// \file
 /// The definition of the JSON parser in libzeep
 
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
-namespace zeep::el
+namespace zeep::json
 {
 
-void parse_json(const std::string& json, el::element& object);
-void parse_json(std::istream& os, el::element& object);
+void parse_json(const std::string& json, json::element& object);
+void parse_json(std::istream& os, json::element& object);
 
 namespace literals
 {
-zeep::el::element operator""_json(const char* s, size_t len);
+zeep::json::element operator""_json(const char* s, size_t len);
 }
 
-} // namespace zeep::el
+} // namespace zeep::json

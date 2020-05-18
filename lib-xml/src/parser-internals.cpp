@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <experimental/type_traits>
 
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
 #include "parser-internals.hpp"
 

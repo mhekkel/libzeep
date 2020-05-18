@@ -155,7 +155,7 @@ dist-clean: clean
 
 soap_PARAMS = 
 
-ZEEP_LIBS = http xml el generic
+ZEEP_LIBS = http xml json generic
 
 define TEST_template =
 

@@ -4,7 +4,7 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 //
-// webapp::el is a set of classes used to implement an 'expression language'
+// webapp::json is a set of classes used to implement an 'expression language'
 // A script language used in the XHTML templates used by the zeep webapp.
 //
 
@@ -61,7 +61,7 @@ bool is_name_char(unicode uc)
 
 
 using request = http::request;
-using object = el::element;
+using object = json::element;
 
 // --------------------------------------------------------------------
 

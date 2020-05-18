@@ -72,7 +72,7 @@ DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
 $(OUTPUT_DIR):
 	mkdir -p $(OUTPUT_DIR)
 
-ZEEP_LIB_PARTS		= generic xml http el rest soap webapp
+ZEEP_LIB_PARTS		= generic xml http json rest soap webapp
 ZEEP_SHARED_LIBS	+= $(ZEEP_LIB_PARTS:%=$(OUTPUT_DIR)/libzeep_%.so)
 ZEEP_STATIC_LIBS	+= $(ZEEP_LIB_PARTS:%=$(OUTPUT_DIR)/libzeep_%.a)
 

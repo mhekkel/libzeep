@@ -43,7 +43,7 @@ VERSION_MAJOR       = 4.0
 VERSION_MINOR       = 0
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 
-LIB_NAME			= libzeep-el
+LIB_NAME			= libzeep-json
 
 DIST_NAME           = $(LIB_NAME)$(VERSION)
 SO_NAME             = $(LIB_NAME).so.$(VERSION_MAJOR)
@@ -98,14 +98,14 @@ OBJECTS = \
 	$(OBJDIR)/parser.o
 
 HEADERS = \
-	zeep/el/element_fwd.hpp \
-	zeep/el/element.hpp \
-	zeep/el/factory.hpp \
-	zeep/el/from_element.hpp \
-	zeep/el/iterator.hpp \
-	zeep/el/parser.hpp \
-	zeep/el/serializer.hpp \
-	zeep/el/to_element.hpp
+	zeep/json/element_fwd.hpp \
+	zeep/json/element.hpp \
+	zeep/json/factory.hpp \
+	zeep/json/from_element.hpp \
+	zeep/json/iterator.hpp \
+	zeep/json/parser.hpp \
+	zeep/json/serializer.hpp \
+	zeep/json/to_element.hpp
 
 $(STATIC_LIB): $(OBJECTS)
 	ar rc $@ $(OBJECTS)
@@ -168,7 +168,7 @@ dist-clean: clean
 
 json_PARAMS = 
 
-ZEEP_LIBS = xml el generic
+ZEEP_LIBS = xml json generic
 BOOST_LIBS = 
 
 define TEST_template =

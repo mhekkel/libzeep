@@ -3,7 +3,7 @@ doxygen autodoc
     :
         [ glob ../include/zeep/*.hpp ]
         [ glob ../include/zeep/xml/*.hpp ]
-        [ glob ../include/zeep/el/*.hpp ]
+        [ glob ../include/zeep/json/*.hpp ]
         [ glob ../include/zeep/http/*.hpp ]
         [ glob ../include/zeep/rest/*.hpp ]
         [ glob ../include/zeep/soap/*.hpp ]

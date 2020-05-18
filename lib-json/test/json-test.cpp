@@ -1,15 +1,15 @@
 #define BOOST_TEST_MODULE Processor_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include <zeep/el/element.hpp>
-#include <zeep/el/parser.hpp>
-#include <zeep/el/serializer.hpp>
+#include <zeep/json/element.hpp>
+#include <zeep/json/parser.hpp>
+#include <zeep/json/serializer.hpp>
 #include <zeep/exception.hpp>
 
 using namespace std;
-using json = zeep::el::element;
+using json = zeep::json::element;
 
-using namespace zeep::el::literals;
+using namespace zeep::json::literals;
 
 // -----------------------------------------------------------------------
 
@@ -165,34 +165,34 @@ BOOST_AUTO_TEST_CASE(j_9)
 {
 	json j;
 
-	zeep::el::serializer<json>::serialize(j, true);
+	zeep::json::serializer<json>::serialize(j, true);
 	BOOST_TEST(j.is_boolean());
 	BOOST_TEST(j == true);
 
-	zeep::el::serializer<json>::serialize(j, false);
+	zeep::json::serializer<json>::serialize(j, false);
 	BOOST_TEST(j.is_boolean());
 	BOOST_TEST(j == false);
 
 
-	zeep::el::serializer<json>::serialize(j, 1);
+	zeep::json::serializer<json>::serialize(j, 1);
 	BOOST_TEST(j.is_number_int());
 	BOOST_TEST(j == 1);
 
-	zeep::el::serializer<json>::serialize(j, 1.0);
+	zeep::json::serializer<json>::serialize(j, 1.0);
 	BOOST_TEST(j.is_number_float());
 	BOOST_TEST(j == 1.0);
 
-	zeep::el::serializer<json>::serialize(j, "aap");
+	zeep::json::serializer<json>::serialize(j, "aap");
 	BOOST_TEST(j.is_string());
 	BOOST_TEST(j == "aap");
 
 	std::optional<int> i;
 
-	zeep::el::serializer<json>::serialize(j, i);
+	zeep::json::serializer<json>::serialize(j, i);
 	BOOST_TEST(j.is_null());
 
 	i = 1;
-	zeep::el::serializer<json>::serialize(j, i);
+	zeep::json::serializer<json>::serialize(j, i);
 	BOOST_TEST(j.is_number_int());
 	BOOST_TEST(j == 1);
 

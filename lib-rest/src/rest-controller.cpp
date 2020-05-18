@@ -16,7 +16,7 @@ namespace ba = boost::algorithm;
 namespace zeep::http
 {
 
-thread_local el::element rest_controller::s_credentials;
+thread_local json::element rest_controller::s_credentials;
 
 rest_controller::~rest_controller()
 {
@@ -47,7 +47,7 @@ bool rest_controller::validate_request(request& req, reply& rep, const std::stri
 	if (not valid)	
 	{
 		rep = reply::stock_reply(unauthorized);
-		rep.set_content(el::element({
+		rep.set_content(json::element({
 			{ "error", "Unauthorized access, unimplemented validate_request" }
 		}));
 		rep.set_status(unauthorized);
@@ -110,7 +110,7 @@ bool rest_controller::handle_request(request& req, reply& rep)
 			{
 				rep = reply::stock_reply(internal_server_error);
 				
-				el::element error({ { "error", e.what() }});
+				json::element error({ { "error", e.what() }});
 				rep.set_content(error);
 			}
 		}

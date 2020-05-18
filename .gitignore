@@ -18,7 +18,7 @@ lib-webapp/test/processor-test
 lib-soap/test/soap-test
 lib-http/test/http-test
 lib-generic/test/crypto-test
-lib-el/test/json-test
+lib-json/test/json-test
 lib-xml/test/parser-test
 lib-xml/test/serializer-test
 lib-xml/test/unit-test

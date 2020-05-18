@@ -16,7 +16,7 @@
 
 #include <zeep/http/header.hpp>
 #include <zeep/xml/document.hpp>
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
 namespace zeep::http
 {
@@ -96,7 +96,7 @@ class reply
 	void set_content(const xml::element& data);
 
 	/// Set the content and the content-type header based on JSON data
-	void set_content(const el::element& json);
+	void set_content(const json::element& json);
 
 	/// Set the content and the content-type header
 	void set_content(const std::string& data,

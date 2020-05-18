@@ -18,7 +18,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/server.hpp>
-#include <zeep/el/element.hpp>
+#include <zeep/json/element.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -98,8 +98,8 @@ class authentication_validation_base
 	/// Return the _null_ object (empty object) when authentication fails.
 	///
 	/// \param req	The zeep::http::request object
-	/// \result		A zeep::el::element object containing the credentials
-	virtual el::element validate_authentication(const request &req) = 0;
+	/// \result		A zeep::json::element object containing the credentials
+	virtual json::element validate_authentication(const request &req) = 0;
 
 	/// \brief validate whether \a password is the valid password for \a username
 	///
@@ -108,9 +108,9 @@ class authentication_validation_base
 	///
 	/// \param username	The username
 	/// \param password	The password, in clear text
-	/// \result			A zeep::el::element object containing the credentials. In case of JWT
+	/// \result			A zeep::json::element object containing the credentials. In case of JWT
 	///					this is stored in a Cookie, so keep it compact.
-	virtual el::element validate_username_password(const std::string &username, const std::string &password);
+	virtual json::element validate_username_password(const std::string &username, const std::string &password);
 
 	/// \brief Add e.g. headers to reply for an unauthorized request
 	///
@@ -129,7 +129,7 @@ class authentication_validation_base
 	///
 	/// \param rep			Then zeep::http::reply object that will be send to the user
 	/// \param credentials	The credentials for the authorized user.
-	virtual void add_authorization_headers(reply &rep, const el::element& credentials) {}
+	virtual void add_authorization_headers(reply &rep, const json::element& credentials) {}
 
   protected:
 	std::string m_realm;
@@ -157,8 +157,8 @@ class digest_authentication_validation : public authentication_validation_base
 	/// Return the _null_ object (empty object) when authentication fails.
 	///
 	/// \param req	The zeep::http::request object
-	/// \result		A zeep::el::element object containing the credentials
-	virtual el::element validate_authentication(const request &req);
+	/// \result		A zeep::json::element object containing the credentials
+	virtual json::element validate_authentication(const request &req);
 
 	/// \brief Add the WWW-Authenticate header to a reply for an unauthorized request
 	///
@@ -240,8 +240,8 @@ class jws_authentication_validation_base : public authentication_validation_base
 	/// Return the _null_ object (empty object) when authentication fails.
 	///
 	/// \param req	The zeep::http::request object
-	/// \result		A zeep::el::element object containing the credentials
-	virtual el::element validate_authentication(const request &req);
+	/// \result		A zeep::json::element object containing the credentials
+	virtual json::element validate_authentication(const request &req);
 
 	/// \brief Add e.g. headers to reply for an authorized request
 	///
@@ -250,7 +250,7 @@ class jws_authentication_validation_base : public authentication_validation_base
 	///
 	/// \param rep			Then zeep::http::reply object that will be send to the user
 	/// \param credentials	The credentials for the authorized user.
-	virtual void add_authorization_headers(reply &rep, const el::element& credentials);
+	virtual void add_authorization_headers(reply &rep, const json::element& credentials);
 
 	/// \brief Return whether the built-in login dialog should be used
 	///
@@ -294,9 +294,9 @@ class simple_jws_authentication_validation : public jws_authentication_validatio
 	///
 	/// \param username	The username
 	/// \param password	The password, in clear text
-	/// \result			A zeep::el::element object containing the credentials. In case of JWT
+	/// \result			A zeep::json::element object containing the credentials. In case of JWT
 	///					this is stored in a Cookie, so keep it compact.
-	virtual el::element validate_username_password(const std::string &username, const std::string &password);
+	virtual json::element validate_username_password(const std::string &username, const std::string &password);
 
   private:
 	std::map<std::string, std::string> m_user_hashes;
