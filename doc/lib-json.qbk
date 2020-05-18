@@ -9,7 +9,7 @@
 
 [chapter JSON
     [quickbook 1.7]
-    [id libzeep.el]
+    [id libzeep.json]
 ]
 
 [section:descr Introduction]
@@ -24,15 +24,15 @@ This library just provides code to parse and write JSON. It stores the data in a
 
 [section:elem The JSON element]
 
-The main data structure in this library is __el_element__, this is the representation of a JSON object and thus can contain various types of data. See this synopsis on how to use it.
+The main data structure in this library is __json_element__, this is the representation of a JSON object and thus can contain various types of data. See this synopsis on how to use it.
 
-[import ./examples/synopsis-el.cpp]
-[synopsis_el_main]
+[import ./examples/synopsis-json.cpp]
+[synopsis_json_main]
 
 
 [heading STL]
 
-The __el_element__ class acts as an STL container, see the class reference for more information. But to give you an idea:
+The __json_element__ class acts as an STL container, see the class reference for more information. But to give you an idea:
 
 [stl_interface]
 

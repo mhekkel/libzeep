@@ -1,4 +1,4 @@
-// compile: clang++ -o synopsis-el synopsis-el.cpp -I ../../include/  ../../lib/libzeep-el.a ../../lib/libzeep-generic.a -std=c++17 -lstdc++fs -I ~/projects/boost_1_73_0/
+// compile: clang++ -o synopsis-json synopsis-json.cpp -I ../../include/  ../../lib/libzeep-json.a ../../lib/libzeep-generic.a -std=c++17 -lstdc++fs -I ~/projects/boost_1_73_0/
 
 #include <iostream>
 #include <cassert>
@@ -31,7 +31,7 @@ void test_stl()
 
 void construct()
 {
-//[ synopsis_el_main
+//[ synopsis_json_main
     using namespace zeep::json::literals; 
     using json = zeep::json::element;
 
