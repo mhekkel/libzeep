@@ -3,16 +3,16 @@
 
 #include <random>
 
-#include <zeep/html/controller.hpp>
-#include <zeep/exception.hpp>
 #include <zeep/crypto.hpp>
+#include <zeep/exception.hpp>
+#include <zeep/html/controller.hpp>
+#include <zeep/http/server.hpp>
 
 using namespace std;
 namespace z = zeep;
 namespace zx = zeep::xml;
-namespace zh = zeep::http;
 
-using webapp = zh::file_based_webapp;
+using webapp = zeep::html::controller;
 
 void compare(zeep::xml::document& a, zeep::xml::document& b)
 {
@@ -38,43 +38,43 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 			mount_post("test", &my_webapp::handle_post_test);
 		}
 
-		virtual void handle_test(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 
-		virtual void handle_get_test(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_get_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("get", "text/plain");
 		}
 
-		virtual void handle_post_test(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_post_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("post", "text/plain");
 		}
 
 	} app;
 
-	zh::request req;
-	req.method = zh::method_type::GET;
+	zeep::http::request req;
+	req.method = zeep::http::method_type::GET;
 	req.uri = "/test";
 
-	zh::reply rep;
+	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "get");
 
-	req.method = zh::method_type::POST;
+	req.method = zeep::http::method_type::POST;
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "post");
 
-	req.method = zh::method_type::DELETE;
+	req.method = zeep::http::method_type::DELETE;
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::not_found);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::not_found);
 }
 
 BOOST_AUTO_TEST_CASE(webapp_2)
@@ -83,15 +83,15 @@ BOOST_AUTO_TEST_CASE(webapp_2)
 
 	app.mount("test", "my-realm", &webapp::handle_file);
 
-	zh::request req;
-	req.method = zh::method_type::GET;
+	zeep::http::request req;
+	req.method = zeep::http::method_type::GET;
 	req.uri = "/test";
 
-	zh::reply rep;
+	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
 
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::internal_server_error);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::internal_server_error);
 }
 
 // digest authentication test
@@ -100,28 +100,28 @@ BOOST_AUTO_TEST_CASE(webapp_3)
 	class my_webapp : public webapp
 	{
 	  public:
-		virtual void handle_test(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 	} app;
 
-	auto validator = new zh::simple_digest_authentication_validation("mijn-realm", {
+	auto validator = new zeep::http::simple_digest_authentication_validation("mijn-realm", {
 		{ "scott", "tiger" }
 	});
 
 	app.add_authenticator(validator, "mijn-realm");
 	app.mount("test", "mijn-realm", &my_webapp::handle_test);
 
-	zh::request req;
-	req.method = zh::method_type::GET;
+	zeep::http::request req;
+	req.method = zeep::http::method_type::GET;
 	req.uri = "/test";
 
-	zh::reply rep;
+	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
 
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::unauthorized);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
 
 	auto wwwAuth = rep.get_header("WWW-Authenticate");
 
@@ -158,11 +158,11 @@ BOOST_AUTO_TEST_CASE(webapp_3)
 		"nc=" + nc + ","
 		"uri='/test'");
 
-	zh::reply rep2;
+	zeep::http::reply rep2;
 
 	app.handle_request(req, rep2);
 
-	BOOST_CHECK_EQUAL(rep2.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
 }
 
 // jws authentication test
@@ -171,30 +171,30 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 	class my_webapp : public webapp
 	{
 	  public:
-		virtual void handle_test(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 	} app;
 
 	auto secret = zeep::encode_hex(zeep::random_hash());
 
-	auto validator = new zh::simple_jws_authentication_validation("mijn-realm", secret, {
+	auto validator = new zeep::http::simple_jws_authentication_validation("mijn-realm", secret, {
 		{ "scott", "tiger" }
 	});
 
 	app.add_authenticator(validator, true);
 	app.mount("test", "mijn-realm", &my_webapp::handle_test);
 
-	zh::request req;
-	req.method = zh::method_type::GET;
+	zeep::http::request req;
+	req.method = zeep::http::method_type::GET;
 	req.uri = "/test";
 
-	zh::reply rep = {};
+	zeep::http::reply rep = {};
 
 	app.handle_request(req, rep);
 
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::unauthorized);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
 
 	auto csrf = rep.get_cookie("csrf-token");
 
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 	if (loginDoc.find_first("//input[@name='_csrf']"))
 		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->get_attribute("value"), csrf);
 
-	req.method = zh::method_type::POST;
+	req.method = zeep::http::method_type::POST;
 	req.uri = "/login";
 	req.set_header("content-type", "application/x-www-form-urlencoded");
 	req.payload = "username=scott&password=tiger&_csrf=" + csrf;
@@ -215,22 +215,22 @@ BOOST_AUTO_TEST_CASE(webapp_3a)
 
 	app.handle_request(req, rep);
 
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::moved_temporarily);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::moved_temporarily);
 	auto cookie = rep.get_cookie("access_token");
 
 	BOOST_CHECK(not cookie.empty());
 
-	zh::request req2;
+	zeep::http::request req2;
 	
-	req2.method = zh::method_type::GET;
+	req2.method = zeep::http::method_type::GET;
 	req2.uri = "/test";
 	req2.set_cookie("access_token", cookie);
 
-	zh::reply rep2;
+	zeep::http::reply rep2;
 
 	app.handle_request(req2, rep2);
 
-	BOOST_CHECK_EQUAL(rep2.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
 }
 
 
@@ -275,87 +275,133 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 			mount("{css,scripts}/", &my_webapp::handle_testf);
 		}
 
-		virtual void handle_test1(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test1(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("1", "text/plain");
 		}
 
-		virtual void handle_test2(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test2(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2", "text/plain");
 		}
 
-		virtual void handle_test2b(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test2b(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2b", "text/plain");
 		}
 
-		virtual void handle_test3(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test3(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("3", "text/plain");
 		}
 
-		virtual void handle_test4(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_test4(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("4", "text/plain");
 		}
 
-		virtual void handle_testf(const zh::request& request, const zh::scope& scope, zh::reply& reply)
+		virtual void handle_testf(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
 		{
-			reply = zh::reply::stock_reply(zh::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("f", "text/plain");
 		}
 
 
 	} app;
 
-	zh::request req;
-	req.method = zh::method_type::GET;
+	zeep::http::request req;
+	req.method = zeep::http::method_type::GET;
 
-	zh::reply rep;
+	zeep::http::reply rep;
 
 	req.uri = "/test";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "1");
 
 	req.uri = "/test/x";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "3");
 
 	req.uri = "/test/x/x";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "4");
 
 	req.uri = "iew.x";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
 
 	req.uri = "x/iew.x";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "2");
 
 	req.uri = "x/x/iew.x";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
 
 	req.uri = "css/styles/my-style.css";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
 
 	req.uri = "scripts/x.js";
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zh::ok);
+	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+}
+
+
+BOOST_AUTO_TEST_CASE(webapp_8)
+{
+	// start up a http server with a html_controller and stop it again
+
+	class my_html_controller : public zeep::html::controller
+	{
+	  public:
+		my_html_controller()
+			: zeep::html::controller("/", "")
+		{
+			mount("", &my_html_controller::handle_index);
+		}
+
+		void handle_index(const zeep::http::request& req, const zeep::html::scope& scope, zeep::http::reply& rep)
+		{
+			rep = zeep::http::reply::stock_reply(zeep::http::ok);
+			rep.set_content("Hello", "text/plain");
+		}
+	};
+
+	zeep::http::daemon d([]() {
+		auto server = new zeep::http::server;
+		server->add_controller(new my_html_controller());
+		return server;
+	}, "zeep-http-test");
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "127.0.0.1", port));
+
+	std::cerr << "started daemon at port " << port << std::endl;
+
+	sleep(1);
+
+	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+
+	pthread_kill(t.native_handle(), SIGHUP);
+
+	t.join();
+
+	BOOST_TEST(reply.get_status() == zeep::http::ok);
+	BOOST_TEST(reply.get_content() == "Hello");
 }

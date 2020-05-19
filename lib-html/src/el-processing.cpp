@@ -17,7 +17,7 @@
 #include <regex>
 
 #include <zeep/html/el-processing.hpp>
-#include <zeep/unicode_support.hpp>
+#include <zeep/unicode-support.hpp>
 
 #include <zeep/utils.hpp>
 
@@ -1875,6 +1875,11 @@ auto scope::get_nodeset(const std::string& name) const -> node_set_type
 void scope::set_nodeset(const std::string& name, node_set_type&& nodes)
 {
 	m_nodesets.emplace(std::make_pair(name, std::move(nodes)));
+}
+
+std::string scope::get_csrf_token() const
+{
+	return get_request().get_cookie("csrf-token");
 }
 
 } // namespace zeep::http

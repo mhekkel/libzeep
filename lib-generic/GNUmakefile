@@ -97,7 +97,7 @@ OBJECTS = \
 	$(OBJDIR)/crypto.o \
 	$(OBJDIR)/exception.o \
 	$(OBJDIR)/streambuf.o \
-	$(OBJDIR)/unicode_support.o \
+	$(OBJDIR)/unicode-support.o \
 	$(OBJDIR)/utils.o
 
 HEADERS = \

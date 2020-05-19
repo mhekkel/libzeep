@@ -160,6 +160,9 @@ class scope
 		return m_nodesets.count(name) or (m_next != nullptr and m_next->has_nodeset(name));
 	}
 
+	/// \brief get the CSRF token from the request burried in \a scope
+	std::string get_csrf_token() const;
+
   private:
 	/// for debugging purposes
 	friend std::ostream& operator<<(std::ostream& lhs, const scope& rhs);

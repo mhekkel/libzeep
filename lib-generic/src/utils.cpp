@@ -448,5 +448,25 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 	return result;
 }
 
+bool is_absolute_path(const std::string& s)
+{
+	bool result = false;
+
+	if (not s.empty())
+	{
+		if (s[0] == '/')
+			result = true;
+		else if (isalpha(s[0]))
+		{
+			std::string::const_iterator ch = s.begin() + 1;
+			while (ch != s.end() and isalpha(*ch))
+				++ch;
+			result = ch != s.end() and *ch == ':';
+		}
+	}
+
+	return result;
+}
+
 }
 

@@ -15,7 +15,7 @@
 #include <map>
 #include <algorithm>
 
-#include <zeep/type_traits.hpp>
+#include <zeep/type-traits.hpp>
 #include <zeep/json/element_fwd.hpp>
 
 namespace zeep::json::detail

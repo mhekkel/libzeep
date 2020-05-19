@@ -3,15 +3,13 @@
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
-//
-// webapp is a base class used to construct web applications in C++ using libzeep
-//
 
 #pragma once
 
 /// \file
-/// definition of the zeep::http::webapp class, a rich extension of the zeep::http::server class 
-/// that allows mapping of member functions to mount points in HTTP space.
+/// definition of the zeep::html::controller class. This class takes
+/// care of handling requests that are mapped to call back functions
+/// and provides code to return XHTML formatted replies.
 
 #include <map>
 #include <set>
@@ -21,11 +19,12 @@
 
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
+#include <zeep/http/controller.hpp>
 #include <zeep/http/request.hpp>
-#include <zeep/http/server.hpp>
 #include <zeep/http/authorization.hpp>
 #include <zeep/html/el-processing.hpp>
 #include <zeep/html/tag-processor.hpp>
+#include <zeep/html/template-processor.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -33,177 +32,23 @@
 namespace zeep::html
 {
 
-// -----------------------------------------------------------------------
-/// \brief abstract base class for a resource loader
-///
-/// A resource loader is used to fetch the resources a webapp can serve
-/// This is an abstract base class, use either file_loader to load files
-/// from a 'docroot' directory or rsrc_loader to load files from compiled in
-/// resources. (See https://github.com/mhekkel/mrc for more info on resources)
-
-class resource_loader
-{
-  public:
-	virtual ~resource_loader() {}
-
-	resource_loader(const resource_loader&) = delete;
-	resource_loader& operator=(const resource_loader&) = delete;
-
-	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept = 0;
-
-	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept = 0;
-
-  protected:
-	resource_loader() {}
-};
-
-// -----------------------------------------------------------------------
-/// \brief actual implementation of a zeep::http::resource_loader that loads files from disk
-/// 
-/// Load the resources from the directory specified in the docroot constructor parameter.
-
-class file_loader : public resource_loader
-{
-  public:
-	/// \brief constructor
-	///
-	/// \param docroot	Path to the directory where the 'resources' are located
-	file_loader(const std::filesystem::path& docroot = ".")
-		: resource_loader(), m_docroot(docroot) {}
-	
-	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;
-
-	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept;
-
-  private:
-	std::filesystem::path m_docroot;
-};
-
-// -----------------------------------------------------------------------
-/// \brief actual implementation of a zeep::http::resource_loader that loads resources from memory
-/// 
-/// Load the resources from resource data created with mrc (see https://github.com/mhekkel/mrc )
-
-class rsrc_loader : public resource_loader
-{
-  public:
-	/// \brief constructor
-	/// 
-	/// The parameter is not used
-	rsrc_loader(const std::string&);
-	
-	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;
-
-	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept;
-
-  private:
-	std::filesystem::file_time_type mRsrcWriteTime = {};
-};
-
 // --------------------------------------------------------------------
 
-/// \brief base class for a webapp
+/// \brief base class for a webapp controller
 ///
-/// basic_html_controller is used to create XHTML web pages based on the contents of a
+/// html::controller is used to create XHTML web pages based on the contents of a
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.
 
-class basic_html_controller
+class controller : public http::controller, public template_processor
 {
   public:
-	basic_html_controller();
+	controller(const std::string& prefix_path = "/", const std::string& docroot = ".");
 
-	virtual ~basic_html_controller();
-
-	/// \brief set the docroot for a webapp
-	virtual void set_docroot(const std::filesystem::path& docroot);
-
-	/// \brief get the current docroot of the webapp
-	std::filesystem::path get_docroot() const { return m_docroot; }
-
-	/// \brief Add a new authentication handler
-	///
-	/// basic_html_controller takes ownership.
-	/// \param authenticator	The object that will the authentication 
-	/// \param login			If true, handlers will be added for /logout and GET and POST /login
-	void add_authenticator(http::authentication_validation_base* authenticator, bool login = false);
-
-	/// \brief Create an error reply for the error containing a validation header
-	///
-	/// When a authentication violation is encountered, this function is called to generate
-	/// the appropriate reply.
-	/// \param req		The request that triggered this call
-	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
-	/// \param realm	The name of the protected area, might be shown to the user
-	/// \param rep		Write the reply in this object
-	virtual void create_unauth_reply(const http::request& req, bool stale, const std::string& realm, http::reply& reply);
-
-	/// \brief Create an error reply for the error
-	///
-	/// An error should be returned with HTTP status code \a status. This method will create a default error page.
-	/// \param req		The request that triggered this call
-	/// \param realm	The name of the protected area, might be shown to the user
-	/// \param rep		Write the reply in this object
-	virtual void create_error_reply(const http::request& req, http::status_type status, http::reply& reply);
-
-	/// \brief Create an error reply for the error with an additional message for the user
-	///
-	/// An error should be returned with HTTP status code \a status and additional information \a message.
-	/// This method will create a default error page.
-	/// \param req		The request that triggered this call
-	/// \param status	The error that triggered this call
-	/// \param message	The message describing the error
-	/// \param rep		Write the reply in this object
-	virtual void create_error_reply(const http::request& req, http::status_type status, const std::string& message, http::reply& reply);
+	virtual ~controller();
 
 	/// \brief Dispatch and handle the request
 	virtual bool handle_request(http::request& req, http::reply& reply);
-
-	// --------------------------------------------------------------------
-	// tag processor support
-
-	/// \brief process all the tags in this node
-	virtual void process_tags(xml::node* node, const scope& scope);
-
-	/// \brief get the CSRF token in the request \a req
-	std::string get_csrf_token(const http::request& req) const
-	{
-		return req.get_cookie("csrf-token");
-	}
-
-	/// \brief get the CSRF token from the request burried in \a scope
-	std::string get_csrf_token(const scope& scope) const
-	{
-		return get_csrf_token(scope.get_request());
-	}
-
-  protected:
-
-	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
-
-	/// \brief process only the tags with the specified namespace prefixes
-	virtual void process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces);
-
-  public:
-
-	/// \brief Use to register a new tag_processor and couple it to a namespace
-	template<typename TagProcessor>
-	void register_tag_processor(const std::string& ns)
-	{
-		m_tag_processor_creators.emplace(ns, [](const std::string& ns) { return new TagProcessor(ns.c_str()); });
-	}
-
-	/// \brief Create a tag_processor
-	tag_processor* create_tag_processor(const std::string& ns) const
-	{
-		return m_tag_processor_creators.at(ns)(ns);
-	}
 
 	// --------------------------------------------------------------------
 
@@ -236,7 +81,7 @@ class basic_html_controller
 	template<class Class>
 	void mount(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, http::method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -245,7 +90,7 @@ class basic_html_controller
 	template<class Class>
 	void mount_get(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, http::method_type::GET, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -254,7 +99,7 @@ class basic_html_controller
 	template<class Class>
 	void mount_post(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, http::method_type::POST, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -263,7 +108,7 @@ class basic_html_controller
 	template<class Class>
 	void mount(const std::string& path, http::method_type method, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, method, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -272,7 +117,7 @@ class basic_html_controller
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, http::method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -281,7 +126,7 @@ class basic_html_controller
 	template<class Class>
 	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, http::method_type::GET, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -290,7 +135,7 @@ class basic_html_controller
 	template<class Class>
 	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, http::method_type::POST, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -299,7 +144,7 @@ class basic_html_controller
 	template<class Class>
 	void mount(const std::string& path, const std::string& realm, http::method_type method, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
 	{
-		static_assert(std::is_base_of_v<basic_html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
 		mount(path, realm, method, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -333,44 +178,11 @@ class basic_html_controller
 		}
 	}
 
-	/// \brief Default handler for serving files out of our doc root
-	virtual void handle_file(const http::request& request, const scope& scope, http::reply& reply);
-
-  public:
-
-	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept = 0;
-
-	/// \brief return error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept = 0;
-
-  public:
-
-	/// \brief Use load_template to fetch the XHTML template file
-	virtual void load_template(const std::string& file, xml::document& doc);
-
-	/// \brief create a reply based on a template
-	virtual void create_reply_from_template(const std::string& file, const scope& scope, http::reply& reply);
-
 	/// \brief Initialize the scope object
+	///
+	/// The default implementation does nothing, derived implementations may
+	/// want to add some default data to the scope.
 	virtual void init_scope(scope& scope);
-
-  protected:
-
-	/// \brief default GET login handler, will simply return the login page
-	///
-	/// This is the default handler for `GET /login`. If you want to provide a custom login
-	/// page, you have to override this method.
-	virtual void handle_get_login(const http::request& request, const scope& scope, http::reply& reply);
-
-	/// \brief default POST login handler, will process the credentials from the form in the login page
-	///
-	/// This is the default handler for `POST /login`. If you want to provide a custom login
-	/// procedure, you have to override this method.
-	virtual void handle_post_login(const http::request& request, const scope& scope, http::reply& reply);
-
-	/// \brief default logout handler, will return a redirect to the base URL and remove the authentication Cookie
-	virtual void handle_logout(const http::request& request, const scope& scope, http::reply& reply);
 
   private:
 
@@ -385,55 +197,7 @@ class basic_html_controller
 	using mount_point_list = std::vector<mount_point>;
 
 	mount_point_list m_dispatch_table;
-	std::string m_ns;
-	std::filesystem::path m_docroot;
-
 	std::vector<http::authentication_validation_base*> m_authentication_validators;
 };
 
-// --------------------------------------------------------------------
-/// webapp is derived from both zeep::http::server and basic_html_controller, it is used to create
-/// interactive web applications.
-
-template<typename Loader>
-class html_controller_base : public http::controller, public basic_html_controller
-{
-  public:
-
-	html_controller_base(const std::string& prefix_path, const std::string& docroot = ".")
-		: http::controller(prefix_path), m_loader(docroot)
-	{
-		register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
-		register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());
-	}
-
-	virtual ~html_controller_base() {}
-
-	/// return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept
-	{
-		return m_loader.file_time(file, ec);
-	}
-
-	// basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept
-	{
-		return m_loader.load_file(file, ec);
-	}
-
-  protected:
-	Loader m_loader;
-};
-
-using file_based_webapp = html_controller_base<file_loader>;
-using rsrc_based_html_controller = html_controller_base<rsrc_loader>;
-
-/// \brief the actual definition of zeep::html::controller
-
-#if WEBAPP_USES_RESOURCES
-using controller = rsrc_based_html_controller;
-#else
-using controller = file_based_html_controller;
-#endif
-
-} // namespace http::zeep
+} // namespace zeep::html

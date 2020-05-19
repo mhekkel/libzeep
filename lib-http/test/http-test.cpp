@@ -10,6 +10,7 @@
 #include <zeep/http/message-parser.hpp>
 #include <zeep/streambuf.hpp>
 #include <zeep/html/controller.hpp>
+#include <zeep/html/el-processing.hpp>
 
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -144,61 +145,62 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 	sleep(1);
 
 	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
-
-	pthread_kill(t.native_handle(), SIGHUP);
-
-	t.join();
-
 	BOOST_TEST(reply.get_status() == zh::not_found);
-}
 
-
-BOOST_AUTO_TEST_CASE(webapp_8)
-{
-	// start up a http server with a html_controller and stop it again
-
-	class my_html_controller : public zh::html_controller
-	{
-	  public:
-		my_html_controller()
-			: html_controller_base("/")
-		{
-			mount("", &my_html_controller::handle_index);
-		}
-
-		void handle_index(const zh::request& req, const zh::scope& scope, zh::reply& rep)
-		{
-			rep = zh::reply::stock_reply(zh::ok);
-			rep.set_content("Hello");
-		}
-
-
-	};
-
-	zh::daemon d([]() {
-		auto server = new zh::server;
-		server->add_controller(new my_html_controller());
-		return server;
-	}, "zeep-http-test");
-
-	std::random_device rng;
-	uint16_t port = 1024 + (rng() % 10240);
-
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "127.0.0.1", port));
-
-	std::cerr << "started daemon at port " << port << std::endl;
-
-	sleep(1);
-
-	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+	reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::bad_request);
 
 	pthread_kill(t.native_handle(), SIGHUP);
 
 	t.join();
 
-	BOOST_TEST(reply.get_status() == zh::ok);
-	BOOST_TEST(reply.get_content() == "Hello");
 }
+
+
+// BOOST_AUTO_TEST_CASE(webapp_8)
+// {
+// 	// start up a http server with a html_controller and stop it again
+
+// 	class my_html_controller : public zeep::html::controller
+// 	{
+// 	  public:
+// 		my_html_controller()
+// 			: zeep::html::controller("/", "")
+// 		{
+// 			mount("", &my_html_controller::handle_index);
+// 		}
+
+// 		void handle_index(const zh::request& req, const zeep::html::scope& scope, zh::reply& rep)
+// 		{
+// 			rep = zh::reply::stock_reply(zh::ok);
+// 			rep.set_content("Hello", "text/plain");
+// 		}
+// 	};
+
+// 	zh::daemon d([]() {
+// 		auto server = new zh::server;
+// 		server->add_controller(new my_html_controller());
+// 		return server;
+// 	}, "zeep-http-test");
+
+// 	std::random_device rng;
+// 	uint16_t port = 1024 + (rng() % 10240);
+
+// 	std::thread t(std::bind(&zh::daemon::run_foreground, d, "127.0.0.1", port));
+
+// 	std::cerr << "started daemon at port " << port << std::endl;
+
+// 	sleep(1);
+
+// 	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+
+// 	pthread_kill(t.native_handle(), SIGHUP);
+
+// 	t.join();
+
+// 	BOOST_TEST(reply.get_status() == zh::ok);
+// 	BOOST_TEST(reply.get_content() == "Hello");
+// }
 
 
 

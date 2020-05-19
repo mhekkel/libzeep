@@ -10,7 +10,7 @@
 
 #include <experimental/type_traits>
 
-#include <zeep/value_serializer.hpp>
+#include <zeep/value-serializer.hpp>
 
 #ifndef __cpp_lib_experimental_detect
 // This code is copied from:

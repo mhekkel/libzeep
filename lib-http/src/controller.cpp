@@ -7,6 +7,7 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
+#include <zeep/utils.hpp>
 
 namespace zeep::http
 {
@@ -23,6 +24,12 @@ controller::~controller()
 bool controller::handle_request(request& req, reply& rep)
 {
 	return false;
+}
+
+bool controller::path_matches_prefix(const std::string& path) const
+{
+	return m_prefix_path.empty() or
+		path.compare(0, path.length(), m_prefix_path) == 0;
 }
 
 }

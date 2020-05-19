@@ -9,6 +9,7 @@
 /// \file
 /// definition of the base class zeep::http::controller, used by e.g. rest_controller and soap_controller
 
+#include <zeep/http/server.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>
 
@@ -40,12 +41,26 @@ class controller
 	/// \brief returns the defined prefix path
 	std::string get_prefix() const      { return m_prefix_path; }
 
+	/// \brief return whether this uri request path matches our prefix
+	bool path_matches_prefix(const std::string& path) const;
+
+	/// \brief bind this controller to \a server
+	void set_server(server* server)
+	{
+		m_server = server;
+	}
+
+	/// \brief return the server object we're bound to
+	const server& get_server() const	{ return *m_server; }
+	server& get_server()				{ return *m_server; }
+
   protected:
 
 	controller(const controller&) = delete;
 	controller& operator=(const controller&) = delete;
 
 	std::string m_prefix_path;
+	server* m_server = nullptr;
 };
 
 } // namespace zeep::http

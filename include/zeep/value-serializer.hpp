@@ -5,7 +5,7 @@
 
 #pragma once
 
-/*! \file zeep/value_serializer.hpp
+/*! \file zeep/value-serializer.hpp
 	\brief File containing the common serialization code in libzeep
 
 	Serialization in libzeep is used by both the XML and the JSON sub libraries.

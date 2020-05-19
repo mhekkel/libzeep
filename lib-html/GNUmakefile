@@ -115,15 +115,18 @@ $(OUTPUT):
 
 OBJECTS = \
 	$(OBJDIR)/authorization.o \
+	$(OBJDIR)/controller.o \
 	$(OBJDIR)/el-processing.o \
-	$(OBJDIR)/tag-processor.o \
+	$(OBJDIR)/error-handler.o \
+	$(OBJDIR)/login-controller.o \
 	$(OBJDIR)/tag-processor-v2.o \
-	$(OBJDIR)/controller.o
+	$(OBJDIR)/tag-processor.o
 
 ifneq ($(USE_RSRC),0)
 OBJECTS += \
-	$(OBJDIR)/controller-rsrc.o \
-	$(OBJDIR)/test_rsrc.o
+	$(OBJDIR)/controller-rsrc.o
+
+$(OBJDIR)/controller-rsrc.o: src/mrsrc.h
 endif
 
 HEADERS = \

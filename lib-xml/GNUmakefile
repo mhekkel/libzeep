@@ -91,7 +91,6 @@ OBJECTS = \
 	$(OBJDIR)/doctype.o \
 	$(OBJDIR)/document.o \
 	$(OBJDIR)/node.o \
-	$(OBJDIR)/parser-internals.o \
 	$(OBJDIR)/parser.o \
 	$(OBJDIR)/xpath.o
 

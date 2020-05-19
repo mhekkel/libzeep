@@ -9,7 +9,7 @@
 #include <sstream>
 
 #include <zeep/http/message-parser.hpp>
-#include <zeep/unicode_support.hpp>
+#include <zeep/unicode-support.hpp>
 
 namespace zeep::http 
 {

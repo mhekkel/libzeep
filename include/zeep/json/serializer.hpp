@@ -17,9 +17,9 @@
 #include <experimental/type_traits>
 #include <optional>
 
-#include <zeep/value_serializer.hpp>
+#include <zeep/value-serializer.hpp>
 #include <zeep/nvp.hpp>
-#include <zeep/type_traits.hpp>
+#include <zeep/type-traits.hpp>
 
 #include <zeep/json/element_fwd.hpp>
 #include <zeep/json/factory.hpp>

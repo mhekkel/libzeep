@@ -12,9 +12,14 @@
 #include <mutex>
 #include <thread>
 
-#include <zeep/http/server.hpp>
-#include <zeep/http/connection.hpp>
+#include <zeep/crypto.hpp>
 #include <zeep/exception.hpp>
+
+#include <zeep/http/authorization.hpp>
+#include <zeep/http/server.hpp>
+#include <zeep/http/error-handler.hpp>
+#include <zeep/http/connection.hpp>
+#include <zeep/http/controller.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
@@ -28,6 +33,10 @@ namespace zeep::http
 namespace detail
 {
 
+// a regex for URI
+
+const std::regex kURIRx(R"((https?://)?([^/]+)?(/.*))", std::regex_constants::icase);
+
 // a thread specific logger
 
 thread_local std::unique_ptr<std::ostringstream> s_log;
@@ -39,12 +48,15 @@ std::mutex s_log_lock;
 // http::server
 
 server::server()
-	: m_log_forwarded(false)
+	: m_log_forwarded(false), m_add_csrf_token(false)
 {
 	using namespace boost::local_time;
 
 	local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
 	std::cout.imbue(std::locale(std::cout.getloc(), lf));
+
+	// add a default error handler
+	add_error_handler(new error_handler());
 }
 
 void server::bind(const std::string& address, unsigned short port)
@@ -73,11 +85,21 @@ server::~server()
 
 	for (auto c: m_controllers)
 		delete c;
+
+	for (auto eh: m_error_handlers)
+		delete eh;
 }
 
 void server::add_controller(controller* c)
 {
 	m_controllers.push_back(c);
+	c->set_server(this);
+}
+
+void server::add_error_handler(error_handler* eh)
+{
+	m_error_handlers.push_front(eh);
+	eh->set_server(this);
 }
 
 void server::run(int nr_of_threads)
@@ -125,19 +147,20 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 {
 	using namespace boost::posix_time;
 
-	// std::string csrf = req.get_cookie("csrf-token");
-	// bool csrf_is_new = csrf.empty();
-
-	// if (csrf_is_new)
-	// {
-	// 	csrf = encode_base64url(random_hash());
-	// 	req.set_cookie("csrf-token", csrf);
-	// }
-
+	// See if we need to add a new csrf token
+	bool csrf_is_new = false;
+	std::string csrf = req.get_cookie("csrf-token");
+	if (m_add_csrf_token and csrf.empty())
+	{
+		csrf_is_new = true;
+		csrf = encode_base64url(random_hash());
+		req.set_cookie("csrf-token", csrf);
+	}
 
 	// we're pessimistic
 	rep = reply::stock_reply(not_found);
 
+	// set up a logging stream and collect logging information
 	detail::s_log.reset(new std::ostringstream);
 	ptime start = second_clock::local_time();
 	
@@ -164,15 +187,10 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			accept = h.value;
 	}
 	
+	std::exception_ptr eptr;
+
 	try
 	{
-		// shortcut, check for supported method
-		if (req.method != method_type::GET and req.method != method_type::POST and req.method != method_type::PUT and
-			req.method != method_type::OPTIONS and req.method != method_type::HEAD and req.method != method_type::DELETE)
-		{
-			throw bad_request;
-		}
-
 		// asking for the remote endpoint address failed sometimes
 		// causing aborting exceptions, so I moved it here.
 		if (client.empty())
@@ -181,18 +199,38 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			client = boost::lexical_cast<std::string>(addr);
 		}
 
+		// shortcut, check for supported method
+		if (req.method != method_type::GET and req.method != method_type::POST and req.method != method_type::PUT and
+			req.method != method_type::OPTIONS and req.method != method_type::HEAD and req.method != method_type::DELETE)
+		{
+			throw bad_request;
+		}
+
+		// parse the uri
+		std::smatch m;
+		if (not std::regex_match(req.uri, m, detail::kURIRx))
+			throw bad_request;
+		
+		std::string path = m[3];
+
 		// do the actual work.
 		for (auto c: m_controllers)
 		{
+			if (not c->path_matches_prefix(path))
+				continue;
+
 			if (c->handle_request(req, rep))
 				break;
 		}
 		
 		if (req.method == method_type::HEAD)
-		{
 			rep.set_content("", rep.get_content_type());
-			// csrf_is_new = false;
-		}
+		else if (csrf_is_new)
+			rep.set_cookie("csrf-token", csrf, {
+				{ "HttpOnly", "" },
+				{ "SameSite", "Lax" },
+				{ "Path", "/" }
+			});
 
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
@@ -202,17 +240,18 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			rep.set_content_type("text/html; charset=utf-8");
 		}
 	}
-	catch (exception& e)
-	{
-		rep = reply::stock_reply(internal_server_error, e.what());
-	}
-	catch (status_type status)
-	{
-		rep = reply::stock_reply(status);
-	}
 	catch (...)
 	{
-		rep = reply::stock_reply(internal_server_error);
+		eptr = std::current_exception();
+	}
+
+	if (eptr)
+	{
+		for (auto eh: m_error_handlers)
+		{
+			if (eh->create_error_reply(req, eptr, rep))
+				break;
+		}
 	}
 
 	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());

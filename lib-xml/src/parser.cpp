@@ -16,11 +16,11 @@
 #include <boost/algorithm/string.hpp>
 
 #include <zeep/exception.hpp>
+#include <zeep/utils.hpp>
+
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
 #include <zeep/xml/character-classification.hpp>
-
-#include "parser-internals.hpp"
 
 namespace ba = boost::algorithm;
 
@@ -47,8 +47,6 @@ bool is_valid_url(const std::string& url)
 {
 	return std::regex_match(url, kURL_rx);
 }
-
-using namespace ::zeep::detail;
 
 // parsing XML is somewhat like macro processing,
 // we can encounter entities that need to be expanded into replacement text

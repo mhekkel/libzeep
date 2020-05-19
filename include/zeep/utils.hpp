@@ -9,6 +9,8 @@
 #include <locale>
 #include <filesystem>
 
+#include <zeep/unicode-support.hpp>
+
 namespace zeep
 {
 
@@ -33,5 +35,56 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 /// \param pattern		The pattern to match against
 /// \return				True in case of a match
 bool glob_match(const std::filesystem::path& p, std::string pattern);
+
+// --------------------------------------------------------------------
+
+/// \brief Simple class to save the state of a variable in a scope
+template <typename T>
+struct value_saver
+{
+	T& m_ref;
+	T m_value;
+
+	value_saver(T& value, const T& new_value) : m_ref(value), m_value(value) { m_ref = new_value; }
+	~value_saver() { m_ref = m_value; }
+};
+
+/// \brief Simple class used as a replacement for std::stack
+///
+/// The overhead of the full blown std::stack is a bit too much sometimes
+class mini_stack
+{
+  public:
+	mini_stack() : m_ix(-1) {}
+
+	unicode top()
+	{
+		assert(m_ix >= 0 and m_ix < int(sizeof(m_data) / sizeof(unicode)));
+		return m_data[m_ix];
+	}
+
+	void pop()
+	{
+		--m_ix;
+	}
+
+	void push(unicode uc)
+	{
+		++m_ix;
+		assert(m_ix < int(sizeof(m_data) / sizeof(unicode)));
+		m_data[m_ix] = uc;
+	}
+
+	bool empty() const
+	{
+		return m_ix == -1;
+	}
+
+  private:
+	unicode m_data[2];
+	int m_ix;
+};
+
+bool is_absolute_path(const std::string& s);
 
 }

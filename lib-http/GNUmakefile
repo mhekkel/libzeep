@@ -97,6 +97,7 @@ OBJECTS = \
 	$(OBJDIR)/connection.o \
 	$(OBJDIR)/controller.o \
 	$(OBJDIR)/daemon.o \
+	$(OBJDIR)/error-handler.o \
 	$(OBJDIR)/message-parser.o \
 	$(OBJDIR)/preforked-server.o \
 	$(OBJDIR)/reply.o \

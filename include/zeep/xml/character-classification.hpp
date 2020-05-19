@@ -10,7 +10,7 @@
 /// routines for classifying characters in an XML context
 
 #include <zeep/config.hpp>
-#include <zeep/unicode_support.hpp>
+#include <zeep/unicode-support.hpp>
 
 #include <string>
 

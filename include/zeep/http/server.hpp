@@ -14,12 +14,14 @@
 #include <boost/asio.hpp>
 
 #include <zeep/http/request-handler.hpp>
-#include <zeep/http/controller.hpp>
 
 namespace zeep::http
 {
 
 class connection;
+class controller;
+class authentication_validation_base;
+class error_handler;
 
 /// \brief The libzeep HTTP server implementation. Originally ased on example code found in boost::asio.
 ///
@@ -42,11 +44,19 @@ class server : public request_handler
 	/// If none of the controller handle the request the not_found error is returned.
 	void add_controller(controller* c);
 
+	/// \brief Add an error handler
+	///
+	/// Errors are handled by the error handler list. The last added handler
+	/// is called first.
+	void add_error_handler(error_handler* eh);
+
 	/// \brief Bind the server to address \a address and port \a port
-	virtual void bind(const std::string& address,
-					  unsigned short port);
+	virtual void bind(const std::string& address, unsigned short port);
 
 	virtual ~server();
+
+	/// \brief Set whether to add a csrf-token Cookie to the session, default is false
+	void set_add_csrf_token(bool b);
 
 	/// \brief Run as many as \a nr_of_threads threads simultaneously
 	virtual void run(int nr_of_threads);
@@ -68,6 +78,12 @@ class server : public request_handler
 
 	/// \brief get_io_service has to be public since we need it to call notify_fork from child code
 	boost::asio::io_service& get_io_service() { return m_io_service; }
+
+	/// \brief Add a new authentication handler
+	///
+	/// Add the \a authenticator to the list of authenticators, server takes ownership.
+	/// \param authenticator	The object that will the authentication
+	void add_authenticator(http::authentication_validation_base* authenticator);
 
   protected:
 
@@ -93,7 +109,9 @@ class server : public request_handler
 	std::string m_address;
 	unsigned short m_port;
 	bool m_log_forwarded;
+	bool m_add_csrf_token;
 	std::list<controller*> m_controllers;
+	std::list<error_handler*> m_error_handlers;
 };
 
 } // namespace zeep::http

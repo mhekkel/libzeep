@@ -15,7 +15,9 @@
 #include <stack>
 
 #include <zeep/exception.hpp>
-#include <zeep/unicode_support.hpp>
+#include <zeep/utils.hpp>
+
+#include <zeep/unicode-support.hpp>
 #include <zeep/json/element.hpp>
 
 #include <zeep/json/parser.hpp>
@@ -87,8 +89,7 @@ class json_parser
 	token_t get_next_token();
 
 	std::istream& m_is;
-#warning("use ministack?")
-	std::stack<unicode> m_buffer;
+	mini_stack m_buffer;
 	std::string m_token;
 	double m_token_float;
 	int64_t m_token_int;

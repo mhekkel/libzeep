@@ -8,7 +8,7 @@
 #include <locale>
 #include <sstream>
 
-#include <zeep/unicode_support.hpp>
+#include <zeep/unicode-support.hpp>
 
 namespace zeep
 {
