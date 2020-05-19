@@ -12,8 +12,8 @@
 namespace zeep::http
 {
 
-controller::controller(const std::string& prefixPath)
-	: m_prefix_path(prefixPath)
+controller::controller(const std::string& prefix_path)
+	: m_prefix_path(prefix_path)
 {
 }
 
@@ -29,7 +29,7 @@ bool controller::handle_request(request& req, reply& rep)
 bool controller::path_matches_prefix(const std::string& path) const
 {
 	return m_prefix_path.empty() or
-		path.compare(0, path.length(), m_prefix_path) == 0;
+		path.compare(0, m_prefix_path.length(), m_prefix_path) == 0;
 }
 
 }

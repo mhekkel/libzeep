@@ -133,7 +133,29 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]() { return new zh::server; }, "zeep-http-test");
+	class my_controller : public zeep::http::controller
+	{
+	  public:
+		my_controller() : zeep::http::controller("/test") {}
+
+		virtual bool handle_request(zeep::http::request& req, zeep::http::reply& rep)
+		{
+			bool result = false;
+			if (req.uri == "/test/one")
+			{
+				rep = zeep::http::reply::stock_reply(zeep::http::ok);
+				result = true;
+			}
+			
+			return result;
+		}
+	};
+
+	zh::daemon d([]() {
+		auto s = new zh::server;
+		s->add_controller(new my_controller());
+		return s;
+	}, "zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
@@ -150,57 +172,16 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 	reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
 	BOOST_TEST(reply.get_status() == zh::bad_request);
 
+	reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::ok);
+
+	reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::not_found);
+
 	pthread_kill(t.native_handle(), SIGHUP);
 
 	t.join();
-
 }
-
-
-// BOOST_AUTO_TEST_CASE(webapp_8)
-// {
-// 	// start up a http server with a html_controller and stop it again
-
-// 	class my_html_controller : public zeep::html::controller
-// 	{
-// 	  public:
-// 		my_html_controller()
-// 			: zeep::html::controller("/", "")
-// 		{
-// 			mount("", &my_html_controller::handle_index);
-// 		}
-
-// 		void handle_index(const zh::request& req, const zeep::html::scope& scope, zh::reply& rep)
-// 		{
-// 			rep = zh::reply::stock_reply(zh::ok);
-// 			rep.set_content("Hello", "text/plain");
-// 		}
-// 	};
-
-// 	zh::daemon d([]() {
-// 		auto server = new zh::server;
-// 		server->add_controller(new my_html_controller());
-// 		return server;
-// 	}, "zeep-http-test");
-
-// 	std::random_device rng;
-// 	uint16_t port = 1024 + (rng() % 10240);
-
-// 	std::thread t(std::bind(&zh::daemon::run_foreground, d, "127.0.0.1", port));
-
-// 	std::cerr << "started daemon at port " << port << std::endl;
-
-// 	sleep(1);
-
-// 	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
-
-// 	pthread_kill(t.native_handle(), SIGHUP);
-
-// 	t.join();
-
-// 	BOOST_TEST(reply.get_status() == zh::ok);
-// 	BOOST_TEST(reply.get_content() == "Hello");
-// }
 
 
 
