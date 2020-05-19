@@ -45,6 +45,10 @@ bool error_handler::create_error_reply(const request& req, std::exception_ptr ep
 	{
 		result = create_error_reply(req, http::internal_server_error, ex.what(), reply);
 	}
+	catch (...)
+	{
+		result = create_error_reply(req, http::internal_server_error, "unhandled exception", reply);
+	}
 
 	return result;
 }

@@ -187,8 +187,6 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			accept = h.value;
 	}
 	
-	std::exception_ptr eptr;
-
 	try
 	{
 		// asking for the remote endpoint address failed sometimes
@@ -242,11 +240,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 	}
 	catch (...)
 	{
-		eptr = std::current_exception();
-	}
-
-	if (eptr)
-	{
+		auto eptr = std::current_exception();
 		for (auto eh: m_error_handlers)
 		{
 			if (eh->create_error_reply(req, eptr, rep))
