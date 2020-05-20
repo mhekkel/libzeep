@@ -3,15 +3,21 @@
 #define BOOST_TEST_MODULE Processor_Test
 #include <boost/test/included/unit_test.hpp>
 
+#include <random>
+
+#include <zeep/crypto.hpp>
+#include <zeep/streambuf.hpp>
+#include <zeep/exception.hpp>
 #include <zeep/html/controller.hpp>
-#include <zeep/http/el-processing.hpp>
+#include <zeep/http/server.hpp>
+#include <zeep/http/daemon.hpp>
+#include <zeep/http/message-parser.hpp>
 
 using namespace std;
 
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
-zeep::http::basic_html_controller& dummy_webapp = *(new zeep::http::webapp());
 
 BOOST_AUTO_TEST_CASE(test_22)
 {
@@ -50,13 +56,14 @@ BOOST_AUTO_TEST_CASE(test_22)
 </data>
     )"_xml;
 
-	zeep::http::tag_processor_v2 tp;
+	zeep::html::tag_processor_v2 tp;
+	zeep::html::rsrc_based_html_template_processor p;
 	zeep::http::request req;
-    zeep::http::scope scope(req);
+    zeep::html::scope scope(req);
 
     scope.put("b", "b");
 
-    tp.process_xml(doc.child(), scope, "", dummy_webapp);
+    tp.process_xml(doc.child(), scope, "", p);
  
 	BOOST_TEST(doc == doc_test);
 
