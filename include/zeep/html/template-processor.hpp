@@ -107,9 +107,10 @@ class rsrc_loader : public resource_loader
 class basic_template_processor
 {
   public:
-	basic_template_processor(const std::string& docroot);
+	basic_template_processor(const std::string& docroot)
+		: m_docroot(docroot) {}
 
-	virtual ~basic_template_processor();
+	virtual ~basic_template_processor() {}
 
 	/// \brief set the docroot for this processor
 	virtual void set_docroot(const std::filesystem::path& docroot);
@@ -176,16 +177,15 @@ class basic_template_processor
 };
 
 // --------------------------------------------------------------------
-/// webapp is derived from both zeep::http::server and basic_html_controller, it is used to create
-/// interactive web applications.
+/// \brief actual implementation of the abstract basic_template_processor
 
 template<typename Loader>
 class html_template_processor : public basic_template_processor
 {
   public:
 
-	html_template_processor(const std::string& docroot = ".")
-		: m_loader(docroot)
+	html_template_processor(const std::string& docroot = "")
+		: basic_template_processor(docroot), m_loader(docroot)
 	{
 		register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
 		register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());

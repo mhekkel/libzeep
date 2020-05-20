@@ -38,29 +38,6 @@ namespace zeep::html
 // --------------------------------------------------------------------
 //
 
-/// return last_write_time of \a file
-std::filesystem::file_time_type file_loader::file_time(const std::string& file, std::error_code& ec) noexcept
-{
-	return fs::last_write_time(m_docroot / file, ec);
-}
-
-/// return last_write_time of \a file
-std::istream* file_loader::load_file(const std::string& file, std::error_code& ec) noexcept
-{
-	std::ifstream* result = new std::ifstream(m_docroot / file, std::ios::binary);
-	if (not result->is_open())
-	{
-		delete result;
-		result = nullptr;
-		ec = std::make_error_code(std::errc::no_such_file_or_directory);
-	}
-	
-	return result;	
-}
-
-// --------------------------------------------------------------------
-//
-
 controller::controller(const std::string& prefix_path, const std::string& docroot)
 	: http::controller(prefix_path), template_processor(docroot)
 {
@@ -134,45 +111,45 @@ bool controller::handle_request(http::request& req, http::reply& rep)
 		}
 		else
 		{
-			// check for the presence of a access_token
+			// // check for the presence of a access_token
 
-			json::element credentials;
+			// json::element credentials;
 
-			// Do authentication here, if needed
-			if (not handler->realm.empty())
-			{
-				auto avi = std::find_if(m_authentication_validators.begin(), m_authentication_validators.end(),
-					[handler](auto av) { return av->get_realm() == handler->realm; });
+			// // Do authentication here, if needed
+			// if (not handler->realm.empty())
+			// {
+			// 	auto avi = std::find_if(m_authentication_validators.begin(), m_authentication_validators.end(),
+			// 		[handler](auto av) { return av->get_realm() == handler->realm; });
 
-				if (avi == m_authentication_validators.end())	// logic error
-					throw std::logic_error("No authenticator provided for realm " + handler->realm);
+			// 	if (avi == m_authentication_validators.end())	// logic error
+			// 		throw std::logic_error("No authenticator provided for realm " + handler->realm);
 
-				credentials = (*avi)->validate_authentication(req);
+			// 	credentials = (*avi)->validate_authentication(req);
 
-				if (not credentials)
-					throw http::unauthorized_exception(handler->realm);
-			}
-			else	// not a protected area, but see if there's a valid login anyway
-			{
-				for (auto av: m_authentication_validators)
-				{
-					credentials = av->validate_authentication(req);
-					if (credentials)
-						break;
-				}
-			}
+			// 	if (not credentials)
+			// 		throw http::unauthorized_exception(handler->realm);
+			// }
+			// else	// not a protected area, but see if there's a valid login anyway
+			// {
+			// 	for (auto av: m_authentication_validators)
+			// 	{
+			// 		credentials = av->validate_authentication(req);
+			// 		if (credentials)
+			// 			break;
+			// 	}
+			// }
 
-			if (credentials)
-			{
-				if (credentials.is_string())
-					req.username = credentials.as<std::string>();
-				else if (credentials.is_object())
-					req.username = credentials["username"].as<std::string>();
+			// if (credentials)
+			// {
+			// 	if (credentials.is_string())
+			// 		req.username = credentials.as<std::string>();
+			// 	else if (credentials.is_object())
+			// 		req.username = credentials["username"].as<std::string>();
 
-				scope.put("credentials", credentials);
-			}
+			// 	scope.put("credentials", credentials);
+			// }
 
-			handler->handler(req, scope, rep);
+			// handler->handler(req, scope, rep);
 		}
 
 		result = true;

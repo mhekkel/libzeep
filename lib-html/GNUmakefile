@@ -114,13 +114,12 @@ $(OUTPUT):
 	mkdir -p $(OUTPUT)
 
 OBJECTS = \
-	$(OBJDIR)/authorization.o \
 	$(OBJDIR)/controller.o \
 	$(OBJDIR)/el-processing.o \
 	$(OBJDIR)/error-handler.o \
-	$(OBJDIR)/login-controller.o \
 	$(OBJDIR)/tag-processor-v2.o \
-	$(OBJDIR)/tag-processor.o
+	$(OBJDIR)/tag-processor.o \
+	$(OBJDIR)/template-processor.o
 
 ifneq ($(USE_RSRC),0)
 OBJECTS += \
@@ -206,11 +205,11 @@ define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o $$(OBJDIR)/test_rsrc.o
 
-test/$(1)-test: $$(OBJECTS) $$($(1)_OBJECTS)
+test/$(1)-test: $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test

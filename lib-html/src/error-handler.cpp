@@ -104,6 +104,8 @@ body, html {
 	}
 
 	rep.set_status(status);
+
+	return true;
 }
 
 }

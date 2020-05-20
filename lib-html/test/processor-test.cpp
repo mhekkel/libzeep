@@ -2,20 +2,20 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <zeep/streambuf.hpp>
-#include <zeep/html/controller.hpp>
-#include <zeep/http/el-processing.hpp>
+#include <zeep/html/template-processor.hpp>
+#include <zeep/html/tag-processor.hpp>
+#include <zeep/html/el-processing.hpp>
 
 using namespace std;
 
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
-zeep::http::basic_html_controller& dummy_webapp = *(new zeep::http::file_based_webapp());
-
-void process_and_compare(zeep::xml::document& a, zeep::xml::document& b, const zeep::http::scope& scope = {})
+void process_and_compare(zeep::xml::document& a, zeep::xml::document& b, const zeep::html::scope& scope = {})
 {
-	zeep::http::tag_processor_v2 tp;
-	tp.process_xml(a.child(), scope, "", dummy_webapp);
+	zeep::html::template_processor p;
+	zeep::html::tag_processor_v2 tp;
+	tp.process_xml(a.child(), scope, "", p);
  
 	BOOST_TEST(a == b);
 	if (a != b)
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(test_2)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("b", zeep::json::element{ "a", "b", "c"});
  
 	process_and_compare(doc, doc_test, scope);
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(test_3)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("x", "<hallo, wereld!>");
  
 	process_and_compare(doc, doc_test, scope);
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(test_3a)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("x", "<b>hallo, wereld!</b>");
  
 	process_and_compare(doc, doc_test, scope);
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(test_4)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("x", "hallo, wereld!");
  
 	process_and_compare(doc, doc_test, scope);
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(test_5)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("x", "<b>hallo, wereld!</b>");
  
 	process_and_compare(doc, doc_test, scope);
@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE(test_6)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("x", "\"<b>'hallo, wereld!'</b>\"");
 	scope.put("y", "Een \"moeilijke\" string");
 	scope.put("a", zeep::json::element{ "a", "b", "c"});
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(test_8)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("a", zeep::json::element{ "a", "b", "c"});
 
 	process_and_compare(doc, doc_test, scope);
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(test_8a)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("a", zeep::json::element{ "a", "b", "c"});
 
 	process_and_compare(doc, doc_test, scope);
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(test_9)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("a", zeep::json::element{ "a", "b", "c"});
 
 	process_and_compare(doc, doc_test, scope);
@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE(test_10)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("id", "my-id-101");
 
 	process_and_compare(doc, doc_test, scope);
@@ -301,7 +301,7 @@ BOOST_AUTO_TEST_CASE(test_11)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("id", "my-id-101");
 
 	process_and_compare(doc, doc_test, scope);
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(test_12)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("ok", true);
 
 	process_and_compare(doc, doc_test, scope);
@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE(test_13)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("ok", true);
 
 	process_and_compare(doc, doc_test, scope);
@@ -361,22 +361,16 @@ BOOST_AUTO_TEST_CASE(test_14)
 </data>
 	)"_xml;
 
-	zeep::http::tag_processor_v2 tp;
+	zeep::html::template_processor p;
+	zeep::html::tag_processor_v2 tp;
 
 	zeep::http::request req;
 	req.headers.push_back({ "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" });
 
-	zeep::http::scope scope(req);
+	zeep::html::scope scope(req);
 	scope.put("ok", true);
 
-	tp.process_xml(doc.child(), scope, "", dummy_webapp);
- 
-	BOOST_TEST_WARN(doc == doc_test);
-	if (doc != doc_test)
-	{
-		cerr << doc << endl
-			 << doc_test << endl;
-	}
+	process_and_compare(doc, doc_test, scope);
 }
 
 BOOST_AUTO_TEST_CASE(test_15)
@@ -393,22 +387,16 @@ BOOST_AUTO_TEST_CASE(test_15)
 </data>
 	)"_xml;
 
-	zeep::http::tag_processor_v2 tp;
+	zeep::html::template_processor p;
+	zeep::html::tag_processor_v2 tp;
 
 	zeep::http::request req;
 	req.headers.push_back({ "Accept-Language", "da, en-US;q=0.7, en;q=0.3" });
 
-	zeep::http::scope scope(req);
+	zeep::html::scope scope(req);
 	scope.put("ok", true);
 
-	tp.process_xml(doc.child(), scope, "", dummy_webapp);
- 
-	BOOST_TEST_WARN(doc == doc_test);
-	if (doc != doc_test)
-	{
-		cerr << doc << endl
-			 << doc_test << endl;
-	}
+	process_and_compare(doc, doc_test, scope);
 }
 
 BOOST_AUTO_TEST_CASE(test_16)
@@ -427,22 +415,13 @@ BOOST_AUTO_TEST_CASE(test_16)
 </data>
 	)"_xml;
 
-	zeep::http::tag_processor_v2 tp;
-
 	zeep::http::request req;
 	req.headers.push_back({ "Accept-Language", "en-GB, en-US;q=0.7, en;q=0.3" });
 
-	zeep::http::scope scope(req);
+	zeep::html::scope scope(req);
 	scope.put("ok", true);
 
-	tp.process_xml(doc.child(), scope, "", dummy_webapp);
- 
-	BOOST_TEST(doc == doc_test);
-	if (doc != doc_test)
-	{
-		cerr << doc << endl
-			 << doc_test << endl;
-	}
+	process_and_compare(doc, doc_test, scope);
 }
 
 BOOST_AUTO_TEST_CASE(test_17)
@@ -459,22 +438,13 @@ BOOST_AUTO_TEST_CASE(test_17)
 </data>
 	)"_xml;
 
-	zeep::http::tag_processor_v2 tp;
-
 	zeep::http::request req;
 	req.headers.push_back({ "Accept-Language", "fr_FR, en-US;q=0.7, en;q=0.3" });
 
-	zeep::http::scope scope(req);
+	zeep::html::scope scope(req);
 	scope.put("ok", true);
 
-	tp.process_xml(doc.child(), scope, "", dummy_webapp);
- 
-	BOOST_TEST_WARN(doc == doc_test);
-	if (doc != doc_test)
-	{
-		cerr << doc << endl
-			 << doc_test << endl;
-	}
+	process_and_compare(doc, doc_test, scope);
 }
 
 BOOST_AUTO_TEST_CASE(test_18)
@@ -491,7 +461,7 @@ BOOST_AUTO_TEST_CASE(test_18)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 
 	json p;
 	p["n"] = "x";
@@ -517,7 +487,7 @@ BOOST_AUTO_TEST_CASE(test_19)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 
 	scope.put("b", true);
 	scope.put("c", false);
@@ -562,7 +532,7 @@ BOOST_AUTO_TEST_CASE(test_20)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 
 	scope.put("a", 2);
 
@@ -583,7 +553,7 @@ BOOST_AUTO_TEST_CASE(test_21)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 
 	scope.put("b", "b");
 
@@ -627,7 +597,7 @@ BOOST_AUTO_TEST_CASE(test_22)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("b", "b");
 
 	process_and_compare(doc, doc_test, scope);
@@ -657,7 +627,7 @@ BOOST_AUTO_TEST_CASE(test_23)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("b", "b");
 	scope.put("c", "bla met < en =");
 
@@ -684,7 +654,7 @@ BOOST_AUTO_TEST_CASE(test_24)
 </data>
 	)"_xml;
 
-	zeep::http::scope scope;
+	zeep::html::scope scope;
 	scope.put("b", "b");
 	scope.put("c", "bla met < en =");
 

@@ -34,7 +34,7 @@ namespace zeep::html
 
 // --------------------------------------------------------------------
 
-/// \brief base class for a webapp controller
+/// \brief base class for a webapp controller that uses XHTML templates
 ///
 /// html::controller is used to create XHTML web pages based on the contents of a
 /// template file and the parameters passed in the request and calculated data stored
@@ -182,7 +182,7 @@ class controller : public http::controller, public template_processor
 	///
 	/// The default implementation does nothing, derived implementations may
 	/// want to add some default data to the scope.
-	virtual void init_scope(scope& scope);
+	virtual void init_scope(scope& scope) {}
 
   private:
 
@@ -197,7 +197,6 @@ class controller : public http::controller, public template_processor
 	using mount_point_list = std::vector<mount_point>;
 
 	mount_point_list m_dispatch_table;
-	std::vector<http::authentication_validation_base*> m_authentication_validators;
 };
 
 } // namespace zeep::html
