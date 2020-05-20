@@ -297,8 +297,6 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::ok);
 
-	sleep(100);
-
 	pthread_kill(t.native_handle(), SIGHUP);
 
 	t.join();
