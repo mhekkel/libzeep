@@ -15,7 +15,7 @@
 #include <zeep/crypto.hpp>
 #include <zeep/exception.hpp>
 
-#include <zeep/http/authorization.hpp>
+#include <zeep/http/security.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/http/error-handler.hpp>
 #include <zeep/http/connection.hpp>
@@ -33,12 +33,7 @@ namespace zeep::http
 namespace detail
 {
 
-// a regex for URI
-
-const std::regex kURIRx(R"((https?://)?([^/]+)?(/.*))", std::regex_constants::icase);
-
 // a thread specific logger
-
 thread_local std::unique_ptr<std::ostringstream> s_log;
 std::mutex s_log_lock;
 
@@ -88,6 +83,8 @@ server::~server()
 
 	for (auto eh: m_error_handlers)
 		delete eh;
+
+	delete m_security_context;
 }
 
 void server::add_controller(controller* c)
@@ -205,11 +202,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 		}
 
 		// parse the uri
-		std::smatch m;
-		if (not std::regex_match(req.uri, m, detail::kURIRx))
-			throw bad_request;
-		
-		std::string path = m[3];
+		std::string path = req.get_path();
 
 		// do the actual work.
 		for (auto c: m_controllers)

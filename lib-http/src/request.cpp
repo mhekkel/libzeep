@@ -19,6 +19,12 @@ namespace ba = boost::algorithm;
 namespace zeep::http
 {
 
+namespace
+{
+// a regex for URI
+const std::regex kURIRx(R"((https?://)?([^/]+)?(/[^?]*))(?:\?(.+))?)", std::regex_constants::icase);
+}
+
 void request::clear()
 {
 	m_request_line.clear();
@@ -33,6 +39,30 @@ void request::clear()
 	close = true;
 	local_address.clear();
 	local_port = 0;
+}
+
+std::string request::get_path() const
+{
+	std::smatch m;
+	if (not std::regex_match(uri, m, kURIRx))
+		throw std::invalid_argument("the request uri is not valid");
+	return m[3];
+}
+
+std::string request::get_query() const
+{
+	std::smatch m;
+	if (not std::regex_match(uri, m, kURIRx))
+		throw std::invalid_argument("the request uri is not valid");
+	return m[4];
+}
+
+std::string request::get_host() const
+{
+	std::smatch m;
+	if (not std::regex_match(uri, m, kURIRx))
+		throw std::invalid_argument("the request uri is not valid");
+	return m[2];
 }
 
 float request::get_accept(const char* type) const

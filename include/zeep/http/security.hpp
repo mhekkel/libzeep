@@ -9,15 +9,18 @@
 #pragma once
 
 /// \file
-/// definition of various classes that handle HTTP authentication
+/// definition of various classes that help in handling HTTP authentication.
 
 #include <map>
 #include <mutex>
 
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
+#include <zeep/crypto.hpp>
+
 #include <zeep/http/request.hpp>
 #include <zeep/http/server.hpp>
+
 #include <zeep/json/element.hpp>
 
 // --------------------------------------------------------------------
@@ -49,24 +52,93 @@ struct unauthorized_exception : public zeep::exception
 	char m_realm[256]; ///< Realm for which the authorization failed
 };
 
-/// \brief exception thrown when the authentication information has expired
-///
-/// Some authentication mechanisms have a limited life-time for the token.
-/// When the token has expired, this exception is thrown. This happens e.g.
-/// in the RFC 2617 HTTP Digest authentication.
+// --------------------------------------------------------------------
 
-struct authorization_stale_exception : public unauthorized_exception
+class password_encoder
 {
-	/// \brief constructor
-	///
-	/// Constructor, \a realm is the name of the area that should be protected.
+  public:
+	virtual ~password_encoder() {}
 
-	authorization_stale_exception(const std::string &realm)
-		: unauthorized_exception(realm) {}
+	virtual std::string encode(const std::string& password) = 0;
+	virtual bool matches(const std::string& raw_password, const std::string& stored_password) = 0;
 };
 
-struct auth_info;
-using auth_info_list = std::list<auth_info>;
+// --------------------------------------------------------------------
+
+class pbkdf2_sha256_password_encoder : public password_encoder
+{
+  public:
+	pbkdf2_sha256_password_encoder(int iterations)
+		: m_iterations(iterations) {}
+
+	virtual std::string encode(const std::string& password) = 0;
+	virtual bool matches(const std::string& raw_password, const std::string& stored_password) = 0;
+
+  private:
+	int m_iterations;
+};
+
+// --------------------------------------------------------------------
+
+/// \brief class that manages security in a HTTP scope
+///
+/// Add this to a HTTP server and it will check authentication.
+/// Access to certain paths can be limited by specifying which
+/// 'roles' are allowed.
+///
+/// The mechanism used is based on JSON Web Tokens, JWT in short.
+
+class security_context
+{
+  public:
+	/// \brief constructor taking a validator
+	///
+	/// Create a security context for server \a s with validator \a validator and
+	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
+
+	security_context(server& s, password_encoder* encoder, bool defaultAccessAllowed = false)
+		: m_server(s), m_default_allow(defaultAccessAllowed), m_encoder(encoder) {}
+
+	/// \brief Add a new rule for access
+	///
+	/// A new rule will be added to the list, allowing access to \a glob_pattern
+	/// to users having role \a role
+	void add_rule(const std::string& glob_pattern, const std::string& role)
+	{
+		m_rules.emplace_back(rule { glob_pattern, { role } });
+	}
+
+	/// \brief Add a new rule for access
+	///
+	/// A new rule will be added to the list, allowing access to \a glob_pattern
+	/// to users having a role in \a roles
+	void add_rule(const std::string& glob_pattern, std::initializer_list<std::string> roles)
+	{
+		m_rules.emplace_back(rule { glob_pattern, roles });
+	}
+
+	/// \brief Validate the request \a req against the stored rules
+	///
+	/// This method will validate the request in \a req agains the stored rules
+	/// and will throw an exception if access is not allowed.
+	void validate_request(const request& req) const;
+
+  private:
+	security_context(const security_context&) = delete;
+	security_context& operator=(const security_context&) = delete;
+
+	struct rule
+	{
+		std::string				m_pattern;
+		std::set<std::string>	m_roles;
+	};
+
+	server &m_server;
+	std::string m_secret;
+	bool m_default_allow;
+	std::unique_ptr<password_encoder> m_encoder;
+	std::vector<rule> m_rules;
+};
 
 // --------------------------------------------------------------------
 
@@ -118,9 +190,7 @@ class authentication_validation_base
 	/// routine will be called to augment the reply with additional information.
 	///
 	/// \param rep		Then zeep::http::reply object that will be send to the user
-	/// \param stale	Boolean indicating whether the authentication provided has expired,
-	///					only used by Digest authentication for now.
-	virtual void add_challenge_headers(reply &rep, bool stale) {}
+	virtual void add_challenge_headers(reply &rep) {}
 
 	/// \brief Add e.g. headers to reply for an authorized request
 	///
@@ -133,85 +203,6 @@ class authentication_validation_base
 
   protected:
 	std::string m_realm;
-};
-
-// --------------------------------------------------------------------
-/// \brief Digest access authentication based on RFC 2617
-///
-/// This abstract class handles authentication according to the Digest HTTP specification.
-/// The get_hashed_password method should be implemented by derived classes.
-
-class digest_authentication_validation : public authentication_validation_base
-{
-  public:
-	/// \brief constructor
-	///
-	/// Constructor, \a realm is the name of the area that should be protected.
-	digest_authentication_validation(const std::string& realm);
-	~digest_authentication_validation();
-
-	/// \brief Validate the authorization, returns the validated user or null
-	///
-	/// Validate the authorization using the information available in \a req and return
-	/// a JSON object containing the credentials. This should at least contain a _username_.
-	/// Return the _null_ object (empty object) when authentication fails.
-	///
-	/// \param req	The zeep::http::request object
-	/// \result		A zeep::json::element object containing the credentials
-	virtual json::element validate_authentication(const request &req);
-
-	/// \brief Add the WWW-Authenticate header to a reply for an unauthorized request
-	///
-	/// When validation fails, the unauthorized HTTP reply is sent back to the user. This
-	/// routine will add the WWW-Authenticate header to the reply.
-	///
-	/// \param rep		Then zeep::http::reply object that will be send to the user
-	/// \param stale	Boolean indicating whether the authentication provided has expired,
-	///					only used by Digest authentication for now.
-	virtual void add_challenge_headers(reply &rep, bool stale);
-
-	/// \brief Get the password for a user, hashed according to the standard
-	///
-	/// Subclasses should implement this to return the password for the user,
-	/// \param username	The user for whom the password should be returned
-	/// \result			The MD5 hash of the string \a username + ':' + realm + ':' + password
-	///                 hex encoded.
-	virtual std::string get_hashed_password(const std::string &username) = 0;
-
-  private:
-	auth_info_list m_auth_info;
-	std::mutex m_auth_mutex;
-};
-
-// --------------------------------------------------------------------
-/// \brief Simple implementation of the zeep::http::digest_authentication_validation class
-///
-/// This class takes a list of username/password pairs in the constructor.
-
-class simple_digest_authentication_validation : public digest_authentication_validation
-{
-  public:
-	struct user_password_pair
-	{
-		std::string username, password;
-	};
-
-	/// \brief constructor
-	///
-	/// \param realm		The name of the area that should be protected.
-	/// \param validUsers	The list of username/passwords that are allowed to access the realm.
-	simple_digest_authentication_validation(const std::string &realm, std::initializer_list<user_password_pair> validUsers);
-
-	/// \brief Return the password for a user, hashed according to the standard
-	///
-	/// This implementation takes the password for \a username if found in the list.
-	/// \param username	The user for whom the password should be returned
-	/// \result			The MD5 hash of the string \a username + ':' + realm + ':' + password
-	///                 hex encoded.
-	virtual std::string get_hashed_password(const std::string &username);
-
-  private:
-	std::map<std::string, std::string> m_user_hashes;
 };
 
 // --------------------------------------------------------------------

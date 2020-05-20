@@ -50,11 +50,10 @@ class error_handler
 	/// When a authentication violation is encountered, this function is called to generate
 	/// the appropriate reply.
 	/// \param req		The request that triggered this call
-	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
 	/// \param realm	The name of the protected area, might be shown to the user
 	/// \param rep		Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& reply);
+	virtual bool create_unauth_reply(const request& req, const std::string& realm, reply& reply);
 
 	/// \brief Create an error reply for the error
 	///

@@ -87,6 +87,15 @@ struct request
 	bool close;			  ///< Whether 'Connection: close' was specified
 	std::string username; ///< The authenticated user for this request (filled in by webapp::validate_authentication)
 
+	/// \brief Return the local path part of the request, after removing scheme, host and parameters
+	std::string get_path() const;
+
+	/// \brief Return the parameter or query string, the part after the first question mark
+	std::string get_query() const;
+
+	/// \brief Return the requested host
+	std::string get_host() const;
+
 	// for redirects...
 	std::string local_address; ///< The address the request was received upon
 	unsigned short local_port; ///< The port number the request was received upon

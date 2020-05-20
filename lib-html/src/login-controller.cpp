@@ -22,7 +22,7 @@ login_controller::login_controller(const std::string& prefix_path = "/")
 	mount("logout", &login_controller::handle_logout);
 }
 
-void login_controller::create_unauth_reply(const request& req, bool stale, const std::string& realm, reply& rep)
+void login_controller::create_unauth_reply(const request& req, const std::string& realm, reply& rep)
 {
 	xml::document doc;
 	doc.set_preserve_cdata(true);
@@ -94,7 +94,7 @@ void login_controller::create_unauth_reply(const request& req, bool stale, const
 		if (av->get_realm() != realm)
 			continue;
 		
-		av->add_challenge_headers(rep, stale);
+		av->add_challenge_headers(rep);
 	}
 }
 

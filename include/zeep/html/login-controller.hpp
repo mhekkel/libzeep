@@ -39,10 +39,9 @@ class login_controller : public html::controller
 	/// When a authentication violation is encountered, this function is called to generate
 	/// the appropriate reply.
 	/// \param req		The request that triggered this call
-	/// \param stale	For Digest authentication, indicates the authentication information is correct but out of date
 	/// \param realm	The name of the protected area, might be shown to the user
 	/// \param rep		Write the reply in this object
-	virtual void create_unauth_reply(const http::request& req, bool stale, const std::string& realm, http::reply& reply);
+	virtual void create_unauth_reply(const http::request& req, const std::string& realm, http::reply& reply);
 
   protected:
 

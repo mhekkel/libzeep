@@ -20,7 +20,7 @@ namespace zeep::http
 
 class connection;
 class controller;
-class authentication_validation_base;
+class security_context;
 class error_handler;
 
 /// \brief The libzeep HTTP server implementation. Originally ased on example code found in boost::asio.
@@ -32,7 +32,12 @@ class error_handler;
 class server : public request_handler
 {
   public:
+
+	/// \brief Simple server, no security
 	server();
+
+	/// \brief server with a security context limiting access
+	server(security_context* s_ctxt);
 
 	server(const server&) = delete;
 	server& operator=(const server&) = delete;
@@ -79,12 +84,6 @@ class server : public request_handler
 	/// \brief get_io_service has to be public since we need it to call notify_fork from child code
 	boost::asio::io_service& get_io_service() { return m_io_service; }
 
-	/// \brief Add a new authentication handler
-	///
-	/// Add the \a authenticator to the list of authenticators, server takes ownership.
-	/// \param authenticator	The object that will the authentication
-	void add_authenticator(http::authentication_validation_base* authenticator);
-
   protected:
 
 	/// \brief the default entry logger
@@ -110,6 +109,7 @@ class server : public request_handler
 	unsigned short m_port;
 	bool m_log_forwarded;
 	bool m_add_csrf_token;
+	security_context* m_security_context = nullptr;
 	std::list<controller*> m_controllers;
 	std::list<error_handler*> m_error_handlers;
 };
