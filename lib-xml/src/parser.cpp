@@ -41,11 +41,15 @@ namespace zeep::xml
 // 
 // const std::regex kURL_rx( url_scheme "://" url_userinfo url_host url_port url_path url_fragment);
 
-const std::regex kURL_rx(R"([[:alpha:]][[:alnum:]]*:.+)");
+// const std::regex kURL_rx(R"([[:alpha:]][[:alnum:]]*:.+)");
 
 bool is_valid_url(const std::string& url)
 {
-	return std::regex_match(url, kURL_rx);
+	// no, really...
+	auto cp = url.find(':');
+
+	return cp > 1 and cp != std::string::npos and std::isalpha(url[0]);
+	// return std::regex_match(url, kURL_rx);
 }
 
 // parsing XML is somewhat like macro processing,

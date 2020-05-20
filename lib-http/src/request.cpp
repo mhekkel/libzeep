@@ -22,7 +22,7 @@ namespace zeep::http
 namespace
 {
 // a regex for URI
-const std::regex kURIRx(R"((https?://)?([^/]+)?(/[^?]*))(?:\?(.+))?)", std::regex_constants::icase);
+const std::regex kURIRx(R"((https?://)?([^/]+)?(/[^?]*)(?:\?(.+))?)", std::regex_constants::icase);
 }
 
 void request::clear()
@@ -749,6 +749,23 @@ std::string request::get_request_line() const
 	return to_string(method) + std::string{' '} + uri + " HTTP/" + std::to_string(http_version_major) + '.' + std::to_string(http_version_minor);
 }
 
+void request::set_header(const std::string& name, const std::string& value)
+{
+	bool set = false;
+	for (auto& h: headers)
+	{
+		if (iequals(h.name, name))
+		{
+			h.value = value;
+			set = true;
+			break;
+		}
+	}
+
+	if (not set)
+		headers.push_back({ name, value });
+}
+
 namespace
 {
 const char
@@ -778,7 +795,7 @@ std::vector<boost::asio::const_buffer> request::to_buffers()
 	return result;
 }
 
-std::iostream& operator<<(std::iostream& io, request& req)
+std::ostream& operator<<(std::ostream& io, request& req)
 {
 	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
 

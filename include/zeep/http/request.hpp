@@ -77,15 +77,14 @@ struct request
 	using param = header;	// alias name
 	using cookie_directive = header;	
 
-	method_type method;		///< POST, GET, etc.
-	std::string uri;		///< The uri as requested
-	int http_version_major; ///< HTTP major number (usually 1)
-	int http_version_minor; ///< HTTP major number (0 or 1)
-	std::vector<header>
-		headers;		  ///< A list with zeep::http::header values
-	std::string payload;  ///< For POST requests
-	bool close;			  ///< Whether 'Connection: close' was specified
-	std::string username; ///< The authenticated user for this request (filled in by webapp::validate_authentication)
+	method_type method;				///< POST, GET, etc.
+	std::string uri;				///< The uri as requested
+	int http_version_major = 1; 	///< HTTP major number (usually 1)
+	int http_version_minor = 0; 	///< HTTP major number (0 or 1)
+	std::vector<header> headers;	///< A list with zeep::http::header values
+	std::string payload;  			///< For POST requests
+	bool close = false;  			///< Whether 'Connection: close' was specified
+	std::string username; 			///< The authenticated user for this request (filled in by webapp::validate_authentication)
 
 	/// \brief Return the local path part of the request, after removing scheme, host and parameters
 	std::string get_path() const;
@@ -211,7 +210,18 @@ struct request
 	std::locale& get_locale() const;
 
 	/// \brief For debugging purposes
-	friend std::iostream& operator<<(std::iostream& io, request& req);
+	friend std::ostream& operator<<(std::ostream& io, request& req);
+
+	/// \brief suppose we want to construct requests...
+	void set_content(const std::string& text, const std::string& contentType)
+	{
+		set_header("content-type", contentType);
+		payload = text;
+		set_header("content-length", std::to_string(text.length()));
+	}
+
+	/// \brief set a header
+	void set_header(const std::string& name, const std::string& value);
 
   private:
 	std::tuple<std::string,bool> get_parameter_ex(const char* name) const;

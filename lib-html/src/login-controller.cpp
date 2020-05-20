@@ -9,9 +9,9 @@
 
 #include <zeep/config.hpp>
 
-#include <zeep/html/login_controller.hpp>
+#include <zeep/html/login-controller.hpp>
 
-namespace zeep::http
+namespace zeep::html
 {
 
 login_controller::login_controller(const std::string& prefix_path = "/")

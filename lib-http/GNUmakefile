@@ -98,10 +98,12 @@ OBJECTS = \
 	$(OBJDIR)/controller.o \
 	$(OBJDIR)/daemon.o \
 	$(OBJDIR)/error-handler.o \
+	$(OBJDIR)/login-controller.o \
 	$(OBJDIR)/message-parser.o \
 	$(OBJDIR)/preforked-server.o \
 	$(OBJDIR)/reply.o \
 	$(OBJDIR)/request.o \
+	$(OBJDIR)/security.o \
 	$(OBJDIR)/server.o
 
 HEADERS = \

@@ -59,8 +59,8 @@ class password_encoder
   public:
 	virtual ~password_encoder() {}
 
-	virtual std::string encode(const std::string& password) = 0;
-	virtual bool matches(const std::string& raw_password, const std::string& stored_password) = 0;
+	virtual std::string encode(const std::string& password) const = 0;
+	virtual bool matches(const std::string& raw_password, const std::string& stored_password) const = 0;
 };
 
 // --------------------------------------------------------------------
@@ -68,14 +68,85 @@ class password_encoder
 class pbkdf2_sha256_password_encoder : public password_encoder
 {
   public:
-	pbkdf2_sha256_password_encoder(int iterations)
-		: m_iterations(iterations) {}
+	pbkdf2_sha256_password_encoder(int iterations = 30000, int key_length = 32)
+		: m_iterations(iterations), m_key_length(key_length) {}
 
-	virtual std::string encode(const std::string& password) = 0;
-	virtual bool matches(const std::string& raw_password, const std::string& stored_password) = 0;
+	virtual std::string encode(const std::string& password) const
+	{
+		auto salt = zeep::encode_base64(zeep::random_hash()).substr(12);
+		auto pw = zeep::encode_base64(zeep::pbkdf2_hmac_sha256(salt, password, m_iterations, m_key_length));
+		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
+	}
+
+	virtual bool matches(const std::string& raw_password, const std::string& stored_password) const
+	{
+		bool result = false;
+
+		std::regex rx(R"(pbkdf2_sha256\$(\d+)\$([^$]+)\$(.+))");
+
+		std::smatch m;
+		if (std::regex_match(stored_password, m, rx))
+		{
+			auto salt = m[2].str();
+			auto iterations = std::stoul(m[1]);
+
+			auto test = zeep::pbkdf2_hmac_sha256(salt, raw_password, iterations, m_key_length);
+			test = zeep::encode_base64(test);
+
+			result = (m[3] == test);
+		}
+
+		return result;
+	}
 
   private:
-	int m_iterations;
+	int m_iterations, m_key_length;
+};
+
+// --------------------------------------------------------------------
+
+/// \brief simple storage class for user details, returned by user_service
+///
+/// The user_details struct contains all the information needed to allow
+/// access to a resource based on username. The password is the encrypted
+/// password.
+struct user_details
+{
+	std::string username;
+	std::string password;
+	std::set<std::string> roles;
+};
+
+// --------------------------------------------------------------------
+
+/// \brief exception thrown by user_service when trying to load user_details for an unknown user
+class user_unknown_exception : public zeep::exception
+{
+  public:
+	user_unknown_exception() : zeep::exception("user unknown") {};
+};
+
+/// \brief exception thrown by security_context when a username/password combo is not valid
+class invalid_password_exception : public zeep::exception
+{
+  public:
+	invalid_password_exception() : zeep::exception("invalid password") {};
+};
+
+// --------------------------------------------------------------------
+
+/// \brief The user service class, provding user data used for authentication
+///
+/// This is an abstract base class for a user service.
+
+class user_service
+{
+  public:
+	user_service() {}
+	virtual ~user_service() {}
+
+	/// \brief return the user_details for a user named \a username
+	virtual user_details load_user(const std::string& username) const = 0;
 };
 
 // --------------------------------------------------------------------
@@ -95,9 +166,8 @@ class security_context
 	///
 	/// Create a security context for server \a s with validator \a validator and
 	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
-
-	security_context(server& s, password_encoder* encoder, bool defaultAccessAllowed = false)
-		: m_server(s), m_default_allow(defaultAccessAllowed), m_encoder(encoder) {}
+	security_context(const std::string& secret, user_service& users, password_encoder* encoder, bool defaultAccessAllowed = false)
+		: m_secret(secret), m_users(users), m_default_allow(defaultAccessAllowed), m_encoder(encoder) {}
 
 	/// \brief Add a new rule for access
 	///
@@ -112,6 +182,8 @@ class security_context
 	///
 	/// A new rule will be added to the list, allowing access to \a glob_pattern
 	/// to users having a role in \a roles
+	///
+	/// If \a roles is empty, access is allowed to anyone
 	void add_rule(const std::string& glob_pattern, std::initializer_list<std::string> roles)
 	{
 		m_rules.emplace_back(rule { glob_pattern, roles });
@@ -123,6 +195,43 @@ class security_context
 	/// and will throw an exception if access is not allowed.
 	void validate_request(const request& req) const;
 
+	/// \brief Add e.g. headers to reply for an authorized request
+	///
+	/// When validation succeeds, a HTTP reply is send to the user and this routine will be
+	/// called to augment the reply with additional information.
+	///
+	/// \param rep			Then zeep::http::reply object that will be send to the user
+	/// \param username		The name for the authorized user, credentials will be fetched from the user_service
+	void add_authorization_headers(reply &rep, const std::string& username);
+
+	/// \brief Add e.g. headers to reply for an authorized request
+	///
+	/// When validation succeeds, a HTTP reply is send to the user and this routine will be
+	/// called to augment the reply with additional information.
+	///
+	/// \param rep			Then zeep::http::reply object that will be send to the user
+	/// \param user			The authorized user details
+	void add_authorization_headers(reply &rep, const user_details user);
+
+	/// \brief verify the username/password combination and set a cookie in the reply in case of success
+	///
+	/// When validation succeeds, add_authorization_headers is called, otherwise an exception is thrown.
+	///
+	/// \param username		The name for the user
+	/// \param password		The password for the user
+	/// \param rep			Then zeep::http::reply object that will be send back to the browser
+	void verify_username_password(const std::string& username, const std::string& password, reply &rep);
+
+	/// \brief return reference to the user_service object
+	user_service& get_user_service() const			{ return m_users; }
+
+	/// \brief CSRF support
+	///
+	/// Return a CSRF token. If this was not present in the request, a new will be generated
+	/// \param req		The HTTP request
+	/// \return			A std::pair containing the CSRF token and a flag indicating the token is new
+	std::pair<std::string,bool> get_csrf_token(request& req);
+
   private:
 	security_context(const security_context&) = delete;
 	security_context& operator=(const security_context&) = delete;
@@ -133,164 +242,12 @@ class security_context
 		std::set<std::string>	m_roles;
 	};
 
-	server &m_server;
 	std::string m_secret;
+	user_service& m_users;
 	bool m_default_allow;
 	std::unique_ptr<password_encoder> m_encoder;
 	std::vector<rule> m_rules;
 };
 
-// --------------------------------------------------------------------
-
-/// \brief base class for the authentication validation system
-///
-/// This is an abstract base class. Derived implementation should
-/// at least provide the validate_authentication method.
-
-class authentication_validation_base
-{
-  public:
-	/// \brief constructor
-	///
-	/// Constructor, \a realm is the name of the area that should be protected.
-	authentication_validation_base(const std::string& realm)
-		: m_realm(realm) {}
-	virtual ~authentication_validation_base() {}
-
-	authentication_validation_base(const authentication_validation_base &) = delete;
-	authentication_validation_base &operator=(const authentication_validation_base &) = delete;
-
-	/// \brief Return the name of the protected area
-	const std::string& get_realm() const			{ return m_realm; }
-
-	/// \brief Validate the authorization, returns the validated user or null
-	///
-	/// Validate the authorization using the information available in \a req and return
-	/// a JSON object containing the credentials. This should at least contain a _username_.
-	/// Return the _null_ object (empty object) when authentication fails.
-	///
-	/// \param req	The zeep::http::request object
-	/// \result		A zeep::json::element object containing the credentials
-	virtual json::element validate_authentication(const request &req) = 0;
-
-	/// \brief validate whether \a password is the valid password for \a username
-	///
-	/// This method should check the username/password combination. It if is valid, it should
-	/// return a JSON object containing the 'username' and optionally other fields.
-	///
-	/// \param username	The username
-	/// \param password	The password, in clear text
-	/// \result			A zeep::json::element object containing the credentials. In case of JWT
-	///					this is stored in a Cookie, so keep it compact.
-	virtual json::element validate_username_password(const std::string &username, const std::string &password);
-
-	/// \brief Add e.g. headers to reply for an unauthorized request
-	///
-	/// When validation fails, the unauthorized HTTP reply is sent back to the user. This
-	/// routine will be called to augment the reply with additional information.
-	///
-	/// \param rep		Then zeep::http::reply object that will be send to the user
-	virtual void add_challenge_headers(reply &rep) {}
-
-	/// \brief Add e.g. headers to reply for an authorized request
-	///
-	/// When validation succeeds, a HTTP reply is send to the user and this routine will be
-	/// called to augment the reply with additional information.
-	///
-	/// \param rep			Then zeep::http::reply object that will be send to the user
-	/// \param credentials	The credentials for the authorized user.
-	virtual void add_authorization_headers(reply &rep, const json::element& credentials) {}
-
-  protected:
-	std::string m_realm;
-};
-
-// --------------------------------------------------------------------
-
-/// \brief A base class for JSON Web Token based authentication using JWS
-///
-/// This is a most basic implementation of authentication using JSON Web Tokens
-/// See for more information e.g. https://tools.ietf.org/html/rfc7519 or
-/// https://en.wikipedia.org/wiki/JSON_Web_Token
-
-class jws_authentication_validation_base : public authentication_validation_base
-{
-  public:
-	/// \brief constructor
-	///
-	/// \param realm  The name of the area that should be protected. This unique string will be put in the 'sub' field
-	/// \param secret The secret used to sign the token
-
-	jws_authentication_validation_base(const std::string &realm, const std::string &secret)
-		: authentication_validation_base(realm), m_secret(secret) {}
-
-	/// \brief Validate the authorization, returns the validated user or null
-	///
-	/// Validate the authorization using the information available in \a req and return
-	/// a JSON object containing the credentials. This should at least contain a _username_.
-	/// Return the _null_ object (empty object) when authentication fails.
-	///
-	/// \param req	The zeep::http::request object
-	/// \result		A zeep::json::element object containing the credentials
-	virtual json::element validate_authentication(const request &req);
-
-	/// \brief Add e.g. headers to reply for an authorized request
-	///
-	/// When validation succeeds, a HTTP reply is send to the user and this routine will be
-	/// called to augment the reply with the JWT Cookie called access_token.
-	///
-	/// \param rep			Then zeep::http::reply object that will be send to the user
-	/// \param credentials	The credentials for the authorized user.
-	virtual void add_authorization_headers(reply &rep, const json::element& credentials);
-
-	/// \brief Return whether the built-in login dialog should be used
-	///
-	/// JWT authentication works with a login form. The default implementation has
-	/// a simple implementation of this form. Subclasses can decide to provide their
-	/// own implementation and should return false.
-	/// \return		True if the default login form should be used
-	virtual bool handles_login() const
-	{
-		return true;
-	}
-
-  private:
-	std::string m_sub, m_secret;
-};
-
-// --------------------------------------------------------------------
-/// \brief Simple implementation of the zeep::http::digest_authentication_validation class
-///
-/// This class takes a list of username/password pairs in the constructor.
-
-class simple_jws_authentication_validation : public jws_authentication_validation_base
-{
-  public:
-	struct user_password_pair
-	{
-		std::string username, password;
-	};
-
-	/// \brief constructor
-	///
-	/// \param realm		The name of the area that should be protected.
-	/// \param secret The secret used to sign the token
-	/// \param validUsers	The list of username/passwords that are allowed to access the realm.
-	simple_jws_authentication_validation(const std::string &realm, const std::string &secret,
-										 std::initializer_list<user_password_pair> validUsers);
-
-	/// \brief validate whether \a password is the valid password for \a username
-	///
-	/// This method compares the username/password with the stored list.
-	///
-	/// \param username	The username
-	/// \param password	The password, in clear text
-	/// \result			A zeep::json::element object containing the credentials. In case of JWT
-	///					this is stored in a Cookie, so keep it compact.
-	virtual json::element validate_username_password(const std::string &username, const std::string &password);
-
-  private:
-	std::map<std::string, std::string> m_user_hashes;
-};
 
 } // namespace zeep::http

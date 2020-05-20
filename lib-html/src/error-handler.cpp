@@ -6,7 +6,7 @@
 
 #include <zeep/config.hpp>
 
-#include <zeep/http/authorization.hpp>
+#include <zeep/http/security.hpp>
 #include <zeep/html/error-handler.hpp>
 #include <zeep/html/el-processing.hpp>
 

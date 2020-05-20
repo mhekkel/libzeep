@@ -44,6 +44,7 @@ std::mutex s_log_lock;
 
 server::server()
 	: m_log_forwarded(false), m_add_csrf_token(false)
+	, m_security_context(nullptr)
 {
 	using namespace boost::local_time;
 
@@ -52,6 +53,12 @@ server::server()
 
 	// add a default error handler
 	add_error_handler(new error_handler());
+}
+
+server::server(security_context* s_cntxt)
+	: server()
+{
+	m_security_context.reset(s_cntxt);
 }
 
 void server::bind(const std::string& address, unsigned short port)
@@ -83,8 +90,6 @@ server::~server()
 
 	for (auto eh: m_error_handlers)
 		delete eh;
-
-	delete m_security_context;
 }
 
 void server::add_controller(controller* c)
@@ -144,16 +149,6 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 {
 	using namespace boost::posix_time;
 
-	// See if we need to add a new csrf token
-	bool csrf_is_new = false;
-	std::string csrf = req.get_cookie("csrf-token");
-	if (m_add_csrf_token and csrf.empty())
-	{
-		csrf_is_new = true;
-		csrf = encode_base64url(random_hash());
-		req.set_cookie("csrf-token", csrf);
-	}
-
 	// we're pessimistic
 	rep = reply::stock_reply(not_found);
 
@@ -199,6 +194,15 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			req.method != method_type::OPTIONS and req.method != method_type::HEAD and req.method != method_type::DELETE)
 		{
 			throw bad_request;
+		}
+
+		std::string csrf;
+		bool csrf_is_new = false;
+
+		if (m_security_context)
+		{
+			m_security_context->validate_request(req);
+			std::tie(csrf, csrf_is_new) = m_security_context->get_csrf_token(req);
 		}
 
 		// parse the uri

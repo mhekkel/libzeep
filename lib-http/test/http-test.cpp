@@ -2,15 +2,18 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <random>
+#include <sstream>
 
-#include <zeep/http/server.hpp>
-#include <zeep/exception.hpp>
 #include <zeep/crypto.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/message-parser.hpp>
+#include <zeep/exception.hpp>
 #include <zeep/streambuf.hpp>
+
 #include <zeep/http/controller.hpp>
-#include <zeep/http/authorization.hpp>
+#include <zeep/http/daemon.hpp>
+#include <zeep/http/login-controller.hpp>
+#include <zeep/http/message-parser.hpp>
+#include <zeep/http/security.hpp>
+#include <zeep/http/server.hpp>
 
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -129,6 +132,14 @@ zh::reply simple_request(uint16_t port, const std::string_view& req)
 	return result;
 }
 
+zh::reply simple_request(uint16_t port, zeep::http::request& req)
+{
+	std::ostringstream os;
+	os << req;
+
+	return simple_request(port, os.str());
+}
+
 // a very simple controller, serving only /test/one
 class my_controller : public zeep::http::controller
 {
@@ -138,7 +149,7 @@ class my_controller : public zeep::http::controller
 	virtual bool handle_request(zeep::http::request& req, zeep::http::reply& rep)
 	{
 		bool result = false;
-		if (req.uri == "/test/one")
+		if (req.uri == "/test/one" or req.uri == "/test/three")
 		{
 			rep = zeep::http::reply::stock_reply(zeep::http::ok);
 			result = true;
@@ -185,14 +196,37 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 }
 
 // digest authentication test
-BOOST_AUTO_TEST_CASE(webapp_3)
+BOOST_AUTO_TEST_CASE(server_with_security_1)
 {
-	zh::daemon d([]() {
-		auto s = new zh::server;
+	class my_user_service : public zeep::http::user_service
+	{
+		virtual zeep::http::user_details load_user(const std::string& username) const
+		{
+			if (username != "scott")
+				throw zeep::http::user_unknown_exception();
+			
+			return {
+				username,
+				m_pwenc.encode("tiger"),
+				{ "admin" }
+			};
+		}
+
+		zeep::http::pbkdf2_sha256_password_encoder m_pwenc;
+	} users;
+
+	std::string secret = "geheim";
+
+	zh::daemon d([&]() {
+		auto s = new zh::server(new zeep::http::security_context(secret, users, new zeep::http::pbkdf2_sha256_password_encoder()));
 		s->add_controller(new my_controller());
-		s->add_authenticator(new zeep::http::simple_digest_authentication_validation("mijn-realm", {
-			{ "scott", "tiger" }
-		}));
+		s->add_controller(new zeep::http::login_controller());
+
+		auto& sec = s->get_security_context();
+
+		sec.add_rule("/test/three", "admin");
+		sec.add_rule("/**", {});
+
 		return s;
 	}, "zeep-http-test");
 
@@ -205,129 +239,132 @@ BOOST_AUTO_TEST_CASE(webapp_3)
 
 	sleep(1);
 
+	auto reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::bad_request);
 
-	app.add_authenticator(validator, "mijn-realm");
-	app.mount("test", "mijn-realm", &my_webapp::handle_test);
+	reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::ok);
 
+	reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::not_found);
+
+	reply = simple_request(port, "GET /test/three HTTP/1.0\r\n\r\n");
+	BOOST_TEST(reply.get_status() == zh::unauthorized);
+
+	// now try to log in and see if we can access all of the above
+
+	// we use a request object now, to store cookies
 	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-	req.uri = "/test";
-
-	zeep::http::reply rep;
-
-	app.handle_request(req, rep);
-
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
-
-	auto wwwAuth = rep.get_header("WWW-Authenticate");
-
-	std::regex rx(R"xx(Digest realm="mijn-realm", qop="auth", nonce="(.+)")xx");
-	std::smatch m;
-
-	BOOST_CHECK(std::regex_match(wwwAuth, m, rx));
-
-	auto nonce = m[1].str();
-
-	std::random_device rng;
-	auto nc = "1";
-
-	auto ha1 = validator->get_hashed_password("scott");
-
-	std::string cnonce = "x";
-
-	std::string ha2 = zeep::encode_hex(zeep::md5("GET:/test"));
-	std::string hash = zeep::encode_hex(zeep::md5(
-								   ha1 + ':' +
-								   nonce + ':' +
-								   nc + ':' +
-								   cnonce + ':' +
-								   "auth" + ':' +
-								   ha2));
-
-	req.set_header("Authorization",
-		"nonce=" + nonce + "," +
-		"cnonce=x" + "," +
-		"username=scott" + "," +
-		"response=" + hash + "," +
-		"qop=auth" + "," +
-		"realm='mijn-realm'" + ","
-		"nc=" + nc + ","
-		"uri='/test'");
-
-	zeep::http::reply rep2;
-
-	app.handle_request(req, rep2);
-
-	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
-}
-
-// jws authentication test
-BOOST_AUTO_TEST_CASE(webapp_3a)
-{
-	class my_webapp : public webapp
-	{
-	  public:
-		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
-		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-		}
-	} app;
-
-	auto secret = zeep::encode_hex(zeep::random_hash());
-
-	auto validator = new zeep::http::simple_jws_authentication_validation("mijn-realm", secret, {
-		{ "scott", "tiger" }
-	});
-
-	app.add_authenticator(validator, true);
-	app.mount("test", "mijn-realm", &my_webapp::handle_test);
-
-	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-	req.uri = "/test";
-
-	zeep::http::reply rep = {};
-
-	app.handle_request(req, rep);
-
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
-
-	auto csrf = rep.get_cookie("csrf-token");
-
-	// check if the login contains all the fields
-	zeep::xml::document loginDoc(rep.get_content());
-	BOOST_CHECK(loginDoc.find_first("//input[@name='username']") != nullptr);
-	BOOST_CHECK(loginDoc.find_first("//input[@name='password']") != nullptr);
-	BOOST_CHECK(loginDoc.find_first("//input[@name='_csrf']") != nullptr);
-	if (loginDoc.find_first("//input[@name='_csrf']"))
-		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->get_attribute("value"), csrf);
-
-	req.method = zeep::http::method_type::POST;
-	req.uri = "/login";
-	req.set_header("content-type", "application/x-www-form-urlencoded");
-	req.payload = "username=scott&password=tiger&_csrf=" + csrf;
-
-	rep = {};
-
-	app.handle_request(req, rep);
-
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::moved_temporarily);
-	auto cookie = rep.get_cookie("access_token");
-
-	BOOST_CHECK(not cookie.empty());
-
-	zeep::http::request req2;
 	
-	req2.method = zeep::http::method_type::GET;
-	req2.uri = "/test";
-	req2.set_cookie("access_token", cookie);
+	// first test is to send a POST to login, but without the csrf token
+	req.method = zh::method_type::POST;
+	req.uri = "/login";
+	req.set_content("username=scott&password=tiger", "application/x-www-form-urlencoded");
+	reply = simple_request(port, req);
+	BOOST_TEST(reply.get_status() == zh::forbidden);
 
-	zeep::http::reply rep2;
+	// OK, fetch the login form then and pry the csrf token out of it
+	req.method = zh::method_type::GET;
+	req.uri = "/login";
+	reply = simple_request(port, req);
+	BOOST_TEST(reply.get_status() == zh::ok);
 
-	app.handle_request(req2, rep2);
+	// copy the cookie
+	auto csrfCookie = reply.get_cookie("csrf-token");
+	req.set_cookie("csrf-token", csrfCookie);
+	
+	zeep::xml::document form(reply.get_content());
+	auto csrf = form.find_first("//input[@name='_csrf']");
+	BOOST_REQUIRE(csrf != nullptr);
+	BOOST_TEST(csrf->get_attribute("value") == csrfCookie);
 
-	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
+	// try again to authenticate
+	req.method = zh::method_type::POST;
+	req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
+	reply = simple_request(port, req);
+	BOOST_TEST(reply.get_status() == zh::moved_temporarily);
+
+	auto accessToken = reply.get_cookie("access_token");
+	req.set_cookie("access_token", accessToken);
+
+	// now try that admin page again
+	req.uri = "/test/three";
+	req.method = zh::method_type::GET;
+	reply = simple_request(port, req);
+	BOOST_TEST(reply.get_status() == zh::ok);
+
+	pthread_kill(t.native_handle(), SIGHUP);
+
+	t.join();
 }
+
+// // jws authentication test
+// BOOST_AUTO_TEST_CASE(webapp_3a)
+// {
+// 	class my_webapp : public webapp
+// 	{
+// 	  public:
+// 		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 		}
+// 	} app;
+
+// 	auto secret = zeep::encode_hex(zeep::random_hash());
+
+// 	auto validator = new zeep::http::simple_jws_authentication_validation("mijn-realm", secret, {
+// 		{ "scott", "tiger" }
+// 	});
+
+// 	app.add_authenticator(validator, true);
+// 	app.mount("test", "mijn-realm", &my_webapp::handle_test);
+
+// 	zeep::http::request req;
+// 	req.method = zeep::http::method_type::GET;
+// 	req.uri = "/test";
+
+// 	zeep::http::reply rep = {};
+
+// 	app.handle_request(req, rep);
+
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
+
+// 	auto csrf = rep.get_cookie("csrf-token");
+
+// 	// check if the login contains all the fields
+// 	zeep::xml::document loginDoc(rep.get_content());
+// 	BOOST_CHECK(loginDoc.find_first("//input[@name='username']") != nullptr);
+// 	BOOST_CHECK(loginDoc.find_first("//input[@name='password']") != nullptr);
+// 	BOOST_CHECK(loginDoc.find_first("//input[@name='_csrf']") != nullptr);
+// 	if (loginDoc.find_first("//input[@name='_csrf']"))
+// 		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->get_attribute("value"), csrf);
+
+// 	req.method = zeep::http::method_type::POST;
+// 	req.uri = "/login";
+// 	req.set_header("content-type", "application/x-www-form-urlencoded");
+// 	req.payload = "username=scott&password=tiger&_csrf=" + csrf;
+
+// 	rep = {};
+
+// 	app.handle_request(req, rep);
+
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::moved_temporarily);
+// 	auto cookie = rep.get_cookie("access_token");
+
+// 	BOOST_CHECK(not cookie.empty());
+
+// 	zeep::http::request req2;
+	
+// 	req2.method = zeep::http::method_type::GET;
+// 	req2.uri = "/test";
+// 	req2.set_cookie("access_token", cookie);
+
+// 	zeep::http::reply rep2;
+
+// 	app.handle_request(req2, rep2);
+
+// 	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
+// }
 
 
 

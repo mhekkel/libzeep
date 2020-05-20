@@ -55,6 +55,8 @@ class server : public request_handler
 	/// is called first.
 	void add_error_handler(error_handler* eh);
 
+	security_context& get_security_context() 		{ return *m_security_context; }
+
 	/// \brief Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address, unsigned short port);
 
@@ -109,7 +111,7 @@ class server : public request_handler
 	unsigned short m_port;
 	bool m_log_forwarded;
 	bool m_add_csrf_token;
-	security_context* m_security_context = nullptr;
+	std::unique_ptr<security_context> m_security_context;
 	std::list<controller*> m_controllers;
 	std::list<error_handler*> m_error_handlers;
 };

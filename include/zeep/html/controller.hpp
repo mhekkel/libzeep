@@ -21,7 +21,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/controller.hpp>
 #include <zeep/http/request.hpp>
-#include <zeep/http/authorization.hpp>
+#include <zeep/http/security.hpp>
 #include <zeep/html/el-processing.hpp>
 #include <zeep/html/tag-processor.hpp>
 #include <zeep/html/template-processor.hpp>
