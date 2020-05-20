@@ -103,7 +103,6 @@ class controller : public http::controller
 	struct mount_point<Result(ControllerType::*)(Args...)> : mount_point_base
 	{
 		using Sig = Result(ControllerType::*)(Args...);
-		// using ArgsTuple = std::tuple<Args...>;
 		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
 		using Callback = std::function<Result(Args...)>;
 
