@@ -44,10 +44,8 @@ class controller : public http::controller
 	/// \param auth			Optionally protect these REST calls with a authentication validator.
 	///						This validator should also be added to the web_app that will contain
 	///						this controller.
-	controller(const std::string& prefix_path, http::authentication_validation_base* auth = nullptr)
-		: http::controller(prefix_path), m_auth(auth)
-	{
-	}
+	controller(const std::string& prefix_path)
+		: http::controller(prefix_path)	{}
 
     ~controller();
 
@@ -55,15 +53,6 @@ class controller : public http::controller
 	virtual bool handle_request(http::request& req, http::reply& rep);
 
   protected:
-
-	/// \brief validate \a req in combination with \a realm and create a JSON error message in \a rep in case of failure
-	virtual bool validate_request(http::request& req, http::reply& rep, const std::string& realm);
-
-	/// \brief Return the credentials for the current call, is valid only when inside a `handle_request`
-	virtual json::element& get_credentials()
-	{
-		return s_credentials;
-	}
 
 	using param = http::header;
 
@@ -94,8 +83,8 @@ class controller : public http::controller
 	/// \brief abstract base class for mount points
 	struct mount_point_base
 	{
-		mount_point_base(const char* path, http::method_type method, const std::string& realm)
-			: m_path(path), m_method(method), m_realm(realm) {}
+		mount_point_base(const char* path, http::method_type method)
+			: m_path(path), m_method(method) {}
 
         virtual ~mount_point_base() {}
 
@@ -103,7 +92,6 @@ class controller : public http::controller
 
 		std::string m_path;
 		http::method_type m_method;
-		std::string m_realm;
 		std::regex m_rx;
 		std::vector<std::string> m_path_params;
 	};
@@ -121,8 +109,8 @@ class controller : public http::controller
 
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* path, http::method_type method, const std::string& realm, controller* owner, Sig sig)
-			: mount_point_base(path, method, realm)
+		mount_point(const char* path, http::method_type method, controller* owner, Sig sig)
+			: mount_point_base(path, method)
 		{
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
 			if (controller == nullptr)
@@ -134,8 +122,8 @@ class controller : public http::controller
 		}
 
 		template<typename... Names>
-		mount_point(const char* path, http::method_type method, const std::string& realm, controller* owner, Sig sig, Names... names)
-			: mount_point(path, method, realm, owner, sig)
+		mount_point(const char* path, http::method_type method, controller* owner, Sig sig, Names... names)
+			: mount_point(path, method, owner, sig)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 			
@@ -368,14 +356,7 @@ class controller : public http::controller
 	template<typename Callback, typename... ArgNames>
 	void map_request(const char* mountPoint, http::method_type method, Callback callback, ArgNames... names)
 	{
-		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, "", this, callback, names...));
-	}
-
-	/// \brief map \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
-	template<typename Callback, typename... ArgNames>
-	void map_request(const char* mountPoint, http::method_type method, const std::string& realm, Callback callback, ArgNames... names)
-	{
-		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, realm, this, callback, names...));
+		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, this, callback, names...));
 	}
 
 	/// \brief map a POST to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
@@ -385,25 +366,11 @@ class controller : public http::controller
 		map_request(mountPoint, http::method_type::POST, callback, names...);
 	}
 
-	/// \brief map a POST to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
-	template<typename Callback, typename... ArgNames>
-	void map_post_request(const char* mountPoint, const std::string& realm, Callback callback, ArgNames... names)
-	{
-		map_request(mountPoint, http::method_type::POST, realm, callback, names...);
-	}
-
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_put_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
 		map_request(mountPoint, http::method_type::PUT, callback, names...);
-	}
-
-	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
-	template<typename Sig, typename... ArgNames>
-	void map_put_request(const char* mountPoint, const std::string& realm, Sig callback, ArgNames... names)
-	{
-		map_request(mountPoint, http::method_type::PUT, realm, callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
@@ -413,13 +380,6 @@ class controller : public http::controller
 		map_request(mountPoint, http::method_type::GET, callback, names...);
 	}
 
-	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
-	template<typename Sig, typename... ArgNames>
-	void map_get_request(const char* mountPoint, const std::string& realm, Sig callback, ArgNames... names)
-	{
-		map_request(mountPoint, http::method_type::GET, realm, callback, names...);
-	}
-
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_delete_request(const char* mountPoint, Sig callback, ArgNames... names)
@@ -427,20 +387,9 @@ class controller : public http::controller
 		map_request(mountPoint, http::method_type::DELETE, callback, names...);
 	}
 
-	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names This version requires authentication.
-	template<typename Sig, typename... ArgNames>
-	void map_delete_request(const char* mountPoint, const std::string& realm, Sig callback, ArgNames... names)
-	{
-		map_request(mountPoint, http::method_type::DELETE, realm, callback, names...);
-	}
-
   private:
 
 	std::list<mount_point_base*> m_mountpoints;
-	http::authentication_validation_base* m_auth = nullptr;
-
-	// keep track of current user accessing this API
-	static thread_local json::element s_credentials;
 };
 
 } // namespace zeep::http

@@ -16,44 +16,10 @@ namespace ba = boost::algorithm;
 namespace zeep::rest
 {
 
-thread_local json::element controller::s_credentials;
-
 controller::~controller()
 {
     for (auto mp: m_mountpoints)
         delete mp;
-}
-
-bool controller::validate_request(http::request& req, http::reply& rep, const std::string& realm)
-{
-	bool valid = false;
-	s_credentials.clear();
-
-	try
-	{
-		if (m_auth and m_auth->get_realm() == realm)
-		{
-			s_credentials = m_auth->validate_authentication(req);
-
-			if (s_credentials)
-				valid = true;
-		}
-	}
-	catch (const http::unauthorized_exception& ex)
-	{
-		valid = false;
-	}
-	
-	if (not valid)	
-	{
-		rep = http::reply::stock_reply(http::unauthorized);
-		rep.set_content(json::element({
-			{ "error", "Unauthorized access, unimplemented validate_request" }
-		}));
-		rep.set_status(http::unauthorized);
-	}
-	
-	return valid;
 }
 
 bool controller::handle_request(http::request& req, http::reply& rep)
@@ -100,26 +66,21 @@ bool controller::handle_request(http::request& req, http::reply& rep)
 				params.m_path_parameters.push_back({mp->m_path_params[i], m[i + 1].str()});
 		}
 
-		if (mp->m_realm.empty() or validate_request(req, rep, mp->m_realm))
+		try
 		{
-			try
-			{
-				mp->call(params, rep);
-			}
-			catch(const std::exception& e)
-			{
-				rep = http::reply::stock_reply(http::internal_server_error);
-				
-				json::element error({ { "error", e.what() }});
-				rep.set_content(error);
-			}
+			mp->call(params, rep);
+		}
+		catch(const std::exception& e)
+		{
+			rep = http::reply::stock_reply(http::internal_server_error);
+			
+			json::element error({ { "error", e.what() }});
+			rep.set_content(error);
 		}
 
 		result = true;
 		break;
 	}
-
-	s_credentials.clear();
 
 	return result;
 }

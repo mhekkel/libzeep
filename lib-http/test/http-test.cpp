@@ -140,7 +140,7 @@ zh::reply simple_request(uint16_t port, zeep::http::request& req)
 	return simple_request(port, os.str());
 }
 
-// a very simple controller, serving only /test/one
+// a very simple controller, serving only /test/one and /test/three
 class my_controller : public zeep::http::controller
 {
 	public:
