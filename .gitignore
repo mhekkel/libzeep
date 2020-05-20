@@ -12,8 +12,8 @@ lib-xml/test/XML-Test-Suite/
 **/obj.dbg/
 lib-html/src/mrsrc.h
 .gradle/
-lib-html/test/html-test
-lib-html/test/rsrc_html-test
+lib-html/test/webapp-test
+lib-html/test/rsrc_webapp-test
 lib-html/test/processor-test
 lib-soap/test/soap-test
 lib-http/test/http-test
