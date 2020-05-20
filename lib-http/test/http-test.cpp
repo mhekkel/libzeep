@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 	t.join();
 }
 
-// digest authentication test
+// authentication test
 BOOST_AUTO_TEST_CASE(server_with_security_1)
 {
 	class my_user_service : public zeep::http::user_service
@@ -276,6 +276,10 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	zeep::xml::document form(reply.get_content());
 	auto csrf = form.find_first("//input[@name='_csrf']");
 	BOOST_REQUIRE(csrf != nullptr);
+
+ 	BOOST_TEST(form.find_first("//input[@name='username']") != nullptr);
+ 	BOOST_TEST(form.find_first("//input[@name='password']") != nullptr);
+
 	BOOST_TEST(csrf->get_attribute("value") == csrfCookie);
 
 	// try again to authenticate
@@ -293,119 +297,9 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::ok);
 
+	sleep(100);
+
 	pthread_kill(t.native_handle(), SIGHUP);
 
 	t.join();
 }
-
-// // jws authentication test
-// BOOST_AUTO_TEST_CASE(webapp_3a)
-// {
-// 	class my_webapp : public webapp
-// 	{
-// 	  public:
-// 		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 		}
-// 	} app;
-
-// 	auto secret = zeep::encode_hex(zeep::random_hash());
-
-// 	auto validator = new zeep::http::simple_jws_authentication_validation("mijn-realm", secret, {
-// 		{ "scott", "tiger" }
-// 	});
-
-// 	app.add_authenticator(validator, true);
-// 	app.mount("test", "mijn-realm", &my_webapp::handle_test);
-
-// 	zeep::http::request req;
-// 	req.method = zeep::http::method_type::GET;
-// 	req.uri = "/test";
-
-// 	zeep::http::reply rep = {};
-
-// 	app.handle_request(req, rep);
-
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
-
-// 	auto csrf = rep.get_cookie("csrf-token");
-
-// 	// check if the login contains all the fields
-// 	zeep::xml::document loginDoc(rep.get_content());
-// 	BOOST_CHECK(loginDoc.find_first("//input[@name='username']") != nullptr);
-// 	BOOST_CHECK(loginDoc.find_first("//input[@name='password']") != nullptr);
-// 	BOOST_CHECK(loginDoc.find_first("//input[@name='_csrf']") != nullptr);
-// 	if (loginDoc.find_first("//input[@name='_csrf']"))
-// 		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->get_attribute("value"), csrf);
-
-// 	req.method = zeep::http::method_type::POST;
-// 	req.uri = "/login";
-// 	req.set_header("content-type", "application/x-www-form-urlencoded");
-// 	req.payload = "username=scott&password=tiger&_csrf=" + csrf;
-
-// 	rep = {};
-
-// 	app.handle_request(req, rep);
-
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::moved_temporarily);
-// 	auto cookie = rep.get_cookie("access_token");
-
-// 	BOOST_CHECK(not cookie.empty());
-
-// 	zeep::http::request req2;
-	
-// 	req2.method = zeep::http::method_type::GET;
-// 	req2.uri = "/test";
-// 	req2.set_cookie("access_token", cookie);
-
-// 	zeep::http::reply rep2;
-
-// 	app.handle_request(req2, rep2);
-
-// 	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
-// }
-
-
-
-// {
-// 	zh::request req;
-// 	req.set_header("Content-Type", "multipart/form-data; boundary=xYzZY");
-// 	req.payload = "--xYzZY\r\nContent-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\nContent-Encoding: gzip\r\nContent-Type: chemical/x-cif\r\n\r\nhello, world!\n\r\n--xYzZY\r\nContent-Disposition: form-data; name=\"mtz-file\"; filename=\"1cbs_map.mtz\"\r\nContent-Type: text/plain\r\n\r\nAnd again, hello!\n\r\n--xYzZY--\r\n";
-
-// 	auto fp1 = req.get_file_parameter("pdb-file");
-// 	BOOST_CHECK_EQUAL(fp1.filename, "1cbs.cif.gz");
-// 	BOOST_CHECK_EQUAL(fp1.mimetype, "chemical/x-cif");
-
-// 	const std::string ks[] = {
-// 		"hello, world!\n",
-// 		"And again, hello!\n"
-// 	};
-
-// 	auto is = fp1.content();
-// 	size_t n = ks[0].length();
-
-// 	is.seekg(0, std::ios_base::end);
-// 	BOOST_CHECK_EQUAL(is.tellg(), n);
-
-// 	is.seekg(0);
-// 	std::string b(n, ' ');
-// 	is.read(b.data(), n);
-// 	BOOST_CHECK_EQUAL(b, ks[0]);
-
-// 	auto fp2 = req.get_file_parameter("mtz-file");
-// 	// BOOST_CHECK_EQUAL(fp1.filename(), "1cbs.cif.gz");
-// 	// BOOST_CHECK_EQUAL(fp1.mimetype(), "chemical/x-cif");
-
-// 	auto is2 = fp2.content();
-// 	n = ks[1].length();
-
-// 	// is2.seekg(0, std::ios_base::end);
-// 	// BOOST_CHECK_EQUAL(is2.tellg(), n);
-
-// 	// is2.seekg(0);
-// 	std::string b2(n, ' ');
-// 	is2.read(b2.data(), n);
-// 	BOOST_CHECK_EQUAL(b2, ks[1]);
-
-// }

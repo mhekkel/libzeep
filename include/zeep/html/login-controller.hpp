@@ -25,23 +25,13 @@ namespace zeep::html
 
 /// \brief html controller that handles login and logout
 ///
-/// basic_html_controller is used to create XHTML web pages based on the contents of a
-/// template file and the parameters passed in the request and calculated data stored
-/// in a scope object.
+/// The login_controller is a controller that handles both GET and POST
+/// on a /login and /logout.
 
 class login_controller : public html::controller
 {
   public:
 	login_controller(const std::string& prefix_path = "/");
-
-	/// \brief Create an error reply for the error containing a validation header
-	///
-	/// When a authentication violation is encountered, this function is called to generate
-	/// the appropriate reply.
-	/// \param req		The request that triggered this call
-	/// \param realm	The name of the protected area, might be shown to the user
-	/// \param rep		Write the reply in this object
-	virtual void create_unauth_reply(const http::request& req, const std::string& realm, http::reply& reply);
 
   protected:
 
