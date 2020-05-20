@@ -56,7 +56,11 @@ class server
 	/// is called first.
 	void add_error_handler(error_handler* eh);
 
+	/// \brief Get the security context provided in the constructor
 	security_context& get_security_context() 		{ return *m_security_context; }
+
+	/// \brief Return the credentials, if there is a security context and the request contains a valid authentication
+	json::element get_credentials(const request& req) const;
 
 	/// \brief Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address, unsigned short port);

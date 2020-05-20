@@ -43,12 +43,18 @@ namespace zeep::html
 class controller : public http::controller, public template_processor
 {
   public:
-	controller(const std::string& prefix_path = "/", const std::string& docroot = ".");
+	controller(const std::string& prefix_path = "/", const std::string& docroot = "");
 
 	virtual ~controller();
 
 	/// \brief Dispatch and handle the request
 	virtual bool handle_request(http::request& req, http::reply& reply);
+
+	/// \brief default file handling
+	virtual void handle_file(const http::request& request, const scope& scope, http::reply& reply)
+	{
+		template_processor::handle_file(request, scope, reply);
+	}
 
 	// --------------------------------------------------------------------
 
@@ -113,50 +119,8 @@ class controller : public http::controller, public template_processor
 			{ (server->*callback)(request, scope, reply); });
 	}
 
-	/// \brief mount a callback on URI path \a path for any HTTP method, and enforce authentication specified by \a realm
-	template<class Class>
-	void mount(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
-	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, http::method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
-			{ (server->*callback)(request, scope, reply); });
-	}
-
-	/// \brief mount a callback on URI path \a path for HTTP method GET, and enforce authentication specified by \a realm
-	template<class Class>
-	void mount_get(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
-	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, http::method_type::GET, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
-			{ (server->*callback)(request, scope, reply); });
-	}
-
-	/// \brief mount a callback on URI path \a path for HTTP method POST, and enforce authentication specified by \a realm
-	template<class Class>
-	void mount_post(const std::string& path, const std::string& realm, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
-	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, http::method_type::POST, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
-			{ (server->*callback)(request, scope, reply); });
-	}
-
-	/// \brief mount a callback on URI path \a path for the HTTP method \a method, and enforce authentication specified by \a realm
-	template<class Class>
-	void mount(const std::string& path, const std::string& realm, http::method_type method, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
-	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, realm, method, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
-			{ (server->*callback)(request, scope, reply); });
-	}
-
 	/// \brief mount a handler on URI path \a path for HTTP method \a method
 	void mount(const std::string& path, http::method_type method, handler_type handler)
-	{
-		mount(path, "", method, std::move(handler));
-	}
-
-	/// \brief mount a handler on URI path \a path for HTTP method \a method, and enforce authentication specified by \a realm
-	void mount(const std::string& path, const std::string& realm, http::method_type method, handler_type handler)
 	{
 		auto mp = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
 			[path, method](auto& mp)
@@ -165,12 +129,9 @@ class controller : public http::controller, public template_processor
 			});
 
 		if (mp == m_dispatch_table.end())
-			m_dispatch_table.push_back({path, realm, method, handler});
+			m_dispatch_table.push_back({path, method, handler});
 		else
 		{
-			if (mp->realm != realm)
-				throw std::logic_error("realms not equal");
-
 			if (mp->method != method)
 				throw std::logic_error("cannot mix http::method_type::UNDEFINED with something else");
 
@@ -189,7 +150,6 @@ class controller : public http::controller, public template_processor
 	struct mount_point
 	{
 		std::string path;
-		std::string realm;
 		http::method_type method;
 		handler_type handler;
 	};

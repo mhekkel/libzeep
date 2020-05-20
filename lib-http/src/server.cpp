@@ -61,6 +61,17 @@ server::server(security_context* s_cntxt)
 	m_security_context.reset(s_cntxt);
 }
 
+server::~server()
+{
+	stop();
+
+	for (auto c: m_controllers)
+		delete c;
+
+	for (auto eh: m_error_handlers)
+		delete eh;
+}
+
 void server::bind(const std::string& address, unsigned short port)
 {
 	m_address = address;
@@ -81,17 +92,6 @@ void server::bind(const std::string& address, unsigned short port)
 		[this](boost::system::error_code ec) { this->handle_accept(ec); });
 }
 
-server::~server()
-{
-	stop();
-
-	for (auto c: m_controllers)
-		delete c;
-
-	for (auto eh: m_error_handlers)
-		delete eh;
-}
-
 void server::add_controller(controller* c)
 {
 	m_controllers.push_back(c);
@@ -102,6 +102,16 @@ void server::add_error_handler(error_handler* eh)
 {
 	m_error_handlers.push_front(eh);
 	eh->set_server(this);
+}
+
+json::element server::get_credentials(const request& req) const
+{
+	json::element result;
+
+	if (m_security_context)
+		result = m_security_context->get_credentials(req);
+
+	return result;
 }
 
 void server::run(int nr_of_threads)

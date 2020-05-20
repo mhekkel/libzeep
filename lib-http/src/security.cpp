@@ -95,6 +95,42 @@ void security_context::validate_request(const request& req) const
 
 // --------------------------------------------------------------------
 
+json::element security_context::get_credentials(const request& req) const
+{
+	json::element result;
+
+	for (;;)
+	{
+		auto access_token = req.get_cookie("access_token");
+		if (access_token.empty())
+			break;
+
+		std::smatch m;
+		if (not std::regex_match(access_token, m, kJWTRx))
+			break;
+			
+		json::element JOSEHeader;
+		json::parse_json(decode_base64url(m[1].str()), JOSEHeader);
+
+		const json::element kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
+
+		if (JOSEHeader != kJOSEHeader)
+			break;
+
+		// check signature
+		auto sig = encode_base64url(hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
+		if (sig != m[3].str())
+			break;
+
+		json::element credentials;
+		json::parse_json(decode_base64url(m[2].str()), result);
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
 void security_context::add_authorization_headers(reply &rep, const user_details user)
 {
 	using namespace json::literals;

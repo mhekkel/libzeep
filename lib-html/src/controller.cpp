@@ -111,49 +111,29 @@ bool controller::handle_request(http::request& req, http::reply& rep)
 		}
 		else
 		{
-			// // check for the presence of a access_token
+			if (m_server)
+			{
+				json::element credentials = get_server().get_credentials(req);
 
-			// json::element credentials;
+				if (credentials)
+				{
+					if (credentials.is_string())
+						req.username = credentials.as<std::string>();
+					else if (credentials.is_object())
+						req.username = credentials["username"].as<std::string>();
 
-			// // Do authentication here, if needed
-			// if (not handler->realm.empty())
-			// {
-			// 	auto avi = std::find_if(m_authentication_validators.begin(), m_authentication_validators.end(),
-			// 		[handler](auto av) { return av->get_realm() == handler->realm; });
+					scope.put("credentials", credentials);
+				}
+			}
 
-			// 	if (avi == m_authentication_validators.end())	// logic error
-			// 		throw std::logic_error("No authenticator provided for realm " + handler->realm);
-
-			// 	credentials = (*avi)->validate_authentication(req);
-
-			// 	if (not credentials)
-			// 		throw http::unauthorized_exception(handler->realm);
-			// }
-			// else	// not a protected area, but see if there's a valid login anyway
-			// {
-			// 	for (auto av: m_authentication_validators)
-			// 	{
-			// 		credentials = av->validate_authentication(req);
-			// 		if (credentials)
-			// 			break;
-			// 	}
-			// }
-
-			// if (credentials)
-			// {
-			// 	if (credentials.is_string())
-			// 		req.username = credentials.as<std::string>();
-			// 	else if (credentials.is_object())
-			// 		req.username = credentials["username"].as<std::string>();
-
-			// 	scope.put("credentials", credentials);
-			// }
-
-			// handler->handler(req, scope, rep);
+			handler->handler(req, scope, rep);
 		}
 
 		result = true;
 	}
+
+	if (not result)
+		rep = http::reply::stock_reply(http::not_found);
 
 	return result;
 }

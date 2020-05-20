@@ -4,9 +4,12 @@
 #include <random>
 
 #include <zeep/crypto.hpp>
+#include <zeep/streambuf.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/html/controller.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/http/daemon.hpp>
+#include <zeep/http/message-parser.hpp>
 
 using namespace std;
 namespace z = zeep;
@@ -77,162 +80,22 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::not_found);
 }
 
-BOOST_AUTO_TEST_CASE(webapp_2)
-{
-	webapp app;
+// BOOST_AUTO_TEST_CASE(webapp_2)
+// {
+// 	webapp app;
 
-	app.mount("test", "my-realm", &webapp::handle_file);
+// 	app.mount("test", &zeep::html::controller::handle_file);
 
-	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-	req.uri = "/test";
+// 	zeep::http::request req;
+// 	req.method = zeep::http::method_type::GET;
+// 	req.uri = "/test";
 
-	zeep::http::reply rep;
+// 	zeep::http::reply rep;
 
-	app.handle_request(req, rep);
+// 	app.handle_request(req, rep);
 
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::internal_server_error);
-}
-
-// digest authentication test
-BOOST_AUTO_TEST_CASE(webapp_3)
-{
-	class my_webapp : public webapp
-	{
-	  public:
-		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
-		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-		}
-	} app;
-
-	auto validator = new zeep::http::simple_digest_authentication_validation("mijn-realm", {
-		{ "scott", "tiger" }
-	});
-
-	app.add_authenticator(validator, "mijn-realm");
-	app.mount("test", "mijn-realm", &my_webapp::handle_test);
-
-	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-	req.uri = "/test";
-
-	zeep::http::reply rep;
-
-	app.handle_request(req, rep);
-
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
-
-	auto wwwAuth = rep.get_header("WWW-Authenticate");
-
-	std::regex rx(R"xx(Digest realm="mijn-realm", qop="auth", nonce="(.+)")xx");
-	std::smatch m;
-
-	BOOST_CHECK(std::regex_match(wwwAuth, m, rx));
-
-	auto nonce = m[1].str();
-
-	std::random_device rng;
-	auto nc = "1";
-
-	auto ha1 = validator->get_hashed_password("scott");
-
-	std::string cnonce = "x";
-
-	std::string ha2 = zeep::encode_hex(zeep::md5("GET:/test"));
-	std::string hash = zeep::encode_hex(zeep::md5(
-								   ha1 + ':' +
-								   nonce + ':' +
-								   nc + ':' +
-								   cnonce + ':' +
-								   "auth" + ':' +
-								   ha2));
-
-	req.set_header("Authorization",
-		"nonce=" + nonce + "," +
-		"cnonce=x" + "," +
-		"username=scott" + "," +
-		"response=" + hash + "," +
-		"qop=auth" + "," +
-		"realm='mijn-realm'" + ","
-		"nc=" + nc + ","
-		"uri='/test'");
-
-	zeep::http::reply rep2;
-
-	app.handle_request(req, rep2);
-
-	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
-}
-
-// jws authentication test
-BOOST_AUTO_TEST_CASE(webapp_3a)
-{
-	class my_webapp : public webapp
-	{
-	  public:
-		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
-		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-		}
-	} app;
-
-	auto secret = zeep::encode_hex(zeep::random_hash());
-
-	auto validator = new zeep::http::simple_jws_authentication_validation("mijn-realm", secret, {
-		{ "scott", "tiger" }
-	});
-
-	app.add_authenticator(validator, true);
-	app.mount("test", "mijn-realm", &my_webapp::handle_test);
-
-	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-	req.uri = "/test";
-
-	zeep::http::reply rep = {};
-
-	app.handle_request(req, rep);
-
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::unauthorized);
-
-	auto csrf = rep.get_cookie("csrf-token");
-
-	// check if the login contains all the fields
-	zeep::xml::document loginDoc(rep.get_content());
-	BOOST_CHECK(loginDoc.find_first("//input[@name='username']") != nullptr);
-	BOOST_CHECK(loginDoc.find_first("//input[@name='password']") != nullptr);
-	BOOST_CHECK(loginDoc.find_first("//input[@name='_csrf']") != nullptr);
-	if (loginDoc.find_first("//input[@name='_csrf']"))
-		BOOST_CHECK_EQUAL(loginDoc.find_first("//input[@name='_csrf']")->get_attribute("value"), csrf);
-
-	req.method = zeep::http::method_type::POST;
-	req.uri = "/login";
-	req.set_header("content-type", "application/x-www-form-urlencoded");
-	req.payload = "username=scott&password=tiger&_csrf=" + csrf;
-
-	rep = {};
-
-	app.handle_request(req, rep);
-
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::moved_temporarily);
-	auto cookie = rep.get_cookie("access_token");
-
-	BOOST_CHECK(not cookie.empty());
-
-	zeep::http::request req2;
-	
-	req2.method = zeep::http::method_type::GET;
-	req2.uri = "/test";
-	req2.set_cookie("access_token", cookie);
-
-	zeep::http::reply rep2;
-
-	app.handle_request(req2, rep2);
-
-	BOOST_CHECK_EQUAL(rep2.get_status(), zeep::http::ok);
-}
-
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::internal_server_error);
+// }
 
 BOOST_AUTO_TEST_CASE(webapp_4)
 {
@@ -360,6 +223,53 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
 }
 
+zeep::http::reply simple_request(uint16_t port, const std::string_view& req)
+{
+	using boost::asio::ip::tcp;
+
+	boost::asio::io_context io_context;
+
+	tcp::resolver resolver(io_context);
+	tcp::resolver::results_type endpoints = resolver.resolve("127.0.0.1", std::to_string(port));
+
+	tcp::socket socket(io_context);
+	boost::asio::connect(socket, endpoints);
+
+	boost::system::error_code ignored_error;
+	boost::asio::write(socket, boost::asio::buffer(req), ignored_error);
+
+	zeep::http::reply result;
+	zeep::http::reply_parser p;
+
+	for (;;)
+	{
+		boost::array<char, 128> buf;
+		boost::system::error_code error;
+
+		size_t len = socket.read_some(boost::asio::buffer(buf), error);
+
+		if (error == boost::asio::error::eof)
+			break; // Connection closed cleanly by peer.
+		else if (error)
+			throw boost::system::system_error(error); // Some other error.
+
+		zeep::char_streambuf sb(buf.data(), len);
+
+		auto r = p.parse(result, sb);
+		if (r == true)
+			break;
+	}
+
+	return result;
+}
+
+zeep::http::reply simple_request(uint16_t port, zeep::http::request& req)
+{
+	std::ostringstream os;
+	os << req;
+
+	return simple_request(port, os.str());
+}
 
 BOOST_AUTO_TEST_CASE(webapp_8)
 {

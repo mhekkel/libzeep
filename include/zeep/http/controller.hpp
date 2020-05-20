@@ -52,7 +52,7 @@ class controller
 	/// \brief return the server object we're bound to
 	const server& get_server() const	{ return *m_server; }
 	server& get_server()				{ return *m_server; }
-
+	
   protected:
 
 	controller(const controller&) = delete;
