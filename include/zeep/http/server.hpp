@@ -13,7 +13,8 @@
 
 #include <boost/asio.hpp>
 
-#include <zeep/http/request-handler.hpp>
+#include <zeep/http/request.hpp>
+#include <zeep/http/reply.hpp>
 
 namespace zeep::http
 {
@@ -29,7 +30,7 @@ class error_handler;
 /// combination. Add controller classes to do the actual work. These controllers will be tried in the order
 /// at which they were added to see if they want to process a request.
 
-class server : public request_handler
+class server
 {
   public:
 
@@ -97,6 +98,7 @@ class server : public request_handler
 
   private:
 	friend class preforked_server_base;
+	friend class connection;
 
 	virtual void handle_request(boost::asio::ip::tcp::socket& socket,
 								request& req, reply& rep);

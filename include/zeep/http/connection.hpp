@@ -14,10 +14,11 @@
 #include <boost/asio/posix/stream_descriptor.hpp>
 
 #include <zeep/http/message-parser.hpp>
-#include <zeep/http/request-handler.hpp>
 
 namespace zeep::http
 {
+
+class server;
 
 /// The HTTP server implementation of libzeep is inspired by the example code
 /// as provided by boost::asio. These objects are not to be used directly.
@@ -29,8 +30,7 @@ class connection
 	connection(connection &) = delete;
 	connection& operator=(connection &) = delete;
 
-	connection(boost::asio::io_service& service,
-			   request_handler& handler);
+	connection(boost::asio::io_service& service, server& handler);
 
 	void start();
 	void handle_read(boost::system::error_code ec, size_t bytes_transferred);
@@ -41,7 +41,7 @@ class connection
   private:
 	boost::asio::ip::tcp::socket m_socket;
 	request_parser m_request_parser;
-	request_handler& m_request_handler;
+	server& m_server;
 	std::array<char, 8192> m_buffer;
 	request m_request;
 	reply m_reply;

@@ -11,12 +11,16 @@
 namespace zeep::http
 {
 
-namespace
+login_controller::login_controller(const std::string& prefix_path)
+	: http::controller(prefix_path)
 {
+}
 
-using namespace xml::literals;
+xml::document login_controller::load_login_form() const
+{
+	using namespace xml::literals;
 
-auto kLoginDoc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
+	return R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
     <meta charset="utf-8" />
@@ -51,11 +55,6 @@ auto kLoginDoc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 </html>)"_xml;
 }
 
-login_controller::login_controller(const std::string& prefix_path)
-	: http::controller(prefix_path)
-{
-}
-
 bool login_controller::handle_request(request& req, reply& rep)
 {
 	bool result = false;
@@ -66,7 +65,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 
 		if (req.method == method_type::GET)
 		{
-			auto doc = kLoginDoc;
+			auto doc = load_login_form();
 			auto csrf = doc.find_first("//input[@name='_csrf']");
 			if (not csrf)
 				throw internal_server_error;
@@ -80,7 +79,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 				throw status_type::forbidden;
 
 			auto uri = req.get_parameter("uri");
-			if (uri.empty())
+			if (uri.empty() or uri == "/login")
 				uri = "/";
 			rep = reply::redirect(uri);
 
@@ -93,7 +92,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 			}
 			catch (const invalid_password_exception& e)
 			{
-				auto doc = kLoginDoc;
+				auto doc = load_login_form();
 				auto csrf = doc.find_first("//input[@name='_csrf']");
 				csrf->set_attribute("value", req.get_cookie("csrf-token"));
 
@@ -114,6 +113,8 @@ bool login_controller::handle_request(request& req, reply& rep)
 	else if (req.get_path() == "/logout")
 	{
 		auto uri = req.get_parameter("uri");
+		if (uri.empty() or uri == "/logout")
+			uri = "/";
 		rep = reply::redirect(uri);
 
 		rep.set_cookie("access_token", "", {

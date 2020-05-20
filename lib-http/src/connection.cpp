@@ -12,8 +12,10 @@
 #include <boost/asio.hpp>
 
 #include <zeep/http/connection.hpp>
+#include <zeep/http/server.hpp>
 
-namespace zeep { namespace http {
+namespace zeep::http
+{
 
 // Needed for CLang/libc++ on FreeBSD 10
 connection* get_pointer(const std::shared_ptr<connection>& p)
@@ -21,10 +23,8 @@ connection* get_pointer(const std::shared_ptr<connection>& p)
 	return p.get();
 }
 
-connection::connection(boost::asio::io_service& service,
-	request_handler& handler)
-	: m_socket(service)
-	, m_request_handler(handler)
+connection::connection(boost::asio::io_service& service, server& handler)
+	: m_socket(service), m_server(handler)
 {
 }
 
@@ -56,7 +56,7 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 		{
 			m_reply.set_version(m_request.http_version_major, m_request.http_version_minor);
 			
-			m_request_handler.handle_request(m_socket, m_request, m_reply);
+			m_server.handle_request(m_socket, m_request, m_reply);
 
 			auto buffers = m_reply.to_buffers();
 
@@ -110,5 +110,4 @@ void connection::handle_write(boost::system::error_code ec, size_t bytes_transfe
 	}
 }
 
-}
 }
