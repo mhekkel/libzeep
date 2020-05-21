@@ -1,4 +1,4 @@
-# Makefile for the libzeep-generic library
+# Makefile for the libzeep-json library
 #
 # Copyright Maarten L. Hekkelman, UMC St. Radboud 2008-2013.
 #        Copyright Maarten L. Hekkelman, 2014-2019
@@ -168,7 +168,7 @@ dist-clean: clean
 
 json_PARAMS = 
 
-ZEEP_LIBS = xml json generic
+ZEEP_LIBS = xml json
 BOOST_LIBS = 
 
 define TEST_template =

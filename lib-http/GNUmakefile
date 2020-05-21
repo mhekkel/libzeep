@@ -1,4 +1,4 @@
-# Makefile for the libzeep-generic library
+# Makefile for the libzeep-http library
 #
 # Copyright Maarten L. Hekkelman, UMC St. Radboud 2008-2013.
 #        Copyright Maarten L. Hekkelman, 2014-2019
@@ -116,6 +116,7 @@ $(OUTPUT):
 OBJECTS = \
 	$(OBJDIR)/connection.o \
 	$(OBJDIR)/controller.o \
+	$(OBJDIR)/crypto.o \
 	$(OBJDIR)/daemon.o \
 	$(OBJDIR)/el-processing.o \
 	$(OBJDIR)/error-handler.o \
@@ -131,7 +132,8 @@ OBJECTS = \
 	$(OBJDIR)/soap-controller.o \
 	$(OBJDIR)/tag-processor-v2.o \
 	$(OBJDIR)/tag-processor.o \
-	$(OBJDIR)/template-processor.o
+	$(OBJDIR)/template-processor.o \
+	$(OBJDIR)/utils.o
 
 ifneq ($(USE_RSRC),0)
 OBJECTS += \
@@ -222,7 +224,7 @@ $(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
 http_PARAMS = 
 webapp_PARAMS = 
 
-ZEEP_LIBS = xml json generic
+ZEEP_LIBS = xml json
 BOOST_LIBS = system
 
 define TEST_template =
@@ -245,7 +247,7 @@ $(1)-test: test/$(1)-test
 
 endef
 
-TESTS = http processor webapp soap
+TESTS = crypto http processor webapp soap
 
 ifneq ($(USE_RSRC),0)
 TESTS += rsrc_webapp

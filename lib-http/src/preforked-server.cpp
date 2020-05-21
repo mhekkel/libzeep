@@ -39,18 +39,20 @@ preforked_server::~preforked_server()
 
 void preforked_server::run(const std::string& address, short port, int nr_of_threads)
 {
+	using namespace std::literals;
+
 	try
 	{
 		// create a socket pair to pass the file descriptors through
 		int sockfd[2];
 		int err = socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd);
 		if (err < 0)
-			throw exception("Error creating socket pair: %s", strerror(errno));
+			throw exception("Error creating socket pair: "s + strerror(errno));
 	
 		// fork
 		m_pid = fork();
 		if (m_pid < 0)
-			throw exception("Error forking worker application: %s", strerror(errno));
+			throw exception("Error forking worker application: "s + strerror(errno));
 
 		if (m_pid == 0)	// child process
 		{
@@ -126,7 +128,7 @@ void preforked_server::run(const std::string& address, short port, int nr_of_thr
 			
 			int r = waitpid(m_pid, &status, WUNTRACED | WCONTINUED);
 			if (r == -1)
-				throw exception("Error waiting for child process: %s", strerror(errno));
+				throw exception("Error waiting for child process: "s + strerror(errno));
 			
 			if (WIFEXITED(status))
 			{
@@ -293,7 +295,10 @@ void preforked_server::write_socket_to_worker(int fd_socket, boost::asio::ip::tc
 	
 	int err = sendmsg(fd_socket, &msg, 0);
 	if (err < 0)
-		throw exception("error passing filedescriptor: %s", strerror(errno));
+	{
+		using namespace std::literals;
+		throw exception("error passing filedescriptor: "s + strerror(errno));
+	}
 }
 
 void preforked_server::stop()

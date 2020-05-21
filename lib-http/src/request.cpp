@@ -6,6 +6,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
 
 namespace ba = boost::algorithm;

@@ -51,20 +51,17 @@ template<typename Iter>
 std::tuple<unicode,Iter> get_first_char(Iter ptr);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
-bool iequals(const std::string& a, const std::string& b);
+///
+/// This is a limited use function, only reliably works with ASCII. But that's OK.
+inline bool iequals(const std::string& a, const std::string& b)
+{
+	bool equal = a.length() == b.length();
 
-/// \brief Maybe not the correct location, but here's a to_string equivalent returning a hexadecimal representation.
-std::string to_hex(int i);
+	for (std::string::size_type i = 0; equal and i < a.length(); ++i)
+		equal = std::toupper(a[i]) == std::toupper(b[i]);
 
-/// \brief Decode a URL using the RFC rules
-/// \param s  The URL that needs to be decoded
-/// \return	  The decoded URL
-std::string decode_url(const std::string& s);
-
-/// \brief Encode a URL using the RFC rules
-/// \param s  The URL that needs to be encoded
-/// \return	  The encoded URL
-std::string encode_url(const std::string& s);
+	return equal;
+}
 
 // inlines
 
@@ -175,6 +172,28 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 	}
 
 	return std::make_tuple(result, ptr);
+}
+
+// --------------------------------------------------------------------
+
+inline std::string to_hex(uint32_t i)
+{
+	char s[sizeof(i) * 2 + 3];
+	char* p = s + sizeof(s);
+	*--p = 0;
+
+	const char kHexChars[] = "0123456789abcdef";
+
+	while (i)
+	{
+		*--p = kHexChars[i & 0x0F];
+		i >>= 4;
+	}
+
+	*--p = 'x';
+	*--p = '0';
+
+	return p;
 }
 
 } // namespace xml

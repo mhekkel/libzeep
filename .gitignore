@@ -14,7 +14,7 @@ lib-http/test/rsrc_webapp-test
 lib-http/test/processor-test
 lib-http/test/soap-test
 lib-http/test/http-test
-lib-generic/test/crypto-test
+lib-http/test/crypto-test
 lib-json/test/json-test
 lib-xml/test/parser-test
 lib-xml/test/serializer-test

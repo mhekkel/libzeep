@@ -22,10 +22,6 @@ The current implementation of libzeep goes much further. It is by now a swissarm
 
 In version 5.0 the library has been split up in seven sub libraries, each targeted at different tasks.
 
-[heading:generic libzeep-generic]
-
-A very small library containing code that is used by all the others. Here you find the basics for serializing datastructures as well as some cryptographic routines (for calculating hash values).
-
 [heading:xml libzeep-xml]
 
 A solid XML library containing a validating parser as well as a modern C++ API for the datastructures. It also supports serializing datastructures using a boost-like serialization interface.

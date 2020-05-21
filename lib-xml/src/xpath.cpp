@@ -2145,7 +2145,7 @@ Token xpath_imp::get_next_token()
 					if (*a != nullptr)
 						m_token_axis = AxisType(a - kAxisNames);
 					else
-						throw exception("invalid axis specification %s", m_token_string.c_str());
+						throw exception("invalid axis specification " + m_token_string);
 
 					// skip over the double colon
 					m_next = c + 2;
@@ -2178,7 +2178,7 @@ Token xpath_imp::get_next_token()
 						}
 
 						if (token != xp_FunctionName)
-							throw exception("invalid function %s", m_token_string.c_str());
+							throw exception("invalid function " + m_token_string);
 					}
 				}
 				
@@ -2294,7 +2294,7 @@ expression_ptr xpath_imp::node_test(AxisType axis)
 		else if (name == "node")
 			result.reset(new node_type_expression<node>(axis));
 		else
-			throw exception("invalid node type specified: %s", name.c_str());
+			throw exception("invalid node type specified: " + name);
 	}
 	else
 	{
@@ -2358,6 +2358,8 @@ expression_ptr xpath_imp::primary_expr()
 
 expression_ptr xpath_imp::function_call()
 {
+	using namespace std::literals;
+
 	CoreFunction function = m_token_function;
 	
 	match(xp_FunctionName);
@@ -2384,15 +2386,15 @@ expression_ptr xpath_imp::function_call()
 	if (expected_arg_count > 0)
 	{
 		if (int(arguments.size()) != expected_arg_count)
-			throw exception("invalid number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+			throw exception("invalid number of arguments for function "s + kCoreFunctionInfo[int(function)].name);
 	}
 	else if (expected_arg_count == kOptionalArgument)
 	{
 		if (arguments.size() > 1)
-			throw exception("incorrect number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+			throw exception("incorrect number of arguments for function "s + kCoreFunctionInfo[int(function)].name);
 	}
 	else if (expected_arg_count < 0 and int(arguments.size()) < -expected_arg_count)
-		throw exception("insufficient number of arguments for function %s", kCoreFunctionInfo[int(function)].name);
+		throw exception("insufficient number of arguments for function "s + kCoreFunctionInfo[int(function)].name);
 	
 	switch (function)
 	{

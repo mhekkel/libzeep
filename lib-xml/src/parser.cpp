@@ -17,6 +17,26 @@ namespace ba = boost::algorithm;
 namespace zeep::xml
 {
 
+bool is_absolute_path(const std::string& s)
+{
+	bool result = false;
+
+	if (not s.empty())
+	{
+		if (s[0] == '/')
+			result = true;
+		else if (isalpha(s[0]))
+		{
+			std::string::const_iterator ch = s.begin() + 1;
+			while (ch != s.end() and isalpha(*ch))
+				++ch;
+			result = ch != s.end() and *ch == ':';
+		}
+	}
+
+	return result;
+}
+
 // #define url_hexdigit	"[[:digit:]a-fA-F]"
 // #define url_unreserved	"[-[:alnum:]._~]"
 // #define url_pct_encoded	"%" url_hexdigit "{2}"

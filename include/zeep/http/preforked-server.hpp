@@ -11,8 +11,6 @@
 
 #include <zeep/config.hpp>
 
-#include <mutex>
-
 #include <zeep/http/server.hpp>
 
 #if HTTP_SERVER_HAS_PREFORK

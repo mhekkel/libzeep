@@ -37,7 +37,7 @@ endif
 BOOST_LIBS          = date_time
 BOOST_LIBS          := $(BOOST_LIBS:%=-lboost_%)
 
-ZEEP_LIB_NAMES		?= rest html http xml el generic
+ZEEP_LIB_NAMES		?= http json xml
 ZEEP_LIBS			:= $(ZEEP_LIB_NAMES:%=-lzeep-%)
 
 LIBS				+= m rt stdc++fs

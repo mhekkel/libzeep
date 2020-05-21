@@ -14,6 +14,7 @@
 #include <codecvt>
 
 #include <zeep/utils.hpp>
+#include <zeep/crypto.hpp>
 #include <zeep/http/el-processing.hpp>
 
 using namespace std;

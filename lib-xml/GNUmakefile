@@ -1,4 +1,4 @@
-# Makefile for the libzeep-generic library
+# Makefile for the libzeep-xml library
 #
 # Copyright Maarten L. Hekkelman, UMC St. Radboud 2008-2013.
 #        Copyright Maarten L. Hekkelman, 2014-2019
@@ -163,7 +163,7 @@ clean:
 parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml
 xpath_PARAMS = XPath-Test-Suite/xpath-tests.xml
 
-ZEEP_LIBS = generic
+ZEEP_LIBS = 
 BOOST_LIBS = program_options
 
 define TEST_template =

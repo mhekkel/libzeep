@@ -92,6 +92,4 @@ class mini_stack
 	int m_ix;
 };
 
-bool is_absolute_path(const std::string& s);
-
 }
