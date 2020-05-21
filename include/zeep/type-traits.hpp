@@ -8,6 +8,8 @@
 /// \file
 /// definition of various classes that help classify data used to select the correct conversion routines
 
+#include <zeep/config.hpp>
+
 #include <experimental/type_traits>
 
 #include <zeep/value-serializer.hpp>

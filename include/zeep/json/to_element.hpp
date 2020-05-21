@@ -8,6 +8,8 @@
 /// \file
 /// various implementations of the to_element function that intializes a zeep::json::element object with some value
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 #include <string>
 #include <memory>

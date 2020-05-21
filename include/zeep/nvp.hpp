@@ -9,6 +9,8 @@
 	\brief File containing the name_value_pair class
 */
 
+#include <zeep/config.hpp>
+
 namespace zeep
 {
 

@@ -7,6 +7,11 @@
 
 #pragma once
 
+#include <zeep/config.hpp>
+
+#include <exception>
+#include <string>
+
 /// \file
 /// This file contains an interface to the crypto related routines used
 /// throughout libzeep.

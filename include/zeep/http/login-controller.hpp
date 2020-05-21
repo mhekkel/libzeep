@@ -10,6 +10,8 @@
 /// definition of the zeep::login_controller class. This class inherits from
 /// html::controller and provides a default for /login and /logout handling.
 
+#include <zeep/config.hpp>
+
 #include <zeep/xml/document.hpp>
 #include <zeep/http/controller.hpp>
 

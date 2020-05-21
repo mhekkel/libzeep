@@ -8,6 +8,8 @@
 /// \file
 /// factory classes for constructing zeep::json::element objects
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 #include <string>
 #include <memory>

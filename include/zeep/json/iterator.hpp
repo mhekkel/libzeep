@@ -8,6 +8,8 @@
 /// \file
 /// generic iterator classes used by zeep::json::element
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 #include <string>
 #include <memory>

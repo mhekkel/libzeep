@@ -9,6 +9,8 @@
 /// \file
 /// definition of the zeep::xml::xpath class, implementing a XPath 1.0 compatible search facility
 
+#include <zeep/config.hpp>
+
 #include <string>
 
 #include <zeep/xml/node.hpp>

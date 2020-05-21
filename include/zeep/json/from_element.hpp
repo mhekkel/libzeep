@@ -8,6 +8,8 @@
 /// \file
 /// various implementations of the from_element function that return the data contained in a zeep::json::element (JSON) object
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 #include <string>
 #include <memory>

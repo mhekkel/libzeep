@@ -12,6 +12,8 @@
 /// \file
 /// The definition of the JSON parser in libzeep
 
+#include <zeep/config.hpp>
+
 #include <zeep/json/element.hpp>
 
 namespace zeep::json

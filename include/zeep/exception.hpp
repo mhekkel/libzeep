@@ -9,6 +9,8 @@
 /// \file
 /// definition of zeep::exception, base class for exceptions thrown by libzeep
 
+#include <zeep/config.hpp>
+
 #include <exception>
 #include <string>
 

@@ -10,6 +10,7 @@
 /// definition of the zeep::xml::document class
 
 #include <zeep/config.hpp>
+
 #include <zeep/xml/character-classification.hpp>
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/serialize.hpp>

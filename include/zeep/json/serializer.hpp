@@ -8,6 +8,8 @@
 /// \file
 /// definition of the serializer classes that help serialize data into and out of zeep::json::element (JSON) objects
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 #include <string>
 #include <memory>

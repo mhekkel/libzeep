@@ -9,6 +9,8 @@
 /// \file
 /// definition of the zeep::http::connection class, that handles HTTP connections
 
+#include <zeep/config.hpp>
+
 #include <memory>
 
 #include <boost/asio/posix/stream_descriptor.hpp>

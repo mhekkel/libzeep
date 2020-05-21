@@ -8,10 +8,11 @@
 /// \file
 /// definition of various classes that help in handling HTTP authentication.
 
+#include <zeep/config.hpp>
+
 #include <map>
 #include <mutex>
 
-#include <zeep/config.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/crypto.hpp>
 

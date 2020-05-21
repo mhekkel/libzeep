@@ -9,6 +9,8 @@
 /// \file
 /// the core of the libzeep XML library defining the main classes in the DOM API
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 
 #include <memory>

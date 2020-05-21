@@ -8,6 +8,8 @@
 /// \file
 /// various templated classes that help selecting the right conversion routines when (de-)serializing zeep::json::element (JSON) objects
 
+#include <zeep/config.hpp>
+
 #include <cassert>
 #include <string>
 #include <memory>

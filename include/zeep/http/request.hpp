@@ -9,6 +9,8 @@
 /// \file
 /// definition of the zeep::http::request class encapsulating a valid HTTP request
 
+#include <zeep/config.hpp>
+
 #include <vector>
 #include <istream>
 

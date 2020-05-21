@@ -9,10 +9,11 @@
 /// \file
 /// Code for a preforked http server implementation
 
+#include <zeep/config.hpp>
+
 #include <thread>
 #include <mutex>
 
-#include <zeep/config.hpp>
 #include <zeep/http/server.hpp>
 
 #if HTTP_SERVER_HAS_PREFORK

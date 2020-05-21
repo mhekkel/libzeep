@@ -9,6 +9,8 @@
 /// \file
 /// definition of the libzeep XML parser, a recursive descent parser
 
+#include <zeep/config.hpp>
+
 #include <functional>
 #include <list>
 

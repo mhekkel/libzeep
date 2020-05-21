@@ -9,6 +9,8 @@
 /// \file
 /// definition of the zeep::http::server class
 
+#include <zeep/config.hpp>
+
 #include <thread>
 
 #include <boost/asio.hpp>

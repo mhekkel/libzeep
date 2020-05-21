@@ -9,6 +9,8 @@
 /// \file
 /// definition of the serializer classes used to (de-)serialize XML data.
 
+#include <zeep/config.hpp>
+
 #include <regex>
 #include <optional>
 

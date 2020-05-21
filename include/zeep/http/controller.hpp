@@ -8,6 +8,8 @@
 /// \file
 /// definition of the base class zeep::http::controller, used by e.g. rest_controller and soap_controller
 
+#include <zeep/config.hpp>
+
 #include <zeep/http/server.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>

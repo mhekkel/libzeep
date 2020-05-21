@@ -12,6 +12,8 @@
 	Code that is common is found here.
 */
 
+#include <zeep/config.hpp>
+
 #include <regex>
 
 #include <boost/date_time/posix_time/posix_time.hpp>

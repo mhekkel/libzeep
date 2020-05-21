@@ -9,6 +9,8 @@
 /// definition of the zeep::template_processor class. This class
 /// handles the loading and processing of XHTML files.
 
+#include <zeep/config.hpp>
+
 #include <filesystem>
 
 #include <zeep/http/reply.hpp>

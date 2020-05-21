@@ -9,6 +9,8 @@
 /// \file
 /// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
+#include <zeep/config.hpp>
+
 #include <vector>
 #include <memory>
 

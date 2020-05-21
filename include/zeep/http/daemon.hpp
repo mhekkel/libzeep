@@ -10,6 +10,8 @@
 /// Source code specifically for Unix/Linux.
 /// Utility routines to build daemon processes
 
+#include <zeep/config.hpp>
+
 #include <string>
 #include <functional>
 

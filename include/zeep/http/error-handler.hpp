@@ -9,6 +9,8 @@
 /// definition of the base class zeep::error_handler, the default 
 /// creates very simple HTTP replies. Override to do something more fancy.
 
+#include <zeep/config.hpp>
+
 #include <zeep/http/server.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>

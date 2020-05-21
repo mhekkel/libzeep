@@ -9,6 +9,8 @@
 /// \file
 /// definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
 
+#include <zeep/config.hpp>
+
 #include <tuple>
 
 #include <boost/logic/tribool.hpp>
