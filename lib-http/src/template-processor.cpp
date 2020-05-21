@@ -10,8 +10,8 @@
 #include <boost/iostreams/copy.hpp>
 
 #include <zeep/xml/xpath.hpp>
-#include <zeep/html/template-processor.hpp>
-#include <zeep/html/controller.hpp>
+#include <zeep/http/template-processor.hpp>
+#include <zeep/http/html-controller.hpp>
 
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;

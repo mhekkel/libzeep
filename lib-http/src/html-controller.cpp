@@ -20,9 +20,8 @@
 #include <zeep/utils.hpp>
 #include <zeep/xml/character-classification.hpp>
 #include <zeep/xml/xpath.hpp>
-#include <zeep/html/controller.hpp>
-#include <zeep/html/el-processing.hpp>
-#include <zeep/html/controller.hpp>
+#include <zeep/http/el-processing.hpp>
+#include <zeep/http/html-controller.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;

@@ -45,6 +45,28 @@ class soap_envelope : public boost::noncopyable
 	xml::element* m_request;
 };
 
+// --------------------------------------------------------------------
+
+/// Wrap data into a SOAP envelope
+///
+/// \param    data  The xml::element object to wrap into the envelope
+/// \return   A new xml::element object containing the envelope.
+xml::element make_envelope(xml::element&& data);
+// xml::element make_envelope(const xml::element& data);
+
+/// Create a standard SOAP Fault message for the string parameter
+///
+/// \param    message The string object containing a descriptive error message.
+/// \return   A new xml::element object containing the fault envelope.
+xml::element make_fault(const std::string& message);
+/// Create a standard SOAP Fault message for the exception object
+///
+/// \param    ex The exception object that was catched.
+/// \return   A new xml::element object containing the fault envelope.
+xml::element make_fault(const std::exception& ex);
+
+// --------------------------------------------------------------------
+
 /// \brief class that helps with handling SOAP requests
 ///
 /// This controller will handle SOAP requests automatically handing the packing
@@ -196,7 +218,7 @@ class soap_controller : public controller
 
 			xml::element response(m_action + "Response");
 			response.move_to_name_space("m", ns, false, false);
-			reply.set_content(soap::make_envelope(std::move(response)));
+			reply.set_content(make_envelope(std::move(response)));
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
@@ -211,7 +233,7 @@ class soap_controller : public controller
 			sr.serialize_element(result);
 			response.move_to_name_space("m", ns, true, true);
 			
-			auto envelope = soap::make_envelope(std::move(response));
+			auto envelope = make_envelope(std::move(response));
 
 			reply.set_content(std::move(envelope));
 		}
@@ -329,24 +351,5 @@ class soap_controller : public controller
 	std::map<std::string,xml::element> m_types;
 };
 
-// --------------------------------------------------------------------
-
-/// Wrap data into a SOAP envelope
-///
-/// \param    data  The xml::element object to wrap into the envelope
-/// \return   A new xml::element object containing the envelope.
-xml::element make_envelope(xml::element&& data);
-// xml::element make_envelope(const xml::element& data);
-
-/// Create a standard SOAP Fault message for the string parameter
-///
-/// \param    message The string object containing a descriptive error message.
-/// \return   A new xml::element object containing the fault envelope.
-xml::element make_fault(const std::string& message);
-/// Create a standard SOAP Fault message for the exception object
-///
-/// \param    ex The exception object that was catched.
-/// \return   A new xml::element object containing the fault envelope.
-xml::element make_fault(const std::exception& ex);
 
 } // namespace zeep::http

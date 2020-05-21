@@ -6,10 +6,10 @@
 #include <zeep/crypto.hpp>
 #include <zeep/streambuf.hpp>
 #include <zeep/exception.hpp>
-#include <zeep/html/controller.hpp>
-#include <zeep/http/server.hpp>
 #include <zeep/http/daemon.hpp>
+#include <zeep/http/html-controller.hpp>
 #include <zeep/http/message-parser.hpp>
+#include <zeep/http/server.hpp>
 
 using namespace std;
 namespace z = zeep;

@@ -10,9 +10,6 @@
 namespace zeep::http
 {
 
-namespace soap
-{
-
 soap_envelope::soap_envelope()
 	: m_request(nullptr)
 {
@@ -62,8 +59,6 @@ xml::element make_fault(const std::exception& ex)
 	return make_fault(std::string(ex.what()));
 }
 
-}
-
 // --------------------------------------------------------------------
 
 bool soap_controller::handle_request(request& req, reply& reply)
@@ -105,12 +100,12 @@ bool soap_controller::handle_request(request& req, reply& reply)
 		}
 		catch (const std::exception& e)
 		{
-			reply.set_content(soap::make_fault(e));
+			reply.set_content(make_fault(e));
 			reply.set_status(internal_server_error);
 		}
 		catch (status_type& s)
 		{
-			reply.set_content(soap::make_fault(get_status_description(s)));
+			reply.set_content(make_fault(get_status_description(s)));
 			reply.set_status(s);
 		}
 	}

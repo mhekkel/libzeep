@@ -2,9 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <zeep/streambuf.hpp>
-#include <zeep/html/template-processor.hpp>
-#include <zeep/html/tag-processor.hpp>
-#include <zeep/html/el-processing.hpp>
+#include <zeep/http/template-processor.hpp>
+#include <zeep/http/tag-processor.hpp>
+#include <zeep/http/el-processing.hpp>
 
 using namespace std;
 

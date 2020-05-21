@@ -12,10 +12,10 @@ lib-xml/test/XML-Test-Suite/
 **/obj.dbg/
 lib-http/src/mrsrc.h
 .gradle/
-lib-html/test/webapp-test
-lib-html/test/rsrc_webapp-test
-lib-html/test/processor-test
-lib-soap/test/soap-test
+lib-http/test/webapp-test
+lib-http/test/rsrc_webapp-test
+lib-http/test/processor-test
+lib-http/test/soap-test
 lib-http/test/http-test
 lib-generic/test/crypto-test
 lib-json/test/json-test
