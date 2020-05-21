@@ -50,6 +50,17 @@ bool controller::handle_request(http::request& req, http::reply& rep)
 {
 	std::string uri = req.uri;
 
+	if (uri.front() == '/')
+		uri.erase(0, 1);
+	
+	if (not ba::starts_with(uri, m_prefix_path))
+		return false;
+
+	uri.erase(0, m_prefix_path.length());
+	
+	if (uri.front() == '/')
+		uri.erase(0, 1);
+
 	// start by sanitizing the request's URI, first parse the parameters
 	std::string ps = req.payload;
 	if (req.method != http::method_type::POST)
