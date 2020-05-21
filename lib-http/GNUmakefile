@@ -219,7 +219,7 @@ dist-clean: clean
 # $(OBJDIR)/unit-test.d: $(OBJDIR)/unit-test.o
 
 $(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
-	mrc -o $@ $<
+	$(MRC) -o $@ $<
 
 http_PARAMS = 
 webapp_PARAMS = 
@@ -233,7 +233,7 @@ define TEST_template =
 
 $(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
 
-ifneq ($(NO_RSRC),0)
+ifneq ($(USE_RSRC),0)
 $(1)_OBJECTS += $$(OBJDIR)/test_rsrc.o
 endif
 
