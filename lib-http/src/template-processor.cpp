@@ -16,7 +16,7 @@
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------

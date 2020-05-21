@@ -15,7 +15,7 @@ using namespace std;
 namespace z = zeep;
 namespace zx = zeep::xml;
 
-using webapp = zeep::html::controller;
+using webapp = zeep::http::html_controller;
 
 void compare(zeep::xml::document& a, zeep::xml::document& b)
 {
@@ -41,18 +41,18 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 			mount_post("test", &my_webapp::handle_post_test);
 		}
 
-		virtual void handle_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 
-		virtual void handle_get_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_get_test(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("get", "text/plain");
 		}
 
-		virtual void handle_post_test(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_post_test(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("post", "text/plain");
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 // {
 // 	webapp app;
 
-// 	app.mount("test", &zeep::html::controller::handle_file);
+// 	app.mount("test", &zeep::http::controller::handle_file);
 
 // 	zeep::http::request req;
 // 	req.method = zeep::http::method_type::GET;
@@ -138,37 +138,37 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 			mount("{css,scripts}/", &my_webapp::handle_testf);
 		}
 
-		virtual void handle_test1(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test1(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("1", "text/plain");
 		}
 
-		virtual void handle_test2(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test2(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2", "text/plain");
 		}
 
-		virtual void handle_test2b(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test2b(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2b", "text/plain");
 		}
 
-		virtual void handle_test3(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test3(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("3", "text/plain");
 		}
 
-		virtual void handle_test4(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test4(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("4", "text/plain");
 		}
 
-		virtual void handle_testf(const zeep::http::request& request, const zeep::html::scope& scope, zeep::http::reply& reply)
+		virtual void handle_testf(const zeep::http::request& request, const zeep::http::scope& scope, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("f", "text/plain");
@@ -275,16 +275,16 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 {
 	// start up a http server with a html_controller and stop it again
 
-	class my_html_controller : public zeep::html::controller
+	class my_html_controller : public zeep::http::html_controller
 	{
 	  public:
 		my_html_controller()
-			: zeep::html::controller("/", "")
+			: zeep::http::html_controller("/", "")
 		{
 			mount("", &my_html_controller::handle_index);
 		}
 
-		void handle_index(const zeep::http::request& req, const zeep::html::scope& scope, zeep::http::reply& rep)
+		void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
 		{
 			rep = zeep::http::reply::stock_reply(zeep::http::ok);
 			rep.set_content("Hello", "text/plain");

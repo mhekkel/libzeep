@@ -7,7 +7,7 @@
 #pragma once
 
 /// \file
-/// definition of the zeep::http::soap_controller class.
+/// definition of the zeep::soap_controller class.
 /// Instances of this class take care of mapping member functions to
 /// SOAP calls automatically converting in- and output data
 
@@ -16,10 +16,34 @@
 #include <zeep/http/controller.hpp>
 #include <zeep/xml/serialize.hpp>
 #include <zeep/xml/document.hpp>
-#include <zeep/soap/envelope.hpp>
 
-namespace zeep::soap
+namespace zeep::http
 {
+
+/// soap_envelope is a wrapper around a SOAP envelope. Use it for
+/// input and output of correctly formatted SOAP messages.
+
+class soap_envelope : public boost::noncopyable
+{
+  public:
+	/// \brief Create an empty envelope
+	soap_envelope();
+
+	/// \brief Parse a SOAP message from the payload received from a client,
+	/// throws an exception if the envelope is empty or invalid.
+	soap_envelope(std::string& payload);
+
+	// /// \brief Parse a SOAP message received from a client,
+	// /// throws an exception if the envelope is empty or invalid.
+	// envelope(xml::document& data);
+
+	/// \brief The request element as contained in the original SOAP message
+	xml::element& request() { return *m_request; }
+
+  private:
+	xml::document m_payload;
+	xml::element* m_request;
+};
 
 /// \brief class that helps with handling SOAP requests
 ///
@@ -31,15 +55,15 @@ namespace zeep::soap
 ///
 /// See the chapter on SOAP controllers in the documention for more information.
 
-class controller : public http::controller
+class soap_controller : public controller
 {
   public:
 	/// \brief constructor
 	///
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	controller(const std::string& prefix_path, const std::string& ns)
-		: http::controller(prefix_path)
+	soap_controller(const std::string& prefix_path, const std::string& ns)
+		: controller(prefix_path)
 		, m_ns(ns)
 		, m_service("b")
 	{
@@ -48,7 +72,7 @@ class controller : public http::controller
 		m_location = m_prefix_path;
 	}
 
-    ~controller()
+    ~soap_controller()
 	{
 		for (auto mp: m_mountpoints)
 			delete mp;
@@ -81,7 +105,7 @@ class controller : public http::controller
 	xml::element make_wsdl();
 
 	/// \brief Handle the SOAP request
-	virtual bool handle_request(http::request& req, http::reply& reply);
+	virtual bool handle_request(request& req, reply& reply);
 
   protected:
 
@@ -94,7 +118,7 @@ class controller : public http::controller
 
         virtual ~mount_point_base() {}
 
-		virtual void call(const xml::element& request, http::reply& reply, const std::string& ns) = 0;
+		virtual void call(const xml::element& request, reply& reply, const std::string& ns) = 0;
 		virtual void collect_types(std::map<std::string,xml::element>& types, const std::string& ns) = 0;
 
 		std::string m_action;
@@ -112,7 +136,7 @@ class controller : public http::controller
  
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* action, controller* owner, Sig sig)
+		mount_point(const char* action, soap_controller* owner, Sig sig)
 			: mount_point_base(action)
 		{
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
@@ -125,7 +149,7 @@ class controller : public http::controller
 		}
 
 		template<typename... Names>
-		mount_point(const char* action, controller* owner, Sig sig, Names... names)
+		mount_point(const char* action, soap_controller* owner, Sig sig, Names... names)
 			: mount_point(action, owner, sig)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
@@ -157,16 +181,16 @@ class controller : public http::controller
 			return xml::type_serializer<type>::schema(m_names[I], ns);
 		}
 
-		virtual void call(const xml::element& request, http::reply& reply, const std::string& ns)
+		virtual void call(const xml::element& request, reply& reply, const std::string& ns)
 		{
-			reply.set_status(http::ok);
+			reply.set_status(ok);
 
 			ArgsTuple args = collect_arguments(request, std::make_index_sequence<N>());
 			invoke<Result>(std::move(args), reply, ns);
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple&& args, http::reply& reply, const std::string& ns)
+		void invoke(ArgsTuple&& args, reply& reply, const std::string& ns)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -176,7 +200,7 @@ class controller : public http::controller
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple&& args, http::reply& reply, const std::string& ns)
+		void invoke(ArgsTuple&& args, reply& reply, const std::string& ns)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -304,5 +328,25 @@ class controller : public http::controller
 	std::string m_ns, m_location, m_service;
 	std::map<std::string,xml::element> m_types;
 };
+
+// --------------------------------------------------------------------
+
+/// Wrap data into a SOAP envelope
+///
+/// \param    data  The xml::element object to wrap into the envelope
+/// \return   A new xml::element object containing the envelope.
+xml::element make_envelope(xml::element&& data);
+// xml::element make_envelope(const xml::element& data);
+
+/// Create a standard SOAP Fault message for the string parameter
+///
+/// \param    message The string object containing a descriptive error message.
+/// \return   A new xml::element object containing the fault envelope.
+xml::element make_fault(const std::string& message);
+/// Create a standard SOAP Fault message for the exception object
+///
+/// \param    ex The exception object that was catched.
+/// \return   A new xml::element object containing the fault envelope.
+xml::element make_fault(const std::exception& ex);
 
 } // namespace zeep::http

@@ -7,7 +7,7 @@
 #pragma once
 
 /// \file
-/// definition of the zeep::html::controller class. This class takes
+/// definition of the zeep::controller class. This class takes
 /// care of handling requests that are mapped to call back functions
 /// and provides code to return XHTML formatted replies.
 
@@ -22,14 +22,14 @@
 #include <zeep/http/controller.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/security.hpp>
-#include <zeep/html/el-processing.hpp>
-#include <zeep/html/tag-processor.hpp>
-#include <zeep/html/template-processor.hpp>
+#include <zeep/http/el-processing.hpp>
+#include <zeep/http/tag-processor.hpp>
+#include <zeep/http/template-processor.hpp>
 
 // --------------------------------------------------------------------
 //
 
-namespace zeep::html
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------
@@ -40,18 +40,18 @@ namespace zeep::html
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.
 
-class controller : public http::controller, public template_processor
+class html_controller : public controller, public template_processor
 {
   public:
-	controller(const std::string& prefix_path = "/", const std::string& docroot = "");
+	html_controller(const std::string& prefix_path = "/", const std::string& docroot = "");
 
-	virtual ~controller();
+	virtual ~html_controller();
 
 	/// \brief Dispatch and handle the request
-	virtual bool handle_request(http::request& req, http::reply& reply);
+	virtual bool handle_request(request& req, reply& reply);
 
 	/// \brief default file handling
-	virtual void handle_file(const http::request& request, const scope& scope, http::reply& reply)
+	virtual void handle_file(const request& request, const scope& scope, reply& reply)
 	{
 		template_processor::handle_file(request, scope, reply);
 	}
@@ -62,7 +62,7 @@ class controller : public http::controller, public template_processor
 
 	/// \brief webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 
-	using handler_type = std::function<void(const http::request& request, const scope& scope, http::reply& reply)>;
+	using handler_type = std::function<void(const request& request, const scope& scope, reply& reply)>;
 
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
@@ -72,7 +72,7 @@ class controller : public http::controller, public template_processor
 	/// \endcode
 	/// Where page_handler is defined as:
 	/// \code{.cpp}
-	/// void session_server::page_handler(const http::request& request, const scope& scope, http::reply& reply);
+	/// void session_server::page_handler(const request& request, const scope& scope, reply& reply);
 	/// \endcode
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
 	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
@@ -85,47 +85,47 @@ class controller : public http::controller, public template_processor
 
 	/// \brief mount a callback on URI path \a path for any HTTP method
 	template<class Class>
-	void mount(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
+	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, http::method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		mount(path, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP GET method
 	template<class Class>
-	void mount_get(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
+	void mount_get(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, http::method_type::GET, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		mount(path, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP POST method
 	template<class Class>
-	void mount_post(const std::string& path, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
+	void mount_post(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, http::method_type::POST, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		mount(path, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP method \a method
 	template<class Class>
-	void mount(const std::string& path, http::method_type method, void(Class::*callback)(const http::request& request, const scope& scope, http::reply& reply))
+	void mount(const std::string& path, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
-		mount(path, method, [server = static_cast<Class*>(this), callback](const http::request& request, const scope& scope, http::reply& reply)
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from basic_html_controller");
+		mount(path, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
 
 	/// \brief mount a handler on URI path \a path for HTTP method \a method
-	void mount(const std::string& path, http::method_type method, handler_type handler)
+	void mount(const std::string& path, method_type method, handler_type handler)
 	{
 		auto mp = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
 			[path, method](auto& mp)
 			{
-				return mp.path == path and (mp.method == method or mp.method == http::method_type::UNDEFINED or method == http::method_type::UNDEFINED);
+				return mp.path == path and (mp.method == method or mp.method == method_type::UNDEFINED or method == method_type::UNDEFINED);
 			});
 
 		if (mp == m_dispatch_table.end())
@@ -133,7 +133,7 @@ class controller : public http::controller, public template_processor
 		else
 		{
 			if (mp->method != method)
-				throw std::logic_error("cannot mix http::method_type::UNDEFINED with something else");
+				throw std::logic_error("cannot mix method_type::UNDEFINED with something else");
 
 			mp->handler = handler;
 		}
@@ -150,7 +150,7 @@ class controller : public http::controller, public template_processor
 	struct mount_point
 	{
 		std::string path;
-		http::method_type method;
+		method_type method;
 		handler_type handler;
 	};
 
@@ -159,4 +159,4 @@ class controller : public http::controller, public template_processor
 	mount_point_list m_dispatch_table;
 };
 
-} // namespace zeep::html
+} // namespace zeep::http

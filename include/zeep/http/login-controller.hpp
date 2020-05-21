@@ -7,7 +7,7 @@
 #pragma once
 
 /// \file
-/// definition of the zeep::http::login_controller class. This class inherits from
+/// definition of the zeep::login_controller class. This class inherits from
 /// html::controller and provides a default for /login and /logout handling.
 
 #include <zeep/xml/document.hpp>
@@ -25,7 +25,7 @@ namespace zeep::http
 ///
 /// There is a html version of this controller as well, that one is a bit nicer
 
-class login_controller : public http::controller
+class login_controller : public controller
 {
   public:
 	login_controller(const std::string& prefix_path = "/");

@@ -10,7 +10,7 @@ make.config
 lib-xml/test/XML-Test-Suite/
 **/obj/
 **/obj.dbg/
-lib-html/src/mrsrc.h
+lib-http/src/mrsrc.h
 .gradle/
 lib-html/test/webapp-test
 lib-html/test/rsrc_webapp-test

@@ -5,12 +5,68 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <zeep/exception.hpp>
-#include <zeep/soap/controller.hpp>
+#include <zeep/http/soap-controller.hpp>
 
-namespace zeep::soap
+namespace zeep::http
 {
 
-bool controller::handle_request(http::request& req, http::reply& reply)
+namespace soap
+{
+
+soap_envelope::soap_envelope()
+	: m_request(nullptr)
+{
+}
+
+// envelope::envelope(xml::document& data)
+// 	: m_request(nullptr)
+// {
+// 	const xml::xpath
+// 		sRequestPath("/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
+	
+// 	std::list<xml::element*> l = sRequestPath.evaluate<xml::element>(*data.root());
+	
+// 	if (l.empty())
+// 		throw zeep::exception("Empty or invalid SOAP envelope passed");
+	
+// 	m_request = l.front();
+// }
+
+xml::element make_envelope(xml::element&& data)
+{
+	xml::element env("soap:Envelope", {
+		{ "xmlns:soap", "http://schemas.xmlsoap.org/soap/envelope/" },
+		{ "soap:encodingStyle", "http://www.w3.org/2003/05/soap-encoding" }
+	});
+	auto& body = env.emplace_back("soap:Body");
+	body.emplace_back(std::forward<xml::element>(data));
+	
+	return env;
+}
+
+xml::element make_fault(const std::string& what)
+{
+	xml::element fault("soap:Fault");
+	
+	auto& faultCode = fault.emplace_back("faultcode");
+	faultCode.set_content("soap:Server");
+	
+	auto& faultString(fault.emplace_back("faultstring"));
+	faultString.set_content(what);
+
+	return make_envelope(std::move(fault));
+}
+
+xml::element make_fault(const std::exception& ex)
+{
+	return make_fault(std::string(ex.what()));
+}
+
+}
+
+// --------------------------------------------------------------------
+
+bool soap_controller::handle_request(request& req, reply& reply)
 {
 	bool result = false;
 
@@ -18,7 +74,7 @@ bool controller::handle_request(http::request& req, http::reply& reply)
 	while (p.front() == '/')
 		p.erase(0, 1);
 	
-	if (req.method == http::method_type::POST and p == m_prefix_path)
+	if (req.method == method_type::POST and p == m_prefix_path)
 	{
 		result = true;
 
@@ -50,25 +106,25 @@ bool controller::handle_request(http::request& req, http::reply& reply)
 		catch (const std::exception& e)
 		{
 			reply.set_content(soap::make_fault(e));
-			reply.set_status(http::internal_server_error);
+			reply.set_status(internal_server_error);
 		}
-		catch (http::status_type& s)
+		catch (status_type& s)
 		{
 			reply.set_content(soap::make_fault(get_status_description(s)));
 			reply.set_status(s);
 		}
 	}
-	else if (req.method == http::method_type::GET and p == m_prefix_path + "/wsdl")
+	else if (req.method == method_type::GET and p == m_prefix_path + "/wsdl")
 	{
 		reply.set_content(make_wsdl());
-		reply.set_status(http::ok);
+		reply.set_status(ok);
 	}
 
 	return result;
 }
 
 /// \brief Create a WSDL based on the registered actions
-xml::element controller::make_wsdl()
+xml::element soap_controller::make_wsdl()
 {
 	// start by making the root node: wsdl:definitions
 

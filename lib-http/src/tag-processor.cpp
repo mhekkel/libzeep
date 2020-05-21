@@ -17,7 +17,7 @@ namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------

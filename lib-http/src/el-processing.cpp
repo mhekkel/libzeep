@@ -23,7 +23,7 @@
 
 using namespace std;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 bool is_name_start_char(unicode uc)

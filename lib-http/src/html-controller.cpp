@@ -29,24 +29,24 @@ namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------
 //
 
-controller::controller(const std::string& prefix_path, const std::string& docroot)
+html_controller::html_controller(const std::string& prefix_path, const std::string& docroot)
 	: http::controller(prefix_path), template_processor(docroot)
 {
 }
 
-controller::~controller()
+html_controller::~html_controller()
 {
 	// for (auto a: m_authentication_validators)
 	// 	delete a;
 }
 
-bool controller::handle_request(http::request& req, http::reply& rep)
+bool html_controller::handle_request(http::request& req, http::reply& rep)
 {
 	std::string uri = req.uri;
 
