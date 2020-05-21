@@ -6,22 +6,22 @@
 #pragma once
 
 /// \file
-/// definition of the zeep::http::template_processor class. This class
+/// definition of the zeep::template_processor class. This class
 /// handles the loading and processing of XHTML files.
 
 #include <filesystem>
 
 #include <zeep/http/reply.hpp>
-#include <zeep/html/el-processing.hpp>
-#include <zeep/html/tag-processor.hpp>
+#include <zeep/http/el-processing.hpp>
+#include <zeep/http/tag-processor.hpp>
 
 // --------------------------------------------------------------------
 //
 
-namespace zeep::html
+namespace zeep::http
 {
 
-class controller;
+class html_controller;
 
 // -----------------------------------------------------------------------
 /// \brief abstract base class for a resource loader
@@ -50,7 +50,7 @@ class resource_loader
 };
 
 // -----------------------------------------------------------------------
-/// \brief actual implementation of a zeep::http::resource_loader that loads files from disk
+/// \brief actual implementation of a zeep::resource_loader that loads files from disk
 /// 
 /// Load the resources from the directory specified in the docroot constructor parameter.
 
@@ -74,7 +74,7 @@ class file_loader : public resource_loader
 };
 
 // -----------------------------------------------------------------------
-/// \brief actual implementation of a zeep::http::resource_loader that loads resources from memory
+/// \brief actual implementation of a zeep::resource_loader that loads resources from memory
 /// 
 /// Load the resources from resource data created with mrc (see https://github.com/mhekkel/mrc )
 
@@ -149,7 +149,7 @@ class basic_template_processor
 	// --------------------------------------------------------------------
 	
 	/// \brief Default handler for serving files out of our doc root
-	virtual void handle_file(const http::request& request, const scope& scope, http::reply& reply);
+	virtual void handle_file(const request& request, const scope& scope, reply& reply);
 
   public:
 
@@ -165,7 +165,7 @@ class basic_template_processor
 	virtual void load_template(const std::string& file, xml::document& doc);
 
 	/// \brief create a reply based on a template
-	virtual void create_reply_from_template(const std::string& file, const scope& scope, http::reply& reply);
+	virtual void create_reply_from_template(const std::string& file, const scope& scope, reply& reply);
 
 	/// \brief Initialize the scope object
 	virtual void init_scope(scope& scope);
@@ -212,7 +212,7 @@ class html_template_processor : public basic_template_processor
 using file_based_html_template_processor = html_template_processor<file_loader>;
 using rsrc_based_html_template_processor = html_template_processor<rsrc_loader>;
 
-/// \brief the actual definition of zeep::html::template_processor
+/// \brief the actual definition of zeep::template_processor
 
 #if WEBAPP_USES_RESOURCES
 using template_processor = rsrc_based_html_template_processor;

@@ -2,9 +2,6 @@
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
-//
-// webapp is a base class used to construct web applications in C++ using libzeep
-//
 
 #include <zeep/config.hpp>
 
@@ -13,13 +10,13 @@
 #include <boost/iostreams/copy.hpp>
 
 #include <zeep/xml/xpath.hpp>
-#include <zeep/html/template-processor.hpp>
-#include <zeep/html/controller.hpp>
+#include <zeep/http/template-processor.hpp>
+#include <zeep/http/html-controller.hpp>
 
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------

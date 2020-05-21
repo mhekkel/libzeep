@@ -11,17 +11,17 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 
-#include <zeep/html/controller.hpp>
 #include <zeep/xml/character-classification.hpp>
-#include <zeep/html/el-processing.hpp>
-#include <zeep/html/tag-processor.hpp>
 #include <zeep/xml/xpath.hpp>
+#include <zeep/http/html-controller.hpp>
+#include <zeep/http/el-processing.hpp>
+#include <zeep/http/tag-processor.hpp>
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 std::unordered_set<std::string> kFixedValueBooleanAttributes{

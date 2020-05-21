@@ -21,7 +21,7 @@
 
 #include <zeep/xml/node.hpp>
 
-namespace zeep::html
+namespace zeep::http
 {
 
 using object = ::zeep::json::element;
@@ -96,7 +96,7 @@ class scope
 	/// \brief constructor used in a HTTP request context
 	///
 	/// \param req	The incomming HTTP request
-	scope(const http::request& req);
+	scope(const request& req);
 
 	/// \brief chaining constructor
 	///
@@ -137,7 +137,7 @@ class scope
 	object& operator[](const std::string& name);
 
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
-	const http::request& get_request() const;
+	const request& get_request() const;
 
     /// \brief select object \a o , used in z2:object constructs
     void select_object(const object& o);
@@ -174,7 +174,7 @@ class scope
 	data_map m_data;
 	scope *m_next;
 	unsigned m_depth;
-	const http::request *m_req;
+	const request *m_req;
     object m_selected;
 
 	using nodeset_map = std::map<std::string,node_set_type>;

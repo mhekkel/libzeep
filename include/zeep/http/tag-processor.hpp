@@ -11,12 +11,12 @@
 #include <filesystem>
 
 #include <zeep/xml/document.hpp>
-#include <zeep/html/el-processing.hpp>
+#include <zeep/http/el-processing.hpp>
 
-namespace zeep::html
+namespace zeep::http
 {
 
-class controller;
+class html_controller;
 class basic_template_processor;
 
 // --------------------------------------------------------------------

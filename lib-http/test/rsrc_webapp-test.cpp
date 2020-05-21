@@ -8,10 +8,10 @@
 #include <zeep/crypto.hpp>
 #include <zeep/streambuf.hpp>
 #include <zeep/exception.hpp>
-#include <zeep/html/controller.hpp>
-#include <zeep/http/server.hpp>
 #include <zeep/http/daemon.hpp>
+#include <zeep/http/html-controller.hpp>
 #include <zeep/http/message-parser.hpp>
+#include <zeep/http/server.hpp>
 
 using namespace std;
 
@@ -56,10 +56,10 @@ BOOST_AUTO_TEST_CASE(test_22)
 </data>
     )"_xml;
 
-	zeep::html::tag_processor_v2 tp;
-	zeep::html::rsrc_based_html_template_processor p;
+	zeep::http::tag_processor_v2 tp;
+	zeep::http::rsrc_based_html_template_processor p;
 	zeep::http::request req;
-    zeep::html::scope scope(req);
+    zeep::http::scope scope(req);
 
     scope.put("b", "b");
 

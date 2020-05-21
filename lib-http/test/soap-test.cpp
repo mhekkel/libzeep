@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE SOAP_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include <zeep/soap/controller.hpp>
+#include <zeep/http/soap-controller.hpp>
 #include <zeep/exception.hpp>
 
 using namespace std;

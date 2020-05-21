@@ -16,14 +16,14 @@
 #include <codecvt>
 #include <regex>
 
-#include <zeep/html/el-processing.hpp>
 #include <zeep/unicode-support.hpp>
+#include <zeep/http/el-processing.hpp>
 
 #include <zeep/utils.hpp>
 
 using namespace std;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 bool is_name_start_char(unicode uc)

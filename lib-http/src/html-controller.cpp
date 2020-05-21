@@ -3,9 +3,6 @@
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
-//
-// webapp is a base class used to construct web applications in C++ using libzeep
-//
 
 #include <zeep/config.hpp>
 
@@ -23,35 +20,45 @@
 #include <zeep/utils.hpp>
 #include <zeep/xml/character-classification.hpp>
 #include <zeep/xml/xpath.hpp>
-#include <zeep/html/controller.hpp>
-#include <zeep/html/el-processing.hpp>
-#include <zeep/html/controller.hpp>
+#include <zeep/http/el-processing.hpp>
+#include <zeep/http/html-controller.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
-namespace zeep::html
+namespace zeep::http
 {
 
 // --------------------------------------------------------------------
 //
 
-controller::controller(const std::string& prefix_path, const std::string& docroot)
+html_controller::html_controller(const std::string& prefix_path, const std::string& docroot)
 	: http::controller(prefix_path), template_processor(docroot)
 {
 }
 
-controller::~controller()
+html_controller::~html_controller()
 {
 	// for (auto a: m_authentication_validators)
 	// 	delete a;
 }
 
-bool controller::handle_request(http::request& req, http::reply& rep)
+bool html_controller::handle_request(http::request& req, http::reply& rep)
 {
 	std::string uri = req.uri;
+
+	if (uri.front() == '/')
+		uri.erase(0, 1);
+	
+	if (not ba::starts_with(uri, m_prefix_path))
+		return false;
+
+	uri.erase(0, m_prefix_path.length());
+	
+	if (uri.front() == '/')
+		uri.erase(0, 1);
 
 	// start by sanitizing the request's URI, first parse the parameters
 	std::string ps = req.payload;

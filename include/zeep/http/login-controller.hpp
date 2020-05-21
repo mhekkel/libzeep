@@ -3,14 +3,11 @@
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
-//
-// webapp is a base class used to construct web applications in C++ using libzeep
-//
 
 #pragma once
 
 /// \file
-/// definition of the zeep::http::login_controller class. This class inherits from
+/// definition of the zeep::login_controller class. This class inherits from
 /// html::controller and provides a default for /login and /logout handling.
 
 #include <zeep/xml/document.hpp>
@@ -28,7 +25,7 @@ namespace zeep::http
 ///
 /// There is a html version of this controller as well, that one is a bit nicer
 
-class login_controller : public http::controller
+class login_controller : public controller
 {
   public:
 	login_controller(const std::string& prefix_path = "/");
