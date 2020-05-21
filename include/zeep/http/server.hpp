@@ -12,6 +12,7 @@
 #include <zeep/config.hpp>
 
 #include <thread>
+#include <mutex>
 
 #include <boost/asio.hpp>
 
