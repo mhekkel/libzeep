@@ -10,7 +10,6 @@
 #include <pwd.h>
 #include <wait.h>
 
-#include <mutex>
 #include <fstream>
 #include <filesystem>
 
