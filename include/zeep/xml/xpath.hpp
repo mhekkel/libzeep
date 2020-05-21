@@ -11,8 +11,6 @@
 
 #include <zeep/config.hpp>
 
-#include <string>
-
 #include <zeep/xml/node.hpp>
 
 namespace zeep::xml

@@ -12,14 +12,8 @@
 #include <zeep/config.hpp>
 
 #include <cassert>
-
-#include <memory>
 #include <list>
-#include <iterator>
-#include <string>
-#include <limits>
-#include <list>
-#include <set>
+#include <tuple>
 
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>

@@ -3,15 +3,12 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/config.hpp>
-
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/iostreams/copy.hpp>
 
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/template-processor.hpp>
-#include <zeep/http/html-controller.hpp>
 
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;

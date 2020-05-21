@@ -10,20 +10,6 @@
 
 #include <zeep/config.hpp>
 
-#include <cassert>
-#include <string>
-#include <memory>
-#include <vector>
-#include <map>
-#include <algorithm>
-#include <experimental/type_traits>
-
-#include <zeep/json/element_fwd.hpp>
-#include <zeep/json/factory.hpp>
-#include <zeep/json/to_element.hpp>
-#include <zeep/json/from_element.hpp>
-#include <zeep/json/serializer.hpp>
-
 namespace zeep::json
 {
 

@@ -4,6 +4,9 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
+// Source code specifically for Unix/Linux
+// Utilitie routines to build daemon processes
+
 #include <pwd.h>
 #include <wait.h>
 
@@ -11,9 +14,6 @@
 #include <filesystem>
 
 #include <boost/algorithm/string.hpp>
-
-// Source code specifically for Unix/Linux
-// Utilitie routines to build daemon processes
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>

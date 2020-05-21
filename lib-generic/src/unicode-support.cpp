@@ -6,8 +6,6 @@
 
 #include <zeep/config.hpp>
 
-#include <algorithm>
-#include <locale>
 #include <sstream>
 
 #include <zeep/unicode-support.hpp>

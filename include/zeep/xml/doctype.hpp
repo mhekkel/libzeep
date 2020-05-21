@@ -11,7 +11,10 @@
 
 #include <zeep/config.hpp>
 
+#include <cassert>
+
 #include <set>
+#include <tuple>
 #include <vector>
 #include <list>
 

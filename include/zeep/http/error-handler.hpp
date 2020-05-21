@@ -12,8 +12,6 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/server.hpp>
-#include <zeep/http/request.hpp>
-#include <zeep/http/reply.hpp>
 #include <zeep/http/template-processor.hpp>
 
 namespace zeep::http

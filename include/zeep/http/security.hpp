@@ -10,15 +10,11 @@
 
 #include <zeep/config.hpp>
 
-#include <map>
-#include <mutex>
+#include <set>
 
 #include <zeep/exception.hpp>
 #include <zeep/crypto.hpp>
-
-#include <zeep/http/request.hpp>
 #include <zeep/http/server.hpp>
-
 #include <zeep/json/element.hpp>
 
 // --------------------------------------------------------------------

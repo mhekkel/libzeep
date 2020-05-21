@@ -11,9 +11,6 @@
 
 #include <zeep/config.hpp>
 
-#include <vector>
-#include <memory>
-
 #include <boost/asio/buffer.hpp>
 
 #include <zeep/http/header.hpp>

@@ -6,25 +6,12 @@
 
 #include <zeep/config.hpp>
 
-#include <cstdlib>
-
-#include <map>
-#include <set>
-
 #include <boost/algorithm/string.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/iostreams/copy.hpp>
 
-#include <zeep/crypto.hpp>
 #include <zeep/utils.hpp>
-#include <zeep/xml/character-classification.hpp>
-#include <zeep/xml/xpath.hpp>
-#include <zeep/http/el-processing.hpp>
 #include <zeep/http/html-controller.hpp>
 
 namespace ba = boost::algorithm;
-namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 

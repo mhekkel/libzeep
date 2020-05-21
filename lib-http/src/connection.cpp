@@ -6,9 +6,6 @@
 
 #include <zeep/config.hpp>
 
-#include <iostream>
-#include <functional>
-
 #include <boost/asio.hpp>
 
 #include <zeep/http/connection.hpp>

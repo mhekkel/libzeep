@@ -10,16 +10,11 @@
 
 #include <zeep/config.hpp>
 
-#include <iomanip>
-#include <cmath>
 #include <locale>
 #include <codecvt>
-#include <regex>
-
-#include <zeep/unicode-support.hpp>
-#include <zeep/http/el-processing.hpp>
 
 #include <zeep/utils.hpp>
+#include <zeep/http/el-processing.hpp>
 
 using namespace std;
 

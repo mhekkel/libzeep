@@ -11,7 +11,6 @@
 
 #include <zeep/config.hpp>
 
-#include <thread>
 #include <mutex>
 
 #include <zeep/http/server.hpp>

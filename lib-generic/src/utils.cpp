@@ -3,18 +3,12 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <cmath>
-#include <iostream>
-#include <codecvt>
-#include <deque>
-#include <limits>
 #include <regex>
 
 #include <boost/algorithm/string.hpp>
 
 #include <zeep/utils.hpp>
 
-namespace fs = std::filesystem;
 namespace ba = boost::algorithm;
 
 namespace

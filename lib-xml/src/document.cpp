@@ -4,19 +4,9 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
-#include <sstream>
 #include <fstream>
-#include <vector>
-#include <stack>
-#include <deque>
-#include <map>
-#include <typeindex>
 
-#include <zeep/config.hpp>
 #include <zeep/streambuf.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/xml/parser.hpp>
 #include <zeep/xml/document.hpp>
 
 namespace zeep::xml

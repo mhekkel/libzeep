@@ -13,19 +13,8 @@
 
 #include <zeep/config.hpp>
 
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
-#include <mutex>
-
-#include <zeep/config.hpp>
-#include <zeep/exception.hpp>
 #include <zeep/http/controller.hpp>
-#include <zeep/http/request.hpp>
-#include <zeep/http/security.hpp>
 #include <zeep/http/el-processing.hpp>
-#include <zeep/http/tag-processor.hpp>
 #include <zeep/http/template-processor.hpp>
 
 // --------------------------------------------------------------------

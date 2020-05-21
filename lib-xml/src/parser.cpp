@@ -4,23 +4,13 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <cassert>
-#include <memory>
-#include <algorithm>
 #include <stack>
-#include <regex>
 
 #include <boost/algorithm/string.hpp>
 
-#include <zeep/exception.hpp>
 #include <zeep/utils.hpp>
-
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
-#include <zeep/xml/character-classification.hpp>
 
 namespace ba = boost::algorithm;
 

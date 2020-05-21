@@ -4,28 +4,15 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/config.hpp>
-
-#include <iostream>
-#include <sstream>
-#include <numeric>
-#include <stack>
-#include <cmath>
-#include <map>
-#include <functional>
-
 #include <boost/algorithm/string.hpp>
 
-#include <boost/core/demangle.hpp>
-
-#include <zeep/exception.hpp>
 #include <zeep/xml/xpath.hpp>
-#include <zeep/xml/character-classification.hpp>
 #include <zeep/xml/document.hpp>
 
 namespace ba = boost::algorithm;
 
-namespace zeep { namespace xml {
+namespace zeep::xml 
+{
 
 // --------------------------------------------------------------------
 
@@ -2769,5 +2756,4 @@ void xpath::dump()
 	m_impl->dump();
 }
 
-}
 }

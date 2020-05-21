@@ -11,7 +11,6 @@
 
 #include <zeep/config.hpp>
 
-#include <vector>
 #include <istream>
 
 #include <boost/asio/buffer.hpp>

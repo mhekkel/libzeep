@@ -6,7 +6,6 @@
 
 #include <boost/date_time/local_time/local_time.hpp>
 
-#include <iostream>
 #include <numeric>
 
 #include <zeep/http/reply.hpp>

@@ -10,6 +10,8 @@
 
 #include <zeep/config.hpp>
 
+#include <cassert>
+
 #include <string>
 #include <locale>
 #include <filesystem>

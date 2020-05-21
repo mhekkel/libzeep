@@ -14,15 +14,11 @@
 #include <regex>
 #include <optional>
 
-#include <zeep/xml/node.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/nvp.hpp>
 #include <zeep/value-serializer.hpp>
-
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/gregorian/gregorian.hpp>
-
 #include <zeep/type-traits.hpp>
+#include <zeep/xml/node.hpp>
 
 namespace zeep::xml
 {

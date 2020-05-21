@@ -4,26 +4,15 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/config.hpp>
-
-#include <iostream>
-#include <sstream>
-#include <locale>
-#include <mutex>
-#include <thread>
-
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
 
 #include <zeep/http/security.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/http/error-handler.hpp>
 #include <zeep/http/connection.hpp>
 #include <zeep/http/controller.hpp>
-
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/algorithm/string.hpp>
 
 namespace ba = boost::algorithm;
 

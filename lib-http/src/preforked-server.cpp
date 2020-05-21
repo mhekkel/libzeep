@@ -8,18 +8,10 @@
 
 #if HTTP_SERVER_HAS_PREFORK
 
-#include <iostream>
-#include <sstream>
-#include <locale>
-#include <cstdlib>
+#include <sys/wait.h>
 
 #include <zeep/http/preforked-server.hpp>
 #include <zeep/http/connection.hpp>
-#include <zeep/exception.hpp>
-
-#include <boost/date_time/posix_time/posix_time.hpp>
-
-#include <sys/wait.h>
 
 namespace zeep::http
 {

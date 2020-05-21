@@ -10,14 +10,7 @@
 
 #include <zeep/config.hpp>
 
-#include <cassert>
-#include <string>
-#include <memory>
 #include <vector>
-#include <map>
-#include <algorithm>
-#include <experimental/type_traits>
-#include <locale>
 #include <codecvt>
 
 #include <zeep/json/element_fwd.hpp>

@@ -19,7 +19,6 @@
 #include <experimental/tuple>
 
 #include <zeep/http/controller.hpp>
-#include <zeep/http/security.hpp>
 #include <zeep/json/parser.hpp>
 
 namespace zeep::http

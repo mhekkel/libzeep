@@ -4,16 +4,6 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <cassert>
-#include <memory>
-#include <algorithm>
-#include <cmath>
-
-#include <stack>
-
 #include <zeep/exception.hpp>
 #include <zeep/utils.hpp>
 

@@ -5,11 +5,7 @@
 
 #define _SCL_SECURE_NO_WARNINGS
 
-#include <iostream>
-#include <typeinfo>
 #include <numeric>
-#include <memory>
-#include <tuple>
 
 #include <boost/algorithm/string.hpp>
 

@@ -9,24 +9,7 @@
 /// definition of the serializer classes that help serialize data into and out of zeep::json::element (JSON) objects
 
 #include <zeep/config.hpp>
-
-#include <cassert>
-#include <string>
-#include <memory>
-#include <vector>
-#include <map>
-#include <algorithm>
-#include <experimental/type_traits>
-#include <optional>
-
-#include <zeep/value-serializer.hpp>
 #include <zeep/nvp.hpp>
-#include <zeep/type-traits.hpp>
-
-#include <zeep/json/element_fwd.hpp>
-#include <zeep/json/factory.hpp>
-#include <zeep/json/to_element.hpp>
-#include <zeep/json/from_element.hpp>
 
 namespace zeep::json
 {

@@ -4,21 +4,15 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
 #include <boost/algorithm/string.hpp>
-#include <vector>
-#include <typeinfo>
-#include <typeindex>
 
 #include <zeep/xml/document.hpp>
 #include <zeep/xml/xpath.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/xml/character-classification.hpp>
 
 namespace ba = boost::algorithm;
 
-namespace zeep { namespace xml {
-
+namespace zeep::xml
+{
 
 // --------------------------------------------------------------------
 
@@ -1065,5 +1059,4 @@ void fix_namespaces(element& e, element& source, element& dest)
 	}
 }
 
-} // xml
-} // zeep
+}

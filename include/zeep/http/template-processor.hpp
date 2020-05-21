@@ -11,10 +11,11 @@
 
 #include <zeep/config.hpp>
 
+#include <set>
 #include <filesystem>
 
-#include <zeep/http/reply.hpp>
 #include <zeep/http/el-processing.hpp>
+#include <zeep/http/reply.hpp>
 #include <zeep/http/tag-processor.hpp>
 
 // --------------------------------------------------------------------
