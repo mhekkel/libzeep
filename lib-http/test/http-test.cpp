@@ -4,6 +4,8 @@
 #include <random>
 #include <sstream>
 
+#include <boost/asio.hpp>
+
 #include <zeep/crypto.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/streambuf.hpp>
