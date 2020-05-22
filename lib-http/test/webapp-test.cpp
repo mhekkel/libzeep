@@ -3,6 +3,8 @@
 
 #include <random>
 
+#include <boost/asio.hpp>
+
 #include <zeep/crypto.hpp>
 #include <zeep/streambuf.hpp>
 #include <zeep/exception.hpp>
