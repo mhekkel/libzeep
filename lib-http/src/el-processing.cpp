@@ -13,9 +13,11 @@
 #include <locale>
 #include <codecvt>
 
-#include <zeep/utils.hpp>
 #include <zeep/crypto.hpp>
+#include <zeep/unicode-support.hpp>
 #include <zeep/http/el-processing.hpp>
+
+#include "format.hpp"
 
 using namespace std;
 

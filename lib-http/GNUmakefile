@@ -134,8 +134,7 @@ OBJECTS = \
 	$(OBJDIR)/soap-controller.o \
 	$(OBJDIR)/tag-processor-v2.o \
 	$(OBJDIR)/tag-processor.o \
-	$(OBJDIR)/template-processor.o \
-	$(OBJDIR)/utils.o
+	$(OBJDIR)/template-processor.o
 
 ifneq ($(USE_RSRC),0)
 OBJECTS += \

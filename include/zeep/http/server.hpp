@@ -27,7 +27,7 @@ class controller;
 class security_context;
 class error_handler;
 
-/// \brief The libzeep HTTP server implementation. Originally ased on example code found in boost::asio.
+/// \brief The libzeep HTTP server implementation. Originally based on example code found in boost::asio.
 ///
 /// The server class is a simple, stand alone HTTP server. Call bind to make it listen to an address/port
 /// combination. Add controller classes to do the actual work. These controllers will be tried in the order

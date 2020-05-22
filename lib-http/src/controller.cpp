@@ -7,7 +7,6 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
-#include <zeep/utils.hpp>
 
 namespace zeep::http
 {
