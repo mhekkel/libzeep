@@ -231,7 +231,7 @@ define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/client-test-code.o $$(OBJDIR)/$(1)-test.o
 
 ifneq ($(USE_RSRC),0)
 $(1)_OBJECTS += $$(OBJDIR)/test_rsrc.o
