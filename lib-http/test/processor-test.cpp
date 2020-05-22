@@ -349,54 +349,72 @@ BOOST_AUTO_TEST_CASE(test_13)
 
 BOOST_AUTO_TEST_CASE(test_14)
 {
-	auto doc = R"(<?xml version="1.0"?>
-<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
-</data>
-	)"_xml;
+	try
+	{
+		std::locale l("nl_NL.UTF-8");
 
-	auto doc_test = R"(<?xml version="1.0"?>
-<data>
-<test> 7 augustus 2019, 12:14</test>
-</data>
-	)"_xml;
+		auto doc = R"(<?xml version="1.0"?>
+	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+	<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
+	</data>
+		)"_xml;
 
-	zeep::http::template_processor p;
-	zeep::http::tag_processor_v2 tp;
+		auto doc_test = R"(<?xml version="1.0"?>
+	<data>
+	<test> 7 augustus 2019, 12:14</test>
+	</data>
+		)"_xml;
 
-	zeep::http::request req;
-	req.headers.push_back({ "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" });
+		zeep::http::template_processor p;
+		zeep::http::tag_processor_v2 tp;
 
-	zeep::http::scope scope(req);
-	scope.put("ok", true);
+		zeep::http::request req;
+		req.headers.push_back({ "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" });
 
-	process_and_compare(doc, doc_test, scope);
+		zeep::http::scope scope(req);
+		scope.put("ok", true);
+
+		process_and_compare(doc, doc_test, scope);
+	}
+	catch (const std::runtime_error& e)
+	{
+		std::cerr << "skipping test 14 since locale nl_NL.UTF-8 is not available" << std::endl;
+	}
 }
 
 BOOST_AUTO_TEST_CASE(test_15)
 {
-	auto doc = R"(<?xml version="1.0"?>
-<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
-</data>
-	)"_xml;
+	try
+	{
+		std::locale l("da_DK.UTF-8");
 
-	auto doc_test = R"(<?xml version="1.0"?>
-<data>
-<test> 7 august 2019, 12:14</test>
-</data>
-	)"_xml;
+		auto doc = R"(<?xml version="1.0"?>
+	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+	<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
+	</data>
+		)"_xml;
 
-	zeep::http::template_processor p;
-	zeep::http::tag_processor_v2 tp;
+		auto doc_test = R"(<?xml version="1.0"?>
+	<data>
+	<test> 7 august 2019, 12:14</test>
+	</data>
+		)"_xml;
 
-	zeep::http::request req;
-	req.headers.push_back({ "Accept-Language", "da, en-US;q=0.7, en;q=0.3" });
+		zeep::http::template_processor p;
+		zeep::http::tag_processor_v2 tp;
 
-	zeep::http::scope scope(req);
-	scope.put("ok", true);
+		zeep::http::request req;
+		req.headers.push_back({ "Accept-Language", "da, en-US;q=0.7, en;q=0.3" });
 
-	process_and_compare(doc, doc_test, scope);
+		zeep::http::scope scope(req);
+		scope.put("ok", true);
+
+		process_and_compare(doc, doc_test, scope);
+	}
+	catch (const std::runtime_error& e)
+	{
+		std::cerr << "skipping test 14 since locale da_DK.UTF-8 is not available" << std::endl;
+	}
 }
 
 BOOST_AUTO_TEST_CASE(test_16)
