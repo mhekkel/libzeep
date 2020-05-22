@@ -15,16 +15,42 @@
 [def __http_server__ [classref zeep::http::server `zeep::http::server`]]
 [def __request__ [classref zeep::http::request `request`]]
 [def __reply__ [classref zeep::http::reply `reply`]]
+[def __scope__ [classref zeep::http::scope `scope`]]
 [def __header__ [classref zeep::http::header `header`]]
+[def __html_controller__ [classref zeep::http::html_controller `html_controller`]]
+[def __rest_controller__ [classref zeep::http::rest_controller `rest_controller`]]
+[def __soap_controller__ [classref zeep::http::soap_controller `soap_controller`]]
 
 
 [section:descr Introduction]
 
-The http library in libzeep contains a simple HTTP server implementation. This implementation leans heavily on an example in the boost::asio library. There are a few notable addtions though that make this library more useful in a web application context.
+The goal of libzeep is to provide a library that makes creating web applications as easy as possible. A lot of frameworks already exist to help building these interactive web apps written in languages ranging from Java to Python to more exotic stuff like Ruby and Laravel. The [@https://spring.io Spring] version stands out between these since it is well designed and offers tons of features and still is fairly easy to work with. But all of these have one flaw in common, they're not written in C++ and thus lack the raw performance.
 
-The __http_server__ class can be used 
+Libzeep tries to implement some of the design patterns found in Spring. There is a very basic HTTP server class with some additional classes that help in creating daemon processes when running a UNIX or lookalike. This HTTP server class delegates requests to controller classes that each process requests in their own corner of the URI space occupied by your server.
+
+There are three main controller classes, each targeted at a different task. The first, __html_controller__ maps requests to functions that take a __request__ and __scope__ and return a __reply__. Various routines are available to help constructing XHTML based replies based on XHTML template files. These files can contain special tags that will be processed and the values can be expressed in _expression language_.
+
+The second controller class is the __rest_controller__. This one also maps requests to functions, but this time the parameters in the request are automatically translated into function parameters and the result of the function is converted back into JSON automatically. Named parameters can be passed in the payload of a POST request, as query parameters in a GET request or as parts of the URI path, as in =GET /book/1234/title= where you request the title of book number 1234.
+
+The third controller is the __soap_controller__. Similar to the REST controller, but this time the translation is between SOAP XML messages and parameters and vice versa.
 
 [endsect:descr]
+
+[section:server HTTP server]
+
+Starting an HTTP server is easy. Simply create the __http_server__ object, [memberref zeep::http::server::bind `bind`] it to an address and call run specifying how many threads to run simultaneously. Something like this:
+
+[import ./examples/http-server-0.cpp]
+[most_simple_http_server]
+
+Running this code will create a server that listens to port 8080 on localhost and will return =NOT FOUND= for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative:
+
+[heading:controller Controllers]
+
+A __http_server__ can have one or more controllers.
+
+[endsect:server]
+
 
 [section:data-types Data types]
 
@@ -38,3 +64,25 @@ The HTTP specification for __request__ and __reply__ are sufficiently similar to
 
 
 [endsect:data-types]
+
+[section:crypto Cryptographic routines]
+
+A limited number of cryptographic routines are available in `<zeep/crypto.hpp>`. These can be divided in the following categories:
+
+[heading Encoding]
+
+The functions encode and decode functions take a std::string and return the encoded or decoded content. There are three encoding schemes, `hex`, `base64` and `base64url`. The latter is simply `base64` but with a different characterset and without the trailing `=` characters allowing their use in a URL.
+
+[heading Hashing]
+
+There are three hash algorithm implementations. These are `md5`, `sha1` and `sha256`. All of them take a std::string and return a std::string with the resulting hash. Note that these strings are not human readable and may contain null characters. Therefore you need the encoding routines to convert a hash into something you can print to the screen e.g.
+
+[heading HMac]
+
+Hashed message authentication codes can be calculated using the available hash functions. Again, these functions take std::string parameters for the message and the key. The result is again a binary std::string.
+
+[heading Key derivation]
+
+Two key derivation routines are on offer, both of them PBKDF2, one using HMAC SHA1 and the other HMAC SHA256.
+
+[endsect:crypto]
