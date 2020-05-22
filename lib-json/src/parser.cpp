@@ -5,7 +5,6 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 #include <zeep/exception.hpp>
-#include <zeep/utils.hpp>
 
 #include <zeep/unicode-support.hpp>
 #include <zeep/json/element.hpp>

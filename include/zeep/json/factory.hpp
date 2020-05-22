@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <codecvt>
+#include <locale>
 
 #include <zeep/json/element_fwd.hpp>
 
