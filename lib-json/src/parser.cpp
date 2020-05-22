@@ -81,7 +81,11 @@ class json_parser
 	token_t get_next_token();
 
 	std::istream& m_is;
-	mini_stack m_buffer;
+
+	// a minimal stack for ungetc like operations
+	unicode m_buffer[2];
+	unicode* m_buffer_ptr = m_buffer;
+
 	std::string m_token;
 	double m_token_float;
 	int64_t m_token_int;
@@ -142,11 +146,8 @@ unicode json_parser::get_next_char()
 {
 	unicode result = 0;
 
-	if (not m_buffer.empty()) // if buffer is not empty we already did all the validity checks
-	{
-		result = m_buffer.top();
-		m_buffer.pop();
-	}
+	if (m_buffer_ptr > m_buffer) // if buffer is not empty we already did all the validity checks
+		result = *--m_buffer_ptr;
 	else
 	{
 		result = get_next_unicode();
@@ -205,7 +206,7 @@ unicode json_parser::get_next_char()
 void json_parser::retract()
 {
 	assert(not m_token.empty());
-	m_buffer.push(pop_last_char(m_token));
+	*m_buffer_ptr++ = pop_last_char(m_token);
 }
 
 auto json_parser::get_next_token() -> token_t

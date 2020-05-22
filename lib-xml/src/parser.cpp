@@ -8,7 +8,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <zeep/utils.hpp>
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
 
@@ -707,13 +706,11 @@ struct parser_imp
 			, m_inserted(insert)
 		{
 			std::swap(m_token, m_impl.m_token);
-			std::swap(m_buffer, m_impl.m_buffer);
 		}
 
 		~source_state()
 		{
 			std::swap(m_token, m_impl.m_token);
-			std::swap(m_buffer, m_impl.m_buffer);
 			m_impl.m_lookahead = m_lookahead;
 			delete m_source;
 		}
@@ -727,7 +724,6 @@ struct parser_imp
 		data_source* m_source;
 		XMLToken m_lookahead;
 		std::string m_token;
-		std::stack<unicode> m_buffer;
 		bool m_inserted;
 	};
 
@@ -861,7 +857,9 @@ struct parser_imp
 	std::string m_token;
 
 	std::stack<source_state> m_source;
-	std::stack<unicode> m_buffer;
+	
+	unicode m_buffer[4];
+	unicode* m_buffer_ptr = m_buffer;
 	
 	float m_version = 1.0f;
 	encoding_type m_encoding = encoding_type::UTF8;
@@ -989,11 +987,8 @@ unicode parser_imp::get_next_char()
 {
 	unicode result = 0;
 
-	if (not m_buffer.empty()) // if buffer is not empty we already did all the validity checks
-	{
-		result = m_buffer.top();
-		m_buffer.pop();
-	}
+	if (m_buffer_ptr > m_buffer) // if buffer is not empty we already did all the validity checks
+		result = *--m_buffer_ptr;
 
 	if (result == 0)
 	{
@@ -1027,7 +1022,8 @@ void parser_imp::retract()
 {
 	assert(not m_token.empty());
 
-	m_buffer.push(pop_last_char(m_token));
+	assert(m_buffer_ptr < m_buffer + 4);
+	*m_buffer_ptr++ = pop_last_char(m_token);
 }
 
 void parser_imp::match(XMLToken token)
@@ -2930,11 +2926,8 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 		{
 			result = m_token;
 
-			while (not m_buffer.empty())
-			{
-				append(result, m_buffer.top());
-				m_buffer.pop();
-			}
+			while (m_buffer_ptr > m_buffer)
+				append(result, *--m_buffer_ptr);
 
 			while (unicode ch = m_source.top()->get_next_char())
 				append(result, ch);

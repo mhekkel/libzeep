@@ -120,6 +120,8 @@ OBJECTS = \
 	$(OBJDIR)/daemon.o \
 	$(OBJDIR)/el-processing.o \
 	$(OBJDIR)/error-handler.o \
+	$(OBJDIR)/format.o \
+	$(OBJDIR)/glob.o \
 	$(OBJDIR)/html-controller.o \
 	$(OBJDIR)/login-controller.o \
 	$(OBJDIR)/message-parser.o \

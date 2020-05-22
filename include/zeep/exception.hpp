@@ -21,9 +21,6 @@ namespace zeep
 class exception : public std::exception
 {
   public:
-	// /// \brief Create an exception with vsprintf like parameters
-	// exception(const char* message, ...);
-
 	/// \brief Create an exception with the message in \a message
 	exception(const std::string& message)
 		: m_message(message) {}

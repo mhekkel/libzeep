@@ -38,13 +38,9 @@
 [def __json_element__ [classref zeep::json::element `zeep::json::element`]]
 
 [include introduction.qbk]
-[include lib-generic.qbk]
 [include lib-xml.qbk]
 [include lib-json.qbk]
 [include lib-http.qbk]
-[include lib-html.qbk]
-[include lib-rest.qbk]
-[include lib-soap.qbk]
 [include reference.qbk]
 
 [/

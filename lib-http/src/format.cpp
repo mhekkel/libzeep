@@ -4,10 +4,13 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <regex>
+#include <codecvt>
 
 #include <boost/algorithm/string.hpp>
 
-#include <zeep/utils.hpp>
+#include <zeep/unicode-support.hpp>
+
+#include "format.hpp"
 
 namespace ba = boost::algorithm;
 
@@ -399,7 +402,7 @@ void expand_group(const std::string& pattern, std::vector<std::string>& expanded
 
 }
 
-namespace zeep
+namespace zeep::http
 {
 
 std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)
@@ -407,39 +410,6 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 	Decimal<double> dec(d);
 	
 	return dec.formatFixed(integerDigits, decimalDigits, loc);
-}
-
-// --------------------------------------------------------------------
-
-bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
-{
-	bool result = path.empty() and glob_pattern.empty();
-
-	if (glob_pattern.back() == '/')
-		glob_pattern += "**";
-
-	if (not path.empty())
-	{
-		std::vector<std::string> patterns;
-		ba::split(patterns, glob_pattern, ba::is_any_of(";"));
-
-		std::vector<std::string> expandedpatterns;
-		std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string& pattern)
-		{
-			expand_group(pattern, expandedpatterns);
-		});
-
-		for (std::string& pat : expandedpatterns)
-		{
-			if (Match(pat.c_str(), path.string().c_str()))
-			{
-				result = true;
-				break;
-			}
-		}
-	}
-
-	return result;
 }
 
 }
