@@ -22,12 +22,7 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
-html_controller::html_controller(const std::string& prefix_path, const std::string& docroot)
-	: controller(prefix_path), template_processor(docroot)
-{
-}
-
-bool html_controller::handle_request(request& req, reply& rep)
+bool html_controller_base::handle_request(request& req, reply& rep)
 {
 	std::string uri = req.uri;
 

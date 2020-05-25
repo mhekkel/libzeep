@@ -20,6 +20,13 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
+file_loader::file_loader(const std::filesystem::path& docroot)
+	: resource_loader(), m_docroot(docroot)
+{
+	if (not std::filesystem::exists(m_docroot))
+		throw std::runtime_error("Docroot '" + m_docroot.string() + "' does not seem to exist");
+}
+
 /// return last_write_time of \a file
 std::filesystem::file_time_type file_loader::file_time(const std::string& file, std::error_code& ec) noexcept
 {
@@ -166,7 +173,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 	{
 		std::error_code ec;
 
-		fs::path template_file = m_docroot / (templateFile + ext);
+		fs::path template_file = templateFile + ext;
 
 		(void)file_time(template_file, ec);
 		if (ec)

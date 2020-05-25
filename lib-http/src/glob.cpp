@@ -96,7 +96,7 @@ bool Match(const char* pattern, const char* name)
 
 void expand_group(const std::string& pattern, std::vector<std::string>& expanded)
 {
-	static std::regex rx(R"(\{([^{},]+,[^{}]*)\})");
+	static std::regex rx(R"(\{([^{},]*,[^{}]*)\})");
 
 	std::smatch m;
 	if (std::regex_search(pattern, m, rx))

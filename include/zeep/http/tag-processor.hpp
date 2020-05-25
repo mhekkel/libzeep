@@ -18,7 +18,7 @@
 namespace zeep::http
 {
 
-class html_controller;
+class html_controller_base;
 class basic_template_processor;
 
 // --------------------------------------------------------------------

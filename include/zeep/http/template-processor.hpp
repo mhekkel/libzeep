@@ -24,7 +24,7 @@
 namespace zeep::http
 {
 
-class html_controller;
+class html_controller_base;
 
 // -----------------------------------------------------------------------
 /// \brief abstract base class for a resource loader
@@ -63,8 +63,9 @@ class file_loader : public resource_loader
 	/// \brief constructor
 	///
 	/// \param docroot	Path to the directory where the 'resources' are located
-	file_loader(const std::filesystem::path& docroot = ".")
-		: resource_loader(), m_docroot(docroot) {}
+	///
+	/// Throws a runtime_error if the docroot does not exist
+	file_loader(const std::filesystem::path& docroot = ".");
 	
 	/// \brief return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;

@@ -43,11 +43,32 @@ Starting an HTTP server is easy. Simply create the __http_server__ object, [memb
 [import ./examples/http-server-0.cpp]
 [most_simple_http_server]
 
-Running this code will create a server that listens to port 8080 on localhost and will return =NOT FOUND= for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative:
+Running this code will create a server that listens to port 8080 on localhost and will return =NOT FOUND= for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative: use controllers.
 
 [heading:controller Controllers]
 
-A __http_server__ can have one or more controllers.
+A __http_server__ can have one or more controllers. Each controller handles requests that have URI's that start with a specified prefix. In this example we have a controller that handles any request, since it has a prefix that is effectively the same as the root. It returns a simple reply.
+
+[import ./examples/http-server-1.cpp]
+[simple_http_server]
+
+Still a not so useful example. Fortunately there are several implementations of [classref zeep::http::controller `controller`] that we can use.
+
+[heading::html_controller HTML Controller]
+
+The __html_controller__ class allows you to *mount* a request handler on a URI path, the result is that this request handler, which is a method of your controller class, will be called whenever a HTTP request with a matching URI comes in.
+
+The handler method has next to the __request__ and __reply__ parameter an additional __scope__ parameter. This scope is a kind of nested map of variable names and values. The scope is `const`, if you want to add data to the scope you should create your own sub scope and pass the original in the constructor.
+
+A handler can of course create simple replies, just as in the previous example. But you can also use templates. Note that the constructor of __html_controller__ takes a second parameter that is called docroot. This should contain the path to the directory containing the templates.
+
+[note The docroot parameter is ignored when you create a html controller based on resources, see section on resources further in this documentation.]
+
+[import ./examples/http-server-2.cpp]
+[html_controller_template]
+
+
+
 
 [endsect:server]
 
