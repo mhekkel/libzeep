@@ -85,7 +85,7 @@ Now build and run this code, and you can access your welcome page at [@http://lo
 
 Several remarks here.
 
-As you can see in the handler code, a check is made for a parameter called =name=. When present, its value is stored in the newly created sub-scope object. The template file contains a construct in the =<span>= element that tests for the availability of this variable and uses the default ='world'= otherwise.
+As you can see in the handler code, a check is made for a parameter called =name=. When present, its value is stored in the newly created sub-scope object. The template file contains a construct in the =<span>= element that tests for the availability of this variable and uses the default ='world'= otherwise. For more information on templates see the section on [link libzeep.http.xhtml-template xhtml templates].
 
 
 
@@ -116,6 +116,12 @@ The HTTP specification for __request__ and __reply__ are sufficiently similar to
 
 
 [endsect:data-types]
+
+[section:xhtml-template XHTML Template Processing]
+
+This section handles template processing.
+
+[endsect:xhtml-template]
 
 [section:crypto Cryptographic routines]
 
