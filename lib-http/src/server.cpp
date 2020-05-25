@@ -61,6 +61,11 @@ server::~server()
 		delete eh;
 }
 
+void server::set_template_processor(basic_template_processor* template_processor)
+{
+	m_template_processor.reset(template_processor);
+}
+
 void server::bind(const std::string& address, unsigned short port)
 {
 	m_address = address;

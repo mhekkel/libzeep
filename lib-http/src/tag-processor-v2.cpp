@@ -9,6 +9,7 @@
 
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/html-controller.hpp>
+#include <zeep/http/template-processor.hpp>
 #include <zeep/http/tag-processor.hpp>
 
 namespace ba = boost::algorithm;

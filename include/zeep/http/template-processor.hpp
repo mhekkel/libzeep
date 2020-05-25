@@ -24,7 +24,7 @@
 namespace zeep::http
 {
 
-class html_controller_base;
+class html_controller;
 
 // -----------------------------------------------------------------------
 /// \brief abstract base class for a resource loader
@@ -139,7 +139,7 @@ class basic_template_processor
 
 	/// \brief Use to register a new tag_processor and couple it to a namespace
 	template<typename TagProcessor>
-	void register_tag_processor(const std::string& ns)
+	void register_tag_processor(const std::string& ns = TagProcessor::ns())
 	{
 		m_tag_processor_creators.emplace(ns, [](const std::string& ns) { return new TagProcessor(ns.c_str()); });
 	}
@@ -188,11 +188,14 @@ class html_template_processor : public basic_template_processor
 {
   public:
 
-	html_template_processor(const std::string& docroot = "")
+	html_template_processor(const std::string& docroot = "", bool addDefaultTagProcessors = true)
 		: basic_template_processor(docroot), m_loader(docroot)
 	{
-		register_tag_processor<tag_processor_v1>(tag_processor_v1::ns());
-		register_tag_processor<tag_processor_v2>(tag_processor_v2::ns());
+		if (addDefaultTagProcessors)
+		{
+			register_tag_processor<tag_processor_v1>();
+			register_tag_processor<tag_processor_v2>();
+		}
 	}
 
 	virtual ~html_template_processor() {}

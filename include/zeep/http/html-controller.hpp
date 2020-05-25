@@ -15,13 +15,14 @@
 
 #include <zeep/http/controller.hpp>
 #include <zeep/http/el-processing.hpp>
-#include <zeep/http/template-processor.hpp>
 
 // --------------------------------------------------------------------
 //
 
 namespace zeep::http
 {
+
+class basic_template_processor;
 
 // --------------------------------------------------------------------
 
@@ -31,16 +32,30 @@ namespace zeep::http
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.
 
-class html_controller_base : public controller
+class html_controller : public controller
 {
   public:
-	html_controller_base(const std::string& prefix_path = "/")
+	html_controller(const std::string& prefix_path = "/")
 		: controller(prefix_path)
 	{
 	}
 
+	/// \brief return the basic_template_processor of the server
+	basic_template_processor& get_template_processor();
+
+	/// \brief return the basic_template_processor of the server
+	const basic_template_processor& get_template_processor() const;
+
 	/// \brief Dispatch and handle the request
 	virtual bool handle_request(request& req, reply& reply);
+
+	/// \brief default file handling
+	///
+	/// This method will ask the server for the default template processor
+	/// to load the actual file. If there is no template processor set,
+	/// it will therefore throw an exception.
+	virtual void handle_file(const request& request, const scope& scope, reply& reply);
+
 
 	// --------------------------------------------------------------------
 
@@ -75,7 +90,7 @@ class html_controller_base : public controller
 	template<class Class>
 	void mount(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<html_controller_base,Class>, "This call can only be used for methods in classes derived from html_controller_base");
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from html_controller");
 		mount(path, method_type::UNDEFINED, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -84,7 +99,7 @@ class html_controller_base : public controller
 	template<class Class>
 	void mount_get(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<html_controller_base,Class>, "This call can only be used for methods in classes derived from html_controller_base");
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from html_controller");
 		mount(path, method_type::GET, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -93,7 +108,7 @@ class html_controller_base : public controller
 	template<class Class>
 	void mount_post(const std::string& path, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<html_controller_base,Class>, "This call can only be used for methods in classes derived from html_controller_base");
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from html_controller");
 		mount(path, method_type::POST, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -102,7 +117,7 @@ class html_controller_base : public controller
 	template<class Class>
 	void mount(const std::string& path, method_type method, void(Class::*callback)(const request& request, const scope& scope, reply& reply))
 	{
-		static_assert(std::is_base_of_v<html_controller_base,Class>, "This call can only be used for methods in classes derived from html_controller_base");
+		static_assert(std::is_base_of_v<html_controller,Class>, "This call can only be used for methods in classes derived from html_controller");
 		mount(path, method, [server = static_cast<Class*>(this), callback](const request& request, const scope& scope, reply& reply)
 			{ (server->*callback)(request, scope, reply); });
 	}
@@ -149,33 +164,5 @@ class html_controller_base : public controller
 
 	mount_point_list m_dispatch_table;
 };
-
-// --------------------------------------------------------------------
-
-template<typename PROCESSOR>
-class html_controller_template_base : public html_controller_base, public PROCESSOR
-{
-  public:
-	using template_processor = PROCESSOR;
-
-	html_controller_template_base(const std::string& prefix_path, const std::string& docroot)
-		: html_controller_base(prefix_path), template_processor(docroot)
-	{
-	}
-
-	/// \brief default file handling
-	virtual void handle_file(const request& request, const scope& scope, reply& reply)
-	{
-		template_processor::handle_file(request, scope, reply);
-	}
-};
-
-// --------------------------------------------------------------------
-
-#if WEBAPP_USES_RESOURCES
-using html_controller = html_controller_template_base<rsrc_based_html_template_processor>;
-#else
-using html_controller = html_controller_template_base<file_based_html_template_processor>;
-#endif
 
 } // namespace zeep::http

@@ -24,7 +24,13 @@ namespace zeep::http
 class error_handler
 {
   public:
-	error_handler();
+	/// \brief constructor
+	///
+	/// If \a error_template is not empty, the error handler will try to 
+	/// load this XHTML template using the server's template_processor.
+	/// If that fails or error_template is empty, a simple stock message
+	/// is returned.
+	error_handler(const std::string& error_template = "error.xhtml");
 	virtual ~error_handler();
 
 	/// \brief set the server object we're bound to
@@ -80,29 +86,7 @@ class error_handler
 	error_handler& operator=(const error_handler&) = delete;
 
 	server*	m_server = nullptr;
+	std::string m_error_template;
 };
-
-/// \brief A base class for error-handler classes
-///
-/// This version of the error handler tries to load a reource called error.xhtml
-
-class html_error_handler : public error_handler, public template_processor
-{
-  public:
-	html_error_handler(const std::string& docroot)
-		: template_processor(docroot) {}
-
-	/// \brief Create an error reply for the error with an additional message for the user
-	///
-	/// An error should be returned with HTTP status code \a status and additional information \a message.
-	/// This method will create a default error page.
-	/// \param req		The request that triggered this call
-	/// \param status	The error that triggered this call
-	/// \param message	The message describing the error
-	/// \param rep		Write the reply in this object
-	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request& req, status_type status, const std::string& message, reply& reply);
-};
-
 
 }

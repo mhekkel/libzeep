@@ -9,6 +9,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <zeep/http/html-controller.hpp>
+#include <zeep/http/template-processor.hpp>
 
 #include "glob.hpp"
 
@@ -19,10 +20,27 @@ namespace pt = boost::posix_time;
 namespace zeep::http
 {
 
+basic_template_processor& html_controller::get_template_processor()
+{
+	return m_server->get_template_processor();
+}
+
+const basic_template_processor& html_controller::get_template_processor() const
+{
+	return m_server->get_template_processor();
+}
+
+// --------------------------------------------------------------------
+
+void html_controller::handle_file(const request& request, const scope& scope, reply& reply)
+{
+	get_template_processor().handle_file(request, scope, reply);
+}
+
 // --------------------------------------------------------------------
 //
 
-bool html_controller_base::handle_request(request& req, reply& rep)
+bool html_controller::handle_request(request& req, reply& rep)
 {
 	std::string uri = req.uri;
 

@@ -7,7 +7,7 @@
 #include <zeep/config.hpp>
 
 #include <zeep/streambuf.hpp>
-#include <zeep/http/html-controller.hpp>
+#include <zeep/http/template-processor.hpp>
 
 #include "mrsrc.h"
 

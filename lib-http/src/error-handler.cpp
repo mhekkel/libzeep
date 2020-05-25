@@ -12,7 +12,8 @@
 namespace zeep::http
 {
 
-error_handler::error_handler()
+error_handler::error_handler(const std::string& error_template)
+	: m_error_template(error_template)
 {
 }
 
@@ -61,46 +62,44 @@ bool error_handler::create_error_reply(const request& req, status_type status, r
 
 bool error_handler::create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
 {
-	rep = reply::stock_reply(status, message);
-	return true;
-}
+	bool handled = false;
 
-// --------------------------------------------------------------------
-
-bool html_error_handler::create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
-{
-	scope scope(req);
-
-	object error
+	if (not m_error_template.empty() and m_server->has_template_processor())
 	{
-		{ "nr", static_cast<int>(status) },
-		{ "head", get_status_text(status) },
-		{ "description", get_status_description(status) },
-		{ "message", message },
-		{ "request",
-			{
-				// { "line", ba::starts_with(req.uri, "http://") ? (boost::format("%1% %2% HTTP%3%/%4%") % to_string(req.method) % req.uri % req.http_version_major % req.http_version_minor).str() : (boost::format("%1% http://%2%%3% HTTP%4%/%5%") % to_string(req.method) % req.get_header("Host") % req.uri % req.http_version_major % req.http_version_minor).str() },
-				{ "username", req.username },
-				{ "method", to_string(req.method) },
-				{ "uri", req.uri }
+		auto& template_processor = m_server->get_template_processor();
+
+		scope scope(req);
+
+		object error
+		{
+			{ "nr", static_cast<int>(status) },
+			{ "head", get_status_text(status) },
+			{ "description", get_status_description(status) },
+			{ "message", message },
+			{ "request",
+				{
+					{ "username", req.username },
+					{ "method", to_string(req.method) },
+					{ "uri", req.uri }
+				}
 			}
+		};
+
+		scope.put("error", error);
+
+		try
+		{
+			template_processor.create_reply_from_template(m_error_template, scope, rep);
+			handled = true;
 		}
-	};
+		catch(const std::exception& e)
+		{
+			using namespace xml::literals;
 
-	scope.put("error", error);
-
-	try
-	{
-		create_reply_from_template("error.html", scope, rep);
-	}
-	catch(const std::exception& e)
-	{
-		using namespace xml::literals;
-
-		auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
+			auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:z="http://www.hekkelman.com/libzeep/m2" xml:lang="en" lang="en">
 <head>
-    <title>Error</title>
+	<title>Error</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <style>
@@ -153,14 +152,22 @@ body, html {
 </body>
 </html>
 )"_xml;
-		process_tags(doc.child(), scope);
-		rep.set_content(doc);
+			template_processor.process_tags(doc.child(), scope);
+			rep.set_content(doc);
+
+			handled = true;
+		}
 	}
 
-	rep.set_status(status);
+	if (not handled)
+	{
+		rep = reply::stock_reply(status, message);
+		handled = true;		
+	}
+	else
+		rep.set_status(status);
 
 	return true;
 }
-
 
 }

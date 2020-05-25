@@ -26,6 +26,7 @@ class connection;
 class controller;
 class security_context;
 class error_handler;
+class basic_template_processor;
 
 /// \brief The libzeep HTTP server implementation. Originally based on example code found in boost::asio.
 ///
@@ -46,6 +47,9 @@ class server
 	server(const server&) = delete;
 	server& operator=(const server&) = delete;
 
+	/// \brief Get the security context provided in the constructor
+	security_context& get_security_context() 		{ return *m_security_context; }
+
 	/// \brief Add controller to the list of controllers
 	///
 	/// When a request is received, the list of controllers get a chance
@@ -59,8 +63,41 @@ class server
 	/// is called first.
 	void add_error_handler(error_handler* eh);
 
-	/// \brief Get the security context provided in the constructor
-	security_context& get_security_context() 		{ return *m_security_context; }
+	/// \brief Set the template processor
+	///
+	/// A template processor handles loading templates and processing
+	/// the contents.
+	void set_template_processor(basic_template_processor* template_processor);
+
+	/// \brief Get the template processor
+	///
+	/// A template processor handles loading templates and processing
+	/// the contents. This will throw if the processor has not been set
+	/// yet.
+	basic_template_processor& get_template_processor()
+	{
+		if (not m_template_processor)
+			throw std::logic_error("Template processor not specified yet");
+		return *m_template_processor;
+	}
+
+	/// \brief Get the template processor
+	///
+	/// A template processor handles loading templates and processing
+	/// the contents. This will throw if the processor has not been set
+	/// yet.
+	const basic_template_processor& get_template_processor() const
+	{
+		if (not m_template_processor)
+			throw std::logic_error("Template processor not specified yet");
+		return *m_template_processor;
+	}
+
+	/// \brief returns whether template processor has been set
+	bool has_template_processor() const
+	{
+		return (bool)m_template_processor;
+	}
 
 	/// \brief Return the credentials, if there is a security context and the request contains a valid authentication
 	json::element get_credentials(const request& req) const;
@@ -121,6 +158,7 @@ class server
 	bool m_log_forwarded;
 	bool m_add_csrf_token;
 	std::unique_ptr<security_context> m_security_context;
+	std::unique_ptr<basic_template_processor> m_template_processor;
 	std::list<controller*> m_controllers;
 	std::list<error_handler*> m_error_handlers;
 };
