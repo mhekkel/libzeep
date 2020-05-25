@@ -62,12 +62,14 @@ class html_controller_base : public controller
 	/// \endcode
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
 	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
+	/// as well as semi-colons that define separate paths.
 	/// Also, patterns ending in / are interpreted as ending in /\*\*
 	/// 
 	/// path             | matches                                     
 	/// ---------------- | --------------------------------------------
-	/// `**``/``*.js`     | matches x.js, a/b/c.js, etc                 
-	/// `{css,scripts}/` | matches css/1/first.css and scripts/index.js
+	/// `**``/``*.js`    | matches x.js, a/b/c.js, etc                 
+	/// `{css,scripts}/` | matches e.g. css/1/first.css and scripts/index.js
+	/// a;b;c            | matches either a, b or c
 
 	/// \brief mount a callback on URI path \a path for any HTTP method
 	template<class Class>

@@ -124,24 +124,22 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 	if (glob_pattern.back() == '/')
 		glob_pattern += "**";
 
-	if (not path.empty())
+	std::vector<std::string> patterns;
+	ba::split(patterns, glob_pattern, ba::is_any_of(";"));
+
+	std::vector<std::string> expandedpatterns;
+	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string& pattern)
 	{
-		std::vector<std::string> patterns;
-		ba::split(patterns, glob_pattern, ba::is_any_of(";"));
+		expand_group(pattern, expandedpatterns);
+	});
 
-		std::vector<std::string> expandedpatterns;
-		std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string& pattern)
+	for (std::string& pat : expandedpatterns)
+	{
+		if ((path.empty() and pat.empty()) or
+			Match(pat.c_str(), path.string().c_str()))
 		{
-			expand_group(pattern, expandedpatterns);
-		});
-
-		for (std::string& pat : expandedpatterns)
-		{
-			if (Match(pat.c_str(), path.string().c_str()))
-			{
-				result = true;
-				break;
-			}
+			result = true;
+			break;
 		}
 	}
 
