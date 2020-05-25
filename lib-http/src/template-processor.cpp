@@ -6,6 +6,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/iostreams/copy.hpp>
+#include <boost/chrono.hpp>
 
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/template-processor.hpp>
@@ -56,7 +57,20 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		return;
 	}
 
-	auto lastWriteTime = decltype(ft)::clock::to_time_t(ft);
+	auto lastWriteTime = std::chrono::duration_cast<std::chrono::seconds>(ft - decltype(ft)::clock::time_point{}).count();
+
+	// // std::chrono::time_point<std::filesystem::__file_clock> tp(ft);
+	// ptime()
+
+	// std::chrono::system_clock::from_time_t()
+
+	// // auto lastWriteTime = decltype(ft)::clock::to_time_t(ft);
+
+	// boost::chrono::duration_cast
+
+	// std::chrono::file_clock;
+	// ptime fpt(ft);
+	// auto lastWriteTime = to_time_t()
 
 	std::string ifModifiedSince;
 	for (const http::header& h : request.headers)

@@ -23,17 +23,11 @@ namespace zeep::http
 //
 
 html_controller::html_controller(const std::string& prefix_path, const std::string& docroot)
-	: http::controller(prefix_path), template_processor(docroot)
+	: controller(prefix_path), template_processor(docroot)
 {
 }
 
-html_controller::~html_controller()
-{
-	// for (auto a: m_authentication_validators)
-	// 	delete a;
-}
-
-bool html_controller::handle_request(http::request& req, http::reply& rep)
+bool html_controller::handle_request(request& req, reply& rep)
 {
 	std::string uri = req.uri;
 
@@ -50,7 +44,7 @@ bool html_controller::handle_request(http::request& req, http::reply& rep)
 
 	// start by sanitizing the request's URI, first parse the parameters
 	std::string ps = req.payload;
-	if (req.method != http::method_type::POST)
+	if (req.method != method_type::POST)
 	{
 		std::string::size_type d = uri.find('?');
 		if (d != std::string::npos)
@@ -88,19 +82,19 @@ bool html_controller::handle_request(http::request& req, http::reply& rep)
 		{
 			// return m.path == uri and
 			return glob_match(uri, m.path) and
-				(	method == http::method_type::HEAD or
-					method == http::method_type::OPTIONS or
+				(	method == method_type::HEAD or
+					method == method_type::OPTIONS or
 					m.method == method or
-					m.method == http::method_type::UNDEFINED);
+					m.method == method_type::UNDEFINED);
 		});
 
 	bool result = false;
 
 	if (handler != m_dispatch_table.end())
 	{
-		if (req.method == http::method_type::OPTIONS)
+		if (req.method == method_type::OPTIONS)
 		{
-			rep = http::reply::stock_reply(http::ok);
+			rep = reply::stock_reply(ok);
 			rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");
 			rep.set_content("", "text/plain");
 		}
@@ -128,7 +122,7 @@ bool html_controller::handle_request(http::request& req, http::reply& rep)
 	}
 
 	if (not result)
-		rep = http::reply::stock_reply(http::not_found);
+		rep = reply::stock_reply(not_found);
 
 	return result;
 }

@@ -16,9 +16,7 @@ PREFIX              ?= /usr/local
 
 # main build variables
 CXX                 ?= c++
-CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17
-CXXFLAGS            += -Wall
-CXXFLAGS            += -g
+CFLAGS	            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17 -Wall -g
 LD                  ?= ld
 LDFLAGS				= -g
 LD_CONFIG			?= ldconfig
@@ -32,7 +30,7 @@ DEBUG               = 0
 
 -include ../make.config
 
-VERSION_MAJOR       = 4.0
+VERSION_MAJOR       = 5.0
 VERSION_MINOR       = 0
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 
@@ -57,23 +55,21 @@ BOOST_INC_DIR		?= $(BOOST)/include
 BOOST_LIB_DIR		?= $(BOOST)/lib
 
 CFLAGS				+= -I $(BOOST_INC_DIR)
-CXXFLAGS			+= -I $(BOOST_INC_DIR)
 LDFLAGS				+= -L $(BOOST_LIB_DIR)
 
 CFLAGS				+= $(DEFINES:%=-D%)
-CXXFLAGS			+= $(DEFINES:%=-D%)
 
 ifeq "$(DEBUG)" "1"
-CXXFLAGS			+= -DDEBUG
+CFLAGS				+= -DDEBUG
 else
-CXXFLAGS			+= -O2
+CFLAGS				+= -O2
 endif
 
 # targets
 
 VPATH += src:test
 
-CXXFLAGS += -I ../include
+CFLAGS				+= -I ../include
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -156,10 +152,6 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 clean:
 	rm -rf $(OBJDIR)/* $(OUTPUT)/$(LIB_NAME)*
 
--include $(OBJDIR)/unit-test.d
-
-# $(OBJDIR)/unit-test.d: $(OBJDIR)/unit-test.o
-
 parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml
 xpath_PARAMS = XPath-Test-Suite/xpath-tests.xml
 
@@ -170,9 +162,12 @@ define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+
+
+test/$(1)-test: $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
@@ -190,8 +185,6 @@ $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 
 .PHONY: test
 test: $(TESTS:%=%-test)
-
-dist-clean: clean
 
 FORCE:
 

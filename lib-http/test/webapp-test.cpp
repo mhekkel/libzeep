@@ -227,29 +227,29 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
 }
 
+class hello_controller : public zeep::http::html_controller
+{
+	public:
+	hello_controller()
+		: zeep::http::html_controller("/", "")
+	{
+		mount("", &hello_controller::handle_index);
+	}
+
+	void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
+	{
+		rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		rep.set_content("Hello", "text/plain");
+	}
+};
+
 BOOST_AUTO_TEST_CASE(webapp_8)
 {
 	// start up a http server with a html_controller and stop it again
 
-	class my_html_controller : public zeep::http::html_controller
-	{
-	  public:
-		my_html_controller()
-			: zeep::http::html_controller("/", "")
-		{
-			mount("", &my_html_controller::handle_index);
-		}
-
-		void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
-		{
-			rep = zeep::http::reply::stock_reply(zeep::http::ok);
-			rep.set_content("Hello", "text/plain");
-		}
-	};
-
 	zeep::http::daemon d([]() {
 		auto server = new zeep::http::server;
-		server->add_controller(new my_html_controller());
+		server->add_controller(new hello_controller());
 		return server;
 	}, "zeep-http-test");
 
@@ -270,4 +270,21 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 
 	BOOST_TEST(reply.get_status() == zeep::http::ok);
 	BOOST_TEST(reply.get_content() == "Hello");
+}
+
+BOOST_AUTO_TEST_CASE(webapp_10)
+{
+    zeep::http::server srv;
+
+	srv.add_controller(new hello_controller());
+
+	std::thread t([&srv]() mutable {
+		sleep(2);
+		srv.stop();
+	});
+
+    srv.bind("127.0.0.1", 8080);
+    srv.run(2);
+
+	t.join();
 }

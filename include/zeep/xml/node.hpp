@@ -868,7 +868,7 @@ class basic_node_list
 
 	iterator erase_impl(const_iterator pos)
 	{
-		if (pos == end())
+		if (pos == cend())
 			return pos;
 
 		if (pos->m_parent != &m_element)

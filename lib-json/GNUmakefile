@@ -16,9 +16,7 @@ PREFIX              ?= /usr/local
 
 # main build variables
 CXX                 ?= c++
-CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17
-CXXFLAGS            += -Wall
-CXXFLAGS            += -g
+CFLAGS	            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17 -Wall -g
 LD                  ?= ld
 LDFLAGS				= -g
 LD_CONFIG			?= ldconfig
@@ -39,7 +37,7 @@ CXXFLAGS			+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(P
 LDFLAGS				+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PACKAGES) --static )
 endif
 
-VERSION_MAJOR       = 4.0
+VERSION_MAJOR       = 5.0
 VERSION_MINOR       = 0
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 
@@ -64,23 +62,21 @@ BOOST_INC_DIR		?= $(BOOST)/include
 BOOST_LIB_DIR		?= $(BOOST)/lib
 
 CFLAGS				+= -I $(BOOST_INC_DIR)
-CXXFLAGS			+= -I $(BOOST_INC_DIR)
 LDFLAGS				+= -L $(BOOST_LIB_DIR)
 
 CFLAGS				+= $(DEFINES:%=-D%)
-CXXFLAGS			+= $(DEFINES:%=-D%)
 
 ifeq "$(DEBUG)" "1"
-CXXFLAGS			+= -DDEBUG
+CFLAGS				+= -DDEBUG
 else
-CXXFLAGS			+= -O2
+CFLAGS				+= -O2
 endif
 
 # targets
 
 VPATH += src:test
 
-CXXFLAGS += -I ../include
+CFLAGS				+= -I ../include
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -175,9 +171,12 @@ define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+
+
+test/$(1)-test: $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(BOOST_LIBS:%=-lboost_%) $(ZEEP_LIBS:%=-lzeep-%) -lstdc++fs
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test

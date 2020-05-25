@@ -6,7 +6,7 @@ Version 5.0.0
 - Implemented some cryptographic routines in order to drop
   dependency on libcrypto++
 - Added more authentication modules for HTTP including JWT support
-- Code now requires a C++17 compiler
+- Code now requires a c++17 compiler
 - Requires at least boost version 1.72
 
 Version 4.0.0

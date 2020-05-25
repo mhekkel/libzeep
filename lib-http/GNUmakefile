@@ -16,14 +16,10 @@ PREFIX              ?= /usr/local
 
 # main build variables
 CXX                 ?= c++
-CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17
-CXXFLAGS            += -Wall
-CXXFLAGS            += -g
+CFLAGS	            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17 -Wall -g
 LD                  ?= ld
 LDFLAGS				= -g
 LD_CONFIG			?= ldconfig
-
-PACKAGES			+=
 
 # default is to only create a static library
 BUILD_STATIC_LIB	= 1
@@ -54,12 +50,7 @@ endif
 
 -include ../make.config
 
-ifneq ($(PACKAGES),)
-CXXFLAGS			+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(PACKAGES))
-LDFLAGS				+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PACKAGES) --static )
-endif
-
-VERSION_MAJOR       = 4.0
+VERSION_MAJOR       = 5.0
 VERSION_MINOR       = 0
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 
@@ -84,23 +75,21 @@ BOOST_INC_DIR		?= $(BOOST)/include
 BOOST_LIB_DIR		?= $(BOOST)/lib
 
 CFLAGS				+= -I $(BOOST_INC_DIR)
-CXXFLAGS			+= -I $(BOOST_INC_DIR)
 LDFLAGS				+= -L $(BOOST_LIB_DIR)
 
 CFLAGS				+= $(DEFINES:%=-D%)
-CXXFLAGS			+= $(DEFINES:%=-D%)
 
 ifeq "$(DEBUG)" "1"
-CXXFLAGS			+= -DDEBUG
+CFLAGS				+= -DDEBUG
 else
-CXXFLAGS			+= -O2
+CFLAGS				+= -O2
 endif
 
 # targets
 
 VPATH += src:test
 
-CXXFLAGS += -I ../include
+CFLAGS				+= -I ../include
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -214,10 +203,6 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 
 clean:
 	rm -rf $(OBJDIR)/* $(OUTPUT)/$(LIB_NAME)*
-
-dist-clean: clean
-
-# $(OBJDIR)/unit-test.d: $(OBJDIR)/unit-test.o
 
 $(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
 	$(MRC) -o $@ $<
