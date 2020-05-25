@@ -101,30 +101,30 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 // 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::internal_server_error);
 // }
 
-BOOST_AUTO_TEST_CASE(webapp_4)
-{
-	using namespace zeep::xml::literals;
+// BOOST_AUTO_TEST_CASE(webapp_4)
+// {
+// 	using namespace zeep::xml::literals;
 
-	webapp app;
-	zx::document doc;
+// 	webapp app;
+// 	zx::document doc;
 
-	app.load_template("fragment-file :: frag1", doc);
+// 	app.load_template("fragment-file :: frag1", doc);
 
-	auto test1 = R"(<?xml version="1.0"?>
-<div>fragment-1</div>)"_xml;
+// 	auto test1 = R"(<?xml version="1.0"?>
+// <div>fragment-1</div>)"_xml;
 
-	compare(doc, test1);
+// 	compare(doc, test1);
 
-	doc.clear();
+// 	doc.clear();
 
-	app.load_template("fragment-file :: #frag2", doc);
+// 	app.load_template("fragment-file :: #frag2", doc);
 
-	auto test2 = R"(<?xml version="1.0"?>
-<div>fragment-2</div>)"_xml;
+// 	auto test2 = R"(<?xml version="1.0"?>
+// <div>fragment-2</div>)"_xml;
 
-	compare(doc, test2);
+// 	compare(doc, test2);
 	
-}
+// }
 
 // test various ways of mounting handlers
 BOOST_AUTO_TEST_CASE(webapp_5)
@@ -231,7 +231,7 @@ class hello_controller : public zeep::http::html_controller
 {
 	public:
 	hello_controller()
-		: zeep::http::html_controller("/", "")
+		: zeep::http::html_controller("/")
 	{
 		mount("", &hello_controller::handle_index);
 	}
