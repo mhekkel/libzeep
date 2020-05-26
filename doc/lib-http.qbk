@@ -78,17 +78,16 @@ This example uses the file docroot/hello.xhtml which should contain:
 	  <head>
 	    <title>Hello</title>
 	  </head>
-	<p>Hello, <span z:text="${name ?: 'world'}"/>!</p>
+	  <p>Hello, <span z:text="${name ?: 'world'}"/>!</p>
 	</html>
 
 Now build and run this code, and you can access your welcome page at [@http://localhost:8080/]. If you want to see another name, use e.g. [@http://localhost:8080/?name=maarten] instead.
 
 Several remarks here.
 
+The server object is created with a =docroot= parameter. That parameter tells the server to create a default [classref zeep::html::template_processor `template_processor`] for use by the __html_controller__ objects.
+
 As you can see in the handler code, a check is made for a parameter called =name=. When present, its value is stored in the newly created sub-scope object. The template file contains a construct in the =<span>= element that tests for the availability of this variable and uses the default ='world'= otherwise. For more information on templates see the section on [link libzeep.http.xhtml-template xhtml templates].
-
-
-
 
 The path specified in `mount` is `{,index,index.html}` which is a glob pattern, this pattern can accept the following constructs:
 
@@ -103,8 +102,7 @@ The path specified in `mount` is `{,index,index.html}` which is a glob pattern, 
 
 [endsect:server]
 
-
-[section:data-types Data types]
+[section:data-types Request and Reply]
 
 An implementation of the HTTP standard will need various data types. There are [classref zeep::http::request HTTP `requests`] and [classref zeep::http::reply HTTP `replies`]. And these contain [classref zeep::http::header HTTP `headers`] but also predefined [enumref zeep::http::method_type `method_type`s].
 
@@ -112,16 +110,253 @@ The HTTP specification for __request__ and __reply__ are sufficiently similar to
 
 [heading request]
 
+The __request__ encapsulates what was received. The standard HTTP request contains a method, like =GET= or =POST=. In this version of libzeep only a limited subset of methods are supported.
 
+The next part is the =uri= that was requested.
 
+Then we have the version, usually 1.0 or 1.1. Libzeep does not currently support anything else. When 1.1 was used, libzeep will honour the keep-alive flag.
+
+Headers are stored in an array and can be accessed using [memberref zeep::http::request::get_header `get_header`].
+
+Cookies stored in the headers can be accessed using [memberref zeep::http::request::get_cookie `get_cookie`].
+
+A __request__ may also contain a payload, usually only in case of a =POST= or =PUT=.
+
+Requests can have parameters. These can be passed url-encoded in the uri, or they can be encoded in the payload using =application/x-www-form-urlencoded= or =multipart/form-data= encoding. The various [memberref zeep::http::reply::get_parameter `get_parameter`] members allow retrieving these parameters by name, optinally passing in a default value in case the parameter was not part of the request.
+
+A special case are file parameters, these are retrieved using [memberref zeep::http::reply::get_file_parameter `get_file_parameter`]. This returns a [classref zeep::http::file_param `file_param`] struct that contains information about the uploaded file. Using the [classref zeep::char_streambuf `char_streambuf`] class you can efficiently read the contents of such a file:
+
+	zeep::file_param f = req.get_file_parameter("upoad");
+	zeep::char_streambuf sb(f.data, f.length);
+	std::istream is(&sb);
+
+Many other convenience accessors are available but data is also directly accessible since this is a `struct`.
+
+There are some functions to set data. Those are probably only useful if you write your own code to send out HTTP requests to other servers.
+
+[heading reply]
+
+The __reply__ object is the object you need to fill in. Replies contain a status line, headers and optionally a payload.
+
+There is a static member called [memberref zeep::http::reply::stock_reply `stock_reply`] that allows you to create a complete
+reply from a status code and an optional message.
+
+The [memberref zeep::http::reply::set_header `set_header`] and [memberref zeep::http::reply::set_cookie `set_cookie`] member functions take care of setting headers and cookies respectively.
+
+The content of the payload can be set using the various [memberref zeep::http::reply::set_content `set_content`] methods. They will set the content type header according to the data passed in. If you specify a `std::istream*` as content, and the version is set to =1.1= then the data stream will be sent in chunked transfer-encoding.
 
 [endsect:data-types]
 
 [section:xhtml-template XHTML Template Processing]
 
-This section handles template processing.
+[def __template_processor__ [classref zeep::http::template_processor `template_processor`]]
+
+Many web application frameworks provide a way of templating, write some boilerplate HTML and fill in the details at the moment a page is requested. Apart from that, a page may contains lots of external scripts, stylesheets, images and fonts. For these two tasks libzeep comes with a __template_processor__ class.
+
+[heading loading]
+
+Starting with the second task just mentioned, the __template_processor__ takes a =docroot= parameter in its constructor. This docroot is the location on disk where files are located. But it is also possible to build libzeep with in-memory resources by using [@https://github.com/mhekkel/mrc =mrc=]. Have a look at the example code for usage.
+
+The [memberref zeep::http::basic_template_processor::load_file `load_file`] member of __template_processor__ loads a file from disk (or compiled resources), the [memberref zeep::http::basic_template_processor::file_time `file_time`] member can be used to get the file time of a file. This can be used to generate =304 not modified= replies instead.
+
+The [memberref zeep::http::basic_template_processor::load_template `load_template`] member loads a template file from docroot and parses the XML contained in this file into a __document__.
+
+[heading templates]
+
+Since we're using a XML parser/library to load template, they should be strict XMTML. It is possible to make these files somewhat HTML 5 like by adding the doctype[teletype]
+
+	<!DOCTYPE html SYSTEM "about:legacy-compat">
+
+The tags inside a template can be processed using a tag_processor. Tag processors are linked to element and attributes in the template using XML namespaces. 
+
+The method [memberref zeep::http::basic_template_processor::create_reply_from_template `create_reply_from_template`] can be used to convert a template into a reply using the data store in a [classref zeep::http::scope `scope`].
+
+[heading tag processing]
+
+Libzeep comes with two tag_processor implementations, the first [classref zeep::http::tag_processor_v1 `tag_processor_v1`] is a legacy one and should probably not be used in new code. The second, [classref zeep::http::tag_processor_v2 `tag_processor_v2`], is inspired by [@https://www.thymeleaf.org].
+
+[heading Using =el= script]
+
+[def __json_object__ [classref zeep::json::element `json::element`]]
+
+=el= means /Expression Language/. It is a script language that tries to be like
+[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. The objects can be
+created in the C++ server code using the __json_object__ class. Object created this
+way are then stored in a __scope__ object and passed along to the XHTML processing code.
+
+To give an example:
+[import ./examples/synopsis-el-1.cpp]
+[fill_scope]
+
+And then you can process some =expression language= construct like this:
+
+[evaluate_el]
+
+And if you then print out the result it should give you something like:
+
+[teletype]
+
+	"1: 1, 2: 2"
+
+There are various =el= processing functions available in the file =el-processing.hpp=. The syntax 
+used should be similar to the one in the [@https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html#standard-expression-syntax https://www.thymeleaf.org/] documentation.
+
+[heading tag_processor_v1]
+
+This tag_processor works on tags, mostly. As opposed to tag_processor_v2 which works on attributes mainly.
+The tags are in a separate XML namespace. You can change this name space
+using the `ns` parameter in the constructor, the default is =http://www.hekkelman.com/libzeep/m1=.
+
+There are several predefined processing tags which are summarized below. There used to be also
+a way to add your own processing tags using an `add_processor` method but that has been dropped.
+
+[table List of predefined processing tags
+[[tag name (without prefix)][Description][Example]]
+[
+	[include]
+	[Takes one parameter named `file` and replaces the tag with the processed content of this file]
+	[ [^<zeep:include file="menu.xhtml"/>] ]
+]
+[
+	[if]
+	[Takes one parameter named `test` containing an `el` script. This script is evaluated and
+      if the result is not empty, zero or false, the content of the `if` tags is inserted in
+      the output. Otherwise, the content is discarded.]
+    
+    [[teletype]
+``
+	<zeep:if test="${not empty name}">
+	  Hello ${name}
+	</zeep:if>
+``
+    ]
+]
+[
+	[iterate]
+	[Takes two parameters, `collection` which contains an `el` script that evaluates to
+		   an array `el::object` and a name in `var`. The content of the `iterate` tag is
+		   included for each value of `collection` and `var` will contain the current value.]
+	[
+``
+	<ul><zeep:iterate collection="${names}" var="name">
+	  <li>${name}</li>
+	</zeep:iterate></ul>
+``
+	]
+]
+[
+	[for]
+	[Takes three parameters. The parameters `begin` and `end` should evaluate to a number.
+	   The parameter `var` contains a name that will be used to hold the current value
+	   when inserting the content of the `for` tag in each iteration of the for
+	   loop between `begin` and `end`.]
+	[
+``
+	<zeep:for begin="1" end="3" var="i">
+	  ${i},
+	</zeep:for>
+``
+	]
+]
+[
+	[number]
+	[Format the number in the `n` parameter using the `f` format. This is limited to
+	the formats ='#.##0'= and ='#.##0B'= for now. The first formats an integer value
+	using thousand separators, the second tries to format the integer value in a
+	power of two multiplier (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc.]
+	[
+``
+	<zeep:number n="1024" f="0.00#B"/>
+	Will output 1K
+``
+	]
+]
+[
+	[options]
+	[This tag will insert multiple =<option>= tags for each element in the `collection`
+	parameter. This `collection` paramter can contain an array of strings or it can
+	contain an array of `el::object`. In the latter case, you can specify a `value` and
+	`label` parameter to name the value and label fields of these objects. A `selected`
+	parameter can be used to select the current value of the options.]
+	[
+``
+	<zeep:options collection="${names}" 
+	  value="id" label="fullName" selected="1" />
+``
+	]
+]
+[
+	[option]
+	[Generate a single =<option>= tag with a value as specified in the `value` parameter.
+	If `selected` evaluates to the same value as `value`, the option is selected.
+	The content of the =<option>= tag is inserted in the final tag.]
+	[
+``
+	<zeep:option value="1" selected="${user}">
+	  John Doe
+	</zeep:option>
+``
+	]
+]
+[
+	[checkbox]
+	[Create an =<input>= tag with type `checkbox`. The parameter `name` is used as
+	name attribute and the parameter `checked` is evaluated to see if the checkbox
+	should be in checked mode.]
+	[
+``
+	<zeep:checkbox name='cb1' checked='${true}'>
+	  Check me
+	</zeep:checkbox>
+``
+	]
+]
+[
+	[url]
+	[The url processing tag creates a new variable in the current scope with the name
+	as specified in the `var` parameter. It then creates a list of all original HTTP
+	parameters for the current page. You can override these parameter, and add new ones,
+	by adding =<param>= tags in the =<url>= tag.]
+	[
+``
+	<zeep:url var="next">
+	  <zeep:param name='page' value='${page + 1}'/>
+	<zeep:url>
+	<a href="${next}">Next page</a>
+``
+	]
+]
+[[param][see =url= above.]]
+[
+	[embed]
+	[This tag takes the content of the `var` parameter which should contain valid
+	XML and puts the processed value in the document.]
+	[
+``
+	<zeep:embed var="&lt;em&gt;hello, world!&lt;/em&gt;"/>
+``
+	]
+]
+]
+
+[heading tag_processor_v2]
+
+Tag processor version 2 is an implementation of the documentation for [@https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html Thymeleaf].
+One day I will write my own documentation but for now you should read the one at the Thymeleaf site.
+
+There are some notable differences though. libzeep does not support the concept of =messages= yet, so using this for localization is not going to work. Furthermore, the Thymeleaf library is written in Java and assumes all data constructs are Java object. Of course that is different in libzeep.
 
 [endsect:xhtml-template]
+
+[section:error-handlers Error handling]
+
+[def __error_handler__ [classref zeep::http::error_handler `error_handler`]]
+
+During the processing of a request, an error may occur, often by throwing an std::exception. The default __error_handler__ class takes care of catching exceptions and turn these in sensible error replies. A default error_handler is created in the __http_server__ constructor and this one uses the default =error.xhtml= template in =docroot=, or a built in template if that file does not exist.
+
+You can derive your own error handler from __error_handler__ and implement a =create_error_reply= member to handle some errors differently. The error handlers will be called in the reverse order of being added allowing you to override default behaviour.
+
+[endsect:error-handlers]
 
 [section:crypto Cryptographic routines]
 
