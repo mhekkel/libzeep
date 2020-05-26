@@ -137,6 +137,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			{
 				xml::document doc;
 				doc.set_validating(test.get_attribute("TYPE") == "invalid");
+				doc.set_validating_ns(test.get_attribute("RECOMMENDATION") == "NS1.0");
 				is >> doc;
 				++should_have_failed;
 				result = false;
@@ -151,7 +152,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 				}
 
 				failed = true;
-				if (VERBOSE)
+				if (VERBOSE > 1)
 					cout << e.what() << endl;
 			}
 			catch (zeep::xml::invalid_exception& e)
@@ -163,7 +164,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 				}
 
 				failed = true;
-				if (VERBOSE)
+				if (VERBOSE > 1)
 					cout << e.what() << endl;
 			}
 			catch (std::exception& e)
@@ -186,7 +187,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			}
 			catch (std::exception& e)
 			{
-				if (VERBOSE)
+				if (VERBOSE > 1)
 					cout << e.what() << endl;
 				
 				failed = true;
@@ -209,7 +210,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 		error = e.what();
 	}
 
-	if (VERBOSE or result == false)
+	if ((result == false and VERBOSE == 1) or (VERBOSE > 1))
 	{
 		cout << "-----------------------------------------------" << endl
 			 << "ID:             " << test.get_attribute("ID") << endl
@@ -265,10 +266,10 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	return result;
 }
 
-void run_test_case(const xml::element& testcase, const string& id,
+void run_test_case(const xml::element& testcase, const string& id, const set<string>& skip,
 	const string& type, int edition, fs::path base_dir, vector<string>& failed_ids)
 {
-	if (VERBOSE and id.empty())
+	if (VERBOSE > 1 and id.empty())
 		cout << "Running testcase " << testcase.get_attribute("PROFILE") << endl;
 
 	if (not testcase.get_attribute("xml:base").empty())
@@ -289,33 +290,39 @@ void run_test_case(const xml::element& testcase, const string& id,
 
 	for (const xml::element* n: xml::xpath(path).evaluate<xml::element>(testcase))
 	{
-		if ((id.empty() or id == n->get_attribute("ID")) and
-			(type.empty() or type == n->get_attribute("TYPE")))
+		auto testID = n->get_attribute("ID");
+		if (skip.count(testID))
+			continue;
+
+		if (not id.empty() and testID != id)
+			continue;
+
+		if (not type.empty() and type != n->get_attribute("TYPE"))
+			continue;
+
+		if (edition != 0)
 		{
-			if (edition != 0)
+			auto es = n->get_attribute("EDITION");
+			if (not es.empty())
 			{
-				auto es = n->get_attribute("EDITION");
-				if (not es.empty())
-				{
-					auto b = sregex_token_iterator(es.begin(), es.end(), ws_re, -1);
-					auto e = sregex_token_iterator();
-					auto ei = find_if(b, e, [edition](const string& e) { return stoi(e) == edition; });
+				auto b = sregex_token_iterator(es.begin(), es.end(), ws_re, -1);
+				auto e = sregex_token_iterator();
+				auto ei = find_if(b, e, [edition](const string& e) { return stoi(e) == edition; });
 
-					if (ei == e)
-						continue;
-				}
+				if (ei == e)
+					continue;
 			}
+		}
 
-			if (fs::exists(base_dir / n->get_attribute("URI")) and
-				not run_test(*n, base_dir))
-			{
-				failed_ids.push_back(n->get_attribute("ID"));
-			}
+		if (fs::exists(base_dir / n->get_attribute("URI")) and
+			not run_test(*n, base_dir))
+		{
+			failed_ids.push_back(n->get_attribute("ID"));
 		}
 	}
 }
 
-void test_testcases(const fs::path& testFile, const string& id,
+void test_testcases(const fs::path& testFile, const string& id, const set<string>& skip,
 	const string& type, int edition, vector<string>& failed_ids)
 {
 	std::ifstream file(testFile, ios::binary);
@@ -338,17 +345,21 @@ void test_testcases(const fs::path& testFile, const string& id,
 	{
 		if (test->get_qname() != "TESTCASES")
 			continue;
-		run_test_case(*test, id, type, edition, base_dir, failed_ids);
+		run_test_case(*test, id, skip, type, edition, base_dir, failed_ids);
 	}
 }
 
 int main(int argc, char* argv[])
 {
+	int result = 0;
+
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	    ("help", "produce help message")
 	    ("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
+		("skip", po::value<vector<string>>(),	"Skip this test, can be specified multiple times")
+		("questionable", po::value<vector<string>>(), "Questionable tests, do not consider failure of these to be an error")
 	    ("test", "Run SUN test suite")
 		("edition", po::value<int>(), "XML 1.0 specification edition to test, default is 5, 0 which means run all tests")
 	    ("trace", "Trace productions in parser")
@@ -418,6 +429,10 @@ int main(int argc, char* argv[])
 			if (vm.count("id"))
 				id = vm["id"].as<string>();
 			
+			vector<string> skip;
+			if (vm.count("skip"))
+				skip = vm["skip"].as<vector<string>>();
+
 			string type;
 			if (vm.count("type"))
 				type = vm["type"].as<string>();
@@ -428,7 +443,7 @@ int main(int argc, char* argv[])
 			
 			vector<string> failed_ids;
 			
-			test_testcases(xmlconfFile, id, type, edition, failed_ids);
+			test_testcases(xmlconfFile, id, {skip.begin(), skip.end()}, type, edition, failed_ids);
 			
 			cout << endl
 				 << "summary: " << endl
@@ -437,14 +452,34 @@ int main(int argc, char* argv[])
 				 << "  " << wrong_exception << " wrong exception" << endl
 				 << "  " << should_have_failed << " should have failed but didn't" << endl;
 
-			if (vm.count("print-ids"))
+			vector<string> questionable;
+			if (vm.count("questionable"))
+				questionable = vm["questionable"].as<vector<string>>();
+			
+			set<string> erronous;
+			for (auto id: failed_ids)
 			{
-				cout << endl
-					 << "ID's for the failed tests: " << endl;
-				
-				copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
-				
+				if (std::find(questionable.begin(), questionable.end(), id) == questionable.end())
+					erronous.insert(id);
+			}
+			
+			if (not erronous.empty())
+				result = 1;
+
+			if (vm.count("print-ids") and not failed_ids.empty())
+			{
 				cout << endl;
+				if (erronous.empty())
+					cout << "All the failed tests were questionable" << endl;
+				else
+				{
+					cout << endl
+						<< "ID's for the failed, non-questionable tests: " << endl;
+
+					copy(erronous.begin(), erronous.end(), ostream_iterator<string>(cout, "\n"));
+					
+					cout << endl;
+				}
 			}
 		}
 	}
@@ -461,5 +496,5 @@ int main(int argc, char* argv[])
 	char ch = _getch();
 #endif
 
-	return 0;
+	return result;
 }

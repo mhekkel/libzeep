@@ -152,7 +152,9 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 clean:
 	rm -rf $(OBJDIR)/* $(OUTPUT)/$(LIB_NAME)*
 
-parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml
+QUESTIONABLE_XML_TEST_IDS = ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13
+
+parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml $(QUESTIONABLE_XML_TEST_IDS:%=--questionable=%) --print-ids
 xpath_PARAMS = XPath-Test-Suite/xpath-tests.xml
 
 ZEEP_LIBS = 

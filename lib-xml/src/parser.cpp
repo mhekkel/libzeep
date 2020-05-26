@@ -483,7 +483,7 @@ struct parser_imp
 	~parser_imp();
 
 	// Here comes the parser part
-	void parse(bool validate);
+	void parse(bool validate, bool validate_ns);
 
 	// the productions. Some are inlined below for obvious reasons.
 	// names of the productions try to follow those in the TR http://www.w3.org/TR/xml
@@ -702,15 +702,20 @@ struct parser_imp
 	{
 		source_state(parser_imp* impl, data_source* source, bool insert)
 			: m_impl(*impl), m_source(source)
+			, m_buffer_offset(m_impl.m_buffer_ptr - m_impl.m_buffer.begin())
 			, m_lookahead(m_impl.m_lookahead)
 			, m_inserted(insert)
 		{
 			std::swap(m_token, m_impl.m_token);
+			std::swap(m_buffer, m_impl.m_buffer);
+			m_impl.m_buffer_ptr = m_impl.m_buffer.begin();
 		}
 
 		~source_state()
 		{
 			std::swap(m_token, m_impl.m_token);
+			std::swap(m_buffer, m_impl.m_buffer);
+			m_impl.m_buffer_ptr = m_impl.m_buffer.begin() + m_buffer_offset;
 			m_impl.m_lookahead = m_lookahead;
 			delete m_source;
 		}
@@ -722,6 +727,8 @@ struct parser_imp
 		
 		parser_imp& m_impl;
 		data_source* m_source;
+		std::array<unicode,4> m_buffer;
+		int m_buffer_offset;
 		XMLToken m_lookahead;
 		std::string m_token;
 		bool m_inserted;
@@ -795,7 +802,17 @@ struct parser_imp
 
 		bool is_known_prefix(const std::string& prefix)
 		{
-			return m_known.count(prefix) or (m_next != nullptr and m_next->is_known_prefix(prefix));
+			bool result = false;
+
+			if (not m_unbound.count(prefix))
+			{
+				if (m_known.count(prefix))
+					result = true;
+				else if (m_next != nullptr)
+					result = m_next->is_known_prefix(prefix);
+			}
+
+			return result;
 		}
 
 		bool is_known_uri(const std::string& uri)
@@ -852,14 +869,15 @@ struct parser_imp
 
 	parser& m_parser;
 	bool m_validating;
+	bool m_validating_ns;
 	bool m_has_dtd;
 	XMLToken m_lookahead;
 	std::string m_token;
 
 	std::stack<source_state> m_source;
 	
-	unicode m_buffer[4];
-	unicode* m_buffer_ptr = m_buffer;
+	std::array<unicode,4> m_buffer;
+	std::array<unicode,4>::iterator m_buffer_ptr = m_buffer.begin();
 	
 	float m_version = 1.0f;
 	encoding_type m_encoding = encoding_type::UTF8;
@@ -987,7 +1005,7 @@ unicode parser_imp::get_next_char()
 {
 	unicode result = 0;
 
-	if (m_buffer_ptr > m_buffer) // if buffer is not empty we already did all the validity checks
+	if (m_buffer_ptr > m_buffer.begin()) // if buffer is not empty we already did all the validity checks
 		result = *--m_buffer_ptr;
 
 	if (result == 0)
@@ -1022,7 +1040,7 @@ void parser_imp::retract()
 {
 	assert(not m_token.empty());
 
-	assert(m_buffer_ptr < m_buffer + 4);
+	assert(m_buffer_ptr < m_buffer.end());
 	*m_buffer_ptr++ = pop_last_char(m_token);
 }
 
@@ -1658,9 +1676,10 @@ float parser_imp::parse_version()
 	return result;
 }
 
-void parser_imp::parse(bool validate)
+void parser_imp::parse(bool validate, bool validate_ns)
 {
 	m_validating = validate;
+	m_validating_ns = validate_ns;
 
 	m_lookahead = get_next_token();
 
@@ -2485,8 +2504,8 @@ void parser_imp::parameter_entity_decl()
 	std::string name = m_token;
 	match(XMLToken::Name);
 
-	// if (name.find(':') != std::string::npos)
-	// 	not_well_formed("Entity names should not contain a colon");
+	if (m_validating_ns and name.find(':') != std::string::npos)
+		not_well_formed("Entity names should not contain a colon");
 	if (ba::starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
@@ -2528,8 +2547,8 @@ void parser_imp::general_entity_decl()
 	match(XMLToken::Name);
 	s(true);
 
-	// if (name.find(':') != std::string::npos)
-	// 	not_well_formed("Entity names should not contain a colon");
+	if (m_validating_ns and name.find(':') != std::string::npos)
+		not_well_formed("Entity names should not contain a colon");
 	if (ba::starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
@@ -2792,8 +2811,8 @@ void parser_imp::notation_decl()
 
 	std::string name = m_token, pubid, sysid;
 
-	// if (name.find(':') != std::string::npos)
-	// 	not_well_formed("Notation names should not contain a colon");
+	if (m_validating_ns and name.find(':') != std::string::npos)
+		not_well_formed("Notation names should not contain a colon");
 
 	if (m_notations.count(name) > 0)
 		not_valid("notation names should be unique");
@@ -2926,7 +2945,7 @@ std::tuple<std::string, std::string> parser_imp::read_external_id()
 		{
 			result = m_token;
 
-			while (m_buffer_ptr > m_buffer)
+			while (m_buffer_ptr > m_buffer.begin())
 				append(result, *--m_buffer_ptr);
 
 			while (unicode ch = m_source.top()->get_next_char())
@@ -3458,20 +3477,6 @@ void parser_imp::element(doctype::validator& valid)
 	ns_state ns(this);
 	std::set<std::string> seen;
 
-	if (dte == nullptr)
-	{
-		if (name[0] == ':')
-			not_well_formed("Element name should not start with colon");
-
-		auto cp = name.find(':');
-		if (cp != std::string::npos)
-		{
-			auto prefix = name.substr(0, cp);
-			if (not ns.is_known_prefix(prefix))
-				not_valid("Unknown prefix for element " + name);
-		}
-	}
-
 	for (;;)
 	{
 		if (m_lookahead != XMLToken::Space)
@@ -3572,6 +3577,9 @@ void parser_imp::element(doctype::validator& valid)
 				{
 					id = true;
 
+					if (m_validating_ns and attr_value.find(':') != std::string::npos)
+						not_valid("ID attribute value should not contain a colon");
+
 					if (m_ids.count(attr_value) > 0)
 					{
 						not_valid("attribute value ('" + attr_value + "') for attribute '" + attr_name + "' is not unique");
@@ -3648,8 +3656,20 @@ void parser_imp::element(doctype::validator& valid)
 		}
 	}
 
-	// add missing attributes
-	if (dte != nullptr)
+	if (dte == nullptr)
+	{
+		if (name[0] == ':')
+			not_well_formed("Element name should not start with colon");
+
+		auto cp = name.find(':');
+		if (cp != std::string::npos)
+		{
+			auto prefix = name.substr(0, cp);
+			if (not ns.is_known_prefix(prefix))
+				not_well_formed("Unknown prefix for element " + name);
+		}
+	}
+	else	// add missing attributes
 	{
 		for (const doctype::attribute_ *dta : dte->get_attributes())
 		{
@@ -3930,6 +3950,9 @@ void parser_imp::pi()
 
 	if (pi_target.empty())
 		not_well_formed("processing instruction target missing");
+	
+	if (m_validating_ns and pi_target.find(':') != std::string::npos)
+		not_well_formed("processing instruction name should not contain a colon");
 
 	// we treat the xml processing instruction separately.
 	if (m_token.substr(2) == "xml")
@@ -4025,9 +4048,9 @@ parser::~parser()
 	delete m_istream;
 }
 
-void parser::parse(bool validate)
+void parser::parse(bool validate, bool validate_ns)
 {
-	m_impl->parse(validate);
+	m_impl->parse(validate, validate_ns);
 }
 
 void parser::xml_decl(encoding_type encoding, bool standalone, float version)

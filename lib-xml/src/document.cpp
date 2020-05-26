@@ -161,13 +161,8 @@ void document::write(std::ostream& os, format_info fmt) const
 	{
 		assert(m_encoding == encoding_type::UTF8);
 
-		if (m_version == 1.0f)
-			os << "<?xml version=\"1.0\"";
-		else if (m_version == 1.1f)
-			os << "<?xml version=\"1.1\"";
-		else
-			throw exception("don't know how to write this version of XML");
-		
+		os << "<?xml version=\"" << std::fixed << std::setprecision(1) << m_version << "\"";
+
 		// os << " encoding=\"UTF-8\"";
 		
 		if (m_standalone)
@@ -402,7 +397,7 @@ void document::parse(std::istream& is)
 
 	m_cur = this;
 
- 	p.parse(m_validating);
+ 	p.parse(m_validating, m_validating_ns);
 	
 	assert(m_cur == this);
 }

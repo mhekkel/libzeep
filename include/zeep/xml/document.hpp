@@ -82,6 +82,10 @@ class document : public element
 	bool is_validating() const								{ return m_validating; }
 	void set_validating(bool validate)						{ m_validating = validate; }
 
+	/// validating_ns: when validating take the NS 1.0 specification into account
+	bool is_validating_ns() const							{ return m_validating_ns; }
+	void set_validating_ns(bool validate)					{ m_validating_ns = validate; }
+
 	/// preserve cdata, preserves CDATA sections instead of converting them
 	/// into text nodes.
 	bool preserves_cdata() const							{ return m_preserve_cdata; }
@@ -228,6 +232,7 @@ class document : public element
 	// some content information
 	doc_type m_doctype;
 	bool m_validating;
+	bool m_validating_ns = false;
 	bool m_preserve_cdata;
 	bool m_has_xml_decl;
 	encoding_type m_encoding;

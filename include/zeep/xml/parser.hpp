@@ -90,7 +90,7 @@ class parser
 	std::function<std::istream *(const std::string& base, const std::string& pubid, const std::string& uri)>external_entity_ref_handler;
 	std::function<void(const std::string& msg)>																report_invalidation_handler;
 
-	void parse(bool validate);
+	void parse(bool validate, bool validate_ns);
 
   protected:
 	friend struct parser_imp;

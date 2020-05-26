@@ -32,13 +32,16 @@ ostream& operator<<(ostream& os, const xml::node& n)
 
 bool run_test(const xml::element& test)
 {
-	cout << "----------------------------------------------------------" << endl
-		 << "ID: " << test.get_attribute("ID")
-		 << endl
-		 << "xpath: " << test.get_attribute("xpath") << endl
-//		 << "data: " << test.content() << endl
-//		 << "expected-size: " << test.attr("expected-size") << endl
-		 << endl;
+	if (VERBOSE)
+	{
+		cout << "----------------------------------------------------------" << endl
+			<< "ID: " << test.get_attribute("ID")
+			<< endl
+			<< "xpath: " << test.get_attribute("xpath") << endl
+	//		 << "data: " << test.content() << endl
+	//		 << "expected-size: " << test.attr("expected-size") << endl
+			<< endl;
+	}
 
 	fs::path data_file = fs::current_path() / test.get_attribute("data");
 	if (not fs::exists(data_file))
@@ -99,15 +102,18 @@ bool run_test(const xml::element& test)
 		}
 	}
 	
-	if (result)
-		cout << "Test passed" << endl;
-	else
+	if (VERBOSE)
 	{
-		cout << "Test failed" << endl;
-		
-		int nr = 1;
-		for (const xml::node* n: ns)
-			cout << nr++ << ") " << *n << endl;
+		if (result)
+			cout << "Test passed" << endl;
+		else
+		{
+			cout << "Test failed" << endl;
+			
+			int nr = 1;
+			for (const xml::node* n: ns)
+				cout << nr++ << ") " << *n << endl;
+		}
 	}
 	
 	return result;
@@ -142,9 +148,13 @@ void run_tests(const fs::path& file)
 	
 	cout << endl;
 	if (failed_nr_of_tests == 0)
-		cout << "All tests passed successfully" << endl;
+		cout << "*** No errors detected" << endl;
 	else
+	{
 		cout << failed_nr_of_tests << " out of " << nr_of_tests << " failed" << endl;
+		if (not VERBOSE)
+			cout << "Run with --verbose to see the errors" << endl;
+	}
 }
 
 int main(int argc, char* argv[])

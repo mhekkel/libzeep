@@ -12,6 +12,7 @@
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/message-parser.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/http/template-processor.hpp>
 
 using namespace std;
 
