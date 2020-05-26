@@ -23,7 +23,7 @@ namespace zeep::http
 file_loader::file_loader(const std::filesystem::path& docroot)
 	: resource_loader(), m_docroot(docroot)
 {
-	if (not std::filesystem::exists(m_docroot))
+	if (not docroot.empty() and not std::filesystem::exists(m_docroot))
 		throw std::runtime_error("Docroot '" + m_docroot.string() + "' does not seem to exist");
 }
 

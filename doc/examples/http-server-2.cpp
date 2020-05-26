@@ -7,13 +7,14 @@ clang++  -o http-server-1 http-server-1.cpp -I ~/projects/boost_1_73_0 -DWEBAPP_
 #undef WEBAPP_USES_RESOURCES
 #include <zeep/http/server.hpp>
 #include <zeep/http/html-controller.hpp>
+#include <zeep/http/template-processor.hpp>
 
 class hello_controller : public zeep::http::html_controller
 {
   public:
-    hello_controller() : zeep::http::html_controller("/", "docroot")
+    hello_controller()
     {
-        /*<< Mount the handler `handle_index` on /index, /index.html and also / >>*/
+        /*<< Mount the handler `handle_index` on =/=, =/index= and =/index.html= / >>*/
         mount("{,index,index.html}", &hello_controller::handle_index);
     }
 
@@ -24,13 +25,14 @@ class hello_controller : public zeep::http::html_controller
         auto name = req.get_parameter("name");
         if (not name.empty())
             sub.put("name", name);
-        create_reply_from_template("hello.xhtml", sub, rep);
+		
+		get_template_processor().create_reply_from_template("hello.xhtml", sub, rep);
     }
 };
 
 int main()
 {
-    zeep::http::server srv;
+    zeep::http::server srv("docroot");
 
     srv.add_controller(new hello_controller());
 

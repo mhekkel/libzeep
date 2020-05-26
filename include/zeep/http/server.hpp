@@ -18,6 +18,7 @@
 
 #include <zeep/http/request.hpp>
 #include <zeep/http/reply.hpp>
+#include <zeep/http/template-processor.hpp>
 
 namespace zeep::http
 {
@@ -26,7 +27,6 @@ class connection;
 class controller;
 class security_context;
 class error_handler;
-class basic_template_processor;
 
 /// \brief The libzeep HTTP server implementation. Originally based on example code found in boost::asio.
 ///
@@ -38,11 +38,25 @@ class server
 {
   public:
 
-	/// \brief Simple server, no security
+	/// \brief Simple server, no security, no template processor
 	server();
+
+	/// \brief Simple server, no security, create default template processor with \a docroot
+	server(const std::string& docroot)
+		: server()
+	{
+		set_template_processor(new template_processor(docroot));
+	}
 
 	/// \brief server with a security context for limited access
 	server(security_context* s_ctxt);
+
+	/// \brief server with a security context for limited access, create default template processor with \a docroot
+	server(security_context* s_ctxt, const std::string& docroot)
+		: server(s_ctxt)
+	{
+		set_template_processor(new template_processor(docroot));
+	}
 
 	server(const server&) = delete;
 	server& operator=(const server&) = delete;
