@@ -177,7 +177,7 @@ The method [memberref zeep::http::basic_template_processor::create_reply_from_te
 
 Libzeep comes with two tag_processor implementations, the first [classref zeep::http::tag_processor_v1 `tag_processor_v1`] is a legacy one and should probably not be used in new code. The second, [classref zeep::http::tag_processor_v2 `tag_processor_v2`], is inspired by [@https://www.thymeleaf.org].
 
-[heading Using =el= script]
+[section Using =el= script]
 
 [def __json_object__ [classref zeep::json::element `json::element`]]
 
@@ -300,7 +300,9 @@ A few predefined utility objects are predefined. These are #dates, #numbers, #re
 	]]
 ]
 
-[heading tag_processor_v1]
+[endsect]
+
+[section tag_processor_v1]
 
 This tag_processor works on tags, mostly. As opposed to tag_processor_v2 which works on attributes mainly.
 The tags are in a separate XML namespace. You can change this name space
@@ -437,13 +439,135 @@ a way to add your own processing tags using an `add_processor` method but that h
 	]
 ]
 ]
+[endsect]
 
-[heading tag_processor_v2]
+[section tag_processor_v2]
 
 Tag processor version 2 is an implementation of the documentation for [@https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html Thymeleaf].
-One day I will write my own documentation but for now you should read the one at the Thymeleaf site.
+This documententation is a bit sparse, for now you might be better off reading the one at the Thymeleaf site.
 
-There are some notable differences though. libzeep does not support the concept of =messages= yet, so using this for localization is not going to work. Furthermore, the Thymeleaf library is written in Java and assumes all data constructs are Java object. Of course that is different in libzeep.
+There are some notable differences between Thymeleaf and libzeep though, libzeep does not support the concept of =messages= yet, so using this for localization is not going to work. Furthermore, the Thymeleaf library is written in Java and assumes all data constructs are Java object. Of course that is different in libzeep.
+
+[heading tags]
+
+There is only one tag this tag processor processes, which is =<z:block>=, for the rest this processor only processes attributes. 
+
+[heading attributes]
+
+Some attributes are treated special, these are listed below. For the other tags the general rule is that if the tag has the prefix for the =v2= namespace, the value of the attribute will be evaluated and the result will be placed in an attribute without the prefix. Possibly overwriting an already existing attribute with that name.
+
+So, e.g. if you have =<span id="one" z:id="${id}"/>= and the variable =id= contains ='two'= the result will be =<span id="two"/>=.
+
+[heading special attributes]
+
+[table processed attributes
+[[attribute]		[remarks]]
+[[=assert=]			[ If the value of this attribute evaluates to `true`, an exception will be thrown. ]]
+[[=attr=]			[
+						The value of this attribute is an expression consisting of one or more comma separated statements that assign a value to an attribute. e.g.
+
+						``
+							<img z:attr="width=${width},height=${height}"/>
+						``
+						
+						will result in the following when the value of the variables =width= and =height= is `100`.
+
+						``
+							<img width="100" height="100/>
+						``
+					]]
+[[=classappend=, =styleappend=]
+					[
+						The value is evaluated and the result is appended to the =class= or =style= attribute respectively.
+					]]
+[[=each=]			[
+						The expression in the value should have a name for a variable, optinally followed by a comma and the name for an iterator-info variable. Then a colon followed by an expression whose result after evaluation is an array.
+
+						The tag containing this attribute will be repeated as many times as there are elements in the array. Each copy will then be evaluated with the name value set to the current value in the array.
+
+						Example, consider this snippet
+
+						``
+							<tr z:each="a, i: ${ { 'aap', 'noot', 'mies' } }">
+							  <td z:text="${i.count}"/>
+							  <td z:text="${a}"/>
+							</tr>]
+						``
+
+						will result in
+
+						``
+							<tr>
+							  <td>1</td>
+							  <td>aap</td>
+							</tr>
+							<tr>
+							  <td>2</td>
+							  <td>noot</td>
+							</tr>
+							<tr>
+							  <td>3</td>
+							  <td>mies</td>
+							</tr>
+						``
+
+						The iterator-info variable can be used to get info about the current value.
+
+						[table iterator members
+						[[name][description]]
+						[[count][counting number starting at one.]]
+						[[index][counting number starting at zero.]]
+						[[even][boolean indicating whether this is an even element]]
+						[[odd][boolean indicating whether this is an odd element]]
+						[[size][size of the total array/collection]]
+						[[first][boolean indicating the first element]]
+						[[last][boolean indicating the last element]]
+						[[current][the value of the current element]]
+						]
+
+					]]
+[[=if=, =unless=]
+					[
+						The attribute value is evaluated and if the result is `true` respectively `false` the containing tag is preserved, otherwise it is deleted.
+					]]
+[[=include=, =insert=, =replace=]
+					[
+						These three statements are used to pull in fragments of markup. The value of the attribute is evaluated and should contain a fragment specification. The contents of this fragment are then copied to the destination. The three attributes differ in the following way:
+
+						[variablelist
+						[[insert][The complete fragment is inserted inside the body of the containing tag]]
+						[[replace][The complete fragment is replaces the containing tag]]
+						[[include][The content of the fragment is inserted inside the body of the containing tag]]
+						]
+
+						Example, when the fragment is `<span z:fragment="f">hello</span>` the following markup:
+
+						``
+							<div z:insert="~{::f}/>
+							<div z:replace="~{::f}/>
+							<div z:include="~{::f}/>
+						``
+
+						will result in:
+
+						``
+							<div><span>hello</span></div>
+							<span>hello</span>
+							<div>hello</div>
+						``						
+
+					]]
+[[=inline=]			[
+						
+					]]
+[[=switch=, =case=]			[		]]
+[[=text=, =utext=]
+			[		]]
+[[=with=]			[		]]
+
+]
+
+[endsect]
 
 [endsect:xhtml-template]
 

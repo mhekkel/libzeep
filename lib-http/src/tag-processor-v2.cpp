@@ -55,21 +55,21 @@ tag_processor_v2::tag_processor_v2(const char* ns)
 {
 	using namespace std::placeholders;
 
-	register_attr_handler("if",				std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("unless",			std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, true));
 	register_attr_handler("assert",			std::bind(&tag_processor_v2::process_attr_assert,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("switch",			std::bind(&tag_processor_v2::process_attr_switch,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("text",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("utext",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("each",			std::bind(&tag_processor_v2::process_attr_each,			this, _1, _2, _3, _4, _5));
 	register_attr_handler("attr",			std::bind(&tag_processor_v2::process_attr_attr,			this, _1, _2, _3, _4, _5));
-	register_attr_handler("with",			std::bind(&tag_processor_v2::process_attr_with,			this, _1, _2, _3, _4, _5));
+	register_attr_handler("classappend",	std::bind(&tag_processor_v2::process_attr_classappend,	this, _1, _2, _3, _4, _5));
+	register_attr_handler("each",			std::bind(&tag_processor_v2::process_attr_each,			this, _1, _2, _3, _4, _5));
+	register_attr_handler("if",				std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("include",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
 	register_attr_handler("inline",			std::bind(&tag_processor_v2::process_attr_inline,		this, _1, _2, _3, _4, _5));
 	register_attr_handler("insert",			std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
-	register_attr_handler("include",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
 	register_attr_handler("replace",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
-	register_attr_handler("classappend",	std::bind(&tag_processor_v2::process_attr_classappend,	this, _1, _2, _3, _4, _5));
 	register_attr_handler("styleappend",	std::bind(&tag_processor_v2::process_attr_styleappend,	this, _1, _2, _3, _4, _5));
+	register_attr_handler("switch",			std::bind(&tag_processor_v2::process_attr_switch,		this, _1, _2, _3, _4, _5));
+	register_attr_handler("text",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("unless",			std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("utext",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("with",			std::bind(&tag_processor_v2::process_attr_with,			this, _1, _2, _3, _4, _5));
 	// register_attr_handler("remove",  std::bind(&tag_processor_v2::process_attr_remove,	this, _1, _2, _3, _4, _5));
 }
 

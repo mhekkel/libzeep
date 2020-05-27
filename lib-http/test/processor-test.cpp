@@ -855,6 +855,27 @@ BOOST_AUTO_TEST_CASE(test_32)
 	process_and_compare(doc, doc_test);
 }
 
+BOOST_AUTO_TEST_CASE(test_32a)
+{
+	auto doc = R"xml(<?xml version="1.0"?>
+<data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+<span z:fragment="f">frag</span>
+<div z:with="frag=~{::f}">
+	<span z:replace="${frag}"/>
+</div>
+</data>
+	)xml"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+<span>frag</span>
+<div>
+	<span>frag</span>
+</div>
+</data>)"_xml;
+
+	process_and_compare(doc, doc_test);}
+
 BOOST_AUTO_TEST_CASE(test_33)
 {
 	auto doc = R"xml(<?xml version="1.0"?>

@@ -94,6 +94,11 @@ class scope
 	/// \brief simple constructor, used where there's no request available
 	scope();
 
+	/// \brief constructor to be used only in debugging 
+	///
+	/// \param req		The incomming HTTP request
+	scope(const request& req);
+
 	/// \brief constructor used in a HTTP request context
 	///
 	/// \param server	The server that handles the incomming request

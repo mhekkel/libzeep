@@ -1806,6 +1806,11 @@ scope::scope(const scope &next)
 		throw std::runtime_error("scope stack overflow");
 }
 
+scope::scope(const request &req)
+	: m_next(nullptr), m_depth(0), m_req(&req), m_server(nullptr)
+{
+}
+
 scope::scope(const server& server, const request &req)
 	: m_next(nullptr), m_depth(0), m_req(&req), m_server(&server)
 {
