@@ -105,7 +105,7 @@ endef
 EXAMPLES = \
 	http-server-0 http-server-1 http-server-2 \
 	serialize-xml synopsis-json synopsis-xml validating-xml-sample xpath-sample \
-	synopsis-el-1 security-sample
+	synopsis-el-1 security-sample rest-sample
 
 $(foreach part,$(EXAMPLES),$(eval $(call EXAMPLE_template,$(part))))
 

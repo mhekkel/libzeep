@@ -910,7 +910,7 @@ object interpreter::parse_template_template_expr()
 					{
 						match(m_lookahead);
 						if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
-							result = object((uint32_t)result.size());
+							result = result.size();
 						else if (m_token_string == "empty")
 							result = result.empty();
 						else if (result.type() == object::value_type::object)
@@ -1706,7 +1706,7 @@ object interpreter::call_method(const string& className, const string& method, v
 		else
 			throw runtime_error("Undefined method " + method + " for utility object " + className);	
 	}
-	else if (className == "#numbers")
+	else if (className == "#request")
 	{
 		if (method == "getRequestURI")
 			result = m_scope.get_request().uri;

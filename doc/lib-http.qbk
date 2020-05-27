@@ -181,10 +181,10 @@ Libzeep comes with two tag_processor implementations, the first [classref zeep::
 
 [def __json_object__ [classref zeep::json::element `json::element`]]
 
-=el= means /Expression Language/. It is a script language that tries to be like
-[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. The objects can be
-created in the C++ server code using the __json_object__ class. Object created this
-way are then stored in a __scope__ object and passed along to the XHTML processing code.
+=el= is the abbreviation for /Expression Language/. It is a script language that tries to be like
+[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. libzeep comes with code to evaluate =el= expressions.
+The language has the concept of variables and these can be created in the C++ code using the __json_object__ class.
+Variables created this way are then stored in a __scope__ object and passed along to the processing code.
 
 To give an example:
 [import ./examples/synopsis-el-1.cpp]
@@ -200,8 +200,105 @@ And if you then print out the result it should give you something like:
 
 	"1: 1, 2: 2"
 
-There are various =el= processing functions available in the file =el-processing.hpp=. The syntax 
-used should be similar to the one in the [@https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html#standard-expression-syntax https://www.thymeleaf.org/] documentation.
+[heading =el= syntax]
+
+Most often you will use simple expressions:
+
+[table Simple expressions
+[[expression][evaluates to]]
+[[`${ ... }`][variable]]
+[[`*{ ... }`][selection variable]]
+[[`@{ ... }`][link URL]]
+[[`~{ ... }`][fragment]]
+[[`#{ ... }`][message (not supported yet in libzeep)]]
+]
+
+The language has literals:
+
+[table Literals
+[[expression][evaluates to]]
+[[`'my text string'`]	[Text literal]]
+[[`0 3.14`]				[Numeric literal, note that scientific notation is not supported]]
+[[`true false`]			[Boolean literal]]
+[[`null`]				[Null literal]]
+[[`user greeting`]		[token]]
+]
+
+Text operations supported are:
+
+[table Text operations
+[[construct]			[description]]
+[[ `'a' + ' b'`]		[concatenation, result is 'a b']]
+[[`|hello ${user}|`]	[literal substitution, if variable user contains 'scott', result is 'hello scott']]
+]
+
+Operators:
+
+[table operators
+[[operators]				[type]]
+[[`+ - * / %`]				[binary operators for standard arithmetic operations]]
+[[`-`]						[unary operator, minus sign]]
+[[`and or`]					[binary operators for standard boolean operations]]
+[[`! not`]					[unary operators, negate]]
+[[`> < >= <= gt lt ge le`]	[operators to compare values]]
+[[`== != eq ne`]			[operators to check for equality]]
+[[`a ? b`]					[conditional operator: if a then return b else null]]
+[[`a ? b : c`]				[conditional operator: if a then return b else return c]]
+[[`a ?: b`]					[conditional operator: if a then return a else return b]]
+]
+
+When using variables, accessing their content follows the same rules as in Javascript. Arrays have a member function `length`.
+
+A few predefined utility objects are predefined. These are #dates, #numbers, #request and #security.
+
+[table Predefined objects and their methods
+[[object.method]				[Description]]
+[[`#dates.format(date,format)`]
+	[
+		This method takes two parameters, a preferrably ISO formatted date and a format string.
+		The result will be the output of [@https://en.cppreference.com/w/cpp/io/manip/put_time `std::put_time`].
+	]]
+[[`#numbers.formatDecimal(number,int_digits,decimals)`]
+	[
+		This method takes up to three parameters, a number that needs to be formatted,
+		an int_digits parameter that specifies the minimum number of integral digits to use and
+		a decimals parameter that specifies how many decimals to use.
+
+		The number is formatted using the locale matching the language specified in the Accept HTTP request header. However, if that locale is not available the default locale is used.
+
+		Defaults for int_digits is 1 and decimals is 0.
+
+		Example output: `${#numbers.formatDecimal(pi,2,4)}` is =03.1415= when the locale to use is en_US.
+	]]
+[[`#numbers.formatDiskSize(number,decimals)`]
+	[
+		This method takes up to two parameters, a number that needs to be formatted,
+		and a decimals parameter that specifies how many decimals to use.
+
+		The number is divided by 1024 until it fits three int digits and the suffix is
+		adjusted accordingly.
+
+		Default for decimals is 0.
+
+		Example output: `${#numbers.formatDiskSize(20480,2)}` is =2.00K= when the locale to use is en_US.
+	]]
+[[`#request.getRequestURI()`]
+	[
+		Returns the original URI in the HTTP request.
+	]]
+[[`#security.authorized()`]
+	[
+		Returns whether the uses has successfully logged in.
+	]]
+[[`#security.username()`]
+	[
+		Returns the username for the current user.
+	]]
+[[`#security.hasRole(role)`]
+	[
+		Returns whether the uses has the role as specified by the parameter.
+	]]
+]
 
 [heading tag_processor_v1]
 
@@ -352,7 +449,9 @@ There are some notable differences though. libzeep does not support the concept 
 
 [section:rest-controller REST Controller]
 
-Creating REST controllers is easy.
+The __rest_controller__ class is similar to the __html_controller__ in that it allows you to map a request to a member function. The difference however is that the REST controller translates parameters from HTTP requests into arguments for your method and translates the result of the method back into JSON to be returned to the client. Lets walk through an example again to show how this works.
+
+[import examples/rest-sample.cpp]
 
 [endsect:rest-controller]
 

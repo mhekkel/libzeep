@@ -103,7 +103,8 @@ class rest_controller : public controller
 	{
 		using Sig = Result(ControllerType::*)(Args...);
 		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
-		using Callback = std::function<Result(Args...)>;
+		using ResultType = typename std::remove_const_t<typename std::remove_reference_t<Result>>;
+		using Callback = std::function<ResultType(Args...)>;
 
 		static constexpr size_t N = sizeof...(Args);
 

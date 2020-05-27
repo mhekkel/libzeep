@@ -1,0 +1,75 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [
+<!ENTITY times "&#xD7;">
+]>
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:z="http://www.hekkelman.com/libzeep/m2">
+  <head>
+    <title>Hello</title>
+    <link rel="stylesheet" href="css/w3.css"/>
+    <script src="scripts/shop.js"></script>
+
+    <style>
+      #cart-list li:first-child {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <div id="account-form">
+    <div class="w3-container w3-teal">
+      <h3>Account info</h3>
+    </div>
+    <form name="client-form" class="w3-container">
+      <p>
+        <input id='client-name' class="w3-input" type="text" placeholder="your name"/>
+        <label>Client name</label>
+      </p>
+      
+      <button id="create-cart-btn" class="w3-btn w3-blue">Create Cart</button>
+    </form>
+  </div>
+
+  <div id="shopping-page" class="w3-row" style="display: none;">
+
+    <div class="w3-col m8 l9">
+
+      <div class="w3-container w3-blue">
+        <h3>Available items</h3>
+      </div>
+
+      <div class="w3-container">
+
+        <p>Welcome <span id="user-name"></span>, today we have on offer the following items.</p>
+        <ul class="w3-ul">
+          <li class="w3-display-container">Milk
+            <span data-item="milk" class="w3-button w3-display-right shopping-item">add</span>
+          </li>
+          <li class="w3-display-container">Butter
+            <span data-item="butter" class="w3-button w3-display-right shopping-item">add</span>
+          </li>
+          <li class="w3-display-container">Eggs six-pack
+            <span data-item="eggs" class="w3-button w3-display-right shopping-item">add</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="w3-col m4 l3">
+
+      <div class="w3-container w3-green">
+        <h3>Shopping cart</h3>
+      </div>
+
+      <div id="cart-list-container" class="w3-container" style="display: none;">
+        <p>These are the items you've put in your shopping cart. Click the &times; button to remove items.</p>
+
+        <ul id="cart-list" class="w3-ul w3-card">
+          <li class="w3-display-container">
+            <span class="text-placeholder"></span>
+            <span class="w3-button w3-display-right cart-item">&times;</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</html>
