@@ -5,24 +5,25 @@ clang++  -o authentication-sample authentication-sample.cpp -I ~/projects/boost_
 // In this example we don't want to use rsrc based templates
 #undef WEBAPP_USES_RESOURCES
 
-//[ authentication_sample
 #include <zeep/http/server.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/template-processor.hpp>
 #include <zeep/http/security.hpp>
 
+//[ sample_security_controller
 class hello_controller : public zeep::http::html_controller
 {
   public:
     hello_controller()
     {
-        /*<< Mount the handler `handle_index` on =/=, =/index= and =/index.html= >>*/
+        // Mount the handler `handle_index` on /, /index and /index.html
         mount("{,index,index.html}", &hello_controller::handle_index);
 
-        /*<< This admin page will only be accessible by authorized users >>*/      
+        // This admin page will only be accessible by authorized users
         mount("admin", &hello_controller::handle_admin);
 
+        // scripts & css
         mount("{css,scripts}/", &hello_controller::handle_file);
     }
 
@@ -36,9 +37,11 @@ class hello_controller : public zeep::http::html_controller
         get_template_processor().create_reply_from_template("security-admin.xhtml", scope, rep);
     }
 };
+//]
 
 int main()
 {
+    //[ create_user_service
     // Create a user service with a single user
     zeep::http::simple_user_service users({
         {
@@ -47,15 +50,21 @@ int main()
             { "USER", "ADMIN" }
         }
     });
+    //]
 
+    //[ create_security_context
     // Create a security context with a secret and users
     std::string secret = zeep::random_hash();
     auto sc = new zeep::http::security_context(secret, users, false);
+    //]
     
+    //[ add_access_rules
     // Add the rule,
     sc->add_rule("/admin", "ADMIN");
     sc->add_rule("/", {});
+    //]
 
+    //[ start_server
     /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
     zeep::http::server srv(sc, "docroot");
 
@@ -64,7 +73,7 @@ int main()
 
     srv.bind("127.0.0.1", 8080);
     srv.run(2);
+    //]
 
     return 0;
 }
-//]

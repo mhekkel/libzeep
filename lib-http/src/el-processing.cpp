@@ -1720,7 +1720,7 @@ object interpreter::call_method(const string& className, const string& method, v
 			if (params.size() == 1 and params[0].is_string())
 			{
 				auto role = params[0].as<std::string>();
-				auto roles = m_scope.get_credentials()["roles"];
+				auto roles = m_scope.get_credentials()["role"];
 				result = roles.is_array() and roles.contains(role);
 			}
 		}

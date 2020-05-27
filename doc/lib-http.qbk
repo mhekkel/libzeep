@@ -378,13 +378,71 @@ You can derive your own error handler from __error_handler__ and implement a =cr
 [def __security_context__ [classref zeep::http::security_context `security_context`]]
 [def __user_service__ [classref zeep::http::user_service `user_service`]]
 [def __user_details__ [classref zeep::http::user_details `user_details`]]
+[def __simple_user_service__ [classref zeep::http::simple_user_service `simple_user_service`]]
 
 In a web application it is often required to limit access to certain URI's to authorized users. To facilitate this in libzeep, the __http_server__ object can use a __security_context__. The __security_context__ itself uses a __user_service__ to provide __user_details__ structs containing the actual data for a user.
 
-The __user_details__ structure contains the =username=, encrypted =password= and a list of =roles= this user can play. The roles are simple text strings and should preferrably very short, like ='USER'= or ='ADMIN'=. 
+The __user_details__ structure contains the =username=, encrypted =password= and a list of =roles= this user can play. The roles are simple text strings and should preferrably be very short, like ='USER'= or ='ADMIN'=. 
 
-The __user_service__ class returns __user_details__ based on a =username= via the pure virtual method [memberref zeep::http::user_service::load_user `load_user`]. 
+The __user_service__ class returns __user_details__ based on a =username= via the pure virtual method [memberref zeep::http::user_service::load_user `load_user`]. A __simple_user_service__ class is available to create very simple user services based on static data. In a real world application you should implement your own user_service and store user information in e.g. a database.
 
+[heading example]
+
+Let us walk through an example of an application using security. This web application will have two pages, a landing page at the URI =/= (but also at =/index= and =/index.html=) and an admin page at =/admin=. The latter of course will only be accessible by our admin who is called /scott/ and he uses the password /tiger/.
+
+[note The code for all example code used in this documentation can be found in the doc/examples subdirectory of the libzeep distribution. ]
+
+First start by writing some template code. For this example we will have a common menu template and two templates for the two pages respectively. The interesting part of the menu template is this: [teletype]
+
+	<div z:fragment="menu" class="w3-bar w3-border w3-light-grey">
+	  <a href="/" class="w3-bar-item w3-button">Home</a>
+	  <a href="/admin" class="w3-bar-item w3-button"
+	  	 z:classappend="${#security.hasRole('ADMIN') ? '' : 'w3-text-grey w3-hover-none w3-hover-text-grey'}">Admin</a>
+	  <a z:if="${not #security.authorized()}" href="/login" class="w3-bar-item w3-button w3-green w3-right">Login</a>
+	  <a z:if="${#security.authorized()}" href="/logout" class="w3-bar-item w3-button w3-green w3-right">Logout</a>
+	</div> 
+
+We're using [@https://www.w3schools.com/w3css/default.asp W3.CSS] as CSS library, albeit we have stored a copy in our own docroot. The two last links in this navigation bar have the =z:if="..."= argument checking whether the current user is authorized. These attributes help in select which of the two will be visible, login or logout, based on the current authentication state. The =#security= class in our =el= library has two more methods called =username= and =hasRole=. The last one returns true when a user has the role asked for.
+
+[import examples/security-sample.cpp]
+
+Next we define a simple __html_controller__ that handles the two pages and also serves stylesheets and scripts.
+
+[sample_security_controller]
+
+Nothing fancy here, just a simple controller returning pages based on templates. In the template we add a salutation: [teletype]
+
+	<p>Hello, <span z:text="${#security.username() ?: 'world'}"></span>!</p>
+
+And here we see the call to =#security.username()=. Note also the use of the elvis operator, if username is not set, 'world' is used instead.
+
+Now, in the `main` of our application we first create a __user_service__.
+
+[create_user_service]
+
+We use the __simple_user_service__ class and provide a static list of users. The __user_service__ should return __user_details__ with an encrypted password and therefore we encrypt the plain text password here. Normally you would store this password encrypted of course. For encrypting password we use the [classref zeep::http::pbkdf2_sha256_password_encoder `pbkdf2_sha256_password_encoder`] class. You can add other password encoders based on other algorithms like bcrypt but you then have to register these yourself using [memberref zeep::http::security_context::register_password_encoder `security_context::register_password_encoder`];
+
+Now we can create the security context. This context will be passed to the __http_server__ class as a pointer and the __http_server__ will take ownership.
+
+[create_security_context]
+
+The secret passed to the security_context is used in creating signatures for the [@https://en.wikipedia.org/wiki/JSON_Web_Token JWT token]. If you store this secret, the sessions of your users will persist reboots of the server. But in this case we create a new secret after each launch and thus the tokens will expire.
+
+Now we add access rules.
+
+[add_access_rules]
+
+A rule specifies for a glob pattern which users can access it based on the roles these users have. If the list of roles is empty, this means all users should be able to access this URI. When a request is received, the rules are checked in order of which they were added. The first match will be used to check the roles.
+
+In this example =/admin= is only accessible by users having role /ADMIN/. All other URI's are allowed by everyone. Note that we could have also created the __security_context__ with the parameter defaultAccessAllowed as `true`, we then would not have needed that last rule.
+
+And now we can create the __http_server__, add some controller and start it.
+
+[start_server]
+
+Note that we add the default [classref zeep::http::login_controller `login_controller`]. This controller takes care of handling =/login= and =/logout= requests. It will also add the required rule for =/login= to the __security_context__ using `add_rule("/login", {});` since otherwise the login page would not be reachable. Make sure you do not add your own rules that prevent access to this page.
+
+And that's all. You can now start this server and see that you can access =/= and =/login= without any problem but =/admin= will give you an authentication error. When you login using the credentials =scott/tiger= you can access the =/admin= page and you can now also click the Logout button.
 
 [endsect]
 

@@ -132,7 +132,6 @@ json::element security_context::get_credentials(const request& req) const
 		if (sig != m[3].str())
 			break;
 
-		json::element credentials;
 		json::parse_json(decode_base64url(m[2].str()), result);
 		break;
 	}
