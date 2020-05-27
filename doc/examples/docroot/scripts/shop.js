@@ -1,4 +1,6 @@
-
+/*
+	simple shopping cart example
+*/
 
 class ShoppingCart {
 	constructor(name, id) {
@@ -30,7 +32,7 @@ class ShoppingCart {
 			.then(order => this.updateOrder(order))
 			.catch(err => {
 				console.log(err);
-				alert(`Failed ot add ${item} to cart`);
+				alert(`Failed to add ${item} to cart`);
 			});
 	}
 
@@ -42,7 +44,7 @@ class ShoppingCart {
 			.then(order => this.updateOrder(order))
 			.catch(err => {
 				console.log(err);
-				alert(`Failed ot add ${item} to cart`);
+				alert(`Failed to remove ${item} from cart`);
 			});
 	}
 

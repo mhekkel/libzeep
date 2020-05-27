@@ -453,6 +453,21 @@ The __rest_controller__ class is similar to the __html_controller__ in that it a
 
 [import examples/rest-sample.cpp]
 
+We begin our example by declaring some shopping cart objects. These are plain structs that also define a `serialize` method for use with serialization.
+
+[cart_items]
+
+Now we create a REST controller that will handle the creation of a new cart and adding and deleting items from this cart. We use standard CRUD REST syntax for this, so e.g. the cart ID is part of the path in the URI for adding and deleting items.
+
+[shop_rest_controller]
+
+The page, script and stylesheet are served by a __html_controller__.
+
+[shop_html_controller]
+
+
+
+
 [endsect:rest-controller]
 
 [section:rest-controller SOAP Controller]
