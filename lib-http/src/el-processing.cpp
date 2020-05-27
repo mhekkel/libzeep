@@ -16,6 +16,7 @@
 #include <zeep/crypto.hpp>
 #include <zeep/unicode-support.hpp>
 #include <zeep/http/el-processing.hpp>
+#include <zeep/http/server.hpp>
 
 #include "format.hpp"
 
@@ -1712,6 +1713,28 @@ object interpreter::call_method(const string& className, const string& method, v
 		else if (method == "getRequestURL")
 			result = m_scope.get_request().uri;
 	}
+	else if (className == "#security")
+	{
+		if (method == "hasRole")
+		{
+			if (params.size() == 1 and params[0].is_string())
+			{
+				auto role = params[0].as<std::string>();
+				auto roles = m_scope.get_credentials()["roles"];
+				result = roles.is_array() and roles.contains(role);
+			}
+		}
+		else if (method == "authorized")
+		{
+			result = m_scope.get_credentials()["username"].is_string();
+		}
+		else if (method == "username")
+		{
+			result = m_scope.get_credentials()["username"];
+		}
+		else
+			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+	}
 	else
 		throw runtime_error("Undefined class for utility object call: " + className);
 	
@@ -1769,21 +1792,22 @@ ostream &operator<<(ostream &lhs, const scope &rhs)
 }
 
 scope::scope()
-	: m_next(nullptr), m_depth(0), m_req(nullptr)
+	: m_next(nullptr), m_depth(0), m_req(nullptr), m_server(nullptr)
 {
 }
 
 scope::scope(const scope &next)
 	: m_next(const_cast<scope *>(&next))
 	, m_depth(next.m_depth + 1)
-	, m_req(nullptr)
+	, m_req(next.m_req)
+	, m_server(next.m_server)
 {
 	if (m_depth > 1000)
 		throw std::runtime_error("scope stack overflow");
 }
 
-scope::scope(const request &req)
-	: m_next(nullptr), m_depth(0), m_req(&req)
+scope::scope(const server& server, const request &req)
+	: m_next(nullptr), m_depth(0), m_req(&req), m_server(&server)
 {
 }
 
@@ -1839,11 +1863,18 @@ object& scope::lookup(const string &name)
 
 const request& scope::get_request() const
 {
-	if (m_next)
-		return m_next->get_request();
+	// if (m_next)
+	// 	return m_next->get_request();
 	if (m_req == nullptr)
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
+}
+
+json::element scope::get_credentials() const
+{
+	if (m_req == nullptr or m_server == nullptr)
+		throw zeep::exception("Invalid scope, no request, no server");
+	return m_server->get_credentials(*m_req);
 }
 
 void scope::select_object(const object& o)

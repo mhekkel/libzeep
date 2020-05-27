@@ -373,6 +373,21 @@ You can derive your own error handler from __error_handler__ and implement a =cr
 
 [endsect:error-handlers]
 
+[section:security Security]
+
+[def __security_context__ [classref zeep::http::security_context `security_context`]]
+[def __user_service__ [classref zeep::http::user_service `user_service`]]
+[def __user_details__ [classref zeep::http::user_details `user_details`]]
+
+In a web application it is often required to limit access to certain URI's to authorized users. To facilitate this in libzeep, the __http_server__ object can use a __security_context__. The __security_context__ itself uses a __user_service__ to provide __user_details__ structs containing the actual data for a user.
+
+The __user_details__ structure contains the =username=, encrypted =password= and a list of =roles= this user can play. The roles are simple text strings and should preferrably very short, like ='USER'= or ='ADMIN'=. 
+
+The __user_service__ class returns __user_details__ based on a =username= via the pure virtual method [memberref zeep::http::user_service::load_user `load_user`]. 
+
+
+[endsect]
+
 [section:crypto Cryptographic routines]
 
 A limited number of cryptographic routines are available in `<zeep/crypto.hpp>`. These can be divided in the following categories:

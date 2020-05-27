@@ -32,6 +32,12 @@ class login_controller : public controller
   public:
 	login_controller(const std::string& prefix_path = "/");
 
+	/// \brief bind this controller to \a server
+	///
+	/// Makes sure the server has a security context and adds rules
+	/// to this security context to allow access to the /login page
+	virtual void set_server(server* server);
+
 	/// \brief will handle the actual requests
 	virtual bool handle_request(request& req, reply& rep);
 

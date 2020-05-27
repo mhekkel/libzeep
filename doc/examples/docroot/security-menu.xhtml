@@ -1,0 +1,15 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:z="http://www.hekkelman.com/libzeep/m2">
+  <head>
+    <title>Landing page</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"/>
+  </head>
+
+  <div z:fragment="menu" class="w3-bar w3-border w3-light-grey">
+    <a href="/" class="w3-bar-item w3-button">Home</a>
+    <a href="/admin" class="w3-bar-item w3-button">Admin</a>
+    <a z:if="${not #security.authorized()}" href="/login" class="w3-bar-item w3-button w3-green w3-right">Login</a>
+    <a z:if="${#security.authorized()}" href="/logout" class="w3-bar-item w3-button w3-green w3-right">Logout</a>
+  </div> 
+</html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:z="http://www.hekkelman.com/libzeep/m2">
+  <head>
+    <title>Admin page</title>
+    <script src="scripts/security.js"></script>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"/>
+  </head>
+
+  <div z:replace="~{security-menu::menu}"></div>
+  <div class="w3-container">
+    <p>Hello, <span z:text="${#security.username() ?: 'world'}"></span>, you're now on the Admin page</p>
+  </div>
+</html>

@@ -80,7 +80,7 @@ bool html_controller::handle_request(request& req, reply& rep)
 		uri.erase(uri.begin());
 
 	// set up the scope by putting some globals in it
-	scope scope(req);
+	scope scope(get_server(), req);
 
 	scope.put("uri", object(uri));
 	auto s = uri.find('?');

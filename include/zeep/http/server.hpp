@@ -61,8 +61,13 @@ class server
 	server(const server&) = delete;
 	server& operator=(const server&) = delete;
 
+	virtual ~server();
+
 	/// \brief Get the security context provided in the constructor
 	security_context& get_security_context() 		{ return *m_security_context; }
+
+	/// \brief Test if a security context was provided in the constructor
+	bool has_security_context() const				{ return (bool)m_security_context; }
 
 	/// \brief Add controller to the list of controllers
 	///
@@ -118,8 +123,6 @@ class server
 
 	/// \brief Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address, unsigned short port);
-
-	virtual ~server();
 
 	/// \brief Set whether to add a csrf-token Cookie to the session, default is false
 	void set_add_csrf_token(bool b);

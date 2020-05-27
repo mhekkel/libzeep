@@ -16,6 +16,18 @@ login_controller::login_controller(const std::string& prefix_path)
 {
 }
 
+void login_controller::set_server(server* server)
+{
+	controller::set_server(server);
+
+	assert(get_server().has_security_context());
+	if (not get_server().has_security_context())
+		throw std::runtime_error("The HTTP server has no security context");
+
+	auto& sc = get_server().get_security_context();
+	sc.add_rule("/login", {});
+}
+
 xml::document login_controller::load_login_form() const
 {
 	using namespace xml::literals;

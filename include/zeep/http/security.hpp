@@ -62,11 +62,15 @@ class password_encoder
 class pbkdf2_sha256_password_encoder : public password_encoder
 {
   public:
+	static inline constexpr const char* name() { return "pbkdf2_sha256"; };
+
 	pbkdf2_sha256_password_encoder(int iterations = 30000, int key_length = 32)
 		: m_iterations(iterations), m_key_length(key_length) {}
 
 	virtual std::string encode(const std::string& password) const
 	{
+		using namespace std::literals;
+
 		auto salt = zeep::encode_base64(zeep::random_hash()).substr(12);
 		auto pw = zeep::encode_base64(zeep::pbkdf2_hmac_sha256(salt, password, m_iterations, m_key_length));
 		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
@@ -74,6 +78,8 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 
 	virtual bool matches(const std::string& raw_password, const std::string& stored_password) const
 	{
+		using namespace std::literals;
+
 		bool result = false;
 
 		std::regex rx(R"(pbkdf2_sha256\$(\d+)\$([^$]+)\$(.+))");
@@ -106,6 +112,10 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 /// password.
 struct user_details
 {
+	user_details() {}
+	user_details(const std::string& username, const std::string& password, const std::set<std::string>& roles)
+		: username(username), password(password), roles(roles) {}
+
 	std::string username;
 	std::string password;
 	std::set<std::string> roles;
@@ -145,6 +155,41 @@ class user_service
 
 // --------------------------------------------------------------------
 
+/// \brief A very simple implementation of the user service class
+///
+/// This implementation of a user service can be used to jump start a
+/// project. Normally you would implement something more robust.
+
+class simple_user_service : public user_service
+{
+  public:
+	simple_user_service(std::initializer_list<std::tuple<std::string,std::string,std::set<std::string>>> users)
+	{
+		for (auto&& [username, password, roles]: users)
+			add_user(username, password, roles);
+	}
+
+	/// \brief return the user_details for a user named \a username
+	virtual user_details load_user(const std::string& username) const
+	{
+		user_details result = {};
+		auto ui = std::find_if(m_users.begin(), m_users.end(), [username](const user_details& u) { return u.username == username; });
+		if (ui != m_users.end())
+			result = *ui;
+		return result;
+	}
+
+	void add_user(const std::string& username, const std::string& password, const std::set<std::string>& roles)
+	{
+		m_users.emplace_back(username, password, roles);
+	}
+
+  protected:
+	std::vector<user_details> m_users;
+};
+
+// --------------------------------------------------------------------
+
 /// \brief class that manages security in a HTTP scope
 ///
 /// Add this to a HTTP server and it will check authentication.
@@ -160,8 +205,21 @@ class security_context
 	///
 	/// Create a security context for server \a s with validator \a validator and
 	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
-	security_context(const std::string& secret, user_service& users, password_encoder* encoder, bool defaultAccessAllowed = false)
-		: m_secret(secret), m_users(users), m_default_allow(defaultAccessAllowed), m_encoder(encoder) {}
+	security_context(const std::string& secret, user_service& users, bool defaultAccessAllowed = false)
+		: m_secret(secret), m_users(users), m_default_allow(defaultAccessAllowed)
+	{
+		register_password_encoder<pbkdf2_sha256_password_encoder>();
+	}
+
+	/// \brief register a custom password encoder
+	///
+	/// The password encoder should derive from the abstract password encoder class above
+	/// and also implement the name() method.
+	template<typename PWEncoder>
+	void register_password_encoder()
+	{
+		m_known_password_encoders.emplace_back(PWEncoder::name(), new PWEncoder());
+	}
 
 	/// \brief Add a new rule for access
 	///
@@ -246,8 +304,8 @@ class security_context
 	std::string m_secret;
 	user_service& m_users;
 	bool m_default_allow;
-	std::unique_ptr<password_encoder> m_encoder;
 	std::vector<rule> m_rules;
+	std::vector<std::tuple<std::string,std::unique_ptr<password_encoder>>> m_known_password_encoders;
 };
 
 

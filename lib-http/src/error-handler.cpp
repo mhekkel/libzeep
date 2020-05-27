@@ -52,7 +52,7 @@ bool error_handler::create_error_reply(const request& req, std::exception_ptr ep
 
 bool error_handler::create_unauth_reply(const request& req, const std::string& realm, reply& rep)
 {
-	return create_error_reply(req, unauthorized, "You don't have access to " + realm, rep);
+	return create_error_reply(req, unauthorized, "You don't have access to this page", rep);
 }
 
 bool error_handler::create_error_reply(const request& req, status_type status, reply& rep)
@@ -68,7 +68,7 @@ bool error_handler::create_error_reply(const request& req, status_type status, c
 	{
 		auto& template_processor = m_server->get_template_processor();
 
-		scope scope(req);
+		scope scope(*get_server(), req);
 
 		object error
 		{

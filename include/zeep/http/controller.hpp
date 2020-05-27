@@ -44,7 +44,7 @@ class controller
 	bool path_matches_prefix(const std::string& path) const;
 
 	/// \brief bind this controller to \a server
-	void set_server(server* server)
+	virtual void set_server(server* server)
 	{
 		m_server = server;
 	}

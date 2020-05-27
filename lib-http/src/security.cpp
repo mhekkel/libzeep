@@ -30,6 +30,23 @@ void security_context::validate_request(const request& req) const
 
 	for (;;)
 	{
+		std::string path = req.get_path();
+
+		// first check if this page is allowed without any credentials
+		// that means, the first rule that matches this uri should allow
+		// access.
+		for (auto& rule: m_rules)
+		{
+			if (not glob_match(path, rule.m_pattern))
+				continue;
+			
+			allow = rule.m_roles.empty();
+			break;
+		}
+
+		if (allow)
+			break;
+
 		std::set<std::string> roles;
 
 		auto access_token = req.get_cookie("access_token");
@@ -61,8 +78,6 @@ void security_context::validate_request(const request& req) const
 			for (auto role: credentials["role"])
 				roles.insert(role.as<std::string>());
 		}
-
-		std::string path = req.get_path();
 
 		for (auto& rule: m_rules)
 		{
@@ -119,6 +134,7 @@ json::element security_context::get_credentials(const request& req) const
 
 		json::element credentials;
 		json::parse_json(decode_base64url(m[2].str()), result);
+		break;
 	}
 
 	return result;
@@ -160,7 +176,17 @@ void security_context::verify_username_password(const std::string& username, con
 	{
 		auto user = m_users.load_user(username);
 		
-		if (not m_encoder->matches(raw_password, user.password))
+		bool match = false;
+		for (auto&& [name, pwenc]: m_known_password_encoders)
+		{
+			if (user.password.compare(0, name.length(), name) != 0)
+				continue;
+			
+			match = pwenc->matches(raw_password, user.password);
+			break;
+		}
+
+		if (not match)
 			throw invalid_password_exception();
 
 		add_authorization_headers(rep, user);

@@ -27,6 +27,7 @@ namespace zeep::http
 using object = ::zeep::json::element;
 
 class scope;
+class server;
 
 /// \brief Process the text in \a text and return `true` if the result is
 ///        not empty, zero or false.
@@ -95,8 +96,9 @@ class scope
 
 	/// \brief constructor used in a HTTP request context
 	///
-	/// \param req	The incomming HTTP request
-	scope(const request& req);
+	/// \param server	The server that handles the incomming request
+	/// \param req		The incomming HTTP request
+	scope(const server& server, const request& req);
 
 	/// \brief chaining constructor
 	///
@@ -139,6 +141,9 @@ class scope
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
 	const request& get_request() const;
 
+	/// \brief return the credentials of the current user
+	json::element get_credentials() const;
+
     /// \brief select object \a o , used in z2:object constructs
     void select_object(const object& o);
 
@@ -175,6 +180,7 @@ class scope
 	scope *m_next;
 	unsigned m_depth;
 	const request *m_req;
+	const server* m_server;
     object m_selected;
 
 	using nodeset_map = std::map<std::string,node_set_type>;
