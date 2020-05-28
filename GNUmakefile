@@ -23,6 +23,7 @@ CXXFLAGS            += -Wall
 CXXFLAGS            += -g
 LD                  ?= ld
 LDFLAGS				= -g
+BJAM				?= b2
 
 # default is to only create a static library
 BUILD_STATIC_LIB	?= 1
@@ -121,7 +122,7 @@ examples: libraries
 
 .PHONY: doc
 doc:
-	cd doc; bjam
+	cd doc; $(BJAM)
 
 .PHONY: all	
 all: libraries test examples
@@ -129,7 +130,7 @@ all: libraries test examples
 .PHONY: clean
 clean: $(ZEEP_LIB_PARTS:%=%_clean)
 	$(MAKE) -C examples clean
-	cd doc; test -x $(which b2) && b2 clean
+	cd doc; $$(which $(BJAM) > /dev/null) && $(BJAM) clean || echo "No $(BJAM) installed, cannot clean doc"
 	rm -f $(DIST_NAME).tgz
 
 .PHONY: dist
