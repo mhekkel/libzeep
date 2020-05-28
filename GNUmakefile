@@ -9,7 +9,7 @@
 # override some of the default settings.
 # 
 
-firstTarget: static-libs
+firstTarget: all
 
 # installation prefix
 PREFIX              ?= /usr/local

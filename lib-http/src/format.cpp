@@ -5,6 +5,7 @@
 
 #include <regex>
 #include <codecvt>
+#include <cmath>
 
 #include <boost/algorithm/string.hpp>
 

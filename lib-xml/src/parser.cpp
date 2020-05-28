@@ -5,6 +5,8 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 #include <stack>
+#include <map>
+#include <sstream>
 
 #include <boost/algorithm/string.hpp>
 

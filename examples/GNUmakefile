@@ -1,4 +1,4 @@
-# Makefile for libzeep, the examples
+# Makefile for the libzeep-http library
 #
 # Copyright Maarten L. Hekkelman, UMC St. Radboud 2008-2013.
 #        Copyright Maarten L. Hekkelman, 2014-2019
@@ -11,50 +11,55 @@
 
 firstTarget: all
 
-# installation prefix
-PREFIX              ?= /usr/local
-
-PACKAGES			+= libpqxx
-
 # main build variables
 CXX                 ?= c++
-CXXFLAGS            += $(BOOST_INC_DIR:%=-I%) -I. -pthread -std=c++17
-CXXFLAGS            += -Wall
-CXXFLAGS            += -g
+CFLAGS	            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17 -Wall -g
 LD                  ?= ld
 LDFLAGS				= -g
 
 # Use the DEBUG flag to build debug versions of the code
-DEBUG               = 0
+DEBUG               ?= 0
 
--include ../make.config
+MRC					?= mrc
 
-ifneq ($(PACKAGES),)
-CXXFLAGS			+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(PACKAGES))
-LDFLAGS				+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PACKAGES) --static )
+# Using resources should be the default
+ifeq ($(USE_RSRC),)
+ifeq ($(shell which $(MRC)),)
+$(warning "")
+$(warning "The executable mrc is not found in your path.")
+$(warning "Please consider installing it to enable compiled-in data resources.")
+$(warning "See https://github.com/mhekkel/mrc")
+$(warning "")
+	USE_RSRC = 0
+else
+	USE_RSRC = 1
+endif
 endif
 
-BOOST_LIBS          = date_time
-BOOST_LIBS          := $(BOOST_LIBS:%=-lboost_%)
+ifneq ($(USE_RSRC),0)
+	DEFINES		+= WEBAPP_USES_RESOURCES
+endif
 
-ZEEP_LIB_NAMES		?= http json xml
-ZEEP_LIBS			:= $(ZEEP_LIB_NAMES:%=-lzeep-%)
+# include the global configuration file
+include ../make.config
 
-LIBS				+= m rt stdc++fs
-LIBS				:= $(LIBS:%=-l%)
-LIBS				+= $(ZEEP_LIBS) $(BOOST_LIBS) -lz -lbz2 -lpthread 
+BOOST_INC_DIR		?= $(BOOST)/include
+BOOST_LIB_DIR		?= $(BOOST)/lib
 
-LDFLAGS             += $(BOOST_LIB_DIR:%=-L%) -L../lib $(LIBS) -g
+CFLAGS				+= -I $(BOOST_INC_DIR)
+LDFLAGS				+= -L $(BOOST_LIB_DIR)
 
-ifneq "$(DEBUG)" "1"
-CXXFLAGS			+= -O2
+CFLAGS				+= $(DEFINES:%=-D%)
+
+ifeq "$(DEBUG)" "1"
+CFLAGS				+= -DDEBUG
+else
+CFLAGS				+= -O2
 endif
 
 # targets
 
-VPATH += src
-
-CXXFLAGS += -I ../include
+CFLAGS				+= -I ../../include
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -64,30 +69,46 @@ endif
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-TEST_APPS = zeep-test html-test processor-tester
-
-OBJECTS = $(TEST_APPS:%=$(OBJDIR)/%.o)
-	
--include $(OBJECTS:%.o=%.d)
-
-$(OBJECTS:.o=.d):
-
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-	@ echo ">>" $<
+	@ echo "cc>" $<
 	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
 
-all: $(TEST_APPS)
-.PHONY: all
-
-$(TEST_APPS): $(ZEEP_LIB_NAMES:%=../../lib/libzeep-%.a)
-
-$(TEST_APPS): %: $(OBJDIR)/%.o
-	@ echo '->' $@
-	@ $(CXX) -o $@ $^ $(LDFLAGS)
+$(OBJDIR)/dummy_rsrc.o:
+	$(MRC) -o $@ test.xml
 
 clean:
-	rm -rf $(OBJDIR)/* $(TEST_APPS)
+	rm -rf $(OBJDIR)/* $(EXAMPLES)
 
-dist-clean: clean
+ZEEP_LIBS = http xml json
+BOOST_LIBS = system
+
+define EXAMPLE_template =
+
+-include $$(OBJDIR)/$(1).d
+
+$(1)_OBJECTS = $$(OBJDIR)/$(1).o
+
+ifneq ($$(USE_RSRC),0)
+$(1)_OBJECTS += $$(OBJDIR)/dummy_rsrc.o
+endif
+
+$(1): $$($(1)_OBJECTS)
+	@ echo "ld> $(1)"
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+
+endef
+
+EXAMPLES = \
+	http-server-0 http-server-1 http-server-2 \
+	serialize-xml synopsis-json synopsis-xml validating-xml-sample xpath-sample \
+	synopsis-el-1 security-sample rest-sample
+
+$(foreach part,$(EXAMPLES),$(eval $(call EXAMPLE_template,$(part))))
+
+.PHONY: examples
+examples: $(EXAMPLES)
+
+all: examples
 
 FORCE:
+
