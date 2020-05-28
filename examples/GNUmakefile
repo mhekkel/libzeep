@@ -59,7 +59,7 @@ endif
 
 # targets
 
-CFLAGS				+= -I ../../include
+CFLAGS				+= -I ../include
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -94,7 +94,7 @@ endif
 
 $(1): $$($(1)_OBJECTS)
 	@ echo "ld> $(1)"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
 endef
 
