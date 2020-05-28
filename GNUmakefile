@@ -136,7 +136,7 @@ clean: $(ZEEP_LIB_PARTS:%=%_clean)
 .PHONY: dist
 dist: doc
 	rm -rf $(DIST_NAME)
-	svn export . $(DIST_NAME)
+	git archive master | tar -x -C $(DIST_NAME)
 	find doc/html -depth | cpio -pd $(DIST_NAME)
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)

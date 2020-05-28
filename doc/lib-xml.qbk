@@ -22,7 +22,7 @@ The core of this library is a validating XML parser with DTD processing and all.
 
 libzeep uses a modern C++ way of accessing and manipulating data. To give an idea have a look at the following code.
 
-[import ./examples/synopsis-xml.cpp]
+[import ../examples/synopsis-xml.cpp]
 [synopsis_xml_main]
 
 [heading XML nodes]
@@ -81,7 +81,7 @@ And an XML document containing[teletype]
 
 When we want to see the `&hello;` entity replaced with `'Hello, world!'` as specified in the DTD, we need to provide a way to load this DTD. To do this, look at the following code. Of course, in this example a simple call to [memberref zeep::xml::document::set_base_dir `set_base_dir`] would have been sufficient.
 
-[import ./examples/validating-xml-sample.cpp]
+[import ../examples/validating-xml-sample.cpp]
 [xml_validation_sample]
 
 [endsect:xml_io]
@@ -90,7 +90,7 @@ When we want to see the `&hello;` entity replaced with `'Hello, world!'` as spec
 
 An alternative way to read/write XML files is using serialization. To do this, we first construct a structure called Person. We add a templated function to this struct just like in `boost::serialize` and then we can read the file.
 
-[import ./examples/serialize-xml.cpp]
+[import ../examples/serialize-xml.cpp]
 [synopsis_xml_serialize]
 
 [heading attributes]
@@ -126,7 +126,7 @@ An example where we look for the first person in our test file with the lastname
 
 XPath constructs can reference variables. As an example, suppose you need to find nodes in a special XML Namespace but you do not want to find out what the prefix of this Namespace is, you could do something like this:
 
-[import ./examples/xpath-sample.cpp]
+[import ../examples/xpath-sample.cpp]
 [xpath_example]
 
 

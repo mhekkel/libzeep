@@ -26,7 +26,7 @@ This library just provides code to parse and write JSON. It stores the data in a
 
 The main data structure in this library is __json_element__, this is the representation of a JSON object and thus can contain various types of data. See this synopsis on how to use it.
 
-[import ./examples/synopsis-json.cpp]
+[import ../examples/synopsis-json.cpp]
 [synopsis_json_main]
 
 [heading STL-like interface]

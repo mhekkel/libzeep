@@ -40,7 +40,7 @@ The third controller is the __soap_controller__. Similar to the REST controller,
 
 Starting an HTTP server is easy. Simply create the __http_server__ object, [memberref zeep::http::server::bind `bind`] it to an address and call run specifying how many threads to run simultaneously. Something like this:
 
-[import ./examples/http-server-0.cpp]
+[import ../examples/http-server-0.cpp]
 [most_simple_http_server]
 
 Running this code will create a server that listens to port 8080 on localhost and will return =NOT FOUND= for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative: use controllers.
@@ -49,7 +49,7 @@ Running this code will create a server that listens to port 8080 on localhost an
 
 A __http_server__ can have one or more controllers. Each controller handles requests that have URI's that start with a specified prefix. In this example we have a controller that handles any request, since it has a prefix that is effectively the same as the root. It returns a simple reply.
 
-[import ./examples/http-server-1.cpp]
+[import ../examples/http-server-1.cpp]
 [simple_http_server]
 
 Still a not so useful example. Fortunately there are several implementations of [classref zeep::http::controller `controller`] that we can use.
@@ -68,7 +68,7 @@ A handler can of course create simple replies, just as in the previous example. 
 
 Our __html_controller__ indirectly inherits [classref zeep::http::template_processor `template_processor`] and this is the class that uses the `docroot` parameter. This class takes care of processing template files. It loads them and uses the registered tag processors and the `scope` to fill in the blanks and process the constructs found in the template.
 
-[import ./examples/http-server-2.cpp]
+[import ../examples/http-server-2.cpp]
 [simple_http_server_2]
 
 This example uses the file docroot/hello.xhtml which should contain:
@@ -187,7 +187,7 @@ The language has the concept of variables and these can be created in the C++ co
 Variables created this way are then stored in a __scope__ object and passed along to the processing code.
 
 To give an example:
-[import ./examples/synopsis-el-1.cpp]
+[import ../examples/synopsis-el-1.cpp]
 [fill_scope]
 
 And then you can process some =expression language= construct like this:
@@ -575,7 +575,7 @@ So, e.g. if you have =<span id="one" z:id="${id}"/>= and the variable =id= conta
 
 The __rest_controller__ class is similar to the __html_controller__ in that it allows you to map a request to a member function. The difference however is that the REST controller translates parameters from HTTP requests into arguments for your method and translates the result of the method back into JSON to be returned to the client. Lets walk through an example again to show how this works.
 
-[import examples/rest-sample.cpp]
+[import ../examples/rest-sample.cpp]
 
 We begin our example by declaring some shopping cart objects. These are plain structs that also define a `serialize` method for use with serialization.
 
@@ -642,7 +642,7 @@ First start by writing some template code. For this example we will have a commo
 
 We're using [@https://www.w3schools.com/w3css/default.asp W3.CSS] as CSS library, albeit we have stored a copy in our own docroot. The two last links in this navigation bar have the =z:if="..."= argument checking whether the current user is authorized. These attributes help in select which of the two will be visible, login or logout, based on the current authentication state. The =#security= class in our =el= library has two more methods called =username= and =hasRole=. The last one returns true when a user has the role asked for.
 
-[import examples/security-sample.cpp]
+[import ../examples/security-sample.cpp]
 
 Next we define a simple __html_controller__ that handles the two pages and also serves stylesheets and scripts.
 
