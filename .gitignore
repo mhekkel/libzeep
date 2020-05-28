@@ -2,6 +2,8 @@
 *.so*
 compile_commands.json
 doc/bin
+doc/html
+doc/autodoc.xml
 libzeep-*.tgz
 make.config
 lib-xml/test/XML-Test-Suite/

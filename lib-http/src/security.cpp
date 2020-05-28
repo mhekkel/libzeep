@@ -100,7 +100,7 @@ void security_context::validate_request(const request& req) const
 	}
 
 	if (not allow)
-		throw unauthorized_exception("no access");
+		throw unauthorized_exception();
 }
 
 // --------------------------------------------------------------------

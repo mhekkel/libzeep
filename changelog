@@ -1,13 +1,16 @@
 Version 5.0.0
 
-- Total rewrite of XML DOM API
-- Lots of improvements in support for building web applications
-- Improved REST controller
+- Total rewrite of about everything
+- Controllers are now the main handlers of requests, three major
+  variants for HTML, REST and SOAP.
 - Implemented some cryptographic routines in order to drop
   dependency on libcrypto++
-- Added more authentication modules for HTTP including JWT support
+- Redesigned authentication, dropped HTTP digest and opted for JWT,
+  added security_context class for managing all of this
 - Code now requires a c++17 compiler
-- Requires at least boost version 1.72
+- Lots of test code added
+- Added some real world examples
+- Tested with boost 1.67 up to 1.73
 
 Version 4.0.0
 

@@ -15,4 +15,4 @@ language: cpp
 
 compiler: clang
 
-script: make USE_RSRC=0 static-libs test
+script: make USE_RSRC=0 all

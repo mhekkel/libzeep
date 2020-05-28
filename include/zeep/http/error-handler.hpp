@@ -56,16 +56,15 @@ class error_handler
 	/// When a authentication violation is encountered, this function is called to generate
 	/// the appropriate reply.
 	/// \param req		The request that triggered this call
-	/// \param realm	The name of the protected area, might be shown to the user
 	/// \param rep		Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_unauth_reply(const request& req, const std::string& realm, reply& reply);
+	virtual bool create_unauth_reply(const request& req, reply& reply);
 
 	/// \brief Create an error reply for the error
 	///
 	/// An error should be returned with HTTP status code \a status. This method will create a default error page.
 	/// \param req		The request that triggered this call
-	/// \param realm	The name of the protected area, might be shown to the user
+	/// \param status	The status code, describing the error
 	/// \param rep		Write the reply in this object
 	/// \return			Return true if the reply was created successfully
 	virtual bool create_error_reply(const request& req, status_type status, reply& reply);

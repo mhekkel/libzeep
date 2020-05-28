@@ -30,20 +30,7 @@ namespace zeep::http
 struct unauthorized_exception : public zeep::exception
 {
 	/// \brief constructor
-	///
-	/// Constructor, \a realm is the name of the area that should be protected.
-
-	unauthorized_exception(const std::string &realm)
-		: exception("unauthorized")
-	{
-		std::string::size_type n = realm.length();
-		if (n > sizeof(m_realm) - 1)
-			n = sizeof(m_realm) - 1;
-		realm.copy(m_realm, n);
-		m_realm[n] = 0;
-	}
-
-	char m_realm[256]; ///< Realm for which the authorization failed
+	unauthorized_exception() : exception("unauthorized") { }
 };
 
 // --------------------------------------------------------------------

@@ -36,7 +36,7 @@ bool error_handler::create_error_reply(const request& req, std::exception_ptr ep
 	}
 	catch (const unauthorized_exception& ex)
 	{
-		result = create_unauth_reply(req, ex.m_realm, reply);
+		result = create_unauth_reply(req, reply);
 	}
 	catch (const std::exception& ex)
 	{
@@ -50,7 +50,7 @@ bool error_handler::create_error_reply(const request& req, std::exception_ptr ep
 	return result;
 }
 
-bool error_handler::create_unauth_reply(const request& req, const std::string& realm, reply& rep)
+bool error_handler::create_unauth_reply(const request& req, reply& rep)
 {
 	return create_error_reply(req, unauthorized, "You don't have access to this page", rep);
 }
