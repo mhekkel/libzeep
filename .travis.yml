@@ -8,6 +8,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install libboost-all-dev libstdc++-8-dev
   - sudo apt-get --reinstall install -qq language-pack-en language-pack-da language-pack-nl
+  - sudo apt-get install libboost-tools-dev xsltproc doxygen docbook-xsl default-jdk fop
 
 install: true
 
@@ -15,4 +16,4 @@ language: cpp
 
 compiler: clang
 
-script: make USE_RSRC=0 all
+script: make USE_RSRC=0

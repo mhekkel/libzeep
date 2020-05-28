@@ -207,7 +207,7 @@ Most often you will use simple expressions:
 [table Simple expressions
 [[expression][evaluates to]]
 [[`${ ... }`][variable]]
-[[`*{ ... }`][selection variable]]
+[[`*{ ... }`][selection variable (lookup is done in the scope of variables that were selected with =z:select=, v2 processor only )]]
 [[`@{ ... }`][link URL]]
 [[`~{ ... }`][fragment]]
 [[`#{ ... }`][message (not supported yet in libzeep)]]
@@ -456,7 +456,7 @@ There is only one tag this tag processor processes, which is =<z:block>=, for th
 
 Some attributes are treated special, these are listed below. For the other tags the general rule is that if the tag has the prefix for the =v2= namespace, the value of the attribute will be evaluated and the result will be placed in an attribute without the prefix. Possibly overwriting an already existing attribute with that name.
 
-So, e.g. if you have =<span id="one" z:id="${id}"/>= and the variable =id= contains ='two'= the result will be =<span id="two"/>=.
+So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= contains ='two'= the result will be ``<span id="two"/>``
 
 [heading special attributes]
 
@@ -558,12 +558,67 @@ So, e.g. if you have =<span id="one" z:id="${id}"/>= and the variable =id= conta
 
 					]]
 [[=inline=]			[
-						
+						The processor processes occurrences of \[\[ ... \]\] or \[\( ... \)\] by evaluating what is in between those brackets.
+
+						``
+							<div>Hello, [[${name ?: 'world'}]]</div>
+						``
+
+						will result in (when name = 'scott'):
+
+						``
+							<div>Hello, scott</div>
+						``
+
+						Using this attribute, you can do even more fancy things. If the value of this attribute is =javascript=, the replacement will be valid in a javascript context by properly quoting double quotes e.g. And it will process commented values properly, as in:
+
+						``
+							<script z:inline='javascript'>let x = /*[[${var}]]*/ null;</script>
+						``
+
+						Might result in:
+
+						``
+							<script>let x = "He said \"bla bla bla\"";</script>
+						``
+
+						If the inline attribute has value =text=, the whole body of the tag will be evaluated as =el=.
 					]]
-[[=switch=, =case=]			[		]]
-[[=text=, =utext=]
-			[		]]
-[[=with=]			[		]]
+[[=switch=, =case=]	[
+						Example:
+
+						``
+							<div z:switch="${user.role}">
+								<span z:case="'admin'">Admin</span>
+								<span z:case="*">Some other user</span>
+							</div>
+						``
+					]]
+[[=text=, =utext=]	[
+						The simplest, replace the body of the tag with the result of the evaluation of the content of this attribute.
+
+						``
+							<span z:text="${name}"/>
+						``
+
+						Will result in:
+
+						``
+							<span>scott</span>
+						``
+
+						The =text= variant will quote special characters like <, > and &. The =utext= variant will not, but beware, if the result is not valid XML an exception is thrown.
+					]]
+[[=with=]			[
+						Assign a value to a variable. Example:
+
+						``
+							<div z:with="n=${name}">
+								<span z:text="${n}"/>
+							</div>
+						``
+
+]]
 
 ]
 
@@ -585,18 +640,33 @@ Now we create a REST controller that will handle the creation of a new cart and 
 
 [shop_rest_controller]
 
+The calls to this rest controller are in the =scripts/shop.js= file. Have a look at that file to see how it works. To give you an idea, this is the snippet that is called after clicking the /add/ link for an item.[teletype]
+
+	addToCart(item) {
+	  const fd = new FormData();
+	  fd.append("name", item);
+	  fetch(`/cart/${this.cartID}/item`, { method: "POST", body: fd})
+	    .then(r => r.json())
+	    .then(order => this.updateOrder(order))
+	    .catch(err => {
+	      console.log(err);
+	      alert(`Failed to add ${item} to cart`);
+	    });
+	}
+
 The page, script and stylesheet are served by a __html_controller__.
 
 [shop_html_controller]
 
+And tie everything together.
 
-
+[shop_main]
 
 [endsect:rest-controller]
 
 [section:rest-controller SOAP Controller]
 
-Creating SOAP controllers is also easy.
+Creating SOAP controllers is also easy. But that will have to wait a bit.
 
 [endsect:rest-controller]
 

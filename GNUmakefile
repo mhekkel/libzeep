@@ -54,7 +54,7 @@ make.config:
 	@ echo "Wrote a new make.config file"
 
 VERSION_MAJOR       = 5.0
-VERSION_MINOR       = 0
+VERSION_MINOR       = 0-b1
 VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
 DIST_NAME           = libzeep-$(VERSION)
 
@@ -136,6 +136,7 @@ clean: $(ZEEP_LIB_PARTS:%=%_clean)
 .PHONY: dist
 dist: doc
 	rm -rf $(DIST_NAME)
+	mkdir $(DIST_NAME)
 	git archive master | tar -x -C $(DIST_NAME)
 	find doc/html -depth | cpio -pd $(DIST_NAME)
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)

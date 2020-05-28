@@ -94,14 +94,21 @@ OBJECTS = \
 	$(OBJDIR)/parser.o
 
 HEADERS = \
-	zeep/json/element_fwd.hpp \
-	zeep/json/element.hpp \
+	zeep/value-serializer.hpp \
+	zeep/config.hpp \
+	zeep/exception.hpp \
+	zeep/nvp.hpp \
+	zeep/unicode-support.hpp \
+	zeep/type-traits.hpp \
 	zeep/json/factory.hpp \
-	zeep/json/from_element.hpp \
 	zeep/json/iterator.hpp \
-	zeep/json/parser.hpp \
+	zeep/json/element.hpp \
 	zeep/json/serializer.hpp \
-	zeep/json/to_element.hpp
+	zeep/json/to_element.hpp \
+	zeep/json/from_element.hpp \
+	zeep/json/parser.hpp \
+	zeep/json/type_traits.hpp \
+	zeep/json/element_fwd.hpp
 
 $(STATIC_LIB): $(OBJECTS)
 	ar rc $@ $(OBJECTS)

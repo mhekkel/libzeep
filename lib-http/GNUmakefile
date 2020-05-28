@@ -133,20 +133,31 @@ $(OBJDIR)/controller-rsrc.o: src/mrsrc.h
 endif
 
 HEADERS = \
-	zeep/http/base64.hpp \
-	zeep/http/connection.hpp \
-	zeep/http/controller.hpp \
-	zeep/http/daemon.hpp \
-	zeep/http/header.hpp \
-	zeep/http/md5.hpp \
+	zeep/value-serializer.hpp \
+	zeep/streambuf.hpp \
+	zeep/crypto.hpp \
+	zeep/config.hpp \
+	zeep/exception.hpp \
+	zeep/unicode-support.hpp \
+	zeep/type-traits.hpp \
 	zeep/http/message-parser.hpp \
+	zeep/http/daemon.hpp \
+	zeep/http/rest-controller.hpp \
+	zeep/http/header.hpp \
 	zeep/http/preforked-server.hpp \
+	zeep/http/connection.hpp \
 	zeep/http/reply.hpp \
-	zeep/http/request-handler.hpp \
 	zeep/http/request.hpp \
-	zeep/http/server.hpp \
+	zeep/http/soap-controller.hpp \
+	zeep/http/error-handler.hpp \
+	zeep/http/html-controller.hpp \
 	zeep/http/tag-processor.hpp \
-	zeep/html/controller.hpp
+	zeep/http/template-processor.hpp \
+	zeep/http/controller.hpp \
+	zeep/http/login-controller.hpp \
+	zeep/http/security.hpp \
+	zeep/http/server.hpp \
+	zeep/http/el-processing.hpp
 
 $(STATIC_LIB): $(OBJECTS)
 	ar rc $@ $(OBJECTS)

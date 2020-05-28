@@ -91,13 +91,20 @@ OBJECTS = \
 	$(OBJDIR)/xpath.o
 
 HEADERS = \
-	zeep/xml/doctype.hpp \
-	zeep/xml/document.hpp \
-	zeep/xml/node.hpp \
-	zeep/xml/parser.hpp \
+	zeep/config.hpp \
+	zeep/value-serializer.hpp \
+	zeep/streambuf.hpp \
+	zeep/exception.hpp \
+	zeep/nvp.hpp \
+	zeep/unicode-support.hpp \
+	zeep/type-traits.hpp \
 	zeep/xml/serialize.hpp \
-	zeep/xml/unicode_support.hpp \
-	zeep/xml/xpath.hpp
+	zeep/xml/xpath.hpp \
+	zeep/xml/character-classification.hpp \
+	zeep/xml/doctype.hpp \
+	zeep/xml/node.hpp \
+	zeep/xml/document.hpp \
+	zeep/xml/parser.hpp
 
 $(STATIC_LIB): $(OBJECTS)
 	ar rc $@ $(OBJECTS)
