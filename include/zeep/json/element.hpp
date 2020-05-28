@@ -161,8 +161,10 @@ class element
 	element(initializer_list_t init);
 	element(size_t cnt, const element& v);
 
-	static element object(initializer_list_t init = {});
-	static element array(initializer_list_t init = {});
+	static element object();
+	static element array();
+	static element object(initializer_list_t init);
+	static element array(initializer_list_t init);
 
 	element& operator=(element j) noexcept(
         std::is_nothrow_move_constructible_v<value_type> and
@@ -709,4 +711,9 @@ class element_reference
 };
 
 } // detail
+
+// working around a nuisance in g++ < 9: default for parameter init = {} is not accepted
+inline element element::object()	{ return element::object({}); }
+inline element element::array()		{ return element::array({}); }
+
 } // zeep::json
