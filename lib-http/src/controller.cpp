@@ -11,6 +11,8 @@
 namespace zeep::http
 {
 
+thread_local request* controller::s_request = nullptr;
+
 controller::controller(const std::string& prefix_path)
 	: m_prefix_path(prefix_path)
 {
@@ -23,9 +25,22 @@ controller::~controller()
 {
 }
 
-bool controller::handle_request(request& req, reply& rep)
+bool controller::dispatch_request(request& req, reply& rep)
 {
-	return false;
+	bool result = false;
+	try
+	{
+		s_request = &req;
+		result = handle_request(req, rep);
+	}
+	catch(const std::exception& e)
+	{
+		result = true;	// an error means we really tried, no need to call any other handler
+	}
+
+	s_request = nullptr;
+
+	return result;
 }
 
 bool controller::path_matches_prefix(const std::string& path) const
@@ -41,6 +56,20 @@ bool controller::path_matches_prefix(const std::string& path) const
 	}
 
 	return result;
+}
+
+json::element controller::get_credentials() const
+{
+	json::element credentials;
+	if (m_server != nullptr and s_request != nullptr)
+		credentials = m_server->get_credentials(*s_request);
+	return credentials;
+}
+
+bool controller::has_role(const std::string& role) const
+{
+	auto credentials = get_credentials();
+	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
 }
 
 }

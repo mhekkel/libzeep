@@ -10,6 +10,11 @@
 
 #include <sys/wait.h>
 
+// for Hurd
+#if not defined(WCONTINUED)
+#define WCONTINUED 0
+#endif
+
 #include <zeep/http/preforked-server.hpp>
 #include <zeep/http/connection.hpp>
 

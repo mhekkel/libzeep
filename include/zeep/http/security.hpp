@@ -152,7 +152,7 @@ class simple_user_service : public user_service
   public:
 	simple_user_service(std::initializer_list<std::tuple<std::string,std::string,std::set<std::string>>> users)
 	{
-		for (auto&& [username, password, roles]: users)
+		for (auto const& [username, password, roles]: users)
 			add_user(username, password, roles);
 	}
 

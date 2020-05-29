@@ -176,7 +176,7 @@ void security_context::verify_username_password(const std::string& username, con
 		auto user = m_users.load_user(username);
 		
 		bool match = false;
-		for (auto&& [name, pwenc]: m_known_password_encoders)
+		for (auto const& [name, pwenc]: m_known_password_encoders)
 		{
 			if (user.password.compare(0, name.length(), name) != 0)
 				continue;

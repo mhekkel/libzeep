@@ -35,7 +35,11 @@ class controller
 
 	virtual ~controller();
 
-	virtual bool handle_request(request& req, reply& rep);
+	/// \brief Calls handle_request but stores a pointer to the request first
+	virtual bool dispatch_request(request& req, reply& rep);
+
+	/// \brief The pure virtual method that actually handles the request
+	virtual bool handle_request(request& req, reply& rep) = 0;
 
 	/// \brief returns the defined prefix path
 	std::string get_prefix() const      { return m_prefix_path; }
@@ -52,7 +56,13 @@ class controller
 	/// \brief return the server object we're bound to
 	const server& get_server() const	{ return *m_server; }
 	server& get_server()				{ return *m_server; }
+
+	/// \brief get the credentials for the current request
+	json::element get_credentials() const;
 	
+	/// \brief returns whether the current user has role \a role
+	bool has_role(const std::string& role) const;
+
   protected:
 
 	controller(const controller&) = delete;
@@ -60,6 +70,7 @@ class controller
 
 	std::string m_prefix_path;
 	server* m_server = nullptr;
+	static thread_local request* s_request;
 };
 
 } // namespace zeep::http
