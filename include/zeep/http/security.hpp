@@ -183,7 +183,7 @@ class simple_user_service : public user_service
 /// Access to certain paths can be limited by specifying which
 /// 'roles' are allowed.
 ///
-/// The mechanism used is based on JSON Web Tokens, JWT in short.
+/// The authentication mechanism used is based on JSON Web Tokens, JWT in short.
 
 class security_context
 {
@@ -212,9 +212,11 @@ class security_context
 	///
 	/// A new rule will be added to the list, allowing access to \a glob_pattern
 	/// to users having role \a role
+	///
+ 	/// \a glob_pattern should start with a slash
 	void add_rule(const std::string& glob_pattern, const std::string& role)
 	{
-		m_rules.emplace_back(rule { glob_pattern, { role } });
+		add_rule(glob_pattern, { role });
 	}
 
 	/// \brief Add a new rule for access
@@ -222,10 +224,13 @@ class security_context
 	/// A new rule will be added to the list, allowing access to \a glob_pattern
 	/// to users having a role in \a roles
 	///
-	/// If \a roles is empty, access is allowed to anyone
-	void add_rule(const std::string& glob_pattern, std::initializer_list<std::string> roles)
+	/// If \a roles is empty, access is allowed to anyone.
+	///
+	/// \a glob_pattern should start with a slash
+	void add_rule(std::string glob_pattern, std::initializer_list<std::string> roles)
 	{
-		m_rules.emplace_back(rule { glob_pattern, roles });
+		assert(glob_pattern.front() == '/');
+		m_rules.emplace_back(rule{glob_pattern, roles});
 	}
 
 	/// \brief Validate the request \a req against the stored rules

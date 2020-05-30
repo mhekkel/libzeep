@@ -24,6 +24,8 @@ namespace
 std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$" );
 }
 
+// --------------------------------------------------------------------
+
 void security_context::validate_request(const request& req) const
 {
 	bool allow = m_default_allow;
@@ -31,6 +33,9 @@ void security_context::validate_request(const request& req) const
 	for (;;)
 	{
 		std::string path = req.get_path();
+
+		if (not path.front() == '/')
+			path.insert(path.begin(), '/');
 
 		// first check if this page is allowed without any credentials
 		// that means, the first rule that matches this uri should allow
