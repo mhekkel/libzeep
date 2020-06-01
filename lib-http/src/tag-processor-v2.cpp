@@ -438,7 +438,7 @@ auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* 
 			element->set_text(text);
 		else
 		{
-			element->erase(element->begin(), element->end());
+			element->set_text("");
 
 			xml::document subDoc("<foo>" + text + "</foo>");
 			auto foo = subDoc.front();
