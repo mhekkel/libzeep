@@ -74,6 +74,8 @@ define ZEEPLIB_template =
 lib-$(1):
 	+$(MAKE) -C lib-$(1) lib
 
+lib-$(1): $(OUTPUT_DIR)
+
 endef
 
 $(foreach part,$(ZEEP_LIB_PARTS),$(eval $(call ZEEPLIB_template,$(part))))

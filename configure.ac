@@ -46,6 +46,6 @@ AC_OUTPUT([GNUmakefile
 		   lib-json/GNUmakefile
 		   lib-http/GNUmakefile
 		   examples/GNUmakefile
-		   libzeep-xml.pc
-		   libzeep-json.pc
-		   libzeep-http.pc])
+		   lib-xml/libzeep-xml.pc
+		   lib-json/libzeep-json.pc
+		   lib-http/libzeep-http.pc])

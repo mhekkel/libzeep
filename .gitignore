@@ -6,6 +6,7 @@ lib-xml/test/XML-Test-Suite/
 **/obj/
 **/obj.dbg/
 lib-*/*.la
+lib-*/.libs
 lib-http/src/mrsrc.h
 .gradle/
 lib-http/test/webapp-test
@@ -23,9 +24,10 @@ lib-xml/test/xpath-test
 autom4te.cache
 config.log
 config.status
+config/m4
 GNUmakefile
 */GNUmakefile
 aclocal.m4
 libtool
-.libs/
+lib/
 libzeep-*.pc

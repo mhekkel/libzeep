@@ -4,7 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: libzeep-xml
-Description: C++ xml library
+Description: C++ library for building web applications
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lzeep-xml
+Libs: -L${libdir} -lzeep-http -lzeep-json -lzeep-xml
 Cflags: -I${includedir}

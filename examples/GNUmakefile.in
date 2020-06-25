@@ -64,8 +64,10 @@ ifeq "$(DEBUG)" "1"
 	OBJDIR	:= $(OBJDIR).dbg
 endif
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+BINDIR = bin
+
+$(OBJDIR) $(BINDIR):
+	mkdir -p $@
 
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo "cc>" $<
@@ -90,7 +92,7 @@ ifneq ($$(USE_RSRC),0)
 $(1)_OBJECTS += $$(OBJDIR)/dummy_rsrc.o
 endif
 
-$(1): $$($(1)_OBJECTS)
+$(BINDIR)/$(1): $$($(1)_OBJECTS) | $(BINDIR)
 	@ echo "ld> $(1)"
 	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
 
@@ -104,7 +106,7 @@ EXAMPLES = \
 $(foreach part,$(EXAMPLES),$(eval $(call EXAMPLE_template,$(part))))
 
 .PHONY: examples
-examples: $(EXAMPLES)
+examples: $(EXAMPLES:%=$(BINDIR)/%)
 
 all: examples
 
