@@ -16,4 +16,4 @@ language: cpp
 
 compiler: clang
 
-script: ./configure && make && make test && make install
+script: ./configure && make && sudo make install
