@@ -5,71 +5,63 @@
 # Distributed under the Boost Software License, Version 1.0.
 #    (See accompanying file LICENSE_1_0.txt or copy at
 #          http://www.boost.org/LICENSE_1_0.txt)
-#
-# Use the make.config file in the uplevel directory to
-# change the settings for this build
 
+.PHONY: firstTarget
 firstTarget: all
 
-# installation prefix
-PREFIX              ?= /usr/local
+CXX					= @CXX@
+CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
+LIBS				= @LIBS@
+
+prefix				= @prefix@
+exec_prefix			= @exec_prefix@
+libdir				= @libdir@
+includedir			= @includedir@
+
+LIB_NAME			= @PACKAGE_NAME@-xml
+LIB_TARGET			= $(LIB_NAME).la
+
+GNUmakefile: ../config.status GNUmakefile.in
+	cd ..; $(SHELL) ./config.status
+
+../config.status: ../configure
+	cd ..; $(SHELL) ./config.status --recheck
+
+../configure: ../configure.ac
+	cd ..; autoconf
+
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ../config.status --recheck
+
+# libtool stuff
+
+LIBTOOL = $(SHELL) ../libtool
+CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
+CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
 
 # main build variables
-CXX                 ?= c++
-CFLAGS	            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17 -Wall -g
-LD                  ?= ld
-LDFLAGS				= -g
-LD_CONFIG			?= ldconfig
-
-# default is to only create a static library
-BUILD_STATIC_LIB	= 1
-BUILD_SHARED_LIB	= 0
+CXXFLAGS            += -I. -pthread -I ../include/
+CXXFLAGS            += -Wall -Wno-multichar
 
 # Use the DEBUG flag to build debug versions of the code
-DEBUG               = 0
-
--include ../make.config
-
-VERSION_MAJOR       = 5.0
-VERSION_MINOR       = 0
-VERSION             = $(VERSION_MAJOR).$(VERSION_MINOR)
-
-LIB_NAME			= libzeep-xml
-
-DIST_NAME           = $(LIB_NAME)$(VERSION)
-SO_NAME             = $(LIB_NAME).so.$(VERSION_MAJOR)
-SHARED_LIB_NAME     = $(SO_NAME).$(VERSION_MINOR)
-STATIC_LIB_NAME		= $(LIB_NAME).a
-
-OUTPUT				= ../lib/
-
-SHARED_LIB			= $(OUTPUT)/$(SHARED_LIB_NAME)
-STATIC_LIB			= $(OUTPUT)/$(STATIC_LIB_NAME)
-
-LIBDIR              ?= $(PREFIX)/lib
-INCDIR              ?= $(PREFIX)/include
-MANDIR              ?= $(PREFIX)/man/man3
-DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
-
-BOOST_INC_DIR		?= $(BOOST)/include
-BOOST_LIB_DIR		?= $(BOOST)/lib
-
-CFLAGS				+= -I $(BOOST_INC_DIR)
-LDFLAGS				+= -L $(BOOST_LIB_DIR)
-
-CFLAGS				+= $(DEFINES:%=-D%)
+DEBUG               = @DEBUG@
 
 ifeq "$(DEBUG)" "1"
-CFLAGS				+= -DDEBUG
+DEFINES				+= DEBUG
+CXXFLAGS            += -g -O0
+LDFLAGS				+= -g
 else
-CFLAGS				+= -O2
+CXXFLAGS			+= -O3
+DEFINES				+= NDEBUG
 endif
 
 # targets
 
 VPATH += src:test
 
-CFLAGS				+= -I ../include
+CXXFLAGS			+= $(DEFINES:%=-D%)
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -79,16 +71,13 @@ endif
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-$(OUTPUT):
-	mkdir -p $(OUTPUT)
-
 OBJECTS = \
-	$(OBJDIR)/character-classification.o \
-	$(OBJDIR)/doctype.o \
-	$(OBJDIR)/document.o \
-	$(OBJDIR)/node.o \
-	$(OBJDIR)/parser.o \
-	$(OBJDIR)/xpath.o
+	$(OBJDIR)/character-classification.lo \
+	$(OBJDIR)/doctype.lo \
+	$(OBJDIR)/document.lo \
+	$(OBJDIR)/node.lo \
+	$(OBJDIR)/parser.lo \
+	$(OBJDIR)/xpath.lo
 
 HEADERS = \
 	zeep/config.hpp \
@@ -106,33 +95,13 @@ HEADERS = \
 	zeep/xml/document.hpp \
 	zeep/xml/parser.hpp
 
-$(STATIC_LIB): $(OBJECTS)
-	ar rc $@ $(OBJECTS)
-	ranlib $@
+$(LIB_TARGET): $(OBJECTS)
+	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
 
-$(SHARED_LIB): $(OBJECTS)
-	$(CXX) -shared -o $(SHARED_LIB) -Wl,-soname=$(SO_NAME) $(OBJECTS) $(LDFLAGS)
-	ln -fs $(SHARED_LIB_NAME) $(OUTPUT)/$(SO_NAME)
-	ln -fs $(SHARED_LIB_NAME) $(OUTPUT)/$(LIB_NAME).so
+.PHONY: lib
+lib: $(LIB_TARGET)
 
-ifeq "$(BUILD_STATIC_LIB)" "1"
-BUILD_LIBS = $(STATIC_LIB)
-endif
-
-ifeq "$(BUILD_SHARED_LIB)" "1"
-BUILD_LIBS += $(SHARED_LIB)
-endif
-
-libs: $(BUILD_LIBS)
-.PHONY: libs
-
-static-lib: $(STATIC_LIB)
-.PHONY: static-lib
-
-shared-lib: $(SHARED_LIB)
-.PHONY: shared-lib
-
-install-libs: $(SHARED_LIB)
+install-libs: lib
 	install -d $(LIBDIR)
 	install $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB_NAME)
 	strip --strip-unneeded $(LIBDIR)/$(SHARED_LIB_NAME)
@@ -152,27 +121,39 @@ install: install-libs install-dev
 
 $(OBJECTS:.o=.d):
 
+$(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
+	@ echo ">>" $<
+	@ $(CXXCOMPILE) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
+
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
-	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
+	@ $(CXX) $(CXXFLAGS) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR)/* $(OUTPUT)/$(LIB_NAME)*
 
-QUESTIONABLE_XML_TEST_IDS = ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13
+QUESTIONABLE_XML_TEST_IDS = \
+	ibm-valid-P28-ibm28v02.xml \
+	ibm-valid-P29-ibm29v01.xml \
+	ibm-valid-P29-ibm29v02.xml \
+	ibm-1-1-valid-P03-ibm03v09.xml \
+	rmt-e2e-34 \
+	rmt-e2e-55 \
+	rmt-054 \
+	rmt-ns10-006 \
+	rmt-e3e-13
 
 parser_PARAMS = XML-Test-Suite/xmlconf/xmlconf.xml $(QUESTIONABLE_XML_TEST_IDS:%=--questionable=%) --print-ids
 xpath_PARAMS = XPath-Test-Suite/xpath-tests.xml
 
-ZEEP_LIBS = 
+ZEEP_LIBS = xml
 BOOST_LIBS = program_options
 
 define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
-
+$(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
 test/$(1)-test: $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"

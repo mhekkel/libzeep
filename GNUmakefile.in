@@ -1,0 +1,114 @@
+# Master makefile for libzeep
+#
+#          copyright 2019, Maarten L. Hekkelman
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+#
+
+SHELL := /bin/bash
+
+.PHONY: firstTarget
+firstTarget: all
+
+CXX					= @CXX@
+CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
+LIBS				= @LIBS@
+
+prefix				= @prefix@
+exec_prefix			= @exec_prefix@
+libdir				= @libdir@
+includedir			= @includedir@
+
+BOOST_LIBS			= program_options
+ZEEP_LIBS			= http json xml
+
+LIBS				+= $(BOOST_LIBS:%=-lboost_%) $(ZEEP_LIBS:%=-lzeep-%)
+
+GNUmakefile: config.status GNUmakefile.in
+	$(SHELL) ./config.status
+
+config.status: configure
+	$(SHELL) ./config.status --recheck
+
+configure: configure.ac
+	autoconf
+
+# libtool stuff
+
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status --recheck
+
+LIBTOOL = $(SHELL) ./libtool
+CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
+CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
+
+# main build variables
+CXXFLAGS            += -Wall -Wno-multichar
+
+VERSION             = @PACKAGE_VERSION@
+DIST_NAME           = @PACKAGE_NAME@
+
+OUTPUT_DIR			?= ./lib
+
+# targets
+
+$(OUTPUT_DIR):
+	mkdir -p $(OUTPUT_DIR)
+
+ZEEP_LIB_PARTS		= xml json http
+
+define ZEEPLIB_template = 
+
+ .PHONY: $(1)_clean
+ $(1)_clean:
+	+$(MAKE) -C lib-$(1) clean
+
+ .PHONY: $(1)_test
+ $(1)_test: libraries
+	+$(MAKE) -C lib-$(1) test
+
+.PHONY: lib-$(1)
+lib-$(1):
+	+$(MAKE) -C lib-$(1) lib
+
+endef
+
+$(foreach part,$(ZEEP_LIB_PARTS),$(eval $(call ZEEPLIB_template,$(part))))
+
+.PHONY: libraries
+libraries: $(ZEEP_LIBS:%=lib-%)
+
+.PHONY: test
+test: $(ZEEP_LIB_PARTS:%=%_test)
+
+.PHONY: examples
+examples: libraries
+	+$(MAKE) -C examples all
+
+.PHONY: doc
+doc:
+	cd doc; $(BJAM)
+
+.PHONY: all	
+all: libraries test examples
+
+.PHONY: clean
+clean: $(ZEEP_LIB_PARTS:%=%_clean)
+	$(MAKE) -C examples clean
+	cd doc; $$(which $(BJAM) > /dev/null) && $(BJAM) clean || echo "No $(BJAM) installed, cannot clean doc"
+	rm -f $(DIST_NAME).tgz
+
+.PHONY: dist
+dist: doc
+	rm -rf $(DIST_NAME)
+	mkdir $(DIST_NAME)
+	git archive master | tar -x -C $(DIST_NAME)
+	find doc/html -depth | cpio -pd $(DIST_NAME)
+	tar czf $(DIST_NAME).tgz $(DIST_NAME)
+	rm -rf $(DIST_NAME)
+
+.PHONY: FORCE
+FORCE:

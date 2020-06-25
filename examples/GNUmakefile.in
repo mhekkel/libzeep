@@ -5,61 +5,59 @@
 # Distributed under the Boost Software License, Version 1.0.
 #    (See accompanying file LICENSE_1_0.txt or copy at
 #          http://www.boost.org/LICENSE_1_0.txt)
-#
-# Use the make.config file in the uplevel directory to
-# change the settings for this build
 
+.PHONY: firstTarget
 firstTarget: all
 
+CXX					= @CXX@
+CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
+LIBS				= @LIBS@
+
+prefix				= @prefix@
+exec_prefix			= @exec_prefix@
+libdir				= @libdir@
+includedir			= @includedir@
+
+GNUmakefile: ../config.status GNUmakefile.in
+	cd ..; $(SHELL) ./config.status
+
+../config.status: ../configure
+	cd ..; $(SHELL) ./config.status --recheck
+
+../configure: ../configure.ac
+	cd ..; autoconf
+
 # main build variables
-CXX                 ?= c++
-CFLAGS	            += $(BOOST_INC_DIR:%=-I%) -I. -fPIC -pthread -std=c++17 -Wall -g
-LD                  ?= ld
-LDFLAGS				= -g
+CXXFLAGS            += -I. -pthread -I ../include/
+CXXFLAGS            += -Wall -Wno-multichar
 
 # Use the DEBUG flag to build debug versions of the code
-DEBUG               ?= 0
+DEBUG               = @DEBUG@
 
-MRC					?= mrc
-
-# Using resources should be the default
-ifeq ($(USE_RSRC),)
-ifeq ($(shell which $(MRC)),)
-$(warning "")
-$(warning "The executable mrc is not found in your path.")
-$(warning "Please consider installing it to enable compiled-in data resources.")
-$(warning "See https://github.com/mhekkel/mrc")
-$(warning "")
-	USE_RSRC = 0
+# resource support?
+MRC					= @MRC@
+ifneq "x$(MRC)" "x"
+USE_RSRC			= 1
+DEFINES				+= USE_RSRC
 else
-	USE_RSRC = 1
+USE_RSRC			= 0
 endif
-endif
-
-ifneq ($(USE_RSRC),0)
-	DEFINES		+= WEBAPP_USES_RESOURCES
-endif
-
-# include the global configuration file
-include ../make.config
-
-BOOST_INC_DIR		?= $(BOOST)/include
-BOOST_LIB_DIR		?= $(BOOST)/lib
-
-CFLAGS				+= -I $(BOOST_INC_DIR)
-LDFLAGS				+= -L $(BOOST_LIB_DIR)
-
-CFLAGS				+= $(DEFINES:%=-D%)
 
 ifeq "$(DEBUG)" "1"
-CFLAGS				+= -DDEBUG
+DEFINES				+= DEBUG
+CXXFLAGS            += -g -O0
+LDFLAGS				+= -g
 else
-CFLAGS				+= -O2
+CXXFLAGS			+= -O3
+DEFINES				+= NDEBUG
 endif
 
 # targets
 
-CFLAGS				+= -I ../include
+VPATH += src:test
+
+CXXFLAGS			+= $(DEFINES:%=-D%)
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"

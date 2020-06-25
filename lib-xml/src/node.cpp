@@ -89,6 +89,7 @@ const element* node::root() const
 bool node::equals(const node* n) const
 {
 	assert(false);
+	return n == this;
 }
 
 std::string node::lang() const

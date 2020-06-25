@@ -34,7 +34,7 @@ void security_context::validate_request(const request& req) const
 	{
 		std::string path = req.get_path();
 
-		if (not path.front() == '/')
+		if (path.front() != '/')
 			path.insert(path.begin(), '/');
 
 		// first check if this page is allowed without any credentials

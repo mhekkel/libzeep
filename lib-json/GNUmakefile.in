@@ -1,0 +1,161 @@
+# Makefile for the libzeep-json library
+#
+# Copyright Maarten L. Hekkelman, UMC St. Radboud 2008-2013.
+#        Copyright Maarten L. Hekkelman, 2014-2019
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
+
+.PHONY: firstTarget
+firstTarget: all
+
+CXX					= @CXX@
+CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
+LIBS				= @LIBS@
+
+prefix				= @prefix@
+exec_prefix			= @exec_prefix@
+libdir				= @libdir@
+includedir			= @includedir@
+
+LIB_NAME			= @PACKAGE_NAME@-json
+LIB_TARGET			= $(LIB_NAME).la
+
+GNUmakefile: ../config.status GNUmakefile.in
+	cd ..; $(SHELL) ./config.status
+
+../config.status: ../configure
+	cd ..; $(SHELL) ./config.status --recheck
+
+../configure: ../configure.ac
+	cd ..; autoconf
+
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ../config.status --recheck
+
+# libtool stuff
+
+LIBTOOL = $(SHELL) ../libtool
+CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
+CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
+
+# main build variables
+CXXFLAGS            += -I. -pthread -I ../include/
+CXXFLAGS            += -Wall -Wno-multichar
+
+# Use the DEBUG flag to build debug versions of the code
+DEBUG               = @DEBUG@
+
+ifeq "$(DEBUG)" "1"
+DEFINES				+= DEBUG
+CXXFLAGS            += -g -O0
+LDFLAGS				+= -g
+else
+CXXFLAGS			+= -O3
+DEFINES				+= NDEBUG
+endif
+
+# targets
+
+VPATH += src:test
+
+CXXFLAGS			+= $(DEFINES:%=-D%)
+
+OBJDIR = obj
+ifeq "$(DEBUG)" "1"
+	OBJDIR	:= $(OBJDIR).dbg
+endif
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+OBJECTS = \
+	$(OBJDIR)/element.lo \
+	$(OBJDIR)/parser.lo
+
+HEADERS = \
+	zeep/value-serializer.hpp \
+	zeep/config.hpp \
+	zeep/exception.hpp \
+	zeep/nvp.hpp \
+	zeep/unicode-support.hpp \
+	zeep/type-traits.hpp \
+	zeep/json/factory.hpp \
+	zeep/json/iterator.hpp \
+	zeep/json/element.hpp \
+	zeep/json/serializer.hpp \
+	zeep/json/to_element.hpp \
+	zeep/json/from_element.hpp \
+	zeep/json/parser.hpp \
+	zeep/json/type_traits.hpp \
+	zeep/json/element_fwd.hpp
+
+$(LIB_TARGET): $(OBJECTS)
+	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
+
+.PHONY: lib
+lib: $(LIB_TARGET)
+
+install-libs: lib
+	install -d $(LIBDIR)
+	install $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB_NAME)
+	strip --strip-unneeded $(LIBDIR)/$(SHARED_LIB_NAME)
+	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(SO_NAME)
+	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(LIB_NAME).so
+	$(LD_CONFIG) -n $(LIBDIR)
+
+install-dev: $(STATIC_LIB)
+	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/html
+	for f in $(HEADERS); do install ../include/$$f $(INCDIR)/$$f; done
+	install $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB_NAME)
+	strip -SX $(LIBDIR)/$(STATIC_LIB_NAME)
+
+install: install-libs install-dev
+
+-include $(OBJECTS:%.o=%.d)
+
+$(OBJECTS:.o=.d):
+
+$(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
+	@ echo ">>" $<
+	@ $(CXXCOMPILE) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
+
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	@ echo ">>" $<
+	@ $(CXX) $(CXXFLAGS) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
+
+clean:
+	rm -rf $(OBJDIR)/* $(OUTPUT)/$(LIB_NAME)*
+
+json_PARAMS = 
+
+ZEEP_LIBS = xml json
+BOOST_LIBS = 
+
+define TEST_template =
+
+-include $$(OBJDIR)/$(1)-test.d
+
+$(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
+
+test/$(1)-test: $$($(1)_OBJECTS)
+	@ echo ">>> building $(1)-test"
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+
+.PHONY: $(1)-test
+$(1)-test: test/$(1)-test
+	cd test; ./$(1)-test $$($(1)_PARAMS)
+
+endef
+
+TESTS = json
+$(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
+
+.PHONY: test
+test: $(TESTS:%=%-test)
+
+FORCE:
+

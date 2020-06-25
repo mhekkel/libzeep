@@ -41,4 +41,6 @@ name_value_pair<T> make_nvp(const char* name, T& v)
 	return name_value_pair<T>(name, v);
 }
 
+#define ZEEP_SERIALIZATION_NVP(name) zeep::name_value_pair(#name, name)
+
 } // namespace zeep
