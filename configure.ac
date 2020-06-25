@@ -36,7 +36,7 @@ AX_PTHREAD(
 	]
 )
 
-AX_BOOST_BASE([1.67], [], [
+AX_BOOST_BASE([1.65.1], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
 ])
 AX_BOOST_ASIO
