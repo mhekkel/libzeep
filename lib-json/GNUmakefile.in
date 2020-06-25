@@ -100,9 +100,9 @@ lib: $(LIB_TARGET)
 
 .PHONY: install
 install: lib
-	$(LIBTOOL) --mode=install install $@ $(libdir)
-	for f in $(HEADERS); do install ../include/$$f $(includedir)/$$f; done
-	install $(LIB_NAME).pc $(pkgconfigdir)
+	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
+	for f in $(HEADERS); do install -D ../include/$$f $(includedir)/$$f; done
+	install -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
 -include $(OBJECTS:%.o=%.d)
 

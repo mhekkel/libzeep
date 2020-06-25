@@ -18,6 +18,7 @@ prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
+pkgconfigdir			= $(libdir)/pkgconfig
 
 LIB_NAME			= @PACKAGE_NAME@-xml
 LIB_TARGET			= $(LIB_NAME).la
@@ -101,8 +102,9 @@ lib: $(LIB_TARGET)
 
 .PHONY: install
 install: lib
-	$(LIBTOOL) --mode=install install $@ $(libdir)
-	for f in $(HEADERS); do install ../include/$$f $(includedir)/$$f; done
+	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
+	for f in $(HEADERS); do install -D ../include/$$f $(includedir)/$$f; done
+	install -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
 -include $(OBJECTS:%.o=%.d)
 
