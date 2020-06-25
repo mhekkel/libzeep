@@ -41,7 +41,7 @@ LIBTOOL_DEPS = @LIBTOOL_DEPS@
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
 
-LIBTOOL = $(SHELL) ./libtool
+LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
 CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
 CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
 

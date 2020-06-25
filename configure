@@ -17185,7 +17185,9 @@ fi
 	fi
 
 
-ac_config_files="$ac_config_files GNUmakefile lib-xml/GNUmakefile lib-json/GNUmakefile lib-http/GNUmakefile examples/GNUmakefile libzeep-xml.pc libzeep-json.pc libzeep-http.pc"
+BUILD_DIR="$abs_top_builddir"
+
+ac_config_files="$ac_config_files GNUmakefile lib-xml/GNUmakefile lib-json/GNUmakefile lib-http/GNUmakefile examples/GNUmakefile lib-xml/libzeep-xml.pc lib-json/libzeep-json.pc lib-http/libzeep-http.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -18289,9 +18291,9 @@ do
     "lib-json/GNUmakefile") CONFIG_FILES="$CONFIG_FILES lib-json/GNUmakefile" ;;
     "lib-http/GNUmakefile") CONFIG_FILES="$CONFIG_FILES lib-http/GNUmakefile" ;;
     "examples/GNUmakefile") CONFIG_FILES="$CONFIG_FILES examples/GNUmakefile" ;;
-    "libzeep-xml.pc") CONFIG_FILES="$CONFIG_FILES libzeep-xml.pc" ;;
-    "libzeep-json.pc") CONFIG_FILES="$CONFIG_FILES libzeep-json.pc" ;;
-    "libzeep-http.pc") CONFIG_FILES="$CONFIG_FILES libzeep-http.pc" ;;
+    "lib-xml/libzeep-xml.pc") CONFIG_FILES="$CONFIG_FILES lib-xml/libzeep-xml.pc" ;;
+    "lib-json/libzeep-json.pc") CONFIG_FILES="$CONFIG_FILES lib-json/libzeep-json.pc" ;;
+    "lib-http/libzeep-http.pc") CONFIG_FILES="$CONFIG_FILES lib-http/libzeep-http.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

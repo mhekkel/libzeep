@@ -31,3 +31,4 @@ aclocal.m4
 libtool
 lib/
 libzeep-*.pc
+examples/bin/

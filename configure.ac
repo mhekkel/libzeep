@@ -40,6 +40,8 @@ AX_BOOST_BASE([1.73])
 AX_BOOST_ASIO
 AX_BOOST_PROGRAM_OPTIONS
 
+BUILD_DIR="$abs_top_builddir"
+
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
 		   lib-xml/GNUmakefile

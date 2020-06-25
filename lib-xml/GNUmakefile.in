@@ -21,7 +21,7 @@ includedir			= @includedir@
 
 LIB_NAME			= @PACKAGE_NAME@-xml
 LIB_TARGET			= $(LIB_NAME).la
-STAGE_DIR			= ../lib
+STAGE_DIR			= @abs_top_builddir@/lib
 
 GNUmakefile: ../config.status GNUmakefile.in
 	cd ..; $(SHELL) ./config.status
@@ -32,13 +32,9 @@ GNUmakefile: ../config.status GNUmakefile.in
 ../configure: ../configure.ac
 	cd ..; autoconf
 
-LIBTOOL_DEPS = @LIBTOOL_DEPS@
-libtool: $(LIBTOOL_DEPS)
-	$(SHELL) ../config.status --recheck
-
 # libtool stuff
 
-LIBTOOL = $(SHELL) ../libtool
+LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
 CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
 CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
 
