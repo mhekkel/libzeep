@@ -319,6 +319,18 @@ void reply::set_content(const std::string& data, const std::string& contentType)
 	set_header("Content-Type", contentType);
 }
 
+void reply::set_content(const char* data, size_t size, const std::string& contentType)
+{
+	m_content = std::string(data, size);
+	m_status = ok;
+
+	delete m_data;
+	m_data = nullptr;
+
+	set_header("Content-Length", std::to_string(m_content.length()));
+	set_header("Content-Type", contentType);
+}
+
 void reply::set_content(std::istream* idata, const std::string& contentType)
 {
 	delete m_data;
