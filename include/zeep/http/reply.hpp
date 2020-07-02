@@ -101,6 +101,9 @@ class reply
 	void set_content(const std::string& data,
 									 const std::string& contentType);
 
+	/// Set the content by copying \a data and the content-type header
+	void set_content(const char* data, size_t size, const std::string& contentType);
+
 	/// To send a stream of data, with unknown size (using chunked transfer).
 	/// reply takes ownership of \a data and deletes it when done.
 	void set_content(std::istream* data,
