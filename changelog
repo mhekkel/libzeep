@@ -10,7 +10,7 @@ Version 5.0.0
 - Code now requires a c++17 compiler
 - Lots of test code added
 - Added some real world examples
-- Tested with boost 1.67 up to 1.73
+- Tested with boost 1.65.1 up to 1.73
 
 Version 4.0.0
 
