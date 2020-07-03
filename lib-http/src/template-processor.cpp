@@ -216,7 +216,15 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 	}
 
 	doc.set_preserve_cdata(true);
-	*data >> doc;
+	try
+	{
+		*data >> doc;
+	}
+	catch (const std::exception& ex)
+	{
+		std::cerr << "Error parsing template: " << ex.what() << std::endl;
+		throw;
+	}
 
 	if (not templateSelector.empty())
 	{
