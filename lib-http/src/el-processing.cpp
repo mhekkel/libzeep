@@ -1295,6 +1295,12 @@ object interpreter::parse_template_primary_expr()
 			}
 			break;
 
+		case token_type::link_template:
+			match(token_type::link_template);
+			result = parse_link_template_expr();
+			match(token_type::rbrace);
+			break;
+
 		default:
 			throw zeep::exception("syntax error, expected number, string or object");
 	}
