@@ -305,7 +305,7 @@ struct value_serializer<boost::posix_time::ptime>
 		boost::posix_time::time_duration t(hours, minutes, seconds);
 
 		if (m.length(f_have_frac)) {
-			double frac = std::stod(std::string(".").append(std::string(m[f_frac])));
+			double frac = std::stod("0." + m[f_frac].str());
 			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
 		}
 
