@@ -153,8 +153,10 @@ install: lib
 	install -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
 -include $(OBJECTS:%.o=%.d)
+-include $(OBJECTS:%.lo=%.d)
 
 $(OBJECTS:.o=.d):
+$(OBJECTS:.lo=.d):
 
 $(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
@@ -208,4 +210,3 @@ $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 test: $(TESTS:%=%-test)
 
 FORCE:
-

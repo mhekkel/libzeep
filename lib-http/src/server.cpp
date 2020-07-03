@@ -218,7 +218,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			if (not c->path_matches_prefix(path))
 				continue;
 
-			if (c->handle_request(req, rep))
+			if (c->dispatch_request(req, rep))
 				break;
 		}
 		

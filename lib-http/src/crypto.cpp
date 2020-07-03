@@ -19,9 +19,9 @@ namespace zeep
 // --------------------------------------------------------------------
 // encoding/decoding
 
-const char kCharTable[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const char kBase64CharTable[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-const uint8_t kIndexTable[128] = {
+const uint8_t kBase64IndexTable[128] = {
 	128, // not used
 	128, // not used
 	128, // not used
@@ -157,10 +157,10 @@ inline size_t sextet(char ch)
 	if (ch < '+' or ch > 'z')
 		throw invalid_base64();
 
-	return kIndexTable[static_cast<uint8_t>(ch)];
+	return kBase64IndexTable[static_cast<uint8_t>(ch)];
 }
 
-std::string encode_base64(const std::string& data, size_t wrap_width)
+std::string encode_base64(std::string_view data, size_t wrap_width)
 {
 	std::string::size_type n = data.length();
 	std::string::size_type m = 4 * (n / 3);
@@ -185,8 +185,8 @@ std::string encode_base64(const std::string& data, size_t wrap_width)
 			case 1:
 			{
 				uint8_t i = *ch++;
-				s[0] = kCharTable[i >> 2];
-				s[1] = kCharTable[(i << 4) bitand 0x03f];
+				s[0] = kBase64CharTable[i >> 2];
+				s[1] = kBase64CharTable[(i << 4) bitand 0x03f];
 
 				n -= 1;
 				break;
@@ -197,9 +197,9 @@ std::string encode_base64(const std::string& data, size_t wrap_width)
 				uint8_t i1 = *ch++;
 				uint8_t i2 = *ch++;
 
-				s[0] = kCharTable[i1 >> 2];
-				s[1] = kCharTable[(i1 << 4 bitor i2 >> 4) bitand 0x03f];
-				s[2] = kCharTable[(i2 << 2) bitand 0x03f];
+				s[0] = kBase64CharTable[i1 >> 2];
+				s[1] = kBase64CharTable[(i1 << 4 bitor i2 >> 4) bitand 0x03f];
+				s[2] = kBase64CharTable[(i2 << 2) bitand 0x03f];
 
 				n -= 2;
 				break;
@@ -211,10 +211,10 @@ std::string encode_base64(const std::string& data, size_t wrap_width)
 				uint8_t i2 = *ch++;
 				uint8_t i3 = *ch++;
 
-				s[0] = kCharTable[i1 >> 2];
-				s[1] = kCharTable[(i1 << 4 bitor i2 >> 4) bitand 0x03f];
-				s[2] = kCharTable[(i2 << 2 bitor i3 >> 6) bitand 0x03f];
-				s[3] = kCharTable[i3 bitand 0x03f];
+				s[0] = kBase64CharTable[i1 >> 2];
+				s[1] = kBase64CharTable[(i1 << 4 bitor i2 >> 4) bitand 0x03f];
+				s[2] = kBase64CharTable[(i2 << 2 bitor i3 >> 6) bitand 0x03f];
+				s[3] = kBase64CharTable[i3 bitand 0x03f];
 
 				n -= 3;
 				break;
@@ -247,7 +247,7 @@ std::string encode_base64(const std::string& data, size_t wrap_width)
 	return result;
 }
 
-std::string decode_base64(const std::string& data)
+std::string decode_base64(std::string_view data)
 {
 	size_t n = data.length();
 	size_t m = 3 * (n / 4);
@@ -314,7 +314,7 @@ std::string decode_base64(const std::string& data)
 	return result;
 }
 
-std::string encode_base64url(const std::string& data)
+std::string encode_base64url(std::string_view data)
 {
 	std::string result = encode_base64(data);
 
@@ -350,7 +350,7 @@ std::string decode_base64url(std::string data)
 // --------------------------------------------------------------------
 // hex
 
-std::string encode_hex(const std::string& data)
+std::string encode_hex(std::string_view data)
 {
 	// convert to hex
 	const char kHexChars[] = "0123456789abcdef";
@@ -366,7 +366,7 @@ std::string encode_hex(const std::string& data)
 	return result;
 }
 
-std::string decode_hex(const std::string& data)
+std::string decode_hex(std::string_view data)
 {
 	if (data.length() % 2 == 1)
 		throw invalid_hex();
@@ -400,11 +400,11 @@ std::string decode_hex(const std::string& data)
 // --------------------------------------------------------------------
 // decode_url function
 
-std::string decode_url(const std::string& s)
+std::string decode_url(std::string_view s)
 {
 	std::string result;
 	
-	for (std::string::const_iterator c = s.begin(); c != s.end(); ++c)
+	for (auto c = s.begin(); c != s.end(); ++c)
 	{
 		if (*c == '%')
 		{
@@ -431,7 +431,7 @@ std::string decode_url(const std::string& s)
 // --------------------------------------------------------------------
 // encode_url function
 
-std::string encode_url(const std::string& s)
+std::string encode_url(std::string_view s)
 {
 	const unsigned char kURLAcceptable[96] =
 	{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
@@ -447,7 +447,7 @@ std::string encode_url(const std::string& s)
 
 	std::string result;
 	
-	for (std::string::const_iterator c = s.begin(); c != s.end(); ++c)
+	for (auto c = s.begin(); c != s.end(); ++c)
 	{
 		unsigned char a = (unsigned char)*c;
 		if (not (a >= 32 and a < 128 and (kURLAcceptable[a - 32] & 4)))
@@ -902,7 +902,7 @@ class hash_base : public I
 		m_bit_length = 0;
 	}
 
-	void update(const std::string& data);
+	void update(std::string_view data);
 	
 	using I::transform;
 	std::string final();
@@ -914,7 +914,7 @@ class hash_base : public I
 };
 
 template<typename I>
-void hash_base<I>::update(const std::string& data)
+void hash_base<I>::update(std::string_view data)
 {
 	auto length = data.length();
 	m_bit_length += length * 8;
@@ -983,7 +983,7 @@ using SHA256 = hash_base<sha256_hash_impl>;
 
 // --------------------------------------------------------------------
 
-std::string sha1(const std::string& data)
+std::string sha1(std::string_view data)
 {
 	SHA1 h;
 	h.init();
@@ -991,7 +991,7 @@ std::string sha1(const std::string& data)
 	return h.final();
 }
 
-std::string sha256(const std::string& data)
+std::string sha256(std::string_view data)
 {
 	SHA256 h;
 	h.init();
@@ -999,7 +999,7 @@ std::string sha256(const std::string& data)
 	return h.final();
 }
 
-std::string md5(const std::string& data)
+std::string md5(std::string_view data)
 {
 	MD5 h;
 	h.init();
@@ -1017,7 +1017,7 @@ class HMAC
 	static const size_t block_size = H::block_size;
 	static const size_t digest_size = H::digest_size;
 
-	HMAC(std::string key)
+	HMAC(std::string_view key)
 		: m_ipad(block_size, '\x36'), m_opad(block_size, '\x5c')
 	{
 		if (key.length() > block_size)
@@ -1036,7 +1036,7 @@ class HMAC
 		}
 	}
 
-	HMAC& update(const std::string& data)
+	HMAC& update(std::string_view data)
 	{
 		if (not m_inner_updated)
 		{
@@ -1063,17 +1063,17 @@ class HMAC
 	H m_inner;
 };
 
-std::string hmac_sha1(const std::string& message, const std::string& key)
+std::string hmac_sha1(std::string_view message, std::string_view key)
 {
 	return HMAC<SHA1>(key).update(message).final();
 }
 
-std::string hmac_sha256(const std::string& message, const std::string& key)
+std::string hmac_sha256(std::string_view message, std::string_view key)
 {
 	return HMAC<SHA256>(key).update(message).final();
 }
 
-std::string hmac_md5(const std::string& message, const std::string& key)
+std::string hmac_md5(std::string_view message, std::string_view key)
 {
 	return HMAC<MD5>(key).update(message).final();
 }
@@ -1082,8 +1082,8 @@ std::string hmac_md5(const std::string& message, const std::string& key)
 // password/key derivation
 
 template<typename HMAC>
-std::string pbkdf2(const std::string& salt,
-	const std::string& password, unsigned iterations, unsigned keyLength)
+std::string pbkdf2(std::string_view salt,
+	std::string_view password, unsigned iterations, unsigned keyLength)
 {
 	std::string result;
 
@@ -1120,15 +1120,15 @@ std::string pbkdf2(const std::string& salt,
 }
 
 /// create password hash according to PBKDF2 with HmacSHA1
-std::string pbkdf2_hmac_sha1(const std::string& salt,
-	const std::string& password, unsigned iterations, unsigned keyLength)
+std::string pbkdf2_hmac_sha1(std::string_view salt,
+	std::string_view password, unsigned iterations, unsigned keyLength)
 {
 	return pbkdf2<HMAC<SHA1>>(salt, password, iterations, keyLength);
 }
 
 /// create password hash according to PBKDF2 with HmacSHA256
-std::string pbkdf2_hmac_sha256(const std::string& salt,
-	const std::string& password, unsigned iterations, unsigned keyLength)
+std::string pbkdf2_hmac_sha256(std::string_view salt,
+	std::string_view password, unsigned iterations, unsigned keyLength)
 {
 	return pbkdf2<HMAC<SHA256>>(salt, password, iterations, keyLength);
 }
