@@ -14,7 +14,7 @@
 
 #include <zeep/value-serializer.hpp>
 
-#ifndef __cpp_lib_experimental_detect
+#if (defined(__cpp_lib_experimental_detect) and (__cpp_lib_experimental_detect < 201505)) or (defined(_LIBCPP_VERSION) and _LIBCPP_VERSION < 5000)
 // This code is copied from:
 // https://ld2015.scusa.lsu.edu/cppreference/en/cpp/experimental/is_detected.html
 
@@ -35,7 +35,7 @@ namespace std
 			};
 			
 			template <class Default, template<class...> class Op, class... Args>
-			struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
+			struct detector<Default, std::tr1::void_t<Op<Args...>>, Op, Args...> {
 			// Note that std::void_t is a c++17 feature
 			using value_t = true_type;
 			using type = Op<Args...>;

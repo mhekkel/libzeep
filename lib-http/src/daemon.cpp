@@ -8,7 +8,7 @@
 // Utilitie routines to build daemon processes
 
 #include <pwd.h>
-#include <wait.h>
+#include <sys/wait.h>
 
 #include <fstream>
 #include <filesystem>
