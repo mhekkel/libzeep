@@ -134,7 +134,7 @@ $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
 test/$(1)-test: $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%)
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
