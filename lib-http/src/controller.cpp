@@ -28,17 +28,18 @@ controller::~controller()
 bool controller::dispatch_request(request& req, reply& rep)
 {
 	bool result = false;
+
 	try
 	{
 		s_request = &req;
 		result = handle_request(req, rep);
+		s_request = nullptr;
 	}
-	catch(const std::exception& e)
+	catch (...)
 	{
-		result = true;	// an error means we really tried, no need to call any other handler
+		s_request = nullptr;
+		throw;
 	}
-
-	s_request = nullptr;
 
 	return result;
 }
