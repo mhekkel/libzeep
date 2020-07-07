@@ -335,7 +335,7 @@ void preforked_server::run(const std::string& address, short port, int nr_of_pro
 
 	for (int i = 0; i < nr_of_processes; ++i)
 	{
-		threads.emplace_back([this, t = i, nr_of_threads, &acceptor]()
+		threads.emplace_back([this, nr_of_threads, &acceptor]()
 		{
 			boost::asio::io_service::work work(m_io_service);
 
