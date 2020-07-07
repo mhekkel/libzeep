@@ -16,6 +16,8 @@ AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_SUBST(LIBTOOL_DEPS)
 
+AC_PATH_PROG([SHELL], [sh])
+
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
 AC_ARG_VAR([MRC], [Specify a location for the mrc executable])

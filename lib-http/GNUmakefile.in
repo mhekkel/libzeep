@@ -18,7 +18,7 @@ prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
-pkgconfigdir			= $(libdir)/pkgconfig
+pkgconfigdir		= $(libdir)/pkgconfig
 
 LIB_NAME			= @PACKAGE_NAME@-http
 LIB_TARGET			= $(LIB_NAME).la
