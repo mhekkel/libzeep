@@ -14,7 +14,7 @@
 
 #include <zeep/value-serializer.hpp>
 
-#ifndef __cpp_lib_experimental_detect
+#if (defined(__cpp_lib_experimental_detect) and (__cpp_lib_experimental_detect < 201505)) or (defined(_LIBCPP_VERSION) and _LIBCPP_VERSION < 5000)
 // This code is copied from:
 // https://ld2015.scusa.lsu.edu/cppreference/en/cpp/experimental/is_detected.html
 

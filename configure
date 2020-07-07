@@ -17400,6 +17400,53 @@ fi
 
 
 
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <filesystem>
+int
+main ()
+{
+(void)std::filesystem::current_path();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Linking for <filesystem> failed, trying -lstdc++fs" >&5
+$as_echo "$as_me: WARNING: Linking for <filesystem> failed, trying -lstdc++fs" >&2;}
+
+		LIBS="$LIBS -lstdc++fs"
+
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <filesystem>
+int
+main ()
+{
+(void)std::filesystem::current_path();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+else
+
+				as_fn_error $? "Could not link filesystem" "$LINENO" 5
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
 
 
 # Check whether --with-boost was given.

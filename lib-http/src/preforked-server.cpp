@@ -92,8 +92,8 @@ bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket
 class child_process
 {
   public:
-	child_process(std::function<server*(void)> constructor, boost::asio::ip::tcp::acceptor& acceptor, int nr_of_threads)
-		: m_constructor(constructor), m_acceptor(acceptor), m_socket(m_acceptor.get_executor()), m_nr_of_threads(nr_of_threads)
+	child_process(std::function<server*(void)> constructor, boost::asio::io_service& io_service, boost::asio::ip::tcp::acceptor& acceptor, int nr_of_threads)
+		: m_constructor(constructor), m_acceptor(acceptor), m_socket(io_service), m_nr_of_threads(nr_of_threads)
 	{
 		m_acceptor.async_accept(m_socket, std::bind(&child_process::handle_accept, this, std::placeholders::_1));
 	}
@@ -339,7 +339,7 @@ void preforked_server::run(const std::string& address, short port, int nr_of_pro
 		{
 			boost::asio::io_service::work work(m_io_service);
 
-			child_process p(m_constructor, acceptor, nr_of_threads);
+			child_process p(m_constructor, m_io_service, acceptor, nr_of_threads);
 			
 			m_io_service.run();
 		});

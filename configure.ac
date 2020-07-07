@@ -38,6 +38,27 @@ AX_PTHREAD(
 
 AC_CHECK_HEADER([filesystem], [], [AC_MSG_ERROR([The file <filesystem> is missing, perhaps you should install a more recent libstdc++ implementation.])])
 
+dnl check if we need stdc++fs as library
+AC_TRY_LINK(
+	[#include <filesystem>],
+	[(void)std::filesystem::current_path();],
+	[],
+	[
+		AC_MSG_WARN([Linking for <filesystem> failed, trying -lstdc++fs])
+
+		LIBS="$LIBS -lstdc++fs"
+
+		AC_TRY_LINK(
+			[#include <filesystem>],
+			[(void)std::filesystem::current_path();],
+			[],
+			[
+				AC_MSG_ERROR([Could not link filesystem])
+			]
+		)
+	]
+)
+
 AX_BOOST_BASE([1.65.1], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
 ])

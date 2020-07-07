@@ -6,14 +6,14 @@
 #          http://www.boost.org/LICENSE_1_0.txt)
 #
 
-SHELL := /bin/bash
+SHELL				?= /bin/sh
 
 .PHONY: firstTarget
 firstTarget: all
 
 CXX					= @CXX@
 CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
-LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
+LDFLAGS				= @LDFLAGS@ @BOOST_LDFLAGS@
 LIBS				= @LIBS@
 
 prefix				= @prefix@
