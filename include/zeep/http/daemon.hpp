@@ -69,7 +69,7 @@ class daemon
 	/// \param run_as_user			The user to run the forked process. Daemons are usually
 	///								started as root and should drop their privileges as soon
 	///								as possible.
-	int start(const std::string& address, uint16_t port,
+	int start(const std::string& address, uint16_t port, size_t nr_of_procs,
 		size_t nr_of_threads, const std::string& run_as_user);
 
 	/// \brief Stop a running daemon process. Returns 0 in case of successfully stopping a process.
@@ -92,7 +92,7 @@ class daemon
 
 	void daemonize();
 	void open_log_file();
-	bool run_main_loop(const std::string& address, uint16_t port,
+	bool run_main_loop(const std::string& address, uint16_t port, size_t nr_of_procs,
 		size_t nr_of_threads, const std::string& run_as_user);
 
 	bool pid_is_for_executable();

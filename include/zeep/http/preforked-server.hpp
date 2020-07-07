@@ -56,6 +56,8 @@ namespace zeep::http
 ///		t.join();
 /// \endcode
 
+class child_process;
+
 class preforked_server
 {
   public:
@@ -69,27 +71,16 @@ class preforked_server
     preforked_server(std::function<server*(void)> server_factory);
     virtual ~preforked_server();
 
-    /// \brief forks child and starts listening, should be a separate thread
-    virtual void run(const std::string& address, short port, int nr_of_threads);
+    /// \brief forks \a nr_of_child_processes children and starts listening, should be a separate thread
+    virtual void run(const std::string& address, short port, int nr_of_child_processes, int nr_of_threads);
     virtual void start();			///< signal the thread it can start listening:
     virtual void stop();			///< stop the running thread
 
   private:
 
-    void fork_child();
-
-    static bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket);
-    static void write_socket_to_worker(int fd_socket, boost::asio::ip::tcp::socket& socket);
-
-    void handle_accept(const boost::system::error_code& ec);
-
     std::function<server*(void)>	m_constructor;
-    boost::asio::io_service			m_io_service;
-    boost::asio::ip::tcp::acceptor	m_acceptor;
-    boost::asio::ip::tcp::socket	m_socket;
-    int								m_fd;
-    int								m_pid;
     std::mutex						m_lock;
+	boost::asio::io_service			m_io_service;
 };
 
 }

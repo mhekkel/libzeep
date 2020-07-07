@@ -39,7 +39,7 @@ daemon::daemon(server_factory_type&& factory, const char* name)
 {
 }
 
-int daemon::start(const std::string& address, uint16_t port, size_t nr_of_threads, const std::string& run_as_user)
+int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
 {
 	int result = 0;
 	
@@ -50,6 +50,17 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_thread
 	}
 	else
 	{
+        if (fs::exists(m_pid_file))
+            try { fs::remove(m_pid_file); } catch (...) {}
+
+		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
+		if (not fs::is_directory(outLogDir))
+			fs::create_directories(outLogDir);
+		
+		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
+		if (not fs::is_directory(errLogDir))
+			fs::create_directories(errLogDir);
+
         try
         {
             boost::asio::io_service io_service;
@@ -72,7 +83,7 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_thread
         
        	daemonize();
         
-        run_main_loop(address, port, nr_of_threads, run_as_user);
+        run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
         
         if (fs::exists(m_pid_file))
             try { fs::remove(m_pid_file); } catch (...) {}
@@ -307,7 +318,7 @@ void daemon::open_log_file()
 		close(fd_err);
 }
 
-bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_of_threads, const std::string& run_as_user)
+bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
 {
 	int sig = 0;
 
@@ -353,7 +364,7 @@ bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_
 			}
 		});
 		
-		std::thread t(std::bind(&zeep::http::preforked_server::run, &server, address, port, nr_of_threads));
+		std::thread t(std::bind(&zeep::http::preforked_server::run, &server, address, port, nr_of_procs, nr_of_threads));
 		
 		try
 		{
