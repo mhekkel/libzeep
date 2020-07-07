@@ -11,7 +11,7 @@ firstTarget: all
 
 CXX					= @CXX@
 CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
-LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
+LDFLAGS				= @LDFLAGS@ @BOOST_LDFLAGS@
 LIBS				= @LIBS@
 
 prefix				= @prefix@
@@ -94,7 +94,7 @@ endif
 
 $(BINDIR)/$(1): $$($(1)_OBJECTS) | $(BINDIR)
 	@ echo "ld> $(1)"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%)
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
 
 endef
 

@@ -46,8 +46,6 @@ AC_TRY_LINK(
 	[(void)std::filesystem::current_path();],
 	[],
 	[
-		AC_MSG_WARN([Linking for <filesystem> failed, trying -lstdc++fs])
-
 		LIBS="$LIBS -lstdc++fs"
 
 		AC_TRY_LINK(
