@@ -10,6 +10,8 @@
 
 #include <zeep/config.hpp>
 
+#include <tr1/type_traits>
+
 #include <zeep/type-traits.hpp>
 #include <zeep/json/element_fwd.hpp>
 

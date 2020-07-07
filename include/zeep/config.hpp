@@ -9,6 +9,10 @@
 
 #pragma once
 
+#include <tr1/valarray>
+#include <tr1/filesystem>
+#include <tr1/type_traits>
+
 /// The http server implementation in libzeep can use a
 /// preforked mode. That means the main process listens to
 /// a network port and passes the socket to a client process
