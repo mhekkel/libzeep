@@ -355,18 +355,18 @@ int main(int argc, char* argv[])
 
 	po::options_description desc("Allowed options");
 	desc.add_options()
-	    ("help", "produce help message")
-	    ("verbose", "verbose output")
+		("help", "produce help message")
+		("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 		("skip", po::value<vector<string>>(),	"Skip this test, can be specified multiple times")
 		("questionable", po::value<vector<string>>(), "Questionable tests, do not consider failure of these to be an error")
-	    ("test", "Run SUN test suite")
+		("test", "Run SUN test suite")
 		("edition", po::value<int>(), "XML 1.0 specification edition to test, default is 5, 0 which means run all tests")
-	    ("trace", "Trace productions in parser")
-	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
-	    ("single", po::value<string>(), "Test a single XML file")
-	    ("dump", po::value<string>(), "Dump the structure of a single XML file")
-	    ("print-ids", "Print the ID's of failed tests")
+		("trace", "Trace productions in parser")
+		("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
+		("single", po::value<string>(), "Test a single XML file")
+		("dump", po::value<string>(), "Dump the structure of a single XML file")
+		("print-ids", "Print the ID's of failed tests")
 	;
 	
 	po::positional_options_description p;
@@ -374,7 +374,7 @@ int main(int argc, char* argv[])
 
 	po::variables_map vm;
 	po::store(po::command_line_parser(argc, argv).
-	          options(desc).positional(p).run(), vm);
+			  options(desc).positional(p).run(), vm);
 	po::notify(vm);
 
 	if (vm.count("help"))

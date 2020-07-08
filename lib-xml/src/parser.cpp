@@ -186,7 +186,11 @@ void istream_data_source::guess_encoding()
 	// see if there is a BOM
 	// if there isn't, we assume the data is UTF-8
 
-	char ch1 = m_data->rdbuf()->sgetc();
+	int ch = m_data->rdbuf()->sgetc();
+	if (ch == std::streambuf::traits_type::eof())
+		return;
+
+	char ch1 = static_cast<char>(ch);
 
 	if (ch1 == char(0xfe))
 	{
