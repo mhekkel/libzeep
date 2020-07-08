@@ -187,52 +187,52 @@ void istream_data_source::guess_encoding()
 	// if there isn't, we assume the data is UTF-8
 
 	int ch = m_data->rdbuf()->sgetc();
-	if (ch == std::streambuf::traits_type::eof())
-		return;
-
-	char ch1 = static_cast<char>(ch);
-
-	if (ch1 == char(0xfe))
+	if (ch != std::streambuf::traits_type::eof())
 	{
-		char ch2 = m_data->rdbuf()->snextc();
+		char ch1 = static_cast<char>(ch);
 
-		if (ch2 == char(0xff))
+		if (ch1 == char(0xfe))
 		{
-			m_data->rdbuf()->snextc();
-			m_encoding = encoding_type::UTF16BE;
-			m_has_bom = true;
-		}
-		else
-			m_data->rdbuf()->sungetc();
-	}
-	else if (ch1 == char(0xff))
-	{
-		char ch2 = m_data->rdbuf()->snextc();
+			char ch2 = m_data->rdbuf()->snextc();
 
-		if (ch2 == char(0xfe))
-		{
-			m_data->rdbuf()->snextc();
-			m_encoding = encoding_type::UTF16LE;
-			m_has_bom = true;
+			if (ch2 == char(0xff))
+			{
+				m_data->rdbuf()->snextc();
+				m_encoding = encoding_type::UTF16BE;
+				m_has_bom = true;
+			}
+			else
+				m_data->rdbuf()->sungetc();
 		}
-		else
-			m_data->rdbuf()->sungetc();
-	}
-	else if (ch1 == char(0xef))
-	{
-		char ch2 = m_data->rdbuf()->snextc();
-		char ch3 = m_data->rdbuf()->snextc();
+		else if (ch1 == char(0xff))
+		{
+			char ch2 = m_data->rdbuf()->snextc();
 
-		if (ch2 == char(0xbb) and ch3 == char(0xbf))
-		{
-			m_data->rdbuf()->snextc();
-			m_encoding = encoding_type::UTF8;
-			m_has_bom = true;
+			if (ch2 == char(0xfe))
+			{
+				m_data->rdbuf()->snextc();
+				m_encoding = encoding_type::UTF16LE;
+				m_has_bom = true;
+			}
+			else
+				m_data->rdbuf()->sungetc();
 		}
-		else
+		else if (ch1 == char(0xef))
 		{
-			m_data->rdbuf()->sungetc();
-			m_data->rdbuf()->sputbackc(ch1);
+			char ch2 = m_data->rdbuf()->snextc();
+			char ch3 = m_data->rdbuf()->snextc();
+
+			if (ch2 == char(0xbb) and ch3 == char(0xbf))
+			{
+				m_data->rdbuf()->snextc();
+				m_encoding = encoding_type::UTF8;
+				m_has_bom = true;
+			}
+			else
+			{
+				m_data->rdbuf()->sungetc();
+				m_data->rdbuf()->sputbackc(ch1);
+			}
 		}
 	}
 
