@@ -465,7 +465,7 @@ BOOST_AUTO_TEST_CASE(test_17)
 
 		auto doc_test = R"(<?xml version="1.0"?>
 	<data>
-	<test>12.345,68</test>
+	<test>12 345,68</test>
 	</data>
 		)"_xml;
 
