@@ -18,7 +18,7 @@ prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
-pkgconfigdir			= $(libdir)/pkgconfig
+pkgconfigdir		= $(libdir)/pkgconfig
 
 LIB_NAME			= @PACKAGE_NAME@-xml
 LIB_TARGET			= $(LIB_NAME).la
@@ -106,11 +106,7 @@ install: lib
 	for f in $(HEADERS); do install -D ../include/$$f $(includedir)/$$f; done
 	install -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
--include $(OBJECTS:%.o=%.d)
 -include $(OBJECTS:%.lo=%.d)
-
-$(OBJECTS:.o=.d):
-$(OBJECTS:.lo=.d):
 
 $(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
@@ -120,8 +116,9 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
 	@ $(CXX) $(CXXFLAGS) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
 
+.PHONY: clean
 clean:
-	rm -rf $(OBJDIR)/* ../$(LIB_NAME)* ../.libs/$(LIB_NAME)*
+	rm -rf $(OBJDIR)/* $(LIB_TARGET) ../$(LIB_NAME)* ../.libs/$(LIB_NAME)* ../lib/$(LIB_NAME)* $(LIB_NAME).pc
 
 QUESTIONABLE_XML_TEST_IDS = \
 	ibm-valid-P28-ibm28v02.xml \
@@ -146,7 +143,7 @@ define TEST_template =
 
 $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
-test/$(1)-test: $$($(1)_OBJECTS)
+test/$(1)-test: lib $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
 	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
 
@@ -168,4 +165,3 @@ $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 test: $(TESTS:%=%-test)
 
 FORCE:
-

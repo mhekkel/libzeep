@@ -22,3 +22,4 @@ libtool
 lib/
 libzeep-*.pc
 examples/bin/
+lib-xml/.gdb_history

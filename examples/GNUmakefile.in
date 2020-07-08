@@ -76,6 +76,7 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 $(OBJDIR)/dummy_rsrc.o:
 	$(MRC) -o $@ test.xml
 
+.PHONY: clean
 clean:
 	rm -rf $(OBJDIR)/* $(EXAMPLES)
 

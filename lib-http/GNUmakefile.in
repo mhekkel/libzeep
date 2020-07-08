@@ -50,7 +50,7 @@ DEBUG               = @DEBUG@
 MRC					= @MRC@
 ifneq "x$(MRC)" "x"
 USE_RSRC			= 1
-DEFINES				+= USE_RSRC
+DEFINES				+= USE_RSRC WEBAPP_USES_RESOURCES
 else
 USE_RSRC			= 0
 endif
@@ -152,11 +152,7 @@ install: lib
 	for f in $(HEADERS); do install -D ../include/$$f $(includedir)/$$f; done
 	install -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
--include $(OBJECTS:%.o=%.d)
 -include $(OBJECTS:%.lo=%.d)
-
-$(OBJECTS:.o=.d):
-$(OBJECTS:.lo=.d):
 
 $(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
@@ -166,8 +162,9 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
 	@ $(CXX) $(CXXFLAGS) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
 
+.PHONY: clean
 clean:
-	rm -rf $(OBJDIR)/* ../$(LIB_NAME)* ../.libs/$(LIB_NAME)*
+	rm -rf $(OBJDIR)/* $(LIB_TARGET) ../$(LIB_NAME)* ../.libs/$(LIB_NAME)* ../lib/$(LIB_NAME)* $(LIB_NAME).pc
 
 $(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
 	$(MRC) -o $@ $<
@@ -188,7 +185,7 @@ ifneq ($(USE_RSRC),0)
 $(1)_OBJECTS += $$(OBJDIR)/test_rsrc.o
 endif
 
-test/$(1)-test: $$($(1)_OBJECTS)
+test/$(1)-test: lib $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
 	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
 
