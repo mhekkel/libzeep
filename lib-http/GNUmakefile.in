@@ -41,7 +41,7 @@ CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS
 
 # main build variables
 CXXFLAGS            += -I. -pthread -I ../include/
-CXXFLAGS            += -Wall -Wno-multichar
+WARNINGS            += all no-multichar
 
 # Use the DEBUG flag to build debug versions of the code
 DEBUG               = @DEBUG@
@@ -69,6 +69,7 @@ endif
 VPATH += src:test
 
 CXXFLAGS			+= $(DEFINES:%=-D%)
+CXXFLAGS			+= $(WARNINGS:%=-W%)
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
