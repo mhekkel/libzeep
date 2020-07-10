@@ -202,3 +202,33 @@ BOOST_AUTO_TEST_CASE(j_10)
 {
 	static_assert(std::is_constructible<json, const char*>::value, "oi");
 }
+
+enum class MyEnum {
+	aap, noot, mies
+};
+
+void to_element(json& e, MyEnum v)
+{
+	switch (v)
+	{
+		case MyEnum::aap:	e = "aap"; break;
+		case MyEnum::noot:	e = "noot"; break;
+		case MyEnum::mies:	e = "mies"; break;
+		default: throw std::runtime_error("invalid enum");
+	}
+}
+
+void from_element(const json& e, MyEnum& v)
+{
+	auto s = e.as<std::string>();
+	if (s == "aap")	v = MyEnum::aap;
+	else if (s == "noot") v = MyEnum::noot;
+	else if (s == "mies") v = MyEnum::mies;
+	else std::runtime_error("Invalid enum value "+ s);
+}
+
+BOOST_AUTO_TEST_CASE(j_11)
+{
+	json e = MyEnum::aap;
+	BOOST_TEST(e.as<std::string>() == "aap");
+}

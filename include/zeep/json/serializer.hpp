@@ -10,6 +10,7 @@
 
 #include <zeep/config.hpp>
 #include <zeep/nvp.hpp>
+#include <zeep/value-serializer.hpp>
 
 namespace zeep::json
 {
@@ -314,7 +315,21 @@ struct element_serializer
 	{
 		::zeep::json::detail::from_element(j, v);
 	}
+};
 
+template<typename T>
+struct element_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
+{
+	static void to_element(element& j, T v)
+	{
+		j = zeep::value_serializer<T>::to_string(v);
+	}
+
+	template<typename J>
+	static void from_element(const J& j, T& v)
+	{
+		v = zeep::value_serializer<T>::from_string(j.template as<std::string>());
+	}
 };
 
 }
