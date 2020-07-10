@@ -73,6 +73,8 @@ fs::file_time_type rsrc_loader::file_time(const std::string& file, std::error_co
 			throw zeep::exception("No such resource: " + file);
 		
 		result = mRsrcWriteTime;
+
+		ec = {};
 	}
 	catch (const std::exception& ex)
 	{
@@ -89,6 +91,7 @@ std::istream* rsrc_loader::load_file(const std::string& file, std::error_code& e
 	try
 	{
 		result = rsrc_istream::create(file);
+		ec = {};
 	}
 	catch(const std::exception& e)
 	{
