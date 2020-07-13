@@ -7,9 +7,28 @@
 
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
+#include <zeep/http/error-handler.hpp>
 
 namespace zeep::http
 {
+
+class login_error_handler : public error_handler
+{
+  public:
+	login_error_handler(login_controller* c)
+		: m_login_controller(c) {}
+
+
+	virtual bool create_unauth_reply(const request& req, reply& reply)
+	{
+		m_login_controller->create_unauth_reply(req, reply);
+		return true;
+	}
+
+  private:
+	login_controller* m_login_controller;
+};
+
 
 login_controller::login_controller(const std::string& prefix_path)
 	: http::controller(prefix_path)
@@ -26,6 +45,8 @@ void login_controller::set_server(server* server)
 
 	auto& sc = get_server().get_security_context();
 	sc.add_rule("/login", {});
+
+	server->add_error_handler(new login_error_handler(this));
 }
 
 xml::document login_controller::load_login_form() const
@@ -65,6 +86,22 @@ xml::document login_controller::load_login_form() const
     </div>
   </body>
 </html>)"_xml;
+}
+
+void login_controller::create_unauth_reply(const request& req, reply& reply)
+{
+	auto doc = load_login_form();
+	auto csrf = doc.find_first("//input[@name='_csrf']");
+	if (not csrf)
+		throw internal_server_error;
+	csrf->set_attribute("value", req.get_cookie("csrf-token"));
+
+	auto uri = doc.find_first("//input[@name='uri']");
+	if (not uri)
+		throw internal_server_error;
+	uri->set_attribute("value", req.uri);
+
+	reply.set_content(doc);
 }
 
 bool login_controller::handle_request(request& req, reply& rep)

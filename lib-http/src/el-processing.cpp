@@ -1385,22 +1385,27 @@ object interpreter::parse_link_template_expr()
 			string name = m_token_string;
 			match(token_type::object);
 
-			match(token_type::assign);
-			string value = parse_primary_expr().as<string>();
-
-			// put into path directly, if found
-			string::size_type p = path.find('{' + name + '}');
-			if (p == string::npos)
-				parameters[name] = value;
-			else
+			if (m_lookahead == token_type::assign)
 			{
-				do
+				match(token_type::assign);
+				string value = parse_primary_expr().as<string>();
+
+				// put into path directly, if found
+				string::size_type p = path.find('{' + name + '}');
+				if (p == string::npos)
+					parameters[name] = value;
+				else
 				{
-					path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
-					p += value.length();
+					do
+					{
+						path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
+						p += value.length();
+					}
+					while ((p = path.find('{' + name + '}', p)) != string::npos);
 				}
-				while ((p = path.find('{' + name + '}', p)) != string::npos);
 			}
+			else
+				parameters[name] = "";
 
 			if (m_lookahead == token_type::comma)
 			{
@@ -1419,7 +1424,11 @@ object interpreter::parse_link_template_expr()
 			auto n = parameters.size();
 			for (auto p: parameters)
 			{
-				path += encode_url(p.first) + '=' + encode_url(p.second);
+				path += encode_url(p.first);
+
+				if (not p.second.empty())
+					path += '=' + encode_url(p.second);
+
 				if (--n > 0)
 					path += '&';
 			}
