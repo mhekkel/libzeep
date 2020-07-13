@@ -168,6 +168,9 @@ class basic_template_processor
 	/// \brief Use load_template to fetch the XHTML template file
 	virtual void load_template(const std::string& file, xml::document& doc);
 
+	/// \brief Check if the argument \a file contains a valid reference to an XHTML template file and return the path, if any.
+	virtual std::tuple<bool, std::filesystem::path> is_template_file(const std::string& file);
+
 	/// \brief create a reply based on a template
 	virtual void create_reply_from_template(const std::string& file, const scope& scope, reply& reply);
 
