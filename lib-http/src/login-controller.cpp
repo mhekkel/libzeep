@@ -5,6 +5,8 @@
 
 #include <zeep/config.hpp>
 
+#include <fstream>
+
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/error-handler.hpp>
@@ -51,40 +53,59 @@ void login_controller::set_server(server* server)
 
 xml::document login_controller::load_login_form() const
 {
+	if (m_server->has_template_processor())
+	{
+		auto& tp = m_server->get_template_processor();
+
+		const auto& [exists, file] = tp.is_template_file("login");
+		
+		try
+		{
+			std::ifstream is(file, std::ios::binary);
+
+			if (is.is_open())
+				return xml::document(is);
+		}
+		catch (const std::exception& ex)
+		{
+			std::cerr << ex.what() << std::endl;
+		}
+	}
+
 	using namespace xml::literals;
 
 	return R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
-    <title>Please sign in</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous" />
-    <link href="https://getbootstrap.com/docs/4.0/examples/signin/signin.css" rel="stylesheet" crossorigin="anonymous" />
-  </head>
-  <body>
-    <div class="container">
-      <form class="form-signin" method="post" action="/login">
-        <input type="hidden" name="uri" />
-        <input type="hidden" name="_csrf" />
-        <h2 class="form-signin-heading">Please sign in</h2>
-        <div class="mt-2 mb-2">
-          <label for="username" class="sr-only">Username</label>
-          <input type="text" id="username" name="username" class="form-control" placeholder="Username" required="required" autofocus="autofocus" />
-        </div>
-        <div class="mt-2 mb-2">
-          <label for="password" class="sr-only">Password</label>
-          <input type="password" id="password" name="password" class="form-control" placeholder="Password" required="required" value="" />
-          <div class="invalid-feedback">
-            Invalid username/password
-          </div>
-        </div>
-        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-      </form>
-    </div>
-  </body>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+<meta name="description" content="" />
+<meta name="author" content="" />
+<title>Please sign in</title>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous" />
+<link href="https://getbootstrap.com/docs/4.0/examples/signin/signin.css" rel="stylesheet" crossorigin="anonymous" />
+</head>
+<body>
+<div class="container">
+<form class="form-signin" method="post" action="/login">
+	<input type="hidden" name="uri" />
+	<input type="hidden" name="_csrf" />
+	<h2 class="form-signin-heading">Please sign in</h2>
+	<div class="mt-2 mb-2">
+	<label for="username" class="sr-only">Username</label>
+	<input type="text" id="username" name="username" class="form-control" placeholder="Username" required="required" autofocus="autofocus" />
+	</div>
+	<div class="mt-2 mb-2">
+	<label for="password" class="sr-only">Password</label>
+	<input type="password" id="password" name="password" class="form-control" placeholder="Password" required="required" value="" />
+	<div class="invalid-feedback">
+		Invalid username/password
+	</div>
+	</div>
+	<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+</form>
+</div>
+</body>
 </html>)"_xml;
 }
 
@@ -102,6 +123,7 @@ void login_controller::create_unauth_reply(const request& req, reply& reply)
 	uri->set_attribute("value", req.uri);
 
 	reply.set_content(doc);
+	reply.set_status(status_type::unauthorized);
 }
 
 bool login_controller::handle_request(request& req, reply& rep)
