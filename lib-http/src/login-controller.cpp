@@ -51,20 +51,22 @@ void login_controller::set_server(server* server)
 	server->add_error_handler(new login_error_handler(this));
 }
 
-xml::document login_controller::load_login_form() const
+xml::document login_controller::load_login_form(const request& req) const
 {
 	if (m_server->has_template_processor())
 	{
-		auto& tp = m_server->get_template_processor();
-
-		const auto& [exists, file] = tp.is_template_file("login");
-		
 		try
 		{
-			std::ifstream is(file, std::ios::binary);
+			auto& tp = m_server->get_template_processor();
 
-			if (is.is_open())
-				return xml::document(is);
+			xml::document doc;
+			doc.set_preserve_cdata(true);
+
+			tp.load_template("login", doc);
+
+			tp.process_tags(doc.child(), {req});
+
+			return doc;
 		}
 		catch (const std::exception& ex)
 		{
@@ -111,16 +113,13 @@ xml::document login_controller::load_login_form() const
 
 void login_controller::create_unauth_reply(const request& req, reply& reply)
 {
-	auto doc = load_login_form();
-	auto csrf = doc.find_first("//input[@name='_csrf']");
-	if (not csrf)
-		throw internal_server_error;
-	csrf->set_attribute("value", req.get_cookie("csrf-token"));
+	auto doc = load_login_form(req);
 
-	auto uri = doc.find_first("//input[@name='uri']");
-	if (not uri)
-		throw internal_server_error;
-	uri->set_attribute("value", req.uri);
+	for (auto csrf: doc.find("//input[@name='_csrf']"))
+		csrf->set_attribute("value", req.get_cookie("csrf-token"));
+
+	for (auto uri: doc.find("//input[@name='uri']"))
+		uri->set_attribute("value", req.uri);
 
 	reply.set_content(doc);
 	reply.set_status(status_type::unauthorized);
@@ -136,11 +135,9 @@ bool login_controller::handle_request(request& req, reply& rep)
 
 		if (req.method == method_type::GET)
 		{
-			auto doc = load_login_form();
-			auto csrf = doc.find_first("//input[@name='_csrf']");
-			if (not csrf)
-				throw internal_server_error;
-			csrf->set_attribute("value", req.get_cookie("csrf-token"));
+			auto doc = load_login_form(req);
+			for (auto csrf: doc.find("//input[@name='_csrf']"))
+				csrf->set_attribute("value", req.get_cookie("csrf-token"));
 			rep.set_content(doc);
 		}
 		else if (req.method == method_type::POST)
@@ -163,15 +160,18 @@ bool login_controller::handle_request(request& req, reply& rep)
 			}
 			catch (const invalid_password_exception& e)
 			{
-				auto doc = load_login_form();
-				auto csrf = doc.find_first("//input[@name='_csrf']");
-				csrf->set_attribute("value", req.get_cookie("csrf-token"));
+				auto doc = load_login_form(req);
+				for (auto csrf: doc.find("//input[@name='_csrf']"))
+					csrf->set_attribute("value", req.get_cookie("csrf-token"));
 
 				auto user = doc.find_first("//input[@name='username']");
 				user->set_attribute("value", username);
 
 				auto pw = doc.find_first("//input[@name='password']");
 				pw->set_attribute("class", pw->get_attribute("class") + " is-invalid");
+
+				for (auto i_uri: doc.find("//input[@name='uri']"))
+					i_uri->set_attribute("value", uri);
 
 				rep.set_content(doc);
 

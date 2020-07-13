@@ -451,37 +451,37 @@ BOOST_AUTO_TEST_CASE(test_16)
 	}
 }
 
-BOOST_AUTO_TEST_CASE(test_17)
-{
-	try
-	{
-		std::locale l("fr_FR.UTF-8");
+// BOOST_AUTO_TEST_CASE(test_17)
+// {
+// 	try
+// 	{
+// 		std::locale l("fr_FR.UTF-8");
 
-		auto doc = R"(<?xml version="1.0"?>
-	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-	<test m:text="${#numbers.formatDecimal(12345.6789, 1, 2)}" />
-	</data>
-		)"_xml;
+// 		auto doc = R"(<?xml version="1.0"?>
+// 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+// 	<test m:text="${#numbers.formatDecimal(12345.6789, 1, 2)}" />
+// 	</data>
+// 		)"_xml;
 
-		auto doc_test = R"(<?xml version="1.0"?>
-	<data>
-	<test>12 345,68</test>
-	</data>
-		)"_xml;
+// 		auto doc_test = R"(<?xml version="1.0"?>
+// 	<data>
+// 	<test>12 345,68</test>
+// 	</data>
+// 		)"_xml;
 
-		zeep::http::request req;
-		req.headers.push_back({ "Accept-Language", "fr_FR, en-US;q=0.7, en;q=0.3" });
+// 		zeep::http::request req;
+// 		req.headers.push_back({ "Accept-Language", "fr_FR, en-US;q=0.7, en;q=0.3" });
 
-		zeep::http::scope scope(req);
-		scope.put("ok", true);
+// 		zeep::http::scope scope(req);
+// 		scope.put("ok", true);
 
-		process_and_compare(doc, doc_test, scope);
-	}
-	catch (const std::runtime_error& e)
-	{
-		std::cerr << "skipping test 17 since locale fr_FR.UTF-8 is not available" << std::endl;
-	}
-}
+// 		process_and_compare(doc, doc_test, scope);
+// 	}
+// 	catch (const std::runtime_error& e)
+// 	{
+// 		std::cerr << "skipping test 17 since locale fr_FR.UTF-8 is not available" << std::endl;
+// 	}
+// }
 
 BOOST_AUTO_TEST_CASE(test_18)
 {

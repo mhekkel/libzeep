@@ -48,7 +48,7 @@ class login_controller : public controller
 	///
 	/// The _csrf value is used to guard against CSRF attacks. The uri is the location to redirect to
 	/// in case of a valid login.
-	virtual xml::document load_login_form() const;
+	virtual xml::document load_login_form(const request& req) const;
 
 	/// \brief Create an error reply for an unauthorized access
 	///
