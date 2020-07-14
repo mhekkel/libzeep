@@ -64,7 +64,7 @@ xml::document login_controller::load_login_form(const request& req) const
 
 			tp.load_template("login", doc);
 
-			tp.process_tags(doc.child(), {req});
+			tp.process_tags(doc.child(), { get_server(), req });
 
 			return doc;
 		}
@@ -129,7 +129,20 @@ bool login_controller::handle_request(request& req, reply& rep)
 {
 	bool result = false;
 
-	if (req.get_path() == "/login")
+	std::string uri = req.uri;
+
+	while (uri.front() == '/')
+		uri.erase(0, 1);
+	
+	if (uri.compare(0, m_prefix_path.length(), m_prefix_path) != 0)
+		return false;
+
+	uri.erase(0, m_prefix_path.length());
+	
+	if (uri.front() == '/')
+		uri.erase(0, 1);
+
+	if (uri == "login")
 	{
 		result = true;
 
@@ -181,7 +194,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 		else
 			result = false;
 	}
-	else if (req.get_path() == "/logout")
+	else if (uri == "logout")
 	{
 		auto uri = req.get_parameter("uri");
 		if (uri.empty() or uri == "/logout")

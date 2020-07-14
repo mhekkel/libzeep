@@ -44,7 +44,7 @@ bool html_controller::handle_request(request& req, reply& rep)
 {
 	std::string uri = req.uri;
 
-	if (uri.front() == '/')
+	while (uri.front() == '/')
 		uri.erase(0, 1);
 	
 	if (not ba::starts_with(uri, m_prefix_path))
@@ -66,18 +66,6 @@ bool html_controller::handle_request(request& req, reply& rep)
 			uri.erase(d, std::string::npos);
 		}
 	}
-
-	// strip off the http part including hostname and such
-	if (ba::starts_with(uri, "http://"))
-	{
-		std::string::size_type s = uri.find_first_of('/', 7);
-		if (s != std::string::npos)
-			uri.erase(0, s);
-	}
-
-	// now make the path relative to the root
-	while (uri.length() > 0 and uri[0] == '/')
-		uri.erase(uri.begin());
 
 	// set up the scope by putting some globals in it
 	scope scope(get_server(), req);
