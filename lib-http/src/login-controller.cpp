@@ -200,11 +200,6 @@ bool login_controller::handle_request(request& req, reply& rep)
 	}
 	else if (uri == "logout")
 	{
-		// auto uri = req.get_parameter("uri");
-		// if (uri.empty() or uri == "/logout")
-		// 	uri = "/";
-		// rep = reply::redirect(uri);
-
 		fs::path redirect_to = 
 			fs::path("/" + get_server().get_context_name() + "/" + req.get_parameter("uri")).lexically_normal();
 		if (redirect_to.empty() or redirect_to.filename() == "logout")

@@ -42,38 +42,11 @@ void html_controller::handle_file(const request& request, const scope& scope, re
 
 bool html_controller::handle_request(request& req, reply& rep)
 {
-	std::string uri = req.uri;
-
-	while (uri.front() == '/')
-		uri.erase(0, 1);
-	
-	if (not ba::starts_with(uri, m_prefix_path))
-		return false;
-
-	uri.erase(0, m_prefix_path.length());
-	
-	if (uri.front() == '/')
-		uri.erase(0, 1);
-
-	// start by sanitizing the request's URI, first parse the parameters
-	std::string ps = req.payload;
-	if (req.method != method_type::POST)
-	{
-		std::string::size_type d = uri.find('?');
-		if (d != std::string::npos)
-		{
-			ps = uri.substr(d + 1);
-			uri.erase(d, std::string::npos);
-		}
-	}
+	std::string uri = get_prefix_less_path(req);
 
 	// set up the scope by putting some globals in it
 	scope scope(get_server(), req);
 
-	scope.put("uri", object(uri));
-	auto s = uri.find('?');
-	if (s != std::string::npos)
-		uri.erase(s, std::string::npos);
 	scope.put("baseuri", uri);
 
 	init_scope(scope);

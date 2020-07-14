@@ -8,8 +8,10 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
+#include <filesystem>
 
 namespace ba = boost::algorithm;
+namespace fs = std::filesystem;
 
 namespace zeep::http
 {
@@ -41,7 +43,7 @@ std::string request::get_path() const
 	std::smatch m;
 	if (not std::regex_match(uri, m, kURIRx))
 		throw std::invalid_argument("the request uri is not valid");
-	return m[3];
+	return fs::path(m[3]).lexically_normal();
 }
 
 std::string request::get_query() const

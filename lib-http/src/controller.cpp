@@ -6,6 +6,8 @@
 
 #include <zeep/config.hpp>
 
+#include <cassert>
+
 #include <zeep/http/controller.hpp>
 
 namespace zeep::http
@@ -57,6 +59,27 @@ bool controller::path_matches_prefix(const std::string& path) const
 	}
 
 	return result;
+}
+
+std::string controller::get_prefix_less_path(request& req) const
+{
+	auto p = req.get_path();
+
+	if (not m_prefix_path.empty())
+	{
+		if (p.compare(0, m_prefix_path.length(), m_prefix_path) != 0)
+		{
+			assert(false);
+			throw std::logic_error("Controller does not have the prefix path for this request");
+		}
+		
+		p.erase(0, m_prefix_path.length());		
+	}
+
+	while (p.front() == '/')
+		p.erase(0, 1);
+	
+	return p;
 }
 
 json::element controller::get_credentials() const
