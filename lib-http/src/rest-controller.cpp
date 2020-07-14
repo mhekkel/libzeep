@@ -24,7 +24,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 {
 	std::string p = req.uri;
 
-	if (p.front() == '/')
+	while (p.front() == '/')
 		p.erase(0, 1);
 	
 	if (not ba::starts_with(p, m_prefix_path))
