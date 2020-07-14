@@ -8,6 +8,7 @@
 // Utilitie routines to build daemon processes
 
 #include <pwd.h>
+#include <grp.h>
 #include <sys/wait.h>
 
 #include <fstream>
@@ -348,7 +349,31 @@ bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_
 				if (not run_as_user.empty())
 				{
 					struct passwd* pw = getpwnam(run_as_user.c_str());
-					if (pw == NULL or setuid(pw->pw_uid) < 0)
+					if (pw == NULL)
+					{
+						std::cerr << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << std::endl;
+						exit(1);
+					}
+
+					int ngroups = 0;
+					if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
+					{
+						std::vector<gid_t> groups(ngroups);
+						if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
+							setgroups(ngroups, groups.data()) == -1)
+						{
+							std::cerr << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << std::endl;
+							exit(1);
+						}
+					}
+
+					if (setgid(pw->pw_gid) < 0)
+					{
+						std::cerr << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << std::endl;
+						exit(1);
+					}
+
+					if (setuid(pw->pw_uid) < 0)
 					{
 						std::cerr << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << std::endl;
 						exit(1);
