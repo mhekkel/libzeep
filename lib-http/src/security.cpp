@@ -36,6 +36,11 @@ void security_context::validate_request(const request& req) const
 
 		if (path.front() != '/')
 			path.insert(path.begin(), '/');
+		else
+		{
+			while (path[1] == '/')
+				path.erase(1, 1);
+		}
 
 		// first check if this page is allowed without any credentials
 		// that means, the first rule that matches this uri should allow

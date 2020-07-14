@@ -6,10 +6,13 @@
 #include <zeep/config.hpp>
 
 #include <fstream>
+#include <filesystem>
 
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/error-handler.hpp>
+
+namespace fs = std::filesystem;
 
 namespace zeep::http
 {
@@ -129,7 +132,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 {
 	bool result = false;
 
-	std::string uri = req.uri;
+	std::string uri = fs::path(req.uri).lexically_relative("/").string();
 
 	while (uri.front() == '/')
 		uri.erase(0, 1);
@@ -159,10 +162,11 @@ bool login_controller::handle_request(request& req, reply& rep)
 			if (csrf != req.get_cookie("csrf-token"))
 				throw status_type::forbidden;
 
-			auto uri = req.get_parameter("uri");
-			if (uri.empty() or uri == "/login")
-				uri = "/";
-			rep = reply::redirect(uri);
+			fs::path redirect_to = 
+				fs::path("/" + get_server().get_context_name() + "/" + req.get_parameter("uri")).lexically_normal();
+			if (redirect_to.empty() or redirect_to.filename() == "login")
+				redirect_to = "/";
+			rep = reply::redirect(redirect_to.string());
 
 			auto username = req.get_parameter("username");
 			auto password = req.get_parameter("password");
@@ -196,10 +200,16 @@ bool login_controller::handle_request(request& req, reply& rep)
 	}
 	else if (uri == "logout")
 	{
-		auto uri = req.get_parameter("uri");
-		if (uri.empty() or uri == "/logout")
-			uri = "/";
-		rep = reply::redirect(uri);
+		// auto uri = req.get_parameter("uri");
+		// if (uri.empty() or uri == "/logout")
+		// 	uri = "/";
+		// rep = reply::redirect(uri);
+
+		fs::path redirect_to = 
+			fs::path("/" + get_server().get_context_name() + "/" + req.get_parameter("uri")).lexically_normal();
+		if (redirect_to.empty() or redirect_to.filename() == "logout")
+			redirect_to = "/";
+		rep = reply::redirect(redirect_to.string());
 
 		rep.set_cookie("access_token", "", {
 			{ "Max-Age", "0" }
