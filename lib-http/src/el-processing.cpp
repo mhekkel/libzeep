@@ -1342,6 +1342,13 @@ object interpreter::parse_link_template_expr()
 
 	int braces = 0;
 
+	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
+	if (m_lookahead == token_type::div)
+	{
+		path = '/' + m_scope.get_context_name() + '/';
+		match(token_type::div);
+	}
+
 	while (m_lookahead != token_type::lparen and m_lookahead != token_type::eof)
 	{
 		if (m_lookahead == token_type::rbrace)
@@ -1385,22 +1392,27 @@ object interpreter::parse_link_template_expr()
 			string name = m_token_string;
 			match(token_type::object);
 
-			match(token_type::assign);
-			string value = parse_primary_expr().as<string>();
-
-			// put into path directly, if found
-			string::size_type p = path.find('{' + name + '}');
-			if (p == string::npos)
-				parameters[name] = value;
-			else
+			if (m_lookahead == token_type::assign)
 			{
-				do
+				match(token_type::assign);
+				string value = parse_primary_expr().as<string>();
+
+				// put into path directly, if found
+				string::size_type p = path.find('{' + name + '}');
+				if (p == string::npos)
+					parameters[name] = value;
+				else
 				{
-					path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
-					p += value.length();
+					do
+					{
+						path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
+						p += value.length();
+					}
+					while ((p = path.find('{' + name + '}', p)) != string::npos);
 				}
-				while ((p = path.find('{' + name + '}', p)) != string::npos);
 			}
+			else
+				parameters[name] = "";
 
 			if (m_lookahead == token_type::comma)
 			{
@@ -1419,7 +1431,11 @@ object interpreter::parse_link_template_expr()
 			auto n = parameters.size();
 			for (auto p: parameters)
 			{
-				path += encode_url(p.first) + '=' + encode_url(p.second);
+				path += encode_url(p.first);
+
+				if (not p.second.empty())
+					path += '=' + encode_url(p.second);
+
 				if (--n > 0)
 					path += '&';
 			}
@@ -1879,6 +1895,13 @@ const request& scope::get_request() const
 	if (m_req == nullptr)
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
+}
+
+std::string scope::get_context_name() const
+{
+	if (not m_server)
+		throw zeep::exception("Invalid scope, no server");
+	return m_server->get_context_name();
 }
 
 json::element scope::get_credentials() const
