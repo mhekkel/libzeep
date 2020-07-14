@@ -73,8 +73,13 @@ void to_element(element& v, T i)
 template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
 void to_element(element& v, T e)
 {
-	using int_type = typename std::underlying_type_t<T>;
-	factory<value_type::number_int>::construct(v, static_cast<int_type>(e));
+	if (value_serializer<T>::empty())
+	{
+		using int_type = typename std::underlying_type_t<T>;
+		factory<value_type::number_int>::construct(v, static_cast<int_type>(e));
+	}
+	else
+		factory<value_type::string>::construct(v, value_serializer<T>::to_string(e));
 }
 
 template<typename T, std::enable_if_t<std::is_same_v<T, bool>, int> = 0>

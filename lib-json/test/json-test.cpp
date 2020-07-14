@@ -18,6 +18,11 @@ struct MyPOD2
 	float f = -1.5;
 	std::vector<int> v = { 1, 2, 3, 4 };
 
+	bool operator==(const MyPOD2& rhs) const
+	{
+		return f == rhs.f and v == rhs.v;
+	}
+
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
 	{
@@ -34,6 +39,11 @@ struct MyPOD
 	int						i;
 	std::optional<int>		o{13};
 	std::vector<MyPOD2>		fp{2, MyPOD2()};
+
+	bool operator==(const MyPOD& rhs) const
+	{
+		return s == rhs.s and i == rhs.i and o == rhs.o and fp == rhs.fp;
+	}
 
 	template<typename Archive>
 	void serialize(Archive& ar, unsigned long version)
@@ -207,28 +217,62 @@ enum class MyEnum {
 	aap, noot, mies
 };
 
-void to_element(json& e, MyEnum v)
+std::ostream& operator<<(std::ostream& os, MyEnum e)
 {
-	switch (v)
-	{
-		case MyEnum::aap:	e = "aap"; break;
-		case MyEnum::noot:	e = "noot"; break;
-		case MyEnum::mies:	e = "mies"; break;
-		default: throw std::runtime_error("invalid enum");
-	}
-}
-
-void from_element(const json& e, MyEnum& v)
-{
-	auto s = e.as<std::string>();
-	if (s == "aap")	v = MyEnum::aap;
-	else if (s == "noot") v = MyEnum::noot;
-	else if (s == "mies") v = MyEnum::mies;
-	else std::runtime_error("Invalid enum value "+ s);
+	os << zeep::value_serializer<MyEnum>::to_string(e);
+	return os;
 }
 
 BOOST_AUTO_TEST_CASE(j_11)
 {
+	zeep::value_serializer<MyEnum>::instance()
+		("aap", MyEnum::aap)
+		("noot", MyEnum::noot)
+		("mies", MyEnum::mies);
+		
 	json e = MyEnum::aap;
 	BOOST_TEST(e.as<std::string>() == "aap");
+	// BOOST_TEST(e.as<MyEnum>() == MyEnum::aap);
+
+	// reinit the enum serializer
+	zeep::value_serializer<MyEnum>::init({
+		{ MyEnum::aap, "aap" },
+		{ MyEnum::noot, "noot" },
+		{ MyEnum::mies, "mies" }
+	});
+
+	e = MyEnum::noot;
+	BOOST_TEST(e.as<std::string>() == "noot");
 }
+
+struct MyPOD3
+{
+	MyEnum a;
+	
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("a", a)
+		   ;
+	}
+};
+
+BOOST_AUTO_TEST_CASE(j_12)
+{
+	MyPOD p1{ "1", 2 }, p1a;
+
+	json e;
+	to_element(e, p1);
+
+	from_element(e, p1a);
+
+	BOOST_TEST((p1 == p1a));
+
+	MyPOD3 p3{MyEnum::noot}, p3a;
+	to_element(e, p3);
+
+	from_element(e, p3a);
+
+	BOOST_TEST(p3.a == p3a.a);
+}
+

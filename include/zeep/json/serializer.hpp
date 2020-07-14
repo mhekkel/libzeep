@@ -226,7 +226,7 @@ struct deserializer
 
 			typename T::value_type v;
 			deserializer_impl::deserialize(v, e);
-			data.reset(v);
+			data.emplace(std::move(v));
 		}
 	};
 
@@ -317,19 +317,19 @@ struct element_serializer
 	}
 };
 
-template<typename T>
-struct element_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
-{
-	static void to_element(element& j, T v)
-	{
-		j = zeep::value_serializer<T>::to_string(v);
-	}
+// template<typename T>
+// struct element_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
+// {
+// 	static void to_element(element& j, T v)
+// 	{
+// 		j = zeep::value_serializer<T>::instance().to_string(v);
+// 	}
 
-	template<typename J>
-	static void from_element(const J& j, T& v)
-	{
-		v = zeep::value_serializer<T>::from_string(j.template as<std::string>());
-	}
-};
+// 	template<typename J>
+// 	static void from_element(const J& j, T& v)
+// 	{
+// 		v = zeep::value_serializer<T>::instance().from_string(j.template as<std::string>());
+// 	}
+// };
 
 }

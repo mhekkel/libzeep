@@ -150,6 +150,8 @@ struct value_serializer<double>
 /// accessible through instance() and then call the operator()
 /// members assinging each of the enum values with their respective
 /// string.
+///
+/// A recent addition is the init() call to initialize the instance
 
 template<typename T>
 struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
@@ -157,7 +159,21 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 	std::string m_type_name;
 
 	using value_map_type = std::map<T,std::string>;
+	using value_map_value_type = typename value_map_type::value_type;
+
 	value_map_type m_value_map;
+
+	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
+	static void init(const char* name, std::initializer_list<value_map_value_type> values)
+	{
+		instance(name).m_value_map = value_map_type(values);
+	}
+
+	/// \brief Initialize a new anonymous instance of value_serializer for this enum with a set of name/value pairs
+	static void init(std::initializer_list<value_map_value_type> values)
+	{
+		instance().m_value_map = value_map_type(values);
+	}
 
 	static value_serializer& instance(const char* name = nullptr) {
 		static value_serializer s_instance;
@@ -198,6 +214,11 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 				break;
 			}
 		return result;
+	}
+
+	static bool empty()
+	{
+		return instance().m_value_map.empty();
 	}
 };
 
