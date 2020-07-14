@@ -146,6 +146,9 @@ class scope
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
 	const request& get_request() const;
 
+	/// \brief return the context_name of the server
+	std::string get_context_name() const;
+
 	/// \brief return the credentials of the current user
 	json::element get_credentials() const;
 

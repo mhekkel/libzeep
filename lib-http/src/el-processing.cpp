@@ -1342,6 +1342,13 @@ object interpreter::parse_link_template_expr()
 
 	int braces = 0;
 
+	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
+	if (m_lookahead == token_type::div)
+	{
+		path = '/' + m_scope.get_context_name() + '/';
+		match(token_type::div);
+	}
+
 	while (m_lookahead != token_type::lparen and m_lookahead != token_type::eof)
 	{
 		if (m_lookahead == token_type::rbrace)
@@ -1888,6 +1895,13 @@ const request& scope::get_request() const
 	if (m_req == nullptr)
 		throw zeep::exception("Invalid scope, no request");
 	return *m_req;
+}
+
+std::string scope::get_context_name() const
+{
+	if (not m_server)
+		throw zeep::exception("Invalid scope, no server");
+	return m_server->get_context_name();
 }
 
 json::element scope::get_credentials() const

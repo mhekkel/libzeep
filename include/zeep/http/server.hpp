@@ -69,6 +69,16 @@ class server
 	/// \brief Test if a security context was provided in the constructor
 	bool has_security_context() const				{ return (bool)m_security_context; }
 
+	/// \brief Set the context_name
+	///
+	/// The context name is used in constructing relative URL's that start with a forward slash
+	void set_context_name(const std::string& context_name)			{ m_context_name = context_name; }
+
+	/// \brief Get the context_name
+	///
+	/// The context name is used in constructing relative URL's that start with a forward slash
+	std::string get_context_name() const							{ return m_context_name; }
+
 	/// \brief Add controller to the list of controllers
 	///
 	/// When a request is received, the list of controllers get a chance
@@ -174,6 +184,7 @@ class server
 	unsigned short m_port;
 	bool m_log_forwarded;
 	bool m_add_csrf_token;
+	std::string m_context_name;		/// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
 	std::unique_ptr<basic_template_processor> m_template_processor;
 	std::list<controller*> m_controllers;
