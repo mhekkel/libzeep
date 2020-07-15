@@ -19,7 +19,7 @@ namespace zeep::http
 namespace
 {
 // a regex for URI
-const std::regex kURIRx(R"((https?://)?([^/]+)?(/[^?]*)(?:\?(.+))?)", std::regex_constants::icase);
+const std::regex kURIRx(R"((?:(https?://)([^/]+))?([^?]*)(?:\?(.+))?)", std::regex_constants::icase);
 }
 
 void request::clear()

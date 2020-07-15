@@ -132,18 +132,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 {
 	bool result = false;
 
-	std::string uri = fs::path(req.uri).lexically_relative("/").string();
-
-	while (uri.front() == '/')
-		uri.erase(0, 1);
-	
-	if (uri.compare(0, m_prefix_path.length(), m_prefix_path) != 0)
-		return false;
-
-	uri.erase(0, m_prefix_path.length());
-	
-	if (uri.front() == '/')
-		uri.erase(0, 1);
+	std::string uri = get_prefix_less_path(req);
 
 	if (uri == "login")
 	{
