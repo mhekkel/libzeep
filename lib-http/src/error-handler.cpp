@@ -78,12 +78,15 @@ bool error_handler::create_error_reply(const request& req, status_type status, c
 			{ "message", message },
 			{ "request",
 				{
-					{ "username", req.username },
-					{ "method", to_string(req.method) },
-					{ "uri", req.uri }
+					{ "method", to_string(req.get_method()) },
+					{ "uri", req.get_uri() }
 				}
 			}
 		};
+
+		auto credentials = req.get_credentials();
+		if (credentials.is_object())
+			error["request"]["username"] = credentials["user"];
 
 		scope.put("error", error);
 

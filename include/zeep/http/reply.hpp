@@ -62,7 +62,11 @@ class reply
 
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
 
-	reply(int version_major = 1, int version_minor = 0);
+	reply(int major_version = 1, int minor_version = 0);
+
+	reply(status_type status, std::tuple<int,int> version,
+		std::vector<header>&& headers, std::string&& payload);
+
 	reply(const reply& rhs);
 	~reply();
 	reply& operator=(const reply &);
@@ -70,6 +74,7 @@ class reply
 	void clear();
 
 	void set_version(int version_major, int version_minor);
+	void set_version(std::tuple<int,int> version);
 
 	/// Add a header with name \a name and value \a value
 	void set_header(const std::string& name,
@@ -141,8 +146,8 @@ class reply
   private:
 	friend class reply_parser;
 
-	int m_version_major, m_version_minor;
 	status_type m_status;
+	int m_version_major, m_version_minor;
 	std::vector<header> m_headers;
 	std::string m_content;
 	std::istream* m_data;

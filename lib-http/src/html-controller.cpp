@@ -52,7 +52,7 @@ bool html_controller::handle_request(request& req, reply& rep)
 	init_scope(scope);
 
 	auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
-		[uri, method=req.method](const mount_point& m)
+		[uri, method=req.get_method()](const mount_point& m)
 		{
 			// return m.path == uri and
 			return glob_match(uri, m.path) and
@@ -66,31 +66,14 @@ bool html_controller::handle_request(request& req, reply& rep)
 
 	if (handler != m_dispatch_table.end())
 	{
-		if (req.method == method_type::OPTIONS)
+		if (req.get_method() == method_type::OPTIONS)
 		{
 			rep = reply::stock_reply(ok);
 			rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");
 			rep.set_content("", "text/plain");
 		}
 		else
-		{
-			if (m_server)
-			{
-				json::element credentials = get_server().get_credentials(req);
-
-				if (credentials)
-				{
-					if (credentials.is_string())
-						req.username = credentials.as<std::string>();
-					else if (credentials.is_object())
-						req.username = credentials["username"].as<std::string>();
-
-					scope.put("credentials", credentials);
-				}
-			}
-
 			handler->handler(req, scope, rep);
-		}
 
 		result = true;
 	}

@@ -122,7 +122,7 @@ void login_controller::create_unauth_reply(const request& req, reply& reply)
 		csrf->set_attribute("value", req.get_cookie("csrf-token"));
 
 	for (auto uri: doc.find("//input[@name='uri']"))
-		uri->set_attribute("value", req.uri);
+		uri->set_attribute("value", req.get_uri());
 
 	reply.set_content(doc);
 	reply.set_status(status_type::unauthorized);
@@ -138,14 +138,14 @@ bool login_controller::handle_request(request& req, reply& rep)
 	{
 		result = true;
 
-		if (req.method == method_type::GET)
+		if (req.get_method() == method_type::GET)
 		{
 			auto doc = load_login_form(req);
 			for (auto csrf: doc.find("//input[@name='_csrf']"))
 				csrf->set_attribute("value", req.get_cookie("csrf-token"));
 			rep.set_content(doc);
 		}
-		else if (req.method == method_type::POST)
+		else if (req.get_method() == method_type::POST)
 		{
 			auto csrf = req.get_parameter("_csrf");
 			if (csrf != req.get_cookie("csrf-token"))

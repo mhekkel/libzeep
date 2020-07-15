@@ -10,6 +10,7 @@
 
 #include <zeep/http/connection.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/streambuf.hpp>
 
 namespace zeep::http
 {
@@ -27,11 +28,6 @@ connection::connection(boost::asio::io_service& service, server& handler)
 
 void connection::start()
 {
-	m_request = request();	// reset
-	
-	m_request.local_address = m_socket.local_endpoint().address().to_string();
-	m_request.local_port = m_socket.local_endpoint().port();
-	
 	m_socket.async_read_some(boost::asio::buffer(m_buffer),
 		[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
 			{ self->handle_read(ec, bytes_transferred); });
@@ -41,19 +37,27 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 {
 	if (not ec)
 	{
-		boost::tribool result;
-		size_t used;
+		char_streambuf sb(m_buffer.data(), bytes_transferred);
 
-		std::tie(result, used) = m_request_parser.parse(
-			m_request, m_buffer.data(), bytes_transferred);
-
-// #pragma message("Need to fix this, check for used == 0")
+		auto result = m_request_parser.parse(sb);
+		
+		auto avail = sb.in_avail();
+		if (avail > 0 and avail < bytes_transferred)
+		{
+			assert(avail + bytes_transferred < m_buffer.size());
+			auto used = bytes_transferred - avail;
+			std::copy(m_buffer.begin() + used, m_buffer.begin() + bytes_transferred, m_buffer.begin());
+		}
 
 		if (result)
 		{
-			m_reply.set_version(m_request.http_version_major, m_request.http_version_minor);
+			auto req = m_request_parser.get_request();
+			req.set_local_endpoint(m_socket);
+			m_keep_alive = req.keep_alive();
+
+			m_request_parser.reset();
 			
-			m_server.handle_request(m_socket, m_request, m_reply);
+			m_server.handle_request(m_socket, req, m_reply);
 
 			auto buffers = m_reply.to_buffers();
 
@@ -92,10 +96,9 @@ void connection::handle_write(boost::system::error_code ec, size_t bytes_transfe
 				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
 					{ self->handle_write(ec, bytes_transferred); });
 		}
-		else if (m_request.http_version_minor >= 1 and not m_request.close)
+		else if (m_keep_alive)
 		{
 			m_request_parser.reset();
-			m_request = request();
 			m_reply = reply();
 
 			m_socket.async_read_some(boost::asio::buffer(m_buffer),

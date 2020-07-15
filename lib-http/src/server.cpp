@@ -98,16 +98,6 @@ void server::add_error_handler(error_handler* eh)
 	eh->set_server(this);
 }
 
-json::element server::get_credentials(const request& req) const
-{
-	json::element result;
-
-	if (m_security_context)
-		result = m_security_context->get_credentials(req);
-
-	return result;
-}
-
 void server::run(int nr_of_threads)
 {
 	// keep the server at work until we call stop
@@ -162,7 +152,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 	
 	std::string referer("-"), userAgent("-"), accept, client;
 	
-	for (const header& h: req.headers)
+	for (const header& h: req.get_headers())
 	{
 		if (m_log_forwarded and iequals(h.name, "X-Forwarded-For"))
 		{
@@ -194,8 +184,9 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 		}
 
 		// shortcut, check for supported method
-		if (req.method != method_type::GET and req.method != method_type::POST and req.method != method_type::PUT and
-			req.method != method_type::OPTIONS and req.method != method_type::HEAD and req.method != method_type::DELETE)
+		auto method = req.get_method();
+		if (method != method_type::GET and method != method_type::POST and method != method_type::PUT and
+			method != method_type::OPTIONS and method != method_type::HEAD and method != method_type::DELETE)
 		{
 			throw bad_request;
 		}
@@ -222,7 +213,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 				break;
 		}
 		
-		if (req.method == method_type::HEAD)
+		if (method == method_type::HEAD)
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
 			rep.set_cookie("csrf-token", csrf, {
@@ -267,16 +258,19 @@ void server::log_request(const std::string& client,
 
 		local_date_time start_local(start, time_zone_ptr());
 
-		std::string username = req.username;
+		auto credentials = req.get_credentials();
+		std::string username = credentials.is_object() ? credentials["username"].as<std::string>() : "";
 		if (username.empty())
 			username = "-";
+
+		const auto& [major, minor] = req.get_version();
 
 		std::cout << client << ' '
 			<< "-" << ' '
 			<< username << ' '
 			<< start_local << ' '
-			<< '"' << to_string(req.method) << ' ' << req.uri << ' '
-					<< "HTTP/" << req.http_version_major << '.' << req.http_version_minor << "\" "
+			<< '"' << to_string(req.get_method()) << ' ' << req.get_uri() << ' '
+					<< "HTTP/" << major << '.' << minor << "\" "
 			<< rep.get_status() << ' '
 			<< rep.size() << ' '
 			<< '"' << referer << '"' << ' '

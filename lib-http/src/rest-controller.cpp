@@ -29,7 +29,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
     bool result = false;
 	for (auto& mp: m_mountpoints)
 	{
-		if (req.method != mp->m_method)
+		if (req.get_method() != mp->m_method)
 			continue;
 		
 		parameter_pack params(req);

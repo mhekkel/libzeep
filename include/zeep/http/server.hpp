@@ -128,9 +128,6 @@ class server
 		return (bool)m_template_processor;
 	}
 
-	/// \brief Return the credentials, if there is a security context and the request contains a valid authentication
-	json::element get_credentials(const request& req) const;
-
 	/// \brief Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address, unsigned short port);
 

@@ -1731,9 +1731,9 @@ object interpreter::call_method(const string& className, const string& method, v
 	else if (className == "#request")
 	{
 		if (method == "getRequestURI")
-			result = m_scope.get_request().uri;
+			result = m_scope.get_request().get_uri();
 		else if (method == "getRequestURL")
-			result = m_scope.get_request().uri;
+			result = m_scope.get_request().get_uri();
 	}
 	else if (className == "#security")
 	{
@@ -1908,7 +1908,7 @@ json::element scope::get_credentials() const
 {
 	if (m_req == nullptr or m_server == nullptr)
 		throw zeep::exception("Invalid scope, no request, no server");
-	return m_server->get_credentials(*m_req);
+	return m_req->get_credentials();
 }
 
 void scope::select_object(const object& o)

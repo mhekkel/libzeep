@@ -314,7 +314,7 @@ class rest_controller : public controller
 			json::element v;
 
 			if (params.m_req.get_header("content-type") == "application/json")
-				zeep::json::parse_json(params.m_req.payload, v);
+				zeep::json::parse_json(params.m_req.get_payload(), v);
 			else
 				zeep::json::parse_json(params.get_parameter(name), v);
 

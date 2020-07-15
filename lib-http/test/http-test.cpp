@@ -69,11 +69,15 @@ BOOST_AUTO_TEST_CASE(http_base64_2)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(connection_read)
+{
+#pragma message "write test for avail/used"
+}
+
 BOOST_AUTO_TEST_CASE(webapp_6)
 {
-	zh::request req;
-	req.set_header("Content-Type", "multipart/form-data; boundary=xYzZY");
-	req.payload = "--xYzZY\r\nContent-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\nContent-Encoding: gzip\r\nContent-Type: chemical/x-cif\r\n\r\nhello, world!\n\r\n--xYzZY\r\nContent-Disposition: form-data; name=\"mtz-file\"; filename=\"1cbs_map.mtz\"\r\nContent-Type: text/plain\r\n\r\nAnd again, hello!\n\r\n--xYzZY--\r\n";
+	zh::request req("GET", "/", {1, 0}, { { "Content-Type", "multipart/form-data; boundary=xYzZY" } },
+		"--xYzZY\r\nContent-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\nContent-Encoding: gzip\r\nContent-Type: chemical/x-cif\r\n\r\nhello, world!\n\r\n--xYzZY\r\nContent-Disposition: form-data; name=\"mtz-file\"; filename=\"1cbs_map.mtz\"\r\nContent-Type: text/plain\r\n\r\nAnd again, hello!\n\r\n--xYzZY--\r\n");
 
 	auto fp1 = req.get_file_parameter("pdb-file");
 	BOOST_CHECK_EQUAL(fp1.filename, "1cbs.cif.gz");
@@ -105,7 +109,7 @@ class my_controller : public zeep::http::controller
 	virtual bool handle_request(zeep::http::request& req, zeep::http::reply& rep)
 	{
 		bool result = false;
-		if (req.uri == "/test/one" or req.uri == "/test/three")
+		if (req.get_uri() == "/test/one" or req.get_uri() == "/test/three")
 		{
 			rep = zeep::http::reply::stock_reply(zeep::http::ok);
 			result = true;
@@ -210,18 +214,14 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	// now try to log in and see if we can access all of the above
 
 	// we use a request object now, to store cookies
-	zeep::http::request req;
+	zeep::http::request req{ "POST", "/login", {1, 0}, { { "Content-Type", "application/x-www-form-urlencoded" } }, "username=scott&password=tiger" };
 	
 	// first test is to send a POST to login, but without the csrf token
-	req.method = zh::method_type::POST;
-	req.uri = "/login";
-	req.set_content("username=scott&password=tiger", "application/x-www-form-urlencoded");
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::forbidden);
 
 	// OK, fetch the login form then and pry the csrf token out of it
-	req.method = zh::method_type::GET;
-	req.uri = "/login";
+	req.set_method(zh::method_type::GET);
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::ok);
 
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	BOOST_TEST(csrf->get_attribute("value") == csrfCookie);
 
 	// try again to authenticate
-	req.method = zh::method_type::POST;
+	req.set_method(zh::method_type::POST);
 	req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::moved_temporarily);
@@ -248,8 +248,8 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	req.set_cookie("access_token", accessToken);
 
 	// now try that admin page again
-	req.uri = "/test/three";
-	req.method = zh::method_type::GET;
+	req.set_uri("/test/three");
+	req.set_method(zh::method_type::GET);
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::ok);
 
@@ -257,3 +257,5 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 
 	t.join();
 }
+
+

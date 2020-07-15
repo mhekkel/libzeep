@@ -51,7 +51,7 @@ void parser::reset()
 	m_http_version_minor = 0;
 }
 
-boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::string& payload, char ch)
+boost::tribool parser::parse_header_lines(char ch)
 {
 	boost::tribool result = boost::indeterminate;
 	
@@ -66,14 +66,14 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 			// which indicates the end of the header section
 			if (ch == '\r')
 				m_state = 20;
-			else if ((ch == ' ' or ch == '\t') and not headers.empty())
+			else if ((ch == ' ' or ch == '\t') and not m_headers.empty())
 				m_state = 10;
 			else if (iscntrl(ch) or detail::is_tspecial(ch))
 				result = false;
 			else
 			{
-				headers.push_back(header());
-				headers.back().name += ch;
+				m_headers.push_back(header());
+				m_headers.back().name += ch;
 				m_state = 1;
 			}
 			break;
@@ -84,7 +84,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 			else if (iscntrl(ch) or detail::is_tspecial(ch))
 				result = false;
 			else
-				headers.back().name += ch;
+				m_headers.back().name += ch;
 			break;
 		
 		case 2:
@@ -99,7 +99,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 				m_state += 2;
 			else if (ch != ' ')
 			{
-				headers.back().value += ch;
+				m_headers.back().value += ch;
 				++m_state;
 			}
 			break;
@@ -108,7 +108,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 			if (ch == '\r')
 				++m_state;
 			else
-				headers.back().value += ch;
+				m_headers.back().value += ch;
 			break;
 		
 		case 5:
@@ -125,7 +125,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 				result = false;
 			else if (not (ch == ' ' or ch == '\t'))
 			{
-				headers.back().value += ch;
+				m_headers.back().value += ch;
 				m_state = 3;
 			}
 			break;
@@ -135,7 +135,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 			{
 				result = true;
 
-				for (std::vector<header>::iterator h = headers.begin(); h != headers.end(); ++h)
+				for (std::vector<header>::iterator h = m_headers.begin(); h != m_headers.end(); ++h)
 				{
 					if (iequals(h->name, "Transfer-Encoding") and iequals(h->value, "chunked"))
 					{
@@ -153,7 +153,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 						{
 							m_parser = &parser::parse_content;
 							m_parsing_content = true;
-							payload.reserve(m_chunk_size);
+							m_payload.reserve(m_chunk_size);
 						}
 						break;
 					}
@@ -167,7 +167,7 @@ boost::tribool parser::parse_header_lines(std::vector<header>& headers, std::str
 	return result;
 }
 
-boost::tribool parser::parse_chunk(std::vector<header>& headers, std::string& payload, char ch)
+boost::tribool parser::parse_chunk(char ch)
 {
 	boost::tribool result = boost::indeterminate;
 	
@@ -215,7 +215,7 @@ boost::tribool parser::parse_chunk(std::vector<header>& headers, std::string& pa
 
 				if (m_chunk_size > 0)
 				{
-					payload.reserve(payload.size() + m_chunk_size);
+					m_payload.reserve(m_payload.size() + m_chunk_size);
 					++m_state;
 				}
 				else
@@ -227,7 +227,7 @@ boost::tribool parser::parse_chunk(std::vector<header>& headers, std::string& pa
 		
 		case 4:
 			if (m_collect_payload)
-				payload += ch;
+				m_payload += ch;
 			if (--m_chunk_size == 0)
 				m_state = 5;		// parse trailing \r\n
 			break;
@@ -243,13 +243,13 @@ boost::tribool parser::parse_chunk(std::vector<header>& headers, std::string& pa
 	return result;
 }
 
-boost::tribool parser::parse_content(std::vector<header>& headers, std::string& payload, char ch)
+boost::tribool parser::parse_content(char ch)
 {
 	boost::tribool result = boost::indeterminate;
 	
 	// here we simply read m_chunk_size of bytes and finish
 	if (m_collect_payload)
-		payload += ch;
+		m_payload += ch;
 
 	if (--m_chunk_size == 0)
 	{
@@ -267,23 +267,20 @@ request_parser::request_parser()
 {
 }
 
-parser::result_type request_parser::parse(request& req, const char* text, size_t length)
+boost::tribool request_parser::parse(std::streambuf& text)
 {
 	if (m_parser == NULL)
 	{
-		// clear the request
-		req.clear();
 		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
 		m_parsing_content = false;
 	}
 
 	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
 	
 	bool is_parsing_content = m_parsing_content;
-	while (used < length and boost::indeterminate(result))
+	while (text.in_avail() > 0 and boost::indeterminate(result))
 	{
-		result = (this->*m_parser)(req.headers, req.payload, text[used++]);
+		result = (this->*m_parser)(text.sbumpc());
 
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
@@ -292,195 +289,16 @@ parser::result_type request_parser::parse(request& req, const char* text, size_t
 		}
 	}
 
-	if (result)
-	{
-		req.uri = m_uri;
-
-			 if (m_method == "OPTIONS")		req.method = method_type::OPTIONS;
-		else if (m_method == "GET")			req.method = method_type::GET;
-		else if (m_method == "HEAD")		req.method = method_type::HEAD;
-		else if (m_method == "POST")		req.method = method_type::POST;
-		else if (m_method == "PUT")			req.method = method_type::PUT;
-		else if (m_method == "DELETE")		req.method = method_type::DELETE;
-		else if (m_method == "TRACE")		req.method = method_type::TRACE;
-		else if (m_method == "CONNECT")		req.method = method_type::CONNECT;
-		else								req.method = method_type::UNDEFINED;
-
-		req.http_version_major = m_http_version_major;
-		req.http_version_minor = m_http_version_minor;
-	}
-
-	return std::tie(result, used);
-}
-
-parser::result_type request_parser::parse_header(request& req, const char* text, size_t length)
-{
-	if (m_parser == NULL)
-	{
-		// clear the reply
-		req.clear();
-		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
-	}
-
-	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
-	
-	while (used < length and boost::indeterminate(result))
-	{
-		result = (this->*m_parser)(req.headers, req.payload, text[used++]);
-		
-		if (boost::indeterminate(result) and m_parsing_content)
-			result = true;
-	}
-
-	if (result)
-	{
-		req.http_version_major = m_http_version_major;
-		req.http_version_minor = m_http_version_minor;
-	}
-
-	return std::tie(result, used);
-}
-
-parser::result_type request_parser::parse_content(request& req, const char* text, size_t length)
-{
-	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
-
-	if (not m_parsing_content)
-		result = false;
-	else
-	{
-		m_collect_payload = false;
-		
-		while (used < length and boost::indeterminate(result))
-		{
-			result = (this->*m_parser)(req.headers, req.payload, text[used++]);
-			
-			if (boost::indeterminate(result) and m_parsing_content)
-				result = true;
-		}
-	}
-	
-	return std::tie(result, used);
-}
-
-boost::tribool request_parser::parse(request& req, std::streambuf& text)
-{
-	if (m_parser == NULL)
-	{
-		// clear the request
-		req.clear();
-		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
-		m_parsing_content = false;
-		m_collect_payload = true;
-	}
-
-	boost::tribool result = boost::indeterminate;
-	
-	bool is_parsing_content = m_parsing_content;
-	while (text.in_avail() > 0 and boost::indeterminate(result))
-	{
-		result = (this->*m_parser)(req.headers, req.payload, text.sbumpc());
-
-		if (result and is_parsing_content == false and m_parsing_content == true)
-		{
-			is_parsing_content = true;
-			result = boost::indeterminate;
-		}
-	}
-	
-	if (result)
-	{
-		req.uri = m_uri;
-
-			 if (m_method == "OPTIONS")		req.method = method_type::OPTIONS;
-		else if (m_method == "GET")			req.method = method_type::GET;
-		else if (m_method == "HEAD")		req.method = method_type::HEAD;
-		else if (m_method == "POST")		req.method = method_type::POST;
-		else if (m_method == "PUT")			req.method = method_type::PUT;
-		else if (m_method == "DELETE")		req.method = method_type::DELETE;
-		else if (m_method == "TRACE")		req.method = method_type::TRACE;
-		else if (m_method == "CONNECT")		req.method = method_type::CONNECT;
-		else								req.method = method_type::UNDEFINED;
-
-		req.http_version_major = m_http_version_major;
-		req.http_version_minor = m_http_version_minor;
-	}
-
 	return result;
 }
 
-boost::tribool request_parser::parse_header(request& req, std::streambuf& text)
+request request_parser::get_request()
 {
-	if (m_parser == NULL)
-	{
-		// clear the reply
-		req.clear();
-		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
-	}
-
-	boost::tribool result = boost::indeterminate;
-	
-	while (text.in_avail() > 0 and boost::indeterminate(result))
-	{
-		result = (this->*m_parser)(req.headers, req.payload, text.sbumpc());
-		
-		if (boost::indeterminate(result) and m_parsing_content)
-			result = true;
-	}
-
-	if (result)
-	{
-		req.http_version_major = m_http_version_major;
-		req.http_version_minor = m_http_version_minor;
-	}
-
-	return result;
+	return request(m_method, std::move(m_uri), { m_http_version_major, m_http_version_minor },
+		std::move(m_headers), std::move(m_payload));
 }
 
-boost::tribool request_parser::parse_content(request& req, std::streambuf& text)
-{
-	boost::tribool result = boost::indeterminate;
-
-	if (not m_parsing_content)
-		result = false;
-	else
-	{
-		m_collect_payload = true;
-		
-		while (text.in_avail() > 0 and boost::indeterminate(result))
-		{
-			char ch = text.sbumpc();
-			result = (this->*m_parser)(req.headers, req.payload, ch);
-		}
-	}
-	
-	return result;
-}
-
-boost::tribool request_parser::parse_content(request& req, std::streambuf& text, std::streambuf& sink)
-{
-	boost::tribool result = boost::indeterminate;
-
-	if (not m_parsing_content)
-		result = false;
-	else
-	{
-		m_collect_payload = false;
-		
-		while (text.in_avail() > 0 and boost::indeterminate(result))
-		{
-			char ch = text.sbumpc();
-			result = (this->*m_parser)(req.headers, req.payload, ch);
-			sink.sputc(ch);
-		}
-	}
-	
-	return result;
-}
-
-boost::tribool request_parser::parse_initial_line(std::vector<header>& headers, std::string& payload, char ch)
+boost::tribool request_parser::parse_initial_line(char ch)
 {
 	boost::tribool result = boost::indeterminate;
 	
@@ -557,95 +375,10 @@ void reply_parser::reset()
 	m_status_line.clear();
 }
 
-parser::result_type reply_parser::parse(reply& rep, const char* text, size_t length)
+boost::tribool reply_parser::parse(std::streambuf& text)
 {
 	if (m_parser == NULL)
 	{
-		// clear the reply
-		rep.clear();
-		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
-		m_parsing_content = false;
-	}
-
-	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
-	
-	bool is_parsing_content = m_parsing_content;
-	while (used < length and boost::indeterminate(result))
-	{
-		result = (this->*m_parser)(rep.m_headers, rep.m_content, text[used++]);
-
-		if (result and is_parsing_content == false and m_parsing_content == true)
-		{
-			is_parsing_content = true;
-			result = boost::indeterminate;
-		}
-	}
-
-	if (result)
-	{
-		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_version_major = m_http_version_major;
-		rep.m_version_minor = m_http_version_minor;
-	}
-
-	return std::tie(result, used);
-}
-
-parser::result_type reply_parser::parse_header(reply& rep, const char* text, size_t length)
-{
-	if (m_parser == NULL)
-	{
-		// clear the reply
-		rep.clear();
-		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
-	}
-
-	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
-	
-	while (used < length and boost::indeterminate(result))
-	{
-		result = (this->*m_parser)(rep.m_headers, rep.m_content, text[used++]);
-		
-		if (boost::indeterminate(result) and m_parsing_content)
-			result = true;
-	}
-
-	if (result)
-	{
-		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_version_major = m_http_version_major;
-		rep.m_version_minor = m_http_version_minor;
-	}
-
-	return std::tie(result, used);
-}
-
-parser::result_type reply_parser::parse_content(reply& rep, const char* text, size_t length)
-{
-	boost::tribool result = boost::indeterminate;
-	size_t used = 0;
-
-	if (not m_parsing_content)
-		result = false;
-	else
-	{
-		m_collect_payload = false;
-		
-		while (used < length and boost::indeterminate(result))
-			result = (this->*m_parser)(rep.m_headers, rep.m_content, text[used++]);
-	}
-	
-	return std::tie(result, used);
-}
-
-boost::tribool reply_parser::parse(reply& rep, std::streambuf& text)
-{
-	if (m_parser == NULL)
-	{
-		// clear the reply
-		rep.clear();
 		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
 		m_parsing_content = false;
 	}
@@ -655,7 +388,7 @@ boost::tribool reply_parser::parse(reply& rep, std::streambuf& text)
 	bool is_parsing_content = m_parsing_content;
 	while (text.in_avail() and boost::indeterminate(result))
 	{
-		result = (this->*m_parser)(rep.m_headers, rep.m_content, text.sbumpc());
+		result = (this->*m_parser)(text.sbumpc());
 
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
@@ -664,67 +397,15 @@ boost::tribool reply_parser::parse(reply& rep, std::streambuf& text)
 		}
 	}
 
-	if (result)
-	{
-		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_version_major = m_http_version_major;
-		rep.m_version_minor = m_http_version_minor;
-	}
-
 	return result;
 }
 
-boost::tribool reply_parser::parse_header(reply& rep, std::streambuf& text)
+reply reply_parser::get_reply()
 {
-	if (m_parser == NULL)
-	{
-		// clear the reply
-		rep.clear();
-		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
-	}
-
-	boost::tribool result = boost::indeterminate;
-
-	while (text.in_avail() and boost::indeterminate(result))
-	{
-		result = (this->*m_parser)(rep.m_headers, rep.m_content, text.sbumpc());
-
-		if (boost::indeterminate(result) and m_parsing_content)
-			result = true;
-	}
-
-	if (result)
-	{
-		rep.m_status = static_cast<status_type>(m_status);
-		rep.m_version_major = m_http_version_major;
-		rep.m_version_minor = m_http_version_minor;
-	}
-
-	return result;
+	return { static_cast<status_type>(m_status), {m_http_version_major, m_http_version_minor }, std::move(m_headers), std::move(m_payload) };
 }
 
-boost::tribool reply_parser::parse_content(reply& rep, std::streambuf& text, std::streambuf& sink)
-{
-	boost::tribool result = boost::indeterminate;
-
-	if (not m_parsing_content)
-		result = false;
-	else
-	{
-		m_collect_payload = false;
-
-		while (text.in_avail() and boost::indeterminate(result))
-		{
-			char ch = text.sbumpc();
-			result = (this->*m_parser)(rep.m_headers, rep.m_content, ch);
-			sink.sputc(ch);
-		}
-	}
-
-	return result;
-}
-
-boost::tribool reply_parser::parse_initial_line(std::vector<header>& headers, std::string& payload, char ch)
+boost::tribool reply_parser::parse_initial_line(char ch)
 {
 	boost::tribool result = boost::indeterminate;
 	

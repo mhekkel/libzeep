@@ -26,22 +26,19 @@ namespace zeep::http
 class parser
 {
   public:
-	using result_type = std::tuple<boost::tribool, size_t>;
-
 	virtual ~parser() {}
 
 	virtual void reset();
 
-	bool is_parsing_content() const { return m_parsing_content; }
-
-	typedef boost::tribool (parser::*state_parser)(std::vector<header>& headers, std::string& payload, char ch);
-
-	boost::tribool parse_header_lines(std::vector<header>& headers, std::string& payload, char ch);
-	boost::tribool parse_chunk(std::vector<header>& headers, std::string& payload, char ch);
-	boost::tribool parse_footer(std::vector<header>& headers, std::string& payload, char ch);
-	boost::tribool parse_content(std::vector<header>& headers, std::string& payload, char ch);
+	boost::tribool parse_header_lines(char ch);
+	boost::tribool parse_chunk(char ch);
+	boost::tribool parse_footer(char ch);
+	boost::tribool parse_content(char ch);
 
   protected:
+
+	typedef boost::tribool (parser::*state_parser)(char ch);
+
 	parser();
 
 	state_parser m_parser;
@@ -50,46 +47,41 @@ class parser
 	std::string m_data;
 	std::string m_uri;
 	std::string m_method;
+
 	bool m_parsing_content;
 	bool m_collect_payload;
 	int m_http_version_major, m_http_version_minor;
+
+	std::vector<header> m_headers;
+	std::string m_payload;
 };
 
 class request_parser : public parser
 {
   public:
 	request_parser();
-	result_type parse(request& req, const char* text, size_t length);
-	result_type parse_header(request& req, const char* text, size_t length);
-	result_type parse_content(request& req, const char* text, size_t length);
 
-	boost::tribool parse(request& req, std::streambuf& text);
-	boost::tribool parse_header(request& req, std::streambuf& text);
+	boost::tribool parse(std::streambuf& text);
 
-	// first variant is used to parse into payload, second into a separate stream
-	boost::tribool parse_content(request& req, std::streambuf& text);
-	boost::tribool parse_content(request& req, std::streambuf& text, std::streambuf& sink);
+	request get_request();
 
   private:
-	boost::tribool parse_initial_line(std::vector<header>& headers, std::string& payload, char ch);
+	boost::tribool parse_initial_line(char ch);
 };
 
 class reply_parser : public parser
 {
   public:
 	reply_parser();
-	result_type parse(reply& req, const char* text, size_t length);
-	result_type parse_header(reply& req, const char* text, size_t length);
-	result_type parse_content(reply& req, const char* text, size_t length);
 
-	boost::tribool parse(reply& req, std::streambuf& text);
-	boost::tribool parse_header(reply& req, std::streambuf& text);
-	boost::tribool parse_content(reply& req, std::streambuf& text, std::streambuf& sink);
+	boost::tribool parse(std::streambuf& text);
+
+	reply get_reply();
 
 	virtual void reset();
 
   private:
-	boost::tribool parse_initial_line(std::vector<header>& headers, std::string& payload, char ch);
+	boost::tribool parse_initial_line(char ch);
 
 	int m_status;
 	std::string m_status_line;

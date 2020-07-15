@@ -82,17 +82,11 @@ std::string controller::get_prefix_less_path(request& req) const
 	return p;
 }
 
-json::element controller::get_credentials() const
-{
-	json::element credentials;
-	if (m_server != nullptr and s_request != nullptr)
-		credentials = m_server->get_credentials(*s_request);
-	return credentials;
-}
-
 bool controller::has_role(const std::string& role) const
 {
-	auto credentials = get_credentials();
+	json::element credentials;
+	if (s_request != nullptr)
+		credentials = s_request->get_credentials();
 	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
 }
 

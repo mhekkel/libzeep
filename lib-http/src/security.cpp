@@ -26,7 +26,7 @@ std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$" );
 
 // --------------------------------------------------------------------
 
-void security_context::validate_request(const request& req) const
+void security_context::validate_request(request& req) const
 {
 	bool allow = m_default_allow;
 
@@ -36,26 +36,6 @@ void security_context::validate_request(const request& req) const
 
 		if (path.front() != '/')
 			path.insert(path.begin(), '/');
-		else
-		{
-			while (path[1] == '/')
-				path.erase(1, 1);
-		}
-
-		// first check if this page is allowed without any credentials
-		// that means, the first rule that matches this uri should allow
-		// access.
-		for (auto& rule: m_rules)
-		{
-			if (not glob_match(path, rule.m_pattern))
-				continue;
-			
-			allow = rule.m_roles.empty();
-			break;
-		}
-
-		if (allow)
-			break;
 
 		std::set<std::string> roles;
 
@@ -87,8 +67,13 @@ void security_context::validate_request(const request& req) const
 
 			for (auto role: credentials["role"])
 				roles.insert(role.as<std::string>());
+			
+			req.set_credentials(std::move(credentials));
 		}
 
+		// first check if this page is allowed without any credentials
+		// that means, the first rule that matches this uri should allow
+		// access.
 		for (auto& rule: m_rules)
 		{
 			if (not glob_match(path, rule.m_pattern))
@@ -111,42 +96,6 @@ void security_context::validate_request(const request& req) const
 
 	if (not allow)
 		throw unauthorized_exception();
-}
-
-// --------------------------------------------------------------------
-
-json::element security_context::get_credentials(const request& req) const
-{
-	json::element result;
-
-	for (;;)
-	{
-		auto access_token = req.get_cookie("access_token");
-		if (access_token.empty())
-			break;
-
-		std::smatch m;
-		if (not std::regex_match(access_token, m, kJWTRx))
-			break;
-			
-		json::element JOSEHeader;
-		json::parse_json(decode_base64url(m[1].str()), JOSEHeader);
-
-		const json::element kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
-
-		if (JOSEHeader != kJOSEHeader)
-			break;
-
-		// check signature
-		auto sig = encode_base64url(hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
-		if (sig != m[3].str())
-			break;
-
-		json::parse_json(decode_base64url(m[2].str()), result);
-		break;
-	}
-
-	return result;
 }
 
 // --------------------------------------------------------------------
