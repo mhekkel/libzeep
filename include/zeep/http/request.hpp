@@ -14,39 +14,14 @@
 #include <istream>
 
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <zeep/http/header.hpp>
+#include <zeep/json/element.hpp>
 
 namespace zeep::http
 {
-
-/// \brief The supported HTTP methods in libzeep, admittedly a bit limited
-///
-/// The supported HTTP methods. This is a subset of what should perhaps be
-/// available.
-enum class method_type
-{
-	UNDEFINED, OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT
-};
-
-/// \brief return the text representation of the \a method
-inline constexpr const char* to_string(method_type method)
-{
-	switch (method)
-	{
-		case method_type::UNDEFINED:	return "UNDEFINED";
-		case method_type::OPTIONS:		return "OPTIONS";
-		case method_type::GET:			return "GET";
-		case method_type::HEAD:			return "HEAD";
-		case method_type::POST:			return "POST";
-		case method_type::PUT:			return "PUT";
-		case method_type::DELETE:		return "DELETE";
-		case method_type::TRACE:		return "TRACE";
-		case method_type::CONNECT:		return "CONNECT";
-		default:						assert(false); return "ERROR";
-	}
-}
 
 // --------------------------------------------------------------------
 // TODO: one day this should be able to work with temporary files
@@ -73,19 +48,43 @@ struct file_param
 /// request contains the parsed original HTTP request as received
 /// by the server.
 
-struct request
+class request
 {
+  public:
+
+	friend class message_parser;
+	friend class request_parser;
+
 	using param = header;	// alias name
 	using cookie_directive = header;	
 
-	method_type method;				///< POST, GET, etc.
-	std::string uri;				///< The uri as requested
-	int http_version_major = 1; 	///< HTTP major number (usually 1)
-	int http_version_minor = 0; 	///< HTTP major number (0 or 1)
-	std::vector<header> headers;	///< A list with zeep::http::header values
-	std::string payload;  			///< For POST requests
-	bool close = false;  			///< Whether 'Connection: close' was specified
-	std::string username; 			///< The authenticated user for this request (filled in by webapp::validate_authentication)
+	request(const std::string& method, std::string&& uri, std::tuple<int,int> version = { 1, 0 },
+		std::vector<header>&& headers = {}, std::string&& payload = {});
+
+	request(const request& req);
+	// request(request&& req);
+
+	request& operator=(const request& rhs);
+	// request& operator=(request&& rhs);
+
+	/// \brief Fetch the local address from the connected socket
+	void set_local_endpoint(boost::asio::ip::tcp::socket& socket);
+	std::tuple<std::string,uint16_t> get_local_endpoint() const				{ return { m_local_address, m_local_port }; }
+
+	/// \brief Get the HTTP version requested
+	std::tuple<int,int> get_version() const									{ return { m_version[0] - '0', m_version[2] - '0' }; }
+
+	/// \brief Set the METHOD type (POST, GET, etc)
+	void set_method(const std::string& method)								{ m_method = method; }
+
+	/// \brief Return the METHOD type (POST, GET, etc)
+	const std::string& get_method() const									{ return m_method; }
+
+	/// \brief Return the original URI as requested
+	std::string get_uri() const												{ return m_uri; }
+
+	/// \brief Set the URI
+	void set_uri(const std::string& uri)									{ m_uri = uri; }
 
 	/// \brief Return the local path part of the request, after removing scheme, host and parameters
 	std::string get_path() const;
@@ -96,24 +95,26 @@ struct request
 	/// \brief Return the requested host
 	std::string get_host() const;
 
-	// for redirects...
-	std::string local_address; ///< The address the request was received upon
-	unsigned short local_port; ///< The port number the request was received upon
+	/// \brief Return the payload
+	const std::string& get_payload() const									{ return m_payload; }
+
+	/// \brief Set the payload
+	void set_payload(const std::string& payload)							{ m_payload = payload; }
 
 	/// \brief Return the time at which this request was received
 	boost::posix_time::ptime get_timestamp() const { return m_timestamp; }
-
-	/// \brief Reinitialises request and sets timestamp
-	void clear();
 
 	/// \brief Return the value in the Accept header for type
 	float get_accept(const char* type) const;
 
 	/// \brief Check for Connection: keep-alive header
-	bool keep_alive() const;				 
+	bool keep_alive() const;
 
 	/// \brief Set or replace a named header
 	void set_header(const char* name, const std::string& value);
+
+	/// \brief Return the list of headers
+	auto get_headers() const												{ return m_headers; }
 
 	/// \brief Return the named header
 	std::string get_header(const char* name) const;
@@ -121,15 +122,18 @@ struct request
 	/// \brief Remove this header from the list of headers
 	void remove_header(const char* name);
 
-	/// \brief Return the (reconstructed) request line
-	std::string get_request_line() const;
-
 	/// \brief Return the path part of the requested URI
 	std::string get_pathname() const
 	{
-		auto s = uri.find('?');
-		return s == std::string::npos ? uri : uri.substr(0, s);
+		auto s = m_uri.find('?');
+		return s == std::string::npos ? m_uri : m_uri.substr(0, s);
 	}
+
+	/// \brief Get the credentials. This is filled in if the request was validated
+	json::element get_credentials() const				{ return m_credentials; }
+
+	/// \brief Set the credentials for the request
+	void set_credentials(json::element&& credentials)	{ m_credentials = std::move(credentials); }
 
 	/// \brief Return the named parameter
 	///
@@ -205,19 +209,19 @@ struct request
 	/// \brief Return the content of this request in a sequence of const_buffers
 	///
 	/// Can be used in code that sends HTTP requests
-	std::vector<boost::asio::const_buffer> to_buffers();
+	std::vector<boost::asio::const_buffer> to_buffers() const;
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
 	std::locale& get_locale() const;
 
 	/// \brief For debugging purposes
-	friend std::ostream& operator<<(std::ostream& io, request& req);
+	friend std::ostream& operator<<(std::ostream& io, const request& req);
 
 	/// \brief suppose we want to construct requests...
 	void set_content(const std::string& text, const std::string& contentType)
 	{
 		set_header("content-type", contentType);
-		payload = text;
+		m_payload = text;
 		set_header("content-length", std::to_string(text.length()));
 	}
 
@@ -225,10 +229,22 @@ struct request
 	void set_header(const std::string& name, const std::string& value);
 
   private:
+
 	std::tuple<std::string,bool> get_parameter_ex(const char* name) const;
 
-	std::string m_request_line;
-	boost::posix_time::ptime m_timestamp;
+	std::string m_local_address;					///< Local endpoint address
+	uint16_t m_local_port = 80;						///< Local endpoint port
+
+	std::string m_method = "UNDEFINED";				///< POST, GET, etc.
+	std::string m_uri;								///< The uri as requested
+	char m_version[3];								///< The version string
+	std::vector<header> m_headers;					///< A list with zeep::http::header values
+	std::string m_payload;  						///< For POST requests
+	bool m_close = false;  							///< Whether 'Connection: close' was specified
+
+	boost::posix_time::ptime m_timestamp = boost::posix_time::second_clock::local_time();
+	json::element m_credentials;					///< The credentials as found in the validated access-token
+
 	mutable std::unique_ptr<std::locale> m_locale;
 };
 

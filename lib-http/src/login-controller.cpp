@@ -6,10 +6,13 @@
 #include <zeep/config.hpp>
 
 #include <fstream>
+#include <filesystem>
 
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/error-handler.hpp>
+
+namespace fs = std::filesystem;
 
 namespace zeep::http
 {
@@ -64,7 +67,7 @@ xml::document login_controller::load_login_form(const request& req) const
 
 			tp.load_template("login", doc);
 
-			tp.process_tags(doc.child(), {req});
+			tp.process_tags(doc.child(), { get_server(), req });
 
 			return doc;
 		}
@@ -119,7 +122,7 @@ void login_controller::create_unauth_reply(const request& req, reply& reply)
 		csrf->set_attribute("value", req.get_cookie("csrf-token"));
 
 	for (auto uri: doc.find("//input[@name='uri']"))
-		uri->set_attribute("value", req.uri);
+		uri->set_attribute("value", req.get_uri());
 
 	reply.set_content(doc);
 	reply.set_status(status_type::unauthorized);
@@ -129,27 +132,34 @@ bool login_controller::handle_request(request& req, reply& rep)
 {
 	bool result = false;
 
-	if (req.get_path() == "/login")
+	std::string uri = get_prefixless_path(req);
+
+	if (uri == "login")
 	{
 		result = true;
 
-		if (req.method == method_type::GET)
+		if (req.get_method() == "GET")
 		{
 			auto doc = load_login_form(req);
 			for (auto csrf: doc.find("//input[@name='_csrf']"))
 				csrf->set_attribute("value", req.get_cookie("csrf-token"));
 			rep.set_content(doc);
 		}
-		else if (req.method == method_type::POST)
+		else if (req.get_method() == "POST")
 		{
 			auto csrf = req.get_parameter("_csrf");
 			if (csrf != req.get_cookie("csrf-token"))
 				throw status_type::forbidden;
 
+			std::string redirect_to{"/"};
+			auto context = get_server().get_context_name();
+			if (not context.empty())
+				redirect_to += context + '/';
 			auto uri = req.get_parameter("uri");
-			if (uri.empty() or uri == "/login")
-				uri = "/";
-			rep = reply::redirect(uri);
+			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")))
+				redirect_to += uri;
+
+			rep = reply::redirect(fs::path(redirect_to).lexically_normal().string());
 
 			auto username = req.get_parameter("username");
 			auto password = req.get_parameter("password");
@@ -181,16 +191,18 @@ bool login_controller::handle_request(request& req, reply& rep)
 		else
 			result = false;
 	}
-	else if (req.get_path() == "/logout")
+	else if (uri == "logout")
 	{
+		std::string redirect_to{"/"};
+		auto context = get_server().get_context_name();
+		if (not context.empty())
+			redirect_to += context + '/';
 		auto uri = req.get_parameter("uri");
-		if (uri.empty() or uri == "/logout")
-			uri = "/";
-		rep = reply::redirect(uri);
+		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")))
+			redirect_to += uri;
 
-		rep.set_cookie("access_token", "", {
-			{ "Max-Age", "0" }
-		});
+		rep = reply::redirect(fs::path(redirect_to).lexically_normal().string());
+		rep.set_delete_cookie("access_token");
 
 		result = true;
 	}

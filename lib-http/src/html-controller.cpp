@@ -42,94 +42,38 @@ void html_controller::handle_file(const request& request, const scope& scope, re
 
 bool html_controller::handle_request(request& req, reply& rep)
 {
-	std::string uri = req.uri;
-
-	if (uri.front() == '/')
-		uri.erase(0, 1);
-	
-	if (not ba::starts_with(uri, m_prefix_path))
-		return false;
-
-	uri.erase(0, m_prefix_path.length());
-	
-	if (uri.front() == '/')
-		uri.erase(0, 1);
-
-	// start by sanitizing the request's URI, first parse the parameters
-	std::string ps = req.payload;
-	if (req.method != method_type::POST)
-	{
-		std::string::size_type d = uri.find('?');
-		if (d != std::string::npos)
-		{
-			ps = uri.substr(d + 1);
-			uri.erase(d, std::string::npos);
-		}
-	}
-
-	// strip off the http part including hostname and such
-	if (ba::starts_with(uri, "http://"))
-	{
-		std::string::size_type s = uri.find_first_of('/', 7);
-		if (s != std::string::npos)
-			uri.erase(0, s);
-	}
-
-	// now make the path relative to the root
-	while (uri.length() > 0 and uri[0] == '/')
-		uri.erase(uri.begin());
+	std::string uri = get_prefixless_path(req);
 
 	// set up the scope by putting some globals in it
 	scope scope(get_server(), req);
 
-	scope.put("uri", object(uri));
-	auto s = uri.find('?');
-	if (s != std::string::npos)
-		uri.erase(s, std::string::npos);
 	scope.put("baseuri", uri);
 
 	init_scope(scope);
 
 	auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
-		[uri, method=req.method](const mount_point& m)
+		[uri, method=req.get_method()](const mount_point& m)
 		{
 			// return m.path == uri and
 			return glob_match(uri, m.path) and
-				(	method == method_type::HEAD or
-					method == method_type::OPTIONS or
+				(	method == "HEAD" or
+					method == "OPTIONS" or
 					m.method == method or
-					m.method == method_type::UNDEFINED);
+					m.method == "UNDEFINED");
 		});
 
 	bool result = false;
 
 	if (handler != m_dispatch_table.end())
 	{
-		if (req.method == method_type::OPTIONS)
+		if (req.get_method() == "OPTIONS")
 		{
 			rep = reply::stock_reply(ok);
 			rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");
 			rep.set_content("", "text/plain");
 		}
 		else
-		{
-			if (m_server)
-			{
-				json::element credentials = get_server().get_credentials(req);
-
-				if (credentials)
-				{
-					if (credentials.is_string())
-						req.username = credentials.as<std::string>();
-					else if (credentials.is_object())
-						req.username = credentials["username"].as<std::string>();
-
-					scope.put("credentials", credentials);
-				}
-			}
-
 			handler->handler(req, scope, rep);
-		}
 
 		result = true;
 	}

@@ -59,8 +59,7 @@ BOOST_AUTO_TEST_CASE(test_22)
 
 	zeep::http::tag_processor_v2 tp;
 	zeep::http::rsrc_based_html_template_processor p;
-	zeep::http::request req;
-    zeep::http::scope scope(req);
+    zeep::http::scope scope;
 
     scope.put("b", "b");
 

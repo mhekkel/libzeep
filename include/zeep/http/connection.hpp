@@ -42,11 +42,12 @@ class connection
 
   private:
 	boost::asio::ip::tcp::socket m_socket;
-	request_parser m_request_parser;
 	server& m_server;
-	std::array<char, 8192> m_buffer;
-	request m_request;
 	reply m_reply;
+	request_parser m_request_parser;
+	bool m_keep_alive = false;
+
+	std::array<char, 8192> m_buffer;
 };
 
 } // namespace zeep::http

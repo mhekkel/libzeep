@@ -65,17 +65,17 @@ bool soap_controller::handle_request(request& req, reply& reply)
 {
 	bool result = false;
 
-	std::string p = req.uri;
+	std::string p = req.get_path();
 	while (p.front() == '/')
 		p.erase(0, 1);
 	
-	if (req.method == method_type::POST and p == m_prefix_path)
+	if (req.get_method() == "POST" and p == m_prefix_path)
 	{
 		result = true;
 
 		try
 		{
-			xml::document envelope(req.payload);
+			xml::document envelope(req.get_payload());
 
 			auto request = envelope.find_first(
 				"/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
@@ -109,7 +109,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 			reply.set_status(s);
 		}
 	}
-	else if (req.method == method_type::GET and p == m_prefix_path + "/wsdl")
+	else if (req.get_method() == "GET" and p == m_prefix_path + "/wsdl")
 	{
 		reply.set_content(make_wsdl());
 		reply.set_status(ok);

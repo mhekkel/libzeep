@@ -49,15 +49,18 @@ zh::reply simple_request(uint16_t port, const std::string& req)
 
 		zeep::char_streambuf sb(buf.data(), len);
 
-		auto r = p.parse(result, sb);
+		auto r = p.parse(sb);
 		if (r == true)
+		{
+			result = p.get_reply();
 			break;
+		}
 	}
 
 	return result;
 }
 
-zh::reply simple_request(uint16_t port, zeep::http::request& req)
+zh::reply simple_request(uint16_t port, const zeep::http::request& req)
 {
 	std::ostringstream os;
 	os << req;

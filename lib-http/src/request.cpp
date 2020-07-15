@@ -8,8 +8,10 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
+#include <filesystem>
 
 namespace ba = boost::algorithm;
+namespace fs = std::filesystem;
 
 namespace zeep::http
 {
@@ -17,37 +19,39 @@ namespace zeep::http
 namespace
 {
 // a regex for URI
-const std::regex kURIRx(R"((https?://)?([^/]+)?(/[^?]*)(?:\?(.+))?)", std::regex_constants::icase);
+const std::regex kURIRx(R"((?:(https?:)(?://([^/]+)))?(?:/?([^?]*))(?:\?(.+))?)", std::regex_constants::icase);
 }
 
-void request::clear()
+request::request(const std::string& method, std::string&& uri, std::tuple<int,int> version,
+		std::vector<header>&& headers, std::string&& payload)
+	: m_method(method)
+	, m_uri(std::move(uri))
+	, m_headers(std::move(headers))
+	, m_payload(std::move(payload))
 {
-	m_request_line.clear();
-	m_timestamp = boost::posix_time::second_clock::local_time();
+	m_version[0] = '0' + std::get<0>(version);
+	m_version[1] = '.';
+	m_version[2] = '0' + std::get<1>(version);
+}
 
-	method = method_type::UNDEFINED;
-	uri.clear();
-	http_version_major = 1;
-	http_version_minor = 0;
-	headers.clear();
-	payload.clear();
-	close = true;
-	local_address.clear();
-	local_port = 0;
+void request::set_local_endpoint(boost::asio::ip::tcp::socket& socket)
+{
+	m_local_address = socket.local_endpoint().address().to_string();
+	m_local_port = socket.local_endpoint().port();
 }
 
 std::string request::get_path() const
 {
 	std::smatch m;
-	if (not std::regex_match(uri, m, kURIRx))
+	if (not std::regex_match(m_uri, m, kURIRx))
 		throw std::invalid_argument("the request uri is not valid");
-	return m[3];
+	return "/" + fs::path(m[3]).lexically_normal().string();
 }
 
 std::string request::get_query() const
 {
 	std::smatch m;
-	if (not std::regex_match(uri, m, kURIRx))
+	if (not std::regex_match(m_uri, m, kURIRx))
 		throw std::invalid_argument("the request uri is not valid");
 	return m[4];
 }
@@ -55,7 +59,7 @@ std::string request::get_query() const
 std::string request::get_host() const
 {
 	std::smatch m;
-	if (not std::regex_match(uri, m, kURIRx))
+	if (not std::regex_match(m_uri, m, kURIRx))
 		throw std::invalid_argument("the request uri is not valid");
 	return m[2];
 }
@@ -82,7 +86,7 @@ float request::get_accept(const char* type) const
 		t1.erase(s, t1.length() - s);
 	}
 	
-	for (const header& h: headers)
+	for (const header& h: m_headers)
 	{
 		if (h.name != "Accept")
 			continue;
@@ -136,17 +140,22 @@ float request::get_accept(const char* type) const
 	return result;
 }
 
+// m_request.http_version_minor >= 1 and not m_request.close
+
 bool request::keep_alive() const
 {
-	bool result = false;
+	bool result = get_version() >= std::make_tuple(1, 1);
 
-	for (const header& h: headers)
+	if (result)
 	{
-		if (h.name != "Connection")
-			continue;
+		for (const header& h: m_headers)
+		{
+			if (h.name != "Connection")
+				continue;
 
-		result = iequals(h.value, "keep-alive");
-		break;
+			result = iequals(h.value, "keep-alive");
+			break;
+		}
 	}
 
 	return result;
@@ -156,7 +165,7 @@ void request::set_header(const char* name, const std::string& value)
 {
 	bool replaced = false;
 
-	for (header& h: headers)
+	for (header& h: m_headers)
 	{
 		if (not iequals(h.name, name))
 			continue;
@@ -167,14 +176,14 @@ void request::set_header(const char* name, const std::string& value)
     }
 
 	if (not replaced)
-		headers.push_back({ name, value });
+		m_headers.push_back({ name, value });
 }
 
 std::string request::get_header(const char* name) const
 {
 	std::string result;
 
-	for (const header& h: headers)
+	for (const header& h: m_headers)
 	{
 		if (not iequals(h.name, name))
 			continue;
@@ -188,10 +197,10 @@ std::string request::get_header(const char* name) const
 
 void request::remove_header(const char* name)
 {
-	headers.erase(
-		remove_if(headers.begin(), headers.end(),
+	m_headers.erase(
+		remove_if(m_headers.begin(), m_headers.end(),
 			[name](const header& h) -> bool { return h.name == name; }),
-		headers.end());
+		m_headers.end());
 }
 
 std::pair<std::string,bool> get_urlencode_parameter(const std::string& s, const char* name)
@@ -235,15 +244,15 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 
 	if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
-		tie(result, found) = get_urlencode_parameter(payload, name);
+		tie(result, found) = get_urlencode_parameter(m_payload, name);
 		if (found)
 			return std::make_tuple(result, true);
 	}
 
-	auto b = uri.find('?');
+	auto b = m_uri.find('?');
 	if (b != std::string::npos)
 	{
-		tie(result, found) = get_urlencode_parameter(uri.substr(b + 1), name);
+		tie(result, found) = get_urlencode_parameter(m_uri.substr(b + 1), name);
 		if (found)
 			return std::make_tuple(result, true);
 	}
@@ -263,27 +272,27 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			
 			std::string::size_type i = 0, r = 0, l = 0;
 			
-			for (i = 0; i <= payload.length(); ++i)
+			for (i = 0; i <= m_payload.length(); ++i)
 			{
-				if (i < payload.length() and payload[i] != '\r' and payload[i] != '\n')
+				if (i < m_payload.length() and m_payload[i] != '\r' and m_payload[i] != '\n')
 					continue;
 
 				// we have found a 'line' at [l, i)
-				if (payload.compare(l, 2, "--") == 0 and
-					payload.compare(l + 2, boundary.length(), boundary) == 0)
+				if (m_payload.compare(l, 2, "--") == 0 and
+					m_payload.compare(l + 2, boundary.length(), boundary) == 0)
 				{
 					// if we're in the content state or if this is the last line
-					if (state == CONTENT or payload.compare(l + 2 + boundary.length(), 2, "--") == 0)
+					if (state == CONTENT or m_payload.compare(l + 2 + boundary.length(), 2, "--") == 0)
 					{
 						if (r > 0)
 						{
 							auto n = l - r;
-							if (n >= 1 and payload[r + n - 1] == '\n')
+							if (n >= 1 and m_payload[r + n - 1] == '\n')
 								--n;
-							if (n >= 1 and payload[r + n - 1] == '\r')
+							if (n >= 1 and m_payload[r + n - 1] == '\r')
 								--n;
 
-							result.assign(payload, r, n);
+							result.assign(m_payload, r, n);
 						}
 							
 						break;
@@ -302,17 +311,17 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 							state = CONTENT;
 
 							r = i + 1;
-							if (payload[i] == '\r' and payload[i + 1] == '\n')
+							if (m_payload[i] == '\r' and m_payload[i + 1] == '\n')
 								r = i + 2;
 						}
 						else
 							state = SKIP;
 					}
-					else if (std::regex_match(payload.begin() + l, payload.begin() + i, m, rx))
+					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx))
 						contentName = m[1].str();
 				}
 				
-				if (payload[i] == '\r' and payload[i + 1] == '\n')
+				if (m_payload[i] == '\r' and m_payload[i + 1] == '\n')
 					++i;
 
 				l = i + 1;
@@ -329,18 +338,18 @@ std::multimap<std::string,std::string> request::get_parameters() const
 {
 	std::string ps;
 	
-	if (method == method_type::POST)
+	if (m_method == "POST")
 	{
 		std::string contentType = get_header("Content-Type");
 		
 		if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
-			ps = payload;
+			ps = m_payload;
 	}
-	else if (method == method_type::GET or method == method_type::PUT)
+	else if (m_method == "GET" or m_method == "PUT")
 	{
-		std::string::size_type d = uri.find('?');
+		std::string::size_type d = m_uri.find('?');
 		if (d != std::string::npos)
-			ps = uri.substr(d + 1);
+			ps = m_uri.substr(d + 1);
 	}
 
 	std::multimap<std::string,std::string> parameters;
@@ -356,7 +365,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 			ps.erase(0, e + 1);
 		}
 		else
-			swap(param, ps);
+			std::swap(param, ps);
 		
 		if (not param.empty())
 		{
@@ -375,29 +384,29 @@ std::multimap<std::string,std::string> request::get_parameters() const
 
 	// std::multimap<std::string,std::string> parameters;
 
-	// for (auto m : { method_type::POST, method_type::GET })
+	// for (auto m : { "POST", "GET" })
 	// {
 	// 	std::string ps;
 
-	// 	// skip payload unless this is a POST
+	// 	// skip m_payload unless this is a POST
 
 	// 	switch (m)
 	// 	{
-	// 		case method_type::POST:
-	// 			if (method == m)
+	// 		case "POST":
+	// 			if (m_method == m)
 	// 			{
 	// 				std::string contentType = get_header("Content-Type");
 					
 	// 				if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
-	// 					ps = payload;
+	// 					ps = m_payload;
 	// 			}
 	// 			break;
 			
-	// 		case method_type::GET:
+	// 		case "GET":
 	// 		{
-	// 			std::string::size_type d = uri.find('?');
+	// 			std::string::size_type d = m_uri.find('?');
 	// 			if (d != std::string::npos)
-	// 				ps = uri.substr(d + 1);
+	// 				ps = m_uri.substr(d + 1);
 	// 			break;
 	// 		}
 
@@ -459,27 +468,27 @@ file_param request::get_file_parameter(const char* name) const
 			
 			std::string::size_type i = 0, r = 0, l = 0;
 			
-			for (i = 0; i <= payload.length(); ++i)
+			for (i = 0; i <= m_payload.length(); ++i)
 			{
-				if (i < payload.length() and payload[i] != '\r' and payload[i] != '\n')
+				if (i < m_payload.length() and m_payload[i] != '\r' and m_payload[i] != '\n')
 					continue;
 
 				// we have found a 'line' at [l, i)
-				if (payload.compare(l, 2, "--") == 0 and
-					payload.compare(l + 2, boundary.length(), boundary) == 0)
+				if (m_payload.compare(l, 2, "--") == 0 and
+					m_payload.compare(l + 2, boundary.length(), boundary) == 0)
 				{
 					// if we're in the content state or if this is the last line
-					if (state == CONTENT or payload.compare(l + 2 + boundary.length(), 2, "--") == 0)
+					if (state == CONTENT or m_payload.compare(l + 2 + boundary.length(), 2, "--") == 0)
 					{
 						if (r > 0)
 						{
 							auto n = l - r;
-							if (n >= 1 and payload[r + n - 1] == '\n')
+							if (n >= 1 and m_payload[r + n - 1] == '\n')
 								--n;
-							if (n >= 1 and payload[r + n - 1] == '\r')
+							if (n >= 1 and m_payload[r + n - 1] == '\r')
 								--n;
 
-							result.data = payload.data() + r;
+							result.data = m_payload.data() + r;
 							result.length = n;
 						}
 							
@@ -499,7 +508,7 @@ file_param request::get_file_parameter(const char* name) const
 							found = true;
 
 							r = i + 1;
-							if (payload[i] == '\r' and payload[i + 1] == '\n')
+							if (m_payload[i] == '\r' and m_payload[i + 1] == '\n')
 								r = i + 2;
 						}
 						else
@@ -508,7 +517,7 @@ file_param request::get_file_parameter(const char* name) const
 							state = SKIP;
 						}
 					}
-					else if (std::regex_match(payload.begin() + l, payload.begin() + i, m, rx_disp))
+					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx_disp))
 					{
 						auto p = m[1].str();
 						std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
@@ -531,7 +540,7 @@ file_param request::get_file_parameter(const char* name) const
 							b = m[0].second;
 						}
 					}
-					else if (std::regex_match(payload.begin() + l, payload.begin() + i, m, rx_cont))
+					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx_cont))
 					{
 						result.mimetype = m[1].str();
 						if (ba::starts_with(result.mimetype, "multipart/"))
@@ -539,7 +548,7 @@ file_param request::get_file_parameter(const char* name) const
 					}
 				}
 				
-				if (payload[i] == '\r' and payload[i + 1] == '\n')
+				if (m_payload[i] == '\r' and m_payload[i + 1] == '\n')
 					++i;
 
 				l = i + 1;
@@ -555,7 +564,7 @@ file_param request::get_file_parameter(const char* name) const
 
 std::string request::get_cookie(const char* name) const
 {
-	for (const header& h : headers)
+	for (const header& h : m_headers)
 	{
 		if (h.name != "Cookie")
 			continue;
@@ -582,7 +591,7 @@ std::string request::get_cookie(const char* name) const
 void request::set_cookie(const char* name, const std::string& value)
 {
 	std::map<std::string,std::string> cookies;
-	for (auto& h: headers)
+	for (auto& h: m_headers)
 	{
 		if (not iequals(h.name, "Cookie"))
 			continue;
@@ -602,9 +611,9 @@ void request::set_cookie(const char* name, const std::string& value)
 		}
 	}
 
-	headers.erase(
-		std::remove_if(headers.begin(), headers.end(), [](header& h) { return iequals(h.name, "Cookie"); }),
-		headers.end());
+	m_headers.erase(
+		std::remove_if(m_headers.begin(), m_headers.end(), [](header& h) { return iequals(h.name, "Cookie"); }),
+		m_headers.end());
 
 	cookies[name] = value;
 
@@ -739,15 +748,15 @@ std::locale& request::get_locale() const
 	return *m_locale;
 }
 
-std::string request::get_request_line() const
-{
-	return to_string(method) + std::string{' '} + uri + " HTTP/" + std::to_string(http_version_major) + '.' + std::to_string(http_version_minor);
-}
+// std::string request::get_request_line() const
+// {
+// 	return to_string(m_method) + std::string{' '} + m_uri + " HTTP/" + std::to_string(m_http_version_major) + '.' + std::to_string(m_http_version_minor);
+// }
 
 void request::set_header(const std::string& name, const std::string& value)
 {
 	bool set = false;
-	for (auto& h: headers)
+	for (auto& h: m_headers)
 	{
 		if (iequals(h.name, name))
 		{
@@ -758,25 +767,36 @@ void request::set_header(const std::string& name, const std::string& value)
 	}
 
 	if (not set)
-		headers.push_back({ name, value });
+		m_headers.push_back({ name, value });
 }
 
 namespace
 {
 const char
 		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' };
+		kCRLF[] = { '\r', '\n' },
+		kSpace[] = { ' ' },
+		kHTTPSlash[] = { ' ', 'H', 'T', 'T', 'P', '/' }
+		;
 }
 
-std::vector<boost::asio::const_buffer> request::to_buffers()
+std::vector<boost::asio::const_buffer> request::to_buffers() const
 {
 	std::vector<boost::asio::const_buffer> result;
 
-	m_request_line = get_request_line();
-	result.push_back(boost::asio::buffer(m_request_line));
+	// m_request_line = get_request_line();
+
+	// m_request_line = m_method + ' ' + m_uri + " HTTP/" + std::to_string(m_http_version_major) + '.' + std::to_string(m_http_version_minor);
+
+	result.push_back(boost::asio::buffer(m_method));
+	result.push_back(boost::asio::buffer(kSpace));
+	result.push_back(boost::asio::buffer(m_uri));
+	result.push_back(boost::asio::buffer(kHTTPSlash));
+	result.push_back(boost::asio::buffer(m_version));
+	
 	result.push_back(boost::asio::buffer(kCRLF));
 	
-	for (header& h: headers)
+	for (const header& h: m_headers)
 	{
 		result.push_back(boost::asio::buffer(h.name));
 		result.push_back(boost::asio::buffer(kNameValueSeparator));
@@ -785,12 +805,12 @@ std::vector<boost::asio::const_buffer> request::to_buffers()
 	}
 
 	result.push_back(boost::asio::buffer(kCRLF));
-	result.push_back(boost::asio::buffer(payload));
+	result.push_back(boost::asio::buffer(m_payload));
 
 	return result;
 }
 
-std::ostream& operator<<(std::ostream& io, request& req)
+std::ostream& operator<<(std::ostream& io, const request& req)
 {
 	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
 

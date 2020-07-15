@@ -65,10 +65,7 @@ BOOST_AUTO_TEST_CASE(soap_1)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req;
-	req.uri = "/ws";
-	req.method = zh::method_type::POST;
-	req.payload = payload_test_1;
+	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test_1);
 
 	zh::reply rep;
 	srv.handle_request(req, rep);
@@ -112,10 +109,7 @@ BOOST_AUTO_TEST_CASE(soap_2)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req;
-	req.uri = "/ws";
-	req.method = zh::method_type::POST;
-	req.payload = payload_test;
+	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
 
 	zh::reply rep;
 	srv.handle_request(req, rep);
@@ -162,10 +156,7 @@ BOOST_AUTO_TEST_CASE(soap_3)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req;
-	req.uri = "/ws";
-	req.method = zh::method_type::POST;
-	req.payload = payload_test;
+	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
 
 	zh::reply rep;
 	srv.handle_request(req, rep);
@@ -212,10 +203,7 @@ BOOST_AUTO_TEST_CASE(soap_3f)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req;
-	req.uri = "/ws";
-	req.method = zh::method_type::POST;
-	req.payload = payload_test;
+	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
 
 	zh::reply rep;
 	srv.handle_request(req, rep);

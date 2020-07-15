@@ -1345,8 +1345,12 @@ object interpreter::parse_link_template_expr()
 	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
 	if (m_lookahead == token_type::div)
 	{
-		path = '/' + m_scope.get_context_name() + '/';
+		path = '/';
 		match(token_type::div);
+
+		auto context = m_scope.get_context_name();
+		if (not context.empty())
+			path += context + '/';
 	}
 
 	while (m_lookahead != token_type::lparen and m_lookahead != token_type::eof)
@@ -1731,9 +1735,9 @@ object interpreter::call_method(const string& className, const string& method, v
 	else if (className == "#request")
 	{
 		if (method == "getRequestURI")
-			result = m_scope.get_request().uri;
+			result = m_scope.get_request().get_uri();
 		else if (method == "getRequestURL")
-			result = m_scope.get_request().uri;
+			result = m_scope.get_request().get_uri();
 	}
 	else if (className == "#security")
 	{
@@ -1908,7 +1912,7 @@ json::element scope::get_credentials() const
 {
 	if (m_req == nullptr or m_server == nullptr)
 		throw zeep::exception("Invalid scope, no request, no server");
-	return m_server->get_credentials(*m_req);
+	return m_req->get_credentials();
 }
 
 void scope::select_object(const object& o)

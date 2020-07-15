@@ -80,7 +80,7 @@ void basic_template_processor::handle_file(const http::request& request, const s
 	// auto lastWriteTime = to_time_t()
 
 	std::string ifModifiedSince;
-	for (const http::header& h : request.headers)
+	for (const http::header& h : request.get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
 		{

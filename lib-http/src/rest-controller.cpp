@@ -22,29 +22,14 @@ rest_controller::~rest_controller()
 
 bool rest_controller::handle_request(http::request& req, http::reply& rep)
 {
-	std::string p = req.uri;
-
-	while (p.front() == '/')
-		p.erase(0, 1);
+	std::string p = get_prefixless_path(req);
 	
-	if (not ba::starts_with(p, m_prefix_path))
-		return false;
-
-	p.erase(0, m_prefix_path.length());
-	
-	if (p.front() == '/')
-		p.erase(0, 1);
-
-	auto pp = p.find('?');
-	if (pp != std::string::npos)
-		p.erase(pp);
-	
-	p = decode_url(p);
+	// p = decode_url(p);
 
     bool result = false;
 	for (auto& mp: m_mountpoints)
 	{
-		if (req.method != mp->m_method)
+		if (req.get_method() != mp->m_method)
 			continue;
 		
 		parameter_pack params(req);
@@ -61,7 +46,11 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 				continue;
 
 			for (size_t i = 0; i < mp->m_path_params.size(); ++i)
-				params.m_path_parameters.push_back({mp->m_path_params[i], m[i + 1].str()});
+			{
+				std::string v = m[i + 1].str();
+				decode_url(v);
+				params.m_path_parameters.push_back({ mp->m_path_params[i], v });
+			}
 		}
 
 		try

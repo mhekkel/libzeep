@@ -237,14 +237,8 @@ class security_context
 	///
 	/// This method will validate the request in \a req agains the stored rules
 	/// and will throw an exception if access is not allowed.
-	void validate_request(const request& req) const;
-
-	/// \brief Return the credentials in the request \a req
-	///
-	/// Will return the null object in case the credentials are not valid
-	/// \param req	The current HTTP request
-	/// \return		The json object with the credentials, or the null object
-	json::element get_credentials(const request& req) const;
+	/// The request \a req will be updated with the credentials for further use.
+	void validate_request(request& req) const;
 
 	/// \brief Add e.g. headers to reply for an authorized request
 	///

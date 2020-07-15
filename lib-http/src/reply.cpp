@@ -107,9 +107,33 @@ const std::string
 }
 
 reply::reply(int version_major, int version_minor)
-	: m_version_major(version_major)
+	: m_status(internal_server_error)
+	, m_version_major(version_major)
 	, m_version_minor(version_minor)
-	, m_status(internal_server_error)
+	, m_data(nullptr)
+{
+	using namespace boost::local_time;
+	using namespace boost::posix_time;
+
+	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
+	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
+	
+	std::stringstream s;
+	s.imbue(std::locale(std::locale(), lf));
+
+	s << t;
+
+	set_header("Date", s.str());
+	set_header("Server", "libzeep");
+}
+
+reply::reply(status_type status, std::tuple<int,int> version,
+		std::vector<header>&& headers, std::string&& payload)
+	: m_status(status)
+	, m_version_major(std::get<0>(version))
+	, m_version_minor(std::get<1>(version))
+	, m_headers(std::move(headers))
+	, m_content(std::move(payload))
 	, m_data(nullptr)
 {
 	using namespace boost::local_time;
@@ -128,9 +152,9 @@ reply::reply(int version_major, int version_minor)
 }
 
 reply::reply(const reply& rhs)
-	: m_version_major(rhs.m_version_major)
+	: m_status(rhs.m_status)
+	, m_version_major(rhs.m_version_major)
 	, m_version_minor(rhs.m_version_minor)
-	, m_status(rhs.m_status)
 	, m_headers(rhs.m_headers)
 	, m_content(rhs.m_content)
 	, m_data(nullptr)
@@ -217,6 +241,22 @@ void reply::set_cookie(const char* name, const std::string& value, std::initiali
 		vs << "; " << directive.name << (directive.value.empty() ? "" : "=" + directive.value);
 	
 	m_headers.push_back({ "Set-Cookie", vs.str() });
+}
+
+void reply::set_delete_cookie(const char* name)
+{
+	using namespace boost::local_time;
+	using namespace boost::posix_time;
+
+	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
+	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
+	
+	std::stringstream s;
+	s.imbue(std::locale(std::locale(), lf));
+
+	s << (t - hours(24));
+
+	set_cookie(name, "", { { "Expires", '"' + s.str() + '"' } });
 }
 
 std::string reply::get_cookie(const char* name) const
