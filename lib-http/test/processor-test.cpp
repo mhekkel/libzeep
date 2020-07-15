@@ -368,8 +368,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 		zeep::http::template_processor p;
 		zeep::http::tag_processor_v2 tp;
 
-		zeep::http::request req;
-		req.headers.push_back({ "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" });
+		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" }}, "");
 
 		zeep::http::scope scope(req);
 		scope.put("ok", true);
@@ -403,8 +402,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 		zeep::http::template_processor p;
 		zeep::http::tag_processor_v2 tp;
 
-		zeep::http::request req;
-		req.headers.push_back({ "Accept-Language", "da, en-US;q=0.7, en;q=0.3" });
+		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "da, en-US;q=0.7, en;q=0.3" }}, "");
 
 		zeep::http::scope scope(req);
 		scope.put("ok", true);
@@ -437,8 +435,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 	</data>
 		)"_xml;
 
-		zeep::http::request req;
-		req.headers.push_back({ "Accept-Language", "en-GB, en-US;q=0.7, en;q=0.3" });
+		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "en-GB, en-US;q=0.7, en;q=0.3" }}, "");
 
 		zeep::http::scope scope(req);
 		scope.put("ok", true);

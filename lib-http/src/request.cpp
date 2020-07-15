@@ -24,23 +24,14 @@ const std::regex kURIRx(R"((?:(https?://)([^/]+))?([^?]*)(?:\?(.+))?)", std::reg
 
 request::request(const std::string& method, std::string&& uri, std::tuple<int,int> version,
 		std::vector<header>&& headers, std::string&& payload)
-	: m_method(method_type::UNDEFINED)
+	: m_method(method)
 	, m_uri(std::move(uri))
-	, m_http_version_major(std::get<0>(version))
-	, m_http_version_minor(std::get<1>(version))
 	, m_headers(std::move(headers))
 	, m_payload(std::move(payload))
 {
-		 if (method == "OPTIONS")		m_method = method_type::OPTIONS;
-	else if (method == "GET")			m_method = method_type::GET;
-	else if (method == "HEAD")			m_method = method_type::HEAD;
-	else if (method == "POST")			m_method = method_type::POST;
-	else if (method == "PUT")			m_method = method_type::PUT;
-	else if (method == "DELETE")		m_method = method_type::DELETE;
-	else if (method == "TRACE")			m_method = method_type::TRACE;
-	else if (method == "CONNECT")		m_method = method_type::CONNECT;
-
-	m_request_line = to_string(m_method) + std::string{' '} + m_uri + " HTTP/" + std::to_string(m_http_version_major) + '.' + std::to_string(m_http_version_minor);
+	m_version[0] = '0' + std::get<0>(version);
+	m_version[1] = '.';
+	m_version[2] = '0' + std::get<1>(version);
 }
 
 void request::set_local_endpoint(boost::asio::ip::tcp::socket& socket)
@@ -153,7 +144,7 @@ float request::get_accept(const char* type) const
 
 bool request::keep_alive() const
 {
-	bool result = m_http_version_major > 1 or m_http_version_minor >= 1;
+	bool result = get_version() >= std::make_tuple(1, 1);
 
 	if (result)
 	{
@@ -347,14 +338,14 @@ std::multimap<std::string,std::string> request::get_parameters() const
 {
 	std::string ps;
 	
-	if (m_method == method_type::POST)
+	if (m_method == "POST")
 	{
 		std::string contentType = get_header("Content-Type");
 		
 		if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
 			ps = m_payload;
 	}
-	else if (m_method == method_type::GET or m_method == method_type::PUT)
+	else if (m_method == "GET" or m_method == "PUT")
 	{
 		std::string::size_type d = m_uri.find('?');
 		if (d != std::string::npos)
@@ -393,7 +384,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 
 	// std::multimap<std::string,std::string> parameters;
 
-	// for (auto m : { method_type::POST, method_type::GET })
+	// for (auto m : { "POST", "GET" })
 	// {
 	// 	std::string ps;
 
@@ -401,7 +392,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 
 	// 	switch (m)
 	// 	{
-	// 		case method_type::POST:
+	// 		case "POST":
 	// 			if (m_method == m)
 	// 			{
 	// 				std::string contentType = get_header("Content-Type");
@@ -411,7 +402,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	// 			}
 	// 			break;
 			
-	// 		case method_type::GET:
+	// 		case "GET":
 	// 		{
 	// 			std::string::size_type d = m_uri.find('?');
 	// 			if (d != std::string::npos)
@@ -783,7 +774,10 @@ namespace
 {
 const char
 		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' };
+		kCRLF[] = { '\r', '\n' },
+		kSpace[] = { ' ' },
+		kHTTPSlash[] = { ' ', 'H', 'T', 'T', 'P', '/' }
+		;
 }
 
 std::vector<boost::asio::const_buffer> request::to_buffers() const
@@ -791,7 +785,15 @@ std::vector<boost::asio::const_buffer> request::to_buffers() const
 	std::vector<boost::asio::const_buffer> result;
 
 	// m_request_line = get_request_line();
-	result.push_back(boost::asio::buffer(m_request_line));
+
+	// m_request_line = m_method + ' ' + m_uri + " HTTP/" + std::to_string(m_http_version_major) + '.' + std::to_string(m_http_version_minor);
+
+	result.push_back(boost::asio::buffer(m_method));
+	result.push_back(boost::asio::buffer(kSpace));
+	result.push_back(boost::asio::buffer(m_uri));
+	result.push_back(boost::asio::buffer(kHTTPSlash));
+	result.push_back(boost::asio::buffer(m_version));
+	
 	result.push_back(boost::asio::buffer(kCRLF));
 	
 	for (const header& h: m_headers)

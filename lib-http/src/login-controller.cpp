@@ -138,14 +138,14 @@ bool login_controller::handle_request(request& req, reply& rep)
 	{
 		result = true;
 
-		if (req.get_method() == method_type::GET)
+		if (req.get_method() == "GET")
 		{
 			auto doc = load_login_form(req);
 			for (auto csrf: doc.find("//input[@name='_csrf']"))
 				csrf->set_attribute("value", req.get_cookie("csrf-token"));
 			rep.set_content(doc);
 		}
-		else if (req.get_method() == method_type::POST)
+		else if (req.get_method() == "POST")
 		{
 			auto csrf = req.get_parameter("_csrf");
 			if (csrf != req.get_cookie("csrf-token"))

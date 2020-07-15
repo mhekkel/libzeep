@@ -69,7 +69,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 	while (p.front() == '/')
 		p.erase(0, 1);
 	
-	if (req.get_method() == method_type::POST and p == m_prefix_path)
+	if (req.get_method() == "POST" and p == m_prefix_path)
 	{
 		result = true;
 
@@ -109,7 +109,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 			reply.set_status(s);
 		}
 	}
-	else if (req.get_method() == method_type::GET and p == m_prefix_path + "/wsdl")
+	else if (req.get_method() == "GET" and p == m_prefix_path + "/wsdl")
 	{
 		reply.set_content(make_wsdl());
 		reply.set_status(ok);

@@ -56,17 +56,17 @@ bool html_controller::handle_request(request& req, reply& rep)
 		{
 			// return m.path == uri and
 			return glob_match(uri, m.path) and
-				(	method == method_type::HEAD or
-					method == method_type::OPTIONS or
+				(	method == "HEAD" or
+					method == "OPTIONS" or
 					m.method == method or
-					m.method == method_type::UNDEFINED);
+					m.method == "UNDEFINED");
 		});
 
 	bool result = false;
 
 	if (handler != m_dispatch_table.end())
 	{
-		if (req.get_method() == method_type::OPTIONS)
+		if (req.get_method() == "OPTIONS")
 		{
 			rep = reply::stock_reply(ok);
 			rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");

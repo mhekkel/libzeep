@@ -82,7 +82,7 @@ class rest_controller : public controller
 	/// \brief abstract base class for mount points
 	struct mount_point_base
 	{
-		mount_point_base(const char* path, method_type method)
+		mount_point_base(const char* path, const std::string& method)
 			: m_path(path), m_method(method) {}
 
         virtual ~mount_point_base() {}
@@ -90,7 +90,7 @@ class rest_controller : public controller
 		virtual void call(const parameter_pack& params, reply& reply) = 0;
 
 		std::string m_path;
-		method_type m_method;
+		std::string m_method;
 		std::regex m_rx;
 		std::vector<std::string> m_path_params;
 	};
@@ -108,7 +108,7 @@ class rest_controller : public controller
 
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* path, method_type method, rest_controller* owner, Sig sig)
+		mount_point(const char* path, const std::string& method, rest_controller* owner, Sig sig)
 			: mount_point_base(path, method)
 		{
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
@@ -121,7 +121,7 @@ class rest_controller : public controller
 		}
 
 		template<typename... Names>
-		mount_point(const char* path, method_type method, rest_controller* owner, Sig sig, Names... names)
+		mount_point(const char* path, const std::string& method, rest_controller* owner, Sig sig, Names... names)
 			: mount_point(path, method, owner, sig)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
@@ -353,7 +353,7 @@ class rest_controller : public controller
 
 	/// \brief map \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Callback, typename... ArgNames>
-	void map_request(const char* mountPoint, method_type method, Callback callback, ArgNames... names)
+	void map_request(const char* mountPoint, const std::string& method, Callback callback, ArgNames... names)
 	{
 		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, this, callback, names...));
 	}
@@ -362,28 +362,28 @@ class rest_controller : public controller
 	template<typename Callback, typename... ArgNames>
 	void map_post_request(const char* mountPoint, Callback callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::POST, callback, names...);
+		map_request(mountPoint, "POST", callback, names...);
 	}
 
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_put_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::PUT, callback, names...);
+		map_request(mountPoint, "PUT", callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_get_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::GET, callback, names...);
+		map_request(mountPoint, "GET", callback, names...);
 	}
 
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template<typename Sig, typename... ArgNames>
 	void map_delete_request(const char* mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, method_type::DELETE, callback, names...);
+		map_request(mountPoint, "DELETE", callback, names...);
 	}
 
   private:

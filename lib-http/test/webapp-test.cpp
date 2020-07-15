@@ -64,9 +64,7 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 
 	} app;
 
-	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-	req.uri = "/test";
+	zeep::http::request req("GET", "/test", { 1, 0 });
 
 	zeep::http::reply rep;
 
@@ -74,12 +72,12 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "get");
 
-	req.method = zeep::http::method_type::POST;
+	req.set_method("POST");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "post");
 
-	req.method = zeep::http::method_type::DELETE;
+	req.set_method("DELETE");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::not_found);
 }
@@ -91,8 +89,8 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 // 	app.mount("test", &zeep::http::controller::handle_file);
 
 // 	zeep::http::request req;
-// 	req.method = zeep::http::method_type::GET;
-// 	req.uri = "/test";
+// 	req.method = zeep::"GET";
+// 	req.set_uri("/test");
 
 // 	zeep::http::reply rep;
 
@@ -181,47 +179,44 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 
 	} app;
 
-	zeep::http::request req;
-	req.method = zeep::http::method_type::GET;
-
+	zeep::http::request req("GET", "/test");
 	zeep::http::reply rep;
 
-	req.uri = "/test";
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "1");
 
-	req.uri = "/test/x";
+	req.set_uri("/test/x");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "3");
 
-	req.uri = "/test/x/x";
+	req.set_uri("/test/x/x");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "4");
 
-	req.uri = "iew.x";
+	req.set_uri("iew.x");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
 
-	req.uri = "x/iew.x";
+	req.set_uri("x/iew.x");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "2");
 
-	req.uri = "x/x/iew.x";
+	req.set_uri("x/x/iew.x");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
 
-	req.uri = "css/styles/my-style.css";
+	req.set_uri("css/styles/my-style.css");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
 
-	req.uri = "scripts/x.js";
+	req.set_uri("scripts/x.js");
 	app.handle_request(req, rep);
 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
 	BOOST_CHECK_EQUAL(rep.get_content(), "f");

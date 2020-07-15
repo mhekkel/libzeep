@@ -185,8 +185,8 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 
 		// shortcut, check for supported method
 		auto method = req.get_method();
-		if (method != method_type::GET and method != method_type::POST and method != method_type::PUT and
-			method != method_type::OPTIONS and method != method_type::HEAD and method != method_type::DELETE)
+		if (method != "GET" and method != "POST" and method != "PUT" and
+			method != "OPTIONS" and method != "HEAD" and method != "DELETE")
 		{
 			throw bad_request;
 		}
@@ -213,7 +213,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 				break;
 		}
 		
-		if (method == method_type::HEAD)
+		if (method == "HEAD")
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
 			rep.set_cookie("csrf-token", csrf, {
@@ -269,7 +269,7 @@ void server::log_request(const std::string& client,
 			<< "-" << ' '
 			<< username << ' '
 			<< start_local << ' '
-			<< '"' << to_string(req.get_method()) << ' ' << req.get_uri() << ' '
+			<< '"' << req.get_method() << ' ' << req.get_uri() << ' '
 					<< "HTTP/" << major << '.' << minor << "\" "
 			<< rep.get_status() << ' '
 			<< rep.size() << ' '

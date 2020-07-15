@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	BOOST_TEST(reply.get_status() == zh::forbidden);
 
 	// OK, fetch the login form then and pry the csrf token out of it
-	req.set_method(zh::method_type::GET);
+	req.set_method("GET");
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::ok);
 
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	BOOST_TEST(csrf->get_attribute("value") == csrfCookie);
 
 	// try again to authenticate
-	req.set_method(zh::method_type::POST);
+	req.set_method("POST");
 	req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::moved_temporarily);
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 
 	// now try that admin page again
 	req.set_uri("/test/three");
-	req.set_method(zh::method_type::GET);
+	req.set_method("GET");
 	reply = simple_request(port, req);
 	BOOST_TEST(reply.get_status() == zh::ok);
 

@@ -129,7 +129,7 @@ reply::reply(int version_major, int version_minor)
 
 reply::reply(status_type status, std::tuple<int,int> version,
 		std::vector<header>&& headers, std::string&& payload)
-	: m_status(internal_server_error)
+	: m_status(status)
 	, m_version_major(std::get<0>(version))
 	, m_version_minor(std::get<1>(version))
 	, m_headers(std::move(headers))

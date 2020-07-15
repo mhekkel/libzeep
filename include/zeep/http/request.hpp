@@ -23,33 +23,6 @@
 namespace zeep::http
 {
 
-/// \brief The supported HTTP methods in libzeep, admittedly a bit limited
-///
-/// The supported HTTP methods. This is a subset of what should perhaps be
-/// available.
-enum class method_type
-{
-	UNDEFINED, OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT
-};
-
-/// \brief return the text representation of the \a method
-inline constexpr const char* to_string(method_type method)
-{
-	switch (method)
-	{
-		case method_type::UNDEFINED:	return "UNDEFINED";
-		case method_type::OPTIONS:		return "OPTIONS";
-		case method_type::GET:			return "GET";
-		case method_type::HEAD:			return "HEAD";
-		case method_type::POST:			return "POST";
-		case method_type::PUT:			return "PUT";
-		case method_type::DELETE:		return "DELETE";
-		case method_type::TRACE:		return "TRACE";
-		case method_type::CONNECT:		return "CONNECT";
-		default:						assert(false); return "ERROR";
-	}
-}
-
 // --------------------------------------------------------------------
 // TODO: one day this should be able to work with temporary files
 
@@ -85,8 +58,8 @@ class request
 	using param = header;	// alias name
 	using cookie_directive = header;	
 
-	request(const std::string& method, std::string&& uri, std::tuple<int,int> version,
-		std::vector<header>&& headers, std::string&& payload);
+	request(const std::string& method, std::string&& uri, std::tuple<int,int> version = { 1, 0 },
+		std::vector<header>&& headers = {}, std::string&& payload = {});
 
 	request(const request& req);
 	// request(request&& req);
@@ -94,26 +67,24 @@ class request
 	request& operator=(const request& rhs);
 	// request& operator=(request&& rhs);
 
-	// void swap(request& req);
-
 	/// \brief Fetch the local address from the connected socket
 	void set_local_endpoint(boost::asio::ip::tcp::socket& socket);
 	std::tuple<std::string,uint16_t> get_local_endpoint() const				{ return { m_local_address, m_local_port }; }
 
 	/// \brief Get the HTTP version requested
-	std::tuple<int,int> get_version() const									{ return { m_http_version_major, m_http_version_minor }; }
+	std::tuple<int,int> get_version() const									{ return { m_version[0] - '0', m_version[2] - '0' }; }
 
 	/// \brief Set the METHOD type (POST, GET, etc)
-	void set_method(method_type method);
+	void set_method(const std::string& method)								{ m_method = method; }
 
 	/// \brief Return the METHOD type (POST, GET, etc)
-	method_type get_method() const											{ return m_method; }
+	const std::string& get_method() const									{ return m_method; }
 
 	/// \brief Return the original URI as requested
 	std::string get_uri() const												{ return m_uri; }
 
 	/// \brief Set the URI
-	void set_uri(const std::string& uri);
+	void set_uri(const std::string& uri)									{ m_uri = uri; }
 
 	/// \brief Return the local path part of the request, after removing scheme, host and parameters
 	std::string get_path() const;
@@ -150,9 +121,6 @@ class request
 
 	/// \brief Remove this header from the list of headers
 	void remove_header(const char* name);
-
-	/// \brief Return the (reconstructed) request line
-	const std::string& get_request_line() const								{ return m_request_line; }
 
 	/// \brief Return the path part of the requested URI
 	std::string get_pathname() const
@@ -267,18 +235,15 @@ class request
 	std::string m_local_address;					///< Local endpoint address
 	uint16_t m_local_port = 80;						///< Local endpoint port
 
-	method_type m_method = method_type::UNDEFINED;	///< POST, GET, etc.
+	std::string m_method = "UNDEFINED";				///< POST, GET, etc.
 	std::string m_uri;								///< The uri as requested
-	int m_http_version_major = 1;	 				///< HTTP major number (usually 1)
-	int m_http_version_minor = 0; 					///< HTTP major number (0 or 1)
+	char m_version[3];								///< The version string
 	std::vector<header> m_headers;					///< A list with zeep::http::header values
 	std::string m_payload;  						///< For POST requests
 	bool m_close = false;  							///< Whether 'Connection: close' was specified
 
 	boost::posix_time::ptime m_timestamp = boost::posix_time::second_clock::local_time();
 	json::element m_credentials;					///< The credentials as found in the validated access-token
-
-	std::string m_request_line;						///< A storage location for to_buffers
 
 	mutable std::unique_ptr<std::locale> m_locale;
 };

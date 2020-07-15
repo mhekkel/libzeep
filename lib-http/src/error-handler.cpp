@@ -78,7 +78,7 @@ bool error_handler::create_error_reply(const request& req, status_type status, c
 			{ "message", message },
 			{ "request",
 				{
-					{ "method", to_string(req.get_method()) },
+					{ "method", req.get_method() },
 					{ "uri", req.get_uri() }
 				}
 			}
