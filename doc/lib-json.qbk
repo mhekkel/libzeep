@@ -29,6 +29,10 @@ The main data structure in this library is __json_element__, this is the represe
 [import ../examples/synopsis-json.cpp]
 [synopsis_json_main]
 
+There is also support for `enum`s, see the following example. The idea is, you call the `std::value_serializer<Enum>::init` once to initialize the global mapping of enum values to strings. The name parameter is optional, but required if you use this serializer also in a SOAP controller.
+
+[enum_support]
+
 [heading STL-like interface]
 
 The __json_element__ class acts as an STL container, see the class reference for more information. But to give you an idea:

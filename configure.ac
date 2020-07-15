@@ -65,6 +65,23 @@ AX_BOOST_BASE([1.65.1], [], [
 AX_BOOST_ASIO
 AX_BOOST_PROGRAM_OPTIONS
 
+dnl for the documentation
+AC_ARG_ENABLE(
+	documentation,
+	[AS_HELP_STRING([--enable-documentation], [Generate documentation])])
+AC_ARG_VAR([DOXYGEN],
+	[Path to doxygen needed to build reference documentation])
+AC_PATH_TOOL([DOXYGEN], [doxygen], [nodoxygen])
+AC_PATH_TOOL([QUICKBOOK], [quickbook], [noquickbook])
+AC_PATH_TOOL([XSLTPROC], [xsltproc], [noxsltproc])
+AC_PATH_TOOL([FOP], [fop], [nofop])
+AC_PATH_TOOL([BJAM], [bjam], [nobjam])
+
+AS_IF([test "$enable_documentation" = "yes" && test "$DOXYGEN" = "nodoxygen" -o "$QUICKBOOX" = "noquickbook" -o "$XSLTPROC" = "noxsltproc" -o "$FOP" = "nofop" -o "$BJAM" = "nobjam"],
+	[AC_MSG_ERROR([could not find the tools necessary to build the documentation])])
+
+AM_CONDITIONAL([BUILD_DOCS], [[test "$enable_documentation" = "yes"]])
+
 BUILD_DIR="$abs_top_builddir"
 
 dnl Process Makefile.in to create Makefile

@@ -635,6 +635,13 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+BUILD_DOCS_FALSE
+BUILD_DOCS_TRUE
+BJAM
+FOP
+XSLTPROC
+QUICKBOOK
+DOXYGEN
 BOOST_PROGRAM_OPTIONS_LIB
 BOOST_ASIO_LIB
 BOOST_LDFLAGS
@@ -748,6 +755,7 @@ with_boost
 with_boost_libdir
 with_boost_asio
 with_boost_program_options
+enable_documentation
 '
       ac_precious_vars='build_alias
 host_alias
@@ -764,7 +772,8 @@ LT_SYS_LIBRARY_PATH
 CPP
 CXXCPP
 DEBUG
-MRC'
+MRC
+DOXYGEN'
 
 
 # Initialize some variables set by options.
@@ -1394,6 +1403,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-documentation  Generate documentation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1441,6 +1451,7 @@ Some influential environment variables:
   CXXCPP      C++ preprocessor
   DEBUG       Build a debug version of the library
   MRC         Specify a location for the mrc executable
+  DOXYGEN     Path to doxygen needed to build reference documentation
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -17456,9 +17467,6 @@ if ac_fn_cxx_try_link "$LINENO"; then :
 
 else
 
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Linking for <filesystem> failed, trying -lstdc++fs" >&5
-$as_echo "$as_me: WARNING: Linking for <filesystem> failed, trying -lstdc++fs" >&2;}
-
 		LIBS="$LIBS -lstdc++fs"
 
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -18228,6 +18236,516 @@ fi
 	fi
 
 
+# Check whether --enable-documentation was given.
+if test "${enable_documentation+set}" = set; then :
+  enableval=$enable_documentation;
+fi
+
+
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}doxygen", so it can be a program name with args.
+set dummy ${ac_tool_prefix}doxygen; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_DOXYGEN+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $DOXYGEN in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_DOXYGEN="$DOXYGEN" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_DOXYGEN="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+DOXYGEN=$ac_cv_path_DOXYGEN
+if test -n "$DOXYGEN"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DOXYGEN" >&5
+$as_echo "$DOXYGEN" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_DOXYGEN"; then
+  ac_pt_DOXYGEN=$DOXYGEN
+  # Extract the first word of "doxygen", so it can be a program name with args.
+set dummy doxygen; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_DOXYGEN+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_DOXYGEN in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_DOXYGEN="$ac_pt_DOXYGEN" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_DOXYGEN="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_DOXYGEN=$ac_cv_path_ac_pt_DOXYGEN
+if test -n "$ac_pt_DOXYGEN"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_DOXYGEN" >&5
+$as_echo "$ac_pt_DOXYGEN" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_DOXYGEN" = x; then
+    DOXYGEN="nodoxygen"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    DOXYGEN=$ac_pt_DOXYGEN
+  fi
+else
+  DOXYGEN="$ac_cv_path_DOXYGEN"
+fi
+
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}quickbook", so it can be a program name with args.
+set dummy ${ac_tool_prefix}quickbook; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_QUICKBOOK+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $QUICKBOOK in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_QUICKBOOK="$QUICKBOOK" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_QUICKBOOK="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+QUICKBOOK=$ac_cv_path_QUICKBOOK
+if test -n "$QUICKBOOK"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $QUICKBOOK" >&5
+$as_echo "$QUICKBOOK" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_QUICKBOOK"; then
+  ac_pt_QUICKBOOK=$QUICKBOOK
+  # Extract the first word of "quickbook", so it can be a program name with args.
+set dummy quickbook; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_QUICKBOOK+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_QUICKBOOK in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_QUICKBOOK="$ac_pt_QUICKBOOK" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_QUICKBOOK="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_QUICKBOOK=$ac_cv_path_ac_pt_QUICKBOOK
+if test -n "$ac_pt_QUICKBOOK"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_QUICKBOOK" >&5
+$as_echo "$ac_pt_QUICKBOOK" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_QUICKBOOK" = x; then
+    QUICKBOOK="noquickbook"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    QUICKBOOK=$ac_pt_QUICKBOOK
+  fi
+else
+  QUICKBOOK="$ac_cv_path_QUICKBOOK"
+fi
+
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}xsltproc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}xsltproc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_XSLTPROC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $XSLTPROC in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_XSLTPROC="$XSLTPROC" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_XSLTPROC="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+XSLTPROC=$ac_cv_path_XSLTPROC
+if test -n "$XSLTPROC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XSLTPROC" >&5
+$as_echo "$XSLTPROC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_XSLTPROC"; then
+  ac_pt_XSLTPROC=$XSLTPROC
+  # Extract the first word of "xsltproc", so it can be a program name with args.
+set dummy xsltproc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_XSLTPROC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_XSLTPROC in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_XSLTPROC="$ac_pt_XSLTPROC" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_XSLTPROC="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_XSLTPROC=$ac_cv_path_ac_pt_XSLTPROC
+if test -n "$ac_pt_XSLTPROC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_XSLTPROC" >&5
+$as_echo "$ac_pt_XSLTPROC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_XSLTPROC" = x; then
+    XSLTPROC="noxsltproc"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    XSLTPROC=$ac_pt_XSLTPROC
+  fi
+else
+  XSLTPROC="$ac_cv_path_XSLTPROC"
+fi
+
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}fop", so it can be a program name with args.
+set dummy ${ac_tool_prefix}fop; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_FOP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $FOP in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_FOP="$FOP" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_FOP="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+FOP=$ac_cv_path_FOP
+if test -n "$FOP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $FOP" >&5
+$as_echo "$FOP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_FOP"; then
+  ac_pt_FOP=$FOP
+  # Extract the first word of "fop", so it can be a program name with args.
+set dummy fop; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_FOP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_FOP in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_FOP="$ac_pt_FOP" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_FOP="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_FOP=$ac_cv_path_ac_pt_FOP
+if test -n "$ac_pt_FOP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_FOP" >&5
+$as_echo "$ac_pt_FOP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_FOP" = x; then
+    FOP="nofop"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    FOP=$ac_pt_FOP
+  fi
+else
+  FOP="$ac_cv_path_FOP"
+fi
+
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}bjam", so it can be a program name with args.
+set dummy ${ac_tool_prefix}bjam; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_BJAM+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $BJAM in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_BJAM="$BJAM" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_BJAM="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+BJAM=$ac_cv_path_BJAM
+if test -n "$BJAM"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $BJAM" >&5
+$as_echo "$BJAM" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_BJAM"; then
+  ac_pt_BJAM=$BJAM
+  # Extract the first word of "bjam", so it can be a program name with args.
+set dummy bjam; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_BJAM+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_BJAM in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_BJAM="$ac_pt_BJAM" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_BJAM="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_BJAM=$ac_cv_path_ac_pt_BJAM
+if test -n "$ac_pt_BJAM"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_BJAM" >&5
+$as_echo "$ac_pt_BJAM" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_BJAM" = x; then
+    BJAM="nobjam"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    BJAM=$ac_pt_BJAM
+  fi
+else
+  BJAM="$ac_cv_path_BJAM"
+fi
+
+
+if test "$enable_documentation" = "yes" && test "$DOXYGEN" = "nodoxygen" -o "$QUICKBOOX" = "noquickbook" -o "$XSLTPROC" = "noxsltproc" -o "$FOP" = "nofop" -o "$BJAM" = "nobjam"; then :
+  as_fn_error $? "could not find the tools necessary to build the documentation" "$LINENO" 5
+fi
+
+ if test "$enable_documentation" = "yes"; then
+  BUILD_DOCS_TRUE=
+  BUILD_DOCS_FALSE='#'
+else
+  BUILD_DOCS_TRUE='#'
+  BUILD_DOCS_FALSE=
+fi
+
+
 BUILD_DIR="$abs_top_builddir"
 
 ac_config_files="$ac_config_files GNUmakefile lib-xml/GNUmakefile lib-json/GNUmakefile lib-http/GNUmakefile examples/GNUmakefile lib-xml/libzeep-xml.pc lib-json/libzeep-json.pc lib-http/libzeep-http.pc"
@@ -18377,6 +18895,10 @@ LIBOBJS=$ac_libobjs
 LTLIBOBJS=$ac_ltlibobjs
 
 
+if test -z "${BUILD_DOCS_TRUE}" && test -z "${BUILD_DOCS_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_DOCS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0

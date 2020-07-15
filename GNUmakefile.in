@@ -53,6 +53,10 @@ DIST_NAME           = @PACKAGE_NAME@
 
 OUTPUT_DIR			?= ./lib
 
+# documentation rules
+@BUILD_DOCS_TRUE@BUILD_DOCS			= 1
+BJAM				= @BJAM@
+
 # targets
 
 $(OUTPUT_DIR):
@@ -95,8 +99,13 @@ examples: libraries
 	+$(MAKE) -C examples all
 
 .PHONY: doc
+ifeq "$(BUILD_DOCS)" "1"
 doc:
 	cd doc; $(BJAM)
+else
+doc:
+	echo "Documentation was not enabled, use the --enable-documentation flag with configure"
+endif
 
 .PHONY: all	
 all: libraries test examples

@@ -106,7 +106,7 @@ The path specified in `mount` is `{,index,index.html}` which is a glob pattern, 
 
 [section:data-types Request and Reply]
 
-An implementation of the HTTP standard will need various data types. There are [classref zeep::http::request HTTP `requests`] and [classref zeep::http::reply HTTP `replies`]. And these contain [classref zeep::http::header HTTP `headers`] but also predefined [enumref zeep::http::method_type `method_type`s].
+An implementation of the HTTP standard will need various data types. There are [classref zeep::http::request HTTP `requests`] and [classref zeep::http::reply HTTP `replies`]. And these contain [classref zeep::http::header HTTP `headers`] but the `method` specifier (which was changed to a `std::string` in a recent update to libzeep).
 
 The HTTP specification for __request__ and __reply__ are sufficiently similar to allow for a common [classref zeep::http::parser message parsing class]. The parser for requests supports [@https://en.wikipedia.org/wiki/Chunked_transfer_encoding chunked transfer encoding].
 

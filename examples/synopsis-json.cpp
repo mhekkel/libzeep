@@ -29,6 +29,27 @@ void test_stl()
 //]
 }
 
+void test_enum()
+{
+    using namespace zeep::json::literals; 
+    using json = zeep::json::element;
+
+//[ enum_support
+
+	enum class MyEnum { aap, noot, mies };
+	zeep::value_serializer<MyEnum>::init("MyEnum",
+	{
+		{ MyEnum::aap, "aap" },
+		{ MyEnum::noot, "noot" },
+		{ MyEnum::mies, "mies" }
+	});
+
+	json j{ MyEnum::aap };
+	assert(j.as<std::string>() == "aap");
+
+//]
+}
+
 void construct()
 {
 //[ synopsis_json_main
