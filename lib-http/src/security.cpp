@@ -40,8 +40,11 @@ void security_context::validate_request(request& req) const
 		std::set<std::string> roles;
 
 		auto access_token = req.get_cookie("access_token");
-		if (not access_token.empty())
+		for (;;)
 		{
+			if (access_token.empty())
+				break;
+
 			std::smatch m;
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
@@ -69,6 +72,8 @@ void security_context::validate_request(request& req) const
 				roles.insert(role.as<std::string>());
 			
 			req.set_credentials(std::move(credentials));
+
+			break;
 		}
 
 		// first check if this page is allowed without any credentials

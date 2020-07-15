@@ -84,6 +84,11 @@ class reply
 
 	/// Set a cookie
 	void set_cookie(const char* name, const std::string& value, std::initializer_list<cookie_directive> directives = {});
+
+	/// \brief Set a header to delete the \a name cookie
+	void set_delete_cookie(const char* name);
+
+	/// Get a cookie
 	std::string get_cookie(const char* name) const;
 
 	/// If the reply contains Connection: keep-alive

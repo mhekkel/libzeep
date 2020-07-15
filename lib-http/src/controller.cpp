@@ -18,9 +18,17 @@ thread_local request* controller::s_request = nullptr;
 controller::controller(const std::string& prefix_path)
 	: m_prefix_path(prefix_path)
 {
-	// strip leading slashes
-	while (m_prefix_path[0] == '/')
-		m_prefix_path.erase(m_prefix_path.begin());
+	if (not m_prefix_path.empty())
+	{
+		if (m_prefix_path.front() != '/')
+			m_prefix_path.insert(m_prefix_path.begin(), '/');
+		else
+		{
+			// strip extra leading slashes
+			while (m_prefix_path[1] == '/')
+				m_prefix_path.erase(m_prefix_path.begin() + 1);
+		}
+	}
 }
 
 controller::~controller()
@@ -50,10 +58,10 @@ bool controller::path_matches_prefix(const std::string& path) const
 {
 	bool result = m_prefix_path.empty();
 	
-	if (not result)
+	if (not result and path.front() == '/')
 	{
 		int offset = 0;
-		while (path[offset] == '/')
+		while (path[offset + 1] == '/')
 			++offset;
 		result = path.compare(offset, m_prefix_path.length(), m_prefix_path) == 0;
 	}
@@ -61,7 +69,7 @@ bool controller::path_matches_prefix(const std::string& path) const
 	return result;
 }
 
-std::string controller::get_prefix_less_path(request& req) const
+std::string controller::get_prefixless_path(const request& req) const
 {
 	auto p = req.get_path();
 
@@ -82,11 +90,17 @@ std::string controller::get_prefix_less_path(request& req) const
 	return p;
 }
 
-bool controller::has_role(const std::string& role) const
+json::element controller::get_credentials() const
 {
 	json::element credentials;
 	if (s_request != nullptr)
 		credentials = s_request->get_credentials();
+	return credentials;
+}
+
+bool controller::has_role(const std::string& role) const
+{
+	auto credentials = get_credentials();
 	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
 }
 

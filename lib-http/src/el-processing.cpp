@@ -1345,8 +1345,12 @@ object interpreter::parse_link_template_expr()
 	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
 	if (m_lookahead == token_type::div)
 	{
-		path = '/' + m_scope.get_context_name() + '/';
+		path = '/';
 		match(token_type::div);
+
+		auto context = m_scope.get_context_name();
+		if (not context.empty())
+			path += context + '/';
 	}
 
 	while (m_lookahead != token_type::lparen and m_lookahead != token_type::eof)

@@ -19,7 +19,7 @@ namespace zeep::http
 namespace
 {
 // a regex for URI
-const std::regex kURIRx(R"((?:(https?://)([^/]+))?([^?]*)(?:\?(.+))?)", std::regex_constants::icase);
+const std::regex kURIRx(R"((?:(https?:)(?://([^/]+)))?(?:/?([^?]*))(?:\?(.+))?)", std::regex_constants::icase);
 }
 
 request::request(const std::string& method, std::string&& uri, std::tuple<int,int> version,
@@ -45,7 +45,7 @@ std::string request::get_path() const
 	std::smatch m;
 	if (not std::regex_match(m_uri, m, kURIRx))
 		throw std::invalid_argument("the request uri is not valid");
-	return fs::path(m[3]).lexically_normal();
+	return "/" + fs::path(m[3]).lexically_normal().string();
 }
 
 std::string request::get_query() const

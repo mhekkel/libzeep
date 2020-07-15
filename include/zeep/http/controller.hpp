@@ -48,7 +48,7 @@ class controller
 	bool path_matches_prefix(const std::string& path) const;
 
 	/// \brief return the path with the prefix path stripped off
-	std::string get_prefix_less_path(request& req) const;
+	std::string get_prefixless_path(const request& req) const;
 
 	/// \brief bind this controller to \a server
 	virtual void set_server(server* server)
@@ -59,6 +59,9 @@ class controller
 	/// \brief return the server object we're bound to
 	const server& get_server() const	{ return *m_server; }
 	server& get_server()				{ return *m_server; }
+
+	/// \brief get the credentials for the current request
+	json::element get_credentials() const;
 
 	/// \brief returns whether the current user has role \a role
 	bool has_role(const std::string& role) const;

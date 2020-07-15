@@ -42,7 +42,7 @@ void html_controller::handle_file(const request& request, const scope& scope, re
 
 bool html_controller::handle_request(request& req, reply& rep)
 {
-	std::string uri = get_prefix_less_path(req);
+	std::string uri = get_prefixless_path(req);
 
 	// set up the scope by putting some globals in it
 	scope scope(get_server(), req);

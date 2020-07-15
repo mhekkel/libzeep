@@ -132,7 +132,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 {
 	bool result = false;
 
-	std::string uri = get_prefix_less_path(req);
+	std::string uri = get_prefixless_path(req);
 
 	if (uri == "login")
 	{
@@ -151,11 +151,16 @@ bool login_controller::handle_request(request& req, reply& rep)
 			if (csrf != req.get_cookie("csrf-token"))
 				throw status_type::forbidden;
 
-			fs::path redirect_to = 
-				fs::path("/" + get_server().get_context_name() + "/" + req.get_parameter("uri")).lexically_normal();
-			if (redirect_to.empty() or redirect_to.filename() == "login")
-				redirect_to = "/";
-			rep = reply::redirect(redirect_to.string());
+			fs::path redirect_to{"/"};
+
+			auto context = get_server().get_context_name();
+			if (not context.empty())
+				redirect_to /= context;
+			auto uri = req.get_parameter("uri");
+			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")))
+				redirect_to /= uri;
+
+			rep = reply::redirect(redirect_to.lexically_normal().string());
 
 			auto username = req.get_parameter("username");
 			auto password = req.get_parameter("password");
@@ -189,15 +194,17 @@ bool login_controller::handle_request(request& req, reply& rep)
 	}
 	else if (uri == "logout")
 	{
-		fs::path redirect_to = 
-			fs::path("/" + get_server().get_context_name() + "/" + req.get_parameter("uri")).lexically_normal();
-		if (redirect_to.empty() or redirect_to.filename() == "logout")
-			redirect_to = "/";
-		rep = reply::redirect(redirect_to.string());
+		fs::path redirect_to{"/"};
 
-		rep.set_cookie("access_token", "", {
-			{ "Max-Age", "0" }
-		});
+		auto context = get_server().get_context_name();
+		if (not context.empty())
+			redirect_to /= context;
+		auto uri = req.get_parameter("uri");
+		if (not uri.empty())
+			redirect_to /= uri;
+
+		rep = reply::redirect(redirect_to.lexically_normal().string());
+		rep.set_delete_cookie("access_token");
 
 		result = true;
 	}

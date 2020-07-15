@@ -243,6 +243,22 @@ void reply::set_cookie(const char* name, const std::string& value, std::initiali
 	m_headers.push_back({ "Set-Cookie", vs.str() });
 }
 
+void reply::set_delete_cookie(const char* name)
+{
+	using namespace boost::local_time;
+	using namespace boost::posix_time;
+
+	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
+	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
+	
+	std::stringstream s;
+	s.imbue(std::locale(std::locale(), lf));
+
+	s << (t - hours(24));
+
+	set_cookie(name, "", { { "Expires", '"' + s.str() + '"' } });
+}
+
 std::string reply::get_cookie(const char* name) const
 {
 	std::string result;
