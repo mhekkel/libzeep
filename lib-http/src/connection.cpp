@@ -53,11 +53,18 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 		{
 			auto req = m_request_parser.get_request();
 			req.set_local_endpoint(m_socket);
-			m_keep_alive = req.keep_alive();
 
 			m_request_parser.reset();
 			
 			m_server.handle_request(m_socket, req, m_reply);
+
+			if (req.keep_alive())
+			{
+				m_reply.set_version({ 1, 1 });
+				m_reply.set_header("Connection", "Keep-Alive");
+				m_reply.set_header("Keep-Alive", "timeout=5, max=100");
+				m_keep_alive = req.keep_alive();
+			}
 
 			auto buffers = m_reply.to_buffers();
 

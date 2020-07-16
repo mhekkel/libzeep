@@ -73,7 +73,11 @@ class reply
 	void clear();
 
 	void set_version(int version_major, int version_minor);
-	void set_version(std::tuple<int,int> version);
+
+	void set_version(std::tuple<int,int> version)
+	{
+		set_version(std::get<0>(version), std::get<1>(version));
+	}
 
 	/// Add a header with name \a name and value \a value
 	void set_header(const std::string& name,
