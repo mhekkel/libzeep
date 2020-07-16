@@ -106,10 +106,10 @@ const std::string
 		kZERO{ '0' };
 }
 
-reply::reply(int version_major, int version_minor)
-	: m_status(internal_server_error)
-	, m_version_major(version_major)
-	, m_version_minor(version_minor)
+reply::reply(status_type status, std::tuple<int,int> version)
+	: m_status(status)
+	, m_version_major(std::get<0>(version))
+	, m_version_minor(std::get<1>(version))
 	, m_data(nullptr)
 {
 	using namespace boost::local_time;
