@@ -46,8 +46,8 @@ class connection
 	reply m_reply;
 	request_parser m_request_parser;
 	bool m_keep_alive = false;
-
-	std::array<char, 8192> m_buffer;
+	boost::asio::streambuf m_buffer;
+	boost::asio::streambuf::mutable_buffers_type m_bufs;
 };
 
 } // namespace zeep::http

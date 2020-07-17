@@ -125,30 +125,15 @@ reply::reply(status_type status, std::tuple<int,int> version)
 
 	set_header("Date", s.str());
 	set_header("Server", "libzeep");
+	set_header("Content-Length", "0");
 }
 
 reply::reply(status_type status, std::tuple<int,int> version,
 		std::vector<header>&& headers, std::string&& payload)
-	: m_status(status)
-	, m_version_major(std::get<0>(version))
-	, m_version_minor(std::get<1>(version))
-	, m_headers(std::move(headers))
-	, m_content(std::move(payload))
-	, m_data(nullptr)
+	: reply(status, version)
 {
-	using namespace boost::local_time;
-	using namespace boost::posix_time;
-
-	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
-	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
-	
-	std::stringstream s;
-	s.imbue(std::locale(std::locale(), lf));
-
-	s << t;
-
-	set_header("Date", s.str());
-	set_header("Server", "libzeep");
+	m_headers = std::move(headers);
+	m_content = std::move(payload);
 }
 
 reply::reply(const reply& rhs)
@@ -156,9 +141,10 @@ reply::reply(const reply& rhs)
 	, m_version_major(rhs.m_version_major)
 	, m_version_minor(rhs.m_version_minor)
 	, m_headers(rhs.m_headers)
-	, m_content(rhs.m_content)
 	, m_data(nullptr)
+	, m_content(rhs.m_content)
 {
+	assert(rhs.m_data == nullptr);
 }
 
 reply::~reply()
@@ -166,15 +152,10 @@ reply::~reply()
 	delete m_data;
 }
 
-void reply::clear()
+void reply::reset()
 {
-	delete m_data;
-	m_data = nullptr;
-	
-	m_status = ok;
-	m_headers.clear();
-	m_buffer.clear();
-	m_content.clear();
+	reply tmp;
+	std::swap(tmp, *this);
 }
 
 reply& reply::operator=(const reply& rhs)
@@ -193,8 +174,47 @@ reply& reply::operator=(const reply& rhs)
 
 void reply::set_version(int version_major, int version_minor)
 {
+	const std::streambuf::pos_type kNoPos = -1;
+
 	m_version_major = version_major;
 	m_version_minor = version_minor;
+
+	// for HTTP/1.0 replies we need to calculate the data length
+	if (m_version_major == 1 and m_version_minor == 0 and m_data != nullptr)
+	{
+		m_chunked = false;
+
+		std::streamsize length = 0;
+		std::streamsize pos = m_data->rdbuf()->pubseekoff(0, std::ios_base::cur);
+
+		if (pos == kNoPos)
+		{
+			// no other option than copying over the data to our buffer
+
+			char buffer[10240];
+			for (;;)
+			{
+				std::streamsize n = m_data->rdbuf()->sgetn(buffer, sizeof(buffer));
+				if (n == 0)
+					break;
+
+				length += n;
+				m_content.insert(m_content.end(), buffer, buffer + n);
+			}
+
+			delete m_data;
+			m_data = nullptr;
+		}
+		else
+		{
+			length = m_data->rdbuf()->pubseekoff(0, std::ios_base::end);
+			length -= pos;
+			m_data->rdbuf()->pubseekoff(pos, std::ios_base::beg);
+		}
+		
+		set_header("Content-Length", boost::lexical_cast<std::string>(length));
+		remove_header("Transfer-Encoding");
+	}
 }
 
 void reply::set_header(const std::string& name, const std::string& value)
@@ -202,7 +222,7 @@ void reply::set_header(const std::string& name, const std::string& value)
 	bool updated = false;
 	for (header& h: m_headers)
 	{
-		if (h.name == name)
+		if (iequals(h.name, name))
 		{
 			h.value = value;
 			updated = true;
@@ -217,13 +237,13 @@ void reply::set_header(const std::string& name, const std::string& value)
 	}
 }
 
-std::string reply::get_header(const std::string& name)
+std::string reply::get_header(const std::string& name) const
 {
 	std::string result;
 
-	for (header& h: m_headers)
+	for (const header& h: m_headers)
 	{
-		if (h.name == name)
+		if (iequals(h.name, name))
 		{
 			result = h.value;
 			break;
@@ -231,6 +251,13 @@ std::string reply::get_header(const std::string& name)
 	}
 
 	return result;
+}
+
+void reply::remove_header(const std::string& name)
+{
+	m_headers.erase(
+		std::remove_if(m_headers.begin(), m_headers.end(), [name](header& h) { return iequals(h.name, name); }),
+		m_headers.end());
 }
 
 void reply::set_cookie(const char* name, const std::string& value, std::initializer_list<cookie_directive> directives)
@@ -286,22 +313,6 @@ std::string reply::get_cookie(const char* name) const
 	return result;
 }
 
-bool reply::keep_alive() const
-{
-	bool result = false;
-	
-	for (const header& h: m_headers)
-	{
-		if (iequals(h.name, "Connection") and iequals(h.value, "keep-alive"))
-		{
-			result = true;
-			break;
-		}
-	}
-	
-	return result;
-}
-
 void reply::set_content(const json::element& json)
 {
 	std::ostringstream s;
@@ -354,8 +365,10 @@ void reply::set_content(const std::string& data, const std::string& contentType)
 
 	delete m_data;
 	m_data = nullptr;
+	m_chunked = false;
 
 	set_header("Content-Length", std::to_string(m_content.length()));
+	remove_header("Transfer-Encoding");
 	set_header("Content-Type", contentType);
 }
 
@@ -366,8 +379,10 @@ void reply::set_content(const char* data, size_t size, const std::string& conten
 
 	delete m_data;
 	m_data = nullptr;
+	m_chunked = false;
 
 	set_header("Content-Length", std::to_string(m_content.length()));
+	remove_header("Transfer-Encoding");
 	set_header("Content-Type", contentType);
 }
 
@@ -378,50 +393,11 @@ void reply::set_content(std::istream* idata, const std::string& contentType)
 	m_content.clear();
 
 	m_status = ok;
+	m_chunked = true;
 
 	set_header("Content-Type", contentType);
-	
-	// for HTTP/1.0 replies we need to calculate the data length
-	if (m_version_major == 1 and m_version_minor == 0 and m_data != nullptr)
-	{
-		std::streamsize pos = m_data->rdbuf()->pubseekoff(0, std::ios_base::cur);
-		std::streamsize length = m_data->rdbuf()->pubseekoff(0, std::ios_base::end);
-		length -= pos;
-		m_data->rdbuf()->pubseekoff(pos, std::ios_base::beg);
-		
-		set_header("Content-Length", boost::lexical_cast<std::string>(length));
-	}
-	else
-		set_header("Transfer-Encoding", "chunked");
-}
-
-std::string reply::get_content_type() const
-{
-	std::string result;
-	
-	for (const header& h: m_headers)
-	{
-		if (iequals(h.name, "Content-Type"))
-		{
-			result = h.value;
-			break;
-		}
-	}
-	
-	return result;
-}
-
-void reply::set_content_type(
-	const std::string& type)
-{
-	for (header& h: m_headers)
-	{
-		if (iequals(h.name, "Content-Type"))
-		{
-			h.value = type;
-			break;
-		}
-	}
+	set_header("Transfer-Encoding", "chunked");
+	remove_header("Content-Length");
 }
 
 std::vector<boost::asio::const_buffer> reply::to_buffers() const
@@ -455,15 +431,11 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 	{
 		const unsigned int kMaxChunkSize = 10240;
 		
-		if (m_buffer.size() < kMaxChunkSize)
-			m_buffer.insert(m_buffer.begin(), kMaxChunkSize, 0);
-		else if (m_buffer.size() > kMaxChunkSize)
-			m_buffer.erase(m_buffer.begin() + kMaxChunkSize, m_buffer.end());
-		
-		std::streamsize n = m_data->rdbuf()->sgetn(&m_buffer[0], m_buffer.size());
+		m_buffer.resize(kMaxChunkSize);
+		std::streamsize n = m_data->rdbuf()->sgetn(m_buffer.data(), m_buffer.size());
 
 		// chunked encoding?
-		if (m_version_major > 1 or m_version_minor >= 1)
+		if (m_chunked)
 		{
 			if (n == 0)
 			{
@@ -475,14 +447,20 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 			}
 			else
 			{
-				std::ostringstream os;
-				os << std::hex << n << '\r' << '\n';
-				os.flush();
-				auto s = os.str();
-				m_buffer.insert(m_buffer.end(), s.begin(), s.end());
-		
-				result.push_back(boost::asio::buffer(&m_buffer[kMaxChunkSize], m_buffer.size() - kMaxChunkSize));
-				result.push_back(boost::asio::buffer(&m_buffer[0], n));
+				const char kHex[] = "0123456789abcdef";
+				char* e = m_size_buffer + sizeof(m_size_buffer);
+				char* p = e;
+				auto l = n;
+
+				while (n != 0)
+				{
+					*--p = kHex[n & 0x0f];
+					n >>= 4;
+				}
+
+				result.push_back(boost::asio::buffer(p, e - p));
+				result.push_back(boost::asio::buffer(kCRLF));
+				result.push_back(boost::asio::buffer(&m_buffer[0], l));
 				result.push_back(boost::asio::buffer(kCRLF));
 			}
 		}

@@ -144,23 +144,8 @@ float request::get_accept(const char* type) const
 
 bool request::keep_alive() const
 {
-	bool result = false;
-
-	try
-	{
-		if (not m_payload.empty() and
-			get_version() >= std::make_tuple(1, 1) and
-			iequals(get_header("Connection"), "keep-alive"))
-		{
-			auto length = std::stoi(get_header("content-length"));
-			result = length > 0 and length == m_payload.length();
-		}
-	}
-	catch(const std::exception& e)
-	{
-	}
-
-	return result;
+	return get_version() >= std::make_tuple(1, 1) and
+		iequals(get_header("Connection"), "keep-alive");
 }
 
 void request::set_header(const char* name, const std::string& value)

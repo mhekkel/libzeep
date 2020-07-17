@@ -22,13 +22,14 @@ connection* get_pointer(const std::shared_ptr<connection>& p)
 }
 
 connection::connection(boost::asio::io_service& service, server& handler)
-	: m_socket(service), m_server(handler)
+	: m_socket(service), m_server(handler), m_bufs(m_buffer.prepare(4096))
 {
 }
 
 void connection::start()
 {
-	m_socket.async_read_some(boost::asio::buffer(m_buffer),
+	m_bufs = m_buffer.prepare(4096);
+	m_socket.async_read_some(m_bufs,
 		[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
 			{ self->handle_read(ec, bytes_transferred); });
 }
@@ -37,18 +38,11 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 {
 	if (not ec)
 	{
-		char_streambuf sb(m_buffer.data(), bytes_transferred);
+		if (bytes_transferred > 0)
+			m_buffer.commit(bytes_transferred);
 
-		auto result = m_request_parser.parse(sb);
+		auto result = m_request_parser.parse(m_buffer);
 		
-		auto avail = sb.in_avail();
-		if (avail > 0 and avail < bytes_transferred)
-		{
-			assert(avail + bytes_transferred < m_buffer.size());
-			auto used = bytes_transferred - avail;
-			std::copy(m_buffer.begin() + used, m_buffer.begin() + bytes_transferred, m_buffer.begin());
-		}
-
 		if (result)
 		{
 			auto req = m_request_parser.get_request();
@@ -58,12 +52,13 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 			
 			m_server.handle_request(m_socket, req, m_reply);
 
+			m_reply.set_version(req.get_version());
+
 			if (req.keep_alive())
 			{
-				m_reply.set_version({ 1, 1 });
 				m_reply.set_header("Connection", "Keep-Alive");
 				m_reply.set_header("Keep-Alive", "timeout=5, max=100");
-				m_keep_alive = req.keep_alive();
+				m_keep_alive = true;
 			}
 
 			auto buffers = m_reply.to_buffers();
@@ -84,7 +79,8 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 		}
 		else
 		{
-			m_socket.async_read_some(boost::asio::buffer(m_buffer),
+			m_bufs = m_buffer.prepare(4096);
+			m_socket.async_read_some(m_bufs,
 				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
 					{ self->handle_read(ec, bytes_transferred); });
 		}
@@ -106,11 +102,17 @@ void connection::handle_write(boost::system::error_code ec, size_t bytes_transfe
 		else if (m_keep_alive)
 		{
 			m_request_parser.reset();
-			m_reply = reply();
+			m_reply.reset();
 
-			m_socket.async_read_some(boost::asio::buffer(m_buffer),
-				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
-					{ self->handle_read(ec, bytes_transferred); });
+			if (m_buffer.in_avail())
+				handle_read({}, 0);	// special case
+			else
+			{
+				m_bufs = m_buffer.prepare(4096);
+				m_socket.async_read_some(m_bufs,
+					[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+						{ self->handle_read(ec, bytes_transferred); });
+			}
 		}
 		else
 			m_socket.close();

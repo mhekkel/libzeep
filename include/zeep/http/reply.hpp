@@ -70,7 +70,7 @@ class reply
 	~reply();
 	reply& operator=(const reply &);
 
-	void clear();
+	void reset();
 
 	void set_version(int version_major, int version_minor);
 
@@ -80,10 +80,13 @@ class reply
 	}
 
 	/// Add a header with name \a name and value \a value
-	void set_header(const std::string& name,
-									const std::string& value);
+	void set_header(const std::string& name, const std::string& value);
 
-	std::string get_header(const std::string& name);
+	/// \brief Return the value of the header with name \a name
+	std::string get_header(const std::string& name) const;
+
+	/// \brief Remove the header with name \a name from the list of headers
+	void remove_header(const std::string& name);
 
 	/// Set a cookie
 	void set_cookie(const char* name, const std::string& value, std::initializer_list<cookie_directive> directives = {});
@@ -94,33 +97,34 @@ class reply
 	/// Get a cookie
 	std::string get_cookie(const char* name) const;
 
-	/// If the reply contains Connection: keep-alive
-	bool keep_alive() const;
+	std::string get_content_type() const
+	{
+		return get_header("Content-Type");
+	}
 
-	std::string get_content_type() const;
-	void set_content_type(
-			const std::string& type); ///< Set the Content-Type header
+	void set_content_type(const std::string& type) ///< Set the Content-Type header
+	{
+		set_header("Content-Type", type);
+	}
 
-	/// Set the content and the content-type header
+	/// Set the content and the content-type header depending on the content of doc (might be xhtml)
 	void set_content(xml::document& doc);
 
-	/// Set the content and the content-type header
+	/// Set the content and the content-type header to text/xml
 	void set_content(const xml::element& data);
 
 	/// Set the content and the content-type header based on JSON data
 	void set_content(const json::element& json);
 
 	/// Set the content and the content-type header
-	void set_content(const std::string& data,
-									 const std::string& contentType);
+	void set_content(const std::string& data, const std::string& contentType);
 
 	/// Set the content by copying \a data and the content-type header
 	void set_content(const char* data, size_t size, const std::string& contentType);
 
 	/// To send a stream of data, with unknown size (using chunked transfer).
 	/// reply takes ownership of \a data and deletes it when done.
-	void set_content(std::istream* data,
-									 const std::string& contentType);
+	void set_content(std::istream* data, const std::string& contentType);
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data. 
@@ -148,6 +152,9 @@ class reply
 	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
 	size_t size() const;
 
+	/// \brief Return true if the content will be sent chunked encoded
+	bool get_chunked() const												{ return m_chunked; }
+
 	/// for debugging
 	friend std::ostream& operator<<(std::ostream& os, const reply& rep);
 
@@ -157,9 +164,12 @@ class reply
 	status_type m_status;
 	int m_version_major, m_version_minor;
 	std::vector<header> m_headers;
-	std::string m_content;
 	std::istream* m_data;
 	std::vector<char> m_buffer;
+	std::string m_content;
+	
+	bool m_chunked = false;
+	char m_size_buffer[8];	///< to store the string with the size for chunked encoding
 
 	// this status line is only here to have a sensible location to store it
 	mutable std::string m_status_line;
