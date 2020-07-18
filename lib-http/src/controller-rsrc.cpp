@@ -31,11 +31,7 @@ class rsrc_istream : public std::istream
 	static rsrc_istream* create(const std::string& file)
 	{
 		mrsrc::rsrc rsrc(file);
-
-		if (not rsrc)
-			throw zeep::exception("No such resource: " + file);
-
-		return new rsrc_istream(new char_streambuf(rsrc.data(), rsrc.size()));
+		return rsrc ? new rsrc_istream(new char_streambuf(rsrc.data(), rsrc.size())) : nullptr;
 	}
 
   private:
@@ -65,21 +61,13 @@ fs::file_time_type rsrc_loader::file_time(const std::string& file, std::error_co
 {
 	fs::file_time_type result = {};
 
-	try
-	{
-		mrsrc::rsrc rsrc(file);
+	ec = {};
+	mrsrc::rsrc rsrc(file);
 
-		if (not rsrc)
-			throw zeep::exception("No such resource: " + file);
-		
+	if (rsrc)
 		result = mRsrcWriteTime;
-
-		ec = {};
-	}
-	catch (const std::exception& ex)
-	{
+	else
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
-	}
 	
 	return result;
 }
@@ -87,16 +75,12 @@ fs::file_time_type rsrc_loader::file_time(const std::string& file, std::error_co
 // basic loader, returns error in ec if file was not found
 std::istream* rsrc_loader::load_file(const std::string& file, std::error_code& ec) noexcept
 {
-	std::istream* result = nullptr;
-	try
-	{
-		result = rsrc_istream::create(file);
+	std::istream* result = rsrc_istream::create(file);
+
+	if (result)
 		ec = {};
-	}
-	catch(const std::exception& e)
-	{
+	else
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
-	}
 	
 	return result;
 }
