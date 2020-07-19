@@ -1645,8 +1645,31 @@ object interpreter::parse_utility_expr()
 object interpreter::call_method(const string& className, const string& method, vector<object>& params)
 {
 	object result;
-	if (className == "#dates")
+
+	if (className[0] == '#')
+		result = expression_utility_object_base::evaluate(m_scope, className.substr(1), method, params);
+
+	// if (result.is_null())
+	// 	throw runtime_error("Undefined class for utility object call: " + className);
+	
+	return result;
+}
+
+// --------------------------------------------------------------------
+// some expression utility objects
+
+expression_utility_object_base::instance* expression_utility_object_base::s_head;
+
+class date_expr_util_object : public expression_utility_object<date_expr_util_object>
+{
+  public:
+	static constexpr const char*	name()		{ return "dates"; }
+
+	virtual object evaluate(const scope& scope, const std::string& method,
+		const std::vector<object>& params) const
 	{
+		object result;
+
 		if (method == "format")
 		{
 			if (params.size() == 2 and params[0].is_string())
@@ -1670,7 +1693,7 @@ object interpreter::call_method(const string& className, const string& method, v
 				
 				wostringstream os;
 
-				os.imbue(m_scope.get_request().get_locale());
+				os.imbue(scope.get_request().get_locale());
 
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
 				wstring time = myconv.from_bytes(params[1].as<string>());
@@ -1680,11 +1703,21 @@ object interpreter::call_method(const string& className, const string& method, v
 				result = os.str();
 			}
 		}
-		else
-			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+
+		return result;
 	}
-	else if (className == "#numbers")
+} s_date_instance;
+
+class number_expr_util_object : public expression_utility_object<number_expr_util_object>
+{
+  public:
+	static constexpr const char*	name()		{ return "numbers"; }
+
+	virtual object evaluate(const scope& scope, const std::string& method,
+		const std::vector<object>& params) const
 	{
+		object result;
+
 		if (method == "formatDecimal")
 		{
 			if (params.size() >= 1 and params[0].is_number())
@@ -1703,7 +1736,7 @@ object interpreter::call_method(const string& className, const string& method, v
 				else
 					d = params[0].as<double>();
 
-				return FormatDecimal(d, intDigits, decimals, m_scope.get_request().get_locale());
+				return FormatDecimal(d, intDigits, decimals, scope.get_request().get_locale());
 			}
 		}
 		else if (method == "formatDiskSize")
@@ -1726,46 +1759,64 @@ object interpreter::call_method(const string& className, const string& method, v
 				if (params.size() >= 2 and params[1].is_number_int())
 					decimals = params[1].as<int>();
 
-				return FormatDecimal(nr, 1, decimals, m_scope.get_request().get_locale()) + ' ' + kBase[base];
+				return FormatDecimal(nr, 1, decimals, scope.get_request().get_locale()) + ' ' + kBase[base];
 			}
 		}
-		else
-			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+
+		return {};
 	}
-	else if (className == "#request")
+} s_number_instance;
+
+class request_expr_util_object : public expression_utility_object<request_expr_util_object>
+{
+  public:
+	static constexpr const char*	name()		{ return "request"; }
+
+	virtual object evaluate(const scope& scope, const std::string& method,
+		const std::vector<object>& params) const
 	{
+		object result;
+
 		if (method == "getRequestURI")
-			result = m_scope.get_request().get_uri();
+			result = scope.get_request().get_uri();
 		else if (method == "getRequestURL")
-			result = m_scope.get_request().get_uri();
+			result = scope.get_request().get_uri();
+		
+		return result;
 	}
-	else if (className == "#security")
+} s_request_instance;
+
+class security_expr_util_object : public expression_utility_object<security_expr_util_object>
+{
+  public:
+	static constexpr const char*	name()		{ return "security"; }
+
+	virtual object evaluate(const scope& scope, const std::string& method,
+		const std::vector<object>& params) const
 	{
+		object result;
+
 		if (method == "hasRole")
 		{
 			if (params.size() == 1 and params[0].is_string())
 			{
 				auto role = params[0].as<std::string>();
-				auto roles = m_scope.get_credentials()["role"];
+				auto roles = scope.get_credentials()["role"];
 				result = roles.is_array() and roles.contains(role);
 			}
 		}
 		else if (method == "authorized")
 		{
-			result = m_scope.get_credentials()["username"].is_string();
+			result = scope.get_credentials()["username"].is_string();
 		}
 		else if (method == "username")
 		{
-			result = m_scope.get_credentials()["username"];
+			result = scope.get_credentials()["username"];
 		}
-		else
-			throw runtime_error("Undefined method " + method + " for utility object " + className);	
+
+		return result;
 	}
-	else
-		throw runtime_error("Undefined class for utility object call: " + className);
-	
-	return result;
-}
+} s_security_instance;
 
 // --------------------------------------------------------------------
 // interpreter calls

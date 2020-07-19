@@ -82,6 +82,57 @@ bool evaluate_el_assert(const scope& scope, const std::string& text);
 
 // --------------------------------------------------------------------
 
+class expression_utility_object_base
+{
+  public:
+
+	virtual ~expression_utility_object_base() = default;
+
+	static object evaluate(const scope& scope,
+		const std::string& className, const std::string& methodName,
+		const std::vector<object>& parameters)
+	{
+		for (auto inst = s_head; inst != nullptr; inst = inst->m_next)
+		{
+			if (className == inst->m_name)
+				return inst->m_obj->evaluate(scope, methodName, parameters);
+		}
+
+		return {};
+	}
+
+  protected:
+
+	virtual object evaluate(const scope& scope, const std::string& methodName,
+		const std::vector<object>& parameters) const = 0;
+
+	struct instance
+	{
+		expression_utility_object_base*	m_obj = nullptr;
+		const char*						m_name;
+		instance*						m_next = nullptr;
+	};
+
+	static instance* s_head;
+};
+
+template<typename OBJ>
+class expression_utility_object : public expression_utility_object_base
+{
+  public:
+	using implementation_type = OBJ;
+
+  protected:
+
+	expression_utility_object()
+	{
+		static instance s_next{ this, implementation_type::name(), s_head };
+		s_head = &s_next;
+	}
+};
+
+// --------------------------------------------------------------------
+
 /// \brief The class that stores variables for the current scope
 ///
 /// When processing tags and in expression language constructs we use
