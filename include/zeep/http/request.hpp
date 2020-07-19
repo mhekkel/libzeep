@@ -182,9 +182,11 @@ class request
 
 	/// \brief Return the info for a file parameter with name \a name
 	///
-	/// for now we only support a single file per parameter
-	/// TODO: implement multi file upload support
 	file_param get_file_parameter(const char* name) const;
+
+	/// \brief Return the info for all file parameters with name \a name
+	///
+	std::vector<file_param> get_file_parameters(const char* name) const;
 
 	/// \brief Return whether the named parameter is present in the request
 	bool has_parameter(const char* name) const

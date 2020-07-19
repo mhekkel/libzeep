@@ -433,119 +433,161 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	return parameters;
 }
 
-file_param request::get_file_parameter(const char* name) const
+struct file_param_parser
 {
-	std::string contentType = get_header("Content-Type");
-	file_param result;
-	bool found = false;
+	file_param_parser(const request& req, const std::string& payload, const char* name);
+
+	file_param next();
+
+	const request& m_req;
+	const std::string m_name;
+	const std::string& m_payload;
+	std::string m_boundary;
+	static const std::regex k_rx_disp, k_rx_cont;
+	enum { START, HEADER, CONTENT, SKIP } m_state = SKIP;
+	std::string::size_type m_i = 0;
+};
+
+const std::regex file_param_parser::k_rx_disp(R"x(content-disposition:\s*form-data(;.+))x", std::regex::icase);
+const std::regex file_param_parser::k_rx_cont(R"x(content-type:\s*(\S+/[^;]+)(;.*)?)x", std::regex::icase);
+
+file_param_parser::file_param_parser(const request& req, const std::string& payload, const char* name)
+	: m_req(req), m_name(name), m_payload(payload)
+{
+	std::string contentType = ba::to_lower_copy(m_req.get_header("Content-Type"));
 
 	if (ba::starts_with(contentType, "multipart/form-data"))
 	{
 		std::string::size_type b = contentType.find("boundary=");
 		if (b != std::string::npos)
+			m_boundary = contentType.substr(b + strlen("boundary="));
+	}
+}
+
+file_param file_param_parser::next()
+{
+	if (m_boundary.empty())
+		return {};
+
+	std::string contentName;
+	std::smatch m;
+	
+	std::string::size_type r = 0, l = 0;
+	file_param result = {};
+	bool found = false;
+
+	for (; m_i <= m_payload.length(); ++m_i)
+	{
+		if (m_i < m_payload.length() and m_payload[m_i] != '\r' and m_payload[m_i] != '\n')
+			continue;
+
+		// we have found a 'line' at [l, i)
+		if (m_payload.compare(l, 2, "--") == 0 and
+			m_payload.compare(l + 2, m_boundary.length(), m_boundary) == 0)
 		{
-			std::string boundary = contentType.substr(b + strlen("boundary="));
-			
-			enum { START, HEADER, CONTENT, SKIP } state = SKIP;
-			
-			std::string contentName;
-			std::regex rx_disp(R"x(content-disposition:\s*form-data(;.+))x", std::regex::icase);
-			std::regex rx_cont(R"x(content-type:\s*(\S+/[^;]+)(;.*)?)x", std::regex::icase);
-			std::smatch m;
-			
-			std::string::size_type i = 0, r = 0, l = 0;
-			
-			for (i = 0; i <= m_payload.length(); ++i)
+			// if we're in the content state or if this is the last line
+			if (m_state == CONTENT or m_payload.compare(l + 2 + m_boundary.length(), 2, "--") == 0)
 			{
-				if (i < m_payload.length() and m_payload[i] != '\r' and m_payload[i] != '\n')
-					continue;
-
-				// we have found a 'line' at [l, i)
-				if (m_payload.compare(l, 2, "--") == 0 and
-					m_payload.compare(l + 2, boundary.length(), boundary) == 0)
+				if (r > 0)
 				{
-					// if we're in the content state or if this is the last line
-					if (state == CONTENT or m_payload.compare(l + 2 + boundary.length(), 2, "--") == 0)
-					{
-						if (r > 0)
-						{
-							auto n = l - r;
-							if (n >= 1 and m_payload[r + n - 1] == '\n')
-								--n;
-							if (n >= 1 and m_payload[r + n - 1] == '\r')
-								--n;
+					auto n = l - r;
+					if (n >= 1 and m_payload[r + n - 1] == '\n')
+						--n;
+					if (n >= 1 and m_payload[r + n - 1] == '\r')
+						--n;
 
-							result.data = m_payload.data() + r;
-							result.length = n;
-						}
-							
-						break;
-					}
-					
-					// Not the last, so it must be a separator and we're now in the Header part
-					state = HEADER;
-				}
-				else if (state == HEADER)
-				{
-					if (l == i)	// empty line
-					{
-						if (contentName == name)
-						{
-							state = CONTENT;
-							found = true;
-
-							r = i + 1;
-							if (m_payload[i] == '\r' and m_payload[i + 1] == '\n')
-								r = i + 2;
-						}
-						else
-						{
-							result = {};
-							state = SKIP;
-						}
-					}
-					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx_disp))
-					{
-						auto p = m[1].str();
-						std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
-
-						auto b = p.begin();
-						auto e = p.end();
-						std::match_results<std::string::iterator> m;
-						while (b < e and std::regex_search(b, e, m, re))
-						{
-							auto key = m[1].str();
-							auto value = m[2].str();
-							if (value.length() > 1 and ((value.front() == '"' and value.back() == '"') or (value.front() == '\'' and value.back() == '\'')))
-								value = value.substr(1, value.length() - 2);
-
-							if (key == "name")
-								contentName = value;
-							else if (key == "filename")
-								result.filename = value;
-
-							b = m[0].second;
-						}
-					}
-					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx_cont))
-					{
-						result.mimetype = m[1].str();
-						if (ba::starts_with(result.mimetype, "multipart/"))
-							throw std::runtime_error("multipart file uploads are not supported");
-					}
+					result.data = m_payload.data() + r;
+					result.length = n;
 				}
 				
-				if (m_payload[i] == '\r' and m_payload[i + 1] == '\n')
-					++i;
+				m_state = HEADER;
+				break;
+			}
+			
+			// Not the last, so it must be a separator and we're now in the Header part
+			m_state = HEADER;
+		}
+		else if (m_state == HEADER)
+		{
+			if (l == m_i)	// empty line
+			{
+				if (contentName == m_name)
+				{
+					m_state = CONTENT;
+					found = true;
 
-				l = i + 1;
+					r = m_i + 1;
+					if (m_payload[m_i] == '\r' and m_payload[m_i + 1] == '\n')
+						r = m_i + 2;
+				}
+				else
+				{
+					result = {};
+					m_state = SKIP;
+				}
+			}
+			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_disp))
+			{
+				auto p = m[1].str();
+				std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
+
+				auto b = p.begin();
+				auto e = p.end();
+				std::match_results<std::string::iterator> m;
+				while (b < e and std::regex_search(b, e, m, re))
+				{
+					auto key = m[1].str();
+					auto value = m[2].str();
+					if (value.length() > 1 and ((value.front() == '"' and value.back() == '"') or (value.front() == '\'' and value.back() == '\'')))
+						value = value.substr(1, value.length() - 2);
+
+					if (key == "name")
+						contentName = value;
+					else if (key == "filename")
+						result.filename = value;
+
+					b = m[0].second;
+				}
+			}
+			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_cont))
+			{
+				result.mimetype = m[1].str();
+				if (ba::starts_with(result.mimetype, "multipart/"))
+					throw std::runtime_error("multipart file uploads are not supported");
 			}
 		}
+		
+		if (m_payload[m_i] == '\r' and m_payload[m_i + 1] == '\n')
+			++m_i;
+
+		l = m_i + 1;
 	}
 	
 	if (not found)
 		result = {};
 
+	return result;	
+}
+
+file_param request::get_file_parameter(const char* name) const
+{
+	file_param_parser fpp(*this, m_payload, name);
+	return fpp.next();
+}
+
+std::vector<file_param> request::get_file_parameters(const char* name) const
+{
+	file_param_parser fpp(*this, m_payload, name);
+
+	std::vector<file_param> result;
+	for (;;)
+	{
+		auto fp = fpp.next();
+		if (not fp)
+			break;
+		result.push_back(fp);
+	}
+	
 	return result;
 }
 
