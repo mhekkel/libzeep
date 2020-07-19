@@ -43,6 +43,25 @@ struct file_param
 	}
 };
 
+// Some type traits to detect arrays of file_params.
+// Should eventually be made more generic for all request parameters
+
+template<typename T, typename = void>
+struct is_file_param_array_type : std::false_type {};
+
+template<typename T>
+struct is_file_param_array_type<T,
+	std::enable_if_t<
+		std::experimental::is_detected_v<value_type_t, T> and
+		std::experimental::is_detected_v<iterator_t, T> and
+		not std::experimental::is_detected_v<std_string_npos_t, T>>>
+{
+	static constexpr bool value = std::is_same_v<typename T::value_type,file_param>;
+};
+
+template<typename T>
+inline constexpr bool is_file_param_array_type_v = is_file_param_array_type<T>::value;
+
 // --------------------------------------------------------------------
 
 /// request contains the parsed original HTTP request as received

@@ -454,7 +454,7 @@ const std::regex file_param_parser::k_rx_cont(R"x(content-type:\s*(\S+/[^;]+)(;.
 file_param_parser::file_param_parser(const request& req, const std::string& payload, const char* name)
 	: m_req(req), m_name(name), m_payload(payload)
 {
-	std::string contentType = ba::to_lower_copy(m_req.get_header("Content-Type"));
+	std::string contentType = m_req.get_header("Content-Type");
 
 	if (ba::starts_with(contentType, "multipart/form-data"))
 	{
