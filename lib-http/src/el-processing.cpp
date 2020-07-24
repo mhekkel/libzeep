@@ -1256,6 +1256,10 @@ object interpreter::parse_template_primary_expr()
 		case token_type::object:
 			result = m_scope.lookup(m_token_string);
 			match(token_type::object);
+
+			if (result.is_null())
+				break;
+
 			for (;;)
 			{
 				if (m_lookahead == token_type::dot)
@@ -1280,11 +1284,9 @@ object interpreter::parse_template_primary_expr()
 					object index = parse_template_expr();
 					match(token_type::rbracket);
 
-					if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
-						result = object();
-					else if (result.type() == object::value_type::array)
+					if (result.type() == object::value_type::array and not (result.empty() or index.empty()))
 						result = result[index.as<int>()];
-					else if (result.type() == object::value_type::object)
+					else if (result.type() == object::value_type::object and not (result.empty() or index.empty()))
 						result = result[index.as<string>()];
 					else
 						result = object::value_type::null;
