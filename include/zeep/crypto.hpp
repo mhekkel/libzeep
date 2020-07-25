@@ -100,6 +100,9 @@ std::string md5(std::string_view data);
 /// \brief return the SHA1 hash of \a data
 std::string sha1(std::string_view data);
 
+/// \brief return the SHA1 hash of \a data
+std::string sha1(std::streambuf& data);
+
 /// \brief return the SHA256 hash of \a data
 std::string sha256(std::string_view data);
 

@@ -903,6 +903,7 @@ class hash_base : public I
 	}
 
 	void update(std::string_view data);
+	void update(const uint8_t* data, size_t n);
 	
 	using I::transform;
 	std::string final();
@@ -913,13 +914,17 @@ class hash_base : public I
 	int64_t		m_bit_length;
 };
 
+
 template<typename I>
 void hash_base<I>::update(std::string_view data)
 {
-	auto length = data.length();
+	update(reinterpret_cast<const uint8_t*>(data.data()), data.size());
+}
+
+template<typename I>
+void hash_base<I>::update(const uint8_t* p, size_t length)
+{
 	m_bit_length += length * 8;
-	
-	const uint8_t* p = reinterpret_cast<const uint8_t*>(data.data());
 	
 	if (m_data_length > 0)
 	{
@@ -988,6 +993,21 @@ std::string sha1(std::string_view data)
 	SHA1 h;
 	h.init();
 	h.update(data);
+	return h.final();
+}
+
+std::string sha1(std::streambuf& data)
+{
+	SHA1 h;
+	h.init();
+
+	while (data.in_avail() > 0)
+	{
+		uint8_t buffer[256];
+		auto n = data.sgetn(reinterpret_cast<char*>(buffer), sizeof(buffer));
+		h.update(buffer, n);
+	}
+
 	return h.final();
 }
 
