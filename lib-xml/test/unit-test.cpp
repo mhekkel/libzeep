@@ -408,6 +408,42 @@ BOOST_AUTO_TEST_CASE(xml_xpath)
 	BOOST_TEST(r.front()->get_qname() == "a");
 }
 
+BOOST_AUTO_TEST_CASE(xml_xpath_2)
+{
+	using namespace zx::literals;
+	auto doc = R"(
+<test>
+	<b/>
+	<b>
+		<c>
+			<a>x</a>
+		</c>
+	</b>
+	<b>
+		<c>
+			<a>
+				<![CDATA[x]]>
+			</a>
+		</c>
+	</b>
+	<b>
+		<c z='z'>
+			<a>y</a>
+		</c>
+	</b>
+</test>
+)"_xml;
+
+	auto r = doc.find("//b[c/a[contains(text(),'x')]]");
+	BOOST_TEST(r.size() == 2);
+	BOOST_TEST(r.front()->get_qname() == "b");
+
+	auto r2 = doc.find("//b/c[@z='z']/a[text()='y']");
+	BOOST_TEST(r2.size() == 1);
+	BOOST_TEST(r2.front()->get_qname() == "a");
+
+}
+
 BOOST_AUTO_TEST_CASE(xml_namespaces)
 {
 	using namespace zx::literals;

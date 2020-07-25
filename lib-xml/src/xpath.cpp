@@ -336,8 +336,8 @@ const std::string object::as<std::string>() const
 		case object_type::string:	result = m_string; break;
 		case object_type::boolean:	result = (m_boolean ? "true" : "false"); break;
 		case object_type::node_set:
-			if (not m_node_set.empty())
-				result = m_node_set.front()->str();
+			for (auto& n: m_node_set)
+				result += n->str();
 			break;
 		default:			break;
 	}
@@ -1337,11 +1337,15 @@ object core_function_expression<CoreFunction::StartsWith>::evaluate(expression_c
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 	
-	if (v1.type() != object_type::string or v2.type() != object_type::string)
+	try
+	{
+		return v2.as<std::string>().empty() or
+			ba::starts_with(v1.as<std::string>(), v2.as<std::string>());
+	}
+	catch(const std::exception& e)
+	{
 		throw exception("expected two strings as argument for starts-with");
-	
-	return v2.as<std::string>().empty() or
-		ba::starts_with(v1.as<std::string>(), v2.as<std::string>());
+	}
 }
 
 template<>
@@ -1350,11 +1354,17 @@ object core_function_expression<CoreFunction::Contains>::evaluate(expression_con
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 	
-	if (v1.type() != object_type::string or v2.type() != object_type::string)
+	try
+	{
+		auto s1 = v1.as<std::string>();
+		auto s2 = v2.as<std::string>();
+
+		return s1.find(s2) != std::string::npos;
+	}
+	catch (...)
+	{
 		throw exception("expected two strings as argument for contains");
-	
-	return v2.as<std::string>().empty() or
-		v1.as<std::string>().find(v2.as<std::string>()) != std::string::npos;
+	}
 }
 
 template<>
@@ -1363,18 +1373,23 @@ object core_function_expression<CoreFunction::SubstringBefore>::evaluate(express
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 	
-	if (v1.type() != object_type::string or v2.type() != object_type::string)
-		throw exception("expected two strings as argument for substring-before");
-	
-	std::string result;
-	if (not v2.as<std::string>().empty())
+
+	try
 	{
-		std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
-		if (p != std::string::npos)
-			result = v1.as<std::string>().substr(0, p);
+		std::string result;
+		if (not v2.as<std::string>().empty())
+		{
+			std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
+			if (p != std::string::npos)
+				result = v1.as<std::string>().substr(0, p);
+		}
+		
+		return result;
 	}
-	
-	return result;
+	catch (...)
+	{
+		throw exception("expected two strings as argument for substring-before");
+	}
 }
 
 template<>
@@ -1383,20 +1398,25 @@ object core_function_expression<CoreFunction::SubstringAfter>::evaluate(expressi
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 	
-	if (v1.type() != object_type::string or v2.type() != object_type::string)
-		throw exception("expected two strings as argument for substring-after");
-	
-	std::string result;
-	if (v2.as<std::string>().empty())
-		result = v1.as<std::string>();
-	else
+
+	try
 	{
-		std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
-		if (p != std::string::npos and p + v2.as<std::string>().length() < v1.as<std::string>().length())
-			result = v1.as<std::string>().substr(p + v2.as<std::string>().length());
+		std::string result;
+		if (v2.as<std::string>().empty())
+			result = v1.as<std::string>();
+		else
+		{
+			std::string::size_type p = v1.as<std::string>().find(v2.as<std::string>());
+			if (p != std::string::npos and p + v2.as<std::string>().length() < v1.as<std::string>().length())
+				result = v1.as<std::string>().substr(p + v2.as<std::string>().length());
+		}
+
+		return result;
 	}
-	
-	return result;
+	catch (...)
+	{
+		throw exception("expected two strings as argument for substring-after");
+	}
 }
 
 template<>
@@ -1408,10 +1428,17 @@ object core_function_expression<CoreFunction::Substring>::evaluate(expression_co
 	object v2 = (*a)->evaluate(context);	++a;
 	object v3 = (*a)->evaluate(context);
 	
-	if (v1.type() != object_type::string or v2.type() != object_type::number or v3.type() != object_type::number)
+	if (v2.type() != object_type::number or v3.type() != object_type::number)
 		throw exception("expected one string and two numbers as argument for substring");
 	
-	return v1.as<std::string>().substr(v2.as<int>() - 1, v3.as<int>());
+	try
+	{
+		return v1.as<std::string>().substr(v2.as<int>() - 1, v3.as<int>());
+	}
+	catch (...)
+	{
+		throw exception("expected one string and two numbers as argument for substring");
+	}
 }
 
 template<>
@@ -1460,24 +1487,28 @@ object core_function_expression<CoreFunction::Translate>::evaluate(expression_co
 	object v2 = (*a)->evaluate(context);	++a;
 	object v3 = (*a)->evaluate(context);
 	
-	if (v1.type() != object_type::string or v2.type() != object_type::string or v3.type() != object_type::string)
-		throw exception("expected three strings as arguments for translate");
-	
-	const std::string& f = v2.as<const std::string&>();
-	const std::string& r = v3.as<const std::string&>();
-	
-	std::string result;
-	result.reserve(v1.as<std::string>().length());
-	for (char c: v1.as<std::string>())
+	try
 	{
-		std::string::size_type fi = f.find(c);
-		if (fi == std::string::npos)
-			result += c;
-		else if (fi < r.length())
-			result += r[fi];
-	}
+		const std::string& f = v2.as<const std::string&>();
+		const std::string& r = v3.as<const std::string&>();
+		
+		std::string result;
+		result.reserve(v1.as<std::string>().length());
+		for (char c: v1.as<std::string>())
+		{
+			std::string::size_type fi = f.find(c);
+			if (fi == std::string::npos)
+				result += c;
+			else if (fi < r.length())
+				result += r[fi];
+		}
 
-	return result;
+		return result;
+	}
+	catch(const std::exception& e)
+	{
+		throw exception("expected three strings as arguments for translate");
+	}
 }
 
 template<>
