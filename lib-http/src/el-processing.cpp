@@ -1257,22 +1257,23 @@ object interpreter::parse_template_primary_expr()
 			result = m_scope.lookup(m_token_string);
 			match(token_type::object);
 
-			if (result.is_null())
-				break;
-
 			for (;;)
 			{
 				if (m_lookahead == token_type::dot)
 				{
 					match(m_lookahead);
-					if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
-						result = object((uint32_t)result.size());
-					else if (m_token_string == "empty")
-						result = result.empty();
-					else if (result.type() == object::value_type::object)
-						result = const_cast<const object &>(result)[m_token_string];
-					else
-						result = object::value_type::null;
+
+					if (not result.is_null())
+					{
+						if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
+							result = object((uint32_t)result.size());
+						else if (m_token_string == "empty")
+							result = result.empty();
+						else if (result.type() == object::value_type::object)
+							result = const_cast<const object &>(result)[m_token_string];
+						else
+							result = object::value_type::null;
+					}
 					match(token_type::object);
 					continue;
 				}
@@ -1284,15 +1285,17 @@ object interpreter::parse_template_primary_expr()
 					object index = parse_template_expr();
 					match(token_type::rbracket);
 
-					if (result.type() == object::value_type::array and not (result.empty() or index.empty()))
-						result = result[index.as<int>()];
-					else if (result.type() == object::value_type::object and not (result.empty() or index.empty()))
-						result = result[index.as<string>()];
-					else
-						result = object::value_type::null;
+					if (not result.is_null())
+					{
+						if (result.type() == object::value_type::array and not (result.empty() or index.empty()))
+							result = result[index.as<int>()];
+						else if (result.type() == object::value_type::object and not (result.empty() or index.empty()))
+							result = result[index.as<string>()];
+						else
+							result = object::value_type::null;
+					}
 					continue;
 				}
-
 				break;
 			}
 			break;
