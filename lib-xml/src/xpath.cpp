@@ -1398,7 +1398,6 @@ object core_function_expression<CoreFunction::SubstringAfter>::evaluate(expressi
 	object v1 = m_args.front()->evaluate(context);
 	object v2 = m_args.back()->evaluate(context);
 	
-
 	try
 	{
 		std::string result;

@@ -207,7 +207,7 @@ element::reference element::operator[](size_t index)
 	else if (not is_array())
 		throw std::runtime_error("Type should have been array to use operator[]");
 	
-	if (index < m_data.m_array->size())
+	if (index + 1 > m_data.m_array->size())
 		m_data.m_array->resize(index + 1);
 	
 	return m_data.m_array->operator[](index);

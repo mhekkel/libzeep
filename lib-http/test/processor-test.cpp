@@ -909,3 +909,31 @@ BOOST_AUTO_TEST_CASE(test_33)
 
 	process_and_compare(doc, doc_test);
 }
+
+BOOST_AUTO_TEST_CASE(test_34)
+{
+	auto doc = R"xml(<?xml version="1.0"?>
+<data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+<span z:text="${a[0].s}"/>
+<span z:text="${a[1].s}"/>
+<span z:text="${b[0].s}"/>
+</data>
+	)xml"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+<span>S</span>
+<span>T</span>
+<span/>
+</data>
+	)"_xml;
+
+	zeep::http::scope scope;
+
+	json j;
+	j.push_back(json{ { "s", "S" } });
+	j.push_back(json{ { "s", "T" } });
+	scope.put("a", j);
+
+	process_and_compare(doc, doc_test, scope);
+}
