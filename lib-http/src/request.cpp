@@ -22,10 +22,10 @@ namespace
 const std::regex kURIRx(R"((?:(https?:)(?://([^/]+)))?(?:/?([^?]*))(?:\?(.+))?)", std::regex_constants::icase);
 }
 
-request::request(const std::string& method, std::string&& uri, std::tuple<int,int> version,
+request::request(const std::string& method, const std::string& uri, std::tuple<int,int> version,
 		std::vector<header>&& headers, std::string&& payload)
 	: m_method(method)
-	, m_uri(std::move(uri))
+	, m_uri(uri)
 	, m_headers(std::move(headers))
 	, m_payload(std::move(payload))
 {

@@ -77,7 +77,7 @@ class request
 	using param = header;	// alias name
 	using cookie_directive = header;	
 
-	request(const std::string& method, std::string&& uri, std::tuple<int,int> version = { 1, 0 },
+	request(const std::string& method, const std::string& uri, std::tuple<int,int> version = { 1, 0 },
 		std::vector<header>&& headers = {}, std::string&& payload = {});
 
 	request(const request& req);

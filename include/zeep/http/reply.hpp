@@ -128,7 +128,7 @@ class reply
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data. 
-	std::string get_content() const
+	const std::string& get_content() const
 	{
 		return m_content;
 	}
