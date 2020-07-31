@@ -83,7 +83,7 @@ class reply_parser : public parser
   private:
 	boost::tribool parse_initial_line(char ch);
 
-	int m_status;
+	int m_status = 0;
 	std::string m_status_line;
 };
 
