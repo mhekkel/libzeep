@@ -70,6 +70,16 @@ class rest_controller : public controller
 				return m_req.get_parameter(name);
 		}
 
+		std::tuple<std::string,bool> get_parameter_ex(const char* name) const
+		{
+			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
+				[name](auto& pp) { return pp.name == name; });
+			if (p != m_path_parameters.end())
+				return { p->value, true };
+			else
+				return m_req.get_parameter_ex(name);
+		}
+
 		std::vector<std::string> get_parameters(const char* name) const
 		{
 			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
@@ -244,14 +254,11 @@ class rest_controller : public controller
 		ArgsTuple collect_arguments(const parameter_pack& params, std::index_sequence<I...>)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
-			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(params, m_names[I])...);
+			return std::make_tuple(get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
-		template<typename T, std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
-		bool get_parameter(const parameter_pack& params, const char* name)
+		bool get_parameter(const parameter_pack& params, const char* name, bool result)
 		{
-			bool result = false;
-
 			try
 			{
 				auto v = params.get_parameter(name);
@@ -266,11 +273,8 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<std::is_same_v<T,file_param>, int> = 0>
-		file_param get_parameter(const parameter_pack& params, const char* name)
+		file_param get_parameter(const parameter_pack& params, const char* name, file_param result)
 		{
-			file_param result;
-
 			try
 			{
 				result = params.get_file_parameter(name);
@@ -284,12 +288,8 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<is_file_param_array_type_v<T>, int> = 0>
-		auto get_parameter(const parameter_pack& params, const char* name)
+		std::vector<file_param> get_parameter(const parameter_pack& params, const char* name, std::vector<file_param> result)
 		{
-			using container_type = T;
-			container_type result;
-
 			try
 			{
 				result = params.get_file_parameters(name);
@@ -303,11 +303,8 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<std::is_same_v<T,json::element>, int> = 0>
-		json::element get_parameter(const parameter_pack& params, const char* name)
+		json::element get_parameter(const parameter_pack& params, const char* name, json::element result)
 		{
-			json::element result;
-
 			try
 			{
 				json::parse_json(params.get_parameter(name), result);
@@ -321,42 +318,70 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<
-			not (zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or
-				 std::is_enum_v<T> or
-				 std::is_same_v<T,bool> or
-				 is_file_param_array_type_v<T> or
-				 std::is_same_v<T,file_param> or
-				 std::is_same_v<T,json::element>), int> = 0>
-		T get_parameter(const parameter_pack& params, const char* name)
+		template<typename T>
+		std::optional<T> get_parameter(const parameter_pack& params, const char* name, std::optional<T> result)
 		{
 			try
 			{
-				T v = {};
+				const auto& [s, available] = params.get_parameter_ex(name);
+				if (available)
+					result = boost::lexical_cast<T>(s);
+			}
+			catch (const std::exception& e)
+			{
+				using namespace std::literals::string_literals;
+				throw std::runtime_error("Invalid value passed for parameter "s + name);
+			}
+
+			return result;
+		}
+
+		std::optional<std::string> get_parameter(const parameter_pack& params, const char* name, std::optional<std::string> result)
+		{
+			try
+			{
+				const auto& [s, available] = params.get_parameter_ex(name);
+				if (available)
+					result = s;
+			}
+			catch (const std::exception& e)
+			{
+				using namespace std::literals::string_literals;
+				throw std::runtime_error("Invalid value passed for parameter "s + name);
+			}
+
+			return result;
+		}
+
+		template<typename T>
+		T get_parameter(const parameter_pack& params, const char* name, T result)
+		{
+			try
+			{
 				auto p = params.get_parameter(name);
 				if (not p.empty())
-					v = boost::lexical_cast<T>(p);
-				return v;
+					result = boost::lexical_cast<T>(p);
 			}
 			catch(const std::exception& e)
 			{
 				using namespace std::literals::string_literals;
 				throw std::runtime_error("Invalid value passed for parameter "s + name);
 			}
+
+			return result;
 		}
 
 		template<typename T, std::enable_if_t<zeep::json::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
-		T get_parameter(const parameter_pack& params, const char* name)
+		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			json::element v = params.get_parameter(name);
 
-			T tv;
-			from_element(v, tv);
-			return tv;
+			from_element(v, result);
+			return result;
 		}
 
 		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>>, int> = 0>
-		T get_parameter(const parameter_pack& params, const char* name)
+		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			json::element v;
 
@@ -365,9 +390,7 @@ class rest_controller : public controller
 			else
 				zeep::json::parse_json(params.get_parameter(name), v);
 
-			T tv;
-			from_element(v, tv);
-			return tv;
+			from_element(v, result);
 		}
 
 		Callback m_callback;

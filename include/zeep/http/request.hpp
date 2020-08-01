@@ -249,9 +249,10 @@ class request
 	/// \brief set a header
 	void set_header(const std::string& name, const std::string& value);
 
-  private:
-
+	/// \brief Return value and flag indicating the existence of a parameter named \a name
 	std::tuple<std::string,bool> get_parameter_ex(const char* name) const;
+
+  private:
 
 	std::string m_local_address;					///< Local endpoint address
 	uint16_t m_local_port = 80;						///< Local endpoint port
