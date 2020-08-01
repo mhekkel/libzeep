@@ -9,18 +9,6 @@
 using namespace std;
 namespace zx = zeep::xml;
 
-BOOST_AUTO_TEST_CASE(generic_1)
-{
-	using T = std::optional<int>;
-
-	static_assert(zeep::is_optional_type_v<T>, "x");
-	static_assert(zeep::is_optional_non_string_type_v<T>, "x");
-
-	using V = std::optional<std::string>;
-	static_assert(zeep::is_optional_type_v<V>, "x");
-	static_assert(zeep::is_optional_string_type_v<V>, "x");
-}
-
 BOOST_AUTO_TEST_CASE(xml_1)
 {
 	zx::element n("data", { { "attr1", "value-1" }, { "attr2", "value-2" } });
