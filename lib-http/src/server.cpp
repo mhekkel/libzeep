@@ -235,8 +235,12 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 		auto eptr = std::current_exception();
 		for (auto eh: m_error_handlers)
 		{
-			if (eh->create_error_reply(req, eptr, rep))
-				break;
+			try
+			{
+				if (eh->create_error_reply(req, eptr, rep))
+					break;
+			}
+			catch (...) { }
 		}
 	}
 

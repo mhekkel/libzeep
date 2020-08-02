@@ -196,7 +196,7 @@ $(1)-test: test/$(1)-test
 
 endef
 
-TESTS = crypto http processor webapp soap
+TESTS = crypto http processor webapp soap rest
 
 ifneq ($(USE_RSRC),0)
 TESTS += rsrc_webapp
