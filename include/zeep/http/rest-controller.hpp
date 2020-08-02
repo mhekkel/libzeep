@@ -273,6 +273,21 @@ class rest_controller : public controller
 			return result;
 		}
 
+		std::string get_parameter(const parameter_pack& params, const char* name, std::string result)
+		{
+			try
+			{
+				result = params.get_parameter(name);
+			}
+			catch (const std::exception& e)
+			{
+				using namespace std::literals::string_literals;
+				throw std::runtime_error("Invalid value passed for parameter "s + name);
+			}
+
+			return result;
+		}
+
 		file_param get_parameter(const parameter_pack& params, const char* name, file_param result)
 		{
 			try
@@ -353,7 +368,7 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T>
+		template<typename T, std::enable_if_t<not (zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or std::is_enum_v<T>), int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			try
@@ -391,6 +406,8 @@ class rest_controller : public controller
 				zeep::json::parse_json(params.get_parameter(name), v);
 
 			from_element(v, result);
+
+			return result;
 		}
 
 		Callback m_callback;
