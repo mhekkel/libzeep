@@ -157,7 +157,7 @@ boost::tribool parser::parse_header_lines(char ch)
 						}
 						break;
 					}
-					else if (iequals(h->name, "Connection") and iequals(h->value, "Close"))
+					else if (iequals(h->name, "Connection") and iequals(h->value, "Close") and (m_method == "POST" or m_method == "PUT"))
 					{
 						m_parser = &parser::parse_content;
 						m_parsing_content = true;
