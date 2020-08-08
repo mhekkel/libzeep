@@ -62,14 +62,14 @@ struct serializer
 	{
 		static void serialize(const T& data, element_type& e)
 		{
-			using serializer_impl = serializer_impl<typename T::value_type>;
+			using value_serializer_impl = serializer_impl<typename T::value_type>;
 
 			e = element_type::value_type::array;
 
 			for (auto& i: data)
 			{
 				element_type ei;
-				serializer_impl::serialize(i, ei);
+				value_serializer_impl::serialize(i, ei);
 				e.push_back(ei);
 			}
 		}
@@ -80,14 +80,14 @@ struct serializer
 	{
 		static void serialize(const T& data, element_type& e)
 		{
-			using serializer_impl = serializer_impl<typename T::mapped_type>;
+			using value_serializer_impl = serializer_impl<typename T::mapped_type>;
 
 			e = element_type::value_type::object;
 
 			for (auto& i: data)
 			{
 				element_type ei;
-				serializer_impl::serialize(i.second, ei);
+				value_serializer_impl::serialize(i.second, ei);
 				e.emplace(i.first, ei);
 			}
 		}
@@ -98,10 +98,10 @@ struct serializer
 	{
 		static void serialize(const T& data, element_type& e)
 		{
-			using serializer_impl = serializer_impl<typename T::value_type>;
+			using value_serializer_impl = serializer_impl<typename T::value_type>;
 
 			if (data)
-				serializer_impl::serialize(*data, e);
+				value_serializer_impl::serialize(*data, e);
 			else
 				e = {};
 		}
@@ -119,18 +119,18 @@ struct serializer
 	template<typename T>
 	void serialize(const char* name, const T& data)
 	{
-		using serializer_impl = serializer_impl<T>;
+		using value_serializer_impl = serializer_impl<T>;
 
 		element_type e;
-		serializer_impl::serialize(data, e);
+		value_serializer_impl::serialize(data, e);
 		m_elem.emplace(std::make_pair(name, e));
 	}
 
 	template<typename T>
 	static void serialize(E& e, const T& v)
 	{
-		using serializer_impl = serializer_impl<T>;
-		serializer_impl::serialize(v, e);
+		using value_serializer_impl = serializer_impl<T>;
+		value_serializer_impl::serialize(v, e);
 	}
 
 	element_type	m_elem;
@@ -151,7 +151,7 @@ struct deserializer
 
 		static void deserialize(T& data, const element_type& e)
 		{
-			data = value_serializer::from_string(e);
+			data = value_serializer::from_string(e.template as<std::string>());
 		}
 	};
 
@@ -182,7 +182,7 @@ struct deserializer
 	{
 		static void deserialize(T& data, const element_type& e)
 		{
-			using deserializer_impl = deserializer_impl<typename T::value_type>;
+			using value_deserializer_impl = deserializer_impl<typename T::value_type>;
 
 			data.clear();
 
@@ -190,7 +190,7 @@ struct deserializer
 			{
 				typename T::value_type v;
 				
-				deserializer_impl::deserialize(v, i);
+				value_deserializer_impl::deserialize(v, i);
 
 				data.push_back(v);
 			}
@@ -202,7 +202,7 @@ struct deserializer
 	{
 		static void deserialize(T& data, const element_type& e)
 		{
-			using deserializer_impl = deserializer_impl<typename T::mapped_type>;
+			using value_deserializer_impl = deserializer_impl<typename T::mapped_type>;
 
 			data.clear();
 
@@ -210,7 +210,7 @@ struct deserializer
 			{
 				typename T::mapped_type v;
 				
-				deserializer_impl::deserialize(v, i.value());
+				value_deserializer_impl::deserialize(v, i.value());
 
 				data[i.key()] = v;
 			}
@@ -222,10 +222,10 @@ struct deserializer
 	{
 		static void deserialize(T& data, element_type& e)
 		{
-			using deserializer_impl = deserializer_impl<typename T::value_type>;
+			using value_deserializer_impl = deserializer_impl<typename T::value_type>;
 
 			typename T::value_type v;
-			deserializer_impl::deserialize(v, e);
+			value_deserializer_impl::deserialize(v, e);
 			data.emplace(std::move(v));
 		}
 	};
@@ -245,21 +245,21 @@ struct deserializer
 		if (not m_elem.is_object() or m_elem.empty())
 			return;
 
-		using deserializer_impl = deserializer_impl<T>;
+		using value_deserializer_impl = deserializer_impl<T>;
 
 		auto value = m_elem[name];
 
 		if (value.is_null())
 			return;
 
-		deserializer_impl::deserialize(data, value);
+		value_deserializer_impl::deserialize(data, value);
 	}
 
 	template<typename T>
 	static void deserialize(const E& e, T& v)
 	{
-		using deserializer_impl = deserializer_impl<T>;
-		deserializer_impl::deserialize(v, e);
+		using value_deserializer_impl = deserializer_impl<T>;
+		value_deserializer_impl::deserialize(v, e);
 	}
 
 	const element_type&	m_elem;

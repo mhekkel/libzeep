@@ -276,3 +276,26 @@ BOOST_AUTO_TEST_CASE(j_12)
 	BOOST_TEST(p3.a == p3a.a);
 }
 
+struct POD3
+{
+	boost::posix_time::ptime now;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("now", now);
+	}
+};
+
+BOOST_AUTO_TEST_CASE(j_13)
+{
+	POD3 p{ boost::posix_time::second_clock::local_time() }, pa;
+
+	json e;
+	to_element(e, p);
+
+	from_element(e, pa);
+
+	BOOST_TEST((p.now == pa.now));
+}
+
