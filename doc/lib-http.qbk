@@ -664,6 +664,23 @@ And tie everything together.
 
 [endsect:rest-controller]
 
+[section:rest-controller REST Controller (CRUD)]
+
+The previous example is a rough example on how to use the __rest_controller__, it assumes you pass in the parameters using form data or query parameters. There's another approach, that is more elegant and easier for the developer: create a [@https://en.wikipedia.org/wiki/Create,_read,_update_and_delete CRUD] interface and pass the data encoded in JSON format.
+
+To make this work, we rework the previous example. The data items =Cart= and =Item= remain the same, they already have a `serialize` method. The real difference is in the JavaScript code, in the previous example all work was done by the server, the JavaScript only called separate methods to fill the items list and the server responded with the new Cart content. In this example however, management of the cart content is done by the JavaScript and the updated cart is then sent using a =PUT= to the server.
+
+The server therefore looks like this:
+
+[import ../examples/rest-sample-2.cpp]
+
+[shop_rest_controller_2]
+
+Some ceveats: this works probably only well if you have a single =JSON= (or compatible) data type as main parameter and optionally one or more path parameters. The request should also have =content-type= equal to =application/json= to work properly.
+
+
+[endsect]
+
 [section:rest-controller SOAP Controller]
 
 Creating SOAP controllers is also easy. But that will have to wait a bit.

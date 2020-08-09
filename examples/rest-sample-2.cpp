@@ -4,7 +4,7 @@
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/http/html-controller.hpp>
 
-//[ cart_items
+//[ cart_items_2
 struct Item
 {
     std::string name;
@@ -34,27 +34,29 @@ struct Cart
 };
 //]
 
-//[ shop_rest_controller
+//[ shop_rest_controller_2
 class shop_rest_controller : public zeep::http::rest_controller
 {
   public:
     shop_rest_controller()
         : zeep::http::rest_controller("/cart")
     {
-        map_post_request("", &shop_rest_controller::create_cart, "client");
-        map_get_request("{id}", &shop_rest_controller::get_cart, "id");
-        map_post_request("{id}/item", &shop_rest_controller::add_cart_item, "id", "name");
-        map_delete_request("{id}/item", &shop_rest_controller::delete_cart_item, "id", "name");
+        // CRUD example interface
+
+        map_post_request("",        &shop_rest_controller::create_cart, "cart");
+        map_get_request("{id}",     &shop_rest_controller::retrieve_cart, "id");
+        map_put_request("{id}",     &shop_rest_controller::update_cart, "id", "cart");
+        map_delete_request("{id}",  &shop_rest_controller::delete_cart, "id");
     }
 
-    int create_cart(const std::string& client)
+    int create_cart(Cart cart)
     {
-        int cartID = sNextCartID++;
-        m_carts.push_back({ cartID, client });
-        return cartID;
+        int result = cart.id = sNextCartID++;
+        m_carts.push_back(std::move(cart));
+        return result;
     }
 
-    Cart& get_cart(int cartID)
+    Cart& retrieve_cart(int cartID)
     {
         auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
         if (oi == m_carts.end())
@@ -62,31 +64,19 @@ class shop_rest_controller : public zeep::http::rest_controller
         return *oi;
     }
 
-    Cart add_cart_item(int cartID, const std::string& item)
+    void update_cart(int cartID, const Cart& cart)
     {
-        Cart& cart = get_cart(cartID);
+        auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
+        if (oi == m_carts.end())
+            throw std::invalid_argument("No such cart");
 
-        auto ii = std::find_if(cart.items.begin(), cart.items.end(), [&](auto& i) { return i.name == item; });
-        if (ii == cart.items.end())
-            cart.items.push_back({item, 1});
-        else
-            ii->count += 1;
-
-        return cart;
+        oi->client = cart.client;
+        oi->items = cart.items;
     }
 
-    Cart delete_cart_item(int cartID, const std::string& item)
+    void delete_cart(int cartID)
     {
-        Cart& cart = get_cart(cartID);
-
-        auto ii = std::find_if(cart.items.begin(), cart.items.end(), [&](auto& i) { return i.name == item; });
-        if (ii != cart.items.end())
-        {
-            if (--ii->count == 0)
-                cart.items.erase(ii);
-        }
-
-        return cart;
+        m_carts.erase(std::remove_if(m_carts.begin(), m_carts.end(), [cartID](auto& cart) { return cart.id == cartID; }), m_carts.end());
     }
 
   private:
@@ -97,7 +87,7 @@ class shop_rest_controller : public zeep::http::rest_controller
 
 int shop_rest_controller::sNextCartID = 1;
 
-//[ shop_html_controller
+//[ shop_html_controller_2
 class shop_html_controller : public zeep::http::html_controller
 {
   public:
@@ -109,12 +99,12 @@ class shop_html_controller : public zeep::http::html_controller
 
     void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
     {
-        get_template_processor().create_reply_from_template("shop.xhtml", scope, rep);
+        get_template_processor().create_reply_from_template("shop-2.xhtml", scope, rep);
     }
 };
 //]
 
-//[ shop_main
+//[ shop_main_2
 int main()
 {
     /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
