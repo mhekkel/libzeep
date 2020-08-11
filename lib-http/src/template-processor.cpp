@@ -236,7 +236,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 
 		throw exception((boost::format("error opening: %1% (%2%)") % (m_docroot / file) % msg).str());
 #else
-		throw exception("error opening: " + m_docroot.string() + " (" + strerror(errno) + ")");
+		throw exception("error opening: " + (m_docroot / file).string() + " (" + strerror(errno) + ")");
 #endif
 	}
 

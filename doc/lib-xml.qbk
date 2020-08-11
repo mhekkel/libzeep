@@ -110,6 +110,12 @@ For conversion of enum's you can use the __value_serializer__ specialization for
 		("foo", MyEnum::FOO)
 		("bar", MyEnum::BAR);
 
+There's also a new interface, somewhat more intuitive from a modern C++ viewpoint:
+
+[import ../examples/synopsis-json.cpp]
+[enum_support]
+
+
 [endsect:ser]
 
 [section:xpath XPath 1.0]

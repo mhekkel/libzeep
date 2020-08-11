@@ -43,7 +43,8 @@ void test_enum()
 		{ MyEnum::noot, "noot" },
 		{ MyEnum::mies, "mies" }
 	});
-
+//]
+//[ enum_usage
 	json j{ MyEnum::aap };
 	assert(j.as<std::string>() == "aap");
 
