@@ -30,13 +30,21 @@ file_loader::file_loader(const std::filesystem::path& docroot)
 /// return last_write_time of \a file
 std::filesystem::file_time_type file_loader::file_time(const std::string& file, std::error_code& ec) noexcept
 {
-	return fs::last_write_time(m_docroot / file, ec);
+	fs::path p(file);
+	if (p.has_root_path())
+		p = fs::relative(p, p.root_path());
+
+	return fs::last_write_time(m_docroot / p, ec);
 }
 
 /// return last_write_time of \a file
 std::istream* file_loader::load_file(const std::string& file, std::error_code& ec) noexcept
 {
-	std::ifstream* result = new std::ifstream(m_docroot / file, std::ios::binary);
+	fs::path p(file);
+	if (p.has_root_path())
+		p = fs::relative(p, p.root_path());
+
+	std::ifstream* result = new std::ifstream(m_docroot / p, std::ios::binary);
 	if (not result->is_open())
 	{
 		delete result;
