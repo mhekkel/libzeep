@@ -80,6 +80,15 @@ std::vector<std::pair<std::string,std::string>> evaluate_el_attr(const scope& sc
 /// \return       True in case all the expressions evaluate to true
 bool evaluate_el_assert(const scope& scope, const std::string& text);
 
+/// \brief Process the text in \a text and put the resulting z:with expressions in the scope
+///
+///	The expressions found in \a text are processed and the result is
+///	returned as a list of name/value pairs to be used in e.g.
+/// processing a m2:attr attribute.
+/// \param scope  The scope for the el scripts
+/// \param text   The text containing el scripts in the form var=val(,var=val)*.
+void evaluate_el_with(scope& scope, const std::string& text);
+
 // --------------------------------------------------------------------
 
 class expression_utility_object_base

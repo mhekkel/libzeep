@@ -495,19 +495,7 @@ auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute
 
 auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_template_processor& loader) -> AttributeAction
 {
-	std::regex kEachRx(R"(^\s*(\w+)\s*=\s*(.+)$)");
-
-	std::smatch m;
-	auto s = attr->value();
-
-	if (not std::regex_match(s, m, kEachRx))
-		throw std::runtime_error("Invalid attribute value for :with");
-
-	std::string var = m[1];
-	std::string val = m[2];
-
-	scope.put(var, evaluate_el(scope, val));
-
+	evaluate_el_with(scope, attr->value());
 	return AttributeAction::none;
 }
 

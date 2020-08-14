@@ -576,18 +576,19 @@ BOOST_AUTO_TEST_CASE(test_21)
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-<a m:with="a=${b}" m:text="${a}"/>
+<a m:with="a=${a},b=${b}" m:text="|${a}-${b}|"/>
 </data>
 	)"_xml;
 
 	auto doc_test = R"(<?xml version="1.0"?>
 <data>
-<a>b</a>
+<a>a-b</a>
 </data>
 	)"_xml;
 
 	zeep::http::scope scope;
 
+	scope.put("a", "a");
 	scope.put("b", "b");
 
 	process_and_compare(doc, doc_test, scope);

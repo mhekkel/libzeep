@@ -20,8 +20,6 @@
 
 #include "format.hpp"
 
-using namespace std;
-
 namespace zeep::http
 {
 
@@ -131,13 +129,14 @@ struct interpreter
 	// template <class OutputIterator, class Match>
 	// OutputIterator operator()(Match &m, OutputIterator out, std::regex::match_flag_type);
 
-	object evaluate(const string &s);
+	object evaluate(const std::string &s);
 
-	vector<pair<string,string>> evaluate_attr_expr(const string& s);
+	std::vector<std::pair<std::string,std::string>> evaluate_attr_expr(const std::string& s);
 
-	bool evaluate_assert(const string& s);
+	bool evaluate_assert(const std::string& s);
+	void evaluate_with(scope& scope, const std::string& s);
 
-	bool process(string &s);
+	bool process(std::string &s);
 
 	void match(token_type t);
 
@@ -178,14 +177,14 @@ struct interpreter
 
 	object parse_utility_expr();
 
-	object call_method(const string& className, const string& method, vector<object>& params);
+	object call_method(const std::string& className, const std::string& method, std::vector<object>& params);
 
 	const scope &m_scope;
 	token_type m_lookahead;
-	string m_token_string;
+	std::string m_token_string;
 	int64_t m_token_number_int;
 	double m_token_number_float;
-	string::const_iterator m_ptr, m_end;
+	std::string::const_iterator m_ptr, m_end;
 	bool m_return_whitespace = false;
 };
 
@@ -201,7 +200,7 @@ struct interpreter
 // 	return out;
 // }
 
-object interpreter::evaluate(const string &s)
+object interpreter::evaluate(const std::string &s)
 {
 	object result;
 
@@ -217,15 +216,16 @@ object interpreter::evaluate(const string &s)
 	}
 	catch (const exception& e)
 	{
+		using namespace std::literals;
 		result = "Error parsing expression: "s + e.what();
 	}
 
 	return result;
 }
 
-vector<pair<string,string>> interpreter::evaluate_attr_expr(const string& s)
+std::vector<std::pair<std::string,std::string>> interpreter::evaluate_attr_expr(const std::string& s)
 {
-	vector<pair<string,string>> result;
+	std::vector<std::pair<std::string,std::string>> result;
 
 	m_ptr = s.begin();
 	m_end = s.end();
@@ -233,14 +233,14 @@ vector<pair<string,string>> interpreter::evaluate_attr_expr(const string& s)
 
 	for (;;)
 	{
-		string var = m_token_string;
+		std::string var = m_token_string;
 		match(token_type::object);
 
 		match (token_type::assign);
 
 		auto value = parse_expr();
 
-		result.emplace_back(var, value.as<string>());
+		result.emplace_back(var, value.as<std::string>());
 
 		if (m_lookahead != token_type::comma)
 			break;
@@ -253,7 +253,7 @@ vector<pair<string,string>> interpreter::evaluate_attr_expr(const string& s)
 	return result;
 }
 
-bool interpreter::evaluate_assert(const string& s)
+bool interpreter::evaluate_assert(const std::string& s)
 {
 	bool result = true;
 
@@ -282,7 +282,33 @@ bool interpreter::evaluate_assert(const string& s)
 	return result;
 }
 
-bool interpreter::process(string &s)
+void interpreter::evaluate_with(scope& scope, const std::string& s)
+{
+	m_ptr = s.begin();
+	m_end = s.end();
+	get_next_token();
+
+	while (m_lookahead == token_type::object)
+	{
+		auto name = m_token_string;
+		match(token_type::object);
+		match(token_type::assign);
+
+		auto value = parse_expr();
+
+		scope.put(name, value);
+		
+		if (m_lookahead == token_type::comma)
+		{
+			match(token_type::comma);
+			continue;
+		}
+	}
+
+	match(token_type::eof);
+}
+
+bool interpreter::process(std::string &s)
 {
 	bool result = false;
 
@@ -301,7 +327,7 @@ bool interpreter::process(string &s)
 		if (obj.is_null())
 			s.clear();
 		else
-			s = obj.as<string>();
+			s = obj.as<std::string>();
 
 		result = true;
 	}
@@ -382,7 +408,7 @@ interpreter::unicode interpreter::get_next_char()
 
 void interpreter::retract()
 {
-	string::iterator c = m_token_string.end();
+	std::string::iterator c = m_token_string.end();
 
 	// skip one valid character back in the input buffer
 	// since we've arrived here, we can safely assume input
@@ -545,7 +571,7 @@ void interpreter::get_next_token()
 				else if (m_token_string[0] == '#')
 					state = State::Hash;
 				else
-					throw zeep::exception("invalid character (" + string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
+					throw zeep::exception("invalid character (" + std::string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
 			}
 			break;
 
@@ -933,7 +959,7 @@ object interpreter::parse_template_template_expr()
 						else if (result.type() == object::value_type::array)
 							result = result[index.as<int>()];
 						else if (result.type() == object::value_type::object)
-							result = result[index.as<string>()];
+							result = result[index.as<std::string>()];
 						else
 							result = object::value_type::null;
 						continue;
@@ -1290,7 +1316,7 @@ object interpreter::parse_template_primary_expr()
 						if (result.type() == object::value_type::array and not (result.empty() or index.empty()))
 							result = result[index.as<int>()];
 						else if (result.type() == object::value_type::object and not (result.empty() or index.empty()))
-							result = result[index.as<string>()];
+							result = result[index.as<std::string>()];
 						else
 							result = object::value_type::null;
 					}
@@ -1314,7 +1340,7 @@ object interpreter::parse_template_primary_expr()
 
 object interpreter::parse_literal_substitution()
 {
-	string result;
+	std::string result;
 
 	m_return_whitespace = true;
 
@@ -1324,7 +1350,7 @@ object interpreter::parse_literal_substitution()
 		{
 			case token_type::variable_template:
 			case token_type::selection_template:
-				result += parse_template_template_expr().as<string>();
+				result += parse_template_template_expr().as<std::string>();
 				break;
 			
 			default:
@@ -1343,7 +1369,7 @@ object interpreter::parse_literal_substitution()
 
 object interpreter::parse_link_template_expr()
 {
-	string path;
+	std::string path;
 
 	int braces = 0;
 
@@ -1374,7 +1400,7 @@ object interpreter::parse_link_template_expr()
 		{
 			case token_type::variable_template:
 			case token_type::selection_template:
-				path += parse_template_template_expr().as<string>();
+				path += parse_template_template_expr().as<std::string>();
 				break;
 			
 			case token_type::lbrace:
@@ -1394,21 +1420,21 @@ object interpreter::parse_link_template_expr()
 	{
 		match(token_type::lparen);
 
-		map<string,string> parameters;
+		std::map<std::string,std::string> parameters;
 
 		for (;;)
 		{
-			string name = m_token_string;
+			std::string name = m_token_string;
 			match(token_type::object);
 
 			if (m_lookahead == token_type::assign)
 			{
 				match(token_type::assign);
-				string value = parse_primary_expr().as<string>();
+				std::string value = parse_primary_expr().as<std::string>();
 
 				// put into path directly, if found
-				string::size_type p = path.find('{' + name + '}');
-				if (p == string::npos)
+				std::string::size_type p = path.find('{' + name + '}');
+				if (p == std::string::npos)
 					parameters[name] = value;
 				else
 				{
@@ -1417,7 +1443,7 @@ object interpreter::parse_link_template_expr()
 						path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
 						p += value.length();
 					}
-					while ((p = path.find('{' + name + '}', p)) != string::npos);
+					while ((p = path.find('{' + name + '}', p)) != std::string::npos);
 				}
 			}
 			else
@@ -1625,7 +1651,7 @@ object interpreter::parse_utility_expr()
 	auto method = m_token_string;
 	match(token_type::object);
 
-	vector<object> params;
+	std::vector<object> params;
 	if (m_lookahead == token_type::lparen)
 	{
 		match(token_type::lparen);
@@ -1647,7 +1673,7 @@ object interpreter::parse_utility_expr()
 	return call_method(className, method, params);
 }
 
-object interpreter::call_method(const string& className, const string& method, vector<object>& params)
+object interpreter::call_method(const std::string& className, const std::string& method, std::vector<object>& params)
 {
 	object result;
 
@@ -1680,30 +1706,30 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 			if (params.size() == 2 and params[0].is_string())
 			{
 				tm t = {};
-				istringstream ss(params[0].as<string>());
+				std::istringstream ss(params[0].as<std::string>());
 
-				ss >> get_time(&t, "%Y-%m-%d %H:%M:%S");
+				ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
 				if (ss.fail())	// hmmmm, lets try the ISO format then
 				{
 					try
 					{
-						auto pt = zeep::value_serializer<boost::posix_time::ptime>::from_string(params[0].as<string>());
+						auto pt = zeep::value_serializer<boost::posix_time::ptime>::from_string(params[0].as<std::string>());
 						t = boost::posix_time::to_tm(pt);
 					}
 					catch(const std::exception& e)
 					{
-						throw runtime_error("Invalid date");
+						throw std::runtime_error("Invalid date");
 					}
 				}
 				
-				wostringstream os;
+				std::wostringstream os;
 
 				os.imbue(scope.get_request().get_locale());
 
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-				wstring time = myconv.from_bytes(params[1].as<string>());
+				std::wstring time = myconv.from_bytes(params[1].as<std::string>());
 
-				os << put_time(&t, time.c_str());
+				os << std::put_time(&t, time.c_str());
 
 				result = os.str();
 			}
@@ -1826,7 +1852,7 @@ class security_expr_util_object : public expression_utility_object<security_expr
 // --------------------------------------------------------------------
 // interpreter calls
 
-bool process_el(const scope &scope, string &text)
+bool process_el(const scope &scope, std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.process(text);
@@ -1840,34 +1866,40 @@ std::string process_el_2(const scope& scope, const std::string& text)
 	return interpreter.process(s) ? s : text;
 }
 
-object evaluate_el(const scope &scope, const string &text)
+object evaluate_el(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate(text);
 }
 
-vector<pair<string,string>> evaluate_el_attr(const scope& scope, const string& text)
+std::vector<std::pair<std::string,std::string>> evaluate_el_attr(const scope& scope, const std::string& text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_attr_expr(text);
 }
 
-bool evaluate_el_assert(const scope& scope, const string& text)
+bool evaluate_el_assert(const scope& scope, const std::string& text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_assert(text);
 }
 
+void evaluate_el_with(scope& scope, const std::string& text)
+{
+	interpreter interpreter(scope);
+	interpreter.evaluate_with(scope, text);
+}
+
 // --------------------------------------------------------------------
 // scope
 
-ostream &operator<<(ostream &lhs, const scope &rhs)
+std::ostream &operator<<(std::ostream &lhs, const scope &rhs)
 {
 	const scope *s = &rhs;
 	while (s != nullptr)
 	{
 		for (scope::data_map::value_type e : s->m_data)
-			lhs << e.first << " = " << e.second << endl;
+			lhs << e.first << " = " << e.second << std::endl;
 		s = s->m_next;
 	}
 	return lhs;
@@ -1898,12 +1930,12 @@ scope::scope(const server& server, const request &req)
 {
 }
 
-object &scope::operator[](const string &name)
+object &scope::operator[](const std::string &name)
 {
 	return lookup(name);
 }
 
-const object& scope::lookup(const string &name, bool includeSelected) const
+const object& scope::lookup(const std::string &name, bool includeSelected) const
 {
 	const object* result = nullptr;
 
@@ -1924,12 +1956,12 @@ const object& scope::lookup(const string &name, bool includeSelected) const
 	return *result;
 }
 
-const object& scope::operator[](const string &name) const
+const object& scope::operator[](const std::string &name) const
 {
 	return lookup(name);
 }
 
-object& scope::lookup(const string &name)
+object& scope::lookup(const std::string &name)
 {
 	object* result = nullptr;
 
