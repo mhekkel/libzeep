@@ -54,6 +54,10 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
         if (fs::exists(m_pid_file))
             try { fs::remove(m_pid_file); } catch (...) {}
 
+		fs::path pidDir = fs::path(m_pid_file).parent_path();
+		if (not fs::is_directory(pidDir))
+			fs::create_directories(pidDir);
+
 		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
 		if (not fs::is_directory(outLogDir))
 			fs::create_directories(outLogDir);
