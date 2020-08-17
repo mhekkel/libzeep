@@ -57,7 +57,14 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 		{
 			mp->call(params, rep);
 		}
-		catch(const std::exception& e)
+		catch (status_type s)
+		{
+			rep = http::reply::stock_reply(s);
+			
+			json::element error({ { "error", get_status_description(s) }});
+			rep.set_content(error);
+		}
+		catch (const std::exception& e)
 		{
 			rep = http::reply::stock_reply(http::internal_server_error);
 			

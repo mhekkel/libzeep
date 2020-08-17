@@ -142,6 +142,8 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		mimetype = "text/xml";
 	else if (file.extension() == ".xhtml")
 		mimetype = "application/xhtml+xml";
+	else if (file.extension() == ".ico")
+		mimetype = "image/x-icon";
 
 	reply.set_content(out.str(), mimetype);
 
