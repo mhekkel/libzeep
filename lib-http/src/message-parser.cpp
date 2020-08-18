@@ -144,7 +144,8 @@ boost::tribool parser::parse_header_lines(char ch)
 						m_parsing_content = true;
 						break;
 					}
-					else if (iequals(h->name, "Content-Length"))
+
+					if (iequals(h->name, "Content-Length"))
 					{
 						std::stringstream s(h->value);
 						s >> m_chunk_size;
@@ -155,7 +156,8 @@ boost::tribool parser::parse_header_lines(char ch)
 							m_parsing_content = true;
 							m_payload.reserve(m_chunk_size);
 						}
-						break;
+						else
+							m_parsing_content = false;
 					}
 					else if (iequals(h->name, "Connection") and iequals(h->value, "Close") and (m_method == "POST" or m_method == "PUT"))
 					{
