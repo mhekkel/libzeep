@@ -242,6 +242,11 @@ class rest_controller : public controller
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
 		}
 
+		void set_reply(reply& rep, zeep::json::element&& v)
+		{
+			rep.set_content(std::move(v));
+		}
+
 		template<typename T>
 		void set_reply(reply& rep, T&& v)
 		{

@@ -1812,6 +1812,8 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 			result = scope.get_request().get_uri();
 		else if (method == "getRequestURL")
 			result = scope.get_request().get_uri();
+		else if ((method == "getParameter") and params.size() == 1)
+			result = scope.get_request().get_parameter(params[0].as<std::string>().c_str());
 		
 		return result;
 	}
