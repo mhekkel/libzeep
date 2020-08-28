@@ -145,9 +145,12 @@ class rest_controller : public controller
 
 		static constexpr size_t N = sizeof...(Args);
 
-		mount_point(const char* path, const std::string& method, rest_controller* owner, Sig sig)
+		template<typename... Names>
+		mount_point(const char* path, const std::string& method, rest_controller* owner, Sig sig, Names... names)
 			: mount_point_base(path, method)
 		{
+			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
+
 			ControllerType* controller = dynamic_cast<ControllerType*>(owner);
 			if (controller == nullptr)
 				throw std::runtime_error("Invalid controller for callback");
@@ -155,53 +158,50 @@ class rest_controller : public controller
 			m_callback = [controller, sig](Args... args) {
 				return (controller->*sig)(args...);
 			};
-		}
 
-		template<typename... Names>
-		mount_point(const char* path, const std::string& method, rest_controller* owner, Sig sig, Names... names)
-			: mount_point(path, method, owner, sig)
-		{
-			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
-			
-			// for (auto name: {...names })
-			size_t i = 0;
-			for (auto name: {names...})
-				m_names[i++] = name;
-
-			// construct a regex for matching paths
-			namespace fs = std::filesystem;
-
-			fs::path p = path;
-			std::string ps;
-
-			for (auto pp: p)
+			if constexpr (sizeof...(Names) > 0)
 			{
-				if (pp.empty())
-					continue;
-				
-				if (not ps.empty())
-					ps += '/';
-				
-				if (pp.string().front() == '{' and pp.string().back() == '}')
+
+				// for (auto name: {...names })
+				size_t i = 0;
+				for (auto name: {names...})
+					m_names[i++] = name;
+
+				// construct a regex for matching paths
+				namespace fs = std::filesystem;
+
+				fs::path p = path;
+				std::string ps;
+
+				for (auto pp: p)
 				{
-					auto param = pp.string().substr(1, pp.string().length() - 2);
+					if (pp.empty())
+						continue;
 					
-					auto i = std::find(m_names.begin(), m_names.end(), param);
-					if (i == m_names.end())
+					if (not ps.empty())
+						ps += '/';
+					
+					if (pp.string().front() == '{' and pp.string().back() == '}')
 					{
-						assert(false);
-						throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
+						auto param = pp.string().substr(1, pp.string().length() - 2);
+						
+						auto i = std::find(m_names.begin(), m_names.end(), param);
+						if (i == m_names.end())
+						{
+							assert(false);
+							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
+						}
+
+						size_t ni = i - m_names.begin();
+						m_path_params.emplace_back(m_names[ni]);
+						ps += "([^/]+)";
 					}
-
-					size_t ni = i - m_names.begin();
-					m_path_params.emplace_back(m_names[ni]);
-					ps += "([^/]+)";
+					else
+						ps += pp.string();
 				}
-				else
-					ps += pp.string();
-			}
 
-			m_rx.assign(ps);
+				m_rx.assign(ps);
+			}
 		}
 
 		virtual void call(const parameter_pack& params, reply& reply)
