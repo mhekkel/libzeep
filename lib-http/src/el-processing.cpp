@@ -1332,6 +1332,10 @@ object interpreter::parse_template_primary_expr()
 			match(token_type::rbrace);
 			break;
 
+		case token_type::fragment_template:
+			result = parse_fragment_expr();
+			break;
+
 		default:
 			throw zeep::exception("syntax error, expected number, string or object");
 	}
@@ -1584,7 +1588,7 @@ object interpreter::parse_selector()
 
 					while (m_lookahead != token_type::rparen and m_lookahead != token_type::eof)
 					{
-						result["params"].push_back(parse_expr());
+						result["params"].push_back(parse_template_expr());
 						if (m_lookahead == token_type::comma)
 						{
 							match(m_lookahead);
