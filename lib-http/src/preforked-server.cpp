@@ -105,7 +105,15 @@ class child_process
 			kill(m_pid, SIGKILL);
 
 			int status;
-			waitpid(m_pid, &status, WUNTRACED | WCONTINUED);
+			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED) != -1)
+			{
+				if (WIFSIGNALED(status))
+					std::cerr << "child " << m_pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+				else
+					std::cerr << "child terminated normally" << std::endl;
+			}
+			else
+				std::cerr << "error in waitpid: " << strerror(errno) << std::endl;
 		}
 	}
 

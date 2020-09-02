@@ -427,29 +427,32 @@ bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_
 		server.stop();
 		t.join();
 
-		// did the client crash within the time window?
-		if (time(nullptr) - start < m_restart_time_window)
-		{
-			if (++restarts >= m_max_restarts)
-			{
-				std::cerr << "aborting due to excessive restarts" << std::endl;
-				break;
-			}
-		}
-		else	// reset counter
-			restarts = 0;
+		if (sig != SIGCHLD)
+			break;
 
-		if (sig == SIGCHLD)
-		{
-			int status, pid;
-			pid = waitpid(-1, &status, WUNTRACED);
+		int status, pid;
+		pid = waitpid(-1, &status, WUNTRACED);
 
-			if (pid != -1 and WIFSIGNALED(status))
+		if (pid != -1)
+		{
+			if (WIFSIGNALED(status))
 				std::cerr << "child " << pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+			else
+				std::cerr << "child terminated normally" << std::endl;
+		}
+
+		// did the client crash within the time window?
+		if (time(nullptr) - start > m_restart_time_window)
+		{
+			restarts = 0;		// no, it was outside, reset counter
 			continue;
 		}
 
-		break;
+		if (++restarts >= m_max_restarts)
+		{
+			std::cerr << "aborting due to excessive restarts" << std::endl;
+			break;
+		}
 	}
 
 	return sig == SIGHUP;
