@@ -373,7 +373,7 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 				}
 			}
 		}
-		catch (exception& ex)
+		catch (const std::exception& ex)
 		{
 			parent->nodes().insert(e, xml::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
 			// parent->erase(e);

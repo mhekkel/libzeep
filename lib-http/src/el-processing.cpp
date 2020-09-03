@@ -204,7 +204,7 @@ object interpreter::evaluate(const std::string &s)
 			result = parse_expr();
 		match(token_type::eof);
 	}
-	catch (const exception& e)
+	catch (const std::exception& e)
 	{
 		using namespace std::literals;
 		result = "Error parsing expression: "s + e.what();
@@ -330,7 +330,7 @@ object interpreter::evaluate_link(const std::string& s)
 
 		match(token_type::eof);
 	}
-	catch (const exception& e)
+	catch (const std::exception& e)
 	{
 		using namespace std::literals;
 		result = "Error parsing expression: "s + e.what();
@@ -362,7 +362,7 @@ bool interpreter::process(std::string &s)
 
 		result = true;
 	}
-	catch (exception &e)
+	catch (const std::exception &e)
 	{
 		//		if (VERBOSE)
 		//			cerr << e.what() << endl;
