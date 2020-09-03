@@ -710,13 +710,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 	auto s = attr->value();
 
-	auto o = evaluate_el(parentScope, s);
+	auto o = evaluate_el_link(parentScope, s);
 	json::element params;
 
 	if (o.is_object())
 		params = o["selector"]["params"];
-	else if (o.is_string())	// reset the content, saves having to add another method
-		o = s;
 
 	auto templates = resolve_fragment_spec(node, dir, loader, o, parentScope);
 

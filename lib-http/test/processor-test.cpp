@@ -785,12 +785,16 @@ BOOST_AUTO_TEST_CASE(test_29)
 </m:block>
 <div m:replace="~{::fr1}"/>
 <div m:replace="~{::fr1/text()}"/>
+<div m:replace="::fr1"/>
+<div m:replace="::fr1/text()"/>
 </data>
 	)xml"_xml;
 
 	auto doc_test = R"(<?xml version="1.0"?>
 <data>
 
+<span>fragment</span><span>ref</span>
+fragmentref
 <span>fragment</span><span>ref</span>
 fragmentref
 </data>
@@ -809,12 +813,14 @@ BOOST_AUTO_TEST_CASE(test_30)
 	<div th:ref="thediv">The div</div>
 </th:block>
 <div th:replace="~{::F_1(~{::thediv})}"/>
+<div th:replace="::F_1(~{::thediv})"/>
 </data>
 	)xml"_xml;
 
 	auto doc_test = R"(<?xml version="1.0"?>
 <data>
 
+<div><div>The div</div></div>
 <div><div>The div</div></div>
 </data>
 	)"_xml;
@@ -913,6 +919,48 @@ BOOST_AUTO_TEST_CASE(test_32b)
 
 	process_and_compare(doc, doc_test, scope);
 }
+
+BOOST_AUTO_TEST_CASE(test_32c)
+{
+	auto doc = R"xml(<?xml version="1.0"?>
+<data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+<span z:fragment="f(a)" z:text="${a}"></span>
+<span z:replace="~{::f(h)}"/>
+</data>
+	)xml"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+<span/>
+<span>hoi</span>
+</data>)"_xml;
+
+	zeep::http::scope scope;
+	scope.put("h", "hoi");
+
+	process_and_compare(doc, doc_test, scope);
+}
+
+// BOOST_AUTO_TEST_CASE(test_32d)
+// {
+// 	auto doc = R"xml(<?xml version="1.0"?>
+// <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+// <span z:fragment="f(a)" z:text="${a}"></span>
+// <span z:text="~{::f(h)}"/>
+// </data>
+// 	)xml"_xml;
+
+// 	auto doc_test = R"(<?xml version="1.0"?>
+// <data>
+// <span/>
+// <span>hoi</span>
+// </data>)"_xml;
+
+// 	zeep::http::scope scope;
+// 	scope.put("h", "hoi");
+
+// 	process_and_compare(doc, doc_test, scope);
+// }
 
 BOOST_AUTO_TEST_CASE(test_33)
 {

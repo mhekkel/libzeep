@@ -89,6 +89,17 @@ bool evaluate_el_assert(const scope& scope, const std::string& text);
 /// \param text   The text containing el scripts in the form var=val(,var=val)*.
 void evaluate_el_with(scope& scope, const std::string& text);
 
+/// \brief Evaluate the text in \a text as a potential link template
+///
+///	The expression found in \a text is processed and the result is
+///	returned as a link template object. This function is called from
+/// el::include/el::replace/el::insert attributes.
+///
+/// \param scope  The scope for the el scripts
+/// \param text   The text containing the link specification
+/// \result		  The resulting link
+object evaluate_el_link(scope& scope, const std::string& text);
+
 // --------------------------------------------------------------------
 
 class expression_utility_object_base

@@ -137,6 +137,7 @@ struct interpreter
 
 	bool evaluate_assert(const std::string& s);
 	void evaluate_with(scope& scope, const std::string& s);
+	object evaluate_link(const std::string& s);
 
 	bool process(std::string &s);
 
@@ -174,6 +175,7 @@ struct interpreter
 	double m_token_number_float;
 	std::string::const_iterator m_ptr, m_end;
 	bool m_return_whitespace = false;
+	bool m_expect_fragment_spec = false;
 };
 
 // template <class OutputIterator, class Match>
@@ -294,6 +296,47 @@ void interpreter::evaluate_with(scope& scope, const std::string& s)
 	}
 
 	match(token_type::eof);
+}
+
+object interpreter::evaluate_link(const std::string& s)
+{
+	object result;
+
+	try
+	{
+		m_ptr = s.begin();
+		m_end = s.end();
+
+		get_next_token();
+
+		switch (m_lookahead)
+		{
+			case token_type::object:
+			case token_type::fragment_separator:
+				result = parse_fragment_expr();
+				break;
+			
+			case token_type::link_template:
+				match(token_type::link_template);
+				result = parse_fragment_expr();
+				match(token_type::rbrace);
+				break;
+			
+			default:
+				m_expect_fragment_spec = true;
+				result = parse_primary_expr();
+				break;
+		}
+
+		match(token_type::eof);
+	}
+	catch (const exception& e)
+	{
+		using namespace std::literals;
+		result = "Error parsing expression: "s + e.what();
+	}
+
+	return result;
 }
 
 bool interpreter::process(std::string &s)
@@ -1096,7 +1139,9 @@ object interpreter::parse_primary_expr()
 			break;
 
 		case token_type::fragment_template:
+			match(token_type::fragment_template);
 			result = parse_fragment_expr();
+			match(token_type::rbrace);
 			break;
 
 		default:
@@ -1255,11 +1300,6 @@ object interpreter::parse_fragment_expr()
 {
 	object result{ {"fragment-spec", true } };
 
-	bool specified = m_lookahead == token_type::fragment_template;
-
-	if (specified)
-		match(token_type::fragment_template);
-
 	if (m_lookahead == token_type::fragment_separator)
 		result["template"] = "this";
 	else if (m_lookahead == token_type::object)
@@ -1283,9 +1323,6 @@ object interpreter::parse_fragment_expr()
 
 		result["selector"] = parse_selector();
 	}
-
-	if (specified)
-		match(token_type::rbrace);
 
 	return result;
 }
@@ -1659,6 +1696,12 @@ void evaluate_el_with(scope& scope, const std::string& text)
 {
 	interpreter interpreter(scope);
 	interpreter.evaluate_with(scope, text);
+}
+
+object evaluate_el_link(scope& scope, const std::string& text)
+{
+	interpreter interpreter(scope);
+	return interpreter.evaluate_link(text);
 }
 
 // --------------------------------------------------------------------
