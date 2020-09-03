@@ -98,7 +98,7 @@ void evaluate_el_with(scope& scope, const std::string& text);
 /// \param scope  The scope for the el scripts
 /// \param text   The text containing the link specification
 /// \result		  The resulting link
-object evaluate_el_link(scope& scope, const std::string& text);
+object evaluate_el_link(const scope& scope, const std::string& text);
 
 // --------------------------------------------------------------------
 

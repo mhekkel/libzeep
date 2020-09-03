@@ -206,7 +206,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 		data.reset(load_file(templateFile.string(), ec));
 	else
 	{
-		auto spec = evaluate_el({}, file);
+		auto spec = evaluate_el_link({}, file);
 
 		if (spec.is_object())	// reset the content, saves having to add another method
 		{

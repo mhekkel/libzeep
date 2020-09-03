@@ -28,6 +28,14 @@ void process_and_compare(zeep::xml::document& a, zeep::xml::document& b, const z
 	}
 }
 
+
+BOOST_AUTO_TEST_CASE(test_0)
+{
+	std::string s = "application/pdf";
+	BOOST_TEST(not zeep::http::process_el({}, s));
+	BOOST_TEST(s == "application/pdf");
+}
+
 BOOST_AUTO_TEST_CASE(test_1)
 {
 	auto doc = R"(<?xml version="1.0"?>
@@ -635,6 +643,23 @@ BOOST_AUTO_TEST_CASE(test_22)
 	scope.put("b", "b");
 
 	process_and_compare(doc, doc_test, scope);
+}
+
+BOOST_AUTO_TEST_CASE(test_22a)
+{
+	zeep::http::template_processor p;
+
+	zeep::xml::document doc1;
+	p.load_template("fragment-file :: frag1", doc1);
+
+	auto doct = R"(<div>fragment-1</div>)"_xml;
+
+	BOOST_TEST(doc1 == doct);
+	if (doc1 != doct)
+	{
+		std::cerr << doc1 << std::endl
+				  << doct << std::endl;
+	}
 }
 
 BOOST_AUTO_TEST_CASE(test_23)

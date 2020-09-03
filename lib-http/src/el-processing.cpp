@@ -364,11 +364,7 @@ bool interpreter::process(std::string &s)
 	}
 	catch (const std::exception &e)
 	{
-		//		if (VERBOSE)
-		//			cerr << e.what() << endl;
-
-		s = "error in el expression: ";
-		s += e.what();
+		result = false;
 	}
 
 	return result;
@@ -1698,7 +1694,7 @@ void evaluate_el_with(scope& scope, const std::string& text)
 	interpreter.evaluate_with(scope, text);
 }
 
-object evaluate_el_link(scope& scope, const std::string& text)
+object evaluate_el_link(const scope& scope, const std::string& text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_link(text);
