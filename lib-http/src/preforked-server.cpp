@@ -9,6 +9,8 @@
 #include <functional>
 #include <cerrno>
 
+#include <boost/date_time/local_time/local_time.hpp>
+
 #if HTTP_SERVER_HAS_PREFORK
 
 #include <sys/wait.h>
@@ -104,16 +106,19 @@ class child_process
 		{
 			kill(m_pid, SIGKILL);
 
+			using namespace boost::posix_time;
+			auto now = second_clock::local_time();
+
 			int status;
 			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED) != -1)
 			{
 				if (WIFSIGNALED(status))
-					std::cerr << "child " << m_pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+					std::cerr << now << " child " << m_pid << " terminated by signal " << WTERMSIG(status) << std::endl;
 				else
-					std::cerr << "child terminated normally" << std::endl;
+					std::cerr << now << " child terminated normally" << std::endl;
 			}
 			else
-				std::cerr << "error in waitpid: " << strerror(errno) << std::endl;
+				std::cerr << now << "error in waitpid: " << strerror(errno) << std::endl;
 		}
 	}
 

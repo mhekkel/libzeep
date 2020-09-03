@@ -98,7 +98,7 @@ enum class token_type
 	else_,
 	dot,
 	hash,
-	pipe,
+	bar,
 
 	true_,
 	false_,
@@ -113,7 +113,9 @@ enum class token_type
 	selection_template,
 	message_template,
 	link_template,
-	fragment_template
+	fragment_template,
+
+	error
 };
 
 // --------------------------------------------------------------------
@@ -155,21 +157,7 @@ struct interpreter
 	object parse_unary_expr();			// ('-')? primary_expr
 	object parse_primary_expr();		// '(' expr ')' | number | string
 	object parse_literal_substitution();// '|xxx ${var}|'
-
-	// --------------------------------------------------------------------
-	// these are for inside ${} templates
-
-	object parse_template_expr();					// or_expr ( '?' expr ':' expr )?
-	object parse_template_or_expr();				// and_expr ( 'or' and_expr)*
-	object parse_template_and_expr();				// equality_expr ( 'and' equality_expr)*
-	object parse_template_equality_expr();			// relational_expr ( ('=='|'!=') relational_expr )?
-	object parse_template_relational_expr();		// additive_expr ( ('<'|'<='|'>='|'>') additive_expr )*
-	object parse_template_additive_expr();			// multiplicative_expr ( ('+'|'-') multiplicative_expr)*
-	object parse_template_multiplicative_expr();	 // unary_expr (('%'|'/') unary_expr)*
-	object parse_template_unary_expr();				// ('-')? primary_expr
-	object parse_template_primary_expr();			// '(' expr ')' | number | string
-
-	object parse_template_template_expr();
+	object parse_template_expr();
 
 	object parse_link_template_expr();
 	object parse_fragment_expr();
@@ -498,7 +486,7 @@ void interpreter::get_next_token()
 				token = token_type::comma;
 				break;
 			case '|':
-				token = token_type::pipe;
+				token = token_type::bar;
 				break;
 			case '=':
 				state = State::Equals;
@@ -546,7 +534,8 @@ void interpreter::get_next_token()
 				else if (is_name_start_char(ch))
 					state = State::Name;
 				else
-					throw zeep::exception("invalid character (" + to_hex(ch) + ") in expression");
+					token = token_type::error;
+					// throw zeep::exception("invalid character (" + to_hex(ch) + ") in expression");
 			}
 			break;
 
@@ -571,7 +560,9 @@ void interpreter::get_next_token()
 				else if (m_token_string[0] == '#')
 					state = State::Hash;
 				else
-					throw zeep::exception("invalid character (" + std::string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
+					token = token_type::error;
+				// else
+				// 	throw zeep::exception("invalid character (" + std::string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
 			}
 			break;
 
@@ -599,7 +590,8 @@ void interpreter::get_next_token()
 			if (ch != '=')
 			{
 				retract();
-				throw zeep::exception("unexpected character ('!') in expression");
+				token = token_type::error;
+				// throw zeep::exception("unexpected character ('!') in expression");
 			}
 			token = token_type::ne;
 			break;
@@ -692,7 +684,8 @@ void interpreter::get_next_token()
 
 		case State::Literal:
 			if (ch == 0)
-				throw zeep::exception("run-away string, missing quote character?");
+				token = token_type::error;
+				// throw zeep::exception("run-away string, missing quote character?");
 			else if (ch == '\'')
 			{
 				token = token_type::string;
@@ -907,20 +900,26 @@ object interpreter::parse_unary_expr()
 	return result;
 }
 
-object interpreter::parse_template_template_expr()
+object interpreter::parse_template_expr()
 {
 	object result;
+
+	bool save_return_white_space = m_return_whitespace;
+	m_return_whitespace = false;
+
 	switch (m_lookahead)
 	{
 		case token_type::variable_template:
 			match(token_type::variable_template);
-			result = parse_template_expr();
+			result = parse_expr();
+			m_return_whitespace = save_return_white_space;
 			match(token_type::rbrace);
 			break;
 		
 		case token_type::link_template:
 			match(token_type::link_template);
 			result = parse_link_template_expr();
+			m_return_whitespace = save_return_white_space;
 			match(token_type::rbrace);
 			break;
 
@@ -951,7 +950,7 @@ object interpreter::parse_template_template_expr()
 					{
 						match(m_lookahead);
 
-						object index = parse_template_expr();
+						object index = parse_expr();
 						match(token_type::rbracket);
 
 						if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
@@ -969,7 +968,8 @@ object interpreter::parse_template_template_expr()
 				}
 			}
 			else
-				result = parse_template_expr();
+				result = parse_expr();
+			m_return_whitespace = save_return_white_space;
 			match(token_type::rbrace);
 			break;
 
@@ -985,277 +985,34 @@ object interpreter::parse_primary_expr()
 	object result;
 	switch (m_lookahead)
 	{
-		case token_type::variable_template:
-		case token_type::link_template:
-		case token_type::selection_template:
-			result = parse_template_template_expr();
-			break;
-		
-		case token_type::fragment_template:
-			result = parse_fragment_expr();
-			break;
-
-		case token_type::pipe:
-			match(token_type::pipe);
-			result = parse_literal_substitution();
-			match(token_type::pipe);
-			break;
-		
 		case token_type::true_:
 			result = true;
 			match(m_lookahead);
 			break;
+
 		case token_type::false_:
 			result = false;
 			match(m_lookahead);
 			break;
+
 		case token_type::number_int:
 			result = m_token_number_int;
 			match(m_lookahead);
 			break;
+
 		case token_type::number_float:
 			result = m_token_number_float;
 			match(m_lookahead);
 			break;
+
 		case token_type::string:
 			result = m_token_string;
 			match(m_lookahead);
 			break;
+
 		case token_type::lparen:
 			match(m_lookahead);
 			result = parse_expr();
-			match(token_type::rparen);
-			break;
-
-		// parse template specifications
-		case token_type::object:
-		{
-			result["template"] = m_token_string;
-			match(m_lookahead);
-			match(token_type::fragment_separator);
-			result["selector"] = parse_selector();
-			break;
-		}
-
-		default:
-			throw zeep::exception("syntax error, expected number, string or object");
-	}
-	return result;
-}
-
-// --------------------------------------------------------------------
-
-object interpreter::parse_template_expr()
-{
-	object result;
-	
-	result = parse_template_or_expr();
-
-	if (m_lookahead == token_type::if_)
-	{
-		match(m_lookahead);
-		object a = parse_template_expr();
-
-		if (m_lookahead == token_type::else_)
-		{
-			match(token_type::else_);
-			object b = parse_template_expr();
-			if (result)
-				result = a;
-			else
-				result = b;
-		}
-		else if (result)
-			result = a;
-	}
-	else if (m_lookahead == token_type::elvis)
-	{
-		match(m_lookahead);
-		object a = parse_template_expr();
-
-		if (not result)
-			result = a;
-	}
-
-	return result;
-}
-
-object interpreter::parse_template_or_expr()
-{
-	object result = parse_template_and_expr();
-	while (m_lookahead == token_type::or_)
-	{
-		match(m_lookahead);
-		bool b1 = result.as<bool>();
-		bool b2 = parse_template_and_expr().as<bool>();
-		result = b1 or b2;
-	}
-	return result;
-}
-
-object interpreter::parse_template_and_expr()
-{
-	object result = parse_template_equality_expr();
-	while (m_lookahead == token_type::and_)
-	{
-		match(m_lookahead);
-		bool b1 = result.as<bool>();
-		bool b2 = parse_template_equality_expr().as<bool>();
-		result = b1 and b2;
-	}
-	return result;
-}
-
-object interpreter::parse_template_equality_expr()
-{
-	object result = parse_template_relational_expr();
-	if (m_lookahead == token_type::eq)
-	{
-		match(m_lookahead);
-		result = (result == parse_template_relational_expr());
-	}
-	else if (m_lookahead == token_type::ne)
-	{
-		match(m_lookahead);
-		result = not(result == parse_template_relational_expr());
-	}
-	return result;
-}
-
-object interpreter::parse_template_relational_expr()
-{
-	object result = parse_template_additive_expr();
-	switch (m_lookahead)
-	{
-		case token_type::lt:
-			match(m_lookahead);
-			result = (result < parse_template_additive_expr());
-			break;
-		case token_type::le:
-			match(m_lookahead);
-			result = (result <= parse_template_additive_expr());
-			break;
-		case token_type::ge:
-			match(m_lookahead);
-			result = (parse_template_additive_expr() <= result);
-			break;
-		case token_type::gt:
-			match(m_lookahead);
-			result = (parse_template_additive_expr() < result);
-			break;
-		case token_type::not_:
-		{
-			match(token_type::not_);
-			match(token_type::in);
-
-			object list = parse_template_additive_expr();
-
-			result = not list.contains(result);
-			break;
-		}
-		case token_type::in:
-		{
-			match(m_lookahead);
-			object list = parse_template_additive_expr();
-
-			result = list.contains(result);
-			break;
-		}
-		default:
-			break;
-	}
-	return result;
-}
-
-object interpreter::parse_template_additive_expr()
-{
-	object result = parse_template_multiplicative_expr();
-	while (m_lookahead == token_type::plus or m_lookahead == token_type::minus)
-	{
-		if (m_lookahead == token_type::plus)
-		{
-			match(m_lookahead);
-			result = (result + parse_template_multiplicative_expr());
-		}
-		else
-		{
-			match(m_lookahead);
-			result = (result - parse_template_multiplicative_expr());
-		}
-	}
-	return result;
-}
-
-object interpreter::parse_template_multiplicative_expr()
-{
-	object result = parse_template_unary_expr();
-	while (m_lookahead == token_type::div or m_lookahead == token_type::mod or m_lookahead == token_type::mult)
-	{
-		if (m_lookahead == token_type::mult)
-		{
-			match(m_lookahead);
-			result = (result * parse_template_unary_expr());
-		}
-		else if (m_lookahead == token_type::div)
-		{
-			match(m_lookahead);
-			result = (result / parse_template_unary_expr());
-		}
-		else
-		{
-			match(m_lookahead);
-			result = (result % parse_template_unary_expr());
-		}
-	}
-	return result;
-}
-
-object interpreter::parse_template_unary_expr()
-{
-	object result;
-	if (m_lookahead == token_type::minus)
-	{
-		match(m_lookahead);
-		result = -(parse_template_primary_expr());
-	}
-	else if (m_lookahead == token_type::not_)
-	{
-		match(m_lookahead);
-		result = not parse_template_primary_expr().as<bool>();
-	}
-	else
-		result = parse_template_primary_expr();
-	return result;
-}
-
-object interpreter::parse_template_primary_expr()
-{
-	object result;
-	switch (m_lookahead)
-	{
-		case token_type::true_:
-			result = true;
-			match(m_lookahead);
-			break;
-		case token_type::false_:
-			result = false;
-			match(m_lookahead);
-			break;
-		case token_type::number_int:
-			result = m_token_number_int;
-			match(m_lookahead);
-			break;
-		case token_type::number_float:
-			result = m_token_number_float;
-			match(m_lookahead);
-			break;
-		case token_type::string:
-			result = m_token_string;
-			match(m_lookahead);
-			break;
-		case token_type::lparen:
-			match(m_lookahead);
-			result = parse_template_expr();
 			match(token_type::rparen);
 			break;
 
@@ -1268,7 +1025,7 @@ object interpreter::parse_template_primary_expr()
 			match(m_lookahead);
 			for (;;)
 			{
-				result.push_back(parse_template_expr());
+				result.push_back(parse_expr());
 				if (m_lookahead == token_type::comma)
 				{
 					match(m_lookahead);
@@ -1277,6 +1034,12 @@ object interpreter::parse_template_primary_expr()
 				break;
 			}
 			match(token_type::rbrace);
+			break;
+
+		case token_type::bar:
+			match(token_type::bar);
+			result = parse_literal_substitution();
+			match(token_type::bar);
 			break;
 
 		case token_type::object:
@@ -1308,7 +1071,7 @@ object interpreter::parse_template_primary_expr()
 				{
 					match(m_lookahead);
 
-					object index = parse_template_expr();
+					object index = parse_expr();
 					match(token_type::rbracket);
 
 					if (not result.is_null())
@@ -1326,10 +1089,10 @@ object interpreter::parse_template_primary_expr()
 			}
 			break;
 
+		case token_type::variable_template:
 		case token_type::link_template:
-			match(token_type::link_template);
-			result = parse_link_template_expr();
-			match(token_type::rbrace);
+		case token_type::selection_template:
+			result = parse_template_expr();
 			break;
 
 		case token_type::fragment_template:
@@ -1339,6 +1102,7 @@ object interpreter::parse_template_primary_expr()
 		default:
 			throw zeep::exception("syntax error, expected number, string or object");
 	}
+
 	return result;
 }
 
@@ -1348,13 +1112,14 @@ object interpreter::parse_literal_substitution()
 
 	m_return_whitespace = true;
 
-	while (m_lookahead != token_type::pipe and m_lookahead != token_type::eof)
+	while (m_lookahead != token_type::bar and m_lookahead != token_type::eof)
 	{
 		switch (m_lookahead)
 		{
 			case token_type::variable_template:
 			case token_type::selection_template:
-				result += parse_template_template_expr().as<std::string>();
+			case token_type::message_template:
+				result += parse_template_expr().as<std::string>();
 				break;
 			
 			default:
@@ -1404,7 +1169,7 @@ object interpreter::parse_link_template_expr()
 		{
 			case token_type::variable_template:
 			case token_type::selection_template:
-				path += parse_template_template_expr().as<std::string>();
+				path += parse_template_expr().as<std::string>();
 				break;
 			
 			case token_type::lbrace:
@@ -1588,7 +1353,7 @@ object interpreter::parse_selector()
 
 					while (m_lookahead != token_type::rparen and m_lookahead != token_type::eof)
 					{
-						result["params"].push_back(parse_template_expr());
+						result["params"].push_back(parse_expr());
 						if (m_lookahead == token_type::comma)
 						{
 							match(m_lookahead);
@@ -1661,7 +1426,7 @@ object interpreter::parse_utility_expr()
 		match(token_type::lparen);
 		while (m_lookahead != token_type::rparen)
 		{
-			params.push_back(parse_template_expr());
+			params.push_back(parse_expr());
 			
 			if (m_lookahead == token_type::comma)
 			{

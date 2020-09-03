@@ -675,7 +675,7 @@ BOOST_AUTO_TEST_CASE(test_24)
 <span m:text="||"/>
 <span m:text="|een twee drie|"/>
 <span m:text="|een ${b} en ${c}|"/>
-<span m:text="'een ' + |twee ${b}|"/>
+<span m:text="'een ' + |twee ${b};:;${c}|"/>
 </data>
 	)"_xml;
 
@@ -684,7 +684,7 @@ BOOST_AUTO_TEST_CASE(test_24)
 <span></span>
 <span>een twee drie</span>
 <span>een b en bla met &lt; en =</span>
-<span>een twee b</span>
+<span>een twee b;:;bla met &lt; en =</span>
 </data>
 	)"_xml;
 
