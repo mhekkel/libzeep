@@ -778,6 +778,8 @@ object interpreter::parse_expr()
 		}
 		else if (result)
 			result = a;
+		else
+			result = {};
 	}
 	else if (m_lookahead == token_type::elvis)
 	{
@@ -786,6 +788,8 @@ object interpreter::parse_expr()
 
 		if (not result)
 			result = a;
+		else
+			result = {};
 	}
 
 	return result;

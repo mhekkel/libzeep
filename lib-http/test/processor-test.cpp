@@ -992,6 +992,7 @@ BOOST_AUTO_TEST_CASE(test_33)
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
 <div class="een" z:classappend="${true} ? 'twee'"/>
+<div class="een" z:classappend="${false} ? 'twee'"/>
 <div style="width: 30" z:styleappend="height: 30"/>
 </data>
 	)xml"_xml;
@@ -999,6 +1000,7 @@ BOOST_AUTO_TEST_CASE(test_33)
 	auto doc_test = R"(<?xml version="1.0"?>
 <data>
 <div class="een twee"/>
+<div class="een"/>
 <div style="width: 30; height: 30;"/>
 </data>
 	)"_xml;
