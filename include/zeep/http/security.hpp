@@ -238,6 +238,7 @@ class security_context
 	/// This method will validate the request in \a req agains the stored rules
 	/// and will throw an exception if access is not allowed.
 	/// The request \a req will be updated with the credentials for further use.
+	/// If the validate CSRF is set, the CSRF token will also be validated.
 	void validate_request(request& req) const;
 
 	/// \brief Add e.g. headers to reply for an authorized request
@@ -270,12 +271,16 @@ class security_context
 	/// \brief return reference to the user_service object
 	user_service& get_user_service() const			{ return m_users; }
 
-	/// \brief CSRF support
+	/// \brief Get or create a CSRF token for the current request
 	///
 	/// Return a CSRF token. If this was not present in the request, a new will be generated
 	/// \param req		The HTTP request
 	/// \return			A std::pair containing the CSRF token and a flag indicating the token is new
 	std::pair<std::string,bool> get_csrf_token(request& req);
+
+	/// \brief To automatically validate CSRF tokens, set this flag
+	void set_validate_csrf(bool validate)			{ m_validate_csrf = validate; }
+	bool get_validate_csrf() const					{ return m_validate_csrf; }
 
   private:
 	security_context(const security_context&) = delete;
@@ -290,6 +295,7 @@ class security_context
 	std::string m_secret;
 	user_service& m_users;
 	bool m_default_allow;
+	bool m_validate_csrf = false;
 	std::vector<rule> m_rules;
 	std::vector<std::tuple<std::string,std::unique_ptr<password_encoder>>> m_known_password_encoders;
 };

@@ -99,6 +99,18 @@ void security_context::validate_request(request& req) const
 		break;
 	}
 
+	if (allow and m_validate_csrf and req.has_parameter("_csrf"))
+	{
+		auto req_csrf_param = req.get_parameter("_csrf");
+		auto req_csrf_cookie = req.get_cookie("csrf-token");
+
+		if (req_csrf_cookie != req_csrf_param)
+		{
+			allow = false;
+			std::cerr << "CSRF validation failed" << std::endl;
+		}
+	}
+
 	if (not allow)
 		throw unauthorized_exception();
 }

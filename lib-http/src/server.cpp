@@ -32,7 +32,7 @@ std::mutex s_log_lock;
 // http::server
 
 server::server()
-	: m_log_forwarded(false), m_add_csrf_token(false)
+	: m_log_forwarded(false)
 	, m_security_context(nullptr)
 {
 	using namespace boost::local_time;

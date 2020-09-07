@@ -131,9 +131,6 @@ class server
 	/// \brief Bind the server to address \a address and port \a port
 	virtual void bind(const std::string& address, unsigned short port);
 
-	/// \brief Set whether to add a csrf-token Cookie to the session, default is false
-	void set_add_csrf_token(bool b);
-
 	/// \brief Run as many as \a nr_of_threads threads simultaneously
 	virtual void run(int nr_of_threads);
 
@@ -180,7 +177,6 @@ class server
 	std::string m_address;
 	unsigned short m_port;
 	bool m_log_forwarded;
-	bool m_add_csrf_token;
 	std::string m_context_name;		/// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
 	std::unique_ptr<basic_template_processor> m_template_processor;
