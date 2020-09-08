@@ -771,6 +771,14 @@ And that's all. You can now start this server and see that you can access =/= an
 
 [endsect]
 
+[section:csrf CSRF protection]
+
+The __security_context__ class contains some rudimentary support for protecting against [@https://en.wikipedia.org/wiki/Cross-site_request_forgery CSRF attacks]. The way it works is that the server class add a special `csrf-token` cookie to a session. This cookie is stored in the browser with the flags `SameSite=Lax` and `HttpOnly` which makes it unavailable to malicious scripts that might have been injected in your pages. If a value has been set to this cookie and the __security_context__ class has the `set_validate_csrf` flag set, each `POST` or `SUBMIT` will be checked if there is a `_csrf` parameter and this should contain the same value as the `csrf-token` cookie.
+
+So, to use this functionality, call the [memberref zeep::http::security_context::set_validate_csrf `set_validate_csrf`] method on a newly created __security_context__ instance. Next you should make sure each form or `POST` call should contain a `_csrf` parameter with the value stored in the session cookie `csrf-token`. This value can be obtained by calling [memberref zeep::http::context::get_csrf_token `zeep::http::context::get_csrf_token`].
+
+[endsect]
+
 [section:crypto Cryptographic routines]
 
 A limited number of cryptographic routines are available in `<zeep/crypto.hpp>`. These can be divided in the following categories:
