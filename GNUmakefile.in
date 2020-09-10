@@ -20,6 +20,7 @@ prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
+docdir				= @docdir@
 
 BOOST_LIBS			= program_options
 ZEEP_LIBS			= http json xml
@@ -82,6 +83,14 @@ lib-$(1):
 install-$(1):
 	+$(MAKE) -C lib-$(1) install
 
+.PHONY: install-$(1)-lib
+install-$(1)-lib:
+	+$(MAKE) -C lib-$(1) install-lib
+
+.PHONY: install-$(1)-dev
+install-$(1)-dev:
+	+$(MAKE) -C lib-$(1) install-dev
+
 lib-$(1): $(OUTPUT_DIR)
 
 endef
@@ -109,6 +118,16 @@ endif
 
 .PHONY: all	
 all: libraries test examples
+
+.PHONY: install-libs
+install-libs: $(ZEEP_LIBS:%=install-%-lib)
+
+.PHONY: install-dev
+install-dev: $(ZEEP_LIBS:%=install-%-dev)
+
+.PHONY: install-doc
+install-doc: doc
+	cd doc; for f in `find html -type f`; do install -D $$f $(docdir)/libzeep-doc/$$f; done
 
 .PHONY: install
 install: $(ZEEP_LIBS:%=install-%)

@@ -99,11 +99,18 @@ $(LIB_TARGET): $(OBJECTS)
 .PHONY: lib
 lib: $(LIB_TARGET)
 
-.PHONY: install
-install: lib
+.PHONY: install-lib
+install-lib: lib
+	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
+
+.PHONY: install-dev
+install-dev:
 	for f in $(HEADERS); do install -D ../include/$$f $(includedir)/$$f; done
-	install -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
+	install -m 644 -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
+
+.PHONY: install
+install: install-lib install-dev
 
 -include $(OBJECTS:%.lo=%.d)
 

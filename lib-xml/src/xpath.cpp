@@ -877,7 +877,7 @@ object operator_expression<xp_OperatorAdd>::evaluate(expression_context& context
 }
 
 template<>
-object operator_expression<xp_OperatorSubstract>::evaluate(expression_context& context)
+object operator_expression<xp_OperatorSubtract>::evaluate(expression_context& context)
 {
 	object v1 = m_lhs->evaluate(context);
 	object v2 = m_rhs->evaluate(context);
@@ -1927,7 +1927,7 @@ std::string xpath_imp::describe_token(Token token)
 		case xp_NodeType:			result << "node type specification"; break;
 		case xp_OperatorUnion:		result << "union operator"; break;
 		case xp_OperatorAdd:		result << "addition operator"; break;
-		case xp_OperatorSubstract:	result << "substraction operator"; break;
+		case xp_OperatorSubtract:	result << "subtraction operator"; break;
 		case xp_OperatorEqual:		result << "equals operator"; break;
 		case xp_OperatorNotEqual:	result << "not-equals operator"; break;
 		case xp_OperatorLess:		result << "less operator"; break;
@@ -1994,7 +1994,7 @@ Token xpath_imp::get_next_token()
 					case '/':	token = xp_Slash; break;
 					case '|':	token = xp_OperatorUnion; break;
 					case '+':	token = xp_OperatorAdd; break;
-					case '-':	token = xp_OperatorSubstract; break;
+					case '-':	token = xp_OperatorSubtract; break;
 					case '=':	token = xp_OperatorEqual; break;
 					case '!':	state = xps_ExclamationMark; break;
 					case '<':	state = xps_LessThan; break;
@@ -2580,14 +2580,14 @@ expression_ptr xpath_imp::additive_expr()
 {
 	expression_ptr result(multiplicative_expr());
 	
-	while (m_lookahead == xp_OperatorAdd or m_lookahead == xp_OperatorSubstract)
+	while (m_lookahead == xp_OperatorAdd or m_lookahead == xp_OperatorSubtract)
 	{
 		Token op = m_lookahead;
 		match(m_lookahead);
 		if (op == xp_OperatorAdd)
 			result.reset(new operator_expression<xp_OperatorAdd>(result, multiplicative_expr()));
 		else
-			result.reset(new operator_expression<xp_OperatorSubstract>(result, multiplicative_expr()));
+			result.reset(new operator_expression<xp_OperatorSubtract>(result, multiplicative_expr()));
 	}
 	
 	return result;
@@ -2630,9 +2630,9 @@ expression_ptr xpath_imp::unary_expr()
 {
 	expression_ptr result;
 	
-	if (m_lookahead == xp_OperatorSubstract)
+	if (m_lookahead == xp_OperatorSubtract)
 	{
-		match(xp_OperatorSubstract);
+		match(xp_OperatorSubtract);
 		result.reset(new negate_expression(unary_expr()));
 	}
 	else
