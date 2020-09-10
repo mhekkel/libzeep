@@ -149,7 +149,14 @@ class element
 	element(std::nullptr_t = nullptr);
 	element(const element& j);
 	element(element&& j);
-	element(const detail::element_reference& r);
+
+	template<typename ElementRef, std::enable_if_t<std::is_same_v<ElementRef,detail::element_reference>, int> = 0>
+	element(const ElementRef& r)
+		: element(r.data())
+	{
+		validate();
+	}
+
 	template<typename T,
 		typename U = typename std::remove_cv_t<typename std::remove_reference_t<T>>,
 		std::enable_if_t<not std::is_same_v<U,element> and detail::is_compatible_type_v<T>, int> = 0>

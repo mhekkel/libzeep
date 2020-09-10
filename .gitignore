@@ -14,7 +14,6 @@ lib-*/test/*-test
 autom4te.cache
 config.log
 config.status
-config/m4
 GNUmakefile
 */GNUmakefile
 aclocal.m4

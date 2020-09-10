@@ -55,12 +55,6 @@ element::element(element&& j)
 	validate();
 }
 
-element::element(const detail::element_reference& r)
-	: element(r.data())
-{
-	validate();
-}
-
 element::element(initializer_list_t init)
 {
 	bool isAnObject = std::all_of(init.begin(), init.end(), [](auto& ref)
