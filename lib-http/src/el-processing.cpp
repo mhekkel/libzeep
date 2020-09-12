@@ -788,8 +788,6 @@ object interpreter::parse_expr()
 
 		if (not result)
 			result = a;
-		else
-			result = {};
 	}
 
 	return result;

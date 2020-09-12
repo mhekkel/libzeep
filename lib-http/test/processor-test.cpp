@@ -340,17 +340,20 @@ BOOST_AUTO_TEST_CASE(test_13)
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
 <test m:class="${not ok} ?: 'ok'" />
+<test m:text="${s?:'geen s'}"/>
 </data>
 	)"_xml;
 
 	auto doc_test = R"(<?xml version="1.0"?>
 <data>
 <test class="ok" />
+<test>s</test>
 </data>
 	)"_xml;
 
 	zeep::http::scope scope;
 	scope.put("ok", true);
+	scope.put("s", "s");
 
 	process_and_compare(doc, doc_test, scope);
 }
