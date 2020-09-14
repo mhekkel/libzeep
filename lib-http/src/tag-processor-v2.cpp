@@ -207,7 +207,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 	if (spec.contains("is-node-set") and spec["is-node-set"])
 		return scope.get_nodeset(spec["node-set-name"].as<std::string>());
 
-	if (spec.is_object())
+	if (spec.is_object() and spec["template"].is_string() and spec["selector"].is_object() and spec["selector"]["xpath"].is_string())
 	{
 		auto file = spec["template"].as<std::string>();
 		auto selector = spec["selector"]["xpath"].as<std::string>();
@@ -215,8 +215,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 		if (not (spec.is_null() or selector.empty()))
 			return resolve_fragment_spec(node, dir, loader, file, selector, true);
 	}
-
-	if (spec.is_string())
+	else if (spec.is_string())
 	{
 		const std::regex kTemplateRx(R"(^\s*(\S*)\s*::\s*(#?[-_[:alnum:]]+)$)");
 
@@ -790,7 +789,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 					};
 					scope.put(argname, pe);
 
-					scope.set_nodeset(argname, resolve_fragment_spec(node, dir, loader, po, parentScope));
+					auto ns = resolve_fragment_spec(node, dir, loader, po, parentScope);
+					if (ns.empty())
+						scope.put(argname, po);
+					else
+						scope.set_nodeset(argname, std::move(ns));
 				}
 				else
 					scope.put(argname, po);
