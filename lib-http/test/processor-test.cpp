@@ -969,6 +969,32 @@ BOOST_AUTO_TEST_CASE(test_32c)
 	process_and_compare(doc, doc_test, scope);
 }
 
+
+BOOST_AUTO_TEST_CASE(test_32d)
+{
+	auto doc = R"xml(<?xml version="1.0"?>
+<data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+<span z:fragment="f(a)" z:text="${a}"></span>
+<span z:replace="~{::f(h.txt)}"/>
+</data>
+	)xml"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+<span/>
+<span>hoi</span>
+</data>)"_xml;
+
+	zeep::http::scope scope;
+	zeep::json::element h{
+		{ "txt", "hoi" }
+	};
+
+	scope.put("h", h);
+
+	process_and_compare(doc, doc_test, scope);
+}
+
 // BOOST_AUTO_TEST_CASE(test_32d)
 // {
 // 	auto doc = R"xml(<?xml version="1.0"?>
