@@ -32,7 +32,7 @@ std::mutex s_log_lock;
 // http::server
 
 server::server()
-	: m_log_forwarded(false)
+	: m_log_forwarded(true)
 	, m_security_context(nullptr)
 {
 	using namespace boost::local_time;
@@ -182,6 +182,8 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			boost::asio::ip::address addr = socket.remote_endpoint().address();
 			client = boost::lexical_cast<std::string>(addr);
 		}
+
+		req.set_remote_address(client);
 
 		// shortcut, check for supported method
 		auto method = req.get_method();

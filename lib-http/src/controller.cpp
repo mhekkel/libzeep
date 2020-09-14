@@ -98,6 +98,14 @@ json::element controller::get_credentials() const
 	return credentials;
 }
 
+std::string controller::get_remote_address() const
+{
+	std::string result;
+	if (s_request != nullptr)
+		result = s_request->get_remote_address();
+	return result;
+}
+
 bool controller::has_role(const std::string& role) const
 {
 	auto credentials = get_credentials();

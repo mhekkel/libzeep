@@ -73,6 +73,7 @@ class request
 
 	friend class message_parser;
 	friend class request_parser;
+	friend class server;
 
 	using param = header;	// alias name
 	using cookie_directive = header;	
@@ -113,6 +114,9 @@ class request
 
 	/// \brief Return the requested host
 	std::string get_host() const;
+
+	/// \brief Get the address of the connecting remote
+	std::string get_remote_address() const									{ return m_remote_address; }
 
 	/// \brief Return the payload
 	const std::string& get_payload() const									{ return m_payload; }
@@ -254,6 +258,11 @@ class request
 
   private:
 
+	void set_remote_address(const std::string& address)
+	{
+		m_remote_address = address;
+	}
+
 	std::string m_local_address;					///< Local endpoint address
 	uint16_t m_local_port = 80;						///< Local endpoint port
 
@@ -266,6 +275,8 @@ class request
 
 	boost::posix_time::ptime m_timestamp = boost::posix_time::second_clock::local_time();
 	json::element m_credentials;					///< The credentials as found in the validated access-token
+
+	std::string m_remote_address;					///< Address of connecting client
 
 	mutable std::unique_ptr<std::locale> m_locale;
 };

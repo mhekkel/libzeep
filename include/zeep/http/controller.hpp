@@ -63,6 +63,9 @@ class controller
 	/// \brief get the credentials for the current request
 	json::element get_credentials() const;
 
+	/// \brief get the remote client address for the current request
+	std::string get_remote_address() const;
+
 	/// \brief returns whether the current user has role \a role
 	bool has_role(const std::string& role) const;
 
