@@ -168,6 +168,7 @@ class tag_processor_v2 : public tag_processor
 	AttributeAction process_attr_include(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader, TemplateIncludeAction tia);
 
 	std::map<std::string, attr_handler> m_attr_handlers;
+	xml::document m_template;	// copy of the entire document...
 };
 
 }

@@ -75,6 +75,9 @@ tag_processor_v2::tag_processor_v2(const char* ns)
 
 void tag_processor_v2::process_xml(xml::node* node, const scope& parentScope, fs::path dir, basic_template_processor& loader)
 {
+	m_template.clear();
+	m_template.emplace_back(*static_cast<const xml::element*>(node));
+
 	process_node(node, parentScope, dir, loader);
 
 	auto e = dynamic_cast<xml::element*>(node);
@@ -255,7 +258,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 	xml::element* root = nullptr;
 
 	if (file.empty() or file == "this")
-		root = node->root();
+		root = m_template.root();
 	else
 	{
 		doc.set_preserve_cdata(true);
@@ -339,10 +342,14 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 
 			attributes.sort([](auto a, auto b) { return attribute_precedence(a) < attribute_precedence(b); });
 
-			for (auto attr = attributes.begin(); attr != attributes.end(); ++attr)
+			auto attr = attributes.begin();
+			while (attr != attributes.end())
 			{
 				if (attr->get_ns() != m_ns or attr->name() == "remove" or attr->name() == "ref" or attr->name() == "fragment")
+				{
+					++attr;
 					continue;
+				}
 
 				AttributeAction action = AttributeAction::none;
 				
@@ -361,7 +368,7 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 						action = h->second(e, attr, scope, dir, loader);
 					else if (kFixedValueBooleanAttributes.count(attr->name()))
 						action = process_attr_boolean_value(e, attr, scope, dir, loader);
-					else //if (kGenericAttributes.count(attr->name()))
+					else
 						action = process_attr_generic(e, attr, scope, dir, loader);
 				}
 
@@ -371,6 +378,8 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 					node = nullptr;
 					break;
 				}
+
+				attr = e->attributes().erase(attr);
 			}
 		}
 		catch (const std::exception& ex)
