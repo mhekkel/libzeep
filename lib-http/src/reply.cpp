@@ -30,6 +30,7 @@ struct status_string
 	{ multiple_choices,		"Multiple Choices" },
 	{ moved_permanently,	"Moved Permanently" },
 	{ moved_temporarily,	"Found" },
+	{ see_other,			"See Other" },
 	{ not_modified,			"Not Modified" },
 	{ bad_request,			"Bad Request" },
 	{ unauthorized,			"Unauthorized" },
@@ -44,6 +45,7 @@ struct status_string
 }, kStatusDescriptions[] = {
 	{ moved_permanently,	"The document requested was moved permanently to a new location" },
 	{ moved_temporarily,	"The document requested was moved temporarily to a new location" },
+	{ see_other,			"The document can be found at another location" },
 	{ not_modified,			"The requested document was not modified" },
 	{ bad_request,			"There was an error in the request, e.g. an incorrect method or a malformed URI" },
 	{ unauthorized,			"You are not authorized to access this location" },
@@ -529,22 +531,27 @@ reply reply::stock_reply(status_type status)
 	return stock_reply(status, "");
 }
 
-reply reply::redirect(const std::string& location)
+reply reply::redirect(const std::string& location, status_type status)
 {
 	reply result;
 
-	result.m_status = moved_temporarily;
+	result.m_status = status;
 
-	std::string text = get_status_text(moved_temporarily);
+	std::string text = get_status_text(status);
 	result.m_content =
 		"<html><head><title>" + text + "</title></head><body><h1>" +
- 		std::to_string(moved_temporarily) + ' ' + text + "</h1></body></html>";
+ 		std::to_string(status) + ' ' + text + "</h1></body></html>";
 	
 	result.set_header("Location", location);
 	result.set_header("Content-Length", std::to_string(result.m_content.length()));
 	result.set_header("Content-Type", "text/html; charset=utf-8");
 	
 	return result;
+}
+
+reply reply::redirect(const std::string& location)
+{
+	return redirect(location, moved_temporarily);
 }
 
 size_t reply::size() const

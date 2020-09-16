@@ -32,6 +32,7 @@ enum status_type
     multiple_choices =      300,
     moved_permanently =     301,
     moved_temporarily =     302,
+	see_other =             303,
     not_modified =          304,
     bad_request =           400,
     unauthorized =          401,
@@ -145,6 +146,7 @@ class reply
 
 	/// Create a standard redirect reply with the specified \a location
 	static reply redirect(const std::string& location);
+	static reply redirect(const std::string& location, status_type status);
 
 	void set_status(status_type status) { m_status = status; }
 	status_type get_status() const { return m_status; }
