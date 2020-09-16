@@ -699,7 +699,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 				else
 				{
 					s.replace(i - 2, j - i + 4, m);
-					b = i + m.length();
+					b = i + m.length() - 2;
 				}
 			}
 
