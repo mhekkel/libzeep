@@ -73,6 +73,9 @@ std::string controller::get_prefixless_path(const request& req) const
 {
 	auto p = req.get_path();
 
+	while (p[0] == '/' and p[1] == '/')
+		p.erase(0, 1);
+
 	if (not m_prefix_path.empty())
 	{
 		if (p.compare(0, m_prefix_path.length(), m_prefix_path) != 0)
