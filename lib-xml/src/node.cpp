@@ -16,6 +16,10 @@ namespace ba = boost::algorithm;
 namespace zeep::xml
 {
 
+const std::set<std::string> kEmptyHTMLElements{
+	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"
+};
+
 // --------------------------------------------------------------------
 
 void write_string(std::ostream& os, const std::string& s, bool escape_whitespace, bool escape_quot, bool trim, float version)
@@ -812,7 +816,8 @@ void element::write(std::ostream& os, format_info fmt) const
 			attr_fmt.indent_width = indentation + 1 + m_qname.length() + 1;
 	}
 	
-	if (fmt.collapse_tags and nodes().empty())
+	if ((fmt.html and kEmptyHTMLElements.count(m_qname)) or
+		(not fmt.html and fmt.collapse_tags and nodes().empty()))
 		os << "/>";
 	else
 	{

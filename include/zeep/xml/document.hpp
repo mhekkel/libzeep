@@ -99,6 +99,12 @@ class document : public element
 	/// \brief if \a c is true, empty tags will be replaced, i.e. write `<foo/>` instead of `<foo></foo>`
 	void set_collapse_empty_tags(bool c)					{ m_fmt.collapse_tags = c; }
 
+	/// \brief collapse 'empty elements' according to HTML rules
+	bool write_html() const									{ return m_fmt.html; }
+
+	/// \brief if \a c is true, 'empty elements' will be collapsed according to HTML rules
+	void set_write_html(bool f)								{ m_fmt.html = f; }
+
 	/// \brief whether to write out comments
 	bool suppresses_comments() const						{ return m_fmt.suppress_comments; }
 

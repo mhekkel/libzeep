@@ -333,7 +333,9 @@ void reply::set_content(xml::document& doc)
 {
 	std::stringstream s;
 
-	if (doc.front().name() != "html")
+	if (doc.front().name() == "html")
+		doc.set_write_html(true);
+	else
 		doc.set_write_doctype(false);
 
 	if (doc.is_html5())
@@ -342,9 +344,10 @@ void reply::set_content(xml::document& doc)
 		doc.set_escape_double_quote(false);
 	}
 	else if (doc.child()->get_ns() == "http://www.w3.org/1999/xhtml")
+	{
 		doc.set_escape_double_quote(false);
-
-	doc.set_collapse_empty_tags(false);
+		doc.set_collapse_empty_tags(true);
+	}
 
 	s << doc;
 	

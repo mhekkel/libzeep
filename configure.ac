@@ -1,3 +1,5 @@
+AC_PREREQ([2.69])
+
 AC_INIT([libzeep], 5.0, [maarten@hekkelman.com])
 
 dnl Switch to a C++ compiler, and check if it works.

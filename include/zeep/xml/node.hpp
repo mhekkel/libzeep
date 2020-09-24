@@ -47,6 +47,7 @@ struct format_info
 	bool suppress_comments = false;
 	bool escape_white_space = false;
 	bool escape_double_quote = true;
+	bool html = false;		///< This flag can be used to collapse only 'empty elements'
 	size_t indent_width = 0;
 	size_t indent_level = 0;
 	float version = 1.0f;
