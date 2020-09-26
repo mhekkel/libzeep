@@ -110,8 +110,10 @@ install-lib: lib
 
 .PHONY: install-dev
 install-dev:
-	for f in $(HEADERS); do install -D ../include/$$f $(includedir)/$$f; done
-	install -m 644 -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
+	install -d $(includedir)/zeep/json
+	for f in $(HEADERS); do install ../include/$$f $(includedir)/$$f; done
+	install -d $(pkgconfigdir)
+	install -m 644 $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
 .PHONY: install
 install: install-lib install-dev
