@@ -10,14 +10,7 @@
 
 #include <zeep/config.hpp>
 
-#include <ciso646>  // detect std::lib
-#ifdef _LIBCPP_VERSION
-// using libc++
 #include <type_traits>
-#else
-// using libstdc++
-#include <tr1/type_traits>
-#endif
 
 #include <zeep/type-traits.hpp>
 #include <zeep/json/element_fwd.hpp>
