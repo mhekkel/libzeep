@@ -27,6 +27,8 @@ ZEEP_LIBS			= http json xml
 
 LIBS				+= $(BOOST_LIBS:%=-lboost_%) $(ZEEP_LIBS:%=-lzeep-%)
 
+ifneq "$(CHECK_CONFIG)" ""
+
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status
 
@@ -35,6 +37,8 @@ config.status: configure
 
 configure: configure.ac
 	autoconf
+
+endif
 
 # libtool stuff
 

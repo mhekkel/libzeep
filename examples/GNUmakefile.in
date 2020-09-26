@@ -19,6 +19,8 @@ exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
 
+ifneq "$(CHECK_CONFIG)" ""
+
 GNUmakefile: ../config.status GNUmakefile.in
 	cd ..; $(SHELL) ./config.status
 
@@ -27,6 +29,8 @@ GNUmakefile: ../config.status GNUmakefile.in
 
 ../configure: ../configure.ac
 	cd ..; autoconf
+
+endif
 
 # main build variables
 CXXFLAGS            += -I. -pthread -I ../include/

@@ -24,6 +24,8 @@ LIB_NAME			= @PACKAGE_NAME@-xml
 LIB_TARGET			= $(LIB_NAME).la
 STAGE_DIR			= @abs_top_builddir@/lib
 
+ifneq "$(CHECK_CONFIG)" ""
+
 GNUmakefile: ../config.status GNUmakefile.in
 	cd ..; $(SHELL) ./config.status
 
@@ -32,6 +34,8 @@ GNUmakefile: ../config.status GNUmakefile.in
 
 ../configure: ../configure.ac
 	cd ..; autoconf
+
+endif
 
 # libtool stuff
 
