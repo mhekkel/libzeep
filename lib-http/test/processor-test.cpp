@@ -394,6 +394,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 
 BOOST_AUTO_TEST_CASE(test_15)
 {
+#if not __APPLE__
 	try
 	{
 		std::locale l("da_DK.UTF-8");
@@ -424,6 +425,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 	{
 		std::cerr << "skipping test 15 since locale da_DK.UTF-8 is not available" << std::endl;
 	}
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(test_16)
