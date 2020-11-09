@@ -132,23 +132,30 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "127.0.0.1", port));
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "localhost", port));
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
 	sleep(1);
 
-	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::not_found);
+	try
+	{
+		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
 
-	reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::bad_request);
+		reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::bad_request);
 
-	reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::ok);
+		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::ok);
 
-	reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::not_found);
+		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
 
 	pthread_kill(t.native_handle(), SIGHUP);
 
@@ -193,65 +200,73 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "127.0.0.1", port));
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "localhost", port));
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
 	sleep(1);
 
-	auto reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::bad_request);
+	try
+	{
 
-	reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::ok);
+		auto reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::bad_request);
 
-	reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::not_found);
+		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::ok);
 
-	reply = simple_request(port, "GET /test/three HTTP/1.0\r\n\r\n");
-	BOOST_TEST(reply.get_status() == zh::unauthorized);
+		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
 
-	// now try to log in and see if we can access all of the above
+		reply = simple_request(port, "GET /test/three HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::unauthorized);
 
-	// we use a request object now, to store cookies
-	zeep::http::request req{ "POST", "/login", {1, 0}, { { "Content-Type", "application/x-www-form-urlencoded" } }, "username=scott&password=tiger" };
-	
-	// first test is to send a POST to login, but without the csrf token
-	reply = simple_request(port, req);
-	BOOST_TEST(reply.get_status() == zh::forbidden);
+		// now try to log in and see if we can access all of the above
 
-	// OK, fetch the login form then and pry the csrf token out of it
-	req.set_method("GET");
-	reply = simple_request(port, req);
-	BOOST_TEST(reply.get_status() == zh::ok);
+		// we use a request object now, to store cookies
+		zeep::http::request req{ "POST", "/login", {1, 0}, { { "Content-Type", "application/x-www-form-urlencoded" } }, "username=scott&password=tiger" };
+		
+		// first test is to send a POST to login, but without the csrf token
+		reply = simple_request(port, req);
+		BOOST_TEST(reply.get_status() == zh::forbidden);
 
-	// copy the cookie
-	auto csrfCookie = reply.get_cookie("csrf-token");
-	req.set_cookie("csrf-token", csrfCookie);
-	
-	zeep::xml::document form(reply.get_content());
-	auto csrf = form.find_first("//input[@name='_csrf']");
-	BOOST_REQUIRE(csrf != nullptr);
+		// OK, fetch the login form then and pry the csrf token out of it
+		req.set_method("GET");
+		reply = simple_request(port, req);
+		BOOST_TEST(reply.get_status() == zh::ok);
 
- 	BOOST_TEST(form.find_first("//input[@name='username']") != nullptr);
- 	BOOST_TEST(form.find_first("//input[@name='password']") != nullptr);
+		// copy the cookie
+		auto csrfCookie = reply.get_cookie("csrf-token");
+		req.set_cookie("csrf-token", csrfCookie);
+		
+		zeep::xml::document form(reply.get_content());
+		auto csrf = form.find_first("//input[@name='_csrf']");
+		BOOST_REQUIRE(csrf != nullptr);
 
-	BOOST_TEST(csrf->get_attribute("value") == csrfCookie);
+		BOOST_TEST(form.find_first("//input[@name='username']") != nullptr);
+		BOOST_TEST(form.find_first("//input[@name='password']") != nullptr);
 
-	// try again to authenticate
-	req.set_method("POST");
-	req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
-	reply = simple_request(port, req);
-	BOOST_TEST(reply.get_status() == zh::moved_temporarily);
+		BOOST_TEST(csrf->get_attribute("value") == csrfCookie);
 
-	auto accessToken = reply.get_cookie("access_token");
-	req.set_cookie("access_token", accessToken);
+		// try again to authenticate
+		req.set_method("POST");
+		req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
+		reply = simple_request(port, req);
+		BOOST_TEST(reply.get_status() == zh::moved_temporarily);
 
-	// now try that admin page again
-	req.set_uri("/test/three");
-	req.set_method("GET");
-	reply = simple_request(port, req);
-	BOOST_TEST(reply.get_status() == zh::ok);
+		auto accessToken = reply.get_cookie("access_token");
+		req.set_cookie("access_token", accessToken);
+
+		// now try that admin page again
+		req.set_uri("/test/three");
+		req.set_method("GET");
+		reply = simple_request(port, req);
+		BOOST_TEST(reply.get_status() == zh::ok);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
 
 	pthread_kill(t.native_handle(), SIGHUP);
 

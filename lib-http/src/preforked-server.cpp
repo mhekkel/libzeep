@@ -336,8 +336,7 @@ void preforked_server::run(const std::string& address, short port, int nr_of_pro
 
 	// then bind the address here
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(address, std::to_string(port));
 
 	acceptor.open(endpoint.protocol());
 	acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));

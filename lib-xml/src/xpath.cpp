@@ -2197,7 +2197,7 @@ Token xpath_imp::get_next_token()
 					}
 					else
 					{
-						for (int i = 0; i < kCoreFunctionCount; ++i)
+						for (size_t i = 0; i < kCoreFunctionCount; ++i)
 						{
 							if (m_token_string == kCoreFunctionInfo[i].name)
 							{

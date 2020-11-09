@@ -8,7 +8,7 @@ clang++ -o http-server-0 http-server-0.cpp -I ../../include/  ../../lib/libzeep-
 int main()
 {
     zeep::http::server srv;
-    srv.bind("127.0.0.1", 8080);
+    srv.bind("localhost", 8080);
     srv.run(2);
 
     return 0;

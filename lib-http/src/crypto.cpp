@@ -174,7 +174,7 @@ std::string encode_base64(std::string_view data, size_t wrap_width)
 	result.reserve(m);
 
 	auto ch = data.begin();
-	int l = 0;
+	size_t l = 0;
 
 	while (n > 0)
 	{
@@ -225,7 +225,7 @@ std::string encode_base64(std::string_view data, size_t wrap_width)
 			result.append(s, s + 4);
 		else
 		{
-			for (int i = 0; i < 4; ++i)
+			for (size_t i = 0; i < 4; ++i)
 			{
 				if (l == wrap_width)
 				{
@@ -642,9 +642,9 @@ struct md5_hash_impl : public hash_impl
 		std::string result;
 		result.reserve(digest_size);
 		
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 		{
-			for (int j = 0; j < sizeof(word_type); ++j)
+			for (size_t j = 0; j < sizeof(word_type); ++j)
 			{
 				uint8_t b = m_h[i] >> (j * 8);
 				result.push_back(b);
@@ -677,6 +677,9 @@ struct sha1_hash_impl : public hash_impl
 
 	virtual void write_bit_length(uint64_t l, uint8_t* b)
 	{
+#if BYTE_ORDER == BIG_ENDIAN
+		memcpy(b, &l, sizeof(l));
+#else
 		b[0] = l >> 56;
 		b[1] = l >> 48;
 		b[2] = l >> 40;
@@ -685,6 +688,7 @@ struct sha1_hash_impl : public hash_impl
 		b[5] = l >> 16;
 		b[6] = l >>  8;
 		b[7] = l >>  0;
+#endif
 	}
 
 	virtual void transform(const uint8_t* data)
@@ -694,6 +698,9 @@ struct sha1_hash_impl : public hash_impl
 			uint32_t w[80];
 		} w;
 
+#if BYTE_ORDER == BIG_ENDIAN
+		memcpy(w.s, data, 64);
+#else
 		auto p = data;
 		for (size_t i = 0; i < 16; ++i)
 		{
@@ -702,13 +709,14 @@ struct sha1_hash_impl : public hash_impl
 			w.s[i * 4 + 1] = *p++;
 			w.s[i * 4 + 0] = *p++;
 		}
+#endif
 
 		for (size_t i = 16; i < 80; ++i)
 			w.w[i] = rotl32(w.w[i - 3] xor w.w[i - 8] xor w.w[i - 14] xor w.w[i - 16], 1);
 
 		word_type wv[word_count];
 
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 			wv[i] = m_h[i];
 
 		for (size_t i = 0; i < 80; ++i)
@@ -744,7 +752,7 @@ struct sha1_hash_impl : public hash_impl
 			wv[0] = t;
 		}
 
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 			m_h[i] += wv[i];
 	}
 
@@ -752,14 +760,18 @@ struct sha1_hash_impl : public hash_impl
 	{
 		std::string result(digest_size, '\0');
 
+#if BYTE_ORDER == BIG_ENDIAN
+		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
+#else
 		auto s = result.begin();
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 		{
 			*s++ = static_cast<char>(m_h[i] >> 24);
 			*s++ = static_cast<char>(m_h[i] >> 16);
 			*s++ = static_cast<char>(m_h[i] >>  8);
 			*s++ = static_cast<char>(m_h[i] >>  0);
 		}
+#endif
 
 		return result;
 	}
@@ -790,6 +802,9 @@ struct sha256_hash_impl : public hash_impl
 
 	virtual void write_bit_length(uint64_t l, uint8_t* b)
 	{
+#if BYTE_ORDER == BIG_ENDIAN
+		memcpy(b, &l, sizeof(l));
+#else
 		b[0] = l >> 56;
 		b[1] = l >> 48;
 		b[2] = l >> 40;
@@ -798,6 +813,7 @@ struct sha256_hash_impl : public hash_impl
 		b[5] = l >> 16;
 		b[6] = l >>  8;
 		b[7] = l >>  0;
+#endif
 	}
 
 	virtual void transform(const uint8_t* data)
@@ -814,7 +830,7 @@ struct sha256_hash_impl : public hash_impl
 		};
 
 		word_type wv[word_count];
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 			wv[i] = m_h[i];
 
 		union {
@@ -822,6 +838,9 @@ struct sha256_hash_impl : public hash_impl
 			uint32_t w[64];
 		} w;
 
+#if BYTE_ORDER == BIG_ENDIAN
+		memcpy(w.w, data, 64);
+#else
 		auto p = data;
 		for (size_t i = 0; i < 16; ++i)
 		{
@@ -830,6 +849,7 @@ struct sha256_hash_impl : public hash_impl
 			w.s[i * 4 + 1] = *p++;
 			w.s[i * 4 + 0] = *p++;
 		}
+#endif
 
 		for (size_t i = 16; i < 64; ++i)
 		{
@@ -857,7 +877,7 @@ struct sha256_hash_impl : public hash_impl
 			wv[0] = t1 + t2;
 		}
 
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 			m_h[i] += wv[i];
 	}
 
@@ -865,14 +885,18 @@ struct sha256_hash_impl : public hash_impl
 	{
 		std::string result(digest_size, '\0');
 
+#if BYTE_ORDER == BIG_ENDIAN
+		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
+#else
 		auto s = result.begin();
-		for (int i = 0; i < word_count; ++i)
+		for (size_t i = 0; i < word_count; ++i)
 		{
 			*s++ = static_cast<char>(m_h[i] >> 24);
 			*s++ = static_cast<char>(m_h[i] >> 16);
 			*s++ = static_cast<char>(m_h[i] >>  8);
 			*s++ = static_cast<char>(m_h[i] >>  0);
 		}
+#endif
 
 		return result;
 	}
@@ -1049,7 +1073,7 @@ class HMAC
 
 		assert(key.length() < block_size);
 
-		for (int i = 0; i < key.length(); ++i)
+		for (size_t i = 0; i < key.length(); ++i)
 		{
 			m_opad[i] ^= key[i];
 			m_ipad[i] ^= key[i];
@@ -1125,7 +1149,7 @@ std::string pbkdf2(std::string_view salt,
 		{
 			buffer = hmac.update(buffer).final();
 
-			for (int i = 0; i < buffer.length(); ++i)
+			for (size_t i = 0; i < buffer.length(); ++i)
 				derived[i] ^= buffer[i];
 		}
 		

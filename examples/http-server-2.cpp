@@ -37,7 +37,7 @@ int main()
 
     srv.add_controller(new hello_controller());
 
-    srv.bind("127.0.0.1", 8080);
+    srv.bind("localhost", 8080);
     srv.run(2);
 
     return 0;

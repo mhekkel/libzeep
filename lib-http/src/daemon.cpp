@@ -70,8 +70,7 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
         {
             boost::asio::io_service io_service;
             boost::asio::ip::tcp::resolver resolver(io_service);
-            boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(query));
+            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port)));
 
             boost::asio::ip::tcp::acceptor acceptor(io_service);
             acceptor.open(endpoint.protocol());
@@ -185,8 +184,10 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
         {
             boost::asio::io_service io_service;
             boost::asio::ip::tcp::resolver resolver(io_service);
-            boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(query));
+
+			boost::system::error_code ec;
+
+            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
 
             boost::asio::ip::tcp::acceptor acceptor(io_service);
             acceptor.open(endpoint.protocol());

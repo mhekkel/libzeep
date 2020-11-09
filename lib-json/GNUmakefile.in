@@ -13,7 +13,7 @@ firstTarget: lib
 CXX					= @CXX@
 CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
 LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
-LIBS				= @LIBS@
+LIBS				= @BOOST_DATE_TIME_LIB@ @LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@

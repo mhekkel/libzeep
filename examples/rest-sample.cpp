@@ -123,7 +123,7 @@ int main()
     srv.add_controller(new shop_html_controller());
     srv.add_controller(new shop_rest_controller());
 
-    srv.bind("127.0.0.1", 8080);
+    srv.bind("localhost", 8080);
 
     // Note that the rest controller above is not thread safe!
     srv.run(1);

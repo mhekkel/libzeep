@@ -75,8 +75,7 @@ void server::bind(const std::string& address, unsigned short port)
 	m_new_connection.reset(new connection(m_io_service, *this));
 
 	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::resolver::query query(address, boost::lexical_cast<std::string>(port));
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(address, std::to_string(port));
 
 	m_acceptor->open(endpoint.protocol());
 	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));

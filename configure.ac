@@ -73,6 +73,7 @@ AX_BOOST_BASE([1.65.1], [], [
 ])
 AX_BOOST_ASIO
 AX_BOOST_PROGRAM_OPTIONS
+AX_BOOST_DATE_TIME
 
 dnl for the documentation
 AC_ARG_ENABLE(
