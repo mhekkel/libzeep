@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(1);
+	sleep(5);
 
 	try
 	{
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(1);
+	sleep(5);
 
 	try
 	{

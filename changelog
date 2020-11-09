@@ -1,6 +1,9 @@
 Version 5.0.1
 
 - Update makefile to include changes made for the Debian package
+- Fix writing HTML, proper empty elements
+- Added some workarounds to build on macOS
+- Fixed endianness issue in sha implementation
 
 Version 5.0.0
 

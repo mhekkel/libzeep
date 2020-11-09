@@ -255,16 +255,24 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(1);
+	sleep(5);
 
-	auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+	try
+	{
+		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello");
+	}
+	catch (const std::exception& ex)
+	{
+		std::cerr << ex.what() << std::endl;
+	}
 
 	pthread_kill(t.native_handle(), SIGHUP);
 
 	t.join();
 
-	BOOST_TEST(reply.get_status() == zeep::http::ok);
-	BOOST_TEST(reply.get_content() == "Hello");
 }
 
 BOOST_AUTO_TEST_CASE(webapp_10)
