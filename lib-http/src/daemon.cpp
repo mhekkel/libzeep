@@ -27,6 +27,13 @@ using namespace std::literals;
 namespace zeep::http
 {
 
+#if __APPLE__
+int getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
+{
+	return ::getgrouplist(user, (int)group, (int*)groups, ngroups);
+}
+#endif
+
 daemon::daemon(server_factory_type&& factory, const std::string& pid_file,
 	const std::string& stdout_log_file, const std::string& stderr_log_file)
 	: m_factory(std::move(factory)), m_pid_file(pid_file)
