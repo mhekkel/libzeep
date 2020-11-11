@@ -46,7 +46,7 @@ endif
 
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
 libtool: $(LIBTOOL_DEPS)
-	$(SHELL) ./config.status --recheck
+	$(SHELL) ./config.status libtool
 
 LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
 CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
@@ -89,8 +89,8 @@ endef
 
 $(foreach part,$(ZEEP_LIB_PARTS),$(eval $(call ZEEPLIB_template,$(part))))
 
-.PHONY: libraries | $(OUTPUT_DIR)
-libraries: $(ZEEP_LIBS:%=lib-%)
+.PHONY: libraries
+libraries: $(ZEEP_LIBS:%=lib-%) | $(OUTPUT_DIR)
 
 .PHONY: test
 test: $(ZEEP_LIB_PARTS:%=%_test)

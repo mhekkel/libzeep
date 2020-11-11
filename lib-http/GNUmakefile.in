@@ -111,11 +111,6 @@ ifneq ($(USE_RSRC),0)
 OBJECTS += \
 	$(OBJDIR)/controller-rsrc.lo
 
-$(OBJDIR)/controller-rsrc.lo: src/mrsrc.h
-
-src/mrsrc.h:
-	$(MRC) --header > $@
-
 endif
 
 $(LIB_TARGET): $(OBJECTS)
@@ -139,7 +134,7 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 clean:
 	rm -rf $(OBJDIR)/* $(LIB_TARGET) .libs ../lib/$(LIB_NAME)* $(LIB_NAME).pc
 
-$(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml src/mrsrc.h
+$(OBJDIR)/test_rsrc.o: test/fragment-file.xhtml
 	$(MRC) -o $@ $<
 
 http_PARAMS = 
@@ -160,7 +155,7 @@ endif
 
 test/$(1)-test: lib $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -rdynamic -ldl -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
