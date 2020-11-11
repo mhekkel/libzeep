@@ -13,10 +13,21 @@ AC_CONFIG_MACRO_DIR([config/m4])
 AC_PREFIX_DEFAULT(/usr/local)
 
 AC_PROG_INSTALL
-AC_ENABLE_STATIC
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
+
+dnl Shared libraries are not convenient
+LT_INIT([disable-shared])
 AC_SUBST(LIBTOOL_DEPS)
+
+dnl versioning
+LZ_CURRENT=5
+LZ_REVISION=0
+LZ_AGE=0
+
+LZ_TL_CURRENT="${LZ_CURRENT}"
+LZ_LT_VERSION="${LZ_CURRENT}:${LZ_REVISION}:${LZ_AGE}"
+
+AC_SUBST(LZ_TL_CURRENT)
+AC_SUBST(LZ_LT_VERSION)
 
 AC_PATH_PROG([SHELL], [sh])
 
@@ -99,7 +110,6 @@ AC_OUTPUT([GNUmakefile
 		   lib-xml/GNUmakefile
 		   lib-json/GNUmakefile
 		   lib-http/GNUmakefile
-		   examples/GNUmakefile
 		   lib-xml/libzeep-xml.pc
 		   lib-json/libzeep-json.pc
 		   lib-http/libzeep-http.pc])

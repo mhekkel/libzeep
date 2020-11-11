@@ -19,8 +19,10 @@ LIBS				= @LIBS@
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
+datarootdir			= @datarootdir@
 includedir			= @includedir@
 docdir				= @docdir@
+pkgconfigdir		= $(libdir)/pkgconfig
 
 BOOST_LIBS			= program_options
 ZEEP_LIBS			= http json xml
@@ -54,7 +56,7 @@ CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS
 CXXFLAGS            += -Wall -Wno-multichar
 
 VERSION             = @PACKAGE_VERSION@
-DIST_NAME           = @PACKAGE_NAME@
+DIST_NAME           = @PACKAGE_NAME@-@PACKAGE_VERSION@
 
 OUTPUT_DIR			?= ./lib
 
@@ -83,25 +85,11 @@ define ZEEPLIB_template =
 lib-$(1):
 	+$(MAKE) -C lib-$(1) lib
 
-.PHONY: install-$(1)
-install-$(1):
-	+$(MAKE) -C lib-$(1) install
-
-.PHONY: install-$(1)-lib
-install-$(1)-lib:
-	+$(MAKE) -C lib-$(1) install-lib
-
-.PHONY: install-$(1)-dev
-install-$(1)-dev:
-	+$(MAKE) -C lib-$(1) install-dev
-
-lib-$(1): $(OUTPUT_DIR)
-
 endef
 
 $(foreach part,$(ZEEP_LIB_PARTS),$(eval $(call ZEEPLIB_template,$(part))))
 
-.PHONY: libraries
+.PHONY: libraries | $(OUTPUT_DIR)
 libraries: $(ZEEP_LIBS:%=lib-%)
 
 .PHONY: test
@@ -121,23 +109,52 @@ doc:
 endif
 
 .PHONY: all	
-all: libraries test examples
+all: libraries
+ifeq "$(BUILD_DOCS)" "1"
+all: doc
+endif
 
+# Install the libraries
 .PHONY: install-libs
-install-libs: $(ZEEP_LIBS:%=install-%-lib)
+install-libs: libraries
+	install -d $(libdir)
+	for lib in $(ZEEP_LIB_PARTS); do \
+		$(LIBTOOL) --mode=install install lib-$${lib}/libzeep-$${lib}.la $(libdir);\
+	done
 
+# Install header files and .pc files
 .PHONY: install-dev
-install-dev: $(ZEEP_LIBS:%=install-%-dev)
+install-dev: libraries
+	for dir in . ./http ./json ./xml ; do \
+		install -d $(includedir)/zeep/$${dir}; \
+		for hdr in include/zeep/$${dir}/*.hpp ; do \
+			install $${hdr} $(includedir)/zeep/$${dir}; \
+		done; \
+	done
+	install -d $(pkgconfigdir)
+	for lib in $(ZEEP_LIB_PARTS); do \
+		install -m 644 lib-$${lib}/libzeep-$${lib}.pc $(pkgconfigdir)/libzeep-$${lib}.pc; \
+	done
 
 .PHONY: install-doc
 install-doc: doc
-	cd doc; for f in `find html -type f`; do install -D $$f $(docdir)/libzeep-doc/$$f; done
+	cd doc; for d in `find html -type d`; do install -d $(docdir)/libzeep-doc/$$d; done
+	cd doc; for f in `find html -type f`; do install $$f $(docdir)/libzeep-doc/$$f; done
+	mkdir $(DIST_NAME)
+	git archive master | tar -x -C $(DIST_NAME)
+	cd $(DIST_NAME); tar cvf ../examples.tgz examples/
+	install examples.tgz $(docdir)/libzeep-doc/examples.tgz
+	rm -rf $(DIST_NAME) examples.tgz
 
 .PHONY: install
-install: $(ZEEP_LIBS:%=install-%)
+install: install-libs install-dev
+ifeq "$(BUILD_DOCS)" "1"
+	+$(MAKE) install-doc
+endif
 
 .PHONY: clean
 clean: $(ZEEP_LIB_PARTS:%=%_clean)
+	rm -rf lib/*
 	$(MAKE) -C examples clean
 	cd doc; $$(which $(BJAM) > /dev/null) && $(BJAM) clean || echo "No $(BJAM) installed, cannot clean doc"
 	rm -f $(DIST_NAME).tgz

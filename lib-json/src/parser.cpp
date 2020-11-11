@@ -585,7 +585,7 @@ void json_parser::parse_value(json::element& e)
 			break;
 		
 		default:
-			throw std::runtime_error("Syntax eror in json, unexpected token " + describe_token(m_lookahead));
+			throw std::runtime_error("Syntax error in json, unexpected token " + describe_token(m_lookahead));
 	}
 }
 

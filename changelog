@@ -1,3 +1,7 @@
+Version 5.0.2
+- Add support for building shared libraries
+- Split out test code into separate module
+
 Version 5.0.1
 
 - Update makefile to include changes made for the Debian package

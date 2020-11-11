@@ -15,7 +15,7 @@ autom4te.cache
 config.log
 config.status
 GNUmakefile
-*/GNUmakefile
+lib-*/GNUmakefile
 aclocal.m4
 libtool
 lib/

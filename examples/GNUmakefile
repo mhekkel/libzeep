@@ -5,48 +5,15 @@
 # Distributed under the Boost Software License, Version 1.0.
 #    (See accompanying file LICENSE_1_0.txt or copy at
 #          http://www.boost.org/LICENSE_1_0.txt)
+#
+# This makefile assumes you already installed libzeep
 
 .PHONY: firstTarget
 firstTarget: all
 
-CXX					= @CXX@
-CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
-LDFLAGS				= @LDFLAGS@ @BOOST_LDFLAGS@
-LIBS				= @LIBS@
-
-prefix				= @prefix@
-exec_prefix			= @exec_prefix@
-libdir				= @libdir@
-includedir			= @includedir@
-
-ifneq "$(CHECK_CONFIG)" ""
-
-GNUmakefile: ../config.status GNUmakefile.in
-	cd ..; $(SHELL) ./config.status
-
-../config.status: ../configure
-	cd ..; $(SHELL) ./config.status --recheck
-
-../configure: ../configure.ac
-	cd ..; autoconf
-
-endif
-
 # main build variables
-CXXFLAGS            += -I. -pthread -I ../include/
+CXXFLAGS            += -pthread -std=c++17
 WARNINGS            += all no-multichar
-
-# Use the DEBUG flag to build debug versions of the code
-DEBUG               = @DEBUG@
-
-# resource support?
-MRC					= @MRC@
-ifneq "x$(MRC)" "x"
-USE_RSRC			= 1
-DEFINES				+= USE_RSRC
-else
-USE_RSRC			= 0
-endif
 
 ifeq "$(DEBUG)" "1"
 DEFINES				+= DEBUG
@@ -56,10 +23,6 @@ else
 CXXFLAGS			+= -O3
 DEFINES				+= NDEBUG
 endif
-
-# targets
-
-VPATH += src:test
 
 CXXFLAGS			+= $(DEFINES:%=-D%)
 CXXFLAGS			+= $(WARNINGS:%=-W%)
@@ -78,12 +41,9 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo "cc>" $<
 	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
 
-$(OBJDIR)/dummy_rsrc.o:
-	$(MRC) -o $@ test.xml
-
 .PHONY: clean
 clean:
-	rm -rf $(OBJDIR)/* $(EXAMPLES)
+	rm -rf $(OBJDIR)/* $(EXAMPLES:%=$(BINDIR)/%)
 
 ZEEP_LIBS = http xml json
 BOOST_LIBS = system
@@ -94,13 +54,9 @@ define EXAMPLE_template =
 
 $(1)_OBJECTS = $$(OBJDIR)/$(1).o
 
-ifneq ($$(USE_RSRC),0)
-$(1)_OBJECTS += $$(OBJDIR)/dummy_rsrc.o
-endif
-
 $(BINDIR)/$(1): $$($(1)_OBJECTS) | $(BINDIR)
 	@ echo "ld> $(1)"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L../lib $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
 
 endef
 

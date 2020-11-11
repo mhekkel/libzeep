@@ -1,3 +1,16 @@
+using boostbook
+  : /usr/share/xml/docbook/stylesheet/docbook-xsl/
+  : /usr/share/xml/docbook/schema/dtd/4.2/
+  : /usr/share/boostbook
+  ;
+
+using xsltproc : /usr/bin/xsltproc ;
+
+using doxygen : /usr/bin/doxygen ;
+
+using fop : /usr/bin/fop ;
+
+using quickbook : /usr/bin/quickbook ;
 
 doxygen autodoc
     :
