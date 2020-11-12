@@ -3,7 +3,9 @@ language: cpp
 os:
   - linux
   # - osx
-
+arch:
+    - amd64
+    - ppc64le
 dist: focal
 
 # osx_image: xcode12
