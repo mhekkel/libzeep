@@ -32,6 +32,11 @@ ifeq "$(DEBUG)" "1"
 	OBJDIR	:= $(OBJDIR).dbg
 endif
 
+ifeq "$(STAGE)" "1"
+CXXFLAGS			+= -I ../include
+LDFLAGS				+= -L ../lib
+endif
+
 BINDIR = bin
 
 $(OBJDIR) $(BINDIR):

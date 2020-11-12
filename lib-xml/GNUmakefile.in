@@ -38,6 +38,10 @@ GNUmakefile: ../config.status GNUmakefile.in
 
 endif
 
+
+$(LIB_NAME).pc: $(LIB_NAME).pc.in GNUmakefile
+	cd ..; $(SHELL) ./config.status lib-http/$(LIB_NAME).pc
+
 # libtool stuff
 
 LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
@@ -89,7 +93,7 @@ $(LIB_TARGET): $(OBJECTS)
 	$(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
 
 .PHONY: lib
-lib: $(LIB_TARGET)
+lib: $(LIB_TARGET) $(LIB_NAME).pc
 
 -include $(OBJECTS:%.lo=%.d)
 
