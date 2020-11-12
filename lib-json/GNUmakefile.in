@@ -39,7 +39,7 @@ GNUmakefile: ../config.status GNUmakefile.in
 endif
 
 $(LIB_NAME).pc: $(LIB_NAME).pc.in GNUmakefile
-	cd ..; $(SHELL) ./config.status lib-http/$(LIB_NAME).pc
+	cd ..; $(SHELL) ./config.status lib-json/$(LIB_NAME).pc
 
 # libtool stuff
 
