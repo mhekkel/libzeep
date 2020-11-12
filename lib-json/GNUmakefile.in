@@ -39,7 +39,7 @@ GNUmakefile: ../config.status GNUmakefile.in
 endif
 
 $(LIB_NAME).pc: $(LIB_NAME).pc.in GNUmakefile
-	cd ..; $(SHELL) ./config.status lib-http/$(LIB_NAME).pc
+	cd ..; $(SHELL) ./config.status lib-json/$(LIB_NAME).pc
 
 # libtool stuff
 
@@ -48,7 +48,7 @@ CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
 CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -version-info $(LIB_VERSION) -o $@
 
 # main build variables
-CXXFLAGS            += -I. -pthread -I ../include/
+CXXFLAGS            += -I. -I ../include/
 WARNINGS            += all no-multichar
 
 # Use the DEBUG flag to build debug versions of the code
