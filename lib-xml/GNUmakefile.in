@@ -38,6 +38,10 @@ GNUmakefile: ../config.status GNUmakefile.in
 
 endif
 
+
+$(LIB_NAME).pc: $(LIB_NAME).pc.in GNUmakefile
+	cd ..; $(SHELL) ./config.status lib-xml/$(LIB_NAME).pc
+
 # libtool stuff
 
 LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
@@ -46,7 +50,7 @@ CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS
 LT_EXEC = $(LIBTOOL) --silent --mode=execute
 
 # main build variables
-CXXFLAGS            += -I. -pthread -I ../include/
+CXXFLAGS            += -I. -I ../include/
 WARNINGS            += all no-multichar
 
 # Use the DEBUG flag to build debug versions of the code
@@ -89,7 +93,7 @@ $(LIB_TARGET): $(OBJECTS)
 	$(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
 
 .PHONY: lib
-lib: $(LIB_TARGET)
+lib: $(LIB_TARGET) $(LIB_NAME).pc
 
 -include $(OBJECTS:%.lo=%.d)
 

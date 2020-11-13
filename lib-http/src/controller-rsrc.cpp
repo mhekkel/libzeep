@@ -9,15 +9,8 @@
 #include <zeep/streambuf.hpp>
 #include <zeep/http/template-processor.hpp>
 
-#include <dlfcn.h>
-
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
-
-// --------------------------------------------------------------------
-
-namespace zeep
-{
 
 // --------------------------------------------------------------------
 // We have a special, private version of mrsrc here. To be able to create
@@ -34,11 +27,14 @@ namespace mrsrc
 		unsigned int m_size;
 		unsigned int m_data;
 	};
+}
 
-// extern const mrsrc::rsrc_imp gResourceIndex[];
-// extern const char gResourceData[];
-// extern const char gResourceName[];
+extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
+extern const __attribute__((weak)) char gResourceData[];
+extern const __attribute__((weak)) char gResourceName[];
 
+namespace mrsrc
+{
 	class rsrc_data
 	{
 	  public:
@@ -64,23 +60,11 @@ namespace mrsrc
 
 		rsrc_data()
 		{
-			void* handle = dlopen(nullptr, RTLD_LAZY);
-			if (handle == nullptr)
-				std::cerr << "Could not dlopen self" << std::endl;
-			else
+			if (gResourceIndex and gResourceIndex and gResourceName)
 			{
-				void* p = dlsym(handle, "gResourceIndex");
-				void* q = dlsym(handle, "gResourceData");
-				void* r = dlsym(handle, "gResourceName");
-
-				if (p == nullptr or q == nullptr or r == nullptr)
-					std::cerr << "Could not load resources, did you link with the -rdynamic and -ldl flags?" << std::endl;
-				else
-				{
-					m_index = (const rsrc_imp*)p;
-					m_data = (const char*)q;
-					m_name = (const char*)r;
-				}
+				m_index = gResourceIndex;
+				m_data = gResourceData;
+				m_name = gResourceName;
 			}
 		}
 
@@ -430,7 +414,11 @@ namespace mrsrc
 	using istream = basic_istream<char, std::char_traits<char>>;
 }
 
-namespace http
+
+
+// --------------------------------------------------------------------
+
+namespace zeep::http
 {
 
 // -----------------------------------------------------------------------
@@ -478,5 +466,4 @@ std::istream* rsrc_loader::load_file(const std::string& file, std::error_code& e
 	return result;
 }
 
-} // namespace http
-} // namespace zeep
+} // namespace zeep::http
