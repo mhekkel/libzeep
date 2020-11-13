@@ -635,7 +635,6 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-BUILD_DOCS_FALSE
 BUILD_DOCS_TRUE
 BJAM
 FOP
@@ -651,7 +650,6 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
-MRC
 DEBUG
 LZ_LT_VERSION
 LZ_TL_CURRENT
@@ -776,7 +774,6 @@ LT_SYS_LIBRARY_PATH
 CPP
 CXXCPP
 DEBUG
-MRC
 DOXYGEN'
 
 
@@ -1459,7 +1456,6 @@ Some influential environment variables:
   CPP         C preprocessor
   CXXCPP      C++ preprocessor
   DEBUG       Build a debug version of the library
-  MRC         Specify a location for the mrc executable
   DOXYGEN     Path to doxygen needed to build reference documentation
 
 Use these variables to override the choices made by `configure' or to help
@@ -15920,64 +15916,6 @@ fi
 
 
 
-if test "x$MRC" = "x"; then
-	# Extract the first word of "mrc", so it can be a program name with args.
-set dummy mrc; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_MRC+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $MRC in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_MRC="$MRC" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_MRC="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-MRC=$ac_cv_path_MRC
-if test -n "$MRC"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $MRC" >&5
-$as_echo "$MRC" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-if test "x$MRC" = "x"; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: mrc not found, building without support for resources." >&5
-$as_echo "$as_me: WARNING: mrc not found, building without support for resources." >&2;}
-else
-	mrc_version=`${MRC} --version 2>&1 | grep "^.*mrc version" | \\
-               sed -e 's/^.*mrc version *//'`
-	if test "x${mrc_version}" = "x" || test "x${mrc_version}" = "x0.1"; then
-         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Only mrc version 1.2 or greater can be used with libzeep." >&5
-$as_echo "$as_me: WARNING: Only mrc version 1.2 or greater can be used with libzeep." >&2;}
-         as_fn_error $? "Please upgrade your mrc resource compiler." "$LINENO" 5
-	fi
-fi
-
-
-
 
 
 ac_ext=c
@@ -18139,22 +18077,18 @@ else
 fi
 
 
-if test "$enable_documentation" = "yes" && test "$DOXYGEN" = "nodoxygen" -o "$QUICKBOOX" = "noquickbook" -o "$XSLTPROC" = "noxsltproc" -o "$FOP" = "nofop" -o "$BJAM" = "nobjam"; then :
+if test "$enable_documentation" = "yes"; then :
+
+		if test "$DOXYGEN" = "nodoxygen" -o "$QUICKBOOX" = "noquickbook" -o "$XSLTPROC" = "noxsltproc" -o "$FOP" = "nofop" -o "$BJAM" = "nobjam"; then :
   as_fn_error $? "could not find the tools necessary to build the documentation" "$LINENO" 5
 fi
 
- if test "$enable_documentation" = "yes"; then
-  BUILD_DOCS_TRUE=
-  BUILD_DOCS_FALSE='#'
-else
-  BUILD_DOCS_TRUE='#'
-  BUILD_DOCS_FALSE=
+		BUILD_DOCS_TRUE=1
+
+
 fi
 
-
-BUILD_DIR="$abs_top_builddir"
-
-ac_config_files="$ac_config_files GNUmakefile lib-xml/GNUmakefile lib-json/GNUmakefile lib-http/GNUmakefile lib-xml/libzeep-xml.pc lib-json/libzeep-json.pc lib-http/libzeep-http.pc"
+ac_config_files="$ac_config_files GNUmakefile libzeep.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -18301,10 +18235,6 @@ LIBOBJS=$ac_libobjs
 LTLIBOBJS=$ac_ltlibobjs
 
 
-if test -z "${BUILD_DOCS_TRUE}" && test -z "${BUILD_DOCS_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_DOCS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
@@ -19258,12 +19188,7 @@ do
   case $ac_config_target in
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "GNUmakefile") CONFIG_FILES="$CONFIG_FILES GNUmakefile" ;;
-    "lib-xml/GNUmakefile") CONFIG_FILES="$CONFIG_FILES lib-xml/GNUmakefile" ;;
-    "lib-json/GNUmakefile") CONFIG_FILES="$CONFIG_FILES lib-json/GNUmakefile" ;;
-    "lib-http/GNUmakefile") CONFIG_FILES="$CONFIG_FILES lib-http/GNUmakefile" ;;
-    "lib-xml/libzeep-xml.pc") CONFIG_FILES="$CONFIG_FILES lib-xml/libzeep-xml.pc" ;;
-    "lib-json/libzeep-json.pc") CONFIG_FILES="$CONFIG_FILES lib-json/libzeep-json.pc" ;;
-    "lib-http/libzeep-http.pc") CONFIG_FILES="$CONFIG_FILES lib-http/libzeep-http.pc" ;;
+    "libzeep.pc") CONFIG_FILES="$CONFIG_FILES libzeep.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
