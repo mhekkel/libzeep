@@ -12,7 +12,7 @@ SHELL 				= @SHELL@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+CXXFLAGS			= @CPPFLAGS@ @CXXFLAGS@ @BOOST_CPPFLAGS@
 LDFLAGS				= @LDFLAGS@ @BOOST_LDFLAGS@
 LIBS				= @LIBS@
 
@@ -25,9 +25,8 @@ docdir				= @docdir@
 pkgconfigdir		= $(libdir)/pkgconfig
 
 BOOST_LIBS			= program_options
-ZEEP_LIBS			= http json xml
 
-LIBS				+= $(BOOST_LIBS:%=-lboost_%) $(ZEEP_LIBS:%=-lzeep-%)
+LIBS				+= $(BOOST_LIBS:%=-lboost_%)
 
 ifneq "$(CHECK_CONFIG)" ""
 
@@ -55,39 +54,56 @@ CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS
 # main build variables
 CXXFLAGS            += -Wall -Wno-multichar
 
+LIB_NAME			= @PACKAGE_NAME@
+LIB_VERSION			= @LZ_LT_VERSION@
+LIB_TARGET			= $(LIB_NAME).la
 VERSION             = @PACKAGE_VERSION@
 DIST_NAME           = @PACKAGE_NAME@-@PACKAGE_VERSION@
 
-OUTPUT_DIR			?= ./lib
-
 # documentation rules
-@BUILD_DOCS_TRUE@BUILD_DOCS			= 1
+BUILD_DOCS			= @BUILD_DOCS_TRUE@
 BJAM				= @BJAM@
+
+VPATH += lib-http/src:lib-json/src:lib-xml/src
 
 # targets
 
-$(OUTPUT_DIR):
-	mkdir -p $(OUTPUT_DIR)
+OBJDIR = obj
+ifeq "$(DEBUG)" "1"
+	OBJDIR	:= $(OBJDIR).dbg
+endif
 
-ZEEP_LIB_PARTS		= xml json http
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-define ZEEPLIB_template = 
+OBJECTS = \
+	$(OBJDIR)/connection.lo \
+	$(OBJDIR)/controller.lo \
+	$(OBJDIR)/crypto.lo \
+	$(OBJDIR)/daemon.lo \
+	$(OBJDIR)/el-processing.lo \
+	$(OBJDIR)/error-handler.lo \
+	$(OBJDIR)/format.lo \
+	$(OBJDIR)/glob.lo \
+	$(OBJDIR)/html-controller.lo \
+	$(OBJDIR)/login-controller.lo \
+	$(OBJDIR)/message-parser.lo \
+	$(OBJDIR)/preforked-server.lo \
+	$(OBJDIR)/reply.lo \
+	$(OBJDIR)/request.lo \
+	$(OBJDIR)/rest-controller.lo \
+	$(OBJDIR)/security.lo \
+	$(OBJDIR)/server.lo \
+	$(OBJDIR)/soap-controller.lo \
+	$(OBJDIR)/tag-processor-v2.lo \
+	$(OBJDIR)/tag-processor.lo \
+	$(OBJDIR)/template-processor.lo
 
- .PHONY: $(1)_clean
- $(1)_clean:
-	+$(MAKE) -C lib-$(1) clean
 
- .PHONY: $(1)_test
- $(1)_test: libraries
-	+$(MAKE) -C lib-$(1) test
 
-.PHONY: lib-$(1)
-lib-$(1):
-	+$(MAKE) -C lib-$(1) lib
 
-endef
-
-$(foreach part,$(ZEEP_LIB_PARTS),$(eval $(call ZEEPLIB_template,$(part))))
+# lib-http links against lib-xml and lib-json
+lib-http: lib-xml lib-json
 
 .PHONY: libraries
 libraries: $(ZEEP_LIBS:%=lib-%) | $(OUTPUT_DIR)
@@ -119,7 +135,7 @@ endif
 install-libs: libraries
 	install -d $(libdir)
 	for lib in $(ZEEP_LIB_PARTS); do \
-		$(LIBTOOL) --mode=install install lib-$${lib}/libzeep-$${lib}.la $(libdir);\
+		$(LIBTOOL) --mode=install install lib/libzeep-$${lib}.la $(libdir);\
 	done
 
 # Install header files and .pc files

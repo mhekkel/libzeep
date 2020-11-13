@@ -83,8 +83,9 @@ OBJECTS = \
 	$(OBJDIR)/parser.lo
 
 $(LIB_TARGET): $(OBJECTS)
-	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
-	$(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
+	cd ..; $(CXXLINK) -rpath $(libdir) $(OBJECTS:%=lib-json/%) $(LIBS)
+	# $(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
+	# $(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
 
 .PHONY: lib
 lib: $(LIB_TARGET) $(LIB_NAME).pc

@@ -22,7 +22,7 @@ pkgconfigdir		= $(libdir)/pkgconfig
 
 LIB_NAME			= @PACKAGE_NAME@-xml
 LIB_VERSION			= @LZ_LT_VERSION@
-LIB_TARGET			= $(LIB_NAME).la
+LIB_TARGET			= ../lib/$(LIB_NAME).la
 STAGE_DIR			= @abs_top_builddir@/lib
 
 ifneq "$(CHECK_CONFIG)" ""
@@ -37,7 +37,6 @@ GNUmakefile: ../config.status GNUmakefile.in
 	cd ..; autoconf
 
 endif
-
 
 $(LIB_NAME).pc: $(LIB_NAME).pc.in GNUmakefile
 	cd ..; $(SHELL) ./config.status lib-xml/$(LIB_NAME).pc
@@ -89,8 +88,9 @@ OBJECTS = \
 	$(OBJDIR)/xpath.lo
 
 $(LIB_TARGET): $(OBJECTS)
-	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
-	$(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
+	cd ..; $(CXXLINK) -rpath $(libdir) $(OBJECTS:%=lib-xml/%) $(LIBS)
+	# $(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
+	# $(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
 
 .PHONY: lib
 lib: $(LIB_TARGET) $(LIB_NAME).pc

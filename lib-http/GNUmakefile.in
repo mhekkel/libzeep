@@ -22,7 +22,7 @@ pkgconfigdir		= $(libdir)/pkgconfig
 
 LIB_NAME			= @PACKAGE_NAME@-http
 LIB_VERSION			= @LZ_LT_VERSION@
-LIB_TARGET			= $(LIB_NAME).la
+LIB_TARGET			= ../lib/$(LIB_NAME).la
 STAGE_DIR			= @abs_top_builddir@/lib
 
 ifneq "$(CHECK_CONFIG)" ""
@@ -122,8 +122,8 @@ src/mrsrc.h:
 endif
 
 $(LIB_TARGET): $(OBJECTS)
-	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
-	$(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
+	cd ..; $(CXXLINK) -rpath $(libdir) $(OBJECTS:%=lib-http/%) -lzeep-xml -lzeep-json $(LIBS)
+	# $(LIBTOOL) --mode=install cp $@ $(STAGE_DIR)
 
 .PHONY: lib
 lib: $(LIB_TARGET) $(LIB_NAME).pc

@@ -3,8 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libzeep-xml
+Name: libzeep
 Description: C++ library for building web applications
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lzeep-http -lzeep-json -lzeep-xml
+Libs: -L${libdir} -lzeep
 Cflags: -I${includedir}

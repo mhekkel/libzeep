@@ -107,9 +107,4 @@ BUILD_DIR="$abs_top_builddir"
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
-		   lib-xml/GNUmakefile
-		   lib-json/GNUmakefile
-		   lib-http/GNUmakefile
-		   lib-xml/libzeep-xml.pc
-		   lib-json/libzeep-json.pc
-		   lib-http/libzeep-http.pc])
+		   libzeep.pc])
