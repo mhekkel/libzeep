@@ -50,8 +50,8 @@ libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status libtool
 
 LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
-CXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
-CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -version-info $(LIB_VERSION) -o $@
+CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
+CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -version-info $(LIB_VERSION) -o $@
 
 # main build variables
 CXXFLAGS            += -Wall -Wno-multichar -I include
@@ -60,9 +60,27 @@ CXXFLAGS            += -Wall -Wno-multichar -I include
 BUILD_DOCS			= @BUILD_DOCS_TRUE@
 BJAM				= @BJAM@
 
+# resource support?
+MRC					= @MRC@
+
 VPATH += lib-http/src:lib-json/src:lib-xml/src:lib-http/test:lib-json/test:lib-xml/test
 
-# targets
+# Debug support
+
+DEBUG				= @DEBUG@
+
+ifeq "$(DEBUG)" "1"
+DEFINES				+= DEBUG
+CXXFLAGS            += -g -O0
+LDFLAGS				+= -g
+else
+CXXFLAGS			+= -O3
+DEFINES				+= NDEBUG
+endif
+
+CXXFLAGS			+= $(DEFINES:%=-D%)
+
+# Objects
 
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
@@ -75,6 +93,7 @@ $(OBJDIR):
 OBJECTS = \
 	$(OBJDIR)/connection.lo \
 	$(OBJDIR)/controller.lo \
+	$(OBJDIR)/controller-rsrc.lo \
 	$(OBJDIR)/crypto.lo \
 	$(OBJDIR)/daemon.lo \
 	$(OBJDIR)/el-processing.lo \
@@ -119,7 +138,7 @@ $(LIB_TARGET): $(OBJECTS)
 # Example code
 
 .PHONY: examples
-examples: libraries
+examples: $(LIB_TARGET)
 	+$(MAKE) -C examples all
 
 # Documentation
@@ -148,7 +167,7 @@ install-lib: $(LIB_TARGET)
 
 # Install header files and .pc files
 .PHONY: install-dev
-install-dev: libraries
+install-dev: $(LIB_TARGET)
 	for dir in . ./http ./json ./xml ; do \
 		install -d $(includedir)/zeep/$${dir}; \
 		for hdr in include/zeep/$${dir}/*.hpp ; do \
@@ -156,9 +175,9 @@ install-dev: libraries
 		done; \
 	done
 	install -d $(pkgconfigdir)
-	install -m 644 lib-$${lib}/libzeep.pc $(pkgconfigdir)/libzeep-$${lib}.pc;
-	cd examples; for d in `find . -type d`; do install -d $(docdir)/libzeep-dev/$$d; done
-	cd examples; for f in `find . -type f`; do install -m644 $$f $(docdir)/libzeep-dev/$$f; done
+	install -m 644 libzeep.pc $(pkgconfigdir)/libzeep.pc;
+	cd examples; for d in `find . -type d`; do install -d $(docdir)/libzeep-dev/examples/$$d; done
+	cd examples; for f in `find . -type f`; do install -m644 $$f $(docdir)/libzeep-dev/examples/$$f; done
 
 .PHONY: install-doc
 install-doc: doc
@@ -166,7 +185,7 @@ install-doc: doc
 	cd doc; for f in `find html -type f`; do install -m644 $$f $(docdir)/libzeep-doc/$$f; done
 
 .PHONY: install
-install: install-libs install-dev
+install: install-lib install-dev
 ifeq "$(BUILD_DOCS)" "1"
 	+$(MAKE) install-doc
 endif
@@ -176,8 +195,22 @@ endif
 tests:
 	mkdir -p tests
 
+$(OBJDIR)/test_rsrc.o: lib-http/test/fragment-file.xhtml
+	$(MRC) -o $@ $<
 
+QUESTIONABLE_XML_TEST_IDS = \
+	ibm-valid-P28-ibm28v02.xml \
+	ibm-valid-P29-ibm29v01.xml \
+	ibm-valid-P29-ibm29v02.xml \
+	ibm-1-1-valid-P03-ibm03v09.xml \
+	rmt-e2e-34 \
+	rmt-e2e-55 \
+	rmt-054 \
+	rmt-ns10-006 \
+	rmt-e3e-13
 
+parser_PARAMS = lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml $(QUESTIONABLE_XML_TEST_IDS:%=--questionable=%) --print-ids
+xpath_PARAMS = lib-xml/test/XPath-Test-Suite/xpath-tests.xml
 
 define TEST_template =
 
@@ -185,9 +218,9 @@ define TEST_template =
 
 $(1)_OBJECTS = $$(OBJDIR)/client-test-code.o $$(OBJDIR)/$(1)-test.o
 
-# ifneq ($(USE_RSRC),0)
-# $(1)_OBJECTS += $$(OBJDIR)/test_rsrc.o
-# endif
+ifneq "x$(MRC)" "x"
+$(1)_OBJECTS += $$(OBJDIR)/test_rsrc.o
+endif
 
 tests/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS) | tests
 	@ echo ">>> building $(1)-test"
@@ -201,7 +234,7 @@ endef
 
 TESTS = unit parser serializer xpath json crypto http processor webapp soap rest
 
-ifneq ($(USE_RSRC),0)
+ifneq "x$(MRC)" "x"
 TESTS += rsrc_webapp
 endif
 

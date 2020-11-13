@@ -33,6 +33,24 @@ AC_PATH_PROG([SHELL], [sh])
 
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
+AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
+
+dnl We really like to use mrc
+if test "x$MRC" = "x"; then
+	AC_PATH_PROG([MRC], [mrc])
+fi
+
+if test "x$MRC" = "x"; then
+	AC_MSG_WARN([mrc not found, building without support for resources.])
+else
+	mrc_version=`${MRC} --version 2>&1 | grep "^.*mrc version" | \\
+               sed -e 's/^.*mrc version *//'`
+	if test "x${mrc_version}" = "x" || test "x${mrc_version}" = "x0.1"; then
+         AC_MSG_WARN([Only mrc version 1.2 or greater can be used with libzeep.])
+         AC_MSG_ERROR([Please upgrade your mrc resource compiler.])
+	fi
+fi
+
 AX_PTHREAD(
 	[
 		LIBS="$PTHREAD_LIBS $LIBS"
