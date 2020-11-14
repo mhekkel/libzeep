@@ -135,6 +135,9 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 $(LIB_TARGET): $(OBJECTS)
 	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LDFLAGS) $(LIBS)
 
+libzeep.pc: libzeep.pc.in
+	./config.status libzeep.pc
+
 # Example code
 
 .PHONY: examples
@@ -167,7 +170,7 @@ install-lib: $(LIB_TARGET)
 
 # Install header files and .pc files
 .PHONY: install-dev
-install-dev: $(LIB_TARGET)
+install-dev: $(LIB_TARGET) libzeep.pc
 	for dir in . ./http ./json ./xml ; do \
 		install -d $(includedir)/zeep/$${dir}; \
 		for hdr in include/zeep/$${dir}/*.hpp ; do \
@@ -240,12 +243,17 @@ endif
 
 $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 
+lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml: lib-xml/test/XML-Test-Suite.tbz
+	cd lib-xml/test; tar xf XML-Test-Suite.tbz
+
+parser-test: lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml
+
 .PHONY: test
 test: $(TESTS:%=%-test)
 
 .PHONY: clean
 clean:
-	rm -rf $(LIB_TARGET) $(OBJDIR) $(DIST_NAME).tgz .libs
+	rm -rf $(LIB_TARGET) $(OBJDIR) $(DIST_NAME).tgz .libs tests lib-xml/test/XML-Test-Suite/ libzeep.pc
 	$(MAKE) -C examples clean
 	cd doc; $$(which $(BJAM) > /dev/null) && $(BJAM) clean || echo "No $(BJAM) installed, cannot clean doc"
 
