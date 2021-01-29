@@ -1381,15 +1381,27 @@ class element : public node
 	}
 
 	/// \brief insert the data of node \a n at position \a pos, using move semantics
-	template<typename N, std::enable_if_t<
-		std::is_same_v<std::remove_reference_t<N>, text> or
-		std::is_same_v<std::remove_reference_t<N>, cdata> or
-		std::is_same_v<std::remove_reference_t<N>, comment> or
-		std::is_same_v<std::remove_reference_t<N>, processing_instruction>,
-		int> = 0>
-	iterator emplace(const_iterator pos, N&& n)
+	iterator emplace(const_iterator pos, text&& n)
 	{
-		return insert_impl(pos, new N(std::forward<N>(n)));
+		return insert_impl(pos, new text(std::forward<text>(n)));
+	}
+
+	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	iterator emplace(const_iterator pos, cdata&& n)
+	{
+		return insert_impl(pos, new cdata(std::forward<cdata>(n)));
+	}
+
+	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	iterator emplace(const_iterator pos, comment&& n)
+	{
+		return insert_impl(pos, new comment(std::forward<comment>(n)));
+	}
+
+	/// \brief insert the data of node \a n at position \a pos, using move semantics
+	iterator emplace(const_iterator pos, processing_instruction&& n)
+	{
+		return insert_impl(pos, new processing_instruction(std::forward<processing_instruction>(n)));
 	}
 
 	/// \brief emplace a newly constructed element at \a pos using argument \a arg
