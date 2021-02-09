@@ -79,7 +79,7 @@ AC_TRY_LINK(
 	]
 )
 
-AX_BOOST_BASE([1.65.1], [], [
+AX_BOOST_BASE([1.71], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
 ])
 AX_BOOST_ASIO
