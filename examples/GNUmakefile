@@ -50,9 +50,6 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 clean:
 	rm -rf $(OBJDIR)/* $(EXAMPLES:%=$(BINDIR)/%)
 
-ZEEP_LIBS = http xml json
-BOOST_LIBS = system
-
 define EXAMPLE_template =
 
 -include $$(OBJDIR)/$(1).d
@@ -61,7 +58,7 @@ $(1)_OBJECTS = $$(OBJDIR)/$(1).o
 
 $(BINDIR)/$(1): $$($(1)_OBJECTS) | $(BINDIR)
 	@ echo "ld> $(1)"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) $(ZEEP_LIBS:%=-lzeep-%) $(BOOST_LIBS:%=-lboost_%) $(LIBS)
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -lzeep $(LIBS)
 
 endef
 

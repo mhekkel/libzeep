@@ -8,12 +8,14 @@
 
 using namespace std;
 
+#define DOCROOT "./lib-http/test/"
+
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
 
 void process_and_compare(zeep::xml::document& a, zeep::xml::document& b, const zeep::http::scope& scope = {})
 {
-	zeep::http::template_processor p;
+	zeep::http::template_processor p(DOCROOT);
 	zeep::http::tag_processor_v2 tp;
 	tp.process_xml(a.child(), scope, "", p);
  
@@ -376,7 +378,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 	</data>
 		)"_xml;
 
-		zeep::http::template_processor p;
+		zeep::http::template_processor p(DOCROOT);
 		zeep::http::tag_processor_v2 tp;
 
 		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" }}, "");
@@ -411,7 +413,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 	</data>
 		)"_xml;
 
-		zeep::http::template_processor p;
+		zeep::http::template_processor p(DOCROOT);
 		zeep::http::tag_processor_v2 tp;
 
 		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "da, en-US;q=0.7, en;q=0.3" }}, "");
@@ -652,7 +654,7 @@ BOOST_AUTO_TEST_CASE(test_22)
 
 BOOST_AUTO_TEST_CASE(test_22a)
 {
-	zeep::http::template_processor p;
+	zeep::http::template_processor p(DOCROOT);
 
 	zeep::xml::document doc1;
 	p.load_template("fragment-file :: frag1", doc1);

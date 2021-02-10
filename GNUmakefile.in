@@ -12,9 +12,9 @@ SHELL 				= @SHELL@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+CXXFLAGS			= @CPPFLAGS@ @CXXFLAGS@ @BOOST_CPPFLAGS@
 LDFLAGS				= @LDFLAGS@ @BOOST_LDFLAGS@
-LIBS				= @LIBS@
+LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
@@ -23,11 +23,6 @@ datarootdir			= @datarootdir@
 includedir			= @includedir@
 docdir				= @docdir@
 pkgconfigdir		= $(libdir)/pkgconfig
-
-BOOST_LIBS			= program_options
-ZEEP_LIBS			= http json xml
-
-LIBS				+= $(BOOST_LIBS:%=-lboost_%) $(ZEEP_LIBS:%=-lzeep-%)
 
 ifneq "$(CHECK_CONFIG)" ""
 
@@ -42,6 +37,12 @@ configure: configure.ac
 
 endif
 
+LIB_NAME			= @PACKAGE_NAME@
+LIB_VERSION			= @LZ_LT_VERSION@
+LIB_TARGET			= $(LIB_NAME).la
+VERSION             = @PACKAGE_VERSION@
+DIST_NAME           = @PACKAGE_NAME@-@PACKAGE_VERSION@
+
 # libtool stuff
 
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
@@ -50,54 +51,100 @@ libtool: $(LIBTOOL_DEPS)
 
 LIBTOOL = $(SHELL) @abs_top_builddir@/libtool
 CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
-CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
+CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -version-info $(LIB_VERSION) -o $@
 
 # main build variables
-CXXFLAGS            += -Wall -Wno-multichar
-
-VERSION             = @PACKAGE_VERSION@
-DIST_NAME           = @PACKAGE_NAME@-@PACKAGE_VERSION@
-
-OUTPUT_DIR			?= ./lib
+CXXFLAGS            += -Wall -Wno-multichar -I include
 
 # documentation rules
-@BUILD_DOCS_TRUE@BUILD_DOCS			= 1
+BUILD_DOCS			= @BUILD_DOCS_TRUE@
 BJAM				= @BJAM@
 
-# targets
+# resource support?
+MRC					= @MRC@
 
-$(OUTPUT_DIR):
-	mkdir -p $(OUTPUT_DIR)
+VPATH += lib-http/src:lib-json/src:lib-xml/src:lib-http/test:lib-json/test:lib-xml/test
 
-ZEEP_LIB_PARTS		= xml json http
+# Debug support
 
-define ZEEPLIB_template = 
+DEBUG				= @DEBUG@
 
- .PHONY: $(1)_clean
- $(1)_clean:
-	+$(MAKE) -C lib-$(1) clean
+ifeq "$(DEBUG)" "1"
+DEFINES				+= DEBUG
+CXXFLAGS            += -g -O0
+LDFLAGS				+= -g
+else
+CXXFLAGS			+= -O3
+DEFINES				+= NDEBUG
+endif
 
- .PHONY: $(1)_test
- $(1)_test: libraries
-	+$(MAKE) -C lib-$(1) test
+CXXFLAGS			+= $(DEFINES:%=-D%)
 
-.PHONY: lib-$(1)
-lib-$(1):
-	+$(MAKE) -C lib-$(1) lib
+# Objects
 
-endef
+OBJDIR = obj
+ifeq "$(DEBUG)" "1"
+	OBJDIR	:= $(OBJDIR).dbg
+endif
 
-$(foreach part,$(ZEEP_LIB_PARTS),$(eval $(call ZEEPLIB_template,$(part))))
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-.PHONY: libraries
-libraries: $(ZEEP_LIBS:%=lib-%) | $(OUTPUT_DIR)
+OBJECTS = \
+	$(OBJDIR)/connection.lo \
+	$(OBJDIR)/controller.lo \
+	$(OBJDIR)/controller-rsrc.lo \
+	$(OBJDIR)/crypto.lo \
+	$(OBJDIR)/daemon.lo \
+	$(OBJDIR)/el-processing.lo \
+	$(OBJDIR)/error-handler.lo \
+	$(OBJDIR)/format.lo \
+	$(OBJDIR)/glob.lo \
+	$(OBJDIR)/html-controller.lo \
+	$(OBJDIR)/login-controller.lo \
+	$(OBJDIR)/message-parser.lo \
+	$(OBJDIR)/preforked-server.lo \
+	$(OBJDIR)/reply.lo \
+	$(OBJDIR)/request.lo \
+	$(OBJDIR)/rest-controller.lo \
+	$(OBJDIR)/security.lo \
+	$(OBJDIR)/server.lo \
+	$(OBJDIR)/soap-controller.lo \
+	$(OBJDIR)/tag-processor-v2.lo \
+	$(OBJDIR)/tag-processor.lo \
+	$(OBJDIR)/template-processor.lo \
+	$(OBJDIR)/element.lo \
+	$(OBJDIR)/json-parser.lo \
+	$(OBJDIR)/character-classification.lo \
+	$(OBJDIR)/doctype.lo \
+	$(OBJDIR)/document.lo \
+	$(OBJDIR)/node.lo \
+	$(OBJDIR)/xml-parser.lo \
+	$(OBJDIR)/xpath.lo
 
-.PHONY: test
-test: $(ZEEP_LIB_PARTS:%=%_test)
+-include $(OBJECTS:%.lo=%.d)
+
+$(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
+	@ echo ">>" $<
+	@ $(CXXCOMPILE) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
+
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	@ echo ">>" $<
+	@ $(CXX) $(CXXFLAGS) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
+
+$(LIB_TARGET): $(OBJECTS)
+	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LDFLAGS) $(LIBS)
+
+libzeep.pc: libzeep.pc.in
+	./config.status libzeep.pc
+
+# Example code
 
 .PHONY: examples
-examples: libraries
+examples: $(LIB_TARGET)
 	+$(MAKE) -C examples all
+
+# Documentation
 
 .PHONY: doc
 ifeq "$(BUILD_DOCS)" "1"
@@ -109,22 +156,21 @@ doc:
 endif
 
 .PHONY: all	
-all: libraries
+all: $(LIB_TARGET)
+
 ifeq "$(BUILD_DOCS)" "1"
 all: doc
 endif
 
 # Install the libraries
-.PHONY: install-libs
-install-libs: libraries
+.PHONY: install-lib
+install-lib: $(LIB_TARGET)
 	install -d $(libdir)
-	for lib in $(ZEEP_LIB_PARTS); do \
-		$(LIBTOOL) --mode=install install lib-$${lib}/libzeep-$${lib}.la $(libdir);\
-	done
+	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir);
 
 # Install header files and .pc files
 .PHONY: install-dev
-install-dev: libraries
+install-dev: $(LIB_TARGET) libzeep.pc
 	for dir in . ./http ./json ./xml ; do \
 		install -d $(includedir)/zeep/$${dir}; \
 		for hdr in include/zeep/$${dir}/*.hpp ; do \
@@ -132,32 +178,84 @@ install-dev: libraries
 		done; \
 	done
 	install -d $(pkgconfigdir)
-	for lib in $(ZEEP_LIB_PARTS); do \
-		install -m 644 lib-$${lib}/libzeep-$${lib}.pc $(pkgconfigdir)/libzeep-$${lib}.pc; \
-	done
+	install -m 644 libzeep.pc $(pkgconfigdir)/libzeep.pc;
+	cd examples; for d in `find . -type d`; do install -d $(docdir)/libzeep-dev/examples/$$d; done
+	cd examples; for f in `find . -type f`; do install -m644 $$f $(docdir)/libzeep-dev/examples/$$f; done
 
 .PHONY: install-doc
 install-doc: doc
 	cd doc; for d in `find html -type d`; do install -d $(docdir)/libzeep-doc/$$d; done
-	cd doc; for f in `find html -type f`; do install $$f $(docdir)/libzeep-doc/$$f; done
-	mkdir $(DIST_NAME)
-	git archive master | tar -x -C $(DIST_NAME)
-	cd $(DIST_NAME); tar cvf ../examples.tgz examples/
-	install examples.tgz $(docdir)/libzeep-doc/examples.tgz
-	rm -rf $(DIST_NAME) examples.tgz
+	cd doc; for f in `find html -type f`; do install -m644 $$f $(docdir)/libzeep-doc/$$f; done
 
 .PHONY: install
-install: install-libs install-dev
+install: install-lib install-dev
 ifeq "$(BUILD_DOCS)" "1"
 	+$(MAKE) install-doc
 endif
 
+# Test rules
+
+tests:
+	mkdir -p tests
+
+$(OBJDIR)/test_rsrc.o: lib-http/test/fragment-file.xhtml
+	$(MRC) -o $@ $<
+
+QUESTIONABLE_XML_TEST_IDS = \
+	ibm-valid-P28-ibm28v02.xml \
+	ibm-valid-P29-ibm29v01.xml \
+	ibm-valid-P29-ibm29v02.xml \
+	ibm-1-1-valid-P03-ibm03v09.xml \
+	rmt-e2e-34 \
+	rmt-e2e-55 \
+	rmt-054 \
+	rmt-ns10-006 \
+	rmt-e3e-13
+
+parser_PARAMS = lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml $(QUESTIONABLE_XML_TEST_IDS:%=--questionable=%) --print-ids
+xpath_PARAMS = lib-xml/test/XPath-Test-Suite/xpath-tests.xml
+
+define TEST_template =
+
+-include $$(OBJDIR)/$(1)-test.d
+
+$(1)_OBJECTS = $$(OBJDIR)/client-test-code.o $$(OBJDIR)/$(1)-test.o
+
+ifneq "x$(MRC)" "x"
+$(1)_OBJECTS += $$(OBJDIR)/test_rsrc.o
+endif
+
+tests/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS) | tests
+	@ echo ">>> building $(1)-test"
+	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) -L.libs -lzeep $(LIBS)
+
+.PHONY: $(1)-test
+$(1)-test: tests/$(1)-test
+	LD_LIBRARY_PATH=.libs tests/$(1)-test $$($(1)_PARAMS)
+
+endef
+
+TESTS = unit parser serializer xpath json crypto http processor webapp soap rest
+
+ifneq "x$(MRC)" "x"
+TESTS += rsrc_webapp
+endif
+
+$(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
+
+lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml: lib-xml/test/XML-Test-Suite.tbz
+	cd lib-xml/test; tar xf XML-Test-Suite.tbz
+
+parser-test: lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml
+
+.PHONY: test
+test: $(TESTS:%=%-test)
+
 .PHONY: clean
-clean: $(ZEEP_LIB_PARTS:%=%_clean)
-	rm -rf lib/*
+clean:
+	rm -rf $(LIB_TARGET) $(OBJDIR) $(DIST_NAME).tgz .libs tests lib-xml/test/XML-Test-Suite/ libzeep.pc
 	$(MAKE) -C examples clean
 	cd doc; $$(which $(BJAM) > /dev/null) && $(BJAM) clean || echo "No $(BJAM) installed, cannot clean doc"
-	rm -f $(DIST_NAME).tgz
 
 .PHONY: dist
 dist: doc
@@ -167,6 +265,3 @@ dist: doc
 	find doc/html -depth | cpio -pd $(DIST_NAME)
 	tar czf $(DIST_NAME).tgz $(DIST_NAME)
 	rm -rf $(DIST_NAME)
-
-.PHONY: FORCE
-FORCE:

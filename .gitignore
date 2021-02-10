@@ -22,3 +22,6 @@ lib/
 libzeep-*.pc
 examples/bin/
 lib-xml/.gdb_history
+tests/
+.libs/
+libzeep.la

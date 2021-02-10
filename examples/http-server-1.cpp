@@ -1,7 +1,3 @@
-/* compile:
-clang++  -o http-server-1 http-server-1.cpp -I ~/projects/boost_1_73_0 -DWEBAPP_USES_RESOURCES -I. -fPIC -pthread -std=c++17 -Wall -g -DDEBUG -I ../../include/ -L ../../lib -lzeep-http -lzeep-xml -lzeep-json dummy_rsrc.o  -lstdc++fs
-*/
-
 //[ simple_http_server
 #include <zeep/http/server.hpp>
 #include <zeep/http/controller.hpp>

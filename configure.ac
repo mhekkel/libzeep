@@ -35,7 +35,7 @@ AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
 AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
 
-dnl We really want to use mrc
+dnl We really like to use mrc
 if test "x$MRC" = "x"; then
 	AC_PATH_PROG([MRC], [mrc])
 fi
@@ -79,7 +79,7 @@ AC_TRY_LINK(
 	]
 )
 
-AX_BOOST_BASE([1.65.1], [], [
+AX_BOOST_BASE([1.71], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
 ])
 AX_BOOST_ASIO
@@ -98,18 +98,15 @@ AC_PATH_TOOL([XSLTPROC], [xsltproc], [noxsltproc])
 AC_PATH_TOOL([FOP], [fop], [nofop])
 AC_PATH_TOOL([BJAM], [bjam], [nobjam])
 
-AS_IF([test "$enable_documentation" = "yes" && test "$DOXYGEN" = "nodoxygen" -o "$QUICKBOOX" = "noquickbook" -o "$XSLTPROC" = "noxsltproc" -o "$FOP" = "nofop" -o "$BJAM" = "nobjam"],
-	[AC_MSG_ERROR([could not find the tools necessary to build the documentation])])
+AS_IF([test "$enable_documentation" = "yes"],
+	[
+		AS_IF([test "$DOXYGEN" = "nodoxygen" -o "$QUICKBOOX" = "noquickbook" -o "$XSLTPROC" = "noxsltproc" -o "$FOP" = "nofop" -o "$BJAM" = "nobjam"],
+			[AC_MSG_ERROR([could not find the tools necessary to build the documentation])])
 
-AM_CONDITIONAL([BUILD_DOCS], [[test "$enable_documentation" = "yes"]])
-
-BUILD_DIR="$abs_top_builddir"
+		BUILD_DOCS_TRUE=1
+		AC_SUBST(BUILD_DOCS_TRUE)
+])
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
-		   lib-xml/GNUmakefile
-		   lib-json/GNUmakefile
-		   lib-http/GNUmakefile
-		   lib-xml/libzeep-xml.pc
-		   lib-json/libzeep-json.pc
-		   lib-http/libzeep-http.pc])
+		   libzeep.pc])

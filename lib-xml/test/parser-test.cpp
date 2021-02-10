@@ -367,6 +367,7 @@ int main(int argc, char* argv[])
 		("single", po::value<string>(), "Test a single XML file")
 		("dump", po::value<string>(), "Dump the structure of a single XML file")
 		("print-ids", "Print the ID's of failed tests")
+		("conf", po::value<string>(), "Configuration file")
 	;
 	
 	po::positional_options_description p;
@@ -420,7 +421,6 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			
 			fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
 			if (vm.count("test"))
 				xmlconfFile = vm["test"].as<string>();
