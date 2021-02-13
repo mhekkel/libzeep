@@ -373,7 +373,9 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<not (zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or std::is_enum_v<T>), int> = 0>
+		template<typename T, std::enable_if_t<not (
+			zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or std::is_enum_v<T> or
+			zeep::is_serializable_array_type_v<T, zeep::json::deserializer<json::element>>), int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			try
@@ -400,7 +402,8 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>>, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or
+			zeep::is_serializable_array_type_v<T, zeep::json::deserializer<json::element>>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			json::element v;
