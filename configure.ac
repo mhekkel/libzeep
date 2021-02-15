@@ -15,7 +15,7 @@ AC_PREFIX_DEFAULT(/usr/local)
 AC_PROG_INSTALL
 
 dnl Shared libraries are not convenient
-LT_INIT([disable-shared])
+LT_INIT([disable-shared pic-only])
 AC_SUBST(LIBTOOL_DEPS)
 
 dnl versioning
