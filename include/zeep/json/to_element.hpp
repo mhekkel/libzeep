@@ -11,6 +11,7 @@
 #include <zeep/config.hpp>
 
 #include <zeep/json/type_traits.hpp>
+#include <optional>
 
 namespace zeep::json::detail
 {
