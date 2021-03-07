@@ -8,6 +8,7 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/json/parser.hpp>
 #include <filesystem>
 
 namespace ba = boost::algorithm;
@@ -244,7 +245,23 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			return std::make_tuple(result, true);
 	}
 
-	if (ba::starts_with(contentType, "multipart/form-data"))
+	if (ba::starts_with(contentType, "application/json"))
+	{
+		try
+		{
+			json::element e;
+			json::parse_json(m_payload, e);
+			if (e.is_object() and e.contains(name))
+			{
+				result = e.at(name).as<std::string>();
+				found = true;
+			}
+		}
+		catch (const std::exception& ex)
+		{
+		}
+	}
+	else if (ba::starts_with(contentType, "multipart/form-data"))
 	{
 		std::string::size_type b = contentType.find("boundary=");
 		if (b != std::string::npos)

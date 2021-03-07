@@ -226,7 +226,6 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 		sigaddset(&wait_mask, SIGHUP);
 		sigaddset(&wait_mask, SIGQUIT);
 		sigaddset(&wait_mask, SIGTERM);
-		sigaddset(&wait_mask, SIGCHLD);
 		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
 
 		int sig;

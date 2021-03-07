@@ -110,6 +110,8 @@ struct GrafiekData
 	}
 };
 
+using Opnames = std::vector<Opname>;
+
 class e_rest_controller : public zeep::http::rest_controller
 {
   public:
@@ -123,6 +125,10 @@ class e_rest_controller : public zeep::http::rest_controller
 		map_delete_request("opname/{id}", &e_rest_controller::delete_opname, "id");
 
 		map_get_request("data/{type}/{aggr}", &e_rest_controller::get_grafiek, "type", "aggr");
+
+		map_get_request("opname", &e_rest_controller::get_opnames);
+
+		map_put_request("opnames", &e_rest_controller::set_opnames, "opnames");
 	}
 
 	// CRUD routines
@@ -134,6 +140,15 @@ class e_rest_controller : public zeep::http::rest_controller
 	void put_opname(string opnameId, Opname opname)
 	{
 		{};
+	}
+
+	Opnames get_opnames()
+	{
+		return { {}, {} };
+	}
+
+	void set_opnames(Opnames opnames)
+	{
 	}
 
 	Opname get_opname(string id)

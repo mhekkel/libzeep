@@ -15,7 +15,7 @@ AC_PREFIX_DEFAULT(/usr/local)
 AC_PROG_INSTALL
 
 dnl Shared libraries are not convenient
-LT_INIT([disable-shared])
+LT_INIT([disable-shared pic-only])
 AC_SUBST(LIBTOOL_DEPS)
 
 dnl versioning
@@ -79,7 +79,7 @@ AC_TRY_LINK(
 	]
 )
 
-AX_BOOST_BASE([1.65.1], [], [
+AX_BOOST_BASE([1.71], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
 ])
 AX_BOOST_ASIO

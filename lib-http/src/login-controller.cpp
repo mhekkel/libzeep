@@ -30,6 +30,11 @@ class login_error_handler : public error_handler
 		return true;
 	}
 
+	virtual bool create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
+	{
+		return false;
+	}
+
   private:
 	login_controller* m_login_controller;
 };
