@@ -54,7 +54,29 @@ std::string encode_base64url(std::string_view data);
 /// \param data			The string containing data to decode
 std::string decode_base64url(std::string data);
 
-/// \brief Thrown when the input does not contain valid base64 encoded data
+// And base32 might be handy as well, RFC 4648 (see https://en.wikipedia.org/wiki/Base32)
+
+/// \brief Thrown when the input does not contain valid base32 encoded data
+class invalid_base32 : public std::exception
+{
+  public:
+	invalid_base32() {}
+
+	const char* what() const noexcept { return "invalid base32 input"; }
+};
+
+/// \brief encode \a data in base32 format
+///
+/// \param data			The string containing data to encode
+/// \param wrap_width	If this value is not zero, lines in the output will be wrapped to this width.
+std::string encode_base32(std::string_view data, size_t wrap_width = 0);
+
+/// \brief decode data from base32 format, will throw invalid_base32 in case of invalid input
+///
+/// \param data			The string containing data to decode
+std::string decode_base32(std::string_view data);
+
+/// \brief Thrown when the input does not contain valid hexadecimal encoded data
 class invalid_hex : public std::exception
 {
   public:
