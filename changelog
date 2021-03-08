@@ -1,3 +1,10 @@
+Version 5.1.0
+- Added base32 encoding/decoding
+- Various REST controller fixes, mainly in accepting parameters
+- The library is now always compiled with PIC
+- Requred boost version is now 71
+- Ignore SIGCHLD in foreground mode
+
 Version 5.0.2
 - Add support for building shared libraries
 - Decoupled example code from rest, should now be build after installation,
