@@ -38,6 +38,7 @@ configure: configure.ac
 endif
 
 LIB_NAME			= @PACKAGE_NAME@
+PACKAGE_TARNAME		= @PACKAGE_TARNAME@
 LIB_VERSION			= @LZ_LT_VERSION@
 LIB_TARGET			= $(LIB_NAME).la
 VERSION             = @PACKAGE_VERSION@
