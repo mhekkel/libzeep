@@ -7,9 +7,11 @@
 // Source code specifically for Unix/Linux
 // Utilitie routines to build daemon processes
 
+#ifndef _MSC_VER
 #include <pwd.h>
 #include <grp.h>
 #include <sys/wait.h>
+#endif
 
 #include <fstream>
 #include <filesystem>
@@ -18,6 +20,8 @@
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>
+
+#include "signals.hpp"
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
@@ -46,6 +50,61 @@ daemon::daemon(server_factory_type&& factory, const char* name)
 		"/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
 {
 }
+
+int daemon::run_foreground(const std::string& address, uint16_t port)
+{
+	int result = 0;
+	
+	if (pid_is_for_executable())
+	{
+		std::cerr << "Server is already running." << std::endl;
+		result = 1;
+	}
+	else
+	{
+        try
+        {
+            boost::asio::io_service io_service;
+            boost::asio::ip::tcp::resolver resolver(io_service);
+
+			boost::system::error_code ec;
+
+            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
+
+            boost::asio::ip::tcp::acceptor acceptor(io_service);
+            acceptor.open(endpoint.protocol());
+            acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+            acceptor.bind(endpoint);
+            acceptor.listen();
+            
+            acceptor.close();
+        }
+        catch (exception& e)
+        {
+            throw std::runtime_error(std::string("Is server running already? ") + e.what());
+        }
+        
+		signal_catcher sc;
+		sc.block();
+
+		std::unique_ptr<server> s(m_factory());
+		s->bind(address, port);
+		std::thread t(std::bind(&server::run, s.get(), 1));
+
+		sc.unblock();
+
+		sc.wait();
+
+		s->stop();
+
+		if (t.joinable())
+			t.join();
+	}
+	
+	return result;
+}
+
+#ifndef _MSC_VER
 
 int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
 {
@@ -174,72 +233,6 @@ int daemon::reload()
     }
 
     return result;
-}
-
-int daemon::run_foreground(const std::string& address, uint16_t port)
-{
-	int result = 0;
-	
-	if (pid_is_for_executable())
-	{
-		std::cerr << "Server is already running." << std::endl;
-		result = 1;
-	}
-	else
-	{
-        try
-        {
-            boost::asio::io_service io_service;
-            boost::asio::ip::tcp::resolver resolver(io_service);
-
-			boost::system::error_code ec;
-
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
-
-            boost::asio::ip::tcp::acceptor acceptor(io_service);
-            acceptor.open(endpoint.protocol());
-            acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-            acceptor.bind(endpoint);
-            acceptor.listen();
-            
-            acceptor.close();
-        }
-        catch (exception& e)
-        {
-            throw std::runtime_error(std::string("Is server running already? ") + e.what());
-        }
-        
-		sigset_t new_mask, old_mask;
-		sigfillset(&new_mask);
-		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-
-		std::unique_ptr<server> s(m_factory());
-		s->bind(address, port);
-		std::thread t(std::bind(&server::run, s.get(), 1));
-
-		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-
-		// Wait for signal indicating time to shut down.
-		sigset_t wait_mask;
-		sigemptyset(&wait_mask);
-		sigaddset(&wait_mask, SIGINT);
-		sigaddset(&wait_mask, SIGHUP);
-		sigaddset(&wait_mask, SIGQUIT);
-		sigaddset(&wait_mask, SIGTERM);
-		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-
-		int sig;
-		sigwait(&wait_mask, &sig);
-
-		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-
-		s->stop();
-
-		if (t.joinable())
-			t.join();
-	}
-	
-	return result;
 }
 
 void daemon::daemonize()
@@ -499,5 +492,7 @@ bool daemon::pid_is_for_executable()
 
 	return result;
 }
+
+#endif
 
 }

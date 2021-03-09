@@ -21,6 +21,7 @@
 #include <boost/iostreams/stream.hpp>
 
 #include "client-test-code.hpp"
+#include "../src/signals.hpp"
 
 namespace z = zeep;
 namespace zx = zeep::xml;
@@ -136,7 +137,8 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(5);
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
 
 	try
 	{
@@ -157,7 +159,7 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 		std::cerr << e.what() << std::endl;
 	}
 
-	pthread_kill(t.native_handle(), SIGHUP);
+	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
 }
@@ -204,7 +206,8 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(5);
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
 
 	try
 	{
@@ -268,7 +271,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		std::cerr << e.what() << std::endl;
 	}
 
-	pthread_kill(t.native_handle(), SIGHUP);
+	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
 }

@@ -108,6 +108,7 @@ OBJECTS = \
 	$(OBJDIR)/reply.lo \
 	$(OBJDIR)/request.lo \
 	$(OBJDIR)/rest-controller.lo \
+	$(OBJDIR)/signals.lo \
 	$(OBJDIR)/security.lo \
 	$(OBJDIR)/server.lo \
 	$(OBJDIR)/soap-controller.lo \
