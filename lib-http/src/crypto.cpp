@@ -1031,7 +1031,7 @@ struct sha1_hash_impl : public hash_impl
 
 	virtual void write_bit_length(uint64_t l, uint8_t* b)
 	{
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
 #else
 		b[0] = l >> 56;
@@ -1052,7 +1052,7 @@ struct sha1_hash_impl : public hash_impl
 			uint32_t w[80];
 		} w;
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(w.s, data, 64);
 #else
 		auto p = data;
@@ -1114,7 +1114,7 @@ struct sha1_hash_impl : public hash_impl
 	{
 		std::string result(digest_size, '\0');
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
 #else
 		auto s = result.begin();
@@ -1156,7 +1156,7 @@ struct sha256_hash_impl : public hash_impl
 
 	virtual void write_bit_length(uint64_t l, uint8_t* b)
 	{
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
 #else
 		b[0] = l >> 56;
@@ -1192,7 +1192,7 @@ struct sha256_hash_impl : public hash_impl
 			uint32_t w[64];
 		} w;
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(w.w, data, 64);
 #else
 		auto p = data;
@@ -1239,7 +1239,7 @@ struct sha256_hash_impl : public hash_impl
 	{
 		std::string result(digest_size, '\0');
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
 #else
 		auto s = result.begin();
