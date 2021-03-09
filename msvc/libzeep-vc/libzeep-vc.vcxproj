@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{05F8A6BE-D02D-4FA9-BC07-31D16E1B8F7F}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\..\boost_1_75_0</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\..\boost_1_75_0</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../boost_1_75_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../boost_1_75_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\lib-http\src\connection.cpp" />
+    <ClCompile Include="..\..\lib-http\src\controller.cpp" />
+    <ClCompile Include="..\..\lib-http\src\crypto.cpp" />
+    <ClCompile Include="..\..\lib-http\src\daemon.cpp" />
+    <ClCompile Include="..\..\lib-http\src\el-processing.cpp" />
+    <ClCompile Include="..\..\lib-http\src\error-handler.cpp" />
+    <ClCompile Include="..\..\lib-http\src\format.cpp" />
+    <ClCompile Include="..\..\lib-http\src\glob.cpp" />
+    <ClCompile Include="..\..\lib-http\src\html-controller.cpp" />
+    <ClCompile Include="..\..\lib-http\src\login-controller.cpp" />
+    <ClCompile Include="..\..\lib-http\src\message-parser.cpp" />
+    <ClCompile Include="..\..\lib-http\src\preforked-server.cpp" />
+    <ClCompile Include="..\..\lib-http\src\reply.cpp" />
+    <ClCompile Include="..\..\lib-http\src\request.cpp" />
+    <ClCompile Include="..\..\lib-http\src\rest-controller.cpp" />
+    <ClCompile Include="..\..\lib-http\src\security.cpp" />
+    <ClCompile Include="..\..\lib-http\src\server.cpp" />
+    <ClCompile Include="..\..\lib-http\src\signals.cpp" />
+    <ClCompile Include="..\..\lib-http\src\soap-controller.cpp" />
+    <ClCompile Include="..\..\lib-http\src\tag-processor-v2.cpp" />
+    <ClCompile Include="..\..\lib-http\src\tag-processor.cpp" />
+    <ClCompile Include="..\..\lib-http\src\template-processor.cpp" />
+    <ClCompile Include="..\..\lib-json\src\element.cpp" />
+    <ClCompile Include="..\..\lib-json\src\json-parser.cpp" />
+    <ClCompile Include="..\..\lib-xml\src\character-classification.cpp" />
+    <ClCompile Include="..\..\lib-xml\src\doctype.cpp" />
+    <ClCompile Include="..\..\lib-xml\src\document.cpp" />
+    <ClCompile Include="..\..\lib-xml\src\node.cpp" />
+    <ClCompile Include="..\..\lib-xml\src\xml-parser.cpp" />
+    <ClCompile Include="..\..\lib-xml\src\xpath.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\zeep\config.hpp" />
+    <ClInclude Include="..\..\include\zeep\crypto.hpp" />
+    <ClInclude Include="..\..\include\zeep\exception.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\connection.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\controller.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\daemon.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\el-processing.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\error-handler.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\header.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\html-controller.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\login-controller.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\message-parser.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\preforked-server.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\reply.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\request.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\rest-controller.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\security.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\server.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\soap-controller.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\tag-processor.hpp" />
+    <ClInclude Include="..\..\include\zeep\http\template-processor.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\element.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\element_fwd.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\factory.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\from_element.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\iterator.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\parser.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\serializer.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\to_element.hpp" />
+    <ClInclude Include="..\..\include\zeep\json\type_traits.hpp" />
+    <ClInclude Include="..\..\include\zeep\nvp.hpp" />
+    <ClInclude Include="..\..\include\zeep\streambuf.hpp" />
+    <ClInclude Include="..\..\include\zeep\type-traits.hpp" />
+    <ClInclude Include="..\..\include\zeep\unicode-support.hpp" />
+    <ClInclude Include="..\..\include\zeep\value-serializer.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\character-classification.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\doctype.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\document.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\node.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\parser.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\serialize.hpp" />
+    <ClInclude Include="..\..\include\zeep\xml\xpath.hpp" />
+    <ClInclude Include="..\..\lib-http\src\format.hpp" />
+    <ClInclude Include="..\..\lib-http\src\glob.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="doc\index.html" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

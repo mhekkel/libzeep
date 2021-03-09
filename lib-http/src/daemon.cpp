@@ -51,7 +51,6 @@ daemon::daemon(server_factory_type&& factory, const char* name)
 {
 }
 
-<<<<<<< Updated upstream
 int daemon::run_foreground(const std::string& address, uint16_t port)
 {
 	int result = 0;
@@ -105,11 +104,41 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 	return result;
 }
 
-#ifndef _MSC_VER
+#if _MSC_VER
 
-=======
-#ifndef _MSC_VER
->>>>>>> Stashed changes
+int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
+{
+	assert(false);
+	return -1;
+}
+
+int daemon::stop()
+{
+	return -1;
+}
+
+int daemon::status()
+{
+	return -1;
+}
+
+int daemon::reload()
+{
+	return -1;
+}
+
+bool daemon::pid_is_for_executable()
+{
+	return false;
+}
+
+void daemon::daemonize()
+{
+	assert(false);
+}
+
+#else 
+
 int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
 {
 	int result = 0;
@@ -237,77 +266,6 @@ int daemon::reload()
     }
 
     return result;
-}
-#endif
-
-int daemon::run_foreground(const std::string& address, uint16_t port)
-{
-	int result = 0;
-	
-	if (pid_is_for_executable())
-	{
-		std::cerr << "Server is already running." << std::endl;
-		result = 1;
-	}
-	else
-	{
-        try
-        {
-            boost::asio::io_service io_service;
-            boost::asio::ip::tcp::resolver resolver(io_service);
-
-			boost::system::error_code ec;
-
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
-
-            boost::asio::ip::tcp::acceptor acceptor(io_service);
-            acceptor.open(endpoint.protocol());
-            acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-            acceptor.bind(endpoint);
-            acceptor.listen();
-            
-            acceptor.close();
-        }
-        catch (exception& e)
-        {
-            throw std::runtime_error(std::string("Is server running already? ") + e.what());
-        }
-        
-#ifndef _MSC_VER
-		sigset_t new_mask, old_mask;
-		sigfillset(&new_mask);
-		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-#endif
-
-		std::unique_ptr<server> s(m_factory());
-		s->bind(address, port);
-		std::thread t(std::bind(&server::run, s.get(), 1));
-
-#ifndef _MSC_VER
-		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-
-		// Wait for signal indicating time to shut down.
-		sigset_t wait_mask;
-		sigemptyset(&wait_mask);
-		sigaddset(&wait_mask, SIGINT);
-		sigaddset(&wait_mask, SIGHUP);
-		sigaddset(&wait_mask, SIGQUIT);
-		sigaddset(&wait_mask, SIGTERM);
-		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-
-		int sig;
-		sigwait(&wait_mask, &sig);
-
-		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-#endif
-
-		s->stop();
-
-		if (t.joinable())
-			t.join();
-	}
-	
-	return result;
 }
 
 void daemon::daemonize()
