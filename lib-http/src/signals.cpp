@@ -21,6 +21,18 @@ namespace zeep
 
 #if _MSC_VER
 
+#include <Windows.h>
+#include <wincon.h>
+#include <signal.h>
+
+#ifndef SIGQUIT
+#define SIGQUIT SIGTERM
+#endif
+
+#ifndef SIGHUP
+#define SIGHUP SIGBREAK
+#endif
+
 struct signal_catcher_impl
 {
 	static BOOL __stdcall CtrlHandler(DWORD inCntrlType);
@@ -75,7 +87,7 @@ BOOL signal_catcher_impl::CtrlHandler(DWORD inCntrlType)
 signal_catcher::signal_catcher()
 	: mImpl(nullptr)
 {
-	if (not ::SetConsoleCtrlHandler(&signal_catcher_impl::CtrlHandler, true))
+	if (not SetConsoleCtrlHandler(&signal_catcher_impl::CtrlHandler, true))
 		throw std::runtime_error("Could not install control handler");
 }
 
@@ -93,7 +105,7 @@ void signal_catcher::unblock()
 
 int signal_catcher::wait()
 {
-	boost::unique_lock<boost::mutex> lock(signal_catcher_impl::sMutex);
+	std::unique_lock<std::mutex> lock(signal_catcher_impl::sMutex);
 	signal_catcher_impl::sCondition.wait(lock);
 	return signal_catcher_impl::sSignal;
 }

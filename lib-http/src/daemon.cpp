@@ -104,7 +104,40 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 	return result;
 }
 
-#ifndef _MSC_VER
+#if _MSC_VER
+
+int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
+{
+	assert(false);
+	return -1;
+}
+
+int daemon::stop()
+{
+	return -1;
+}
+
+int daemon::status()
+{
+	return -1;
+}
+
+int daemon::reload()
+{
+	return -1;
+}
+
+bool daemon::pid_is_for_executable()
+{
+	return false;
+}
+
+void daemon::daemonize()
+{
+	assert(false);
+}
+
+#else 
 
 int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
 {

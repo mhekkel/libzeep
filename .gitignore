@@ -25,3 +25,9 @@ lib-xml/.gdb_history
 tests/
 .libs/
 libzeep.la
+msvc/libzeep-vc/x64/
+msvc/.vs/libzeep-vc/v16/
+.vs/
+**/*.vcxproj.user
+**/Debug/
+

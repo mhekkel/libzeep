@@ -1,9 +1,9 @@
+#include <boost/asio.hpp>
+
 #define BOOST_TEST_MODULE WebApp_Test
 #include <boost/test/included/unit_test.hpp>
 
 #include <random>
-
-#include <boost/asio.hpp>
 
 #include <zeep/crypto.hpp>
 #include <zeep/streambuf.hpp>
@@ -14,6 +14,7 @@
 #include <zeep/http/server.hpp>
 
 #include "client-test-code.hpp"
+#include "../src/signals.hpp"
 
 using namespace std;
 namespace z = zeep;
@@ -255,7 +256,8 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(5);
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(2s);
 
 	try
 	{
@@ -269,7 +271,7 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 		std::cerr << ex.what() << std::endl;
 	}
 
-	pthread_kill(t.native_handle(), SIGHUP);
+	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
 
@@ -282,7 +284,10 @@ BOOST_AUTO_TEST_CASE(webapp_10)
 	srv.add_controller(new hello_controller());
 
 	std::thread t([&srv]() mutable {
-		sleep(2);
+		
+		using namespace std::chrono_literals;
+		std::this_thread::sleep_for(2s);
+
 		srv.stop();
 	});
 

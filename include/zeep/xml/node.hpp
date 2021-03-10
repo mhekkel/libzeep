@@ -1164,7 +1164,7 @@ class attribute_set : public basic_node_list<attribute>
 		return *this;
 	}
 
-	attribute_set& operator=(attribute_set&& l)
+	attribute_set& operator=(attribute_set&& l) noexcept
 	{
 		if (this != &l)
 		{

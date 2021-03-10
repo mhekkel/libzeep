@@ -7,6 +7,7 @@
 #include <stack>
 #include <map>
 #include <sstream>
+#include <array>
 
 #include <boost/algorithm/string.hpp>
 
