@@ -164,7 +164,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")))
 				redirect_to += uri;
 
-			rep = reply::redirect(fs::path(redirect_to).lexically_normal().string());
+			rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
 
 			auto username = req.get_parameter("username");
 			auto password = req.get_parameter("password");
@@ -206,7 +206,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")))
 			redirect_to += uri;
 
-		rep = reply::redirect(fs::path(redirect_to).lexically_normal().string());
+		rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
 		rep.set_delete_cookie("access_token");
 
 		result = true;
