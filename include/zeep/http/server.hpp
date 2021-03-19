@@ -69,6 +69,18 @@ class server
 	/// \brief Test if a security context was provided in the constructor
 	bool has_security_context() const				{ return (bool)m_security_context; }
 
+	/// \brief Set the set of allowed methods (default is "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE")
+	void set_allowed_methods(const std::set<std::string>& methods)
+	{
+		m_allowed_methods = methods;
+	}
+
+	/// \brief Get the set of allowed methods
+	std::set<std::string> get_allowed_methods() const
+	{
+		return m_allowed_methods;
+	}
+
 	/// \brief Set the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
@@ -152,6 +164,12 @@ class server
 	/// \brief get_io_service has to be public since we need it to call notify_fork from child code
 	boost::asio::io_service& get_io_service() { return m_io_service; }
 
+	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
+	boost::asio::io_context& get_io_context() { return m_io_service; }
+
+	/// \brief get_executor has to be public since we need it to call notify_fork from child code
+	boost::asio::io_service::executor_type get_executor() { return m_io_service.get_executor(); }
+
   protected:
 
 	/// \brief the default entry logger
@@ -182,6 +200,7 @@ class server
 	std::unique_ptr<basic_template_processor> m_template_processor;
 	std::list<controller*> m_controllers;
 	std::list<error_handler*> m_error_handlers;
+	std::set<std::string> m_allowed_methods;
 };
 
 } // namespace zeep::http

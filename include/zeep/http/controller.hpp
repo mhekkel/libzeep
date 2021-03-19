@@ -36,7 +36,7 @@ class controller
 	virtual ~controller();
 
 	/// \brief Calls handle_request but stores a pointer to the request first
-	virtual bool dispatch_request(request& req, reply& rep);
+	virtual bool dispatch_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep);
 
 	/// \brief The pure virtual method that actually handles the request
 	virtual bool handle_request(request& req, reply& rep) = 0;

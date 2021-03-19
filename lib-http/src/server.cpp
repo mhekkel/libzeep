@@ -34,6 +34,7 @@ std::mutex s_log_lock;
 server::server()
 	: m_log_forwarded(true)
 	, m_security_context(nullptr)
+	, m_allowed_methods{ "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE" }
 {
 	using namespace boost::local_time;
 
@@ -186,11 +187,8 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 
 		// shortcut, check for supported method
 		auto method = req.get_method();
-		if (method != "GET" and method != "POST" and method != "PUT" and
-			method != "OPTIONS" and method != "HEAD" and method != "DELETE")
-		{
+		if (not (m_allowed_methods.empty() or m_allowed_methods.count(method)))
 			throw bad_request;
-		}
 
 		std::string csrf;
 		bool csrf_is_new = false;
@@ -210,7 +208,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 			if (not c->path_matches_prefix(path))
 				continue;
 
-			if (c->dispatch_request(req, rep))
+			if (c->dispatch_request(socket, req, rep))
 				break;
 		}
 		
