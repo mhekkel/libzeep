@@ -34,34 +34,34 @@ class error_handler;
 /// combination. Add controller classes to do the actual work. These controllers will be tried in the order
 /// at which they were added to see if they want to process a request.
 
-class server
+class basic_server
 {
   public:
 
 	/// \brief Simple server, no security, no template processor
-	server();
+	basic_server();
 
 	/// \brief Simple server, no security, create default template processor with \a docroot
-	server(const std::string& docroot)
-		: server()
+	basic_server(const std::string& docroot)
+		: basic_server()
 	{
 		set_template_processor(new template_processor(docroot));
 	}
 
 	/// \brief server with a security context for limited access
-	server(security_context* s_ctxt);
+	basic_server(security_context* s_ctxt);
 
 	/// \brief server with a security context for limited access, create default template processor with \a docroot
-	server(security_context* s_ctxt, const std::string& docroot)
-		: server(s_ctxt)
+	basic_server(security_context* s_ctxt, const std::string& docroot)
+		: basic_server(s_ctxt)
 	{
 		set_template_processor(new template_processor(docroot));
 	}
 
-	server(const server&) = delete;
-	server& operator=(const server&) = delete;
+	basic_server(const basic_server&) = delete;
+	basic_server& operator=(const basic_server&) = delete;
 
-	virtual ~server();
+	virtual ~basic_server();
 
 	/// \brief Get the security context provided in the constructor
 	security_context& get_security_context() 		{ return *m_security_context; }
@@ -162,10 +162,10 @@ class server
 	unsigned short get_port() const { return m_port; }
 
 	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
-	boost::asio::io_context& get_io_context() { return m_io_context; }
+	virtual boost::asio::io_context& get_io_context() = 0;
 
 	/// \brief get_executor has to be public since we need it to call notify_fork from child code
-	boost::asio::io_context::executor_type get_executor() { return m_io_context.get_executor(); }
+	boost::asio::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
 
   protected:
 
@@ -185,7 +185,6 @@ class server
 
 	void handle_accept(boost::system::error_code ec);
 
-	boost::asio::io_context m_io_context;
 	std::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor;
 	std::list<std::thread> m_threads;
 	std::shared_ptr<connection> m_new_connection;
@@ -198,6 +197,40 @@ class server
 	std::list<controller*> m_controllers;
 	std::list<error_handler*> m_error_handlers;
 	std::set<std::string> m_allowed_methods;
+};
+
+// --------------------------------------------------------------------
+/// \brief The most often used server class, contains its own io_context.
+
+class server : public basic_server
+{
+  public:
+	/// \brief Simple server, no security, no template processor
+	server() {}
+
+	/// \brief Simple server, no security, create default template processor with \a docroot
+	server(const std::string& docroot) : basic_server(docroot) {}
+
+	/// \brief server with a security context for limited access
+	server(security_context* s_ctxt) : basic_server(s_ctxt) {}
+
+	/// \brief server with a security context for limited access, create default template processor with \a docroot
+	server(security_context* s_ctxt, const std::string& docroot) : basic_server(s_ctxt, docroot) {}
+
+	boost::asio::io_context& get_io_context() override
+	{
+		return m_io_context;
+	}
+
+	/// \brief Stop the server and also stop the io_context
+	virtual void stop()
+	{
+		basic_server::stop();
+		m_io_context.stop();
+	}
+
+  private:
+	boost::asio::io_context m_io_context;
 };
 
 } // namespace zeep::http

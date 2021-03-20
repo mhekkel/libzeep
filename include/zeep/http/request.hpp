@@ -73,7 +73,7 @@ class request
 
 	friend class message_parser;
 	friend class request_parser;
-	friend class server;
+	friend class basic_server;
 
 	using param = header;	// alias name
 	using cookie_directive = header;	

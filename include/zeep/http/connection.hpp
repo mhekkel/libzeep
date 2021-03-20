@@ -20,7 +20,7 @@
 namespace zeep::http
 {
 
-class server;
+class basic_server;
 
 /// The HTTP server implementation of libzeep is inspired by the example code
 /// as provided by boost::asio. These objects are not to be used directly.
@@ -32,7 +32,7 @@ class connection
 	connection(connection &) = delete;
 	connection& operator=(connection &) = delete;
 
-	connection(boost::asio::io_context& service, server& handler);
+	connection(boost::asio::io_context& service, basic_server& handler);
 
 	void start();
 	void handle_read(boost::system::error_code ec, size_t bytes_transferred);
@@ -42,7 +42,7 @@ class connection
 
   private:
 	boost::asio::ip::tcp::socket m_socket;
-	server& m_server;
+	basic_server& m_server;
 	reply m_reply;
 	request_parser m_request_parser;
 	bool m_keep_alive = false;

@@ -209,9 +209,9 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 		sigfillset(&new_mask);
 		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-		std::unique_ptr<server> s(m_factory());
+		std::unique_ptr<basic_server> s(m_factory());
 		s->bind(address, port);
-		std::thread t(std::bind(&server::run, s.get(), 1));
+		std::thread t(std::bind(&basic_server::run, s.get(), 1));
 
 		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 

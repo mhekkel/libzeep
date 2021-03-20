@@ -29,9 +29,9 @@ std::mutex s_log_lock;
 }
 
 // --------------------------------------------------------------------
-// http::server
+// http::basic_server
 
-server::server()
+basic_server::basic_server()
 	: m_log_forwarded(true)
 	, m_security_context(nullptr)
 	, m_allowed_methods{ "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE" }
@@ -45,13 +45,13 @@ server::server()
 	add_error_handler(new error_handler());
 }
 
-server::server(security_context* s_cntxt)
-	: server()
+basic_server::basic_server(security_context* s_cntxt)
+	: basic_server()
 {
 	m_security_context.reset(s_cntxt);
 }
 
-server::~server()
+basic_server::~basic_server()
 {
 	stop();
 
@@ -62,20 +62,20 @@ server::~server()
 		delete eh;
 }
 
-void server::set_template_processor(basic_template_processor* template_processor)
+void basic_server::set_template_processor(basic_template_processor* template_processor)
 {
 	m_template_processor.reset(template_processor);
 }
 
-void server::bind(const std::string& address, unsigned short port)
+void basic_server::bind(const std::string& address, unsigned short port)
 {
 	m_address = address;
 	m_port = port;
 	
-	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_context));
-	m_new_connection.reset(new connection(m_io_context, *this));
+	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(get_io_context()));
+	m_new_connection.reset(new connection(get_io_context(), *this));
 
-	boost::asio::ip::tcp::resolver resolver(m_io_context);
+	boost::asio::ip::tcp::resolver resolver(get_io_context());
 	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
 
 	m_acceptor->open(endpoint.protocol());
@@ -86,25 +86,25 @@ void server::bind(const std::string& address, unsigned short port)
 		[this](boost::system::error_code ec) { this->handle_accept(ec); });
 }
 
-void server::add_controller(controller* c)
+void basic_server::add_controller(controller* c)
 {
 	m_controllers.push_back(c);
 	c->set_server(this);
 }
 
-void server::add_error_handler(error_handler* eh)
+void basic_server::add_error_handler(error_handler* eh)
 {
 	m_error_handlers.push_front(eh);
 	eh->set_server(this);
 }
 
-void server::run(int nr_of_threads)
+void basic_server::run(int nr_of_threads)
 {
 	// keep the server at work until we call stop
-	auto work = boost::asio::make_work_guard(m_io_context);
+	auto work = boost::asio::make_work_guard(get_io_context());
 
 	for (int i = 0; i < nr_of_threads; ++i)
-		m_threads.emplace_back([this]() { m_io_context.run(); });
+		m_threads.emplace_back([this]() { get_io_context().run(); });
 
 	for (auto& t: m_threads)
 	{
@@ -113,33 +113,31 @@ void server::run(int nr_of_threads)
 	}
 }
 
-void server::stop()
+void basic_server::stop()
 {
 	if (m_acceptor and m_acceptor->is_open())
 		m_acceptor->close();
-
-	m_io_context.stop();
 }
 
-void server::handle_accept(boost::system::error_code ec)
+void basic_server::handle_accept(boost::system::error_code ec)
 {
 	if (not ec)
 	{
 		m_new_connection->start();
-		m_new_connection.reset(new connection(m_io_context, *this));
+		m_new_connection.reset(new connection(get_io_context(), *this));
 		m_acceptor->async_accept(m_new_connection->get_socket(),
 			[this](boost::system::error_code ec) { this->handle_accept(ec); });
 	}
 }
 
-std::ostream& server::get_log()
+std::ostream& basic_server::get_log()
 {
 	if (detail::s_log.get() == NULL)
 		detail::s_log.reset(new std::ostringstream);
 	return *detail::s_log;
 }
 
-void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
+void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
 {
 	using namespace boost::posix_time;
 
@@ -246,7 +244,7 @@ void server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, 
 	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
 }
 
-void server::log_request(const std::string& client,
+void basic_server::log_request(const std::string& client,
 	const request& req, const reply& rep,
 	const boost::posix_time::ptime& start,
 	const std::string& referer, const std::string& userAgent,

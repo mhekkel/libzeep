@@ -34,13 +34,13 @@ class error_handler
 	virtual ~error_handler();
 
 	/// \brief set the server object we're bound to
-	void set_server(server* s)				{ m_server = s; }
+	void set_server(basic_server* s)				{ m_server = s; }
 
 	/// \brief get the server object we're bound to
-	server* get_server()					{ return m_server; }
+	basic_server* get_server()					{ return m_server; }
 
 	/// \brief set the server object we're bound to
-	const server* get_server() const		{ return m_server; }
+	const basic_server* get_server() const		{ return m_server; }
 
 	/// \brief Create an error reply for an exception
 	///
@@ -84,7 +84,7 @@ class error_handler
 	error_handler(const error_handler&) = delete;
 	error_handler& operator=(const error_handler&) = delete;
 
-	server*	m_server = nullptr;
+	basic_server*	m_server = nullptr;
 	std::string m_error_template;
 };
 
