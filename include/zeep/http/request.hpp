@@ -82,11 +82,9 @@ class request
 		std::vector<header>&& headers = {}, std::string&& payload = {});
 
 	request(const request& req);
-	// request(request&& req);
-
+	
 	request& operator=(const request& rhs);
-	// request& operator=(request&& rhs);
-
+	
 	/// \brief Fetch the local address from the connected socket
 	void set_local_endpoint(boost::asio::ip::tcp::socket& socket);
 	std::tuple<std::string,uint16_t> get_local_endpoint() const				{ return { m_local_address, m_local_port }; }
