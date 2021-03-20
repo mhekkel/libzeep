@@ -72,11 +72,11 @@ void server::bind(const std::string& address, unsigned short port)
 	m_address = address;
 	m_port = port;
 	
-	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_service));
-	m_new_connection.reset(new connection(m_io_service, *this));
+	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(m_io_context));
+	m_new_connection.reset(new connection(m_io_context, *this));
 
-	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(address, std::to_string(port));
+	boost::asio::ip::tcp::resolver resolver(m_io_context);
+	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
 
 	m_acceptor->open(endpoint.protocol());
 	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
@@ -101,10 +101,10 @@ void server::add_error_handler(error_handler* eh)
 void server::run(int nr_of_threads)
 {
 	// keep the server at work until we call stop
-	boost::asio::io_service::work work(m_io_service);
+	auto work = boost::asio::make_work_guard(m_io_context);
 
 	for (int i = 0; i < nr_of_threads; ++i)
-		m_threads.emplace_back([this]() { m_io_service.run(); });
+		m_threads.emplace_back([this]() { m_io_context.run(); });
 
 	for (auto& t: m_threads)
 	{
@@ -118,7 +118,7 @@ void server::stop()
 	if (m_acceptor and m_acceptor->is_open())
 		m_acceptor->close();
 
-	m_io_service.stop();
+	m_io_context.stop();
 }
 
 void server::handle_accept(boost::system::error_code ec)
@@ -126,7 +126,7 @@ void server::handle_accept(boost::system::error_code ec)
 	if (not ec)
 	{
 		m_new_connection->start();
-		m_new_connection.reset(new connection(m_io_service, *this));
+		m_new_connection.reset(new connection(m_io_context, *this));
 		m_acceptor->async_accept(m_new_connection->get_socket(),
 			[this](boost::system::error_code ec) { this->handle_accept(ec); });
 	}

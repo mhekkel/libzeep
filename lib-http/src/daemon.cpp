@@ -75,11 +75,11 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 
         try
         {
-            boost::asio::io_service io_service;
-            boost::asio::ip::tcp::resolver resolver(io_service);
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port)));
+            boost::asio::io_context io_context;
 
-            boost::asio::ip::tcp::acceptor acceptor(io_service);
+		    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
+
+            boost::asio::ip::tcp::acceptor acceptor(io_context);
             acceptor.open(endpoint.protocol());
             acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
             acceptor.bind(endpoint);
@@ -189,14 +189,10 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 	{
         try
         {
-            boost::asio::io_service io_service;
-            boost::asio::ip::tcp::resolver resolver(io_service);
+            boost::asio::io_context io_context;
+            boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
 
-			boost::system::error_code ec;
-
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
-
-            boost::asio::ip::tcp::acceptor acceptor(io_service);
+            boost::asio::ip::tcp::acceptor acceptor(io_context);
             acceptor.open(endpoint.protocol());
             acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
             acceptor.bind(endpoint);

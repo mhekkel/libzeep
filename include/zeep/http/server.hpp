@@ -161,14 +161,11 @@ class server
 	/// \brief returns the port as specified in bind
 	unsigned short get_port() const { return m_port; }
 
-	/// \brief get_io_service has to be public since we need it to call notify_fork from child code
-	boost::asio::io_service& get_io_service() { return m_io_service; }
-
 	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
-	boost::asio::io_context& get_io_context() { return m_io_service; }
+	boost::asio::io_context& get_io_context() { return m_io_context; }
 
 	/// \brief get_executor has to be public since we need it to call notify_fork from child code
-	boost::asio::io_service::executor_type get_executor() { return m_io_service.get_executor(); }
+	boost::asio::io_context::executor_type get_executor() { return m_io_context.get_executor(); }
 
   protected:
 
@@ -188,7 +185,7 @@ class server
 
 	void handle_accept(boost::system::error_code ec);
 
-	boost::asio::io_service m_io_service;
+	boost::asio::io_context m_io_context;
 	std::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor;
 	std::list<std::thread> m_threads;
 	std::shared_ptr<connection> m_new_connection;

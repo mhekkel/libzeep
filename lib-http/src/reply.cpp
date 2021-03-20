@@ -566,7 +566,7 @@ size_t reply::size() const
 std::ostream& operator<<(std::ostream& lhs, const reply& rhs)
 {
 	for (auto& b: rhs.to_buffers())
-		lhs.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
+		lhs.write(static_cast<const char*>(b.data()), b.size());
 
 	return lhs;
 }

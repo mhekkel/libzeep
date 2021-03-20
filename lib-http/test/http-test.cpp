@@ -132,11 +132,11 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "localhost", port));
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(5);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
 
 	try
 	{
@@ -200,11 +200,11 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "localhost", port));
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	sleep(5);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
 
 	try
 	{

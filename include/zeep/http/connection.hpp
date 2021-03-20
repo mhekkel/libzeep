@@ -32,7 +32,7 @@ class connection
 	connection(connection &) = delete;
 	connection& operator=(connection &) = delete;
 
-	connection(boost::asio::io_service& service, server& handler);
+	connection(boost::asio::io_context& service, server& handler);
 
 	void start();
 	void handle_read(boost::system::error_code ec, size_t bytes_transferred);

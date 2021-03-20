@@ -861,7 +861,7 @@ std::ostream& operator<<(std::ostream& io, const request& req)
 	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
 
 	for (auto& b: buffers)
-		io.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
+		io.write(static_cast<const char*>(b.data()), b.size());
 
 	return io;
 }

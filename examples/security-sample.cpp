@@ -71,7 +71,7 @@ int main()
     srv.add_controller(new hello_controller());
     srv.add_controller(new zeep::http::login_controller());
 
-    srv.bind("localhost", 8080);
+    srv.bind("::", 8080);
     srv.run(2);
     //]
 

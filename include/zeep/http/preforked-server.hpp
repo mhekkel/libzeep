@@ -80,7 +80,7 @@ class preforked_server
 
     std::function<server*(void)>	m_constructor;
     std::mutex						m_lock;
-	boost::asio::io_service			m_io_service;
+	boost::asio::io_context			m_io_context;
 };
 
 }

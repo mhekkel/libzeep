@@ -55,6 +55,7 @@ CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS
 
 # main build variables
 CXXFLAGS            += -Wall -Wno-multichar -I include
+DEFINES				+= BOOST_ASIO_NO_DEPRECATED
 
 # documentation rules
 BUILD_DOCS			= @BUILD_DOCS_TRUE@

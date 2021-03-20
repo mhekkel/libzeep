@@ -21,7 +21,7 @@ connection* get_pointer(const std::shared_ptr<connection>& p)
 	return p.get();
 }
 
-connection::connection(boost::asio::io_service& service, server& handler)
+connection::connection(boost::asio::io_context& service, server& handler)
 	: m_socket(service), m_server(handler), m_bufs(m_buffer.prepare(4096))
 {
 }
