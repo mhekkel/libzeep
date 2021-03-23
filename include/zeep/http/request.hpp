@@ -116,6 +116,12 @@ class request
 	/// \brief Get the address of the connecting remote
 	std::string get_remote_address() const									{ return m_remote_address; }
 
+	/// \brief Get the entire request line (convenience method)
+	std::string get_request_line() const
+	{
+		return get_method() + ' ' + get_uri() + " HTTP/" + std::string(m_version, m_version + 3);
+	}
+
 	/// \brief Return the payload
 	const std::string& get_payload() const									{ return m_payload; }
 
