@@ -80,6 +80,8 @@ std::string controller::get_prefixless_path(const request& req) const
 	{
 		if (p.compare(0, m_prefix_path.length(), m_prefix_path) != 0)
 		{
+std::cerr << p << std::endl << m_prefix_path << std::endl;
+
 			assert(false);
 			throw std::logic_error("Controller does not have the prefix path for this request");
 		}

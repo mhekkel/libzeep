@@ -2,6 +2,7 @@ Version 5.0.2
 - Add support for building shared libraries
 - Decoupled example code from rest, should now be build after installation,
   or use the STAGE=1 option to make.
+- rest controller can now return a reply object, adding flexibility
 
 Version 5.0.1
 
