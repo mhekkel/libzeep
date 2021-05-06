@@ -121,7 +121,7 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 {
 	bool result = path.empty() and glob_pattern.empty();
 
-	if (glob_pattern.back() == '/')
+	if (not glob_pattern.empty() and glob_pattern.back() == '/')
 		glob_pattern += "**";
 
 	std::vector<std::string> patterns;
@@ -136,7 +136,7 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 	for (std::string& pat : expandedpatterns)
 	{
 		if ((path.empty() and pat.empty()) or
-			Match(pat.c_str(), path.string().c_str()))
+			Match(pat.c_str(), path.generic_string().c_str()))
 		{
 			result = true;
 			break;

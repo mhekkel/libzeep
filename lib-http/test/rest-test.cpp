@@ -1,8 +1,8 @@
-#define BOOST_TEST_MODULE REST_Test
-#include <boost/test/included/unit_test.hpp>
-
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/exception.hpp>
+
+#define BOOST_TEST_MODULE REST_Test
+#include <boost/test/included/unit_test.hpp>
 
 using namespace std;
 namespace z = zeep;

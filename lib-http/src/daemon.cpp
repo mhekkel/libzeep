@@ -7,9 +7,11 @@
 // Source code specifically for Unix/Linux
 // Utilitie routines to build daemon processes
 
+#ifndef _MSC_VER
 #include <pwd.h>
 #include <grp.h>
 #include <sys/wait.h>
+#endif
 
 #include <fstream>
 #include <filesystem>
@@ -18,6 +20,8 @@
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>
+
+#include "signals.hpp"
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
@@ -46,6 +50,94 @@ daemon::daemon(server_factory_type&& factory, const char* name)
 		"/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
 {
 }
+
+int daemon::run_foreground(const std::string& address, uint16_t port)
+{
+	int result = 0;
+	
+	if (pid_is_for_executable())
+	{
+		std::cerr << "Server is already running." << std::endl;
+		result = 1;
+	}
+	else
+	{
+        try
+        {
+            boost::asio::io_service io_service;
+            boost::asio::ip::tcp::resolver resolver(io_service);
+
+			boost::system::error_code ec;
+
+            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
+
+            boost::asio::ip::tcp::acceptor acceptor(io_service);
+            acceptor.open(endpoint.protocol());
+            acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+            acceptor.bind(endpoint);
+            acceptor.listen();
+            
+            acceptor.close();
+        }
+        catch (exception& e)
+        {
+            throw std::runtime_error(std::string("Is server running already? ") + e.what());
+        }
+        
+		signal_catcher sc;
+		sc.block();
+
+		std::unique_ptr<server> s(m_factory());
+		s->bind(address, port);
+		std::thread t(std::bind(&server::run, s.get(), 1));
+
+		sc.unblock();
+
+		sc.wait();
+
+		s->stop();
+
+		if (t.joinable())
+			t.join();
+	}
+	
+	return result;
+}
+
+#if _MSC_VER
+
+int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
+{
+	assert(false);
+	return -1;
+}
+
+int daemon::stop()
+{
+	return -1;
+}
+
+int daemon::status()
+{
+	return -1;
+}
+
+int daemon::reload()
+{
+	return -1;
+}
+
+bool daemon::pid_is_for_executable()
+{
+	return false;
+}
+
+void daemon::daemonize()
+{
+	assert(false);
+}
+
+#else 
 
 int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
 {
@@ -495,5 +587,7 @@ bool daemon::pid_is_for_executable()
 
 	return result;
 }
+
+#endif
 
 }

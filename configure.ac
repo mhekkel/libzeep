@@ -1,6 +1,12 @@
 AC_PREREQ([2.69])
 
-AC_INIT([libzeep], 5.0, [maarten@hekkelman.com])
+m4_define([libzeep_version_major],[5])
+m4_define([libzeep_version_minor],[1])
+m4_define([libzeep_version_micro],[0])
+m4_define([libzeep_version_extra],[])
+m4_define([libzeep_version],[libzeep_version_major().libzeep_version_minor().libzeep_version_micro()libzeep_version_extra])
+
+AC_INIT([libzeep], [libzeep_version], [maarten@hekkelman.com])
 
 dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
@@ -20,8 +26,8 @@ AC_SUBST(LIBTOOL_DEPS)
 
 dnl versioning
 LZ_CURRENT=5
-LZ_REVISION=0
-LZ_AGE=0
+LZ_REVISION=1
+LZ_AGE=1
 
 LZ_TL_CURRENT="${LZ_CURRENT}"
 LZ_LT_VERSION="${LZ_CURRENT}:${LZ_REVISION}:${LZ_AGE}"

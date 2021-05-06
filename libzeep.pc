@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libzeep
+Description: C++ library for building web applications
+Version: 5.1.0
+Libs: -L${libdir} -lzeep
+Cflags: -I${includedir}

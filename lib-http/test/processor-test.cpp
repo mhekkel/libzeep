@@ -1,3 +1,5 @@
+#include <boost/asio.hpp>
+
 #define BOOST_TEST_MODULE Processor_Test
 #include <boost/test/included/unit_test.hpp>
 
