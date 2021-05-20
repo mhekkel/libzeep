@@ -91,7 +91,7 @@ std::string controller::get_prefixless_path(const request& req) const
 		p.erase(0, m_prefix_path.length());		
 	}
 
-	while (p.front() == '/')
+	while (not p.empty() and p.front() == '/')
 		p.erase(0, 1);
 	
 	return p;

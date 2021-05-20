@@ -270,7 +270,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 
 			fs::path template_file = dir / (file + ext);
 
-			(void)loader.file_time(template_file, ec);
+			(void)loader.file_time(template_file.string(), ec);
 			if (ec)
 				continue;
 

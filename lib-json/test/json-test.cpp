@@ -77,7 +77,9 @@ BOOST_AUTO_TEST_CASE(j_2)
 	BOOST_TEST(jint.as<float>() == 1.0);
 	BOOST_TEST(jint.as<string>() == "1");
 	BOOST_TEST(jint.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jint.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_3)
@@ -89,7 +91,9 @@ BOOST_AUTO_TEST_CASE(j_3)
 	BOOST_TEST(jint.as<float>() == -1.0);
 	BOOST_TEST(jint.as<string>() == "-1");
 	BOOST_TEST(jint.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jint.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_4)
@@ -101,7 +105,9 @@ BOOST_AUTO_TEST_CASE(j_4)
 	BOOST_TEST(jfloat.as<float>() == 1.0);
 	BOOST_TEST(jfloat.as<string>() == "1");
 	BOOST_TEST(jfloat.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jfloat.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_5)
@@ -113,7 +119,9 @@ BOOST_AUTO_TEST_CASE(j_5)
 	BOOST_TEST(jfloat.as<float>() == -1.0);
 	BOOST_TEST(jfloat.as<string>() == "-1");
 	BOOST_TEST(jfloat.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jfloat.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_6)

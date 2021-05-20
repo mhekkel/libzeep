@@ -1,10 +1,10 @@
+#include <boost/asio.hpp>
+
 #define BOOST_TEST_MODULE HTTP_Test
 #include <boost/test/included/unit_test.hpp>
 
 #include <random>
 #include <sstream>
-
-#include <boost/asio.hpp>
 
 #include <zeep/crypto.hpp>
 #include <zeep/exception.hpp>
@@ -21,6 +21,7 @@
 #include <boost/iostreams/stream.hpp>
 
 #include "client-test-code.hpp"
+#include "../src/signals.hpp"
 
 namespace z = zeep;
 namespace zx = zeep::xml;
@@ -136,7 +137,8 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
 
 	try
 	{
@@ -157,7 +159,7 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 		std::cerr << e.what() << std::endl;
 	}
 
-	pthread_kill(t.native_handle(), SIGHUP);
+	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
 }
@@ -171,7 +173,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		{
 			if (username != "scott")
 				throw zeep::http::user_unknown_exception();
-			
+
 			return {
 				username,
 				m_pwenc.encode("tiger"),
@@ -195,7 +197,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		sec.add_rule("/**", {});
 
 		return s;
-	}, "zeep-http-test");
+		}, "zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
@@ -204,7 +206,8 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
 
 	try
 	{
@@ -225,7 +228,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 
 		// we use a request object now, to store cookies
 		zeep::http::request req{ "POST", "/login", {1, 0}, { { "Content-Type", "application/x-www-form-urlencoded" } }, "username=scott&password=tiger" };
-		
+
 		// first test is to send a POST to login, but without the csrf token
 		reply = simple_request(port, req);
 		BOOST_TEST(reply.get_status() == zh::forbidden);
@@ -238,7 +241,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		// copy the cookie
 		auto csrfCookie = reply.get_cookie("csrf-token");
 		req.set_cookie("csrf-token", csrfCookie);
-		
+
 		zeep::xml::document form(reply.get_content());
 		auto csrf = form.find_first("//input[@name='_csrf']");
 		BOOST_REQUIRE(csrf != nullptr);
@@ -268,7 +271,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		std::cerr << e.what() << std::endl;
 	}
 
-	pthread_kill(t.native_handle(), SIGHUP);
+	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
 }
