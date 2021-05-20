@@ -65,7 +65,7 @@ bool controller::path_matches_prefix(const std::string& path) const
 			++offset;
 		result = path.compare(offset, m_prefix_path.length(), m_prefix_path) == 0;
 
-rm		if (result)
+		if (result)
 			result = m_prefix_path == "/" or
 				path.length() == offset + m_prefix_path.length() or path[offset + m_prefix_path.length()] == '/';
 	}
