@@ -39,7 +39,10 @@
 
 /// The current version of libzeep
 
+#define LIBZEEP_VERSION		  "5.1.0"
 #define LIBZEEP_VERSION_MAJOR 5
+#define LIBZEEP_VERSION_MINOR 1
+#define LIBZEEP_VERSION_PATCH 0
 
 // see if we're using Visual C++, if so we have to include
 // some VC specific include files to make the standard C++
@@ -67,3 +70,6 @@
 #	pragma warning (disable : 4800)	// BOOL conversion
 
 #endif
+
+// configure defined definitions
+#include <zeep/config-defs.hpp>

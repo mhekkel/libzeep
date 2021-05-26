@@ -652,6 +652,10 @@ PTHREAD_CC
 ax_pthread_config
 MRC
 DEBUG
+LIBZEEP_VERSION_PATCH
+LIBZEEP_VERSION_MINOR
+LIBZEEP_VERSION_MAJOR
+LIBZEEP_VERSION
 LZ_LT_VERSION
 LZ_TL_CURRENT
 LIBTOOL_DEPS
@@ -3765,7 +3769,6 @@ fi
 ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
 ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
 
 
 
@@ -15873,6 +15876,15 @@ LZ_LT_VERSION="${LZ_CURRENT}:${LZ_REVISION}:${LZ_AGE}"
 
 
 
+LIBZEEP_VERSION=5.1.0
+
+LIBZEEP_VERSION_MAJOR=5
+
+LIBZEEP_VERSION_MINOR=1
+
+LIBZEEP_VERSION_PATCH=0
+
+
 # Extract the first word of "sh", so it can be a program name with args.
 set dummy sh; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -18148,7 +18160,7 @@ fi
 
 fi
 
-ac_config_files="$ac_config_files GNUmakefile libzeep.pc"
+ac_config_files="$ac_config_files GNUmakefile include/zeep/config.hpp libzeep.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -19248,6 +19260,7 @@ do
   case $ac_config_target in
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "GNUmakefile") CONFIG_FILES="$CONFIG_FILES GNUmakefile" ;;
+    "include/zeep/config.hpp") CONFIG_FILES="$CONFIG_FILES include/zeep/config.hpp" ;;
     "libzeep.pc") CONFIG_FILES="$CONFIG_FILES libzeep.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
