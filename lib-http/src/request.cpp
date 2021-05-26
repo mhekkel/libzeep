@@ -35,6 +35,45 @@ request::request(const std::string& method, const std::string& uri, std::tuple<i
 	m_version[2] = '0' + std::get<1>(version);
 }
 
+request::request(const request& req)
+	: m_local_address(req.m_local_address)
+	, m_local_port(req.m_local_port)
+	, m_method(req.m_method)
+	, m_uri(req.m_uri)
+	, m_headers(req.m_headers)
+	, m_payload(req.m_payload)
+	, m_close(req.m_close)
+	, m_timestamp(req.m_timestamp)
+	, m_credentials(req.m_credentials)
+	, m_remote_address(req.m_remote_address)
+{
+	char* d = &m_version[0];
+	for (auto c: req.m_version)
+		*d++ = c;
+}
+
+request& request::operator=(const request& req)
+{
+	if (this != &req)
+	{
+		m_local_address = req.m_local_address;
+		m_local_port = req.m_local_port;
+		m_method = req.m_method;
+		m_uri = req.m_uri;
+		m_version[0] = req.m_version[0];
+		m_version[1] = req.m_version[1];
+		m_version[2] = req.m_version[2];
+		m_headers = req.m_headers;
+		m_payload = req.m_payload;
+		m_close = req.m_close;
+		m_timestamp = req.m_timestamp;
+		m_credentials = req.m_credentials;
+		m_remote_address = req.m_remote_address;
+	}
+
+	return *this;
+}
+
 void request::set_local_endpoint(boost::asio::ip::tcp::socket& socket)
 {
 	m_local_address = socket.local_endpoint().address().to_string();
@@ -861,7 +900,7 @@ std::ostream& operator<<(std::ostream& io, const request& req)
 	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
 
 	for (auto& b: buffers)
-		io.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
+		io.write(static_cast<const char*>(b.data()), b.size());
 
 	return io;
 }

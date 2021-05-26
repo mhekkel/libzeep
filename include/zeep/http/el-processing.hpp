@@ -27,7 +27,7 @@ namespace zeep::http
 using object = ::zeep::json::element;
 
 class scope;
-class server;
+class basic_server;
 
 /// \brief Process the text in \a text and return `true` if the result is
 ///        not empty, zero or false.
@@ -174,7 +174,7 @@ class scope
 	///
 	/// \param server	The server that handles the incomming request
 	/// \param req		The incomming HTTP request
-	scope(const server& server, const request& req);
+	scope(const basic_server& server, const request& req);
 
 	/// \brief chaining constructor
 	///
@@ -259,7 +259,7 @@ class scope
 	scope *m_next;
 	unsigned m_depth;
 	const request *m_req;
-	const server* m_server;
+	const basic_server* m_server;
     object m_selected;
 
 	using nodeset_map = std::map<std::string,node_set_type>;

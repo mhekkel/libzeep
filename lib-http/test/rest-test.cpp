@@ -129,6 +129,8 @@ class e_rest_controller : public zeep::http::rest_controller
 		map_get_request("opname", &e_rest_controller::get_opnames);
 
 		map_put_request("opnames", &e_rest_controller::set_opnames, "opnames");
+
+		map_get_request("all_data", &e_rest_controller::get_all_data);
 	}
 
 	// CRUD routines
@@ -174,6 +176,14 @@ class e_rest_controller : public zeep::http::rest_controller
 	{
 		return{};
 	}
+
+	zeep::http::reply get_all_data()
+	{
+		return { zeep::http::ok, { 1, 0 }, {
+			{ "Content-Length", "13" },
+			{ "Content-Type", "text/plain" }
+		}, "Hello, world!" };
+	}
 };
 
 
@@ -183,5 +193,17 @@ BOOST_AUTO_TEST_CASE(rest_1)
 	// simply see if the above compiles
 
 	e_rest_controller rc;
-}
 
+	zeep::http::reply rep;
+
+	boost::asio::io_context io_context;
+	boost::asio::ip::tcp::socket s(io_context);
+
+	zeep::http::request req{ "GET", "/ajax/all_data" };
+
+	BOOST_CHECK(rc.dispatch_request(s, req, rep));
+	
+	BOOST_CHECK(rep.get_status() == zeep::http::ok);
+	BOOST_CHECK(rep.get_content_type() == "text/plain");
+
+}

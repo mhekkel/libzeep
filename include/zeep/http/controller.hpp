@@ -36,7 +36,7 @@ class controller
 	virtual ~controller();
 
 	/// \brief Calls handle_request but stores a pointer to the request first
-	virtual bool dispatch_request(request& req, reply& rep);
+	virtual bool dispatch_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep);
 
 	/// \brief The pure virtual method that actually handles the request
 	virtual bool handle_request(request& req, reply& rep) = 0;
@@ -51,14 +51,14 @@ class controller
 	std::string get_prefixless_path(const request& req) const;
 
 	/// \brief bind this controller to \a server
-	virtual void set_server(server* server)
+	virtual void set_server(basic_server* server)
 	{
 		m_server = server;
 	}
 
 	/// \brief return the server object we're bound to
-	const server& get_server() const	{ return *m_server; }
-	server& get_server()				{ return *m_server; }
+	const basic_server& get_server() const	{ return *m_server; }
+	basic_server& get_server()				{ return *m_server; }
 
 	/// \brief get the credentials for the current request
 	json::element get_credentials() const;
@@ -75,7 +75,7 @@ class controller
 	controller& operator=(const controller&) = delete;
 
 	std::string m_prefix_path;
-	server* m_server = nullptr;
+	basic_server* m_server = nullptr;
 	static thread_local request* s_request;
 };
 

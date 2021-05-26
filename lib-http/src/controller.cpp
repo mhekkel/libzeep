@@ -35,7 +35,7 @@ controller::~controller()
 {
 }
 
-bool controller::dispatch_request(request& req, reply& rep)
+bool controller::dispatch_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
 {
 	bool result = false;
 
@@ -64,6 +64,10 @@ bool controller::path_matches_prefix(const std::string& path) const
 		while (path[offset + 1] == '/')
 			++offset;
 		result = path.compare(offset, m_prefix_path.length(), m_prefix_path) == 0;
+
+		if (result)
+			result = m_prefix_path == "/" or
+				path.length() == offset + m_prefix_path.length() or path[offset + m_prefix_path.length()] == '/';
 	}
 
 	return result;

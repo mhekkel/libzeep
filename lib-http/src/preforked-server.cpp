@@ -94,8 +94,8 @@ bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket& socket
 class child_process
 {
   public:
-	child_process(std::function<server*(void)> constructor, boost::asio::io_service& io_service, boost::asio::ip::tcp::acceptor& acceptor, int nr_of_threads)
-		: m_constructor(constructor), m_acceptor(acceptor), m_socket(io_service), m_nr_of_threads(nr_of_threads)
+	child_process(std::function<basic_server*(void)> constructor, boost::asio::io_context& io_context, boost::asio::ip::tcp::acceptor& acceptor, int nr_of_threads)
+		: m_constructor(constructor), m_acceptor(acceptor), m_socket(io_context), m_nr_of_threads(nr_of_threads)
 	{
 		m_acceptor.async_accept(m_socket, std::bind(&child_process::handle_accept, this, std::placeholders::_1));
 	}
@@ -131,7 +131,7 @@ class child_process
 	void start();
 	void run();
 
-	std::function<server*(void)> m_constructor;
+	std::function<basic_server*(void)> m_constructor;
 	boost::asio::ip::tcp::acceptor& m_acceptor;
 	boost::asio::ip::tcp::socket m_socket;
 	int m_nr_of_threads;
@@ -165,10 +165,10 @@ void child_process::start()
 		pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
 
 		// Time to construct the Server object
-		std::unique_ptr<server> srvr(m_constructor());
+		std::unique_ptr<basic_server> srvr(m_constructor());
 		
 		// run the server as a worker
-		std::thread t(std::bind(&server::run, srvr.get(), m_nr_of_threads));
+		std::thread t(std::bind(&basic_server::run, srvr.get(), m_nr_of_threads));
 
 		// now start the processing loop passing on file descriptors read
 		// from the parent process
@@ -176,7 +176,7 @@ void child_process::start()
 		{
 			for (;;)
 			{
-				std::shared_ptr<connection> conn(new connection(srvr->get_io_service(), *srvr));
+				std::shared_ptr<connection> conn(new connection(srvr->get_io_context(), *srvr));
 				
 				if (not read_socket_from_parent(sockfd[1], conn->get_socket()))
 					break;
@@ -227,7 +227,7 @@ void child_process::stop()
 			if (WIFEXITED(status))
 				break;
 			
-			sleep(1);
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 
 		if (not WIFEXITED(status))
@@ -317,7 +317,7 @@ void child_process::handle_accept(const boost::system::error_code& ec)
 
 // --------------------------------------------------------------------
 
-preforked_server::preforked_server(std::function<server*(void)> constructor)
+preforked_server::preforked_server(std::function<basic_server*(void)> constructor)
 	: m_constructor(constructor)
 {
 	m_lock.lock();
@@ -332,11 +332,11 @@ void preforked_server::run(const std::string& address, short port, int nr_of_pro
 	// first wait until we are allowed to start listening
 	std::unique_lock<std::mutex> lock(m_lock);
 
-    boost::asio::ip::tcp::acceptor	acceptor(m_io_service);
+    boost::asio::ip::tcp::acceptor	acceptor(m_io_context);
 
 	// then bind the address here
-	boost::asio::ip::tcp::resolver resolver(m_io_service);
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(address, std::to_string(port));
+	boost::asio::ip::tcp::resolver resolver(m_io_context);
+	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
 
 	acceptor.open(endpoint.protocol());
 	acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
@@ -349,11 +349,11 @@ void preforked_server::run(const std::string& address, short port, int nr_of_pro
 	{
 		threads.emplace_back([this, nr_of_threads, &acceptor]()
 		{
-			boost::asio::io_service::work work(m_io_service);
+			auto work = boost::asio::make_work_guard(m_io_context);
 
-			child_process p(m_constructor, m_io_service, acceptor, nr_of_threads);
+			child_process p(m_constructor, m_io_context, acceptor, nr_of_threads);
 			
-			m_io_service.run();
+			m_io_context.run();
 		});
 	}
 
@@ -368,7 +368,7 @@ void preforked_server::start()
 
 void preforked_server::stop()
 {
-	m_io_service.stop();
+	m_io_context.stop();
 }
 
 }
