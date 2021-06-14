@@ -10,7 +10,7 @@
 
 #include <zeep/http/reply.hpp>
 #include <zeep/xml/document.hpp>
-#include <zeep/crypto.hpp>
+#include <zeep/http/url.hpp>
 
 namespace zeep::http
 {
@@ -546,8 +546,8 @@ reply reply::redirect(const std::string& location, status_type status)
 		"<html><head><title>" + text + "</title></head><body><h1>" +
  		std::to_string(status) + ' ' + text + "</h1></body></html>";
 
-	if (not is_valid_url(location))
-		throw zeep::exception("Invalid URL");
+	// try to parse the location URL, will fail if it is not valid
+	url url(location);
 
 	result.set_header("Location", location);
 	result.set_header("Content-Length", std::to_string(result.m_content.length()));

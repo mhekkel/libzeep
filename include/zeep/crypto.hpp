@@ -107,12 +107,6 @@ std::string decode_url(std::string_view s);
 /// \return	  The encoded URL
 std::string encode_url(std::string_view s);
 
-/// \brief Check if a URL contains only valid characters
-/// \param url The URL to check
-/// \return    Returns true if the URL is valid
-
-bool is_valid_url(const std::string& url);
-
 // --------------------------------------------------------------------
 // random bytes
 

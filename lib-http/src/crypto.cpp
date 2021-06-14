@@ -818,25 +818,6 @@ std::string encode_url(std::string_view s)
 }
 
 // --------------------------------------------------------------------
-// Is a valid url?
-
-bool is_valid_url(const std::string& url)
-{
-	bool result = true;
-
-	for (unsigned char ch: url)
-	{
-		if (ch < 32 or ch >= 128 or (kURLAcceptable[ch - 32] & 4) == 0)
-		{
-			result = false;
-			break;
-		}
-	}
-
-	return result;
-}
-
-// --------------------------------------------------------------------
 // random
 
 std::string random_hash()

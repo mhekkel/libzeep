@@ -115,6 +115,7 @@ OBJECTS = \
 	$(OBJDIR)/tag-processor-v2.lo \
 	$(OBJDIR)/tag-processor.lo \
 	$(OBJDIR)/template-processor.lo \
+	$(OBJDIR)/url.o \
 	$(OBJDIR)/element.lo \
 	$(OBJDIR)/json-parser.lo \
 	$(OBJDIR)/character-classification.lo \
