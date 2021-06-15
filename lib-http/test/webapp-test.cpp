@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "localhost", port));
+	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "::", port));
 
 	std::cerr << "started daemon at port " << port << std::endl;
 
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(webapp_10)
 		srv.stop();
 	});
 
-    srv.bind("localhost", 8080);
+    srv.bind("::", 8080);
     srv.run(2);
 
 	t.join();

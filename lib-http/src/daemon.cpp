@@ -62,32 +62,28 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 	}
 	else
 	{
-        try
-        {
-            boost::asio::io_service io_service;
-            boost::asio::ip::tcp::resolver resolver(io_service);
+		try
+		{
+            boost::asio::io_context io_context;
+            boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
 
-			boost::system::error_code ec;
-
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port), ec));
-
-            boost::asio::ip::tcp::acceptor acceptor(io_service);
+            boost::asio::ip::tcp::acceptor acceptor(io_context);
             acceptor.open(endpoint.protocol());
             acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
             acceptor.bind(endpoint);
             acceptor.listen();
             
             acceptor.close();
-        }
-        catch (exception& e)
-        {
-            throw std::runtime_error(std::string("Is server running already? ") + e.what());
-        }
-        
+		}
+		catch (exception& e)
+		{
+			throw std::runtime_error(std::string("Is server running already? ") + e.what());
+		}
+		
 		signal_catcher sc;
 		sc.block();
 
-		std::unique_ptr<server> s(m_factory());
+		std::unique_ptr<basic_server> s(m_factory());
 		s->bind(address, port);
 		std::thread t(std::bind(&server::run, s.get(), 1));
 
@@ -150,8 +146,8 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 	}
 	else
 	{
-        if (fs::exists(m_pid_file))
-            try { fs::remove(m_pid_file); } catch (...) {}
+		if (fs::exists(m_pid_file))
+			try { fs::remove(m_pid_file); } catch (...) {}
 
 		fs::path pidDir = fs::path(m_pid_file).parent_path();
 		if (not fs::is_directory(pidDir))
@@ -165,31 +161,31 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 		if (not fs::is_directory(errLogDir))
 			fs::create_directories(errLogDir);
 
-        try
-        {
-            boost::asio::io_service io_service;
-            boost::asio::ip::tcp::resolver resolver(io_service);
-            boost::asio::ip::tcp::endpoint endpoint(*resolver.resolve(address, std::to_string(port)));
+		try
+		{
+			boost::asio::io_context io_context;
 
-            boost::asio::ip::tcp::acceptor acceptor(io_service);
-            acceptor.open(endpoint.protocol());
-            acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-            acceptor.bind(endpoint);
-            acceptor.listen();
-            
-            acceptor.close();
-        }
-        catch (exception& e)
-        {
-            throw std::runtime_error(std::string("Is server running already? ") + e.what());
-        }
-        
-       	daemonize();
-        
-        run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
-        
-        if (fs::exists(m_pid_file))
-            try { fs::remove(m_pid_file); } catch (...) {}
+			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
+
+			boost::asio::ip::tcp::acceptor acceptor(io_context);
+			acceptor.open(endpoint.protocol());
+			acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+			acceptor.bind(endpoint);
+			acceptor.listen();
+			
+			acceptor.close();
+		}
+		catch (exception& e)
+		{
+			throw std::runtime_error(std::string("Is server running already? ") + e.what());
+		}
+		
+	   	daemonize();
+		
+		run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
+		
+		if (fs::exists(m_pid_file))
+			try { fs::remove(m_pid_file); } catch (...) {}
 	}
 	
 	return result;
@@ -197,129 +193,129 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 
 int daemon::stop()
 {
-    int result = 1;
+	int result = 1;
 
-    if (pid_is_for_executable())
-    {
-        std::ifstream file(m_pid_file);
-        if (not file.is_open())
-            throw std::runtime_error("Failed to open pid file");
+	if (pid_is_for_executable())
+	{
+		std::ifstream file(m_pid_file);
+		if (not file.is_open())
+			throw std::runtime_error("Failed to open pid file");
 
-        int pid;
-        file >> pid;
-        file.close();
+		int pid;
+		file >> pid;
+		file.close();
 
-	    result = ::kill(pid, SIGINT);
-	    if (result != 0)
-	        std::cerr << "Failed to stop process " << pid << ": " << strerror(errno) << std::endl;
-        try
-        {
-            if (fs::exists(m_pid_file))
-                fs::remove(m_pid_file);
-        }
-        catch (...) {}
+		result = ::kill(pid, SIGINT);
+		if (result != 0)
+			std::cerr << "Failed to stop process " << pid << ": " << strerror(errno) << std::endl;
+		try
+		{
+			if (fs::exists(m_pid_file))
+				fs::remove(m_pid_file);
+		}
+		catch (...) {}
 
-    }
-    else
-        throw std::runtime_error("Not my pid file: " + m_pid_file);
+	}
+	else
+		throw std::runtime_error("Not my pid file: " + m_pid_file);
 
-    return result;
+	return result;
 }
 
 int daemon::status()
 {
-    int result;
+	int result;
 
-    if (pid_is_for_executable())
-    {
+	if (pid_is_for_executable())
+	{
 		std::cerr << "server is running" << std::endl;
-        result = 0;
-    }
-    else
-    {
+		result = 0;
+	}
+	else
+	{
 		std::cerr << "server is not running" << std::endl;
-        result = 1;
-    }
+		result = 1;
+	}
 
-    return result;
+	return result;
 }
 
 int daemon::reload()
 {
-    int result;
+	int result;
 
-    if (pid_is_for_executable())
-    {
-        std::ifstream file(m_pid_file);
-        if (not file.is_open())
-            throw std::runtime_error("Failed to open pid file");
+	if (pid_is_for_executable())
+	{
+		std::ifstream file(m_pid_file);
+		if (not file.is_open())
+			throw std::runtime_error("Failed to open pid file");
 
-        int pid;
-        file >> pid;
+		int pid;
+		file >> pid;
 
-        result = ::kill(pid, SIGHUP);
-    }
-    else
-    {
+		result = ::kill(pid, SIGHUP);
+	}
+	else
+	{
 		std::cerr << "server is not running" << std::endl;
-        result = 1;
-    }
+		result = 1;
+	}
 
-    return result;
+	return result;
 }
 
 void daemon::daemonize()
 {
-    int pid = fork();
+	int pid = fork();
 
-    if (pid == -1)
-    {
-        std::cerr << "Fork failed" << std::endl;
-        exit(1);
-    }
+	if (pid == -1)
+	{
+		std::cerr << "Fork failed" << std::endl;
+		exit(1);
+	}
 
-    // exit the parent (=calling) process
-    if (pid != 0)
-        _exit(0);
+	// exit the parent (=calling) process
+	if (pid != 0)
+		_exit(0);
 
-    if (setsid() < 0)
-    {
-        std::cerr << "Failed to create process group: " << strerror(errno) << std::endl;
-        exit(1);
-    }
+	if (setsid() < 0)
+	{
+		std::cerr << "Failed to create process group: " << strerror(errno) << std::endl;
+		exit(1);
+	}
 
-    // it is dubious if this is needed:
-    signal(SIGHUP, SIG_IGN);
+	// it is dubious if this is needed:
+	signal(SIGHUP, SIG_IGN);
 
-    // fork again, to avoid being able to attach to a terminal device
-    pid = fork();
+	// fork again, to avoid being able to attach to a terminal device
+	pid = fork();
 
-    if (pid == -1)
-        std::cerr << "Fork failed" << std::endl;
+	if (pid == -1)
+		std::cerr << "Fork failed" << std::endl;
 
-    if (pid != 0)
-        _exit(0);
+	if (pid != 0)
+		_exit(0);
 
-    // write our pid to the pid file
-    std::ofstream pidFile(m_pid_file);
-    if (not pidFile.is_open())
-    {
-        std::cerr << "Failed to write to " << m_pid_file << ": " << strerror(errno) << std::endl;
-        exit(1);
-    }
+	// write our pid to the pid file
+	std::ofstream pidFile(m_pid_file);
+	if (not pidFile.is_open())
+	{
+		std::cerr << "Failed to write to " << m_pid_file << ": " << strerror(errno) << std::endl;
+		exit(1);
+	}
 
-    pidFile << getpid() << std::endl;
-    pidFile.close();
+	pidFile << getpid() << std::endl;
+	pidFile.close();
 
-    if (chdir("/") != 0)
-    {
-        std::cerr << "Cannot chdir to /: " << strerror(errno) << std::endl;
-        exit(1);
-    }
+	if (chdir("/") != 0)
+	{
+		std::cerr << "Cannot chdir to /: " << strerror(errno) << std::endl;
+		exit(1);
+	}
 
-    // close stdin
-    close(STDIN_FILENO);
-    open("/dev/null", O_RDONLY);
+	// close stdin
+	close(STDIN_FILENO);
+	open("/dev/null", O_RDONLY);
 }
 
 void daemon::open_log_file()

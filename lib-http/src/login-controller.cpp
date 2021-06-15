@@ -45,7 +45,7 @@ login_controller::login_controller(const std::string& prefix_path)
 {
 }
 
-void login_controller::set_server(server* server)
+void login_controller::set_server(basic_server* server)
 {
 	controller::set_server(server);
 

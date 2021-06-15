@@ -15,7 +15,6 @@ AX_CXX_COMPILE_STDCXX_17([noext])
 AC_CONFIG_SRCDIR([lib-http/src/connection.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
-
 AC_PREFIX_DEFAULT(/usr/local)
 
 AC_PROG_INSTALL
@@ -34,6 +33,11 @@ LZ_LT_VERSION="${LZ_CURRENT}:${LZ_REVISION}:${LZ_AGE}"
 
 AC_SUBST(LZ_TL_CURRENT)
 AC_SUBST(LZ_LT_VERSION)
+
+AC_SUBST(LIBZEEP_VERSION, [libzeep_version])
+AC_SUBST(LIBZEEP_VERSION_MAJOR, [libzeep_version_major])
+AC_SUBST(LIBZEEP_VERSION_MINOR, [libzeep_version_minor])
+AC_SUBST(LIBZEEP_VERSION_PATCH, [libzeep_version_micro])
 
 AC_PATH_PROG([SHELL], [sh])
 
@@ -115,4 +119,5 @@ AS_IF([test "$enable_documentation" = "yes"],
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
+		   include/zeep/config.hpp
 		   libzeep.pc])

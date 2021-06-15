@@ -3,12 +3,15 @@ Version 5.1.0
 - Various REST controller fixes, mainly in accepting parameters
 - The library is now always compiled with PIC
 - Requred boost version is now 71
-- Ignore SIGCHLD in foreground mode
+- Ignore SIGCHLD in foreground mode, signals are now handled by 
+  cross platform implementation
+- reintroduced a Windows version
 
 Version 5.0.2
 - Add support for building shared libraries
 - Decoupled example code from rest, should now be build after installation,
   or use the STAGE=1 option to make.
+- rest controller can now return a reply object, adding flexibility
 
 Version 5.0.1
 

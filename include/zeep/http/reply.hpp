@@ -70,6 +70,7 @@ class reply
 	reply(const reply& rhs);
 	~reply();
 	reply& operator=(const reply &);
+	reply& operator=(reply &&);
 
 	void reset();
 

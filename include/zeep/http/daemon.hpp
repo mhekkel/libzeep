@@ -18,7 +18,7 @@
 namespace zeep::http
 {
 
-class server;
+class basic_server;
 
 /// \brief A class to create daemon processes easily
 ///
@@ -33,7 +33,7 @@ class daemon
   public:
 
 	/// \brief The factory for creating server instances.
-	using server_factory_type = std::function<server*()>;
+	using server_factory_type = std::function<basic_server*()>;
 
 	/// \brief constructor with separately specified files
 	///

@@ -1737,7 +1737,7 @@ scope::scope(const request &req)
 {
 }
 
-scope::scope(const server& server, const request &req)
+scope::scope(const basic_server& server, const request &req)
 	: m_next(nullptr), m_depth(0), m_req(&req), m_server(&server)
 {
 }
