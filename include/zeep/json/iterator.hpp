@@ -43,6 +43,8 @@ class iterator_impl
 public:
 
 	iterator_impl() = default;
+	~iterator_impl() {}
+	
 	explicit iterator_impl(pointer obj) noexcept
 		: m_obj(obj)
 	{
@@ -294,7 +296,10 @@ public:
 private:
 	pointer	m_obj = nullptr;
 
-	union
+	// Ahw... MSVC does not allow a union here...
+	// union
+
+	struct
 	{
 		typename E::array_type::iterator	m_array_it;
 		typename E::object_type::iterator	m_object_it;

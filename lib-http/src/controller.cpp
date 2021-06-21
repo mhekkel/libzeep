@@ -89,7 +89,7 @@ std::cerr << p << std::endl << m_prefix_path << std::endl;
 		p.erase(0, m_prefix_path.length());		
 	}
 
-	while (p.front() == '/')
+	while (not p.empty() and p.front() == '/')
 		p.erase(0, 1);
 	
 	return p;

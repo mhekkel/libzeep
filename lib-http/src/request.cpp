@@ -85,7 +85,7 @@ std::string request::get_path() const
 	std::smatch m;
 	if (not std::regex_match(m_uri, m, kURIRx))
 		throw std::invalid_argument("the request uri is not valid");
-	return "/" + fs::path(m[3]).lexically_normal().string();
+	return "/" + fs::path(m[3].str()).lexically_normal().generic_string();
 }
 
 std::string request::get_query() const
