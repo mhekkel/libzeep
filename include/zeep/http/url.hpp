@@ -10,6 +10,16 @@
 
 #include <zeep/config.hpp>
 
+// --------------------------------------------------------------------
+
+class url_parse_error : public std::runtime_error
+{
+  public:
+	url_parse_error() : std::runtime_error("invalid uri") {};
+};
+
+// --------------------------------------------------------------------
+
 class url
 {
   public:
