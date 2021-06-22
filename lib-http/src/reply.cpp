@@ -10,7 +10,7 @@
 
 #include <zeep/http/reply.hpp>
 #include <zeep/xml/document.hpp>
-#include <zeep/http/url.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace zeep::http
 {
@@ -553,9 +553,9 @@ reply reply::redirect(const std::string &location, status_type status)
  		std::to_string(status) + ' ' + text + "</h1></body></html>";
 
 	// try to parse the location URL, will fail if it is not valid
-	url url(location);
+	uri url(location);
 
-	result.set_header("Location", location);
+	result.set_header("Location", url.string());
 	result.set_header("Content-Length", std::to_string(result.m_content.length()));
 	result.set_header("Content-Type", "text/html; charset=utf-8");
 

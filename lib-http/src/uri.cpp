@@ -4,65 +4,170 @@
 //            http://www.boost.org/LICENSE_1_0.txt)
 
 #include <cassert>
+#include <iostream>
 #include <regex>
 
-#include <zeep/http/url.hpp>
+#include <zeep/http/uri.hpp>
+
+#include <uriparser/Uri.h>
 
 namespace zeep::http
 {
 
-#define GEN_DELIMS		R"([][]:/?#@])"
-#define SUB_DELIMS		R"([!$&'()*+,;=])"
-#define RESERVED		GEN_DELIMS | SUB_DELIMS
-#define UNRESERVED		R"([-._~A-Za-z0-9])"
-#define SCHEME			R"([a-zA-Z][-+.a-zA-Z0-9]*)"
+// --------------------------------------------------------------------
 
-#define PCT_ENCODED		"%[[:xdigit]]{2}"
+struct uri_impl
+{
+	std::string m_s;
+	UriUriA m_uri;
 
-#define USERINFO		"(" UNRESERVED | PCT_ENCODED | SUB_DELIMS | ":" ")*"
+	~uri_impl()
+	{
+		uriFreeUriMembersA(&m_uri);
+	}
+};
 
-#define HOST			IP_LITERAL "|" IPv4_ADDRESS "|" REG_NAME
+// --------------------------------------------------------------------
 
-#define IP_LITERAL		R"(\[())" IPv6_ADDRESS "|" IPvFUTURE R"()\])"
-#define IPvFUTURE		R"(v[[:xdigit:]]\.()" UNRESERVED "|" SUB_DELIMS "|" ":" ")+"
+uri::uri(const std::string &url)
+	: m_impl(new uri_impl{url})
+{
+	if (uriParseSingleUriA(&m_impl->m_uri, m_impl->m_s.c_str(), nullptr) != URI_SUCCESS)
+		throw uri_parse_error(url);
+}
 
-#define IPv6_ADDRESS	"("	\
-																	"(" h16 ":){6}"	ls32	"|" \
-															"::"	"(" h16 ":){5}" ls32	"|"	\
-							"("					h16 ")?"	"::"	"(" h16 ":){4}" ls32	"|" \
-							"((" h16 ":){1}"	h16 ")?"	"::"	"(" h16 ":){3}" ls32	"|" \
-							"((" h16 ":){2}"	h16 ")?"	"::"	"(" h16 ":){2}" ls32	"|" \
-							"((" h16 ":){3}"	h16 ")?"	"::"	"(" h16 ":){1}" ls32	"|" \
-							"((" h16 ":){4}"	h16 ")?"	"::"					ls32	"|" \
-							"((" h16 ":){5}"	h16 ")?"	"::"					h16		"|" \
-							"((" h16 ":){6}"	h16 ")?"	"::"							"|" \
-						")"
+uri::uri(const uri &u)
+	: uri(u.string())
+{
+}
 
-#define ls32			"(" h16 ":" h16 ")|" IPv4_ADDRESS
+uri& uri::operator=(const uri &u)
+{
+	if (&u != this)
+	{
+		uri tmp(u);
+		swap(tmp);
+	}
 
-#define IPv4_ADDRESS	DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET
+	return *this;
+}
 
-#define DEC_OCTET		"([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+uri::~uri()
+{
+	delete m_impl;
+}
 
-#define REG_NAME		"(" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS ")*"
+void uri::swap(uri &u) noexcept
+{
+	std::swap(m_impl, u.m_impl);
+}
 
-#define h16				"[[:xdigit:]]{1,4}"
+std::string uri::string() const
+{
+	int charsRequired;
+	if (uriToStringCharsRequiredA(&m_impl->m_uri, &charsRequired) != URI_SUCCESS)
+	{
+		throw zeep::exception("Failed to copy url to string");
+	}
+	
+	std::string result(charsRequired, 0);
+	charsRequired += 1;
 
-#define PORT			"[[:digit:]]*"
+	if (uriToStringA(result.data(), &m_impl->m_uri, charsRequired, NULL) != URI_SUCCESS)
+	{
+		throw zeep::exception("Failed to copy url to string");
+	}
 
-#define AUTHORITY		"(" USERINFO "@" ")?" HOST "(:" PORT ")?"
+	return result;
+}
 
-#define PATH_ABEMPTY	"(" "/" SEGMENT ")*"
-#define PATH_ABSOLUTE	"/" "(" SEGMENT_NZ "(" "/" SEGMENT ")*" ")?"
-#define PATH_ROOTLESS	SEGMENT_NZ "(" "/" SEGMENT ")*"
-#define PATH_EMPTY		""
+// --------------------------------------------------------------------
 
-#define HIER_PART		"(" "//" AUTHORITY PATH_ABEMPTY "|" PATH_ABSOLUTE "|" PATH_ROOTLESS "|" PATH_EMPTY ")"
-
-#define URI				"(" SCHEME "):(" HIER_PART ") // (?:\?(" QUERY "))?(?:#(" FRAGMENT "))?" 
-
+std::ostream &operator<<(std::ostream &os, const uri &url)
+{
+	os << url.string();
+	return os;
+}
 
 
+// #define GEN_DELIMS		R"([][]:/?#@])"
+// #define SUB_DELIMS		R"([!$&'()*+,;=])"
+// #define RESERVED		GEN_DELIMS | SUB_DELIMS
+// #define UNRESERVED		R"([-._~A-Za-z0-9])"
+// #define SCHEME			R"([a-zA-Z][-+.a-zA-Z0-9]*)"
+
+// #define PCT_ENCODED		"%[[:xdigit:]]{2}"
+
+// #define USERINFO		"(" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "|" ":" ")*"
+
+// #define HOST			IP_LITERAL "|" IPv4_ADDRESS "|" REG_NAME
+
+// #define IP_LITERAL		R"(\[(?:)" IPv6_ADDRESS "|" IPvFUTURE R"()\])"
+// #define IPvFUTURE		R"(v[[:xdigit:]]\.(?:)" UNRESERVED "|" SUB_DELIMS "|" ":" ")+"
+
+// #define IPv6_ADDRESS	"(?:"	\
+// 																	"(?:" h16 ":){6}"	ls32	"|" \
+// 															"::"	"(?:" h16 ":){5}"	ls32	"|"	\
+// 							"(?:"					h16 ")?""::"	"(?:" h16 ":){4}"	ls32	"|" \
+// 							"(?:(" h16 ":){1}"	h16 ")?"	"::"	"(?:" h16 ":){3}"	ls32	"|" \
+// 							"(?:(" h16 ":){2}"	h16 ")?"	"::"	"(?:" h16 ":){2}"	ls32	"|" \
+// 							"(?:(" h16 ":){3}"	h16 ")?"	"::"	"(?:" h16 ":){1}"	ls32	"|" \
+// 							"(?:(" h16 ":){4}"	h16 ")?"	"::"						ls32	"|" \
+// 							"(?:(" h16 ":){5}"	h16 ")?"	"::"						h16		"|" \
+// 							"(?:(" h16 ":){6}"	h16 ")?"	"::"								"|" \
+// 						")"
+
+// #define ls32			"(?:" h16 ":" h16 ")|" IPv4_ADDRESS
+
+// #define IPv4_ADDRESS	DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET
+
+// #define DEC_OCTET		"(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+
+// #define REG_NAME		"(" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS ")*"
+
+// #define h16				"[[:xdigit:]]{1,4}"
+
+// #define PORT			"[[:digit:]]*"
+
+// #define AUTHORITY		"(" USERINFO "@" ")?" HOST "(:" PORT ")?"
+
+// #define PATH_ABEMPTY	"(" "/" SEGMENT ")*"
+// #define PATH_ABSOLUTE	"/" "(" SEGMENT_NZ "(" "/" SEGMENT ")*" ")?"
+// #define PATH_ROOTLESS	SEGMENT_NZ "(" "/" SEGMENT ")*"
+// #define PATH_EMPTY		""
+
+// #define	SEGMENT			"(" PCHAR ")*"
+// #define SEGMENT_NZ		"(" PCHAR "){1,}"
+// #define SEGMENT_NZ_NC	"(" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "){1,}"
+// #define PCHAR			UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "|" ":" "|" "@"
+
+// #define HIER_PART		"//" AUTHORITY PATH_ABEMPTY "|" PATH_ABSOLUTE "|" PATH_ROOTLESS "|" PATH_EMPTY
+
+// #define QUERY			R"((\?|/|PCHAR)*)"
+// #define FRAGMENT		R"((\?|/|PCHAR)*)"
+
+// #define URI				"(" SCHEME "):(" HIER_PART ")(\\?(" QUERY "))?(#(" FRAGMENT "))?"
+// // #define URI				"(" HIER_PART ")"
+
+// // --------------------------------------------------------------------
+
+// url::url(const std::string& u)
+// {
+// 	std::regex rx1(URI);
+
+// 	std::smatch m;
+
+// 	if (not std::regex_match(u, m, rx1))
+// 		throw uri_parse_error(u);
+
+// 	std::cout << u << std::endl;
+
+// 	for (auto mi: m)
+// 		std::cout << mi << std::endl;
+
+// 	// std::regex rx(URI);
+
+// }
 
 // // --------------------------------------------------------------------
 
@@ -157,16 +262,12 @@ namespace zeep::http
 // 			result |= e[1] - 'a' + 10;
 // 		else if (e[1] >= 'A' and e[1] <= 'F')
 // 			result |= e[1] - 'A' + 10;
-		
+
 // 		return result;
 // 	}
 
 // 	void parse()
 // 	{
-
-
-
-
 
 // 		parse_scheme();
 
@@ -192,7 +293,7 @@ namespace zeep::http
 // 	{
 // 		int ch = get_next_char();
 // 		if (not is_alpha(ch))
-// 			throw url_parse_error();
+// 			throw uri_parse_error();
 
 // 		m_scheme = { static_cast<char>(ch) };
 
@@ -204,12 +305,12 @@ namespace zeep::http
 // 				retract();
 // 				break;
 // 			}
-			
+
 // 			m_scheme += static_cast<char>(ch);
 // 		}
 
 // 		if (*m_i++ != ':')
-// 			throw url_parse_error();
+// 			throw uri_parse_error();
 // 	}
 
 // 	const std::string& m_s;
@@ -225,8 +326,6 @@ namespace zeep::http
 // 	std::string m_fragment;
 
 // };
-
-
 
 // // --------------------------------------------------------------------
 // // Is a valid url?
@@ -267,9 +366,9 @@ namespace zeep::http
 // 				if (std::isalpha(ch))
 // 					state = scheme2;
 // 				else
-// 					state = restart(); 
+// 					state = restart();
 // 				break;
-			
+
 // 			case scheme2:
 // 				if (ch == ':')
 // 					state = authority;
@@ -278,7 +377,6 @@ namespace zeep::http
 // 		}
 
 // 	}
-
 
 // 	for (unsigned char ch: url)
 // 	{
@@ -293,4 +391,3 @@ namespace zeep::http
 // }
 
 } // namespace zeep::http
-

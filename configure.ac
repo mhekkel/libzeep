@@ -117,6 +117,10 @@ AS_IF([test "$enable_documentation" = "yes"],
 		AC_SUBST(BUILD_DOCS_TRUE)
 ])
 
+dnl for uriparser
+PKG_PROG_PKG_CONFIG
+PKG_CHECK_MODULES([URIPARSER], [liburiparser >= 0.9.0], [], [])
+
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
 		   include/zeep/config.hpp

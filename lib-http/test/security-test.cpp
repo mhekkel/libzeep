@@ -34,7 +34,15 @@ BOOST_AUTO_TEST_CASE(sec_1)
 
 	BOOST_CHECK_THROW(rep = zh::reply::redirect("http://example.com\r\nSet-Cookie: wrong=false;"), zeep::exception);
 
+	BOOST_CHECK_THROW(rep = zh::reply::redirect("http://example.com%0D%0ASet-Cookie: wrong=false;"), zeep::exception);
+
+	rep = zh::reply::redirect("http://example.com/%0D%0ASet-Cookie:%20wrong=false;");
+
+	BOOST_CHECK_EQUAL(rep.get_header("Location"), "http://example.com/%0D%0ASet-Cookie:%20wrong=false;");
+
 	rep = zh::reply::redirect("http://example.com");
+
+	BOOST_CHECK_EQUAL(rep.get_header("Location"), "http://example.com");
 
 /*
 	std::cerr << rep << std::endl;
