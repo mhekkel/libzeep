@@ -223,7 +223,7 @@ class server : public basic_server
 	}
 
 	/// \brief Stop the server and also stop the io_context
-	virtual void stop()
+	virtual void stop() override
 	{
 		basic_server::stop();
 		m_io_context.stop();
