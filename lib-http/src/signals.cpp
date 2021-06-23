@@ -11,9 +11,6 @@
 
 #include "signals.hpp"
 
-namespace zeep
-{
-
 // --------------------------------------------------------------------
 //
 //	Signal handling
@@ -32,6 +29,9 @@ namespace zeep
 #ifndef SIGHUP
 #define SIGHUP SIGBREAK
 #endif
+
+namespace zeep
+{
 
 struct signal_catcher_impl
 {
@@ -115,11 +115,16 @@ void signal_catcher::signal_hangup(std::thread& t)
 	signal_catcher_impl::CtrlHandler(CTRL_BREAK_EVENT);
 }
 
+}
+
 #else
 
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+
+namespace zeep
+{
 
 // --------------------------------------------------------------------
 //
@@ -175,6 +180,6 @@ void signal_catcher::signal_hangup(std::thread& t)
 	pthread_kill(t.native_handle(), SIGHUP);
 }
 
-#endif
-
 }
+
+#endif
