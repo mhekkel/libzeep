@@ -10,6 +10,8 @@
 
 #include <zeep/config.hpp>
 
+#include <optional>
+
 #include <zeep/json/type_traits.hpp>
 
 namespace zeep::json::detail

@@ -1,8 +1,8 @@
-#define BOOST_TEST_MODULE REST_Test
-#include <boost/test/included/unit_test.hpp>
-
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/exception.hpp>
+
+#define BOOST_TEST_MODULE REST_Test
+#include <boost/test/included/unit_test.hpp>
 
 using namespace std;
 namespace z = zeep;
@@ -110,6 +110,8 @@ struct GrafiekData
 	}
 };
 
+using Opnames = std::vector<Opname>;
+
 class e_rest_controller : public zeep::http::rest_controller
 {
   public:
@@ -123,6 +125,12 @@ class e_rest_controller : public zeep::http::rest_controller
 		map_delete_request("opname/{id}", &e_rest_controller::delete_opname, "id");
 
 		map_get_request("data/{type}/{aggr}", &e_rest_controller::get_grafiek, "type", "aggr");
+
+		map_get_request("opname", &e_rest_controller::get_opnames);
+
+		map_put_request("opnames", &e_rest_controller::set_opnames, "opnames");
+
+		map_get_request("all_data", &e_rest_controller::get_all_data);
 	}
 
 	// CRUD routines
@@ -134,6 +142,15 @@ class e_rest_controller : public zeep::http::rest_controller
 	void put_opname(string opnameId, Opname opname)
 	{
 		{};
+	}
+
+	Opnames get_opnames()
+	{
+		return { {}, {} };
+	}
+
+	void set_opnames(Opnames opnames)
+	{
 	}
 
 	Opname get_opname(string id)
@@ -159,6 +176,14 @@ class e_rest_controller : public zeep::http::rest_controller
 	{
 		return{};
 	}
+
+	zeep::http::reply get_all_data()
+	{
+		return { zeep::http::ok, { 1, 0 }, {
+			{ "Content-Length", "13" },
+			{ "Content-Type", "text/plain" }
+		}, "Hello, world!" };
+	}
 };
 
 
@@ -168,5 +193,17 @@ BOOST_AUTO_TEST_CASE(rest_1)
 	// simply see if the above compiles
 
 	e_rest_controller rc;
-}
 
+	zeep::http::reply rep;
+
+	boost::asio::io_context io_context;
+	boost::asio::ip::tcp::socket s(io_context);
+
+	zeep::http::request req{ "GET", "/ajax/all_data" };
+
+	BOOST_CHECK(rc.dispatch_request(s, req, rep));
+	
+	BOOST_CHECK(rep.get_status() == zeep::http::ok);
+	BOOST_CHECK(rep.get_content_type() == "text/plain");
+
+}

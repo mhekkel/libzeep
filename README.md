@@ -33,7 +33,8 @@ appears to be invalid when it is in validating mode. Error reporting is done
 in this case.
 
 The JSON library in itself is fairly simple. There are much better alternatives
-if you're looking for just JSON. However, it is required by the web app part. 
+if you're looking for just JSON. But this implementation is required by the
+web application part. 
 
 And then we have a web application library. This one makes it very easy to build
 a HTTP server that serves HTML but also speaks REST and SOAP. The current
@@ -51,4 +52,4 @@ enveloped data structures respectively.
 
 Full documentation can be found at:
 
-[www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc)
+[www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc/)

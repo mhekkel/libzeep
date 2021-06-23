@@ -115,7 +115,7 @@ void basic_template_processor::handle_file(const http::request& request, const s
 
 	fs::path file = scope["baseuri"].as<std::string>();
 
-	std::unique_ptr<std::istream> in(load_file(file, ec));
+	std::unique_ptr<std::istream> in(load_file(file.string(), ec));
 	if (ec)
 	{
 		reply = http::reply::stock_reply(http::not_found);
@@ -176,7 +176,7 @@ std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_fi
 
 		template_file = file + ext;
 
-		(void)file_time(template_file, ec);
+		(void)file_time(template_file.string(), ec);
 
 		if (ec)
 			continue;
@@ -244,7 +244,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 			}
 		}
 
-		throw exception((boost::format("error opening: %1% (%2%)") % (m_docroot / file) % msg).str());
+		throw exception("error opening: " + (m_docroot / file).string() + " (" + msg + ")");
 #else
 		throw exception("error opening: " + (m_docroot / file).string() + " (" + strerror(errno) + ")");
 #endif

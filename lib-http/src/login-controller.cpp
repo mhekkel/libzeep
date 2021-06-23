@@ -11,6 +11,7 @@
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/error-handler.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace fs = std::filesystem;
 
@@ -45,7 +46,7 @@ login_controller::login_controller(const std::string& prefix_path)
 {
 }
 
-void login_controller::set_server(server* server)
+void login_controller::set_server(basic_server* server)
 {
 	controller::set_server(server);
 
@@ -161,10 +162,10 @@ bool login_controller::handle_request(request& req, reply& rep)
 			if (not context.empty())
 				redirect_to += context + '/';
 			auto uri = req.get_parameter("uri");
-			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")))
+			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")) and is_valid_uri(uri))
 				redirect_to += uri;
 
-			rep = reply::redirect(fs::path(redirect_to).lexically_normal().string());
+			rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
 
 			auto username = req.get_parameter("username");
 			auto password = req.get_parameter("password");
@@ -203,10 +204,10 @@ bool login_controller::handle_request(request& req, reply& rep)
 		if (not context.empty())
 			redirect_to += context + '/';
 		auto uri = req.get_parameter("uri");
-		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")))
+		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
 			redirect_to += uri;
 
-		rep = reply::redirect(fs::path(redirect_to).lexically_normal().string());
+		rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
 		rep.set_delete_cookie("access_token");
 
 		result = true;

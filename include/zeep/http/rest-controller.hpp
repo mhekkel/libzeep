@@ -231,10 +231,16 @@ class rest_controller : public controller
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
 
-		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<not (std::is_void_v<ResultType> or std::is_same_v<ResultType, reply>), int> = 0>
 		void invoke(ArgsTuple&& args, reply& reply)
 		{
 			set_reply(reply, std::apply(m_callback, std::forward<ArgsTuple>(args)));
+		}
+
+		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_same_v<ResultType, reply>, int> = 0>
+		void invoke(ArgsTuple&& args, reply& reply)
+		{
+			reply = std::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
 
 		void set_reply(reply& rep, std::filesystem::path v)
@@ -373,7 +379,9 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<not (zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or std::is_enum_v<T>), int> = 0>
+		template<typename T, std::enable_if_t<not (
+			zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or std::is_enum_v<T> or
+			zeep::is_serializable_array_type_v<T, zeep::json::deserializer<json::element>>), int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			try
@@ -400,7 +408,8 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>>, int> = 0>
+		template<typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or
+			zeep::is_serializable_array_type_v<T, zeep::json::deserializer<json::element>>, int> = 0>
 		T get_parameter(const parameter_pack& params, const char* name, T result)
 		{
 			json::element v;

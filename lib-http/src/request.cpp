@@ -4,24 +4,20 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include <filesystem>
+
 #include <boost/algorithm/string.hpp>
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/json/parser.hpp>
-#include <filesystem>
+#include <zeep/http/uri.hpp>
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 namespace zeep::http
 {
-
-namespace
-{
-// a regex for URI
-const std::regex kURIRx(R"((?:(https?:)(?://([^/]+)))?(?:/?([^?]*))(?:\?(.+))?)", std::regex_constants::icase);
-}
 
 request::request(const std::string& method, const std::string& uri, std::tuple<int,int> version,
 		std::vector<header>&& headers, std::string&& payload)
@@ -35,34 +31,49 @@ request::request(const std::string& method, const std::string& uri, std::tuple<i
 	m_version[2] = '0' + std::get<1>(version);
 }
 
+request::request(const request& req)
+	: m_local_address(req.m_local_address)
+	, m_local_port(req.m_local_port)
+	, m_method(req.m_method)
+	, m_uri(req.m_uri)
+	, m_headers(req.m_headers)
+	, m_payload(req.m_payload)
+	, m_close(req.m_close)
+	, m_timestamp(req.m_timestamp)
+	, m_credentials(req.m_credentials)
+	, m_remote_address(req.m_remote_address)
+{
+	char* d = &m_version[0];
+	for (auto c: req.m_version)
+		*d++ = c;
+}
+
+request& request::operator=(const request& req)
+{
+	if (this != &req)
+	{
+		m_local_address = req.m_local_address;
+		m_local_port = req.m_local_port;
+		m_method = req.m_method;
+		m_uri = req.m_uri;
+		m_version[0] = req.m_version[0];
+		m_version[1] = req.m_version[1];
+		m_version[2] = req.m_version[2];
+		m_headers = req.m_headers;
+		m_payload = req.m_payload;
+		m_close = req.m_close;
+		m_timestamp = req.m_timestamp;
+		m_credentials = req.m_credentials;
+		m_remote_address = req.m_remote_address;
+	}
+
+	return *this;
+}
+
 void request::set_local_endpoint(boost::asio::ip::tcp::socket& socket)
 {
 	m_local_address = socket.local_endpoint().address().to_string();
 	m_local_port = socket.local_endpoint().port();
-}
-
-std::string request::get_path() const
-{
-	std::smatch m;
-	if (not std::regex_match(m_uri, m, kURIRx))
-		throw std::invalid_argument("the request uri is not valid");
-	return "/" + fs::path(m[3]).lexically_normal().string();
-}
-
-std::string request::get_query() const
-{
-	std::smatch m;
-	if (not std::regex_match(m_uri, m, kURIRx))
-		throw std::invalid_argument("the request uri is not valid");
-	return m[4];
-}
-
-std::string request::get_host() const
-{
-	std::smatch m;
-	if (not std::regex_match(m_uri, m, kURIRx))
-		throw std::invalid_argument("the request uri is not valid");
-	return m[2];
 }
 
 float request::get_accept(const char* type) const
@@ -191,7 +202,7 @@ void request::remove_header(const char* name)
 		m_headers.end());
 }
 
-std::pair<std::string,bool> get_urlencode_parameter(const std::string& s, const char* name)
+std::pair<std::string,bool> get_urlencoded_parameter(const std::string& s, const char* name)
 {
 	std::string::size_type b = 0;
 	std::string result;
@@ -232,15 +243,17 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 
 	if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
-		tie(result, found) = get_urlencode_parameter(m_payload, name);
+		tie(result, found) = get_urlencoded_parameter(m_payload, name);
 		if (found)
 			return std::make_tuple(result, true);
 	}
 
-	auto b = m_uri.find('?');
-	if (b != std::string::npos)
+	uri uri(m_uri);
+	auto query = uri.get_query();
+
+	if (not query.empty())
 	{
-		tie(result, found) = get_urlencode_parameter(m_uri.substr(b + 1), name);
+		tie(result, found) = get_urlencoded_parameter(query, name);
 		if (found)
 			return std::make_tuple(result, true);
 	}
@@ -351,9 +364,8 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	}
 	else if (m_method == "GET" or m_method == "PUT")
 	{
-		std::string::size_type d = m_uri.find('?');
-		if (d != std::string::npos)
-			ps = m_uri.substr(d + 1);
+		uri uri(m_uri);
+		ps = uri.get_query();
 	}
 
 	std::multimap<std::string,std::string> parameters;
@@ -861,7 +873,7 @@ std::ostream& operator<<(std::ostream& io, const request& req)
 	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
 
 	for (auto& b: buffers)
-		io.write(boost::asio::buffer_cast<const char*>(b), boost::asio::buffer_size(b));
+		io.write(static_cast<const char*>(b.data()), b.size());
 
 	return io;
 }

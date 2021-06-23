@@ -29,6 +29,31 @@ ZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4=
 	BOOST_CHECK(s == in);
 }
 
+BOOST_AUTO_TEST_CASE(http_base32_1)
+{
+	using namespace std::literals;
+
+	auto in = R"(Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.)"s;
+	
+	auto out = R"(JVQW4IDJOMQGI2LTORUW4Z3VNFZWQZLEFQQG433UEBXW43DZEBRHSIDINFZSA4TFMFZW63RMEBRH
+K5BAMJ4SA5DINFZSA43JNZTXK3DBOIQHAYLTONUW63RAMZZG63JAN52GQZLSEBQW42LNMFWHGLBA
+O5UGSY3IEBUXGIDBEBWHK43UEBXWMIDUNBSSA3LJNZSCYIDUNBQXIIDCPEQGCIDQMVZHGZLWMVZG
+C3TDMUQG6ZRAMRSWY2LHNB2CA2LOEB2GQZJAMNXW45DJNZ2WKZBAMFXGIIDJNZSGKZTBORUWOYLC
+NRSSAZ3FNZSXEYLUNFXW4IDPMYQGW3TPO5WGKZDHMUWCAZLYMNSWKZDTEB2GQZJAONUG64TUEB3G
+K2DFNVSW4Y3FEBXWMIDBNZ4SAY3BOJXGC3BAOBWGKYLTOVZGKLQ=
+)"s;
+
+	auto test = zeep::encode_base32(in, 76);
+
+	BOOST_CHECK_EQUAL(test, out);
+
+	auto s = zeep::decode_base32(test);
+
+	BOOST_CHECK(s == in);
+}
+
+
+
 BOOST_AUTO_TEST_CASE(http_base64_2)
 {
 	using namespace std::literals;

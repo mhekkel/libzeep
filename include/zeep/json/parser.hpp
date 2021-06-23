@@ -20,7 +20,7 @@ namespace zeep::json
 {
 
 void parse_json(const std::string& json, json::element& object);
-void parse_json(std::istream& os, json::element& object);
+void parse_json(std::istream& is, json::element& object);
 
 namespace literals
 {

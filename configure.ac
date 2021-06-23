@@ -1,6 +1,12 @@
 AC_PREREQ([2.69])
 
-AC_INIT([libzeep], 5.0, [maarten@hekkelman.com])
+m4_define([libzeep_version_major],[5])
+m4_define([libzeep_version_minor],[1])
+m4_define([libzeep_version_micro],[0])
+m4_define([libzeep_version_extra],[])
+m4_define([libzeep_version],[libzeep_version_major().libzeep_version_minor().libzeep_version_micro()libzeep_version_extra])
+
+AC_INIT([libzeep], [libzeep_version], [maarten@hekkelman.com])
 
 dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
@@ -9,17 +15,16 @@ AX_CXX_COMPILE_STDCXX_17([noext])
 AC_CONFIG_SRCDIR([lib-http/src/connection.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
-
 AC_PREFIX_DEFAULT(/usr/local)
 
 AC_PROG_INSTALL
 
 dnl Shared libraries are not convenient
-LT_INIT([disable-shared])
+LT_INIT([disable-shared pic-only])
 AC_SUBST(LIBTOOL_DEPS)
 
 dnl versioning
-LZ_CURRENT=5
+LZ_CURRENT=6
 LZ_REVISION=0
 LZ_AGE=0
 
@@ -28,6 +33,11 @@ LZ_LT_VERSION="${LZ_CURRENT}:${LZ_REVISION}:${LZ_AGE}"
 
 AC_SUBST(LZ_TL_CURRENT)
 AC_SUBST(LZ_LT_VERSION)
+
+AC_SUBST(LIBZEEP_VERSION, [libzeep_version])
+AC_SUBST(LIBZEEP_VERSION_MAJOR, [libzeep_version_major])
+AC_SUBST(LIBZEEP_VERSION_MINOR, [libzeep_version_minor])
+AC_SUBST(LIBZEEP_VERSION_PATCH, [libzeep_version_micro])
 
 AC_PATH_PROG([SHELL], [sh])
 
@@ -58,26 +68,8 @@ AX_PTHREAD(
 	]
 )
 
-AC_CHECK_HEADER([filesystem], [], [AC_MSG_ERROR([The file <filesystem> is missing, perhaps you should install a more recent libstdc++ implementation.])])
-
-dnl check if we need stdc++fs as library
-AC_TRY_LINK(
-	[#include <filesystem>],
-	[(void)std::filesystem::current_path();],
-	[],
-	[
-		LIBS="$LIBS -lstdc++fs"
-
-		AC_TRY_LINK(
-			[#include <filesystem>],
-			[(void)std::filesystem::current_path();],
-			[],
-			[
-				AC_MSG_ERROR([Could not link filesystem])
-			]
-		)
-	]
-)
+dnl check for <filesystem> and if we need stdc++fs as library
+AX_FILESYSTEM
 
 AX_BOOST_BASE([1.71], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
@@ -106,6 +98,9 @@ AS_IF([test "$enable_documentation" = "yes"],
 		BUILD_DOCS_TRUE=1
 		AC_SUBST(BUILD_DOCS_TRUE)
 ])
+
+dnl for uriparser
+AX_URIPARSER
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile

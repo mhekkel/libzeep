@@ -30,10 +30,12 @@ addons:
       - docbook-xsl
       - default-jdk
       - fop
+      - liburiparser-dev
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update      ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install make; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update           ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install make     ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install uriparser; fi
 
 script:
   - ./configure

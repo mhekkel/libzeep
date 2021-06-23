@@ -21,7 +21,7 @@ connection* get_pointer(const std::shared_ptr<connection>& p)
 	return p.get();
 }
 
-connection::connection(boost::asio::io_service& service, server& handler)
+connection::connection(boost::asio::io_context& service, basic_server& handler)
 	: m_socket(service), m_server(handler), m_bufs(m_buffer.prepare(4096))
 {
 }
@@ -51,6 +51,10 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 			m_request_parser.reset();
 			
 			m_server.handle_request(m_socket, req, m_reply);
+
+			// by now, a client might have taken over our socket, in that case, simply drop out
+			if (not m_socket.is_open())
+				return;
 
 			m_reply.set_version(req.get_version());
 

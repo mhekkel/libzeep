@@ -36,7 +36,7 @@ class login_controller : public controller
 	///
 	/// Makes sure the server has a security context and adds rules
 	/// to this security context to allow access to the /login page
-	virtual void set_server(server* server);
+	virtual void set_server(basic_server* server);
 
 	/// \brief will handle the actual requests
 	virtual bool handle_request(request& req, reply& rep);

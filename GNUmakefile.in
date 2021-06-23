@@ -12,9 +12,9 @@ SHELL 				= @SHELL@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @CPPFLAGS@ @CXXFLAGS@ @BOOST_CPPFLAGS@
-LDFLAGS				= @LDFLAGS@ @BOOST_LDFLAGS@
-LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@
+CXXFLAGS			= @BOOST_CPPFLAGS@ @CPPFLAGS@ @CXXFLAGS@ @URIPARSER_CFLAGS@
+LDFLAGS				= @BOOST_LDFLAGS@ @LDFLAGS@ 
+LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@ @URIPARSER_LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
@@ -38,6 +38,7 @@ configure: configure.ac
 endif
 
 LIB_NAME			= @PACKAGE_NAME@
+PACKAGE_TARNAME		= @PACKAGE_TARNAME@
 LIB_VERSION			= @LZ_LT_VERSION@
 LIB_TARGET			= $(LIB_NAME).la
 VERSION             = @PACKAGE_VERSION@
@@ -55,6 +56,7 @@ CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS
 
 # main build variables
 CXXFLAGS            += -Wall -Wno-multichar -I include
+DEFINES				+= BOOST_ASIO_NO_DEPRECATED
 
 # documentation rules
 BUILD_DOCS			= @BUILD_DOCS_TRUE@
@@ -107,12 +109,14 @@ OBJECTS = \
 	$(OBJDIR)/reply.lo \
 	$(OBJDIR)/request.lo \
 	$(OBJDIR)/rest-controller.lo \
+	$(OBJDIR)/signals.lo \
 	$(OBJDIR)/security.lo \
 	$(OBJDIR)/server.lo \
 	$(OBJDIR)/soap-controller.lo \
 	$(OBJDIR)/tag-processor-v2.lo \
 	$(OBJDIR)/tag-processor.lo \
 	$(OBJDIR)/template-processor.lo \
+	$(OBJDIR)/uri.lo \
 	$(OBJDIR)/element.lo \
 	$(OBJDIR)/json-parser.lo \
 	$(OBJDIR)/character-classification.lo \
@@ -235,7 +239,7 @@ $(1)-test: tests/$(1)-test
 
 endef
 
-TESTS = unit parser serializer xpath json crypto http processor webapp soap rest
+TESTS = unit parser serializer xpath json crypto http processor webapp soap rest security uri
 
 ifneq "x$(MRC)" "x"
 TESTS += rsrc_webapp

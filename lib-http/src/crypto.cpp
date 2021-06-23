@@ -154,7 +154,7 @@ const uint8_t kBase64IndexTable[128] = {
 
 inline size_t sextet(char ch)
 {
-	if (ch < '+' or ch > 'z')
+	if (ch < '+' or ch > 'z' or kBase64IndexTable[static_cast<uint8_t>(ch)] >= 128)
 		throw invalid_base64();
 
 	return kBase64IndexTable[static_cast<uint8_t>(ch)];
@@ -348,6 +348,360 @@ std::string decode_base64url(std::string data)
 }
 
 // --------------------------------------------------------------------
+
+
+const char kBase32CharTable[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+const uint8_t kBase32IndexTable[128] = {
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	26, // 2
+	27, // 3
+	28, // 4
+	29, // 5
+	30, // 6
+	31, // 7
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	0, // A
+	1, // B
+	2, // C
+	3, // D
+	4, // E
+	5, // F
+	6, // G
+	7, // H
+	8, // I
+	9, // J
+	10, // K
+	11, // L
+	12, // M
+	13, // N
+	14, // O
+	15, // P
+	16, // Q
+	17, // R
+	18, // S
+	19, // T
+	20, // U
+	21, // V
+	22, // W
+	23, // X
+	24, // Y
+	25, // Z
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	0, // a
+	1, // b
+	2, // c
+	3, // d
+	4, // e
+	5, // f
+	6, // g
+	7, // h
+	8, // i
+	9, // j
+	10, // k
+	11, // l
+	12, // m
+	13, // n
+	14, // o
+	15, // p
+	16, // q
+	17, // r
+	18, // s
+	19, // t
+	20, // u
+	21, // v
+	22, // w
+	23, // x
+	24, // y
+	25, // z
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+	32, // not used
+};
+
+inline size_t quintet(char ch)
+{
+	if (ch < '2' or ch > 'z' or kBase32IndexTable[static_cast<uint8_t>(ch)] >= 32)
+		throw invalid_base32();
+
+	return kBase32IndexTable[static_cast<uint8_t>(ch)];
+}
+
+std::string encode_base32(std::string_view data, size_t wrap_width)
+{
+	std::string::size_type n = data.length();
+	std::string::size_type m = 8 * (n / 5);
+	if (n % 5)
+		m += 8;
+
+	if (wrap_width != 0)
+		m += (m / wrap_width) + 1;
+
+	std::string result;
+	result.reserve(m);
+
+	auto ch = data.begin();
+	size_t l = 0;
+
+	while (n > 0)
+	{
+		char s[8] = { '=', '=', '=', '=', '=', '=', '=', '=' };
+
+		switch (n)
+		{
+			case 1:
+			{
+				uint8_t i1 = *ch++;
+
+				s[0] = kBase32CharTable[(i1 >> 3) bitand 0x01f];
+				s[1] = kBase32CharTable[(i1 << 2) bitand 0x01f];
+
+				n -= 1;
+				break;
+			}
+
+			case 2:
+			{
+				uint8_t i1 = *ch++;
+				uint8_t i2 = *ch++;
+																				//	i1	i2
+				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
+				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
+				s[3] = kBase32CharTable[(i2 << 4              ) bitand 0x01f];	//		1
+
+				n -= 2;
+				break;
+			}
+
+			case 3:
+			{
+				uint8_t i1 = *ch++;
+				uint8_t i2 = *ch++;
+				uint8_t i3 = *ch++;
+																				//	i1	i2	i3
+				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
+				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
+				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f];	//		1	4
+				s[4] = kBase32CharTable[(i3 << 1              ) bitand 0x01f];	//			4
+
+				n -= 3;
+				break;
+			}
+
+			case 4:
+			{
+				uint8_t i1 = *ch++;
+				uint8_t i2 = *ch++;
+				uint8_t i3 = *ch++;
+				uint8_t i4 = *ch++;
+																				//	i1	i2	i3	i4
+				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
+				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
+				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f];	//		1	4
+				s[4] = kBase32CharTable[(i3 << 1              ) bitand 0x01f];	//			4	1
+				s[5] = kBase32CharTable[(			   i4 >> 2) bitand 0x01f];	//				5
+				s[6] = kBase32CharTable[(i4 << 3              ) bitand 0x01f];	//				2
+
+				n -= 4;
+				break;
+			}
+
+			default:
+			{
+				uint8_t i1 = *ch++;
+				uint8_t i2 = *ch++;
+				uint8_t i3 = *ch++;
+				uint8_t i4 = *ch++;
+				uint8_t i5 = *ch++;
+																				//	i1	i2	i3	i4	i5
+				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
+				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
+				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f];	//		1	4
+				s[4] = kBase32CharTable[(i3 << 1 bitor i4 >> 7) bitand 0x01f];	//			4	1
+				s[5] = kBase32CharTable[(			   i4 >> 2) bitand 0x01f];	//				5
+				s[6] = kBase32CharTable[(i4 << 3 bitor i5 >> 5) bitand 0x01f];	//				2	3
+				s[7] = kBase32CharTable[(i5 				  ) bitand 0x01f];	//					5						
+
+				n -= 5;
+				break;
+			}
+		}
+
+		if (wrap_width == 0)
+			result.append(s, s + 8);
+		else
+		{
+			for (size_t i = 0; i < 8; ++i)
+			{
+				if (l == wrap_width)
+				{
+					result.append(1, '\n');
+					l = 0;
+				}
+
+				result.append(1, s[i]);
+				++l;
+			}
+		}
+	}
+
+	if (wrap_width != 0)
+		result.append(1, '\n');
+
+	assert(result.length() == m);
+
+	return result;
+}
+
+std::string decode_base32(std::string_view data)
+{
+	size_t n = data.length();
+	size_t m = 8 * (n / 5);
+
+	std::string result;
+	result.reserve(m);
+
+	auto i = data.begin();
+
+	int padding = 0;
+	while (i != data.end() and not padding)
+	{
+		uint8_t qnt[5] = {};
+		int c = 0;
+
+		while (c + padding != 8 and i != data.end())
+		{
+			auto ch = *i++;
+
+			if (std::isspace(ch))
+				continue;
+
+			if (padding)
+			{
+				if (ch != '=')
+					throw invalid_base32();
+
+				++padding;
+				continue;
+			}
+
+			if (ch == '=')
+			{
+				++padding;
+				continue;
+			}
+
+			if (ch < '2' or ch > 'z' or kBase32IndexTable[static_cast<uint8_t>(ch)] >= 32)
+				throw invalid_base32();
+			
+			auto b = kBase32IndexTable[static_cast<uint8_t>(ch)];
+
+			switch (c++)
+			{
+				case 0:	qnt[0] |= b << 3;					break;
+				case 1: qnt[0] |= b >> 2; qnt[1] = b << 6;	break;
+				case 2: qnt[1] |= b << 1;					break;
+				case 3: qnt[1] |= b >> 4; qnt[2] = b << 4;	break;
+				case 4: qnt[2] |= b >> 1; qnt[3] = b << 7;	break;
+				case 5: qnt[3] |= b << 2;					break;
+				case 6: qnt[3] |= b >> 3; qnt[4] = b << 5;	break;
+				case 7: qnt[4] |= b;						break;
+			}
+		}
+
+		if (c + padding != 8)
+			throw invalid_base32();
+
+		switch (c)
+		{
+			case 2:	result.append(qnt, qnt + 1); break;
+			case 4:	result.append(qnt, qnt + 2); break;
+			case 5:	result.append(qnt, qnt + 3); break;
+			case 7:	result.append(qnt, qnt + 4); break;
+			case 8:	result.append(qnt, qnt + 5); break;
+			default:
+				throw invalid_base32();
+		}
+	}
+
+	while (i != data.end())
+	{
+		if (not std::isspace(*i++))
+			throw invalid_base32();
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
 // hex
 
 std::string encode_hex(std::string_view data)
@@ -392,72 +746,6 @@ std::string decode_hex(std::string_view data)
 		}
 
 		result.push_back(static_cast<char>(n[0] << 4 bitor n[1]));
-	}
-
-	return result;
-}
-
-// --------------------------------------------------------------------
-// decode_url function
-
-std::string decode_url(std::string_view s)
-{
-	std::string result;
-	
-	for (auto c = s.begin(); c != s.end(); ++c)
-	{
-		if (*c == '%')
-		{
-			if (s.end() - c >= 3)
-			{
-				int value;
-				std::string s2(c + 1, c + 3);
-				std::istringstream is(s2);
-				if (is >> std::hex >> value)
-				{
-					result += static_cast<char>(value);
-					c += 2;
-				}
-			}
-		}
-		else if (*c == '+')
-			result += ' ';
-		else
-			result += *c;
-	}
-	return result;
-}
-
-// --------------------------------------------------------------------
-// encode_url function
-
-std::string encode_url(std::string_view s)
-{
-	const unsigned char kURLAcceptable[96] =
-	{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
-	    0,0,0,0,0,0,0,0,0,0,7,6,0,7,7,4,		/* 2x   !"#$%&'()*+,-./	 */
-	    7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,		/* 3x  0123456789:;<=>?	 */
-	    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 4x  @ABCDEFGHIJKLMNO  */
-	    7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,7,		/* 5X  PQRSTUVWXYZ[\]^_	 */
-	    0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 6x  `abcdefghijklmno	 */
-	    7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0			/* 7X  pqrstuvwxyz{\}~	DEL */
-	};
-
-	const char kHex[] = "0123456789abcdef";
-
-	std::string result;
-	
-	for (auto c = s.begin(); c != s.end(); ++c)
-	{
-		unsigned char a = (unsigned char)*c;
-		if (not (a >= 32 and a < 128 and (kURLAcceptable[a - 32] & 4)))
-		{
-			result += '%';
-			result += kHex[a >> 4];
-			result += kHex[a & 15];
-		}
-		else
-			result += *c;
 	}
 
 	return result;
@@ -677,7 +965,7 @@ struct sha1_hash_impl : public hash_impl
 
 	virtual void write_bit_length(uint64_t l, uint8_t* b)
 	{
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
 #else
 		b[0] = l >> 56;
@@ -698,7 +986,7 @@ struct sha1_hash_impl : public hash_impl
 			uint32_t w[80];
 		} w;
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(w.s, data, 64);
 #else
 		auto p = data;
@@ -760,7 +1048,7 @@ struct sha1_hash_impl : public hash_impl
 	{
 		std::string result(digest_size, '\0');
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
 #else
 		auto s = result.begin();
@@ -802,7 +1090,7 @@ struct sha256_hash_impl : public hash_impl
 
 	virtual void write_bit_length(uint64_t l, uint8_t* b)
 	{
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
 #else
 		b[0] = l >> 56;
@@ -838,7 +1126,7 @@ struct sha256_hash_impl : public hash_impl
 			uint32_t w[64];
 		} w;
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(w.w, data, 64);
 #else
 		auto p = data;
@@ -885,7 +1173,7 @@ struct sha256_hash_impl : public hash_impl
 	{
 		std::string result(digest_size, '\0');
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
 #else
 		auto s = result.begin();

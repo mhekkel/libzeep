@@ -4,6 +4,9 @@
 #include <zeep/json/element.hpp>
 #include <zeep/json/parser.hpp>
 #include <zeep/json/serializer.hpp>
+
+#include <zeep/nvp.hpp>
+
 #include <zeep/exception.hpp>
 
 using namespace std;
@@ -74,7 +77,9 @@ BOOST_AUTO_TEST_CASE(j_2)
 	BOOST_TEST(jint.as<float>() == 1.0);
 	BOOST_TEST(jint.as<string>() == "1");
 	BOOST_TEST(jint.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jint.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_3)
@@ -86,7 +91,9 @@ BOOST_AUTO_TEST_CASE(j_3)
 	BOOST_TEST(jint.as<float>() == -1.0);
 	BOOST_TEST(jint.as<string>() == "-1");
 	BOOST_TEST(jint.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jint.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_4)
@@ -98,7 +105,9 @@ BOOST_AUTO_TEST_CASE(j_4)
 	BOOST_TEST(jfloat.as<float>() == 1.0);
 	BOOST_TEST(jfloat.as<string>() == "1");
 	BOOST_TEST(jfloat.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jfloat.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_5)
@@ -110,7 +119,9 @@ BOOST_AUTO_TEST_CASE(j_5)
 	BOOST_TEST(jfloat.as<float>() == -1.0);
 	BOOST_TEST(jfloat.as<string>() == "-1");
 	BOOST_TEST(jfloat.as<bool>() == true);
+#ifndef _MSC_VER
 	BOOST_CHECK_THROW(jfloat.as<vector<int>>(), std::exception);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(j_6)
@@ -297,5 +308,39 @@ BOOST_AUTO_TEST_CASE(j_13)
 	from_element(e, pa);
 
 	BOOST_TEST((p.now == pa.now));
+}
+
+
+
+enum class E { aap, noot, mies };
+
+struct Se
+{
+	E m_e;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long)
+	{
+		ar & zeep::make_nvp("e", m_e);
+	}
+
+	bool operator==(const Se& se) const
+	{
+		return m_e == se.m_e;
+	}
+};
+
+
+BOOST_AUTO_TEST_CASE(j_test_array_1)
+{
+	using array_type = std::vector<Se>;
+
+	array_type v{ { E::aap }, { E::noot }, { E::mies }}, v2;
+
+	json e;
+	to_element(e, v);
+	from_element(e, v2);
+
+	BOOST_TEST(v == v2);
 }
 

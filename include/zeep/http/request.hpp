@@ -73,7 +73,7 @@ class request
 
 	friend class message_parser;
 	friend class request_parser;
-	friend class server;
+	friend class basic_server;
 
 	using param = header;	// alias name
 	using cookie_directive = header;	
@@ -82,11 +82,9 @@ class request
 		std::vector<header>&& headers = {}, std::string&& payload = {});
 
 	request(const request& req);
-	// request(request&& req);
-
+	
 	request& operator=(const request& rhs);
-	// request& operator=(request&& rhs);
-
+	
 	/// \brief Fetch the local address from the connected socket
 	void set_local_endpoint(boost::asio::ip::tcp::socket& socket);
 	std::tuple<std::string,uint16_t> get_local_endpoint() const				{ return { m_local_address, m_local_port }; }
@@ -106,17 +104,14 @@ class request
 	/// \brief Set the URI
 	void set_uri(const std::string& uri)									{ m_uri = uri; }
 
-	/// \brief Return the local path part of the request, after removing scheme, host and parameters
-	std::string get_path() const;
-
-	/// \brief Return the parameter or query string, the part after the first question mark
-	std::string get_query() const;
-
-	/// \brief Return the requested host
-	std::string get_host() const;
-
 	/// \brief Get the address of the connecting remote
 	std::string get_remote_address() const									{ return m_remote_address; }
+
+	/// \brief Get the entire request line (convenience method)
+	std::string get_request_line() const
+	{
+		return get_method() + ' ' + get_uri() + " HTTP/" + std::string(m_version, m_version + 3);
+	}
 
 	/// \brief Return the payload
 	const std::string& get_payload() const									{ return m_payload; }
@@ -144,13 +139,6 @@ class request
 
 	/// \brief Remove this header from the list of headers
 	void remove_header(const char* name);
-
-	/// \brief Return the path part of the requested URI
-	std::string get_pathname() const
-	{
-		auto s = m_uri.find('?');
-		return s == std::string::npos ? m_uri : m_uri.substr(0, s);
-	}
 
 	/// \brief Get the credentials. This is filled in if the request was validated
 	json::element get_credentials() const				{ return m_credentials; }

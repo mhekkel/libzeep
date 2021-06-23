@@ -10,6 +10,7 @@
 #include <zeep/crypto.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/json/parser.hpp>
+#include <zeep/http/uri.hpp>
 
 #include "glob.hpp"
 
@@ -32,7 +33,7 @@ void security_context::validate_request(request& req) const
 
 	for (;;)
 	{
-		std::string path = req.get_path();
+		std::string path = uri(req.get_uri()).get_path().string();
 
 		if (path.front() != '/')
 			path.insert(path.begin(), '/');
