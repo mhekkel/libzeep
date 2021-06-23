@@ -82,12 +82,6 @@ endif
 
 CXXFLAGS			+= $(DEFINES:%=-D%)
 
-# We're using a local copy of liburiparser
-
-CXXFLAGS			+= -Iuriparser/include
-LDFLAGS				+= -L./uriparser
-LIBS				+= -luriparser
-
 # Objects
 
 OBJDIR = obj
