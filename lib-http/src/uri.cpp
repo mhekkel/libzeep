@@ -99,7 +99,7 @@ std::filesystem::path uri::get_path() const
 	std::filesystem::path result;
 
 	for (auto p = m_impl->m_uri.pathHead; p != nullptr /*m_impl->m_uri.pathTail*/; p = p->next)
-		result /= { p->text.first, p->text.afterLast };
+		result /= decode_url({ p->text.first, p->text.afterLast - p->text.first });
 	
 	return result;
 }

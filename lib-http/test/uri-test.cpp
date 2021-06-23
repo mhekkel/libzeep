@@ -24,3 +24,17 @@ BOOST_AUTO_TEST_CASE(uri_2)
 	BOOST_CHECK_EQUAL(url.get_path().string(), "segment/index.html");
 	BOOST_CHECK_EQUAL(url.get_query(), "query");
 }
+
+BOOST_AUTO_TEST_CASE(uri_3)
+{
+	zeep::http::uri url("http://www.example.com/~maarten");
+
+	BOOST_CHECK_EQUAL(url.get_path().string(), "~maarten");
+}
+
+BOOST_AUTO_TEST_CASE(uri_4)
+{
+	zeep::http::uri url("http://www.example.com/%7Emaarten");
+
+	BOOST_CHECK_EQUAL(url.get_path().string(), "~maarten");
+}
