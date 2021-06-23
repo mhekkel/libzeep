@@ -785,18 +785,18 @@ std::string decode_url(std::string_view s)
 // --------------------------------------------------------------------
 // encode_url function
 
+const unsigned char kURLAcceptable[96] =
+{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
+	0,0,0,0,0,0,0,0,0,0,7,6,0,7,7,4,		/* 2x   !"#$%&'()*+,-./	 */
+	7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,		/* 3x  0123456789:;<=>?	 */
+	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 4x  @ABCDEFGHIJKLMNO  */
+	7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,7,		/* 5X  PQRSTUVWXYZ[\]^_	 */
+	0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 6x  `abcdefghijklmno	 */
+	7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0			/* 7X  pqrstuvwxyz{\}~	DEL */
+};
+
 std::string encode_url(std::string_view s)
 {
-	const unsigned char kURLAcceptable[96] =
-	{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
-	    0,0,0,0,0,0,0,0,0,0,7,6,0,7,7,4,		/* 2x   !"#$%&'()*+,-./	 */
-	    7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,		/* 3x  0123456789:;<=>?	 */
-	    7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 4x  @ABCDEFGHIJKLMNO  */
-	    7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,7,		/* 5X  PQRSTUVWXYZ[\]^_	 */
-	    0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 6x  `abcdefghijklmno	 */
-	    7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0			/* 7X  pqrstuvwxyz{\}~	DEL */
-	};
-
 	const char kHex[] = "0123456789abcdef";
 
 	std::string result;
@@ -812,6 +812,25 @@ std::string encode_url(std::string_view s)
 		}
 		else
 			result += *c;
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+// Is a valid url?
+
+bool is_valid_url(const std::string& url)
+{
+	bool result = true;
+
+	for (unsigned char ch: url)
+	{
+		if (ch < 32 or ch >= 128 or (kURLAcceptable[ch - 32] & 4) == 0)
+		{
+			result = false;
+			break;
+		}
 	}
 
 	return result;

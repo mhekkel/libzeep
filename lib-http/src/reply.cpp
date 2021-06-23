@@ -10,6 +10,7 @@
 
 #include <zeep/http/reply.hpp>
 #include <zeep/xml/document.hpp>
+#include <zeep/crypto.hpp>
 
 namespace zeep::http
 {

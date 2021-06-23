@@ -238,7 +238,7 @@ $(1)-test: tests/$(1)-test
 
 endef
 
-TESTS = unit parser serializer xpath json crypto http processor webapp soap rest
+TESTS = unit parser serializer xpath json crypto http processor webapp soap rest security
 
 ifneq "x$(MRC)" "x"
 TESTS += rsrc_webapp
