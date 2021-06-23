@@ -6,6 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <regex>
+#include <sstream>
 
 #include <zeep/http/uri.hpp>
 
