@@ -7,10 +7,20 @@ namespace z = zeep;
 
 BOOST_AUTO_TEST_CASE(uri_1)
 {
-	zeep::http::uri url1("http://a/");
+	zeep::http::is_valid_uri("http://a/");
 
-	zeep::http::uri url2("http://a.b/");
-	zeep::http::uri url3("http://a/b");
-	zeep::http::uri url4("http://a/b%0A%0DSet-Cookie:%20false");
-	zeep::http::uri url5("http://user:pass@[::1]/segment/index.html?query#frag");
+	zeep::http::is_valid_uri("http://a.b/");
+	zeep::http::is_valid_uri("http://a/b");
+	zeep::http::is_valid_uri("http://a/b%0A%0DSet-Cookie:%20false");
+	zeep::http::is_valid_uri("http://user:pass@[::1]/segment/index.html?query#frag");
+}
+
+BOOST_AUTO_TEST_CASE(uri_2)
+{
+	zeep::http::uri url("http://user:pass@[::1]/segment/index.html?query#frag");
+
+	BOOST_CHECK_EQUAL(url.get_scheme(), "http");
+	BOOST_CHECK_EQUAL(url.get_host(), "::1");
+	BOOST_CHECK_EQUAL(url.get_path().string(), "segment/index.html");
+	BOOST_CHECK_EQUAL(url.get_query(), "query");
 }

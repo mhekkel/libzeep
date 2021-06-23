@@ -17,6 +17,7 @@
 #include <zeep/unicode-support.hpp>
 #include <zeep/http/el-processing.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/http/uri.hpp>
 
 #include "format.hpp"
 

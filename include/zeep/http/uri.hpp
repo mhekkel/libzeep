@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// A simple uri class.
+/// A simple uri class. For now this class wraps around a liburiparser UriUriStruct.
 
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
@@ -39,12 +39,14 @@ class uri
 	uri &operator=(const uri &u);
 	uri &operator=(uri &&u);
 
-	// std::string get_scheme() const;
-	// std::string get_authority() const;
-	// std::string get_path() const;
-	// std::string get_query() const;
-	// std::string get_fragment() const;
+	bool empty() const;
+
 	bool is_absolute() const;
+
+	std::string get_scheme() const;
+	std::string get_host() const;
+	std::filesystem::path get_path() const;
+	std::string get_query() const;
 
 	std::string string() const;
 
@@ -55,5 +57,21 @@ class uri
   private:
 	struct uri_impl *m_impl;
 };
+
+// --------------------------------------------------------------------
+
+bool is_valid_uri(const std::string& uri);
+
+// --------------------------------------------------------------------
+
+/// \brief Decode a URL using the RFC rules
+/// \param s  The URL that needs to be decoded
+/// \return	  The decoded URL
+std::string decode_url(std::string_view s);
+
+/// \brief Encode a URL using the RFC rules
+/// \param s  The URL that needs to be encoded
+/// \return	  The encoded URL
+std::string encode_url(std::string_view s);
 
 } // namespace zeep::http

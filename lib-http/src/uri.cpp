@@ -9,7 +9,10 @@
 
 #include <zeep/http/uri.hpp>
 
+extern "C"
+{
 #include <uriparser/Uri.h>
+}
 
 namespace zeep::http
 {
@@ -81,12 +84,50 @@ std::string uri::string() const
 	return result;
 }
 
+std::string uri::get_scheme() const
+{
+	return { m_impl->m_uri.scheme.first, m_impl->m_uri.scheme.afterLast };
+}
+
+std::string uri::get_host() const
+{
+	return { m_impl->m_uri.hostText.first, m_impl->m_uri.hostText.afterLast };
+}
+
+std::filesystem::path uri::get_path() const
+{
+	std::filesystem::path result;
+
+	for (auto p = m_impl->m_uri.pathHead; p != nullptr /*m_impl->m_uri.pathTail*/; p = p->next)
+		result /= { p->text.first, p->text.afterLast };
+	
+	return result;
+}
+
+std::string uri::get_query() const
+{
+	return { m_impl->m_uri.query.first, m_impl->m_uri.query.afterLast };
+}
+
 // --------------------------------------------------------------------
 
 std::ostream &operator<<(std::ostream &os, const uri &url)
 {
 	os << url.string();
 	return os;
+}
+
+// --------------------------------------------------------------------
+
+bool is_valid_uri(const std::string &s)
+{
+	UriUriA uri;
+
+	bool result = uriParseSingleUriA(&uri, s.c_str(), nullptr) == URI_SUCCESS;
+
+	uriFreeUriMembersA(&uri);
+
+	return result;
 }
 
 
@@ -389,5 +430,72 @@ std::ostream &operator<<(std::ostream &os, const uri &url)
 
 // 	return result;
 // }
+
+
+// --------------------------------------------------------------------
+// decode_url function
+
+std::string decode_url(std::string_view s)
+{
+	std::string result;
+	
+	for (auto c = s.begin(); c != s.end(); ++c)
+	{
+		if (*c == '%')
+		{
+			if (s.end() - c >= 3)
+			{
+				int value;
+				std::string s2(c + 1, c + 3);
+				std::istringstream is(s2);
+				if (is >> std::hex >> value)
+				{
+					result += static_cast<char>(value);
+					c += 2;
+				}
+			}
+		}
+		else if (*c == '+')
+			result += ' ';
+		else
+			result += *c;
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+// encode_url function
+
+const unsigned char kURLAcceptable[96] =
+{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
+	0,0,0,0,0,0,0,0,0,0,7,6,0,7,7,4,		/* 2x   !"#$%&'()*+,-./	 */
+	7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,		/* 3x  0123456789:;<=>?	 */
+	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 4x  @ABCDEFGHIJKLMNO  */
+	7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,7,		/* 5X  PQRSTUVWXYZ[\]^_	 */
+	0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 6x  `abcdefghijklmno	 */
+	7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0			/* 7X  pqrstuvwxyz{\}~	DEL */
+};
+
+std::string encode_url(std::string_view s)
+{
+	const char kHex[] = "0123456789abcdef";
+
+	std::string result;
+	
+	for (auto c = s.begin(); c != s.end(); ++c)
+	{
+		unsigned char a = (unsigned char)*c;
+		if (not (a >= 32 and a < 128 and (kURLAcceptable[a - 32] & 4)))
+		{
+			result += '%';
+			result += kHex[a >> 4];
+			result += kHex[a & 15];
+		}
+		else
+			result += *c;
+	}
+
+	return result;
+}
 
 } // namespace zeep::http

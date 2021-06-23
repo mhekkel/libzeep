@@ -23,27 +23,42 @@ namespace detail
 		status_type code;
 		const char *text;
 	} kStatusStrings[] = {
-		{cont, "Continue"},
-		{ok, "OK"},
-		{created, "Created"},
-		{accepted, "Accepted"},
-		{no_content, "No Content"},
-		{multiple_choices, "Multiple Choices"},
-		{moved_permanently, "Moved Permanently"},
-		{moved_temporarily, "Found"},
-		{see_other, "See Other"},
-		{not_modified, "Not Modified"},
-		{bad_request, "Bad Request"},
-		{unauthorized, "Unauthorized"},
-		{proxy_authentication_required, "Proxy Authentication Required"},
-		{forbidden, "Forbidden"},
-		{not_found, "Not Found"},
-		{method_not_allowed, "Method not allowed"},
-		{internal_server_error, "Internal Server Error"},
-		{not_implemented, "Not Implemented"},
-		{bad_gateway, "Bad Gateway"},
-		{service_unavailable, "Service Unavailable"}},
-	  kStatusDescriptions[] = {{moved_permanently, "The document requested was moved permanently to a new location"}, {moved_temporarily, "The document requested was moved temporarily to a new location"}, {see_other, "The document can be found at another location"}, {not_modified, "The requested document was not modified"}, {bad_request, "There was an error in the request, e.g. an incorrect method or a malformed URI"}, {unauthorized, "You are not authorized to access this location"}, {proxy_authentication_required, "You are not authorized to use this proxy"}, {forbidden, "Access to this location is forbidden"}, {not_found, "The requested web page was not found on this server."}, {internal_server_error, "An internal error prevented the server from processing your request"}, {not_implemented, "Your request could not be handled since the required code is not implemented"}, {bad_gateway, "The server, while acting as a gateway or proxy, received an invalid response from the upstream server it accessed in attempting to fulfill the request. "}, {service_unavailable, "The service is unavailable at this moment, try again later"}};
+		{ cont, "Continue" },
+		{ ok, "OK" },
+		{ created, "Created" },
+		{ accepted, "Accepted" },
+		{ no_content, "No Content" },
+		{ multiple_choices, "Multiple Choices" },
+		{ moved_permanently, "Moved Permanently" },
+		{ moved_temporarily, "Found" },
+		{ see_other, "See Other" },
+		{ not_modified, "Not Modified" },
+		{ bad_request, "Bad Request" },
+		{ unauthorized, "Unauthorized" },
+		{ proxy_authentication_required, "Proxy Authentication Required" },
+		{ forbidden, "Forbidden" },
+		{ not_found, "Not Found" },
+		{ method_not_allowed, "Method not allowed" },
+		{ internal_server_error, "Internal Server Error" },
+		{ not_implemented, "Not Implemented" },
+		{ bad_gateway, "Bad Gateway" },
+		{ service_unavailable, "Service Unavailable" }
+	},
+	kStatusDescriptions[] = {
+		{ moved_permanently, "The document requested was moved permanently to a new location" },
+		{ moved_temporarily, "The document requested was moved temporarily to a new location" },
+		{ see_other, "The document can be found at another location" },
+		{ not_modified, "The requested document was not modified" },
+		{ bad_request, "There was an error in the request, e.g. an incorrect method or a malformed URI" },
+		{ unauthorized, "You are not authorized to access this location" },
+		{ proxy_authentication_required, "You are not authorized to use this proxy" },
+		{ forbidden, "Access to this location is forbidden" },
+		{ not_found, "The requested web page was not found on this server." },
+		{ internal_server_error, "An internal error prevented the server from processing your request" },
+		{ not_implemented, "Your request could not be handled since the required code is not implemented" },
+		{ bad_gateway, "The server, while acting as a gateway or proxy, received an invalid response from the upstream server it accessed in attempting to fulfill the request. " },
+		{ service_unavailable, "The service is unavailable at this moment, try again later"}
+	};
 
 	const int
 		kStatusStringCount = sizeof(kStatusStrings) / sizeof(status_string);
@@ -552,10 +567,11 @@ reply reply::redirect(const std::string &location, status_type status)
 		"<html><head><title>" + text + "</title></head><body><h1>" +
  		std::to_string(status) + ' ' + text + "</h1></body></html>";
 
-	// try to parse the location URL, will fail if it is not valid
-	uri url(location);
+	// Check if the location is a valid URL
+	if (not is_valid_uri(location))
+		throw exception("Invalid redirect location");
 
-	result.set_header("Location", url.string());
+	result.set_header("Location", location);
 	result.set_header("Content-Length", std::to_string(result.m_content.length()));
 	result.set_header("Content-Type", "text/html; charset=utf-8");
 

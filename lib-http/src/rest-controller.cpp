@@ -8,6 +8,7 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/rest-controller.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace ba = boost::algorithm;
 

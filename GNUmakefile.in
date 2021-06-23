@@ -14,7 +14,7 @@ firstTarget: all
 CXX					= @CXX@
 CXXFLAGS			= @BOOST_CPPFLAGS@ @CPPFLAGS@ @CXXFLAGS@
 LDFLAGS				= @BOOST_LDFLAGS@ @LDFLAGS@ 
-LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@ @URIPARSER_LIBS@
+LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
@@ -81,6 +81,12 @@ DEFINES				+= NDEBUG
 endif
 
 CXXFLAGS			+= $(DEFINES:%=-D%)
+
+# We're using a local copy of liburiparser
+
+CXXFLAGS			+= -Iuriparser/include
+LDFLAGS				+= -L./uriparser
+LIBS				+= -luriparser
 
 # Objects
 

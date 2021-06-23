@@ -6,6 +6,7 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/http/soap-controller.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace zeep::http
 {
@@ -65,7 +66,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 {
 	bool result = false;
 
-	std::string p = req.get_path();
+	std::string p = uri(req.get_uri()).get_path().string();
 	while (p.front() == '/')
 		p.erase(0, 1);
 	
