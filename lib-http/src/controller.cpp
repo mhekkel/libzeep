@@ -24,6 +24,10 @@ controller::controller(const std::string& prefix_path)
 		// strip leading slashes
 		while (m_prefix_path.front() == '/')
 			m_prefix_path.erase(m_prefix_path.begin());
+
+		// and trailing slashes
+		while (m_prefix_path.back() == '/')
+			m_prefix_path.pop_back();
 	}
 }
 

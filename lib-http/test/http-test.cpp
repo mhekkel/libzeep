@@ -75,6 +75,15 @@ BOOST_AUTO_TEST_CASE(connection_read)
 #pragma message "write test for avail/used"
 }
 
+BOOST_AUTO_TEST_CASE(request_params_1)
+{
+	zh::request req{ "GET", "http://www.example.com/index?a=A;b=B&c=C%24"};
+
+	BOOST_CHECK_EQUAL(req.get_parameter("a"), "A");
+	BOOST_CHECK_EQUAL(req.get_parameter("b"), "B");
+	BOOST_CHECK_EQUAL(req.get_parameter("c"), "C$");
+}
+
 BOOST_AUTO_TEST_CASE(webapp_6)
 {
 	zh::request req("GET", "/", {1, 0}, { { "Content-Type", "multipart/form-data; boundary=xYzZY" } },

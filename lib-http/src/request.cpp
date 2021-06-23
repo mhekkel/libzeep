@@ -224,7 +224,7 @@ std::pair<std::string,bool> get_urlencoded_parameter(const std::string& s, const
 			{
 				b += nlen + 1;
 				result = s.substr(b, e - b);
-				// result = decode_url(result);
+				result = decode_url(result);
 			}
 			
 			break;
