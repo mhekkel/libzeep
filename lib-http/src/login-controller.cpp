@@ -11,6 +11,7 @@
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/error-handler.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace fs = std::filesystem;
 
@@ -161,7 +162,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 			if (not context.empty())
 				redirect_to += context + '/';
 			auto uri = req.get_parameter("uri");
-			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")))
+			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")) and is_valid_uri(uri))
 				redirect_to += uri;
 
 			rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
@@ -203,7 +204,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 		if (not context.empty())
 			redirect_to += context + '/';
 		auto uri = req.get_parameter("uri");
-		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")))
+		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
 			redirect_to += uri;
 
 		rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());

@@ -39,29 +39,12 @@ bool is_absolute_path(const std::string& s)
 	return result;
 }
 
-// #define url_hexdigit	"[[:digit:]a-fA-F]"
-// #define url_unreserved	"[-[:alnum:]._~]"
-// #define url_pct_encoded	"%" url_hexdigit "{2}"
-// #define url_sub_delims	"[!$&'()*+,;=]"
-// #define url_userinfo	"(?:((?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)@)?"
-// #define url_scheme		"[[:alpha:]][[:alnum:]]*"
-// #define url_host		"(\\[(?:[[:digit:]a-fA-F:]+)\\]|(?:" url_unreserved "|" url_pct_encoded "|" url_sub_delims ")+)"
-// #define url_port		"(?::([[:digit:]]+))?"
-// #define url_pchar		url_unreserved "|" url_pct_encoded "|" url_sub_delims "|:|@"
-// #define url_path		"(?:/((?:" url_pchar "|\\*|\\?|/)*))?"
-// #define url_fragment	"(?:#(?:" url_pchar ")*)?"
-// 
-// const std::regex kURL_rx( url_scheme "://" url_userinfo url_host url_port url_path url_fragment);
-
-// const std::regex kURL_rx(R"([[:alpha:]][[:alnum:]]*:.+)");
-
 bool is_valid_url(const std::string& url)
 {
-	// no, really...
+	// The rules for url in namespaces are a bit different from the URI requirements in RFC3986
 	auto cp = url.find(':');
 
 	return cp > 1 and cp != std::string::npos and std::isalpha(url[0]);
-	// return std::regex_match(url, kURL_rx);
 }
 
 // parsing XML is somewhat like macro processing,

@@ -12,9 +12,9 @@ SHELL 				= @SHELL@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @BOOST_CPPFLAGS@ @CPPFLAGS@ @CXXFLAGS@
+CXXFLAGS			= @BOOST_CPPFLAGS@ @CPPFLAGS@ @CXXFLAGS@ @URIPARSER_CFLAGS@
 LDFLAGS				= @BOOST_LDFLAGS@ @LDFLAGS@ 
-LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@
+LIBS				= @BOOST_PROGRAM_OPTIONS_LIB@ @BOOST_DATE_TIME_LIB@ @LIBS@ @URIPARSER_LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
@@ -116,6 +116,7 @@ OBJECTS = \
 	$(OBJDIR)/tag-processor-v2.lo \
 	$(OBJDIR)/tag-processor.lo \
 	$(OBJDIR)/template-processor.lo \
+	$(OBJDIR)/uri.lo \
 	$(OBJDIR)/element.lo \
 	$(OBJDIR)/json-parser.lo \
 	$(OBJDIR)/character-classification.lo \
@@ -238,7 +239,7 @@ $(1)-test: tests/$(1)-test
 
 endef
 
-TESTS = unit parser serializer xpath json crypto http processor webapp soap rest security
+TESTS = unit parser serializer xpath json crypto http processor webapp soap rest security uri
 
 ifneq "x$(MRC)" "x"
 TESTS += rsrc_webapp

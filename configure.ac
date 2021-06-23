@@ -68,26 +68,8 @@ AX_PTHREAD(
 	]
 )
 
-AC_CHECK_HEADER([filesystem], [], [AC_MSG_ERROR([The file <filesystem> is missing, perhaps you should install a more recent libstdc++ implementation.])])
-
-dnl check if we need stdc++fs as library
-AC_TRY_LINK(
-	[#include <filesystem>],
-	[(void)std::filesystem::current_path();],
-	[],
-	[
-		LIBS="$LIBS -lstdc++fs"
-
-		AC_TRY_LINK(
-			[#include <filesystem>],
-			[(void)std::filesystem::current_path();],
-			[],
-			[
-				AC_MSG_ERROR([Could not link filesystem])
-			]
-		)
-	]
-)
+dnl check for <filesystem> and if we need stdc++fs as library
+AX_FILESYSTEM
 
 AX_BOOST_BASE([1.71], [], [
 	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
@@ -117,7 +99,9 @@ AS_IF([test "$enable_documentation" = "yes"],
 		AC_SUBST(BUILD_DOCS_TRUE)
 ])
 
+dnl for uriparser
+AX_URIPARSER
+
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
-		   include/zeep/config.hpp
 		   libzeep.pc])

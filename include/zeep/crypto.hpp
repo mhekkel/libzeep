@@ -95,24 +95,6 @@ std::string encode_hex(std::string_view data);
 /// \param data			The string containing data to decode
 std::string decode_hex(std::string_view data);
 
-// perhaps not the most logical of all locations:
-
-/// \brief Decode a URL using the RFC rules
-/// \param s  The URL that needs to be decoded
-/// \return	  The decoded URL
-std::string decode_url(std::string_view s);
-
-/// \brief Encode a URL using the RFC rules
-/// \param s  The URL that needs to be encoded
-/// \return	  The encoded URL
-std::string encode_url(std::string_view s);
-
-/// \brief Check if a URL contains only valid characters
-/// \param url The URL to check
-/// \return    Returns true if the URL is valid
-
-bool is_valid_url(const std::string& url);
-
 // --------------------------------------------------------------------
 // random bytes
 

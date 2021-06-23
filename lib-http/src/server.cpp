@@ -13,6 +13,7 @@
 #include <zeep/http/error-handler.hpp>
 #include <zeep/http/connection.hpp>
 #include <zeep/http/controller.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace ba = boost::algorithm;
 
@@ -198,7 +199,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 		}
 
 		// parse the uri
-		std::string path = req.get_path();
+		std::string path = uri(req.get_uri()).get_path().string();
 
 		// do the actual work.
 		for (auto c: m_controllers)
