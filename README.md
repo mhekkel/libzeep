@@ -52,4 +52,4 @@ enveloped data structures respectively.
 
 Full documentation can be found at:
 
-[www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc)
+[www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc/)
