@@ -119,6 +119,7 @@ void signal_catcher::signal_hangup(std::thread& t)
 
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 
 // --------------------------------------------------------------------
 //
