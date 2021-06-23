@@ -79,7 +79,7 @@ Can't find the uriparser header uriparser/Uri.h. Make sure that uriparser
 is installed, and either use the --with-uriparser option or install pkg-config.])])
 
 			AX_CHECK_LIBRARY([URIPARSER], [uriparser/Uri.h], [uriparser],
-				[ LIBS="-luriparser $LIBS" ],
+				[ LDFLAGS="-L$URIPARSER_LDFLAGS $LDFLAGS" LIBS="-luriparser $LIBS" ],
 				[AC_MSG_ERROR([uriparser not found])])
 
 			LDFLAGS=$save_LDFLAGS
