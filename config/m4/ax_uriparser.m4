@@ -60,7 +60,7 @@ AC_DEFUN([AX_URIPARSER],
 				if test -d "$_AX_URIPARSER_path/include/uriparser" && test -r "$_AX_URIPARSER_path/include/uriparser" ; then
 
 					for libsubdir in $search_libsubdirs ; do
-						if ls "$_AX_URIPARSER_path/$libsubdir/uriparser"* >/dev/null 2>&1 ; then break; fi
+						if ls "$_AX_URIPARSER_path/$libsubdir/liburiparser"* >/dev/null 2>&1 ; then break; fi
 					done
 					URIPARSER_LDFLAGS="-L$_AX_URIPARSER_path/$libsubdir"
 					URIPARSER_CFLAGS="-I$_AX_URIPARSER_path/include"
@@ -79,7 +79,7 @@ Can't find the uriparser header uriparser/Uri.h. Make sure that uriparser
 is installed, and either use the --with-uriparser option or install pkg-config.])])
 
 			AX_CHECK_LIBRARY([URIPARSER], [uriparser/Uri.h], [uriparser],
-				[ LDFLAGS="-L$URIPARSER_LDFLAGS $LDFLAGS" LIBS="-luriparser $LIBS" ],
+				[ LIBS="-luriparser $LIBS" ],
 				[AC_MSG_ERROR([uriparser not found])])
 
 			LDFLAGS=$save_LDFLAGS
