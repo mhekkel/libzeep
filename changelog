@@ -6,6 +6,8 @@ Version 5.1.0
 - Ignore SIGCHLD in foreground mode, signals are now handled by 
   cross platform implementation
 - reintroduced a Windows version
+- Fixed a couple of security issues, all caused by incorrectly
+  parsing uri's. Switched to using liburiparser for now.
 
 Version 5.0.2
 - Add support for building shared libraries

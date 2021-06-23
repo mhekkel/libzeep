@@ -60,6 +60,16 @@ uri::~uri()
 	delete m_impl;
 }
 
+bool uri::empty() const
+{
+	return m_impl->m_s.empty();
+}
+
+bool uri::is_absolute() const
+{
+	return m_impl->m_uri.absolutePath;
+}
+
 void uri::swap(uri &u) noexcept
 {
 	std::swap(m_impl, u.m_impl);

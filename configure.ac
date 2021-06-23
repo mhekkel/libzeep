@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 
 m4_define([libzeep_version_major],[5])
-m4_define([libzeep_version_minor],[2])
+m4_define([libzeep_version_minor],[1])
 m4_define([libzeep_version_micro],[0])
 m4_define([libzeep_version_extra],[])
 m4_define([libzeep_version],[libzeep_version_major().libzeep_version_minor().libzeep_version_micro()libzeep_version_extra])
