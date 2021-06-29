@@ -29,9 +29,25 @@ namespace mrsrc
 	};
 }
 
+#if _MSC_VER
+
 extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
 extern const __attribute__((weak)) char gResourceData[];
 extern const __attribute__((weak)) char gResourceName[];
+
+extern const mrsrc::rsrc_imp *gDefaultResourceIndex = nullptr;
+extern const char *gDefaultResourceData = nullptr;
+extern const char *gDefaultResourceName = nullptr;
+
+#pragma comment(linker, "/alternatename:_gResourceIndex=_gDefaultResourceIndex")
+#pragma comment(linker, "/alternatename:_gResourceData=_gDefaultResourceData")
+#pragma comment(linker, "/alternatename:_gResourceName=_gDefaultResourceName")
+
+#else
+extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
+extern const __attribute__((weak)) char gResourceData[];
+extern const __attribute__((weak)) char gResourceName[];
+#endif
 
 namespace mrsrc
 {
