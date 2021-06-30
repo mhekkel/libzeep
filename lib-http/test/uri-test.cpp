@@ -76,3 +76,12 @@ BOOST_AUTO_TEST_CASE(uri_5)
 
 	BOOST_CHECK_EQUAL(uri.get_path().string(), "b\r\nSet-Cookie: false");
 }
+
+BOOST_AUTO_TEST_CASE(uri_6)
+{
+	zeep::http::uri uri("file:/a/b");
+	BOOST_CHECK(uri.is_absolute());
+
+	zeep::http::uri uri2("file://a/b");
+	BOOST_CHECK(not uri2.is_absolute());
+}

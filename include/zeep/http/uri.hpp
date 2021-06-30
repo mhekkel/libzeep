@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// A simple uri class. For now this class wraps around a liburiparser UriUriStruct.
+/// A simple uri class. Uses a parser based on simple regular expressions
 
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
@@ -29,7 +29,7 @@ class uri_parse_error : public zeep::exception
 
 // --------------------------------------------------------------------
 
-/// \brief Simple class encapsulating the UriUriStructA from liburiparser
+/// \brief Simple class, should be extended to have setters, one day
 class uri
 {
   public:
