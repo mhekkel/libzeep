@@ -60,6 +60,9 @@ class uri
 	/// \brief Return the query
 	std::string get_query() const;				
 
+	/// \brief Return the fragment
+	std::string get_fragment() const;
+
 	std::string string() const;					///< Return the URI as a string
 
 	void swap(uri &u) noexcept;

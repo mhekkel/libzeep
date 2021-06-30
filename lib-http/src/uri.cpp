@@ -539,6 +539,10 @@ uri::uri(const std::string &url)
 	{
 		m_impl->m_scheme = m[1];
 		m_impl->m_host = m[3];
+
+		if (not m_impl->m_host.empty() and m_impl->m_host.front() == '[' and m_impl->m_host.back() == ']')
+			m_impl->m_host = m_impl->m_host.substr(1, m_impl->m_host.length() - 2);
+
 		if (m[5].matched)
 			m_impl->m_path = m[5];
 		else if (m[6].matched)
@@ -636,6 +640,11 @@ std::filesystem::path uri::get_path() const
 std::string uri::get_query() const
 {
 	return m_impl->m_query;
+}
+
+std::string uri::get_fragment() const
+{
+	return m_impl->m_fragment;
 }
 
 // --------------------------------------------------------------------
