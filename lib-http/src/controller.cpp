@@ -60,10 +60,14 @@ bool controller::path_matches_prefix(const std::string& path) const
 	
 	if (not result)
 	{
-		result = path.compare(0, m_prefix_path.length(), m_prefix_path) == 0;
+		std::string::size_type offset = 0;
+		while (offset < path.length() and path[offset] == '/')
+			++offset;
+
+		result = path.compare(offset, m_prefix_path.length(), m_prefix_path) == 0;
 
 		if (result)
-			result = path.length() == m_prefix_path.length() or path[m_prefix_path.length()] == '/';
+			result = path.length() == m_prefix_path.length() + offset or path[offset + m_prefix_path.length()] == '/';
 	}
 
 	return result;
@@ -73,7 +77,10 @@ std::string controller::get_prefixless_path(const request& req) const
 {
 	uri uri(req.get_uri());
 
-	auto result = uri.get_path();
+	auto result = uri.is_absolute()
+		? uri.get_path().lexically_relative("/")
+		: uri.get_path();
+
 	if (not m_prefix_path.empty())
 	{
 		result = result.lexically_relative(m_prefix_path);
@@ -85,34 +92,7 @@ std::string controller::get_prefixless_path(const request& req) const
 		}
 	}
 
-	return result.string();
-	
-
-
-	// auto path = uri.get_path();
-
-	// auto pi = path.begin();
-
-	// while (pi != path.end() and pi->empty())
-	// 	++pi;
-	
-	// path.lexically_relative
-
-	// if (not m_prefix_path.empty())
-	// {
-	// 	if (p.compare(0, m_prefix_path.length(), m_prefix_path) != 0)
-	// 	{
-	// 		assert(false);
-	// 		throw std::logic_error("Controller does not have the prefix path for this request");
-	// 	}
-		
-	// 	p.erase(0, m_prefix_path.length());		
-	// }
-
-	// while (not p.empty() and p.front() == '/')
-	// 	p.erase(0, 1);
-	
-	// return p;
+	return result == "." ? "" : result.string();
 }
 
 json::element controller::get_credentials() const

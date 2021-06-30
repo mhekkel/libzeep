@@ -1,3 +1,6 @@
+Version 5.1.1
+- Removed uriparser again. URI implementation is now regex based.
+
 Version 5.1.0
 - Added base32 encoding/decoding
 - Various REST controller fixes, mainly in accepting parameters

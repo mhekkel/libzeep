@@ -99,9 +99,6 @@ AS_IF([test "$enable_documentation" = "yes"],
 		AC_SUBST(BUILD_DOCS_TRUE)
 ])
 
-dnl for uriparser
-AX_URIPARSER
-
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT([GNUmakefile
 		   libzeep.pc])
