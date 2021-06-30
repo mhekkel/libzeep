@@ -53,7 +53,7 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
-/// This is a limited use function, only reliably works with ASCII. But that's OK.
+/// This is a limited use function, works only reliably with ASCII. But that's OK.
 inline bool iequals(const std::string& a, const std::string& b)
 {
 	bool equal = a.length() == b.length();
@@ -212,6 +212,23 @@ inline std::string to_hex(uint32_t i)
 	*--p = '0';
 
 	return p;
+}
+
+// --------------------------------------------------------------------
+
+/// \brief A simple implementation of trim, removing white space from start and end of \a s
+inline void trim(std::string& s)
+{
+	std::string::iterator b = s.begin();
+	while (b != s.end() and std::isspace(*b))
+		++b;
+	
+	std::string::iterator e = s.end();
+	while (e > b and std::isspace(*(e - 1)))
+		--e;
+	
+	if (b != s.begin() or e != s.end())
+		s = { b, e };
 }
 
 } // namespace xml

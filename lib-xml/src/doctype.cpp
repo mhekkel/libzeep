@@ -599,7 +599,7 @@ bool attribute_::is_name(std::string& s) const
 {
 	bool result = true;
 
-	ba::trim(s);
+	trim(s);
 
 	if (not s.empty())
 	{
@@ -619,7 +619,7 @@ bool attribute_::is_names(std::string& s) const
 {
 	bool result = true;
 
-	ba::trim(s);
+	trim(s);
 
 	if (not s.empty())
 	{
@@ -657,7 +657,7 @@ bool attribute_::is_names(std::string& s) const
 
 bool attribute_::is_nmtoken(std::string& s) const
 {
-	ba::trim(s);
+	trim(s);
 
 	bool result = not s.empty();
 
@@ -671,7 +671,7 @@ bool attribute_::is_nmtoken(std::string& s) const
 bool attribute_::is_nmtokens(std::string& s) const
 {
 	// remove leading and trailing spaces
-	ba::trim(s);
+	trim(s);
 
 	bool result = not s.empty();
 
@@ -751,7 +751,7 @@ bool attribute_::validate_value(std::string& value, const entity_list& entities)
 		result = is_nmtokens(value);
 	else if (m_type == AttributeType::Enumerated or m_type == AttributeType::Notation)
 	{
-		ba::trim(value);
+		trim(value);
 		result = find(m_enum.begin(), m_enum.end(), value) != m_enum.end();
 	}
 

@@ -5,7 +5,6 @@
 #include <filesystem>
 
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
@@ -16,7 +15,6 @@ using namespace std;
 using namespace zeep;
 namespace po = boost::program_options;
 namespace fs = std::filesystem;
-namespace ba = boost::algorithm;
 
 #define foreach BOOST_FOREACH
 

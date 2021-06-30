@@ -4,13 +4,9 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/crypto.hpp>
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/http/uri.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::http
 {

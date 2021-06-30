@@ -632,7 +632,7 @@ std::string request::get_cookie(const char* name) const
 
 		for (std::string& cookie : rawCookies)
 		{
-			ba::trim(cookie);
+			trim(cookie);
 
 			auto d = cookie.find('=');
 			if (d == std::string::npos)
@@ -659,7 +659,7 @@ void request::set_cookie(const char* name, const std::string& value)
 
 		for (std::string& cookie : rawCookies)
 		{
-			ba::trim(cookie);
+			trim(cookie);
 
 			auto d = cookie.find('=');
 			if (d == std::string::npos)

@@ -12,7 +12,6 @@
 #include <filesystem>
 
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
@@ -26,7 +25,6 @@ using namespace zeep;
 
 namespace po = boost::program_options;
 namespace fs = std::filesystem;
-namespace ba = boost::algorithm;
 
 int VERBOSE;
 int TRACE;
@@ -47,7 +45,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	s << indoc;
 
 	string s1 = s.str();
-	ba::trim(s1);
+	trim(s1);
 
 	if (TRACE)
 		cout << s1 << endl;
@@ -63,7 +61,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 			getline(out, line);
 			s2 += line + "\n";
 		}
-		ba::trim(s2);
+		trim(s2);
 
 		if (s1 != s2)
 		{
@@ -226,7 +224,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			string line;
 			getline(s, line);
 			
-			ba::trim(line);
+			trim(line);
 			
 			if (line.empty())
 			{
@@ -248,7 +246,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 				string line;
 				getline(s, line);
 				
-				ba::trim(line);
+				trim(line);
 				
 				if (line.empty() and s.eof())
 					break;

@@ -893,7 +893,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 
 		s = process_el_2(scope, s);
 
-		ba::trim(s);
+		trim(s);
 
 		if (s.empty())
 			break;
@@ -907,7 +907,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 		}
 		
 		auto cs = c->value();
-		ba::trim(cs);
+		trim(cs);
 
 		if (cs.empty())
 			c->set_text(s);
@@ -930,7 +930,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 
 		s = process_el_2(scope, s);
 
-		ba::trim(s);
+		trim(s);
 
 		if (s.empty())
 			break;
@@ -947,7 +947,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 		}
 		
 		auto cs = c->value();
-		ba::trim(cs);
+		trim(cs);
 
 		if (cs.empty())
 		{

@@ -13,8 +13,6 @@
 
 #include "format.hpp"
 
-namespace ba = boost::algorithm;
-
 namespace
 {
 
