@@ -9,10 +9,40 @@ BOOST_AUTO_TEST_CASE(uri_1)
 {
 	zeep::http::is_valid_uri("http://a/");
 
+	zeep::http::is_valid_uri("http://a:80/");
+
 	zeep::http::is_valid_uri("http://a.b/");
 	zeep::http::is_valid_uri("http://a/b");
-	zeep::http::is_valid_uri("http://a/b%0A%0DSet-Cookie:%20false");
+
+	zeep::http::is_valid_uri("http://user@a/b");
+	zeep::http::is_valid_uri("http://user:pass@a/b");
+	zeep::http::is_valid_uri("http://user:pass@a:80/b");
+
+	zeep::http::is_valid_uri("http://a?q");
+	zeep::http::is_valid_uri("http://a#f");
+
+	zeep::http::is_valid_uri("http://a/b?q");
+	zeep::http::is_valid_uri("http://a/b#f");
+
+	zeep::http::is_valid_uri("http://a/b/c?q");
+	zeep::http::is_valid_uri("http://a/b/c#f");
+
+	zeep::http::is_valid_uri("http://a/b/c.d?q");
+	zeep::http::is_valid_uri("http://a/b/c.d#f");
+
+	zeep::http::is_valid_uri("http://user@localhost/segment/index.html#frag");
+	zeep::http::is_valid_uri("http://user@[::1]/segment/index.html#frag");
+	zeep::http::is_valid_uri("http://user:pass@[::1]/segment/index.html#frag");
+
+	zeep::http::is_valid_uri("http://user@localhost/segment/index.html?query");
+	zeep::http::is_valid_uri("http://user@[::1]/segment/index.html?query");
+	zeep::http::is_valid_uri("http://user:pass@[::1]/segment/index.html?query");
+
+	zeep::http::is_valid_uri("http://user@localhost/segment/index.html?query#frag");
+	zeep::http::is_valid_uri("http://user@[::1]/segment/index.html?query#frag");
 	zeep::http::is_valid_uri("http://user:pass@[::1]/segment/index.html?query#frag");
+
+	zeep::http::is_valid_uri("http://a/b%0A%0DSet-Cookie:%20false");
 }
 
 BOOST_AUTO_TEST_CASE(uri_2)
