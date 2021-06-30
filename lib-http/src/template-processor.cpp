@@ -5,13 +5,10 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/chrono.hpp>
 
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/template-processor.hpp>
 
-namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -124,7 +121,14 @@ void basic_template_processor::handle_file(const http::request& request, const s
 
 	std::stringstream out;
 
-	io::copy(*in, out);
+	for (;;)
+	{
+		char buffer[1024];
+		auto r = in->readsome(buffer, sizeof(buffer));
+		if (r <= 0)
+			break;
+		out.write(buffer, r);
+	}
 
 	std::string mimetype = "text/plain";
 
