@@ -1,9 +1,16 @@
+Version 5.1.1
+- Removed uriparser again. URI implementation is now regex based.
+
 Version 5.1.0
 - Added base32 encoding/decoding
 - Various REST controller fixes, mainly in accepting parameters
 - The library is now always compiled with PIC
 - Requred boost version is now 71
-- Ignore SIGCHLD in foreground mode
+- Ignore SIGCHLD in foreground mode, signals are now handled by 
+  cross platform implementation
+- reintroduced a Windows version
+- Fixed a couple of security issues, all caused by incorrectly
+  parsing uri's. Switched to using liburiparser for now.
 
 Version 5.0.2
 - Add support for building shared libraries

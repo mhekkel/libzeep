@@ -8,6 +8,7 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/rest-controller.hpp>
+#include <zeep/http/uri.hpp>
 
 namespace ba = boost::algorithm;
 
@@ -23,8 +24,6 @@ rest_controller::~rest_controller()
 bool rest_controller::handle_request(http::request& req, http::reply& rep)
 {
 	std::string p = get_prefixless_path(req);
-	
-	// p = decode_url(p);
 
     bool result = false;
 	for (auto& mp: m_mountpoints)

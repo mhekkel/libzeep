@@ -10,6 +10,7 @@
 /// various definitions of data types and routines used to work with Unicode encoded text
 
 #include <zeep/config.hpp>
+#include <zeep/exception.hpp>
 
 #include <string>
 #include <tuple>
@@ -139,7 +140,12 @@ inline unicode pop_last_char(std::string& s)
 	return result;
 }
 
-// this code only works if the input is valid utf-8
+// I used to have this comment here:
+//
+//    this code only works if the input is valid utf-8
+//
+// That was a bad idea....
+//
 /// \brief return the first unicode and the advanced pointer from a string
 template<typename Iter>
 std::tuple<unicode,Iter> get_first_char(Iter ptr)
@@ -154,12 +160,20 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 		if ((result & 0x0E0) == 0x0C0)
 		{
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
+
+			if ((ch[0] & 0x0c0) != 0x080)
+				throw zeep::exception("Invalid utf-8");
+
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
+
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
+				throw zeep::exception("Invalid utf-8");
+
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 		}
 		else if ((result & 0x0F8) == 0x0F0)
@@ -167,6 +181,10 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[2] = static_cast<unsigned char>(*ptr); ++ptr;
+
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
+				throw zeep::exception("Invalid utf-8");
+
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 		}
 	}

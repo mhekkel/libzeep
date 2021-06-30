@@ -116,6 +116,7 @@ OBJECTS = \
 	$(OBJDIR)/tag-processor-v2.lo \
 	$(OBJDIR)/tag-processor.lo \
 	$(OBJDIR)/template-processor.lo \
+	$(OBJDIR)/uri.lo \
 	$(OBJDIR)/element.lo \
 	$(OBJDIR)/json-parser.lo \
 	$(OBJDIR)/character-classification.lo \
@@ -238,7 +239,7 @@ $(1)-test: tests/$(1)-test
 
 endef
 
-TESTS = unit parser serializer xpath json crypto http processor webapp soap rest
+TESTS = unit parser serializer xpath json crypto http processor webapp soap rest security uri
 
 ifneq "x$(MRC)" "x"
 TESTS += rsrc_webapp

@@ -29,9 +29,17 @@ namespace mrsrc
 	};
 }
 
+#if _MSC_VER
+
+extern const mrsrc::rsrc_imp *gResourceIndex = nullptr;
+extern const char *gResourceData = nullptr;
+extern const char *gResourceName = nullptr;
+
+#else
 extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
 extern const __attribute__((weak)) char gResourceData[];
 extern const __attribute__((weak)) char gResourceName[];
+#endif
 
 namespace mrsrc
 {
@@ -423,8 +431,19 @@ namespace zeep::http
 
 // -----------------------------------------------------------------------
 
+
+#if _MSC_VER and not defined(WIN32_LEAN_AND_MEAN)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 rsrc_loader::rsrc_loader(const std::string&)
 {
+#if _MSC_VER
+	char exePath[MAX_PATH] = {};
+	if (::GetModuleFileNameA(NULL, exePath, MAX_PATH) > 0)
+		mRsrcWriteTime = fs::last_write_time(exePath);
+#else
 	char exePath[PATH_MAX + 1];
 	int r = readlink("/proc/self/exe", exePath, PATH_MAX);
 	if (r > 0)
@@ -432,6 +451,7 @@ rsrc_loader::rsrc_loader(const std::string&)
 		exePath[r] = 0;
 		mRsrcWriteTime = fs::last_write_time(exePath);
 	}
+#endif
 }
 
 /// return last_write_time of \a file
