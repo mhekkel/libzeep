@@ -4,8 +4,6 @@
 #include <fstream>
 #include <filesystem>
 
-#include <boost/program_options.hpp>
-
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/xml/parser.hpp>
@@ -13,13 +11,11 @@
 
 using namespace std;
 using namespace zeep;
-namespace po = boost::program_options;
 namespace fs = std::filesystem;
 
 #define foreach BOOST_FOREACH
 
 int VERBOSE;
-int TRACE;
 
 ostream& operator<<(ostream& os, const xml::node& n)
 {
@@ -157,37 +153,22 @@ void run_tests(const fs::path& file)
 
 int main(int argc, char* argv[])
 {
-	po::options_description desc("Allowed options");
-	desc.add_options()
-	    ("help,h", "produce help message")
-	    ("verbose,v", "verbose output")
-	    ("test,t", "Run SUN test suite")
-	    ("trace,T", "Trace productions in parser")
-	;
-	
-	po::positional_options_description p;
-	p.add("test", -1);
+	using namespace std::literals;
+	fs::path xmlconfFile("XPath-Test-Suite/xpath-tests.xml");
 
-	po::variables_map vm;
-	po::store(po::command_line_parser(argc, argv).
-	          options(desc).positional(p).run(), vm);
-	po::notify(vm);
-
-	if (vm.count("help"))
+	for (int i = 1; i < argc; ++i)
 	{
-		cout << desc << endl;
-		return 1;
+		if (argv[i] == "-v"s)
+		{
+			++VERBOSE;
+			continue;
+		}
+
+		xmlconfFile = argv[i];
 	}
-	
-	VERBOSE = vm.count("verbose");
-	TRACE = vm.count("trace");
-	
+
 	try
 	{
-		fs::path xmlconfFile("XPath-Test-Suite/xpath-tests.xml");
-		if (vm.count("test"))
-			xmlconfFile = vm["test"].as<string>();
-		
 		run_tests(xmlconfFile);
 	}
 	catch (std::exception& e)
