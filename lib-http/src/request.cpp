@@ -6,14 +6,11 @@
 
 #include <filesystem>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/json/parser.hpp>
 #include <zeep/http/uri.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -345,7 +342,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			}
 		}
 
-		ba::replace_all(result, "\r\n", "\n");
+		replace_all(result, "\r\n", "\n");
 	}
 	
 	return make_tuple(result, found);

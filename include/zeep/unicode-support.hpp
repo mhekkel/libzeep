@@ -289,4 +289,45 @@ inline void to_lower(std::string& s, const std::locale& loc = std::locale())
 		ch = std::tolower(ch, loc);
 }
 
+// --------------------------------------------------------------------
+/// \brief Simplistic join function
+
+template<typename Container = std::vector<std::string> >
+std::string join(const Container& v, std::string_view d)
+{
+	std::string result;
+
+	if (not v.empty())
+	{
+		auto i = v.begin();
+		for (;;)
+		{
+			result += *i++;
+
+			if (i == v.end())
+				break;
+
+			result += d;
+		}
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic replace_all
+
+inline void replace_all(std::string& s, std::string_view p, std::string_view r)
+{
+	std::string::size_type i = 0;
+	for (;;)
+	{
+		auto l = s.find(p, i);
+		if (l == std::string::npos)
+			break;
+		
+		s.replace(l, p.length(), r);
+		i = l + r.length();
+	}
+}
+
 } // namespace xml

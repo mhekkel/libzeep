@@ -9,12 +9,8 @@
 #include <sstream>
 #include <array>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml
 {
@@ -1702,7 +1698,7 @@ void parser_imp::parse(bool validate, bool validate_ns)
 
 	if (not m_unresolved_ids.empty())
 	{
-		not_valid("document contains references to the following undefined ID's: '" + ba::join(m_unresolved_ids, ", ") + "'");
+		not_valid("document contains references to the following undefined ID's: '" + join(m_unresolved_ids, ", ") + "'");
 	}
 }
 
@@ -2851,8 +2847,8 @@ void parser_imp::notation_decl()
 
 	collapse_spaces(sysid);
 
-	ba::replace_all(pubid, "\t", " ");
-	ba::replace_all(pubid, "\n", " ");
+	replace_all(pubid, "\t", " ");
+	replace_all(pubid, "\n", " ");
 	collapse_spaces(pubid);
 
 	m_parser.notation_decl(name, sysid, pubid);
