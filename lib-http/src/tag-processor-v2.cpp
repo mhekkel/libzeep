@@ -5,14 +5,11 @@
 
 #include <unordered_set>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/template-processor.hpp>
 #include <zeep/http/tag-processor.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 

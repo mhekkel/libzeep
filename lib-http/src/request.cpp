@@ -241,7 +241,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 	std::string result, contentType = get_header("Content-Type");
 	bool found = false;
 
-	if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+	if (starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
 		tie(result, found) = get_urlencoded_parameter(m_payload, name);
 		if (found)
@@ -258,7 +258,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			return std::make_tuple(result, true);
 	}
 
-	if (ba::starts_with(contentType, "application/json"))
+	if (starts_with(contentType, "application/json"))
 	{
 		try
 		{
@@ -274,7 +274,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 		{
 		}
 	}
-	else if (ba::starts_with(contentType, "multipart/form-data"))
+	else if (starts_with(contentType, "multipart/form-data"))
 	{
 		std::string::size_type b = contentType.find("boundary=");
 		if (b != std::string::npos)
@@ -359,7 +359,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	{
 		std::string contentType = get_header("Content-Type");
 		
-		if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+		if (starts_with(contentType, "application/x-www-form-urlencoded"))
 			ps = m_payload;
 	}
 	else if (m_method == "GET" or m_method == "PUT")
@@ -413,7 +413,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	// 			{
 	// 				std::string contentType = get_header("Content-Type");
 					
-	// 				if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+	// 				if (starts_with(contentType, "application/x-www-form-urlencoded"))
 	// 					ps = m_payload;
 	// 			}
 	// 			break;
@@ -485,7 +485,7 @@ file_param_parser::file_param_parser(const request& req, const std::string& payl
 {
 	std::string contentType = m_req.get_header("Content-Type");
 
-	if (ba::starts_with(contentType, "multipart/form-data"))
+	if (starts_with(contentType, "multipart/form-data"))
 	{
 		std::string::size_type b = contentType.find("boundary=");
 		if (b != std::string::npos)
@@ -581,7 +581,7 @@ file_param file_param_parser::next()
 			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_cont))
 			{
 				result.mimetype = m[1].str();
-				if (ba::starts_with(result.mimetype, "multipart/"))
+				if (starts_with(result.mimetype, "multipart/"))
 					throw std::runtime_error("multipart file uploads are not supported");
 			}
 		}

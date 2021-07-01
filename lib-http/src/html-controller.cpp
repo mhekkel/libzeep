@@ -6,14 +6,11 @@
 
 #include <zeep/config.hpp>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/template-processor.hpp>
 
 #include "glob.hpp"
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 

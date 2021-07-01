@@ -7,8 +7,6 @@
 #include <codecvt>
 #include <cmath>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/unicode-support.hpp>
 
 #include "format.hpp"

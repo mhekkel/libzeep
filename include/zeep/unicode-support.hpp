@@ -231,4 +231,28 @@ inline void trim(std::string& s)
 		s = { b, e };
 }
 
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of starts_with
+
+inline bool starts_with(std::string_view s, std::string_view p)
+{
+	return s.compare(0, p.length(), p) == 0;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of ends_with
+
+inline bool ends_with(std::string_view s, std::string_view p)
+{
+	return s.length() >= p.length() and s.compare(s.length() - p.length(), p.length(), p) == 0;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of contains
+
+inline bool contains(std::string_view s, std::string_view p)
+{
+	return s.find(p) != std::string_view::npos;
+}
+
 } // namespace xml

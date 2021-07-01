@@ -2257,7 +2257,7 @@ void parser_imp::element_decl()
 	s(true);
 
 	std::string name = m_token;
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Element names should not start with xmlns:");
 
 	auto e = std::find_if(m_doctype.begin(), m_doctype.end(),
@@ -2496,7 +2496,7 @@ void parser_imp::parameter_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	s(true);
@@ -2539,7 +2539,7 @@ void parser_imp::general_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	std::string value, ndata;
@@ -3506,7 +3506,7 @@ void parser_imp::element(doctype::validator& valid)
 			not_valid("invalid value specified for fixed attribute");
 		}
 
-		// had a crash suddenly here deep down in ba::starts_with...
+		// had a crash suddenly here deep down in starts_with...
 		if (attr_name == "xmlns" or attr_name.compare(0, 6, "xmlns:", 6) == 0) // namespace support
 		{
 			if (not ((m_version > 1.0f and attr_value.empty()) or is_valid_url(attr_value)))

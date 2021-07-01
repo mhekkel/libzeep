@@ -1340,7 +1340,7 @@ object core_function_expression<CoreFunction::StartsWith>::evaluate(expression_c
 	try
 	{
 		return v2.as<std::string>().empty() or
-			ba::starts_with(v1.as<std::string>(), v2.as<std::string>());
+			starts_with(v1.as<std::string>(), v2.as<std::string>());
 	}
 	catch(const std::exception& e)
 	{
