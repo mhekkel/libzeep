@@ -255,4 +255,38 @@ inline bool contains(std::string_view s, std::string_view p)
 	return s.find(p) != std::string_view::npos;
 }
 
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of split, with std:string in the vector
+inline void split(std::vector<std::string>& v, std::string_view s, std::string_view p, bool compress = false)
+{
+	v.clear();
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i or compress == false)
+			v.emplace_back(s.substr(i, n - i));
+
+		if (n == std::string_view::npos)
+			break;
+		
+		i = n + p.length();
+	}
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic to_lower function, works for one byte charsets only...
+
+inline void to_lower(std::string& s, const std::locale& loc = std::locale())
+{
+	for (char& ch: s)
+		ch = std::tolower(ch, loc);
+}
+
 } // namespace xml

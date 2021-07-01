@@ -1756,14 +1756,14 @@ void parser_imp::xml_decl()
 			{
 				match(XMLToken::Name);
 				eq();
-				ba::to_upper(m_token);
-				if (m_token == "US-ASCII")
+				to_lower(m_token);
+				if (m_token == "us-ascii")
 					encoding = encoding_type::ASCII;
-				else if (m_token == "ISO-8859-1")
+				else if (m_token == "iso-8859-1")
 					encoding = encoding_type::ISO88591;
-				else if (m_token == "UTF-8")
+				else if (m_token == "utf-8")
 					encoding = encoding_type::UTF8;
-				else if (m_token == "UTF-16")
+				else if (m_token == "utf-16")
 				{
 					if (m_source.top()->encoding() != encoding_type::UTF16LE and m_source.top()->encoding() != encoding_type::UTF16BE)
 						not_well_formed("Inconsistent encoding attribute in XML declaration");

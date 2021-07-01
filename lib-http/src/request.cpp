@@ -628,7 +628,7 @@ std::string request::get_cookie(const char* name) const
 			continue;
 
 		std::vector<std::string> rawCookies;
-		ba::split(rawCookies, h.value, ba::is_any_of(";"));
+		split(rawCookies, h.value, ";");
 
 		for (std::string& cookie : rawCookies)
 		{
@@ -655,7 +655,7 @@ void request::set_cookie(const char* name, const std::string& value)
 			continue;
 		
 		std::vector<std::string> rawCookies;
-		ba::split(rawCookies, h.value, ba::is_any_of(";"));
+		split(rawCookies, h.value, ";");
 
 		for (std::string& cookie : rawCookies)
 		{
@@ -742,7 +742,7 @@ std::locale& request::get_locale() const
 
 		std::string preferred;
 		std::vector<std::string> accepted;
-		ba::split(accepted, acceptedLanguage, ba::is_any_of(","));
+		split(accepted, acceptedLanguage, ",");
 
 		struct lang_score
 		{

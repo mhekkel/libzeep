@@ -7,13 +7,9 @@
 
 #include <numeric>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/exception.hpp>
 #include <zeep/xml/doctype.hpp>
 #include <zeep/xml/character-classification.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml::doctype
 {
@@ -732,7 +728,7 @@ bool attribute_::validate_value(std::string& value, const entity_list& entities)
 		if (result)
 		{
 			std::vector<std::string> values;
-			ba::split(values, value, ba::is_any_of(" "));
+			split(values, value, " ");
 			for (const std::string& v : values)
 			{
 				if (not is_unparsed_entity(v, entities))
