@@ -5,11 +5,8 @@
 
 #include <regex>
 
-#include <boost/algorithm/string.hpp>
-
+#include <zeep/unicode-support.hpp>
 #include "glob.hpp"
-
-namespace ba = boost::algorithm;
 
 // --------------------------------------------------------------------
 
@@ -104,7 +101,7 @@ void expand_group(const std::string& pattern, std::vector<std::string>& expanded
 		std::vector<std::string> options;
 
 		std::string group = m[1].str();
-		ba::split(options, group, ba::is_any_of(","));
+		split(options, group, ",", true);
 
 		for (std::string& option : options)
 			expand_group(m.prefix().str() + option + m.suffix().str(), expanded);
@@ -125,7 +122,7 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 		glob_pattern += "**";
 
 	std::vector<std::string> patterns;
-	ba::split(patterns, glob_pattern, ba::is_any_of(";"));
+	split(patterns, glob_pattern, ";");
 
 	std::vector<std::string> expandedpatterns;
 	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string& pattern)

@@ -9,12 +9,8 @@
 #include <sstream>
 #include <array>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml
 {
@@ -1702,7 +1698,7 @@ void parser_imp::parse(bool validate, bool validate_ns)
 
 	if (not m_unresolved_ids.empty())
 	{
-		not_valid("document contains references to the following undefined ID's: '" + ba::join(m_unresolved_ids, ", ") + "'");
+		not_valid("document contains references to the following undefined ID's: '" + join(m_unresolved_ids, ", ") + "'");
 	}
 }
 
@@ -1756,14 +1752,14 @@ void parser_imp::xml_decl()
 			{
 				match(XMLToken::Name);
 				eq();
-				ba::to_upper(m_token);
-				if (m_token == "US-ASCII")
+				to_lower(m_token);
+				if (m_token == "us-ascii")
 					encoding = encoding_type::ASCII;
-				else if (m_token == "ISO-8859-1")
+				else if (m_token == "iso-8859-1")
 					encoding = encoding_type::ISO88591;
-				else if (m_token == "UTF-8")
+				else if (m_token == "utf-8")
 					encoding = encoding_type::UTF8;
-				else if (m_token == "UTF-16")
+				else if (m_token == "utf-16")
 				{
 					if (m_source.top()->encoding() != encoding_type::UTF16LE and m_source.top()->encoding() != encoding_type::UTF16BE)
 						not_well_formed("Inconsistent encoding attribute in XML declaration");
@@ -2257,7 +2253,7 @@ void parser_imp::element_decl()
 	s(true);
 
 	std::string name = m_token;
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Element names should not start with xmlns:");
 
 	auto e = std::find_if(m_doctype.begin(), m_doctype.end(),
@@ -2496,7 +2492,7 @@ void parser_imp::parameter_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	s(true);
@@ -2539,7 +2535,7 @@ void parser_imp::general_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	std::string value, ndata;
@@ -2851,8 +2847,8 @@ void parser_imp::notation_decl()
 
 	collapse_spaces(sysid);
 
-	ba::replace_all(pubid, "\t", " ");
-	ba::replace_all(pubid, "\n", " ");
+	replace_all(pubid, "\t", " ");
+	replace_all(pubid, "\n", " ");
 	collapse_spaces(pubid);
 
 	m_parser.notation_decl(name, sysid, pubid);
@@ -3506,7 +3502,7 @@ void parser_imp::element(doctype::validator& valid)
 			not_valid("invalid value specified for fixed attribute");
 		}
 
-		// had a crash suddenly here deep down in ba::starts_with...
+		// had a crash suddenly here deep down in starts_with...
 		if (attr_name == "xmlns" or attr_name.compare(0, 6, "xmlns:", 6) == 0) // namespace support
 		{
 			if (not ((m_version > 1.0f and attr_value.empty()) or is_valid_url(attr_value)))

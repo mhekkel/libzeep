@@ -17,16 +17,12 @@
 #include <zeep/http/security.hpp>
 #include <zeep/http/server.hpp>
 
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/stream.hpp>
-
 #include "client-test-code.hpp"
 #include "../src/signals.hpp"
 
 namespace z = zeep;
 namespace zx = zeep::xml;
 namespace zh = zeep::http;
-namespace io = boost::iostreams;
 
 BOOST_AUTO_TEST_CASE(sec_1)
 {

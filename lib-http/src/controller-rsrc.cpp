@@ -9,7 +9,6 @@
 #include <zeep/streambuf.hpp>
 #include <zeep/http/template-processor.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 // --------------------------------------------------------------------

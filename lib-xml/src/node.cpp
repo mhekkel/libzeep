@@ -7,12 +7,8 @@
 #include <set>
 #include <stack>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/document.hpp>
 #include <zeep/xml/xpath.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml
 {
@@ -331,10 +327,10 @@ bool text::equals(const node* n) const
 	if (t != nullptr)
 	{
 		std::string text = m_text;
-		ba::trim(text);
+		trim(text);
 
 		std::string ttext = t->m_text;
-		ba::trim(ttext);
+		trim(ttext);
 
 		result = text == ttext;
 	}

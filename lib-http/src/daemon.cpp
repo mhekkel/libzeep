@@ -16,14 +16,11 @@
 #include <fstream>
 #include <filesystem>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>
 
 #include "signals.hpp"
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 using namespace std::literals;
@@ -511,7 +508,7 @@ bool daemon::pid_is_for_executable()
 				throw std::runtime_error("could not get exe path ("s + strerror(errno) + ")");
 
 			result = strcmp(exe, path) == 0 or
-					 (ba::ends_with(path, " (deleted)") and ba::starts_with(path, exe));
+					 (ends_with(path, " (deleted)") and starts_with(path, exe));
 		}
 		else if (errno == ENOENT) // link file doesn't exist
 			result = false;

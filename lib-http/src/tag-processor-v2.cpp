@@ -5,14 +5,11 @@
 
 #include <unordered_set>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/template-processor.hpp>
 #include <zeep/http/tag-processor.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
@@ -893,7 +890,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 
 		s = process_el_2(scope, s);
 
-		ba::trim(s);
+		trim(s);
 
 		if (s.empty())
 			break;
@@ -907,7 +904,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 		}
 		
 		auto cs = c->value();
-		ba::trim(cs);
+		trim(cs);
 
 		if (cs.empty())
 			c->set_text(s);
@@ -930,7 +927,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 
 		s = process_el_2(scope, s);
 
-		ba::trim(s);
+		trim(s);
 
 		if (s.empty())
 			break;
@@ -947,7 +944,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 		}
 		
 		auto cs = c->value();
-		ba::trim(cs);
+		trim(cs);
 
 		if (cs.empty())
 		{

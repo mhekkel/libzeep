@@ -53,7 +53,7 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
-/// This is a limited use function, only reliably works with ASCII. But that's OK.
+/// This is a limited use function, works only reliably with ASCII. But that's OK.
 inline bool iequals(const std::string& a, const std::string& b)
 {
 	bool equal = a.length() == b.length();
@@ -212,6 +212,122 @@ inline std::string to_hex(uint32_t i)
 	*--p = '0';
 
 	return p;
+}
+
+// --------------------------------------------------------------------
+
+/// \brief A simple implementation of trim, removing white space from start and end of \a s
+inline void trim(std::string& s)
+{
+	std::string::iterator b = s.begin();
+	while (b != s.end() and std::isspace(*b))
+		++b;
+	
+	std::string::iterator e = s.end();
+	while (e > b and std::isspace(*(e - 1)))
+		--e;
+	
+	if (b != s.begin() or e != s.end())
+		s = { b, e };
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of starts_with
+
+inline bool starts_with(std::string_view s, std::string_view p)
+{
+	return s.compare(0, p.length(), p) == 0;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of ends_with
+
+inline bool ends_with(std::string_view s, std::string_view p)
+{
+	return s.length() >= p.length() and s.compare(s.length() - p.length(), p.length(), p) == 0;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of contains
+
+inline bool contains(std::string_view s, std::string_view p)
+{
+	return s.find(p) != std::string_view::npos;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of split, with std:string in the vector
+inline void split(std::vector<std::string>& v, std::string_view s, std::string_view p, bool compress = false)
+{
+	v.clear();
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i or compress == false)
+			v.emplace_back(s.substr(i, n - i));
+
+		if (n == std::string_view::npos)
+			break;
+		
+		i = n + p.length();
+	}
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic to_lower function, works for one byte charsets only...
+
+inline void to_lower(std::string& s, const std::locale& loc = std::locale())
+{
+	for (char& ch: s)
+		ch = std::tolower(ch, loc);
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic join function
+
+template<typename Container = std::vector<std::string> >
+std::string join(const Container& v, std::string_view d)
+{
+	std::string result;
+
+	if (not v.empty())
+	{
+		auto i = v.begin();
+		for (;;)
+		{
+			result += *i++;
+
+			if (i == v.end())
+				break;
+
+			result += d;
+		}
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic replace_all
+
+inline void replace_all(std::string& s, std::string_view p, std::string_view r)
+{
+	std::string::size_type i = 0;
+	for (;;)
+	{
+		auto l = s.find(p, i);
+		if (l == std::string::npos)
+			break;
+		
+		s.replace(l, p.length(), r);
+		i = l + r.length();
+	}
 }
 
 } // namespace xml
