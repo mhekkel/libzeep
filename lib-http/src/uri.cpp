@@ -108,11 +108,11 @@ uri::uri(const std::string &url)
 			m_impl->m_host = m_impl->m_host.substr(1, m_impl->m_host.length() - 2);
 
 		if (m[5].matched)
-			m_impl->m_path = m[5];
+			m_impl->m_path = m[5].str();
 		else if (m[6].matched)
-			m_impl->m_path = m[6];
+			m_impl->m_path = m[6].str();
 		else if (m[7].matched)
-			m_impl->m_path = m[7];
+			m_impl->m_path = m[7].str();
 		
 		m_impl->m_query = m[8];
 		m_impl->m_fragment = m[9];

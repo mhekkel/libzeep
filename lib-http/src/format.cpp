@@ -6,6 +6,7 @@
 #include <regex>
 #include <codecvt>
 #include <cmath>
+#include <deque>
 
 #include <zeep/unicode-support.hpp>
 

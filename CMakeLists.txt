@@ -64,6 +64,7 @@ set(ZEEP_HEADERS
         ${CMAKE_SOURCE_DIR}/include/zeep/http/request.hpp
         ${CMAKE_SOURCE_DIR}/include/zeep/http/rest-controller.hpp
         ${CMAKE_SOURCE_DIR}/include/zeep/http/soap-controller.hpp
+        ${CMAKE_SOURCE_DIR}/include/zeep/http/uri.hpp
         ${CMAKE_SOURCE_DIR}/include/zeep/http/html-controller.hpp
         ${CMAKE_SOURCE_DIR}/include/zeep/http/security.hpp
         ${CMAKE_SOURCE_DIR}/include/zeep/http/el-processing.hpp
@@ -97,6 +98,7 @@ set(ZEEP_SRC
         ${CMAKE_SOURCE_DIR}/lib-http/src/tag-processor.cpp
         ${CMAKE_SOURCE_DIR}/lib-http/src/template-processor.cpp
         ${CMAKE_SOURCE_DIR}/lib-http/src/signals.cpp
+        ${CMAKE_SOURCE_DIR}/lib-http/src/uri.cpp
         ${CMAKE_SOURCE_DIR}/lib-json/src/element.cpp
         ${CMAKE_SOURCE_DIR}/lib-json/src/json-parser.cpp
         ${CMAKE_SOURCE_DIR}/lib-xml/src/character-classification.cpp

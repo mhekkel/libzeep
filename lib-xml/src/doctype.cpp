@@ -6,6 +6,7 @@
 #define _SCL_SECURE_NO_WARNINGS
 
 #include <numeric>
+#include <functional>
 
 #include <zeep/exception.hpp>
 #include <zeep/xml/doctype.hpp>
