@@ -10,7 +10,9 @@
 
 using namespace std;
 
+#ifndef DOCROOT
 #define DOCROOT "./lib-http/test/"
+#endif
 
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
