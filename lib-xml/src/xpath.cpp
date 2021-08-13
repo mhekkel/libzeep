@@ -1338,7 +1338,7 @@ object core_function_expression<CoreFunction::StartsWith>::evaluate(expression_c
 		return v2.as<std::string>().empty() or
 			starts_with(v1.as<std::string>(), v2.as<std::string>());
 	}
-	catch(const std::exception& e)
+	catch(const std::exception &)
 	{
 		throw exception("expected two strings as argument for starts-with");
 	}
@@ -1500,7 +1500,7 @@ object core_function_expression<CoreFunction::Translate>::evaluate(expression_co
 
 		return result;
 	}
-	catch(const std::exception& e)
+	catch(const std::exception &)
 	{
 		throw exception("expected three strings as arguments for translate");
 	}

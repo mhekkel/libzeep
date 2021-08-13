@@ -167,7 +167,7 @@ void security_context::verify_username_password(const std::string& username, con
 
 		add_authorization_headers(rep, user);
 	}
-	catch (const std::exception& ex)
+	catch (const std::exception &)
 	{
 		throw invalid_password_exception();
 	}

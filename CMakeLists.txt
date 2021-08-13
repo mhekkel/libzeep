@@ -26,6 +26,19 @@ if(MSVC)
     # make msvc standards compliant...
     add_compile_options(/permissive-)
 
+	macro(get_WIN32_WINNT version)
+		if (WIN32 AND CMAKE_SYSTEM_VERSION)
+			set(ver ${CMAKE_SYSTEM_VERSION})
+			string(REPLACE "." "" ver ${ver})
+			string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
+
+			set(${version} "0x${ver}")
+		endif()
+	endmacro()
+
+	get_WIN32_WINNT(ver)
+	add_definitions(-D_WIN32_WINNT=${ver})
+
 	# On Windows, do not install in the system location by default
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
@@ -175,11 +188,14 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.cmakein
-   ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
-   INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+# if(BUILD_SHARED_LIBS)
+# 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.cmakein
+# 		${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
+# 	file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
+# 		INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
+# 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+# endif()
 
 set(ConfigPackageLocation lib/cmake)
 

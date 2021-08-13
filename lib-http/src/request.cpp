@@ -267,7 +267,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 				found = true;
 			}
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception &)
 		{
 		}
 	}
@@ -765,7 +765,7 @@ std::locale& request::get_locale() const
 				if (iequals(loc.name(), name))
 					scores.push_back({lang, region, score, loc});
 			}
-			catch(const std::exception& e)
+			catch(const std::exception &)
 			{
 			}
 		};

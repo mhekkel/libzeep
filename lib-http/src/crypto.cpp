@@ -152,7 +152,7 @@ const uint8_t kBase64IndexTable[128] = {
 	128, // not used
 };
 
-inline size_t sextet(char ch)
+inline uint8_t sextet(char ch)
 {
 	if (ch < '+' or ch > 'z' or kBase64IndexTable[static_cast<uint8_t>(ch)] >= 128)
 		throw invalid_base64();
@@ -968,14 +968,14 @@ struct sha1_hash_impl : public hash_impl
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
 #else
-		b[0] = l >> 56;
-		b[1] = l >> 48;
-		b[2] = l >> 40;
-		b[3] = l >> 32;
-		b[4] = l >> 24;
-		b[5] = l >> 16;
-		b[6] = l >>  8;
-		b[7] = l >>  0;
+		b[0] = static_cast<uint8_t>(l >> 56);
+		b[1] = static_cast<uint8_t>(l >> 48);
+		b[2] = static_cast<uint8_t>(l >> 40);
+		b[3] = static_cast<uint8_t>(l >> 32);
+		b[4] = static_cast<uint8_t>(l >> 24);
+		b[5] = static_cast<uint8_t>(l >> 16);
+		b[6] = static_cast<uint8_t>(l >>  8);
+		b[7] = static_cast<uint8_t>(l >>  0);
 #endif
 	}
 
@@ -1093,14 +1093,14 @@ struct sha256_hash_impl : public hash_impl
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
 #else
-		b[0] = l >> 56;
-		b[1] = l >> 48;
-		b[2] = l >> 40;
-		b[3] = l >> 32;
-		b[4] = l >> 24;
-		b[5] = l >> 16;
-		b[6] = l >>  8;
-		b[7] = l >>  0;
+		b[0] = static_cast<uint8_t>(l >> 56);
+		b[1] = static_cast<uint8_t>(l >> 48);
+		b[2] = static_cast<uint8_t>(l >> 40);
+		b[3] = static_cast<uint8_t>(l >> 32);
+		b[4] = static_cast<uint8_t>(l >> 24);
+		b[5] = static_cast<uint8_t>(l >> 16);
+		b[6] = static_cast<uint8_t>(l >>  8);
+		b[7] = static_cast<uint8_t>(l >>  0);
 #endif
 	}
 

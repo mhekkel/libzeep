@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(uri_2)
 
 	BOOST_CHECK_EQUAL(url.get_scheme(), "http");
 	BOOST_CHECK_EQUAL(url.get_host(), "::1");
-	BOOST_CHECK_EQUAL(url.get_path().string(), "segment/index.html");
+	BOOST_CHECK_EQUAL(url.get_path().string(), std::filesystem::path("segment/index.html"));
 	BOOST_CHECK_EQUAL(url.get_query(), "query");
 	BOOST_CHECK_EQUAL(url.get_fragment(), "frag");
 }
