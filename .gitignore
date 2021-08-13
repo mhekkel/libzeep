@@ -25,3 +25,4 @@ tests/
 **/*.vcxproj.user
 .vs/
 .vscode
+build/
