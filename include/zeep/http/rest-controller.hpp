@@ -163,9 +163,9 @@ class rest_controller : public controller
 			{
 
 				// for (auto name: {...names })
-				size_t i = 0;
+				size_t ix = 0;
 				for (auto name: {names...})
-					m_names[i++] = name;
+					m_names[ix++] = name;
 
 				// construct a regex for matching paths
 				namespace fs = std::filesystem;
@@ -226,7 +226,7 @@ class rest_controller : public controller
 		}
 
 		template<typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple&& args, reply& reply)
+		void invoke(ArgsTuple&& args, reply& /*reply*/)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
@@ -290,7 +290,7 @@ class rest_controller : public controller
 			{
 				result = params.get_parameter(name);
 			}
-			catch (const std::exception& e)
+			catch (const std::exception&)
 			{
 				using namespace std::literals::string_literals;
 				throw std::runtime_error("Invalid value passed for parameter "s + name);

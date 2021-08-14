@@ -659,8 +659,8 @@ private:
 	}
 
   public:
-	value_type		m_type;
-	element_data	m_data;
+	value_type		m_type = value_type::null;
+	element_data	m_data = {};
 };
 
 template<>

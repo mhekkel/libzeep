@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(http_base64_2)
 
 BOOST_AUTO_TEST_CASE(connection_read)
 {
-#pragma message "write test for avail/used"
+#pragma message("write test for avail/used")
 }
 
 BOOST_AUTO_TEST_CASE(request_params_1)

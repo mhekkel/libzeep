@@ -26,4 +26,4 @@ tests/
 .vs/
 .vscode
 build/
-lib-xml/test/XML-Test-Suite-x/xmlconf/testcases.dtd
+

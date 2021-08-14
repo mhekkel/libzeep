@@ -76,7 +76,7 @@ class char_streambuf : public std::streambuf
 		return m_end - m_current;
 	}
 
-	pos_type seekoff(std::streambuf::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which)
+	pos_type seekoff(std::streambuf::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode /*which*/)
 	{
 		switch (dir)
 		{
@@ -105,7 +105,7 @@ class char_streambuf : public std::streambuf
 		return m_current - m_begin;
 	}
 
-	pos_type seekpos(std::streambuf::pos_type pos, std::ios_base::openmode which)
+	pos_type seekpos(std::streambuf::pos_type pos, std::ios_base::openmode /*which*/)
 	{
 		m_current = m_begin + pos;
 

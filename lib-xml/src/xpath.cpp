@@ -1126,7 +1126,7 @@ class literal_expression : public expression
 	std::string			m_lit;
 };
 
-object literal_expression::evaluate(expression_context& context)
+object literal_expression::evaluate(expression_context& /*context*/)
 {
 	return object(m_lit);
 }
@@ -1147,7 +1147,7 @@ class number_expression : public expression
 	double				m_number;
 };
 
-object number_expression::evaluate(expression_context& context)
+object number_expression::evaluate(expression_context& /*context*/)
 {
 	return object(m_number);
 }
@@ -1176,10 +1176,9 @@ class core_function_expression : public expression
 };
 
 template<CoreFunction CF>
-object core_function_expression<CF>::evaluate(expression_context& context)
+object core_function_expression<CF>::evaluate(expression_context& /*context*/)
 {
 	throw exception("unimplemented function ");
-	return object();
 }
 
 template<>
@@ -1521,13 +1520,13 @@ object core_function_expression<CoreFunction::Not>::evaluate(expression_context&
 }
 
 template<>
-object core_function_expression<CoreFunction::True>::evaluate(expression_context& context)
+object core_function_expression<CoreFunction::True>::evaluate(expression_context& /*context*/)
 {
 	return true;
 }
 
 template<>
-object core_function_expression<CoreFunction::False>::evaluate(expression_context& context)
+object core_function_expression<CoreFunction::False>::evaluate(expression_context& /*context*/)
 {
 	return false;
 }

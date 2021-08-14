@@ -287,7 +287,7 @@ boost::tribool request_parser::parse(std::streambuf& text)
 	bool is_parsing_content = m_parsing_content;
 	while (text.in_avail() > 0 and boost::indeterminate(result))
 	{
-		result = (this->*m_parser)(text.sbumpc());
+		result = (this->*m_parser)(static_cast<char>(text.sbumpc()));
 
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
@@ -395,7 +395,7 @@ boost::tribool reply_parser::parse(std::streambuf& text)
 	bool is_parsing_content = m_parsing_content;
 	while (text.in_avail() and boost::indeterminate(result))
 	{
-		result = (this->*m_parser)(text.sbumpc());
+		result = (this->*m_parser)(static_cast<char>(text.sbumpc()));
 
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
