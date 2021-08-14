@@ -59,6 +59,22 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
+# Optionally use mrc to create resources
+find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
+
+if(MRC)
+	option(USE_RSRC "Use mrc to create resources" ON)
+else()
+	message(WARNING "Not using resources since mrc was not found")
+endif()
+
+if(USE_RSRC STREQUAL "ON")
+	set(USE_RSRC 1)
+
+	message("Using resources compiled with ${MRC}")
+	add_compile_definitions(USE_RSRC)
+endif()
+
 find_package(Threads REQUIRED)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
@@ -255,14 +271,30 @@ if(ZEEP_BUILD_TESTS)
 		http/security
 		http/uri)
 
+	if(USE_RSRC)
+		list(APPEND zeep_tests http/rsrc_webapp)
+
+		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj
+			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml ${COFF_SPEC}
+		)
+	
+	endif()
+
 	foreach(TEST IN LISTS zeep_tests)
 		string(REGEX MATCH "^[^/]+" ZEEP_TEST_DIR ${TEST})
 		string(REGEX MATCH "[^/]+$" ZEEP_TEST ${TEST})
 
 		set(ZEEP_TEST "${ZEEP_TEST}-test")
 		set(ZEEP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test/${ZEEP_TEST}.cpp")
+		set(ZEEP_TEST_RESOURCE "")
 
-		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE})
+		if("${TEST}" STREQUAL "http/rsrc_webapp")
+			if(USE_RSRC)
+				set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
+			endif()
+		endif()
+
+		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} ${ZEEP_TEST_RESOURCE})
 
 		if("${TEST}" STREQUAL "http/processor")
 			target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")

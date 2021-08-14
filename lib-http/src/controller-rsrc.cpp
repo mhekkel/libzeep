@@ -30,9 +30,17 @@ namespace mrsrc
 
 #if _MSC_VER
 
-extern const mrsrc::rsrc_imp *gResourceIndex = nullptr;
-extern const char *gResourceData = nullptr;
-extern const char *gResourceName = nullptr;
+extern "C" const mrsrc::rsrc_imp* gResourceIndexDefault[1] = {};
+extern "C" const char* gResourceDataDefault[1] = {};
+extern "C" const char* gResourceNameDefault[1] = {};
+
+extern "C" const mrsrc::rsrc_imp gResourceIndex[];
+extern "C" const char gResourceData[];
+extern "C" const char gResourceName[];
+
+#pragma comment(linker, "/alternatename:gResourceIndex=gResourceIndexDefault")
+#pragma comment(linker, "/alternatename:gResourceData=gResourceDataDefault")
+#pragma comment(linker, "/alternatename:gResourceName=gResourceNameDefault")
 
 #else
 extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
