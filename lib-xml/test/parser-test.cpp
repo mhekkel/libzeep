@@ -492,10 +492,10 @@ int main(int argc, char* argv[])
 	
 	fs::current_path(savedwd);
 
-#if defined(_MSC_VER)
-	cout << "press any key to continue...";
-	char ch = _getch();
-#endif
+// #if defined(_MSC_VER)
+// 	cout << "press any key to continue...";
+// 	char ch = _getch();
+// #endif
 
 	return result;
 }
