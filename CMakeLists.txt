@@ -229,6 +229,14 @@ if(ZEEP_BUILD_TESTS)
 		${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp
 		${ZEEP_SRC}
 		${ZEEP_HEADERS})
+	
+	# data files for the parser test
+
+	if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+		file(ARCHIVE_EXTRACT INPUT ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz
+			DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
+			VERBOSE)
+	endif()
 
 	#  unit parser serializer xpath json crypto http processor webapp soap rest security uri
 
@@ -285,6 +293,7 @@ if(ZEEP_BUILD_TESTS)
 				ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 				ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
 			list(TRANSFORM ZEEP_TEST_ARGS PREPEND "--questionable=")
+			list(PREPEND ZEEP_TEST_ARGS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
 		else()
 			set(ZEEP_TEST_ARGS "")
 		endif()

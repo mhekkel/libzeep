@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error& e)
+	catch (const std::runtime_error&)
 	{
 		std::cerr << "skipping test 14 since locale nl_NL.UTF-8 is not available" << std::endl;
 	}

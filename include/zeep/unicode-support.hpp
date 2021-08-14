@@ -49,7 +49,7 @@ std::string wstring_to_string(const std::wstring& s);
 void append(std::string& s, unicode ch);
 unicode pop_last_char(std::string& s);
 template<typename Iter>
-std::tuple<unicode,Iter> get_first_char(Iter ptr);
+std::tuple<unicode,Iter> get_first_char(Iter ptr, Iter end);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
@@ -148,7 +148,7 @@ inline unicode pop_last_char(std::string& s)
 //
 /// \brief return the first unicode and the advanced pointer from a string
 template<typename Iter>
-std::tuple<unicode,Iter> get_first_char(Iter ptr)
+std::tuple<unicode,Iter> get_first_char(Iter ptr, Iter end)
 {
 	unicode result = static_cast<unsigned char>(*ptr);
 	++ptr;
@@ -159,6 +159,9 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 		
 		if ((result & 0x0E0) == 0x0C0)
 		{
+			if (ptr >= end)
+				throw zeep::exception("Invalid utf-8");
+
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 
 			if ((ch[0] & 0x0c0) != 0x080)
@@ -168,6 +171,9 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
+			if (ptr + 1 >= end)
+				throw zeep::exception("Invalid utf-8");
+
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
 
@@ -178,6 +184,9 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
+			if (ptr + 2 >= end)
+				throw zeep::exception("Invalid utf-8");
+
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[2] = static_cast<unsigned char>(*ptr); ++ptr;
@@ -220,11 +229,11 @@ inline std::string to_hex(uint32_t i)
 inline void trim(std::string& s)
 {
 	std::string::iterator b = s.begin();
-	while (b != s.end() and std::isspace(*b))
+	while (b != s.end() and *b > 0 and std::isspace(*b))
 		++b;
 	
 	std::string::iterator e = s.end();
-	while (e > b and std::isspace(*(e - 1)))
+	while (e > b and *(e - 1) > 0 and std::isspace(*(e - 1)))
 		--e;
 	
 	if (b != s.begin() or e != s.end())

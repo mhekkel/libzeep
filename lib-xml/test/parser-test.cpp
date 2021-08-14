@@ -423,6 +423,9 @@ int main(int argc, char* argv[])
 			if (vm.count("test"))
 				xmlconfFile = vm["test"].as<string>();
 			
+			if (not fs::exists(xmlconfFile))
+				throw std::runtime_error("Config file not found: " + xmlconfFile.string());
+			
 			string id;
 			if (vm.count("id"))
 				id = vm["id"].as<string>();

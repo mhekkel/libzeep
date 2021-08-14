@@ -260,7 +260,7 @@ std::tuple<std::string,int> Decimal<T>::roundDecimal(int newLength)
 	std::string dec = m_dec;
 	int exp10 = m_exp10;
 	
-	int l = dec.length();
+	int l = static_cast<int>(dec.length());
 	
 	if (newLength < 0)
 		dec = "0";

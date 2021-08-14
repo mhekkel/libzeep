@@ -294,7 +294,7 @@ auto json_parser::get_next_token() -> token_t
 				else if (ch < 128 and std::isalpha(ch))
 					state = state_t::Literal;
 				else
-					throw zeep::exception("invalid character (" + (std::isprint(ch) ? std::string(1, ch) :to_hex(ch)) + ") in json");
+					throw zeep::exception("invalid character (" + (std::isprint(ch) ? std::string(1, static_cast<char>(ch)) : to_hex(ch)) + ") in json");
 			}
 			break;
 

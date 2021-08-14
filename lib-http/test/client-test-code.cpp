@@ -14,7 +14,7 @@ zh::reply simple_request(uint16_t port, const std::string& req)
 #if BOOST_VERSION > 107000
 	boost::asio::io_context io_context;
 	tcp::resolver resolver(io_context);
-	tcp::resolver::results_type endpoints = resolver.resolve("::", std::to_string(port));
+	tcp::resolver::results_type endpoints = resolver.resolve("localhost", std::to_string(port));
 
 	tcp::socket socket(io_context);
 	boost::asio::connect(socket, endpoints);
@@ -22,7 +22,7 @@ zh::reply simple_request(uint16_t port, const std::string& req)
     boost::asio::io_context io_context;
 
     tcp::resolver resolver(io_context);
-    auto endpoint_iterator = resolver.resolve({ "::", std::to_string(port) });
+    auto endpoint_iterator = resolver.resolve({ "localhost", std::to_string(port) });
 
 	tcp::socket socket(io_context);
 

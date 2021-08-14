@@ -19,15 +19,23 @@ thread_local request* controller::s_request = nullptr;
 controller::controller(const std::string& prefix_path)
 	: m_prefix_path(prefix_path)
 {
-	if (not m_prefix_path.empty())
+	while (not m_prefix_path.empty())
 	{
 		// strip leading slashes
-		while (m_prefix_path.front() == '/')
+		if (m_prefix_path.front() == '/')
+		{
 			m_prefix_path.erase(m_prefix_path.begin());
+			continue;
+		}
 
 		// and trailing slashes
-		while (m_prefix_path.back() == '/')
+		if (m_prefix_path.back() == '/')
+		{
 			m_prefix_path.pop_back();
+			continue;
+		}
+
+		break;
 	}
 }
 

@@ -31,7 +31,7 @@ void write_string(std::ostream& os, const std::string& s, bool escape_whitespace
 		auto sb = sp;
 
 		unicode c;
-		std::tie(c, sp) = get_first_char(sp);
+		std::tie(c, sp) = get_first_char(sp, se);
 
 		switch (c)
 		{
