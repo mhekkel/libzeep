@@ -12,7 +12,6 @@
 #include <filesystem>
 
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
@@ -26,7 +25,6 @@ using namespace zeep;
 
 namespace po = boost::program_options;
 namespace fs = std::filesystem;
-namespace ba = boost::algorithm;
 
 int VERBOSE;
 int TRACE;
@@ -47,7 +45,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	s << indoc;
 
 	string s1 = s.str();
-	ba::trim(s1);
+	trim(s1);
 
 	if (TRACE)
 		cout << s1 << endl;
@@ -63,19 +61,19 @@ bool run_valid_test(istream& is, fs::path& outfile)
 			getline(out, line);
 			s2 += line + "\n";
 		}
-		ba::trim(s2);
+		trim(s2);
 
 		if (s1 != s2)
 		{
-			stringstream s;
-			s	 << "output differs: " << endl
+			stringstream ss;
+			ss	 << "output differs: " << endl
 				 << endl
 				 << s1 << endl
 				 << endl
 				 << s2 << endl
 				 << endl;
 
-			throw zeep::exception(s.str());
+			throw zeep::exception(ss.str());
 		}
 	}
 	else
@@ -87,7 +85,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 void dump(xml::element& e, int level = 0)
 {
 	cout << level << "> " << e.get_qname() << endl;
-	for (auto& [name, ignore]: e.attributes())
+	for (auto& [name, ign]: e.attributes())
 		cout << level << " (a)> " << name << endl;
 	for (auto& c: e)
 		dump(c, level + 1);
@@ -226,7 +224,7 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			string line;
 			getline(s, line);
 			
-			ba::trim(line);
+			trim(line);
 			
 			if (line.empty())
 			{
@@ -242,15 +240,15 @@ bool run_test(const xml::element& test, fs::path base_dir)
 
 		if (result == false)
 		{
-			istringstream s(error);
+			istringstream iss(error);
 			for (;;)
 			{
 				string line;
-				getline(s, line);
+				getline(iss, line);
 				
-				ba::trim(line);
+				trim(line);
 				
-				if (line.empty() and s.eof())
+				if (line.empty() and iss.eof())
 					break;
 				
 				cout << "  " << line << endl;
@@ -384,8 +382,8 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	VERBOSE = vm.count("verbose");
-	TRACE = vm.count("trace");
+	VERBOSE = static_cast<int>(vm.count("verbose"));
+	TRACE = static_cast<int>(vm.count("trace"));
 
 	fs::path savedwd = fs::current_path();
 	
@@ -425,6 +423,9 @@ int main(int argc, char* argv[])
 			if (vm.count("test"))
 				xmlconfFile = vm["test"].as<string>();
 			
+			if (not fs::exists(xmlconfFile))
+				throw std::runtime_error("Config file not found: " + xmlconfFile.string());
+			
 			string id;
 			if (vm.count("id"))
 				id = vm["id"].as<string>();
@@ -457,10 +458,10 @@ int main(int argc, char* argv[])
 				questionable = vm["questionable"].as<vector<string>>();
 			
 			set<string> erronous;
-			for (auto id: failed_ids)
+			for (auto fid: failed_ids)
 			{
-				if (std::find(questionable.begin(), questionable.end(), id) == questionable.end())
-					erronous.insert(id);
+				if (std::find(questionable.begin(), questionable.end(), fid) == questionable.end())
+					erronous.insert(fid);
 			}
 			
 			if (not erronous.empty())
@@ -491,10 +492,10 @@ int main(int argc, char* argv[])
 	
 	fs::current_path(savedwd);
 
-#if defined(_MSC_VER)
-	cout << "press any key to continue...";
-	char ch = _getch();
-#endif
+// #if defined(_MSC_VER)
+// 	cout << "press any key to continue...";
+// 	char ch = _getch();
+// #endif
 
 	return result;
 }

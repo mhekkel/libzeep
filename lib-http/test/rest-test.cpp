@@ -16,7 +16,7 @@ struct Opname
 	map<string,float>	standen;
 
 	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("id", id)
 		   & zeep::make_nvp("standen", standen);

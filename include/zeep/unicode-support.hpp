@@ -10,6 +10,7 @@
 /// various definitions of data types and routines used to work with Unicode encoded text
 
 #include <zeep/config.hpp>
+#include <zeep/exception.hpp>
 
 #include <string>
 #include <tuple>
@@ -48,11 +49,11 @@ std::string wstring_to_string(const std::wstring& s);
 void append(std::string& s, unicode ch);
 unicode pop_last_char(std::string& s);
 template<typename Iter>
-std::tuple<unicode,Iter> get_first_char(Iter ptr);
+std::tuple<unicode,Iter> get_first_char(Iter ptr, Iter end);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
-/// This is a limited use function, only reliably works with ASCII. But that's OK.
+/// This is a limited use function, works only reliably with ASCII. But that's OK.
 inline bool iequals(const std::string& a, const std::string& b)
 {
 	bool equal = a.length() == b.length();
@@ -139,10 +140,15 @@ inline unicode pop_last_char(std::string& s)
 	return result;
 }
 
-// this code only works if the input is valid utf-8
+// I used to have this comment here:
+//
+//    this code only works if the input is valid utf-8
+//
+// That was a bad idea....
+//
 /// \brief return the first unicode and the advanced pointer from a string
 template<typename Iter>
-std::tuple<unicode,Iter> get_first_char(Iter ptr)
+std::tuple<unicode,Iter> get_first_char(Iter ptr, Iter end)
 {
 	unicode result = static_cast<unsigned char>(*ptr);
 	++ptr;
@@ -153,20 +159,41 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr)
 		
 		if ((result & 0x0E0) == 0x0C0)
 		{
+			if (ptr >= end)
+				throw zeep::exception("Invalid utf-8");
+
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
+
+			if ((ch[0] & 0x0c0) != 0x080)
+				throw zeep::exception("Invalid utf-8");
+
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 		}
 		else if ((result & 0x0F0) == 0x0E0)
 		{
+			if (ptr + 1 >= end)
+				throw zeep::exception("Invalid utf-8");
+
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
+
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
+				throw zeep::exception("Invalid utf-8");
+
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 		}
 		else if ((result & 0x0F8) == 0x0F0)
 		{
+			if (ptr + 2 >= end)
+				throw zeep::exception("Invalid utf-8");
+
 			ch[0] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[1] = static_cast<unsigned char>(*ptr); ++ptr;
 			ch[2] = static_cast<unsigned char>(*ptr); ++ptr;
+
+			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
+				throw zeep::exception("Invalid utf-8");
+
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 		}
 	}
@@ -194,6 +221,122 @@ inline std::string to_hex(uint32_t i)
 	*--p = '0';
 
 	return p;
+}
+
+// --------------------------------------------------------------------
+
+/// \brief A simple implementation of trim, removing white space from start and end of \a s
+inline void trim(std::string& s)
+{
+	std::string::iterator b = s.begin();
+	while (b != s.end() and *b > 0 and std::isspace(*b))
+		++b;
+	
+	std::string::iterator e = s.end();
+	while (e > b and *(e - 1) > 0 and std::isspace(*(e - 1)))
+		--e;
+	
+	if (b != s.begin() or e != s.end())
+		s = { b, e };
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of starts_with
+
+inline bool starts_with(std::string_view s, std::string_view p)
+{
+	return s.compare(0, p.length(), p) == 0;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of ends_with
+
+inline bool ends_with(std::string_view s, std::string_view p)
+{
+	return s.length() >= p.length() and s.compare(s.length() - p.length(), p.length(), p) == 0;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of contains
+
+inline bool contains(std::string_view s, std::string_view p)
+{
+	return s.find(p) != std::string_view::npos;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic implementation of split, with std:string in the vector
+inline void split(std::vector<std::string>& v, std::string_view s, std::string_view p, bool compress = false)
+{
+	v.clear();
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i or compress == false)
+			v.emplace_back(s.substr(i, n - i));
+
+		if (n == std::string_view::npos)
+			break;
+		
+		i = n + p.length();
+	}
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic to_lower function, works for one byte charsets only...
+
+inline void to_lower(std::string& s, const std::locale& loc = std::locale())
+{
+	for (char& ch: s)
+		ch = std::tolower(ch, loc);
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic join function
+
+template<typename Container = std::vector<std::string> >
+std::string join(const Container& v, std::string_view d)
+{
+	std::string result;
+
+	if (not v.empty())
+	{
+		auto i = v.begin();
+		for (;;)
+		{
+			result += *i++;
+
+			if (i == v.end())
+				break;
+
+			result += d;
+		}
+	}
+	return result;
+}
+
+// --------------------------------------------------------------------
+/// \brief Simplistic replace_all
+
+inline void replace_all(std::string& s, std::string_view p, std::string_view r)
+{
+	std::string::size_type i = 0;
+	for (;;)
+	{
+		auto l = s.find(p, i);
+		if (l == std::string::npos)
+			break;
+		
+		s.replace(l, p.length(), r);
+		i = l + r.length();
+	}
 }
 
 } // namespace xml

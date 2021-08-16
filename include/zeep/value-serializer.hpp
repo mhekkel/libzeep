@@ -310,9 +310,9 @@ struct value_serializer<boost::posix_time::ptime>
 		}
 
 		boost::gregorian::date d(
-		  std::stoi(m[f_year])
-		, std::stoi(m[f_month])
-		, std::stoi(m[f_day])
+		  static_cast<uint16_t>(std::stoi(m[f_year]))
+		, static_cast<uint16_t>(std::stoi(m[f_month]))
+		, static_cast<uint16_t>(std::stoi(m[f_day]))
 		);
 
 		int hours = std::stoi(m[f_hours]);
@@ -335,8 +335,8 @@ struct value_serializer<boost::posix_time::ptime>
 		if (m.length(f_have_tz)) {
 			if (not m.length(f_zulu)) {
 				std::string sign = m[f_offs_sign];
-				int hours = std::stoi(m[f_offs_hours]);
-				int minutes = 0;
+				hours = std::stoi(m[f_offs_hours]);
+				minutes = 0;
 				if (m.length(f_have_offs_minutes)) {
 					minutes = std::stoi(m[f_offs_minutes]);
 				}
@@ -353,8 +353,8 @@ struct value_serializer<boost::posix_time::ptime>
 			// For now, settle on using mktime...
 			std::tm tm = boost::posix_time::to_tm(result);
 			tm.tm_isdst = -1;
-			std::time_t t = mktime(&tm);
-			result = boost::posix_time::from_time_t(t);
+			std::time_t t2 = mktime(&tm);
+			result = boost::posix_time::from_time_t(t2);
 		}
 
 		return result;
@@ -411,9 +411,9 @@ struct value_serializer<boost::gregorian::date>
 		}
 
 		return boost::gregorian::date(
-				  std::stoi(m[f_year])
-				, std::stoi(m[f_month])
-				, std::stoi(m[f_day])
+				  static_cast<uint16_t>(std::stoi(m[f_year]))
+				, static_cast<uint16_t>(std::stoi(m[f_month]))
+				, static_cast<uint16_t>(std::stoi(m[f_day]))
 				);
 	}
 };

@@ -233,7 +233,7 @@ auto json_parser::get_next_token() -> token_t
 	double fraction = 1.0, exponent = 1;
 	bool negative = false, negativeExp = false;
 
-	unicode hx;
+	unicode hx = {};
 
 	m_token.clear();
 
@@ -294,7 +294,7 @@ auto json_parser::get_next_token() -> token_t
 				else if (ch < 128 and std::isalpha(ch))
 					state = state_t::Literal;
 				else
-					throw zeep::exception("invalid character (" + (std::isprint(ch) ? std::string(1, ch) :to_hex(ch)) + ") in json");
+					throw zeep::exception("invalid character (" + (std::isprint(ch) ? std::string(1, static_cast<char>(ch)) : to_hex(ch)) + ") in json");
 			}
 			break;
 
@@ -323,7 +323,8 @@ auto json_parser::get_next_token() -> token_t
 				throw zeep::exception("invalid number in json, should not start with zero");
 			else if (ch == '.')
 			{
-				m_token_float = m_token_int = 0;
+				m_token_float = 0;
+				m_token_int = 0;
 				fraction = 0.1;
 				state = state_t::NumberFraction;
 			}
@@ -341,13 +342,13 @@ auto json_parser::get_next_token() -> token_t
 				m_token_int = 10 * m_token_int + (ch - '0');
 			else if (ch == '.')
 			{
-				m_token_float = m_token_int;
+				m_token_float = static_cast<double>(m_token_int);
 				fraction = 0.1;
 				state = state_t::NumberFraction;
 			}
 			else if (ch == 'e' or ch == 'E')
 			{
-				m_token_float = m_token_int;
+				m_token_float = static_cast<double>(m_token_int);
 				state = state_t::NumberExpSign;
 			}
 			else
@@ -471,7 +472,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex1:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 10 + ch - 'a';
@@ -484,7 +485,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex2:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = 16 * hx + ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 16 * hx + 10 + ch - 'a';
@@ -497,7 +498,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex3:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = 16 * hx + ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 16 * hx + 10 + ch - 'a';
@@ -510,7 +511,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex4:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = 16 * hx + ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 16 * hx + 10 + ch - 'a';

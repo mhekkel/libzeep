@@ -17,16 +17,12 @@
 #include <zeep/http/security.hpp>
 #include <zeep/http/server.hpp>
 
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/stream.hpp>
-
 #include "client-test-code.hpp"
 #include "../src/signals.hpp"
 
 namespace z = zeep;
 namespace zx = zeep::xml;
 namespace zh = zeep::http;
-namespace io = boost::iostreams;
 
 BOOST_AUTO_TEST_CASE(http_base64_1)
 {
@@ -72,7 +68,7 @@ BOOST_AUTO_TEST_CASE(http_base64_2)
 
 BOOST_AUTO_TEST_CASE(connection_read)
 {
-#pragma message "write test for avail/used"
+#pragma message("write test for avail/used")
 }
 
 BOOST_AUTO_TEST_CASE(request_params_1)
@@ -98,16 +94,6 @@ BOOST_AUTO_TEST_CASE(webapp_6)
 	BOOST_CHECK_EQUAL(fp2.filename, "1cbs_map.mtz");
 	BOOST_CHECK_EQUAL(fp2.mimetype, "text/plain");
 	BOOST_CHECK_EQUAL(std::string(fp2.data, fp2.data + fp2.length), "And again, hello!\n");
-}
-
-BOOST_AUTO_TEST_CASE(webapp_6a)
-{
-	char s[] = "Hello, world!";
-
-	io::stream<io::array_source> is(s, s + strlen(s));
-
-	auto len = is.seekg(0, std::ios_base::end).tellg();
-	BOOST_CHECK_EQUAL(len, strlen(s));
 }
 
 // a very simple controller, serving only /test/one and /test/three

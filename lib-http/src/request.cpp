@@ -6,14 +6,11 @@
 
 #include <filesystem>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/json/parser.hpp>
 #include <zeep/http/uri.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -26,9 +23,9 @@ request::request(const std::string& method, const std::string& uri, std::tuple<i
 	, m_headers(std::move(headers))
 	, m_payload(std::move(payload))
 {
-	m_version[0] = '0' + std::get<0>(version);
+	m_version[0] = static_cast<char>('0' + std::get<0>(version));
 	m_version[1] = '.';
-	m_version[2] = '0' + std::get<1>(version);
+	m_version[2] = static_cast<char>('0' + std::get<1>(version));
 }
 
 request::request(const request& req)
@@ -241,7 +238,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 	std::string result, contentType = get_header("Content-Type");
 	bool found = false;
 
-	if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+	if (starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
 		tie(result, found) = get_urlencoded_parameter(m_payload, name);
 		if (found)
@@ -258,7 +255,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			return std::make_tuple(result, true);
 	}
 
-	if (ba::starts_with(contentType, "application/json"))
+	if (starts_with(contentType, "application/json"))
 	{
 		try
 		{
@@ -270,11 +267,11 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 				found = true;
 			}
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception &)
 		{
 		}
 	}
-	else if (ba::starts_with(contentType, "multipart/form-data"))
+	else if (starts_with(contentType, "multipart/form-data"))
 	{
 		std::string::size_type b = contentType.find("boundary=");
 		if (b != std::string::npos)
@@ -345,7 +342,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			}
 		}
 
-		ba::replace_all(result, "\r\n", "\n");
+		replace_all(result, "\r\n", "\n");
 	}
 	
 	return make_tuple(result, found);
@@ -359,7 +356,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	{
 		std::string contentType = get_header("Content-Type");
 		
-		if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+		if (starts_with(contentType, "application/x-www-form-urlencoded"))
 			ps = m_payload;
 	}
 	else if (m_method == "GET" or m_method == "PUT")
@@ -413,7 +410,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 	// 			{
 	// 				std::string contentType = get_header("Content-Type");
 					
-	// 				if (ba::starts_with(contentType, "application/x-www-form-urlencoded"))
+	// 				if (starts_with(contentType, "application/x-www-form-urlencoded"))
 	// 					ps = m_payload;
 	// 			}
 	// 			break;
@@ -485,7 +482,7 @@ file_param_parser::file_param_parser(const request& req, const std::string& payl
 {
 	std::string contentType = m_req.get_header("Content-Type");
 
-	if (ba::starts_with(contentType, "multipart/form-data"))
+	if (starts_with(contentType, "multipart/form-data"))
 	{
 		std::string::size_type b = contentType.find("boundary=");
 		if (b != std::string::npos)
@@ -562,11 +559,11 @@ file_param file_param_parser::next()
 
 				auto b = p.begin();
 				auto e = p.end();
-				std::match_results<std::string::iterator> m;
-				while (b < e and std::regex_search(b, e, m, re))
+				std::match_results<std::string::iterator> m2;
+				while (b < e and std::regex_search(b, e, m2, re))
 				{
-					auto key = m[1].str();
-					auto value = m[2].str();
+					auto key = m2[1].str();
+					auto value = m2[2].str();
 					if (value.length() > 1 and ((value.front() == '"' and value.back() == '"') or (value.front() == '\'' and value.back() == '\'')))
 						value = value.substr(1, value.length() - 2);
 
@@ -575,13 +572,13 @@ file_param file_param_parser::next()
 					else if (key == "filename")
 						result.filename = value;
 
-					b = m[0].second;
+					b = m2[0].second;
 				}
 			}
 			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_cont))
 			{
 				result.mimetype = m[1].str();
-				if (ba::starts_with(result.mimetype, "multipart/"))
+				if (starts_with(result.mimetype, "multipart/"))
 					throw std::runtime_error("multipart file uploads are not supported");
 			}
 		}
@@ -628,11 +625,11 @@ std::string request::get_cookie(const char* name) const
 			continue;
 
 		std::vector<std::string> rawCookies;
-		ba::split(rawCookies, h.value, ba::is_any_of(";"));
+		split(rawCookies, h.value, ";");
 
 		for (std::string& cookie : rawCookies)
 		{
-			ba::trim(cookie);
+			trim(cookie);
 
 			auto d = cookie.find('=');
 			if (d == std::string::npos)
@@ -655,11 +652,11 @@ void request::set_cookie(const char* name, const std::string& value)
 			continue;
 		
 		std::vector<std::string> rawCookies;
-		ba::split(rawCookies, h.value, ba::is_any_of(";"));
+		split(rawCookies, h.value, ";");
 
 		for (std::string& cookie : rawCookies)
 		{
-			ba::trim(cookie);
+			trim(cookie);
 
 			auto d = cookie.find('=');
 			if (d == std::string::npos)
@@ -742,7 +739,7 @@ std::locale& request::get_locale() const
 
 		std::string preferred;
 		std::vector<std::string> accepted;
-		ba::split(accepted, acceptedLanguage, ba::is_any_of(","));
+		split(accepted, acceptedLanguage, ",");
 
 		struct lang_score
 		{
@@ -768,7 +765,7 @@ std::locale& request::get_locale() const
 				if (iequals(loc.name(), name))
 					scores.push_back({lang, region, score, loc});
 			}
-			catch(const std::exception& e)
+			catch(const std::exception &)
 			{
 			}
 		};

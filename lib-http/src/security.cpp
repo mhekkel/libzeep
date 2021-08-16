@@ -33,7 +33,7 @@ void security_context::validate_request(request& req) const
 
 	for (;;)
 	{
-		std::string path = uri(req.get_uri()).get_path().string();
+		std::string path = uri(req.get_uri()).get_path().generic_string();
 
 		if (path.front() != '/')
 			path.insert(path.begin(), '/');
@@ -167,7 +167,7 @@ void security_context::verify_username_password(const std::string& username, con
 
 		add_authorization_headers(rep, user);
 	}
-	catch (const std::exception& ex)
+	catch (const std::exception &)
 	{
 		throw invalid_password_exception();
 	}

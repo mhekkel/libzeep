@@ -4,12 +4,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/xpath.hpp>
 #include <zeep/xml/document.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml 
 {
@@ -199,7 +195,7 @@ class object
 	object_type			type() const					{ return m_type; }
 
 	template<typename T>
-	const T				as() const;
+	T					as() const;
 	
   private:
 	object_type			m_type;
@@ -279,7 +275,7 @@ const node_set& object::as<const node_set&>() const
 }
 
 template<>
-const bool object::as<bool>() const
+bool object::as<bool>() const
 {
 	bool result;
 	switch (m_type)
@@ -295,7 +291,7 @@ const bool object::as<bool>() const
 }
 
 template<>
-const double object::as<double>() const
+double object::as<double>() const
 {
 	double result;
 	switch (m_type)
@@ -310,7 +306,7 @@ const double object::as<double>() const
 }
 
 template<>
-const int object::as<int>() const
+int object::as<int>() const
 {
 	if (m_type != object_type::number)
 		throw exception("object is not of type number");
@@ -326,7 +322,7 @@ const std::string& object::as<const std::string&>() const
 }
 
 template<>
-const std::string object::as<std::string>() const
+std::string object::as<std::string>() const
 {
 	std::string result;
 	
@@ -642,8 +638,8 @@ class expression
 	virtual				~expression() {}
 	virtual object		evaluate(expression_context& context) = 0;
 
-						// print exists only for debugging purposes
-	virtual void		print(int level) = 0;
+	// 					// print exists only for debugging purposes
+	// virtual void		print(int level) = 0;
 };
 
 typedef std::shared_ptr<expression>	expression_ptr;
@@ -766,7 +762,7 @@ class name_test_step_expression : public step_expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "name test step " << m_name << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "name test step " << m_name << std::endl; }
 
   protected:
 
@@ -813,7 +809,7 @@ class node_type_expression : public step_expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "node type step " << boost::core::demangle(typeid(T).name()) << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "node type step " << boost::core::demangle(typeid(T).name()) << std::endl; }
 
   private:
 	static bool			test(const node* n)					{ return dynamic_cast<const T*>(n) != nullptr; }
@@ -834,7 +830,7 @@ class root_expression : public expression
   public:
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "root" << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "root" << std::endl; }
 };
 
 object root_expression::evaluate(expression_context& context)
@@ -855,13 +851,13 @@ class operator_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level)
-						{
-							indent(level);
-							std::cout << "operator " << boost::core::demangle(typeid(OP).name()) << std::endl;
-							m_lhs->print(level + 1);
-							m_rhs->print(level + 1);
-						}
+	// virtual void		print(int level)
+	// 					{
+	// 						indent(level);
+	// 						std::cout << "operator " << boost::core::demangle(typeid(OP).name()) << std::endl;
+	// 						m_lhs->print(level + 1);
+	// 						m_rhs->print(level + 1);
+	// 					}
 
   private:
 	expression_ptr		m_lhs, m_rhs;
@@ -994,7 +990,7 @@ class negate_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "negate" << std::endl; m_expr->print(level + 1); }
+	// virtual void		print(int level) { indent(level); std::cout << "negate" << std::endl; m_expr->print(level + 1); }
 
   private:
 	expression_ptr		m_expr;
@@ -1016,13 +1012,13 @@ class path_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level)
-						{
-							indent(level);
-							std::cout << "path" << std::endl;
-							m_lhs->print(level + 1);
-							m_rhs->print(level + 1);
-						}
+	// virtual void		print(int level)
+	// 					{
+	// 						indent(level);
+	// 						std::cout << "path" << std::endl;
+	// 						m_lhs->print(level + 1);
+	// 						m_rhs->print(level + 1);
+	// 					}
 
   private:
 	expression_ptr		m_lhs, m_rhs;
@@ -1057,13 +1053,13 @@ class predicate_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level)
-						{
-							indent(level);
-							std::cout << "predicate" << std::endl;
-							m_path->print(level + 1);
-							m_pred->print(level + 1);
-						}
+	// virtual void		print(int level)
+	// 					{
+	// 						indent(level);
+	// 						std::cout << "predicate" << std::endl;
+	// 						m_path->print(level + 1);
+	// 						m_pred->print(level + 1);
+	// 					}
 
   private:
 	expression_ptr		m_path, m_pred;
@@ -1103,7 +1099,7 @@ class variable_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "variable " << m_var << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "variable " << m_var << std::endl; }
 
   private:
 	std::string			m_var;
@@ -1124,13 +1120,13 @@ class literal_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "literal " << m_lit << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "literal " << m_lit << std::endl; }
 
   private:
 	std::string			m_lit;
 };
 
-object literal_expression::evaluate(expression_context& context)
+object literal_expression::evaluate(expression_context& /*context*/)
 {
 	return object(m_lit);
 }
@@ -1145,13 +1141,13 @@ class number_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level) { indent(level); std::cout << "number " << m_number << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "number " << m_number << std::endl; }
 
   private:
 	double				m_number;
 };
 
-object number_expression::evaluate(expression_context& context)
+object number_expression::evaluate(expression_context& /*context*/)
 {
 	return object(m_number);
 }
@@ -1167,23 +1163,22 @@ class core_function_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level)
-						{
-							indent(level);
-							std::cout << "function call " << boost::core::demangle(typeid(CF).name()) << std::endl;
-							for_each(m_args.begin(), m_args.end(),
-								std::bind(&expression::print, std::placeholders::_1, level + 1));
-						}
+	// virtual void		print(int level)
+	// 					{
+	// 						indent(level);
+	// 						std::cout << "function call " << boost::core::demangle(typeid(CF).name()) << std::endl;
+	// 						for_each(m_args.begin(), m_args.end(),
+	// 							std::bind(&expression::print, std::placeholders::_1, level + 1));
+	// 					}
 
   private:
 	expression_list		m_args;
 };
 
 template<CoreFunction CF>
-object core_function_expression<CF>::evaluate(expression_context& context)
+object core_function_expression<CF>::evaluate(expression_context& /*context*/)
 {
 	throw exception("unimplemented function ");
-	return object();
 }
 
 template<>
@@ -1340,9 +1335,9 @@ object core_function_expression<CoreFunction::StartsWith>::evaluate(expression_c
 	try
 	{
 		return v2.as<std::string>().empty() or
-			ba::starts_with(v1.as<std::string>(), v2.as<std::string>());
+			starts_with(v1.as<std::string>(), v2.as<std::string>());
 	}
-	catch(const std::exception& e)
+	catch(const std::exception &)
 	{
 		throw exception("expected two strings as argument for starts-with");
 	}
@@ -1504,7 +1499,7 @@ object core_function_expression<CoreFunction::Translate>::evaluate(expression_co
 
 		return result;
 	}
-	catch(const std::exception& e)
+	catch(const std::exception &)
 	{
 		throw exception("expected three strings as arguments for translate");
 	}
@@ -1525,13 +1520,13 @@ object core_function_expression<CoreFunction::Not>::evaluate(expression_context&
 }
 
 template<>
-object core_function_expression<CoreFunction::True>::evaluate(expression_context& context)
+object core_function_expression<CoreFunction::True>::evaluate(expression_context& /*context*/)
 {
 	return true;
 }
 
 template<>
-object core_function_expression<CoreFunction::False>::evaluate(expression_context& context)
+object core_function_expression<CoreFunction::False>::evaluate(expression_context& /*context*/)
 {
 	return false;
 }
@@ -1542,10 +1537,10 @@ object core_function_expression<CoreFunction::Lang>::evaluate(expression_context
 	object v = m_args.front()->evaluate(context);
 	
 	std::string test = v.as<std::string>();
-	ba::to_lower(test);
+	to_lower(test);
 	
 	std::string lang = context.m_node->lang();
-	ba::to_lower(lang);
+	to_lower(lang);
 	
 	bool result = test == lang;
 	
@@ -1601,13 +1596,13 @@ class union_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	virtual void		print(int level)
-						{
-							indent(level);
-							std::cout << "union" << std::endl;
-							m_lhs->print(level + 1);
-							m_rhs->print(level + 1);
-						}
+	// virtual void		print(int level)
+	// 					{
+	// 						indent(level);
+	// 						std::cout << "union" << std::endl;
+	// 						m_lhs->print(level + 1);
+	// 						m_rhs->print(level + 1);
+	// 					}
 
   private:
 	expression_ptr		m_lhs, m_rhs;
@@ -1641,13 +1636,13 @@ struct xpath_imp
 	node_set			evaluate(node& root, context_imp& context);
 
 	void				parse(const std::string& path);
-	void				dump()
-	{
-		if (m_expr)
-			m_expr->print(0);
-		else
-			std::cout << "xpath is null" << std::endl;
-	}
+	// void				dump()
+	// {
+	// 	if (m_expr)
+	// 		m_expr->print(0);
+	// 	else
+	// 		std::cout << "xpath is null" << std::endl;
+	// }
 
 	void				preprocess(const std::string& path);
 	
@@ -2785,7 +2780,7 @@ bool xpath::matches(const node* n) const
 
 void xpath::dump()
 {
-	m_impl->dump();
+	// m_impl->dump();
 }
 
 }

@@ -7,12 +7,8 @@
 #include <set>
 #include <stack>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/document.hpp>
 #include <zeep/xml/xpath.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml
 {
@@ -35,7 +31,7 @@ void write_string(std::ostream& os, const std::string& s, bool escape_whitespace
 		auto sb = sp;
 
 		unicode c;
-		std::tie(c, sp) = get_first_char(sp);
+		std::tie(c, sp) = get_first_char(sp, se);
 
 		switch (c)
 		{
@@ -331,10 +327,10 @@ bool text::equals(const node* n) const
 	if (t != nullptr)
 	{
 		std::string text = m_text;
-		ba::trim(text);
+		trim(text);
 
 		std::string ttext = t->m_text;
-		ba::trim(ttext);
+		trim(ttext);
 
 		result = text == ttext;
 	}
@@ -667,39 +663,39 @@ bool element::equals(const node* n) const
 			result = m_attributes == e->m_attributes;
 			if (not result)
 			{
-				std::set<attribute> a(m_attributes.begin(), m_attributes.end());
-				std::set<attribute> b(e->m_attributes.begin(), e->m_attributes.end());
+				std::set<attribute> as(m_attributes.begin(), m_attributes.end());
+				std::set<attribute> bs(e->m_attributes.begin(), e->m_attributes.end());
 
 				std::set<std::string> nsa, nsb;
 
-				auto ai = a.begin(), bi = b.begin();
+				auto ai = as.begin(), bi = bs.begin();
 				for (;;)
 				{
-					if (ai == a.end() and bi == b.end())
+					if (ai == as.end() and bi == bs.end())
 						break;
 					
-					if (ai != a.end() and ai->is_namespace())
+					if (ai != as.end() and ai->is_namespace())
 					{
 						nsa.insert(ai->value());
 						++ai;
 						continue;
 					}
 
-					if (bi != b.end() and bi->is_namespace())
+					if (bi != bs.end() and bi->is_namespace())
 					{
 						nsb.insert(bi->value());
 						++bi;
 						continue;
 					}
 
-					if (ai == a.end() or bi == b.end() or *ai++ != *bi++)
+					if (ai == as.end() or bi == bs.end() or *ai++ != *bi++)
 					{
 						result = false;
 						break;
 					}
 				}
 
-				result = ai == a.end() and bi == b.end() and nsa == nsb;
+				result = ai == as.end() and bi == bs.end() and nsa == nsb;
 			}
 		}
 	}
@@ -952,9 +948,9 @@ void element::move_to_name_space(const std::string& prefix, const std::string& u
 			if (not attr.is_namespace())
 				continue;
 			
-			auto p = prefix_for_namespace(attr.uri());
-			if (not p.second)
-				attr.set_qname("xmlns", p.first);
+			auto nsp = prefix_for_namespace(attr.uri());
+			if (not nsp.second)
+				attr.set_qname("xmlns", nsp.first);
 		}
 
 		// ... and then the others, makes sure the namespaces are known
@@ -969,10 +965,10 @@ void element::move_to_name_space(const std::string& prefix, const std::string& u
 				attr.set_qname(prefix + ':' + attr.name());
 			else
 			{
-				auto p = prefix_for_namespace(ns);
-				if (not p.second)
+				auto nsp = prefix_for_namespace(ns);
+				if (not nsp.second)
 					throw exception("Cannot move element to new namespace, namespace not found: " + ns);
-				attr.set_qname(p.first, attr.name());
+				attr.set_qname(nsp.first, attr.name());
 			}
 		}
 	}
@@ -1025,20 +1021,20 @@ void fix_namespaces(element& e, element& source, element& dest)
 
 	while (not s.empty())
 	{
-		auto e = s.top();
+		auto n = s.top();
 		s.pop();
 
-		auto p = e->get_prefix();
+		auto p = n->get_prefix();
 		if (not p.empty())
 		{
 			if (mapped.count(p))
 			{
 				if (mapped[p] != p)
-					e->set_qname(mapped[p], e->name());
+					n->set_qname(mapped[p], n->name());
 			}
 			else
 			{
-				auto ns = e->namespace_for_prefix(p);
+				auto ns = n->namespace_for_prefix(p);
 				if (ns.empty())
 					ns = source.namespace_for_prefix(p);
 
@@ -1046,7 +1042,7 @@ void fix_namespaces(element& e, element& source, element& dest)
 				if (dp.second)
 				{
 					mapped[p] = dp.first;
-					e->set_qname(dp.first, e->name());
+					n->set_qname(dp.first, n->name());
 				}
 				else
 				{
@@ -1056,7 +1052,7 @@ void fix_namespaces(element& e, element& source, element& dest)
 			}
 		}
 
-		auto el = dynamic_cast<element*>(e);
+		auto el = dynamic_cast<element*>(n);
 		if (el == nullptr)
 			continue;
 

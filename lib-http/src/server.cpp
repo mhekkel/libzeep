@@ -4,7 +4,6 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 
@@ -14,8 +13,6 @@
 #include <zeep/http/connection.hpp>
 #include <zeep/http/controller.hpp>
 #include <zeep/http/uri.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::http
 {
@@ -116,8 +113,12 @@ void basic_server::run(int nr_of_threads)
 
 void basic_server::stop()
 {
+	m_new_connection.reset();
+
 	if (m_acceptor and m_acceptor->is_open())
 		m_acceptor->close();
+
+	m_acceptor.reset();
 }
 
 void basic_server::handle_accept(boost::system::error_code ec)
@@ -199,7 +200,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 		}
 
 		// parse the uri
-		std::string path = uri(req.get_uri()).get_path().string();
+		std::string path = uri(req.get_uri()).get_path().generic_string();
 
 		// do the actual work.
 		for (auto c: m_controllers)
@@ -221,9 +222,9 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 			});
 
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
-		if (ba::starts_with(rep.get_content_type(), "application/xhtml+xml") and
-			not ba::contains(accept, "application/xhtml+xml") and
-			ba::contains(userAgent, "MSIE"))
+		if (starts_with(rep.get_content_type(), "application/xhtml+xml") and
+			not contains(accept, "application/xhtml+xml") and
+			contains(userAgent, "MSIE"))
 		{
 			rep.set_content_type("text/html; charset=utf-8");
 		}

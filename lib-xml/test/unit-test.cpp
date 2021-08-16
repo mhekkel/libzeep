@@ -304,9 +304,9 @@ BOOST_AUTO_TEST_CASE(xml_iterators_2)
 
 	for (int i = 0; i < 10; ++i)
 	{
-		zx::element* e = dynamic_cast<zx::element*>(nodes[i]);
-		BOOST_TEST(e != nullptr);
-		BOOST_TEST(e->get_content() == to_string(i));
+		zx::element* el = dynamic_cast<zx::element*>(nodes[i]);
+		BOOST_TEST(el != nullptr);
+		BOOST_TEST(el->get_content() == to_string(i));
 	}
 }
 
@@ -591,3 +591,12 @@ BOOST_AUTO_TEST_CASE(xml_namespaces_3)
 	BOOST_TEST(ay->get_ns() == "http://a.com/");
 }
 
+BOOST_AUTO_TEST_CASE(security_test_1)
+{
+	using namespace zx::literals;
+
+    zx::element n("test");
+	n.set_attribute("a", "a\xf6\"b");
+	std::stringstream ss;
+	BOOST_CHECK_THROW(ss << n, zeep::exception);
+}

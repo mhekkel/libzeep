@@ -96,7 +96,7 @@ class node
 	///
 	/// To reduce storage requirements, names are stored in nodes as qnames, if at all.
 	virtual std::string get_qname() const;
-	virtual void set_qname(const std::string& qn)
+	virtual void set_qname(const std::string& /*qn*/)
 	{
 		assert(false);
 	}
@@ -218,7 +218,7 @@ class comment : public node_with_text
 {
   public:
 	comment() {}
-	comment(comment&& c) : node_with_text(std::move(c.m_text)) {}
+	comment(comment&& c) noexcept : node_with_text(std::move(c.m_text)){}
 	comment(const std::string& text) : node_with_text(text) {}
 
 	/// \brief compare nodes for equality
@@ -240,7 +240,7 @@ class processing_instruction : public node_with_text
   public:
 	processing_instruction() {}
 
-	processing_instruction(processing_instruction&& pi)
+	processing_instruction(processing_instruction&& pi) noexcept
 		: node_with_text(std::move(pi.m_text))
 		, m_target(std::move(pi.m_target))
 	{}
@@ -284,7 +284,7 @@ class text : public node_with_text
   public:
 	text() {}
 
-	text(text&& t)
+	text(text&& t) noexcept
 		: node_with_text(std::move(t.m_text)) {}
 
 	text(const std::string& text)
@@ -316,7 +316,7 @@ class cdata : public text
 {
   public:
 	cdata() {}
-	cdata(cdata&& cd) : text(std::move(cd)) {}
+	cdata(cdata&& cd) noexcept : text(std::move(cd)) {}
 	cdata(const std::string& s)	: text(s) {}
 
 	/// \brief compare nodes for equality
@@ -343,13 +343,13 @@ class attribute : public node
 	attribute(const attribute& attr)
 		: m_qname(attr.m_qname), m_value(attr.m_value), m_id(attr.m_id) {}
 
-	attribute(attribute&& attr)
+	attribute(attribute&& attr) noexcept
 		: m_qname(std::move(attr.m_qname)), m_value(std::move(attr.m_value)), m_id(attr.m_id) {}
 
 	attribute(const std::string& qname, const std::string& value, bool id = false)
 		: m_qname(qname), m_value(value), m_id(id) {}
 	
-	attribute& operator=(attribute&& attr)
+	attribute& operator=(attribute&& attr) noexcept
 	{
 		std::swap(m_qname, attr.m_qname);
 		std::swap(m_value, attr.m_value);
@@ -523,7 +523,7 @@ class iterator_impl
 #endif
 	}
 
-	iterator_impl(iterator_impl&& i)
+	iterator_impl(iterator_impl&& i) noexcept
 		: m_container(i.m_container)
 		, m_current(i.m_current)
 		, m_at_end(i.m_at_end)
@@ -552,7 +552,7 @@ class iterator_impl
 		return *this;
 	}
 
-	iterator_impl& operator=(iterator_impl&& i)
+	iterator_impl& operator=(iterator_impl&& i) noexcept
 	{
 		if (this != &i)
 		{
@@ -691,7 +691,7 @@ class iterator_impl
 		return std::distance(*this, other);
 	}
 
-	operator const pointer() const	{ return current(); }
+	operator pointer() const		{ return current(); }
 	operator pointer()				{ return current(); }
 
   private:
@@ -976,7 +976,7 @@ class node_list : public basic_node_list<node>
 		return *this;
 	}
 
-	node_list& operator=(node_list&& l)
+	node_list& operator=(node_list&& l) noexcept
 	{
 		if (this != &l)
 		{

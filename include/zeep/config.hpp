@@ -68,5 +68,7 @@
 #	pragma warning (disable : 4068)	// unknown pragma
 #	pragma warning (disable : 4996)	// stl copy()
 #	pragma warning (disable : 4800)	// BOOL conversion
+#	pragma warning (disable : 4100) // unreferenced formal parameter
+#	pragma warning (disable : 4101) // unreferenced local variable
 
 #endif

@@ -10,9 +10,10 @@
 
 #include <zeep/config.hpp>
 
-#include <type_traits>
 #if __has_include(<experimental/type_traits>)
 #include <experimental/type_traits>
+#else
+#include <type_traits>
 #endif
 
 #include <zeep/value-serializer.hpp>

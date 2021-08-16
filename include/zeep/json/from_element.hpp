@@ -89,9 +89,9 @@ void from_element(const E& e, A& v)
 {
     switch (e.type())
     {
-        case value_type::boolean:       v = *e.template get_ptr<const typename E::boolean_type*>(); break;
-        case value_type::number_int:    v = *e.template get_ptr<const typename E::int_type*>(); break;
-        case value_type::number_float:  v = *e.template get_ptr<const typename E::float_type*>(); break;
+        case value_type::boolean:       v = static_cast<A>(*e.template get_ptr<const typename E::boolean_type*>()); break;
+        case value_type::number_int:    v = static_cast<A>(*e.template get_ptr<const typename E::int_type*>()); break;
+        case value_type::number_float:  v = static_cast<A>(*e.template get_ptr<const typename E::float_type*>()); break;
         default:    throw std::runtime_error("Type should have been number but was " + e.type_name()); break;
     }
 }

@@ -3,12 +3,9 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/http/template-processor.hpp>
 #include <zeep/http/tag-processor.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
@@ -222,8 +219,8 @@ void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::p
 
 		for (auto& c: *node)
 		{
-			auto i = parent->emplace(node, c); // insert before processing, to assign namespaces
-			process_xml(i, s, dir, loader);
+			auto i2 = parent->emplace(node, c); // insert before processing, to assign namespaces
+			process_xml(i2, s, dir, loader);
 		}
 	}
 }
@@ -263,7 +260,7 @@ void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs
 		s << nr << ' ' << kBase[base];
 		number = s.str();
 	}
-	else if (format.empty() or ba::starts_with(format, "#,##0"))
+	else if (format.empty() or starts_with(format, "#,##0"))
 	{
 		uint64_t nr = evaluate_el(scope, number).as<uint64_t>();
 

@@ -9,12 +9,8 @@
 #include <sstream>
 #include <array>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace zeep::xml
 {
@@ -175,11 +171,11 @@ void istream_data_source::guess_encoding()
 	{
 		char ch1 = static_cast<char>(ch);
 
-		if (ch1 == char(0xfe))
+		if (ch1 == static_cast<char>(0xfe))
 		{
-			char ch2 = m_data->rdbuf()->snextc();
+			char ch2 = static_cast<char>(m_data->rdbuf()->snextc());
 
-			if (ch2 == char(0xff))
+			if (ch2 == static_cast<char>(0xff))
 			{
 				m_data->rdbuf()->snextc();
 				m_encoding = encoding_type::UTF16BE;
@@ -188,11 +184,11 @@ void istream_data_source::guess_encoding()
 			else
 				m_data->rdbuf()->sungetc();
 		}
-		else if (ch1 == char(0xff))
+		else if (ch1 == static_cast<char>(0xff))
 		{
-			char ch2 = m_data->rdbuf()->snextc();
+			char ch2 = static_cast<char>(m_data->rdbuf()->snextc());
 
-			if (ch2 == char(0xfe))
+			if (ch2 == static_cast<char>(0xfe))
 			{
 				m_data->rdbuf()->snextc();
 				m_encoding = encoding_type::UTF16LE;
@@ -201,12 +197,12 @@ void istream_data_source::guess_encoding()
 			else
 				m_data->rdbuf()->sungetc();
 		}
-		else if (ch1 == char(0xef))
+		else if (ch1 == static_cast<char>(0xef))
 		{
-			char ch2 = m_data->rdbuf()->snextc();
-			char ch3 = m_data->rdbuf()->snextc();
+			char ch2 = static_cast<char>(m_data->rdbuf()->snextc());
+			char ch3 = static_cast<char>(m_data->rdbuf()->snextc());
 
-			if (ch2 == char(0xbb) and ch3 == char(0xbf))
+			if (ch2 == static_cast<char>(0xbb) and ch3 == static_cast<char>(0xbf))
 			{
 				m_data->rdbuf()->snextc();
 				m_encoding = encoding_type::UTF8;
@@ -408,7 +404,7 @@ public:
 		unicode result = 0;
 
 		if (m_ptr != m_data.end())
-			std::tie(result, m_ptr) = get_first_char(m_ptr);
+			std::tie(result, m_ptr) = get_first_char(m_ptr, m_data.end());
 
 		if (result == '\n')
 			++m_line_nr;
@@ -718,7 +714,7 @@ struct parser_imp
 		parser_imp& m_impl;
 		data_source* m_source;
 		std::array<unicode,4> m_buffer;
-		int m_buffer_offset;
+		std::ptrdiff_t m_buffer_offset;
 		XMLToken m_lookahead;
 		std::string m_token;
 		bool m_inserted;
@@ -1181,7 +1177,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 					else if (is_char(uc))
 						token = XMLToken::Other;
 					else
-						not_well_formed("Unexpected character: " + ((uc < 128 and std::isprint(uc)) ? std::string(1, uc) : to_hex(uc)) );
+						not_well_formed("Unexpected character: " + ((uc < 128 and std::isprint(uc)) ? std::string(1, static_cast<char>(uc)) : to_hex(uc)) );
 
 					break;
 			}
@@ -1401,7 +1397,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 					if (is_char(uc))
 						state = state_Content; // anything else
 					else
-						not_well_formed("Unexpected character in content: " + (std::isprint(uc) ? std::string(1, uc) : to_hex(uc)) );
+						not_well_formed("Unexpected character in content: " + (std::isprint(uc) ? std::string(1, static_cast<char>(uc)) : to_hex(uc)) );
 					break;
 			}
 			break;
@@ -1702,7 +1698,7 @@ void parser_imp::parse(bool validate, bool validate_ns)
 
 	if (not m_unresolved_ids.empty())
 	{
-		not_valid("document contains references to the following undefined ID's: '" + ba::join(m_unresolved_ids, ", ") + "'");
+		not_valid("document contains references to the following undefined ID's: '" + join(m_unresolved_ids, ", ") + "'");
 	}
 }
 
@@ -1756,14 +1752,14 @@ void parser_imp::xml_decl()
 			{
 				match(XMLToken::Name);
 				eq();
-				ba::to_upper(m_token);
-				if (m_token == "US-ASCII")
+				to_lower(m_token);
+				if (m_token == "us-ascii")
 					encoding = encoding_type::ASCII;
-				else if (m_token == "ISO-8859-1")
+				else if (m_token == "iso-8859-1")
 					encoding = encoding_type::ISO88591;
-				else if (m_token == "UTF-8")
+				else if (m_token == "utf-8")
 					encoding = encoding_type::UTF8;
-				else if (m_token == "UTF-16")
+				else if (m_token == "utf-16")
 				{
 					if (m_source.top()->encoding() != encoding_type::UTF16LE and m_source.top()->encoding() != encoding_type::UTF16BE)
 						not_well_formed("Inconsistent encoding attribute in XML declaration");
@@ -2257,7 +2253,7 @@ void parser_imp::element_decl()
 	s(true);
 
 	std::string name = m_token;
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Element names should not start with xmlns:");
 
 	auto e = std::find_if(m_doctype.begin(), m_doctype.end(),
@@ -2496,7 +2492,7 @@ void parser_imp::parameter_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	s(true);
@@ -2539,7 +2535,7 @@ void parser_imp::general_entity_decl()
 
 	if (m_validating_ns and name.find(':') != std::string::npos)
 		not_well_formed("Entity names should not contain a colon");
-	if (ba::starts_with(name, "xmlns:"))
+	if (starts_with(name, "xmlns:"))
 		not_well_formed("Entity names should not start with xmlns:");
 
 	std::string value, ndata;
@@ -2745,14 +2741,14 @@ void parser_imp::attlist_decl()
 
 				s(true);
 
-				std::string value = m_token;
-				normalize_attribute_value(value, attribute->get_type() == doctype::AttributeType::CDATA);
-				if (not value.empty() and not attribute->validate_value(value, m_general_entities))
+				std::string token_value = m_token;
+				normalize_attribute_value(token_value, attribute->get_type() == doctype::AttributeType::CDATA);
+				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
-					not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
+					not_valid("default value '" + token_value + "' for attribute '" + name + "' is not valid");
 				}
 
-				attribute->set_default(doctype::AttributeDefault::Fixed, value);
+				attribute->set_default(doctype::AttributeDefault::Fixed, token_value);
 				match(XMLToken::String);
 				break;
 			}
@@ -2765,14 +2761,14 @@ void parser_imp::attlist_decl()
 				if (m_standalone)
 					not_valid("Document cannot be standalone since there is a default value for an attribute");
 
-				std::string value = m_token;
-				normalize_attribute_value(value, attribute->get_type() == doctype::AttributeType::CDATA);
-				collapse_spaces(value);
-				if (not value.empty() and not attribute->validate_value(value, m_general_entities))
+				std::string token_value = m_token;
+				normalize_attribute_value(token_value, attribute->get_type() == doctype::AttributeType::CDATA);
+				collapse_spaces(token_value);
+				if (not token_value.empty() and not attribute->validate_value(token_value, m_general_entities))
 				{
-					not_valid("default value '" + value + "' for attribute '" + name + "' is not valid");
+					not_valid("default value '" + token_value + "' for attribute '" + name + "' is not valid");
 				}
-				attribute->set_default(doctype::AttributeDefault::None, value);
+				attribute->set_default(doctype::AttributeDefault::None, token_value);
 				match(XMLToken::String);
 				break;
 			}
@@ -2851,8 +2847,8 @@ void parser_imp::notation_decl()
 
 	collapse_spaces(sysid);
 
-	ba::replace_all(pubid, "\t", " ");
-	ba::replace_all(pubid, "\n", " ");
+	replace_all(pubid, "\t", " ");
+	replace_all(pubid, "\n", " ");
 	collapse_spaces(pubid);
 
 	m_parser.notation_decl(name, sysid, pubid);
@@ -3113,7 +3109,7 @@ void parser_imp::parse_general_entity_declaration(std::string& s)
 	while (sp < se)
 	{
 		unicode c;
-		std::tie(c, sp) = get_first_char(sp);
+		std::tie(c, sp) = get_first_char(sp, se);
 
 		switch (state)
 		{
@@ -3506,7 +3502,7 @@ void parser_imp::element(doctype::validator& valid)
 			not_valid("invalid value specified for fixed attribute");
 		}
 
-		// had a crash suddenly here deep down in ba::starts_with...
+		// had a crash suddenly here deep down in starts_with...
 		if (attr_name == "xmlns" or attr_name.compare(0, 6, "xmlns:", 6) == 0) // namespace support
 		{
 			if (not ((m_version > 1.0f and attr_value.empty()) or is_valid_url(attr_value)))
@@ -3598,9 +3594,9 @@ void parser_imp::element(doctype::validator& valid)
 					{
 						if (e - b > 0)
 						{
-							std::string id = attr_value.substr(b, e);
-							if (not m_ids.count(id))
-								m_unresolved_ids.insert(id);
+							std::string idv = attr_value.substr(b, e);
+							if (not m_ids.count(idv))
+								m_unresolved_ids.insert(idv);
 						}
 						b = e + 1;
 						e = attr_value.find(' ', b);
@@ -3608,9 +3604,9 @@ void parser_imp::element(doctype::validator& valid)
 
 					if (b != std::string::npos and b < attr_value.length())
 					{
-						std::string id = attr_value.substr(b);
-						if (not m_ids.count(id))
-							m_unresolved_ids.insert(id);
+						std::string idv = attr_value.substr(b);
+						if (not m_ids.count(idv))
+							m_unresolved_ids.insert(idv);
 					}
 				}
 			}
@@ -3631,12 +3627,12 @@ void parser_imp::element(doctype::validator& valid)
 					auto prefix = attr_name.substr(0, d);
 					if (not iequals(prefix, "xml"))
 					{
-						std::string ns = m_ns->ns_for_prefix(prefix);
+						std::string nsv = m_ns->ns_for_prefix(prefix);
 
-						if (ns.empty())
+						if (nsv.empty())
 							not_well_formed("Unbound attribute prefix");
 
-						attr.m_ns = ns;
+						attr.m_ns = nsv;
 						attr.m_name = attr_name.substr(d + 1);
 					}
 				}
@@ -3683,27 +3679,27 @@ void parser_imp::element(doctype::validator& valid)
 				if (m_validating and m_standalone and dta->is_external())
 					not_valid("default value for attribute defined in external declaration which is not allowed in a standalone document");
 
-				detail::attr attr;
-				attr.m_name = attr_name;
-				attr.m_value = normalize_attribute_value(defValue, dta->get_type() == doctype::AttributeType::CDATA);
-				attr.m_id = false;
+				detail::attr def_attr;
+				def_attr.m_name = attr_name;
+				def_attr.m_value = normalize_attribute_value(defValue, dta->get_type() == doctype::AttributeType::CDATA);
+				def_attr.m_id = false;
 
 				if (m_ns != nullptr)
 				{
 					std::string::size_type d = attr_name.find(':');
 					if (d != std::string::npos)
 					{
-						std::string ns = m_ns->ns_for_prefix(attr_name.substr(0, d));
+						std::string nsv = m_ns->ns_for_prefix(attr_name.substr(0, d));
 
-						if (not ns.empty())
+						if (not nsv.empty())
 						{
-							attr.m_ns = ns;
-							attr.m_name = attr_name.substr(d + 1);
+							def_attr.m_ns = nsv;
+							def_attr.m_name = attr_name.substr(d + 1);
 						}
 					}
 				}
 
-				attrs.push_back(attr);
+				attrs.push_back(def_attr);
 			}
 		}
 	}

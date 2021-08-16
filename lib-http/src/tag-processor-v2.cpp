@@ -5,14 +5,11 @@
 
 #include <unordered_set>
 
-#include <boost/algorithm/string.hpp>
-
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/template-processor.hpp>
 #include <zeep/http/tag-processor.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
@@ -534,11 +531,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 
 		for (auto v: collection)
 		{
-			auto s(scope);
-			s.put(var, v);
+			auto subscope(scope);
+			subscope.put(var, v);
 
 			if (not stat.empty())
-				s.put(stat, object{
+				subscope.put(stat, object{
 					{ "index", ix },
 					{ "count", ix + 1 },
 					{ "size", collectionSize },
@@ -553,7 +550,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 			clone.attributes().erase(attr->get_qname());
 
 			auto i = parent->emplace(node, std::move(clone)); // insert before processing, to assign namespaces
-			process_node(i, s, dir, loader);
+			process_node(i, subscope, dir, loader);
 
 			++ix;
 		}
@@ -687,8 +684,8 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 				else if (c2 == '(' and m.find('<') != std::string::npos)		// 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the 
 				{
 					xml::document subDoc("<foo>" + m + "</foo>");
-					for (auto& n: subDoc.front().nodes())
-						node->nodes().emplace(next, std::move(n));
+					for (auto& subnode: subDoc.front().nodes())
+						node->nodes().emplace(next, std::move(subnode));
 					
 					text.set_text(s.substr(0, i - 2));
 
@@ -716,9 +713,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 {
 	AttributeAction result = AttributeAction::none;
 
-	auto s = attr->value();
+	auto av = attr->value();
 
-	auto o = evaluate_el_link(parentScope, s);
+	auto o = evaluate_el_link(parentScope, av);
 	json::element params;
 
 	if (o.is_object())
@@ -728,9 +725,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 	for (auto& templ: templates)
 	{
-		xml::element* e = dynamic_cast<xml::element*>(templ.get());
+		xml::element* el = dynamic_cast<xml::element*>(templ.get());
 
-		if (e == nullptr)
+		if (el == nullptr)
 		{
 			if (tia == TemplateIncludeAction::include)
 			{
@@ -756,11 +753,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 		}
 
 		// take a full copy, and fix up the prefixes for the namespaces, if required
-		xml::element& replacement(*e);
+		xml::element& replacement(*el);
 
 		scope scope(parentScope);
 
-		for (auto& f: e->attributes())
+		for (auto& f: el->attributes())
 		{
 			// the copy lost its namespace info
 			if (node->namespace_for_prefix(f.get_prefix()) != ns() or f.name() != "fragment")
@@ -825,16 +822,16 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 				result = AttributeAction::remove;
 			}
 
-			auto e = dynamic_cast<xml::element*>(&*i);
-			if (e != nullptr)
+			auto e2 = dynamic_cast<xml::element*>(&*i);
+			if (e2 != nullptr)
 			{
-				auto& attr = e->attributes();
+				auto& attrs = e2->attributes();
 
 				// if (templateID[0] == '#')	// remove the copied ID
 				// 	attr.erase("id");
 				
-				attr.erase(i->prefix_tag("ref", ns()));
-				attr.erase(i->prefix_tag("fragment", ns()));
+				attrs.erase(i->prefix_tag("ref", ns()));
+				attrs.erase(i->prefix_tag("fragment", ns()));
 			}
 
 			process_node(i, scope, dir, loader);
@@ -893,7 +890,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 
 		s = process_el_2(scope, s);
 
-		ba::trim(s);
+		trim(s);
 
 		if (s.empty())
 			break;
@@ -907,7 +904,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 		}
 		
 		auto cs = c->value();
-		ba::trim(cs);
+		trim(cs);
 
 		if (cs.empty())
 			c->set_text(s);
@@ -930,7 +927,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 
 		s = process_el_2(scope, s);
 
-		ba::trim(s);
+		trim(s);
 
 		if (s.empty())
 			break;
@@ -947,7 +944,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 		}
 		
 		auto cs = c->value();
-		ba::trim(cs);
+		trim(cs);
 
 		if (cs.empty())
 		{
