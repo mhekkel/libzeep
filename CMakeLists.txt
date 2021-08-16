@@ -23,8 +23,8 @@ if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 endif()
 if(MSVC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4 /DEBUG")
-	set(CMAKE_EXE_LINKER_FLAGS "/DEBUG")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4 /Zi /Zo")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
 endif()
 
 set(CMAKE_DEBUG_POSTFIX d)
@@ -195,7 +195,6 @@ install(TARGETS zeep zeep_static
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-	  DOCUMENTATION DESTINATION ${CMAKE_INSTALL_DOCDIR}
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -245,73 +244,16 @@ install(FILES
 		COMPONENT Devel
 )
 
-# Documentation
-find_program(DOXYGEN doxygen)
-find_program(QUICKBOOK quickbook)
-find_program(XSLTPROC xsltproc)
-find_program(FOP fop)
-find_program(BJAM bjam)
-
-if(DOXYGEN AND QUICKBOOK AND XSLTPROC AND FOP AND BJAM)
-	option(ZEEP_BUILD_DOC "Build documentation" OFF)
-
-	if(ZEEP_BUILD_DOC)
-		make_directory(doc)
-		configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
-		add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
-			COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
-			DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
-		add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
-		install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
-	endif()
-else()
-	message(WARNING "Cannot create documentation since the following applications could not be found:")
-
-	if(NOT DOXYGEN)
-		message(WARNING " => doxygen")
-	endif()
-	if(NOT QUICKBOOK)
-		message(WARNING " => quickbook")
-	endif()
-	if(NOT XSLTPROC)
-		message(WARNING " => xsltproc")
-	endif()
-	if(NOT FOP)
-		message(WARNING " => fop")
-	endif()
-	if(NOT BJAM)
-		message(WARNING " => bjam")
-	endif()
-endif()
-
-# Test applications
-
-option(ZEEP_BUILD_TESTS "Build test exectuables" OFF)
-
 if(ZEEP_BUILD_TESTS)
+
+	# data files for the parser test
 
 	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
 
-	# data files for the parser test
-	set(XML_CONF_TAR ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
-	set(XML_CONF_FILE ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
-
-	if (NOT EXISTS ${XML_CONF_FILE})
-		if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
-			find_program(TAR tar)
-
-			if(TAR)
-				add_custom_command(OUTPUT ${XML_CONF_FILE}
-					COMMAND ${TAR} xf ${XML_CONF_TAR}
-					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib-xml/test/)
-			else()
-				message(FATAL_ERROR "Please extract the archive ${XML_CONF_TAR} manually or update your cmake version to at least 3.18")
-			endif()
-		else()
-			file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
-				DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
-				VERBOSE)
-		endif()
+	if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+		file(ARCHIVE_EXTRACT INPUT ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz
+			DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
+			VERBOSE)
 	endif()
 
 	#  unit parser serializer xpath json crypto http processor webapp soap rest security uri
@@ -337,6 +279,7 @@ if(ZEEP_BUILD_TESTS)
 		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj
 			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml ${COFF_SPEC}
 		)
+	
 	endif()
 
 	foreach(TEST IN LISTS zeep_tests)
@@ -347,8 +290,10 @@ if(ZEEP_BUILD_TESTS)
 		set(ZEEP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test/${ZEEP_TEST}.cpp")
 		set(ZEEP_TEST_RESOURCE "")
 
-		if("${TEST}" STREQUAL "http/rsrc_webapp" AND USE_RSRC)
-			set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
+		if("${TEST}" STREQUAL "http/rsrc_webapp")
+			if(USE_RSRC)
+				set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
+			endif()
 		endif()
 
 		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test> ${ZEEP_TEST_RESOURCE})
@@ -382,7 +327,7 @@ if(ZEEP_BUILD_TESTS)
 				ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 				ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
 			list(TRANSFORM ZEEP_TEST_ARGS PREPEND "--questionable=")
-			list(PREPEND ZEEP_TEST_ARGS ${XML_CONF_FILE})
+			list(PREPEND ZEEP_TEST_ARGS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
 		else()
 			set(ZEEP_TEST_ARGS "")
 		endif()
