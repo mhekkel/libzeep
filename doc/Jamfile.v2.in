@@ -56,12 +56,12 @@ boostbook standalone
 
 
 install css : [ glob @CMAKE_SOURCE_DIR@/doc/css/*.css ]
-    : <location>doc/html/css ;
+    : <location>html/css ;
 
 install images
 	: [ glob @CMAKE_SOURCE_DIR@/doc/images/*.png ]
 	  [ glob @CMAKE_SOURCE_DIR@/doc/images/callouts/*.png ]
-    : <location>doc/html/images ;
+    : <location>html/images ;
 
 explicit css ;
 

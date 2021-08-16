@@ -56,12 +56,12 @@ boostbook standalone
 
 
 install css : [ glob /home/maarten/projects/libzeep/doc/css/*.css ]
-    : <location>doc/html/css ;
+    : <location>html/css ;
 
 install images
 	: [ glob /home/maarten/projects/libzeep/doc/images/*.png ]
 	  [ glob /home/maarten/projects/libzeep/doc/images/callouts/*.png ]
-    : <location>doc/html/images ;
+    : <location>html/images ;
 
 explicit css ;
 
