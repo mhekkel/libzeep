@@ -12,6 +12,7 @@
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
 
+#include <vector>
 #include <string>
 #include <tuple>
 
