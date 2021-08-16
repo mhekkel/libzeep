@@ -13,7 +13,7 @@ namespace zeep
 
 class signal_catcher
 {
-public:
+  public:
 	signal_catcher();
 	~signal_catcher();
 
@@ -22,13 +22,13 @@ public:
 
 	int wait();
 
-	static void signal_hangup(std::thread& t);
+	static void signal_hangup(std::thread &t);
 
-private:
+  private:
 	signal_catcher(const signal_catcher &) = delete;
 	signal_catcher &operator=(const signal_catcher &) = delete;
 
 	struct signal_catcher_impl *mImpl;
 };
 
-}
+} // namespace zeep
