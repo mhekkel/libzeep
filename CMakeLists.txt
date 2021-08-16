@@ -194,6 +194,7 @@ install(TARGETS zeep zeep_static
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	  DOCUMENTATION DESTINATION ${CMAKE_INSTALL_DOCDIR}
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -243,6 +244,49 @@ install(FILES
 		COMPONENT Devel
 )
 
+# Documentation
+find_program(DOXYGEN doxygen)
+find_program(QUICKBOOK quickbook)
+find_program(XSLTPROC xsltproc)
+find_program(FOP fop)
+find_program(BJAM bjam)
+
+if(DOXYGEN AND QUICKBOOK AND XSLTPROC AND FOP AND BJAM)
+	option(ZEEP_BUILD_DOC "Build documentation" OFF)
+
+	if(ZEEP_BUILD_DOC)
+		make_directory(doc)
+		configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in doc/Jamfile.v2 @ONLY)
+		add_custom_command(OUTPUT doc/html/index.html
+			COMMAND ${BJAM} doc
+			DEPENDS doc/Jamfile.v2)
+		add_custom_target(doc ALL DEPENDS doc/html/index.html)
+		install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
+	endif()
+else()
+	message(WARNING "Cannot create documentation since the following applications could not be found:")
+
+	if(NOT DOXYGEN)
+		message(WARNING " => doxygen")
+	endif()
+	if(NOT QUICKBOOK)
+		message(WARNING " => quickbook")
+	endif()
+	if(NOT XSLTPROC)
+		message(WARNING " => xsltproc")
+	endif()
+	if(NOT FOP)
+		message(WARNING " => fop")
+	endif()
+	if(NOT BJAM)
+		message(WARNING " => bjam")
+	endif()
+endif()
+
+# Test applications
+
+option(ZEEP_BUILD_TESTS "Build test exectuables" OFF)
+
 if(ZEEP_BUILD_TESTS)
 
 	# data files for the parser test
@@ -278,7 +322,6 @@ if(ZEEP_BUILD_TESTS)
 		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj
 			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml ${COFF_SPEC}
 		)
-	
 	endif()
 
 	foreach(TEST IN LISTS zeep_tests)
@@ -289,10 +332,8 @@ if(ZEEP_BUILD_TESTS)
 		set(ZEEP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test/${ZEEP_TEST}.cpp")
 		set(ZEEP_TEST_RESOURCE "")
 
-		if("${TEST}" STREQUAL "http/rsrc_webapp")
-			if(USE_RSRC)
-				set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
-			endif()
+		if("${TEST}" STREQUAL "http/rsrc_webapp" AND USE_RSRC)
+			set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
 		endif()
 
 		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test> ${ZEEP_TEST_RESOURCE})
