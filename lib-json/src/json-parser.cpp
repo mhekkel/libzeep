@@ -472,7 +472,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex1:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 10 + ch - 'a';
@@ -485,7 +485,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex2:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = 16 * hx + ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 16 * hx + 10 + ch - 'a';
@@ -498,7 +498,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex3:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = 16 * hx + ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 16 * hx + 10 + ch - 'a';
@@ -511,7 +511,7 @@ auto json_parser::get_next_token() -> token_t
 			break;
 
 		case state_t::EscapeHex4:
-			if (ch >= 0 and ch <= '9')
+			if (ch >= '0' and ch <= '9')
 				hx = 16 * hx + ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
 				hx = 16 * hx + 10 + ch - 'a';

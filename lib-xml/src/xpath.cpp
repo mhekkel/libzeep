@@ -195,7 +195,7 @@ class object
 	object_type			type() const					{ return m_type; }
 
 	template<typename T>
-	const T				as() const;
+	T					as() const;
 	
   private:
 	object_type			m_type;
@@ -275,7 +275,7 @@ const node_set& object::as<const node_set&>() const
 }
 
 template<>
-const bool object::as<bool>() const
+bool object::as<bool>() const
 {
 	bool result;
 	switch (m_type)
@@ -291,7 +291,7 @@ const bool object::as<bool>() const
 }
 
 template<>
-const double object::as<double>() const
+double object::as<double>() const
 {
 	double result;
 	switch (m_type)
@@ -306,7 +306,7 @@ const double object::as<double>() const
 }
 
 template<>
-const int object::as<int>() const
+int object::as<int>() const
 {
 	if (m_type != object_type::number)
 		throw exception("object is not of type number");
@@ -322,7 +322,7 @@ const std::string& object::as<const std::string&>() const
 }
 
 template<>
-const std::string object::as<std::string>() const
+std::string object::as<std::string>() const
 {
 	std::string result;
 	

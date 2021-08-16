@@ -691,7 +691,7 @@ class iterator_impl
 		return std::distance(*this, other);
 	}
 
-	operator const pointer() const	{ return current(); }
+	operator pointer() const		{ return current(); }
 	operator pointer()				{ return current(); }
 
   private:
