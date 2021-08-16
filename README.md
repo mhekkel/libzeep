@@ -59,6 +59,9 @@ Building libzeep
 
 To build libzeep you have to have [cmake](https://cmake.org/) installed.
 
+It is also recommended to install [mrc](https://github.com/mhekkel/mrc) in
+order to have resources support in libzeep.
+
 The commands to build libzeep from the command line are e.g.:
 
 ```
@@ -66,21 +69,22 @@ The commands to build libzeep from the command line are e.g.:
 	cd libzeep
 	mkdir build
 	cd build
-	cmake .. -DZEEP_BUILD_TESTS
+	cmake .. -DZEEP_BUILD_TESTS=ON
 	cmake --build .
 	ctest
 	cmake --install .
 
 ```
 
-On Windows that would probably be something like (using powershell):
+On Windows, assuming you have [boost](https://boost.org) installed in C:\Boost, 
+the steps would probably look something like (using powershell):
 
 ```
 	git clone https://github.com/mhekkel/libzeep
 	cd libzeep
 	mkdir build
 	cd build
-	cmake .. -DZEEP_BUILD_TESTS
+	cmake .. -DZEEP_BUILD_TESTS=ON -DBOOST_ROOT=C:\Boost
 	cmake --build . --config Release
 	ctest -C Release
 	cmake --install . --config Release
