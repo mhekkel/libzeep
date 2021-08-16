@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: libzeep
 Description: C++ library for building web applications
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -l$<TARGET_FILE_BASE_NAME:zeep>
+Libs: -L${libdir} -lzeep
 Cflags: -I${includedir}

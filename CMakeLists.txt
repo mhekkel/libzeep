@@ -28,8 +28,6 @@ endif()
 
 set(CMAKE_DEBUG_POSTFIX d)
 
-option(BUILD_SHARED_LIBS "build shared libs (true)" TRUE)
-
 if(MSVC)
     # make msvc standards compliant...
     add_compile_options(/permissive-)
@@ -182,14 +180,15 @@ set(ZEEP_SRC
         ${CMAKE_SOURCE_DIR}/lib-xml/src/xpath.cpp
 )
 
-add_library(zeep SHARED
-	${ZEEP_SRC}
-	${ZEEP_HEADERS}
-)
+add_library(zeep_obj OBJECT ${ZEEP_SRC} ${ZEEP_HEADERS})
+set_target_properties(zeep_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
+add_library(zeep SHARED $<TARGET_OBJECTS:zeep_obj>)
 set_target_properties(zeep PROPERTIES SOVERSION ${PACKAGE_VERSION})
 
-install(TARGETS zeep
+add_library(zeep_static STATIC $<TARGET_OBJECTS:zeep_obj>)
+
+install(TARGETS zeep zeep_static
 	  EXPORT zeepTargets
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -212,14 +211,11 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
-
-# if(BUILD_SHARED_LIBS)
-# 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.cmakein
-# 		${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
-# 	file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
-# 		INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
-# 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-# endif()
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.cmakein
+	${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
+	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 set(ConfigPackageLocation lib/cmake)
 
@@ -249,12 +245,9 @@ install(FILES
 
 if(ZEEP_BUILD_TESTS)
 
-	add_library(zeep_test STATIC
-		${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp
-		${ZEEP_SRC}
-		${ZEEP_HEADERS})
-	
 	# data files for the parser test
+
+	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
 
 	if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
 		file(ARCHIVE_EXTRACT INPUT ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz
@@ -302,7 +295,7 @@ if(ZEEP_BUILD_TESTS)
 			endif()
 		endif()
 
-		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} ${ZEEP_TEST_RESOURCE})
+		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test> ${ZEEP_TEST_RESOURCE})
 
 		if("${TEST}" STREQUAL "http/processor")
 			target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
@@ -313,7 +306,7 @@ if(ZEEP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${ZEEP_TEST} zeep_test)
+		target_link_libraries(${ZEEP_TEST} zeep_static)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
