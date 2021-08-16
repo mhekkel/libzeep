@@ -14,4 +14,4 @@
     [id libzeep.ref]
 ]
 
-[xinclude autodoc.xml]
+[xinclude ./autodoc.xml]

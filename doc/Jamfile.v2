@@ -6,11 +6,11 @@ using boostbook
 
 using xsltproc : /usr/bin/xsltproc ;
 
-using doxygen : /usr/bin/doxygen ;
+using doxygen : /usr/local/bin/doxygen ;
 
 using fop : /usr/bin/fop ;
 
-using quickbook : /usr/bin/quickbook ;
+using quickbook : /usr/local/bin/quickbook ;
 
 doxygen autodoc
     :
@@ -30,11 +30,11 @@ doxygen autodoc
         <doxygen:param>SEARCH_INCLUDES=YES
         <doxygen:param>INCLUDE_PATH=$(BOOST_ROOT)
 		<doxygen:param>FULL_PATH_NAMES=YES
-		<doxygen:param>STRIP_FROM_PATH=../include
+		<doxygen:param>STRIP_FROM_PATH=/home/maarten/projects/libzeep/include
 		<doxygen:params>SORT_MEMBER_DOCS=NO
     ;
 
-xml libzeep-doc : libzeep-doc.qbk ;
+xml libzeep-doc : /home/maarten/projects/libzeep/doc/libzeep-doc.qbk ;
 
 boostbook standalone
     :
@@ -55,13 +55,13 @@ boostbook standalone
     ;
 
 
-install css : [ glob ./css/*.css ]
-    : <location>html/css ;
+install css : [ glob /home/maarten/projects/libzeep/doc/css/*.css ]
+    : <location>doc/html/css ;
 
 install images
-	: [ glob images/*.png ]
-	  [ glob images/callouts/*.png ]
-    : <location>html/images <install-source-root>images ;
+	: [ glob /home/maarten/projects/libzeep/doc/images/*.png ]
+	  [ glob /home/maarten/projects/libzeep/doc/images/callouts/*.png ]
+    : <location>doc/html/images ;
 
 explicit css ;
 

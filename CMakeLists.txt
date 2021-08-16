@@ -256,12 +256,12 @@ if(DOXYGEN AND QUICKBOOK AND XSLTPROC AND FOP AND BJAM)
 
 	if(ZEEP_BUILD_DOC)
 		make_directory(doc)
-		configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in doc/Jamfile.v2 @ONLY)
-		add_custom_command(OUTPUT doc/html/index.html
-			COMMAND ${BJAM} doc
-			DEPENDS doc/Jamfile.v2)
-		add_custom_target(doc ALL DEPENDS doc/html/index.html)
-		install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
+		configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
+		add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
+			COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
+			DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
+		add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
+		install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
 	endif()
 else()
 	message(WARNING "Cannot create documentation since the following applications could not be found:")
@@ -289,14 +289,28 @@ option(ZEEP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(ZEEP_BUILD_TESTS)
 
-	# data files for the parser test
-
 	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
 
-	if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
-		file(ARCHIVE_EXTRACT INPUT ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz
-			DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
-			VERBOSE)
+	# data files for the parser test
+	set(XML_CONF_TAR ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
+	set(XML_CONF_FILE ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+
+	if (NOT EXISTS ${XML_CONF_FILE})
+		if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
+			find_program(TAR tar)
+
+			if(TAR)
+				add_custom_command(OUTPUT ${XML_CONF_FILE}
+					COMMAND ${TAR} xf ${XML_CONF_TAR}
+					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib-xml/test/)
+			else()
+				message(FATAL_ERROR "Please extract the archive ${XML_CONF_TAR} manually or update your cmake version to at least 3.18")
+			endif()
+		else()
+			file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
+				DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
+				VERBOSE)
+		endif()
 	endif()
 
 	#  unit parser serializer xpath json crypto http processor webapp soap rest security uri
@@ -367,7 +381,7 @@ if(ZEEP_BUILD_TESTS)
 				ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 				ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
 			list(TRANSFORM ZEEP_TEST_ARGS PREPEND "--questionable=")
-			list(PREPEND ZEEP_TEST_ARGS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+			list(PREPEND ZEEP_TEST_ARGS ${XML_CONF_FILE})
 		else()
 			set(ZEEP_TEST_ARGS "")
 		endif()
