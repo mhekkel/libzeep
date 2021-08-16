@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.0.0 LANGUAGES CXX C)
+project(libzeep VERSION 5.1.1 LANGUAGES CXX C)
 
 enable_testing()
 
@@ -12,7 +12,7 @@ include(CMakePackageConfigHelpers)
 include(Dart)
 
 set(PACKAGE "zeep")
-set(PACKAGE_VERSION "5.0.0")
+set(PACKAGE_VERSION "5.1.1")
 add_definitions(-DVERSION=${PACKAGE_VERSION})
 
 set(CXX_EXTENSIONS OFF)

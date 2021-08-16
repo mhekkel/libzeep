@@ -53,3 +53,39 @@ enveloped data structures respectively.
 Full documentation can be found at:
 
 [www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc/)
+
+Building libzeep
+----------------
+
+To build libzeep you have to have [cmake](https://cmake.org/) installed.
+
+The commands to build libzeep from the command line are e.g.:
+
+```
+	git clone https://github.com/mhekkel/libzeep
+	cd libzeep
+	mkdir build
+	cd build
+	cmake .. -DZEEP_BUILD_TESTS
+	cmake --build .
+	ctest
+	cmake --install .
+
+```
+
+On Windows that would probably be something like (using powershell):
+
+```
+	git clone https://github.com/mhekkel/libzeep
+	cd libzeep
+	mkdir build
+	cd build
+	cmake .. -DZEEP_BUILD_TESTS
+	cmake --build . --config Release
+	ctest -C Release
+	cmake --install . --config Release
+
+```
+
+The windows version will by default install in your local AppData folder.
+Use the --prefix option to specify another location.
