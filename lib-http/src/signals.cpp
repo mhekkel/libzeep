@@ -6,8 +6,8 @@
 
 #include <zeep/config.hpp>
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 
 #include "signals.hpp"
 
@@ -19,8 +19,8 @@
 #if _MSC_VER
 
 #include <Windows.h>
-#include <wincon.h>
 #include <signal.h>
+#include <wincon.h>
 
 #ifndef SIGQUIT
 #define SIGQUIT SIGTERM
@@ -110,18 +110,18 @@ int signal_catcher::wait()
 	return signal_catcher_impl::sSignal;
 }
 
-void signal_catcher::signal_hangup(std::thread& t)
+void signal_catcher::signal_hangup(std::thread &t)
 {
 	signal_catcher_impl::CtrlHandler(CTRL_BREAK_EVENT);
 }
 
-}
+} // namespace zeep
 
 #else
 
-#include <unistd.h>
-#include <signal.h>
 #include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
 
 namespace zeep
 {
@@ -174,12 +174,12 @@ int signal_catcher::wait()
 	return sig;
 }
 
-void signal_catcher::signal_hangup(std::thread& t)
+void signal_catcher::signal_hangup(std::thread &t)
 {
 	// kill(getpid(), SIGHUP);
 	pthread_kill(t.native_handle(), SIGHUP);
 }
 
-}
+} // namespace zeep
 
 #endif

@@ -4,22 +4,22 @@ using boostbook
   : /usr/share/boostbook
   ;
 
-using xsltproc : /usr/bin/xsltproc ;
+using xsltproc : @XSLTPROC@ ;
 
-using doxygen : /usr/local/bin/doxygen ;
+using doxygen : @DOXYGEN@ ;
 
-using fop : /usr/bin/fop ;
+using fop : @FOP@ ;
 
-using quickbook : /usr/local/bin/quickbook ;
+using quickbook : @QUICKBOOK@ ;
 
 doxygen autodoc
     :
-        [ glob /home/maarten/projects/libzeep/include/zeep/*.hpp ]
-        [ glob /home/maarten/projects/libzeep/include/zeep/xml/*.hpp ]
-        [ glob /home/maarten/projects/libzeep/include/zeep/json/*.hpp ]
-        [ glob /home/maarten/projects/libzeep/include/zeep/http/*.hpp ]
-        [ glob /home/maarten/projects/libzeep/include/zeep/rest/*.hpp ]
-        [ glob /home/maarten/projects/libzeep/include/zeep/soap/*.hpp ]
+        [ glob @CMAKE_SOURCE_DIR@/include/zeep/*.hpp ]
+        [ glob @CMAKE_SOURCE_DIR@/include/zeep/xml/*.hpp ]
+        [ glob @CMAKE_SOURCE_DIR@/include/zeep/json/*.hpp ]
+        [ glob @CMAKE_SOURCE_DIR@/include/zeep/http/*.hpp ]
+        [ glob @CMAKE_SOURCE_DIR@/include/zeep/rest/*.hpp ]
+        [ glob @CMAKE_SOURCE_DIR@/include/zeep/soap/*.hpp ]
     :
 		<doxygen:param>"PREDEFINED=\"HTTP_SERVER_HAS_PREFORK\""
         <doxygen:param>HIDE_UNDOC_MEMBERS=YES
@@ -30,11 +30,11 @@ doxygen autodoc
         <doxygen:param>SEARCH_INCLUDES=YES
         <doxygen:param>INCLUDE_PATH=$(BOOST_ROOT)
 		<doxygen:param>FULL_PATH_NAMES=YES
-		<doxygen:param>STRIP_FROM_PATH=/home/maarten/projects/libzeep/include
+		<doxygen:param>STRIP_FROM_PATH=@CMAKE_SOURCE_DIR@/include
 		<doxygen:params>SORT_MEMBER_DOCS=NO
     ;
 
-xml libzeep-doc : /home/maarten/projects/libzeep/doc/libzeep-doc.qbk ;
+xml libzeep-doc : @CMAKE_SOURCE_DIR@/doc/libzeep-doc.qbk ;
 
 boostbook standalone
     :
@@ -55,12 +55,12 @@ boostbook standalone
     ;
 
 
-install css : [ glob /home/maarten/projects/libzeep/doc/css/*.css ]
+install css : [ glob @CMAKE_SOURCE_DIR@/doc/css/*.css ]
     : <location>html/css ;
 
 install images
-	: [ glob /home/maarten/projects/libzeep/doc/images/*.png ]
-	  [ glob /home/maarten/projects/libzeep/doc/images/callouts/*.png ]
+	: [ glob @CMAKE_SOURCE_DIR@/doc/images/*.png ]
+	  [ glob @CMAKE_SOURCE_DIR@/doc/images/callouts/*.png ]
     : <location>html/images ;
 
 explicit css ;

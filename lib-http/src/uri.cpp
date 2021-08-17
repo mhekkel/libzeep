@@ -82,6 +82,9 @@ bool is_valid_uri(const std::string& url)
 
 struct uri_impl
 {
+	uri_impl(const std::string& uri)
+		: m_s(uri) {}
+
 	std::string m_s;
 	std::string m_scheme;
 	std::string m_host;

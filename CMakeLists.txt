@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.0.0 LANGUAGES CXX C)
+project(libzeep VERSION 5.1.1 LANGUAGES CXX C)
 
 enable_testing()
 
@@ -9,9 +9,10 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
+include(Dart)
 
 set(PACKAGE "zeep")
-set(PACKAGE_VERSION "5.0.0")
+set(PACKAGE_VERSION "5.1.1")
 add_definitions(-DVERSION=${PACKAGE_VERSION})
 
 set(CXX_EXTENSIONS OFF)
@@ -19,15 +20,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 endif()
 if(MSVC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4 /Zi /Zo")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
 endif()
 
 set(CMAKE_DEBUG_POSTFIX d)
-
-option(BUILD_SHARED_LIBS "build shared libs (true)" TRUE)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -85,7 +85,7 @@ endif()
 find_package(Threads REQUIRED)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.73.0 REQUIRED COMPONENTS program_options system date_time)
+find_package(Boost 1.71.0 REQUIRED COMPONENTS program_options system date_time)
 # extra diagnostic -- helpful for problem with FindBoost.cmake
 message(STATUS "Boost headers in: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libraries in: ${Boost_LIBRARY_DIRS}")
@@ -181,14 +181,15 @@ set(ZEEP_SRC
         ${CMAKE_SOURCE_DIR}/lib-xml/src/xpath.cpp
 )
 
-add_library(zeep SHARED
-	${ZEEP_SRC}
-	${ZEEP_HEADERS}
-)
+add_library(zeep_obj OBJECT ${ZEEP_SRC} ${ZEEP_HEADERS})
+set_target_properties(zeep_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
+add_library(zeep SHARED $<TARGET_OBJECTS:zeep_obj>)
 set_target_properties(zeep PROPERTIES SOVERSION ${PACKAGE_VERSION})
 
-install(TARGETS zeep
+add_library(zeep_static STATIC $<TARGET_OBJECTS:zeep_obj>)
+
+install(TARGETS zeep zeep_static
 	  EXPORT zeepTargets
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -211,14 +212,11 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
-
-# if(BUILD_SHARED_LIBS)
-# 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.cmakein
-# 		${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
-# 	file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
-# 		INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
-# 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-# endif()
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.in
+	${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
+	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 set(ConfigPackageLocation lib/cmake)
 
@@ -246,20 +244,78 @@ install(FILES
 		COMPONENT Devel
 )
 
+# Documentation
+find_program(DOXYGEN doxygen)
+find_program(QUICKBOOK quickbook)
+find_program(XSLTPROC xsltproc)
+find_program(FOP fop)
+find_program(BJAM bjam)
+
+if(DOXYGEN AND QUICKBOOK AND XSLTPROC AND FOP AND BJAM)
+      option(ZEEP_BUILD_DOC "Build documentation" OFF)
+
+      if(ZEEP_BUILD_DOC)
+              make_directory(doc)
+              configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
+              add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
+                      COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
+                      DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
+              add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
+              install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
+      endif()
+else()
+      message(WARNING "Cannot create documentation since the following applications could not be found:")
+
+      if(NOT DOXYGEN)
+              message(WARNING " => doxygen")
+      endif()
+      if(NOT QUICKBOOK)
+              message(WARNING " => quickbook")
+      endif()
+      if(NOT XSLTPROC)
+              message(WARNING " => xsltproc")
+      endif()
+      if(NOT FOP)
+              message(WARNING " => fop")
+      endif()
+      if(NOT BJAM)
+              message(WARNING " => bjam")
+      endif()
+endif()
+
+# Test applications
+
+option(ZEEP_BUILD_TESTS "Build test exectuables" OFF)
+
 if(ZEEP_BUILD_TESTS)
 
-	add_library(zeep_test STATIC
-		${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp
-		${ZEEP_SRC}
-		${ZEEP_HEADERS})
-	
 	# data files for the parser test
 
-	if (NOT EXISTS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
-		file(ARCHIVE_EXTRACT INPUT ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz
-			DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
-			VERBOSE)
+	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
+
+	# data files for the parser test
+	set(XML_CONF_TAR ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
+	set(XML_CONF_FILE ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+
+	if (NOT EXISTS ${XML_CONF_FILE})
+		if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
+			find_program(TAR tar)
+
+			if(TAR)
+				add_custom_command(OUTPUT ${XML_CONF_FILE}
+					COMMAND ${TAR} xf ${XML_CONF_TAR}
+					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib-xml/test/)
+			else()
+				message(FATAL_ERROR "Please extract the archive ${XML_CONF_TAR} manually or update your cmake version to at least 3.18")
+			endif()
+		else()
+			file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
+				DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
+				VERBOSE)
+		endif()
 	endif()
+
+	add_custom_target(XML_CONF ALL DEPENDS ${XML_CONF_FILE})
 
 	#  unit parser serializer xpath json crypto http processor webapp soap rest security uri
 
@@ -301,7 +357,7 @@ if(ZEEP_BUILD_TESTS)
 			endif()
 		endif()
 
-		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} ${ZEEP_TEST_RESOURCE})
+		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test> ${ZEEP_TEST_RESOURCE})
 
 		if("${TEST}" STREQUAL "http/processor")
 			target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
@@ -312,7 +368,7 @@ if(ZEEP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${ZEEP_TEST} zeep_test)
+		target_link_libraries(${ZEEP_TEST} zeep_static)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
@@ -332,7 +388,8 @@ if(ZEEP_BUILD_TESTS)
 				ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 				ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
 			list(TRANSFORM ZEEP_TEST_ARGS PREPEND "--questionable=")
-			list(PREPEND ZEEP_TEST_ARGS ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+			list(PREPEND ZEEP_TEST_ARGS ${XML_CONF_FILE})
+			add_dependencies(${ZEEP_TEST} XML_CONF)
 		else()
 			set(ZEEP_TEST_ARGS "")
 		endif()

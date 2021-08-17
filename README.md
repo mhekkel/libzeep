@@ -53,3 +53,43 @@ enveloped data structures respectively.
 Full documentation can be found at:
 
 [www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc/)
+
+Building libzeep
+----------------
+
+To build libzeep you have to have [cmake](https://cmake.org/) installed.
+
+It is also recommended to install [mrc](https://github.com/mhekkel/mrc) in
+order to have resources support in libzeep.
+
+The commands to build libzeep from the command line are e.g.:
+
+```
+	git clone https://github.com/mhekkel/libzeep
+	cd libzeep
+	mkdir build
+	cd build
+	cmake .. -DZEEP_BUILD_TESTS=ON
+	cmake --build .
+	ctest
+	cmake --install .
+
+```
+
+On Windows, assuming you have [boost](https://boost.org) installed in C:\Boost, 
+the steps would probably look something like (using powershell):
+
+```
+	git clone https://github.com/mhekkel/libzeep
+	cd libzeep
+	mkdir build
+	cd build
+	cmake .. -DZEEP_BUILD_TESTS=ON -DBOOST_ROOT=C:\Boost
+	cmake --build . --config Release
+	ctest -C Release
+	cmake --install . --config Release
+
+```
+
+The windows version will by default install in your local AppData folder.
+Use the --prefix option to specify another location.

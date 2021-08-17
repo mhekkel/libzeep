@@ -1,5 +1,6 @@
 Version 5.1.1
 - Removed uriparser again. URI implementation is now regex based.
+- Replaced GNU configure with cmake
 
 Version 5.1.0
 - Added base32 encoding/decoding
