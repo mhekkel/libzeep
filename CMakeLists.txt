@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.1 LANGUAGES CXX C)
+project(libzeep VERSION 5.1.2 LANGUAGES CXX C)
 
 enable_testing()
 
@@ -10,6 +10,7 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
+include(GenerateExportHeader)
 
 set(PACKAGE ${PROJECT_NAME})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
@@ -29,8 +30,6 @@ endif()
 # Build shared libraries by default (not my cup of tea, but hey)
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
-# set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -182,31 +181,74 @@ set(ZEEP_SRC
         ${CMAKE_SOURCE_DIR}/lib-xml/src/xpath.cpp
 )
 
-add_library(zeep_obj OBJECT ${ZEEP_SRC} ${ZEEP_HEADERS})
-set_target_properties(zeep_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
+set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_library(zeep SHARED $<TARGET_OBJECTS:zeep_obj>)
-set_target_properties(zeep PROPERTIES SOVERSION ${PACKAGE_VERSION})
-
-add_library(zeep_static STATIC $<TARGET_OBJECTS:zeep_obj>)
-
-install(TARGETS zeep zeep_static
-	  EXPORT zeepTargets
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+target_include_directories(zeep
+	PUBLIC
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
-configure_file(${PROJECT_SOURCE_DIR}/include/zeep/revision.hpp.in revision.hpp @ONLY)
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-	FILES_MATCHING PATTERN "*.hpp")
-install(FILES ${CMAKE_BINARY_DIR}/revision.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/zeep/)
+generate_export_header(zeep)
+
+# Install rules
+
+install(TARGETS zeep
+	EXPORT zeepTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+export(EXPORT zeepTargets
+	FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/zeepTargets.cmake"
+	NAMESPACE zeep::
+)
+
+install(
+	DIRECTORY include/zeep
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	COMPONENT Devel
+)
+
+configure_package_config_file(Config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR
+)
+
+install(FILES
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	COMPONENT Devel
+)
+
+set(zeep_MAJOR_VERSION 5)
+set_target_properties(zeep PROPERTIES
+	VERSION ${PROJECT_VERSION}
+	SOVERSION 5
+	INTERFACE_zeep_MAJOR_VERSION 5)
+
+set_property(TARGET zeep APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
+)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+# pkgconfig support
 
 set(prefix      ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix ${CMAKE_INSTALL_PREFIX})
@@ -218,32 +260,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.in
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
 	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-
-set(ConfigPackageLocation lib/cmake)
-
-configure_package_config_file(zeepConfig.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
-	INSTALL_DESTINATION ${ConfigPackageLocation}
-	PATH_VARS includedir libdir)
-
-write_basic_package_version_file(
-	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake
-	VERSION ${PROJECT_VERSION}
-	COMPATIBILITY AnyNewerVersion)
-
-install(EXPORT zeepTargets
-        FILE zeepTargets.cmake
-        NAMESPACE zeep::
-        DESTINATION ${ConfigPackageLocation}
-		COMPONENT Devel
-)
-
-install(FILES
-		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
-		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake
-		DESTINATION ${ConfigPackageLocation}
-		COMPONENT Devel
-)
 
 # Documentation
 find_program(DOXYGEN doxygen)
@@ -369,7 +385,7 @@ if(ZEEP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${ZEEP_TEST} zeep_static)
+		target_link_libraries(${ZEEP_TEST} zeep)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
