@@ -296,3 +296,22 @@ BOOST_AUTO_TEST_CASE(webapp_10)
 
 	t.join();
 }
+
+// a more generic set of tests, should be in a separate file I guess
+
+BOOST_AUTO_TEST_CASE(split_1)
+{
+	std::vector<std::string> p;
+	zeep::split(p, ",een,twee"s, ",", false);
+
+	BOOST_ASSERT(p.size() == 3);
+	BOOST_CHECK_EQUAL(p[0], "");
+	BOOST_CHECK_EQUAL(p[1], "een");
+	BOOST_CHECK_EQUAL(p[2], "twee");
+
+	zeep::split(p, ",een,twee"s, ",", true);
+
+	BOOST_ASSERT(p.size() == 2);
+	BOOST_CHECK_EQUAL(p[0], "een");
+	BOOST_CHECK_EQUAL(p[1], "twee");
+}

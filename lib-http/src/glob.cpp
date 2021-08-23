@@ -101,7 +101,7 @@ void expand_group(const std::string& pattern, std::vector<std::string>& expanded
 		std::vector<std::string> options;
 
 		std::string group = m[1].str();
-		split(options, group, ",", true);
+		split(options, group, ",", false);
 
 		for (std::string& option : options)
 			expand_group(m.prefix().str() + option + m.suffix().str(), expanded);

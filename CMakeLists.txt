@@ -11,8 +11,8 @@ include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
 
-set(PACKAGE "zeep")
-set(PACKAGE_VERSION "5.1.1")
+set(PACKAGE ${PROJECT_NAME})
+set(PACKAGE_VERSION ${PROJECT_VERSION})
 add_definitions(-DVERSION=${PACKAGE_VERSION})
 
 set(CXX_EXTENSIONS OFF)
@@ -23,11 +23,14 @@ if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 endif()
 if(MSVC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4 /Zi /Zo")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-set(CMAKE_DEBUG_POSTFIX d)
+# Build shared libraries by default (not my cup of tea, but hey)
+option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+# set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -82,6 +85,8 @@ if(USE_RSRC STREQUAL "ON")
 	add_compile_definitions(USE_RSRC)
 endif()
 
+set(CMAKE_THREAD_PREFER_PTHREAD)
+set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
@@ -89,10 +94,6 @@ find_package(Boost 1.71.0 REQUIRED COMPONENTS program_options system date_time)
 # extra diagnostic -- helpful for problem with FindBoost.cmake
 message(STATUS "Boost headers in: ${Boost_INCLUDE_DIR}")
 message(STATUS "Boost libraries in: ${Boost_LIBRARY_DIRS}")
-
-set(CMAKE_THREAD_PREFER_PTHREAD)
-set(THREADS_PREFER_PTHREAD_FLAG)
-find_package(Threads)
 
 find_package(ZLIB)
 find_package(BZip2)
@@ -182,7 +183,7 @@ set(ZEEP_SRC
 )
 
 add_library(zeep_obj OBJECT ${ZEEP_SRC} ${ZEEP_HEADERS})
-set_target_properties(zeep_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+set_target_properties(zeep_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(zeep SHARED $<TARGET_OBJECTS:zeep_obj>)
 set_target_properties(zeep PROPERTIES SOVERSION ${PACKAGE_VERSION})
