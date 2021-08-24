@@ -28,7 +28,7 @@ if(MSVC)
 endif()
 
 # Build shared libraries by default (not my cup of tea, but hey)
-option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
+option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(MSVC)
@@ -68,8 +68,16 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
+if(UNIX AND NOT APPLE)
+	# On Linux, install in the $HOME/.local folder by default
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
+		set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
+	endif()
+endif()
+
 # Optionally use mrc to create resources
-find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
+find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "$ENV{HOME}/.local/bin" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
 
 if(MRC)
 	option(USE_RSRC "Use mrc to create resources" ON)
@@ -197,7 +205,7 @@ endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
 
-generate_export_header(zeep)
+generate_export_header(zeep EXPORT_FILE_NAME zeep/zeep_export.hpp)
 
 # Install rules
 
@@ -208,14 +216,21 @@ install(TARGETS zeep
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-export(EXPORT zeepTargets
-	FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/zeepTargets.cmake"
+install(EXPORT zeepTargets
+	FILE "zeepTargets.cmake"
 	NAMESPACE zeep::
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
 )
 
 install(
 	DIRECTORY include/zeep
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	COMPONENT Devel
+)
+
+install(
+	FILES "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep_export.hpp"
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/zeep
 	COMPONENT Devel
 )
 

@@ -8,3 +8,4 @@ build/
 Testing/Temporary
 doc/bin
 doc/html
+doc/autodoc.xml
