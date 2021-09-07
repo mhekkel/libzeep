@@ -10,7 +10,7 @@ using doxygen : /usr/local/bin/doxygen ;
 
 using fop : /usr/bin/fop ;
 
-using quickbook : /usr/local/bin/quickbook ;
+using quickbook : /home/maarten/projects/libzeep/doc/tools/quickbook.sh ;
 
 doxygen autodoc
     :

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.2 LANGUAGES CXX C)
+project(libzeep VERSION 5.1.2 LANGUAGES CXX)
 
 enable_testing()
 
@@ -30,6 +30,8 @@ endif()
 # Build shared libraries by default (not my cup of tea, but hey)
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -250,7 +252,7 @@ install(FILES
 set(zeep_MAJOR_VERSION 5)
 set_target_properties(zeep PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION 5
+	SOVERSION 5.1
 	INTERFACE_zeep_MAJOR_VERSION 5)
 
 set_property(TARGET zeep APPEND PROPERTY
@@ -284,35 +286,36 @@ find_program(FOP fop)
 find_program(BJAM bjam)
 
 if(DOXYGEN AND QUICKBOOK AND XSLTPROC AND FOP AND BJAM)
-      option(ZEEP_BUILD_DOC "Build documentation" OFF)
+	option(ZEEP_BUILD_DOC "Build documentation" OFF)
 
-      if(ZEEP_BUILD_DOC)
-              make_directory(doc)
-              configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
-              add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
-                      COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
-                      DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
-              add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
-              install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
-      endif()
+	if(ZEEP_BUILD_DOC)
+		make_directory(doc)
+		configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
+		configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in ${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh @ONLY)
+		add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
+				COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
+				DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
+		add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
+		install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
+	endif()
 else()
-      message(WARNING "Cannot create documentation since the following applications could not be found:")
+	message(WARNING "Cannot create documentation since the following applications could not be found:")
 
-      if(NOT DOXYGEN)
-              message(WARNING " => doxygen")
-      endif()
-      if(NOT QUICKBOOK)
-              message(WARNING " => quickbook")
-      endif()
-      if(NOT XSLTPROC)
-              message(WARNING " => xsltproc")
-      endif()
-      if(NOT FOP)
-              message(WARNING " => fop")
-      endif()
-      if(NOT BJAM)
-              message(WARNING " => bjam")
-      endif()
+	if(NOT DOXYGEN)
+		message(WARNING " => doxygen")
+	endif()
+	if(NOT QUICKBOOK)
+		message(WARNING " => quickbook")
+	endif()
+	if(NOT XSLTPROC)
+		message(WARNING " => xsltproc")
+	endif()
+	if(NOT FOP)
+		message(WARNING " => fop")
+	endif()
+	if(NOT BJAM)
+		message(WARNING " => bjam")
+	endif()
 endif()
 
 # Test applications
