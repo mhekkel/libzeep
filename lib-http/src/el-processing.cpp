@@ -661,7 +661,7 @@ void interpreter::get_next_token()
 				m_token_number_int = 10 * m_token_number_int + (ch - '0');
 			else if (ch == '.')
 			{
-				m_token_number_float = m_token_number_int;
+				m_token_number_float = static_cast<double>(m_token_number_int);
 				fraction = 0.1;
 				state = State::NumberFraction;
 			}
@@ -1568,7 +1568,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 
 				double d;
 				if (params[0].is_number_int())
-					d = params[0].as<int64_t>();
+					d = static_cast<double>(params[0].as<int64_t>());
 				else
 					d = params[0].as<double>();
 

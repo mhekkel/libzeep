@@ -34,7 +34,7 @@ bool error_handler::create_error_reply(const request& req, std::exception_ptr ep
 	{
 		result = create_error_reply(req, s, get_status_description(s), reply);
 	}
-	catch (const unauthorized_exception& ex)
+	catch (const unauthorized_exception&)
 	{
 		result = create_unauth_reply(req, reply);
 	}
@@ -95,7 +95,7 @@ bool error_handler::create_error_reply(const request& req, status_type status, c
 			template_processor.create_reply_from_template(m_error_template, scope, rep);
 			handled = true;
 		}
-		catch(const std::exception& e)
+		catch(const std::exception&)
 		{
 			using namespace xml::literals;
 

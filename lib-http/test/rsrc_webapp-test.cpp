@@ -1,8 +1,5 @@
 // rsrc_webapp-test
 
-#define BOOST_TEST_MODULE Processor_Test
-#include <boost/test/included/unit_test.hpp>
-
 #include <random>
 
 #include <zeep/crypto.hpp>
@@ -13,6 +10,9 @@
 #include <zeep/http/message-parser.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/http/template-processor.hpp>
+
+#define BOOST_TEST_MODULE Processor_Test
+#include <boost/test/included/unit_test.hpp>
 
 using namespace std;
 

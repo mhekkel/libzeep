@@ -195,7 +195,7 @@ class object
 	object_type			type() const					{ return m_type; }
 
 	template<typename T>
-	const T				as() const;
+	T					as() const;
 	
   private:
 	object_type			m_type;
@@ -275,7 +275,7 @@ const node_set& object::as<const node_set&>() const
 }
 
 template<>
-const bool object::as<bool>() const
+bool object::as<bool>() const
 {
 	bool result;
 	switch (m_type)
@@ -291,7 +291,7 @@ const bool object::as<bool>() const
 }
 
 template<>
-const double object::as<double>() const
+double object::as<double>() const
 {
 	double result;
 	switch (m_type)
@@ -306,7 +306,7 @@ const double object::as<double>() const
 }
 
 template<>
-const int object::as<int>() const
+int object::as<int>() const
 {
 	if (m_type != object_type::number)
 		throw exception("object is not of type number");
@@ -322,7 +322,7 @@ const std::string& object::as<const std::string&>() const
 }
 
 template<>
-const std::string object::as<std::string>() const
+std::string object::as<std::string>() const
 {
 	std::string result;
 	
@@ -1126,7 +1126,7 @@ class literal_expression : public expression
 	std::string			m_lit;
 };
 
-object literal_expression::evaluate(expression_context& context)
+object literal_expression::evaluate(expression_context& /*context*/)
 {
 	return object(m_lit);
 }
@@ -1147,7 +1147,7 @@ class number_expression : public expression
 	double				m_number;
 };
 
-object number_expression::evaluate(expression_context& context)
+object number_expression::evaluate(expression_context& /*context*/)
 {
 	return object(m_number);
 }
@@ -1176,10 +1176,9 @@ class core_function_expression : public expression
 };
 
 template<CoreFunction CF>
-object core_function_expression<CF>::evaluate(expression_context& context)
+object core_function_expression<CF>::evaluate(expression_context& /*context*/)
 {
 	throw exception("unimplemented function ");
-	return object();
 }
 
 template<>
@@ -1338,7 +1337,7 @@ object core_function_expression<CoreFunction::StartsWith>::evaluate(expression_c
 		return v2.as<std::string>().empty() or
 			starts_with(v1.as<std::string>(), v2.as<std::string>());
 	}
-	catch(const std::exception& e)
+	catch(const std::exception &)
 	{
 		throw exception("expected two strings as argument for starts-with");
 	}
@@ -1500,7 +1499,7 @@ object core_function_expression<CoreFunction::Translate>::evaluate(expression_co
 
 		return result;
 	}
-	catch(const std::exception& e)
+	catch(const std::exception &)
 	{
 		throw exception("expected three strings as arguments for translate");
 	}
@@ -1521,13 +1520,13 @@ object core_function_expression<CoreFunction::Not>::evaluate(expression_context&
 }
 
 template<>
-object core_function_expression<CoreFunction::True>::evaluate(expression_context& context)
+object core_function_expression<CoreFunction::True>::evaluate(expression_context& /*context*/)
 {
 	return true;
 }
 
 template<>
-object core_function_expression<CoreFunction::False>::evaluate(expression_context& context)
+object core_function_expression<CoreFunction::False>::evaluate(expression_context& /*context*/)
 {
 	return false;
 }

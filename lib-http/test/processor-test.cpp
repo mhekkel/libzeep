@@ -10,7 +10,9 @@
 
 using namespace std;
 
+#ifndef DOCROOT
 #define DOCROOT "./lib-http/test/"
+#endif
 
 using json = zeep::json::element;
 using namespace zeep::xml::literals;
@@ -390,7 +392,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error& e)
+	catch (const std::runtime_error&)
 	{
 		std::cerr << "skipping test 14 since locale nl_NL.UTF-8 is not available" << std::endl;
 	}
@@ -425,7 +427,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error& e)
+	catch (const std::runtime_error&)
 	{
 		std::cerr << "skipping test 15 since locale da_DK.UTF-8 is not available" << std::endl;
 	}
@@ -459,7 +461,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error& e)
+	catch (const std::runtime_error&)
 	{
 		std::cerr << "skipping test 16 since locale en_GB.UTF-8 is not available" << std::endl;
 	}

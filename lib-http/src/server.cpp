@@ -113,8 +113,12 @@ void basic_server::run(int nr_of_threads)
 
 void basic_server::stop()
 {
+	m_new_connection.reset();
+
 	if (m_acceptor and m_acceptor->is_open())
 		m_acceptor->close();
+
+	m_acceptor.reset();
 }
 
 void basic_server::handle_accept(boost::system::error_code ec)
@@ -196,7 +200,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 		}
 
 		// parse the uri
-		std::string path = uri(req.get_uri()).get_path().string();
+		std::string path = uri(req.get_uri()).get_path().generic_string();
 
 		// do the actual work.
 		for (auto c: m_controllers)

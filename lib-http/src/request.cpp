@@ -23,9 +23,9 @@ request::request(const std::string& method, const std::string& uri, std::tuple<i
 	, m_headers(std::move(headers))
 	, m_payload(std::move(payload))
 {
-	m_version[0] = '0' + std::get<0>(version);
+	m_version[0] = static_cast<char>('0' + std::get<0>(version));
 	m_version[1] = '.';
-	m_version[2] = '0' + std::get<1>(version);
+	m_version[2] = static_cast<char>('0' + std::get<1>(version));
 }
 
 request::request(const request& req)
@@ -267,7 +267,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 				found = true;
 			}
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception &)
 		{
 		}
 	}
@@ -559,11 +559,11 @@ file_param file_param_parser::next()
 
 				auto b = p.begin();
 				auto e = p.end();
-				std::match_results<std::string::iterator> m;
-				while (b < e and std::regex_search(b, e, m, re))
+				std::match_results<std::string::iterator> m2;
+				while (b < e and std::regex_search(b, e, m2, re))
 				{
-					auto key = m[1].str();
-					auto value = m[2].str();
+					auto key = m2[1].str();
+					auto value = m2[2].str();
 					if (value.length() > 1 and ((value.front() == '"' and value.back() == '"') or (value.front() == '\'' and value.back() == '\'')))
 						value = value.substr(1, value.length() - 2);
 
@@ -572,7 +572,7 @@ file_param file_param_parser::next()
 					else if (key == "filename")
 						result.filename = value;
 
-					b = m[0].second;
+					b = m2[0].second;
 				}
 			}
 			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_cont))
@@ -765,7 +765,7 @@ std::locale& request::get_locale() const
 				if (iequals(loc.name(), name))
 					scores.push_back({lang, region, score, loc});
 			}
-			catch(const std::exception& e)
+			catch(const std::exception &)
 			{
 			}
 		};

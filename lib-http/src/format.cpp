@@ -192,7 +192,7 @@ Decimal<T>::Decimal(T x)
 	
 	while (digits > 0)
 	{
-		int n = digits;
+		n = digits;
 		if (n > 8)
 			n = 8;
 		
@@ -260,7 +260,7 @@ std::tuple<std::string,int> Decimal<T>::roundDecimal(int newLength)
 	std::string dec = m_dec;
 	int exp10 = m_exp10;
 	
-	int l = dec.length();
+	int l = static_cast<int>(dec.length());
 	
 	if (newLength < 0)
 		dec = "0";
@@ -283,7 +283,7 @@ std::tuple<std::string,int> Decimal<T>::roundDecimal(int newLength)
 			}
 			else
 			{
-				dec[l - 1] = c + '0';
+				dec[l - 1] = static_cast<char>(c + '0');
 				dec.resize(l);
 				break;
 			}

@@ -161,7 +161,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 			auto context = get_server().get_context_name();
 			if (not context.empty())
 				redirect_to += context + '/';
-			auto uri = req.get_parameter("uri");
+			uri = req.get_parameter("uri");
 			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")) and is_valid_uri(uri))
 				redirect_to += uri;
 
@@ -177,8 +177,8 @@ bool login_controller::handle_request(request& req, reply& rep)
 			catch (const invalid_password_exception& e)
 			{
 				auto doc = load_login_form(req);
-				for (auto csrf: doc.find("//input[@name='_csrf']"))
-					csrf->set_attribute("value", req.get_cookie("csrf-token"));
+				for (auto csrf_attr: doc.find("//input[@name='_csrf']"))
+					csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
 
 				auto user = doc.find_first("//input[@name='username']");
 				user->set_attribute("value", username);
@@ -203,7 +203,7 @@ bool login_controller::handle_request(request& req, reply& rep)
 		auto context = get_server().get_context_name();
 		if (not context.empty())
 			redirect_to += context + '/';
-		auto uri = req.get_parameter("uri");
+		uri = req.get_parameter("uri");
 		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
 			redirect_to += uri;
 

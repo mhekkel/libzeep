@@ -1,5 +1,12 @@
+Version 5.1.2
+- Fix glob code to match empty path specifications for controllers
+- Change CMakeLists file to generate only shared or static libs,
+  but not both
+- Generate pkgconfig file again
+
 Version 5.1.1
 - Removed uriparser again. URI implementation is now regex based.
+- Replaced GNU configure with cmake
 
 Version 5.1.0
 - Added base32 encoding/decoding

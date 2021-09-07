@@ -219,8 +219,8 @@ void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::p
 
 		for (auto& c: *node)
 		{
-			auto i = parent->emplace(node, c); // insert before processing, to assign namespaces
-			process_xml(i, s, dir, loader);
+			auto i2 = parent->emplace(node, c); // insert before processing, to assign namespaces
+			process_xml(i2, s, dir, loader);
 		}
 	}
 }
