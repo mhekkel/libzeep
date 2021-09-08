@@ -52,7 +52,7 @@ if(MSVC)
 
 	# On Windows, do not install in the system location by default
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
+		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
 
@@ -70,30 +70,22 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
-if(UNIX AND NOT APPLE)
-	# On Linux, install in the $HOME/.local folder by default
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
-		set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
-	endif()
-endif()
-
 # Optionally use mrc to create resources
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_package(Mrc)
+	find_program(MRC mrc)
 
-	if(MRC_FOUND)
+	if(MRC)
 		option(USE_RSRC "Use mrc to create resources" ON)
 	else()
-		message("Not using resources since mrc was not found")
+		message("Using resources not possible since mrc was not found")
 	endif()
 
-	if(USE_RSRC)
+	if(USE_RSRC STREQUAL "ON")
 		set(USE_RSRC 1)
 
-		message("Using resources compiled with ${MRC} ${MRC_VERSION}")
+		message("Using resources compiled with ${MRC}")
 		add_compile_definitions(USE_RSRC)
 	endif()
 endif()
@@ -102,11 +94,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
-set (Boost_DETAILED_FAILURE_MSG ON)
+set(Boost_DETAILED_FAILURE_MSG ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
-# extra diagnostic -- helpful for problem with FindBoost.cmake
-message(STATUS "Boost headers in: ${Boost_INCLUDE_DIR}")
-message(STATUS "Boost libraries in: ${Boost_LIBRARY_DIRS}")
 
 find_package(ZLIB)
 find_package(BZip2)
@@ -176,7 +165,7 @@ set(ZEEP_SRC
 	${CMAKE_SOURCE_DIR}/lib-http/src/preforked-server.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/reply.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/request.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/rest-controller.cpp 
+	${CMAKE_SOURCE_DIR}/lib-http/src/rest-controller.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/security.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/server.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/uri.cpp
@@ -332,6 +321,8 @@ if(ZEEP_BUILD_DOC)
 	configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
 	
 	add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
+			${CMAKE_SOURCE_DIR}/doc/html ${CMAKE_SOURCE_DIR}/doc/bin
+			${CMAKE_SOURCE_DIR}/doc/autodoc.xml
 		COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
 		DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
 	add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
@@ -393,6 +384,11 @@ if(ZEEP_BUILD_TESTS)
 
 	if(USE_RSRC)
 		list(APPEND zeep_tests http/rsrc_webapp)
+
+		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj
+			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml ${COFF_SPEC}
+		)
+	
 	endif()
 
 	foreach(TEST IN LISTS zeep_tests)
@@ -403,11 +399,11 @@ if(ZEEP_BUILD_TESTS)
 		set(ZEEP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test/${ZEEP_TEST}.cpp")
 		set(ZEEP_TEST_RESOURCE "")
 
-		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test>)
-
 		if("${TEST}" STREQUAL "http/rsrc_webapp" AND USE_RSRC)
-			mrc_target_resources(${ZEEP_TEST} ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
+			set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
 		endif()
+
+		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test> ${ZEEP_TEST_RESOURCE})
 
 		if("${TEST}" STREQUAL "http/processor")
 			target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
