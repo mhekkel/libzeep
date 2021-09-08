@@ -314,17 +314,26 @@ if(ZEEP_BUILD_DOC)
 	endif()
 
 	make_directory(doc)
+
+	if(UNIX)
+		set(QUICKBOOK_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/quickbook.sh")
+
+		configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in
+			${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
+			@ONLY)
+		file(COPY ${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
+			DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+			FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+		file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/tmp/)
+	else()
+		set(QUICKBOOK_SCRIPT ${QUICKBOOK})
+	endif()
+
 	configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
-	configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in
-		${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
-		@ONLY)
-	file(COPY ${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
-		DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-		FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
-	file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/tmp/)
+	
 	add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
-			COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
-			DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
+		COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
+		DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
 	add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
 endif()
