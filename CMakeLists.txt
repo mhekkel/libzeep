@@ -291,7 +291,13 @@ if(DOXYGEN AND QUICKBOOK AND XSLTPROC AND FOP AND BJAM)
 	if(ZEEP_BUILD_DOC)
 		make_directory(doc)
 		configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
-		configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in ${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh @ONLY)
+		configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in
+			${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
+			@ONLY)
+		file(COPY 
+			${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
+			DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+			FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 		add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
 				COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
 				DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)

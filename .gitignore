@@ -9,4 +9,4 @@ Testing/Temporary
 doc/bin
 doc/html
 doc/autodoc.xml
-doc/tools/quickbook.sh
+doc/Jamfile.v2
