@@ -10,7 +10,7 @@ using doxygen : @DOXYGEN@ ;
 
 using fop : @FOP@ ;
 
-using quickbook : @QUICKBOOK@ ;
+using quickbook : @CMAKE_CURRENT_BINARY_DIR@/quickbook.sh ;
 
 doxygen autodoc
     :

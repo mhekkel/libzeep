@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.2 LANGUAGES CXX C)
+project(libzeep VERSION 5.1.2 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -30,6 +30,8 @@ endif()
 # Build shared libraries by default (not my cup of tea, but hey)
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -290,19 +292,19 @@ if(ZEEP_BUILD_DOC)
 	find_program(FOP fop)
 	find_program(BJAM bjam)
 
-	if(NOT DOXYGEN_FOUND)
+	if(NOT DOXYGEN)
 		list(APPEND MISSING_DOC_TOOL_LIST doxygen)
 	endif()
-	if(NOT QUICKBOOK_FOUND)
+	if(NOT QUICKBOOK)
 		list(APPEND MISSING_DOC_TOOL_LIST quickbook)
 	endif()
-	if(NOT XSLTPROC_FOUND)
+	if(NOT XSLTPROC)
 		list(APPEND MISSING_DOC_TOOL_LIST xsltproc)
 	endif()
-	if(NOT FOP_FOUND)
+	if(NOT FOP)
 		list(APPEND MISSING_DOC_TOOL_LIST fop)
 	endif()
-	if(NOT BJAM_FOUND)
+	if(NOT BJAM)
 		list(APPEND MISSING_DOC_TOOL_LIST bjam)
 	endif()
 
@@ -313,12 +315,18 @@ if(ZEEP_BUILD_DOC)
 
 	make_directory(doc)
 	configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
+	configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in
+		${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
+		@ONLY)
+	file(COPY ${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
+		DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+		FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+	file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/tmp/)
 	add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
 			COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
 			DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
 	add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
 	install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
-
 endif()
 
 # Test applications

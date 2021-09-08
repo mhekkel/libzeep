@@ -10,3 +10,4 @@ doc/bin
 doc/html
 doc/autodoc.xml
 msvc/
+doc/Jamfile.v2
