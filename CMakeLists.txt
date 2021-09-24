@@ -98,6 +98,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 set(Boost_DETAILED_FAILURE_MSG ON)
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
 
 find_package(ZLIB)
