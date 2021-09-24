@@ -7,7 +7,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
-include(CheckIncludeFileCXX)
+include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
@@ -21,11 +21,7 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-check_include_file_cxx("filesystem" _CXX_FILESYSTEM_HAVE_HEADER)
-mark_as_advanced(_CXX_FILESYSTEM_HAVE_HEADER)
-if(NOT _CXX_FILESYSTEM_HAVE_HEADER)
-	message(FATAL_ERROR "The standard c++ header file <filesystem> could not be found, please use a more recent compiler")
-endif()
+find_package(Filesystem REQUIRED)
 
 if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
@@ -421,7 +417,7 @@ if(ZEEP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${ZEEP_TEST} zeep)
+		target_link_libraries(${ZEEP_TEST} PRIVATE zeep std::filesystem)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
