@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.2 LANGUAGES CXX)
+project(libzeep VERSION 5.1.3 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -101,11 +101,9 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
 
-find_package(ZLIB)
-find_package(BZip2)
-
-include_directories(${Boost_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
-link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+# if(NOT MSVC AND Boost_USE_STATIC_LIBS)
+# 	find_package(ZLIB REQUIRED)
+# endif()
 
 set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
@@ -195,7 +193,11 @@ target_include_directories(zeep
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	${Boost_INCLUDE_DIR}
 )
+
+target_include_directories(zeep PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(zeep PUBLIC ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -344,6 +346,11 @@ if(ZEEP_BUILD_TESTS)
 	# data files for the parser test
 
 	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
+	target_include_directories(client_test PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/include
+		${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+		${CMAKE_SOURCE_DIR}/include
+	)
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
@@ -416,6 +423,7 @@ if(ZEEP_BUILD_TESTS)
 		target_include_directories(${ZEEP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+			${CMAKE_SOURCE_DIR}/include
 		)
 
 		target_link_libraries(${ZEEP_TEST} PRIVATE zeep std::filesystem)
