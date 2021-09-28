@@ -515,7 +515,8 @@ element::element(const std::string& qname, std::initializer_list<zeep::xml::attr
 
 // copy constructor. Copy data and children, but not parent and sibling
 element::element(const element& e)
-	: m_qname(e.m_qname)
+	: node()
+	, m_qname(e.m_qname)
 	, m_nodes(*this, e.m_nodes)
 	, m_attributes(*this, e.m_attributes)
 {

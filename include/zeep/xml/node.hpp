@@ -341,10 +341,10 @@ class attribute : public node
 	using parent_type = element;
 
 	attribute(const attribute& attr)
-		: m_qname(attr.m_qname), m_value(attr.m_value), m_id(attr.m_id) {}
+		: node(), m_qname(attr.m_qname), m_value(attr.m_value), m_id(attr.m_id) {}
 
 	attribute(attribute&& attr) noexcept
-		: m_qname(std::move(attr.m_qname)), m_value(std::move(attr.m_value)), m_id(attr.m_id) {}
+		: node(), m_qname(std::move(attr.m_qname)), m_value(std::move(attr.m_value)), m_id(attr.m_id) {}
 
 	attribute(const std::string& qname, const std::string& value, bool id = false)
 		: m_qname(qname), m_value(value), m_id(id) {}

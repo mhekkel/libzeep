@@ -23,10 +23,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Filesystem REQUIRED)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
-endif()
-if(MSVC)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
+elseif(MSVC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
@@ -197,7 +196,7 @@ target_include_directories(zeep
 )
 
 target_include_directories(zeep PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(zeep PUBLIC ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(zeep PUBLIC ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} std::filesystem)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -350,6 +349,7 @@ if(ZEEP_BUILD_TESTS)
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		${CMAKE_SOURCE_DIR}/include
+		${Boost_INCLUDE_DIR}
 	)
 
 	# data files for the parser test
