@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
@@ -20,10 +21,11 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
-endif()
-if(MSVC)
+find_package(Filesystem REQUIRED)
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
+elseif(MSVC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
@@ -52,8 +54,8 @@ if(MSVC)
 
 	# On Windows, do not install in the system location by default
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
-		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
+		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/zeep")
+		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/zeep" CACHE PATH "..." FORCE)
 	endif()
 
 	# Find out the processor type for the target
@@ -95,13 +97,10 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 set(Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
-
-find_package(ZLIB)
-find_package(BZip2)
-
-include_directories(${Boost_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
-link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+if(NOT BUILD_SHARED_LIBS)
+	set(Boost_USE_STATIC_LIBS ON)
+endif()
+find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time regex)
 
 set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
@@ -191,7 +190,11 @@ target_include_directories(zeep
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	${Boost_INCLUDE_DIR}
 )
+
+target_include_directories(zeep PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(zeep PUBLIC ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} std::filesystem)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -340,6 +343,12 @@ if(ZEEP_BUILD_TESTS)
 	# data files for the parser test
 
 	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
+	target_include_directories(client_test PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/include
+		${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+		${CMAKE_SOURCE_DIR}/include
+		${Boost_INCLUDE_DIR}
+	)
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
@@ -412,9 +421,10 @@ if(ZEEP_BUILD_TESTS)
 		target_include_directories(${ZEEP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+			${CMAKE_SOURCE_DIR}/include
 		)
 
-		target_link_libraries(${ZEEP_TEST} zeep)
+		target_link_libraries(${ZEEP_TEST} PRIVATE zeep std::filesystem)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
