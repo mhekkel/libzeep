@@ -54,8 +54,8 @@ if(MSVC)
 
 	# On Windows, do not install in the system location by default
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
-		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
+		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/zeep")
+		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/zeep" CACHE PATH "..." FORCE)
 	endif()
 
 	# Find out the processor type for the target
@@ -97,8 +97,10 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 set(Boost_DETAILED_FAILURE_MSG ON)
-set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
+if(NOT BUILD_SHARED_LIBS)
+	set(Boost_USE_STATIC_LIBS ON)
+endif()
+find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time regex)
 
 set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
