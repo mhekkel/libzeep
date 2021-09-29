@@ -100,10 +100,6 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
 
-# if(NOT MSVC AND Boost_USE_STATIC_LIBS)
-# 	find_package(ZLIB REQUIRED)
-# endif()
-
 set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/streambuf.hpp
