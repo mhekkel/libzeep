@@ -1,7 +1,7 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-find_dependency(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time)
+find_dependency(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time regex)
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/zeepTargets.cmake")
 
