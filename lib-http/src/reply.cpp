@@ -151,6 +151,21 @@ reply::reply(const reply &rhs)
 	assert(rhs.m_data == nullptr);
 }
 
+reply::reply(reply &&rhs)
+	: m_status(rhs.m_status)
+	, m_version_major(rhs.m_version_major)
+	, m_version_minor(rhs.m_version_minor)
+	, m_headers(std::move(rhs.m_headers))
+	, m_data(rhs.m_data)
+	, m_buffer(std::move(rhs.m_buffer))
+	, m_content(rhs.m_content)
+	, m_chunked(rhs.m_chunked)
+	, m_status_line(std::move(rhs.m_status_line))
+{
+	memcpy(m_size_buffer, rhs.m_size_buffer, sizeof(m_size_buffer));
+	rhs.m_data = nullptr;
+}
+
 reply::~reply()
 {
 	delete m_data;

@@ -31,34 +31,34 @@ class controller
 	///
 	/// \param prefix_path  The prefix path this controller is bound to
 
-	controller(const std::string& prefix_path);
+	controller(const std::string &prefix_path);
 
 	virtual ~controller();
 
 	/// \brief Calls handle_request but stores a pointer to the request first
-	virtual bool dispatch_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep);
+	virtual bool dispatch_request(boost::asio::ip::tcp::socket &socket, request &req, reply &rep);
 
 	/// \brief The pure virtual method that actually handles the request
-	virtual bool handle_request(request& req, reply& rep) = 0;
+	virtual bool handle_request(request &req, reply &rep) = 0;
 
 	/// \brief returns the defined prefix path
-	std::string get_prefix() const      { return m_prefix_path; }
+	std::string get_prefix() const { return m_prefix_path; }
 
 	/// \brief return whether this uri request path matches our prefix
-	bool path_matches_prefix(const std::string& path) const;
+	bool path_matches_prefix(const std::string &path) const;
 
 	/// \brief return the path with the prefix path stripped off
-	std::string get_prefixless_path(const request& req) const;
+	std::string get_prefixless_path(const request &req) const;
 
 	/// \brief bind this controller to \a server
-	virtual void set_server(basic_server* server)
+	virtual void set_server(basic_server *server)
 	{
 		m_server = server;
 	}
 
 	/// \brief return the server object we're bound to
-	const basic_server& get_server() const	{ return *m_server; }
-	basic_server& get_server()				{ return *m_server; }
+	const basic_server &get_server() const { return *m_server; }
+	basic_server &get_server() { return *m_server; }
 
 	/// \brief get the credentials for the current request
 	json::element get_credentials() const;
@@ -67,16 +67,18 @@ class controller
 	std::string get_remote_address() const;
 
 	/// \brief returns whether the current user has role \a role
-	bool has_role(const std::string& role) const;
+	bool has_role(const std::string &role) const;
+
+	/// \brief return a specific header line from the original request
+	std::string get_header(const char *name) const;
 
   protected:
-
-	controller(const controller&) = delete;
-	controller& operator=(const controller&) = delete;
+	controller(const controller &) = delete;
+	controller &operator=(const controller &) = delete;
 
 	std::string m_prefix_path;
-	basic_server* m_server = nullptr;
-	static thread_local request* s_request;
+	basic_server *m_server = nullptr;
+	static thread_local request *s_request;
 };
 
 } // namespace zeep::http

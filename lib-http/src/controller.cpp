@@ -125,4 +125,9 @@ bool controller::has_role(const std::string& role) const
 	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
 }
 
+std::string controller::get_header(const char *name) const
+{
+	return s_request ? s_request->get_header(name) : "";
+}
+
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.4 LANGUAGES CXX)
+project(libzeep VERSION 5.1.5 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -32,8 +32,6 @@ endif()
 # Build shared libraries by default (not my cup of tea, but hey)
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
-set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...

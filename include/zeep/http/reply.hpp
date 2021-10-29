@@ -68,6 +68,8 @@ class reply
 		std::vector<header>&& headers, std::string&& payload);
 
 	reply(const reply& rhs);
+	reply(reply &&rhs);
+
 	~reply();
 	reply& operator=(const reply &);
 	reply& operator=(reply &&);
