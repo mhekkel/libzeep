@@ -171,8 +171,9 @@ void tag_processor_v2::process_text(xml::text& text, const scope& scope)
 		auto m = s.substr(i, j - i);
 
 		if (not process_el(scope, m))
-			m.clear();
-		else if (c2 == '(' and m.find('<') != std::string::npos)		// 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the 
+			m = "Error processing " + m;
+		
+		if (c2 == '(' and m.find('<') != std::string::npos)		// 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the 
 		{
 			xml::document subDoc("<foo>" + m + "</foo>");
 			auto foo = subDoc.front();
@@ -680,8 +681,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 				auto m = s.substr(i, j - i);
 
 				if (not process_el(scope, m))
-					m.clear();
-				else if (c2 == '(' and m.find('<') != std::string::npos)		// 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the 
+					m = "Error processing " + m;
+				
+				if (c2 == '(' and m.find('<') != std::string::npos)		// 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the 
 				{
 					xml::document subDoc("<foo>" + m + "</foo>");
 					for (auto& subnode: subDoc.front().nodes())

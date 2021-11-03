@@ -1,3 +1,7 @@
+Version 5.1.5
+- update zeepConfig.cmake to include required link file
+- fix infinite loop in processing incorrect :inline constructs
+
 Version 5.1.4
 - Update cmakefile to work more reliably
 

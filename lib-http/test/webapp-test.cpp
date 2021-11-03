@@ -291,7 +291,10 @@ BOOST_AUTO_TEST_CASE(webapp_10)
 		srv.stop();
 	});
 
-    srv.bind("::", 8080);
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+    srv.bind("::", port);
     srv.run(2);
 
 	t.join();

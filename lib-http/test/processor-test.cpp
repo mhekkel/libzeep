@@ -1072,3 +1072,28 @@ BOOST_AUTO_TEST_CASE(test_34)
 
 	process_and_compare(doc, doc_test, scope);
 }
+
+BOOST_AUTO_TEST_CASE(test_35)
+{
+	auto doc = R"xml(<?xml version="1.0"?>
+<data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+<span z:inline="text">test [(${a}.${b})]</span>
+</data>
+	)xml"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+<span>test Error processing ${a}.${b}</span>
+</data>
+	)"_xml;
+
+	zeep::http::scope scope;
+
+	scope.put("a", "aap");
+	scope.put("b", "noot");
+
+	zeep::http::template_processor p(DOCROOT);
+	zeep::http::tag_processor_v2 tp;
+
+	process_and_compare(doc, doc_test, scope);
+}
