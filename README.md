@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/mhekkel/libzeep.svg?branch=master)](https://travis-ci.org/mhekkel/libzeep)
+[![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
 About libzeep
 =============
