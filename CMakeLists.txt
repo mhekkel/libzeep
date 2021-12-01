@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.5 LANGUAGES CXX)
+project(libzeep VERSION 5.1.6 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
