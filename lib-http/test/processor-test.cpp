@@ -1097,3 +1097,30 @@ BOOST_AUTO_TEST_CASE(test_35)
 
 	process_and_compare(doc, doc_test, scope);
 }
+
+BOOST_AUTO_TEST_CASE(test_36)
+{
+	auto doc = R"xml(<?xml version="1.0"?>
+<data xmlns:z="http://www.hekkelman.com/libzeep/m2">
+<span z:classappend="${x ge 1.5 ? 'greater-equal'}"></span>
+<span z:classappend="${x le 1.5 ? 'less-equal'}"></span>
+</data>
+	)xml"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+<span class="greater-equal"></span>
+<span/>
+</data>
+	)"_xml;
+
+	zeep::http::scope scope;
+
+	scope.put("x", 2.0);
+
+	zeep::http::template_processor p(DOCROOT);
+	zeep::http::tag_processor_v2 tp;
+
+	process_and_compare(doc, doc_test, scope);
+}
+
