@@ -8,13 +8,13 @@
 // Utilitie routines to build daemon processes
 
 #ifndef _MSC_VER
-#include <pwd.h>
 #include <grp.h>
+#include <pwd.h>
 #include <sys/wait.h>
 #endif
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>
@@ -31,27 +31,29 @@ namespace zeep::http
 #if __APPLE__
 int getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
 {
-	return ::getgrouplist(user, (int)group, (int*)groups, ngroups);
+	return ::getgrouplist(user, (int)group, (int *)groups, ngroups);
 }
 #endif
 
-daemon::daemon(server_factory_type&& factory, const std::string& pid_file,
-	const std::string& stdout_log_file, const std::string& stderr_log_file)
-	: m_factory(std::move(factory)), m_pid_file(pid_file)
-	, m_stdout_log_file(stdout_log_file), m_stderr_log_file(stderr_log_file)
+daemon::daemon(server_factory_type &&factory, const std::string &pid_file,
+	const std::string &stdout_log_file, const std::string &stderr_log_file)
+	: m_factory(std::move(factory))
+	, m_pid_file(pid_file)
+	, m_stdout_log_file(stdout_log_file)
+	, m_stderr_log_file(stderr_log_file)
 {
 }
 
-daemon::daemon(server_factory_type&& factory, const char* name)
+daemon::daemon(server_factory_type &&factory, const char *name)
 	: daemon(std::forward<server_factory_type>(factory), "/var/run/"s + name,
-		"/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
+		  "/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
 {
 }
 
-int daemon::run_foreground(const std::string& address, uint16_t port)
+int daemon::run_foreground(const std::string &address, uint16_t port)
 {
 	int result = 0;
-	
+
 	if (pid_is_for_executable())
 	{
 		std::cerr << "Server is already running." << std::endl;
@@ -61,22 +63,33 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 	{
 		try
 		{
-            boost::asio::io_context io_context;
-            boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
+			boost::asio::io_context io_context;
+			boost::asio::ip::tcp::endpoint endpoint;
 
-            boost::asio::ip::tcp::acceptor acceptor(io_context);
-            acceptor.open(endpoint.protocol());
-            acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-            acceptor.bind(endpoint);
-            acceptor.listen();
-            
-            acceptor.close();
+			try
+			{
+				endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
+			}
+			catch (const std::exception &e)
+			{
+				boost::asio::ip::tcp::resolver resolver(io_context);
+				boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+				endpoint = *resolver.resolve(query);
+			}
+
+			boost::asio::ip::tcp::acceptor acceptor(io_context);
+			acceptor.open(endpoint.protocol());
+			acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+			acceptor.bind(endpoint);
+			acceptor.listen();
+
+			acceptor.close();
 		}
-		catch (exception& e)
+		catch (exception &e)
 		{
 			throw std::runtime_error(std::string("Is server running already? ") + e.what());
 		}
-		
+
 		signal_catcher sc;
 		sc.block();
 
@@ -93,13 +106,13 @@ int daemon::run_foreground(const std::string& address, uint16_t port)
 		if (t.joinable())
 			t.join();
 	}
-	
+
 	return result;
 }
 
 #if _MSC_VER
 
-int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
+int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {
 	assert(false);
 	return -1;
@@ -130,12 +143,12 @@ void daemon::daemonize()
 	assert(false);
 }
 
-#else 
+#else
 
-int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
+int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {
 	int result = 0;
-	
+
 	if (pid_is_for_executable())
 	{
 		std::cerr << "Server is already running." << std::endl;
@@ -144,7 +157,13 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 	else
 	{
 		if (fs::exists(m_pid_file))
-			try { fs::remove(m_pid_file); } catch (...) {}
+			try
+			{
+				fs::remove(m_pid_file);
+			}
+			catch (...)
+			{
+			}
 
 		fs::path pidDir = fs::path(m_pid_file).parent_path();
 		if (not fs::is_directory(pidDir))
@@ -153,7 +172,7 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
 		if (not fs::is_directory(outLogDir))
 			fs::create_directories(outLogDir);
-		
+
 		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
 		if (not fs::is_directory(errLogDir))
 			fs::create_directories(errLogDir);
@@ -162,29 +181,45 @@ int daemon::start(const std::string& address, uint16_t port, size_t nr_of_procs,
 		{
 			boost::asio::io_context io_context;
 
-			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
+			boost::asio::ip::tcp::endpoint endpoint;
+			try
+			{
+				endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
+			}
+			catch (const std::exception &e)
+			{
+				boost::asio::ip::tcp::resolver resolver(io_context);
+				boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+				endpoint = *resolver.resolve(query);
+			}
 
 			boost::asio::ip::tcp::acceptor acceptor(io_context);
 			acceptor.open(endpoint.protocol());
 			acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 			acceptor.bind(endpoint);
 			acceptor.listen();
-			
+
 			acceptor.close();
 		}
-		catch (exception& e)
+		catch (exception &e)
 		{
 			throw std::runtime_error(std::string("Is server running already? ") + e.what());
 		}
-		
-	   	daemonize();
-		
+
+		daemonize();
+
 		run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
-		
+
 		if (fs::exists(m_pid_file))
-			try { fs::remove(m_pid_file); } catch (...) {}
+			try
+			{
+				fs::remove(m_pid_file);
+			}
+			catch (...)
+			{
+			}
 	}
-	
+
 	return result;
 }
 
@@ -210,8 +245,9 @@ int daemon::stop()
 			if (fs::exists(m_pid_file))
 				fs::remove(m_pid_file);
 		}
-		catch (...) {}
-
+		catch (...)
+		{
+		}
 	}
 	else
 		throw std::runtime_error("Not my pid file: " + m_pid_file);
@@ -318,7 +354,7 @@ void daemon::daemonize()
 void daemon::open_log_file()
 {
 	// open the log file
-	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT|O_APPEND|O_RDWR, 0644);
+	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
 	if (fd_out < 0)
 	{
 		std::cerr << "Opening log file " << m_stdout_log_file << " failed" << std::endl;
@@ -331,7 +367,7 @@ void daemon::open_log_file()
 		fd_err = fd_out;
 	else
 	{
-		fd_err = open(m_stderr_log_file.c_str(), O_CREAT|O_APPEND|O_RDWR, 0644);
+		fd_err = open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
 		if (fd_err < 0)
 		{
 			std::cerr << "Opening log file " << m_stderr_log_file << " failed" << std::endl;
@@ -349,7 +385,7 @@ void daemon::open_log_file()
 		close(fd_err);
 }
 
-bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string& run_as_user)
+bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {
 	int sig = 0;
 
@@ -373,7 +409,7 @@ bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_
 		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
 		preforked_server server([=]()
-		{
+			{
 			try
 			{
 				if (not run_as_user.empty())
@@ -416,21 +452,20 @@ bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_
 			{
 				std::cerr << "Failed to launch server: " << e.what() << std::endl;
 				exit(1);
-			}
-		});
-		
+			} });
+
 		std::thread t(std::bind(&zeep::http::preforked_server::run, &server, address, port, nr_of_procs, nr_of_threads));
-		
+
 		try
 		{
 			server.start();
 		}
-		catch (const exception& ex)
+		catch (const exception &ex)
 		{
 			std::cerr << std::endl
-				<< "Exception running server: " << std::endl
-				<< ex.what() << std::endl
-				<< std::endl;
+					  << "Exception running server: " << std::endl
+					  << ex.what() << std::endl
+					  << std::endl;
 			exit(1);
 		}
 
@@ -470,7 +505,7 @@ bool daemon::run_main_loop(const std::string& address, uint16_t port, size_t nr_
 		// did the client crash within the time window?
 		if (time(nullptr) - start > m_restart_time_window)
 		{
-			restarts = 0;		// no, it was outside, reset counter
+			restarts = 0; // no, it was outside, reset counter
 			continue;
 		}
 
@@ -508,7 +543,7 @@ bool daemon::pid_is_for_executable()
 				throw std::runtime_error("could not get exe path ("s + strerror(errno) + ")");
 
 			result = strcmp(exe, path) == 0 or
-					 (ends_with(path, " (deleted)") and starts_with(path, exe));
+			         (ends_with(path, " (deleted)") and starts_with(path, exe));
 		}
 		else if (errno == ENOENT) // link file doesn't exist
 			result = false;
@@ -521,4 +556,4 @@ bool daemon::pid_is_for_executable()
 
 #endif
 
-}
+} // namespace zeep::http

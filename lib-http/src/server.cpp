@@ -4,14 +4,14 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <zeep/http/security.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/http/error-handler.hpp>
 #include <zeep/http/connection.hpp>
 #include <zeep/http/controller.hpp>
+#include <zeep/http/error-handler.hpp>
+#include <zeep/http/security.hpp>
+#include <zeep/http/server.hpp>
 #include <zeep/http/uri.hpp>
 
 namespace zeep::http
@@ -20,11 +20,11 @@ namespace zeep::http
 namespace detail
 {
 
-// a thread specific logger
-thread_local std::unique_ptr<std::ostringstream> s_log;
-std::mutex s_log_lock;
+	// a thread specific logger
+	thread_local std::unique_ptr<std::ostringstream> s_log;
+	std::mutex s_log_lock;
 
-}
+} // namespace detail
 
 // --------------------------------------------------------------------
 // http::basic_server
@@ -32,18 +32,18 @@ std::mutex s_log_lock;
 basic_server::basic_server()
 	: m_log_forwarded(true)
 	, m_security_context(nullptr)
-	, m_allowed_methods{ "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE" }
+	, m_allowed_methods{"GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE"}
 {
 	using namespace boost::local_time;
 
-	local_time_facet* lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
+	local_time_facet *lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
 	std::cout.imbue(std::locale(std::cout.getloc(), lf));
 
 	// add a default error handler
 	add_error_handler(new error_handler());
 }
 
-basic_server::basic_server(security_context* s_cntxt)
+basic_server::basic_server(security_context *s_cntxt)
 	: basic_server()
 {
 	m_security_context.reset(s_cntxt);
@@ -53,44 +53,56 @@ basic_server::~basic_server()
 {
 	stop();
 
-	for (auto c: m_controllers)
+	for (auto c : m_controllers)
 		delete c;
 
-	for (auto eh: m_error_handlers)
+	for (auto eh : m_error_handlers)
 		delete eh;
 }
 
-void basic_server::set_template_processor(basic_template_processor* template_processor)
+void basic_server::set_template_processor(basic_template_processor *template_processor)
 {
 	m_template_processor.reset(template_processor);
 }
 
-void basic_server::bind(const std::string& address, unsigned short port)
+void basic_server::bind(const std::string &address, unsigned short port)
 {
 	m_address = address;
 	m_port = port;
-	
+
 	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(get_io_context()));
 	m_new_connection.reset(new connection(get_io_context(), *this));
 
-	boost::asio::ip::tcp::resolver resolver(get_io_context());
-	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address), port);
+	// then bind the address here
+	boost::asio::ip::tcp::endpoint endpoint;
+
+	try
+	{
+		endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
+	}
+	catch (const std::exception &e)
+	{
+		boost::asio::ip::tcp::resolver resolver(get_io_context());
+		boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+		endpoint = *resolver.resolve(query);
+	}
 
 	m_acceptor->open(endpoint.protocol());
 	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 	m_acceptor->bind(endpoint);
 	m_acceptor->listen();
 	m_acceptor->async_accept(m_new_connection->get_socket(),
-		[this](boost::system::error_code ec) { this->handle_accept(ec); });
+		[this](boost::system::error_code ec)
+		{ this->handle_accept(ec); });
 }
 
-void basic_server::add_controller(controller* c)
+void basic_server::add_controller(controller *c)
 {
 	m_controllers.push_back(c);
 	c->set_server(this);
 }
 
-void basic_server::add_error_handler(error_handler* eh)
+void basic_server::add_error_handler(error_handler *eh)
 {
 	m_error_handlers.push_front(eh);
 	eh->set_server(this);
@@ -102,9 +114,10 @@ void basic_server::run(int nr_of_threads)
 	auto work = boost::asio::make_work_guard(get_io_context());
 
 	for (int i = 0; i < nr_of_threads; ++i)
-		m_threads.emplace_back([this]() { get_io_context().run(); });
+		m_threads.emplace_back([this]()
+			{ get_io_context().run(); });
 
-	for (auto& t: m_threads)
+	for (auto &t : m_threads)
 	{
 		if (t.joinable())
 			t.join();
@@ -128,18 +141,19 @@ void basic_server::handle_accept(boost::system::error_code ec)
 		m_new_connection->start();
 		m_new_connection.reset(new connection(get_io_context(), *this));
 		m_acceptor->async_accept(m_new_connection->get_socket(),
-			[this](boost::system::error_code ec) { this->handle_accept(ec); });
+			[this](boost::system::error_code ec)
+			{ this->handle_accept(ec); });
 	}
 }
 
-std::ostream& basic_server::get_log()
+std::ostream &basic_server::get_log()
 {
 	if (detail::s_log.get() == NULL)
 		detail::s_log.reset(new std::ostringstream);
 	return *detail::s_log;
 }
 
-void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
+void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request &req, reply &rep)
 {
 	using namespace boost::posix_time;
 
@@ -149,10 +163,10 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 	// set up a logging stream and collect logging information
 	detail::s_log.reset(new std::ostringstream);
 	ptime start = second_clock::local_time();
-	
+
 	std::string referer("-"), userAgent("-"), accept, client;
-	
-	for (const header& h: req.get_headers())
+
+	for (const header &h : req.get_headers())
 	{
 		if (m_log_forwarded and iequals(h.name, "X-Forwarded-For"))
 		{
@@ -172,7 +186,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 		else if (iequals(h.name, "Accept"))
 			accept = h.value;
 	}
-	
+
 	try
 	{
 		// asking for the remote endpoint address failed sometimes
@@ -187,7 +201,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 
 		// shortcut, check for supported method
 		auto method = req.get_method();
-		if (not (m_allowed_methods.empty() or m_allowed_methods.count(method)))
+		if (not(m_allowed_methods.empty() or m_allowed_methods.count(method)))
 			throw bad_request;
 
 		std::string csrf;
@@ -203,7 +217,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 		std::string path = uri(req.get_uri()).get_path().generic_string();
 
 		// do the actual work.
-		for (auto c: m_controllers)
+		for (auto c : m_controllers)
 		{
 			if (not c->path_matches_prefix(path))
 				continue;
@@ -211,15 +225,11 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 			if (c->dispatch_request(socket, req, rep))
 				break;
 		}
-		
+
 		if (method == "HEAD")
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
-			rep.set_cookie("csrf-token", csrf, {
-				{ "HttpOnly", "" },
-				{ "SameSite", "Lax" },
-				{ "Path", "/" }
-			});
+			rep.set_cookie("csrf-token", csrf, {{"HttpOnly", ""}, {"SameSite", "Lax"}, {"Path", "/"}});
 
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (starts_with(rep.get_content_type(), "application/xhtml+xml") and
@@ -232,25 +242,27 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket& socket, request&
 	catch (...)
 	{
 		auto eptr = std::current_exception();
-		for (auto eh: m_error_handlers)
+		for (auto eh : m_error_handlers)
 		{
 			try
 			{
 				if (eh->create_error_reply(req, eptr, rep))
 					break;
 			}
-			catch (...) { }
+			catch (...)
+			{
+			}
 		}
 	}
 
 	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
 }
 
-void basic_server::log_request(const std::string& client,
-	const request& req, const reply& rep,
-	const boost::posix_time::ptime& start,
-	const std::string& referer, const std::string& userAgent,
-	const std::string& entry) noexcept
+void basic_server::log_request(const std::string &client,
+	const request &req, const reply &rep,
+	const boost::posix_time::ptime &start,
+	const std::string &referer, const std::string &userAgent,
+	const std::string &entry) noexcept
 {
 	try
 	{
@@ -266,25 +278,27 @@ void basic_server::log_request(const std::string& client,
 		if (username.empty())
 			username = "-";
 
-		const auto& [major, minor] = req.get_version();
+		const auto &[major, minor] = req.get_version();
 
 		std::cout << client << ' '
-			<< "-" << ' '
-			<< username << ' '
-			<< start_local << ' '
-			<< '"' << req.get_method() << ' ' << req.get_uri() << ' '
-					<< "HTTP/" << major << '.' << minor << "\" "
-			<< rep.get_status() << ' '
-			<< rep.size() << ' '
-			<< '"' << referer << '"' << ' '
-			<< '"' << userAgent << '"' << ' ';
-		
+				  << "-" << ' '
+				  << username << ' '
+				  << start_local << ' '
+				  << '"' << req.get_method() << ' ' << req.get_uri() << ' '
+				  << "HTTP/" << major << '.' << minor << "\" "
+				  << rep.get_status() << ' '
+				  << rep.size() << ' '
+				  << '"' << referer << '"' << ' '
+				  << '"' << userAgent << '"' << ' ';
+
 		if (entry.empty())
 			std::cout << '-' << std::endl;
 		else
 			std::cout << '"' << entry << '"' << std::endl;
 	}
-	catch (...) {}
+	catch (...)
+	{
+	}
 }
 
-}
+} // namespace zeep::http
