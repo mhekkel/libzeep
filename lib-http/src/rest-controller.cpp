@@ -54,17 +54,25 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 		}
 		catch (status_type s)
 		{
-			rep = http::reply::stock_reply(s);
-			
 			json::element error({ { "error", get_status_description(s) }});
-			rep.set_content(error);
+
+			std::stringstream ss;
+			ss << error;
+
+			rep = http::reply{ s, { 1, 1 }, {
+				{ "content-type", "application/json" }
+			}, ss.str() };
 		}
 		catch (const std::exception& e)
 		{
-			rep = http::reply::stock_reply(http::internal_server_error);
-			
 			json::element error({ { "error", e.what() }});
-			rep.set_content(error);
+
+			std::stringstream ss;
+			ss << error;
+
+			rep = http::reply{ http::internal_server_error, { 1, 1 }, {
+				{ "content-type", "application/json" }
+			}, ss.str() };
 		}
 
 		result = true;

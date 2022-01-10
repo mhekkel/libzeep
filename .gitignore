@@ -11,3 +11,4 @@ doc/html
 doc/autodoc.xml
 msvc/
 doc/Jamfile.v2
+CMakeSettings.json
