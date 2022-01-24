@@ -186,13 +186,12 @@ set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(zeep
 	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+	"$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	${Boost_INCLUDE_DIR}
 )
 
-target_include_directories(zeep PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(zeep PUBLIC ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} std::filesystem)
+target_link_libraries(zeep PUBLIC Boost::regex Boost::date_time Threads::Threads std::filesystem)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -422,7 +421,7 @@ if(ZEEP_BUILD_TESTS)
 			${CMAKE_SOURCE_DIR}/include
 		)
 
-		target_link_libraries(${ZEEP_TEST} PRIVATE zeep std::filesystem)
+		target_link_libraries(${ZEEP_TEST} PRIVATE zeep std::filesystem Boost::program_options)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
@@ -442,7 +441,7 @@ if(ZEEP_BUILD_TESTS)
 				ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 				ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
 			list(TRANSFORM ZEEP_TEST_ARGS PREPEND "--questionable=")
-			list(PREPEND ZEEP_TEST_ARGS ${XML_CONF_FILE})
+			list(PREPEND ZEEP_TEST_ARGS ${XML_CONF_FILE} "--print-ids")
 			add_dependencies(${ZEEP_TEST} XML_CONF)
 		else()
 			set(ZEEP_TEST_ARGS "")
