@@ -408,7 +408,7 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 		sigfillset(&new_mask);
 		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-		preforked_server server([=]()
+		preforked_server server([=, this]()
 			{
 			try
 			{

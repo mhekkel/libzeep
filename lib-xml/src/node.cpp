@@ -48,7 +48,7 @@ void write_string(std::ostream& os, const std::string& s, bool escape_whitespace
 							for (auto ci = sb; ci < sp; ++ci)
 								os << *ci;
 						else
-							os << "&#" << c << ';';
+							os << "&#" << static_cast<int>(c) << ';';
 						last_is_space = false;
 						break;
 		}
