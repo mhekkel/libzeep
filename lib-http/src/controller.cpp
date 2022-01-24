@@ -95,12 +95,12 @@ std::string controller::get_prefixless_path(const request& req) const
 
 		if (not result.empty() and result.begin()->string() == "..")
 		{
-			assert(false);
+			// assert(false);
 			throw std::logic_error("Controller does not have the prefix path for this request");
 		}
 	}
 
-	return result == "." ? "" : result.string();
+	return result == "." ? "" : result.generic_string();
 }
 
 json::element controller::get_credentials() const

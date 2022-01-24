@@ -1,8 +1,14 @@
+#include <random>
+
 #include <zeep/http/rest-controller.hpp>
+#include <zeep/http/daemon.hpp>
 #include <zeep/exception.hpp>
+#include "../src/signals.hpp"
 
 #define BOOST_TEST_MODULE REST_Test
 #include <boost/test/included/unit_test.hpp>
+
+#include "client-test-code.hpp"
 
 using namespace std;
 namespace z = zeep;
@@ -155,6 +161,9 @@ class e_rest_controller : public zeep::http::rest_controller
 
 	Opname get_opname(string id)
 	{
+		if (id == "xxx")
+			throw zeep::http::not_found;
+
 		return {};
 	}
 
@@ -186,8 +195,6 @@ class e_rest_controller : public zeep::http::rest_controller
 	}
 };
 
-
-
 BOOST_AUTO_TEST_CASE(rest_1)	
 {
 	// simply see if the above compiles
@@ -205,5 +212,48 @@ BOOST_AUTO_TEST_CASE(rest_1)
 	
 	BOOST_CHECK(rep.get_status() == zeep::http::ok);
 	BOOST_CHECK(rep.get_content_type() == "text/plain");
+}
 
+BOOST_AUTO_TEST_CASE(rest_2)	
+{
+	// start up a http server and stop it again
+
+	zh::daemon d([]() {
+		auto s = new zh::server;
+		s->add_controller(new e_rest_controller());
+		return s;
+	}, "zeep-http-test");
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+
+	std::cerr << "started daemon at port " << port << std::endl;
+
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);	
+
+	try
+	{
+		auto rep = simple_request(port, "GET /ajax/all_data HTTP/1.0\r\n\r\n");
+
+		BOOST_CHECK(rep.get_status() == zeep::http::ok);
+		BOOST_CHECK(rep.get_content_type() == "text/plain");
+
+		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
+
+		reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
+		BOOST_CHECK_EQUAL(reply.get_content_type(), "application/json");
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+
+	zeep::signal_catcher::signal_hangup(t);
+
+	t.join();
 }

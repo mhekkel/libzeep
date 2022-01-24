@@ -58,6 +58,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 			
 			json::element error({ { "error", get_status_description(s) }});
 			rep.set_content(error);
+			rep.set_status(s);
 		}
 		catch (const std::exception& e)
 		{
@@ -65,6 +66,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 			
 			json::element error({ { "error", e.what() }});
 			rep.set_content(error);
+			rep.set_status(http::internal_server_error);
 		}
 
 		result = true;

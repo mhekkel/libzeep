@@ -2,6 +2,8 @@ Version 5.1.6
 - Fix the visibility of types in zeep::json::detail::iterator_impl
 - Reintroduced resolving of bind addresses, using "localhost" is
   easier than only numerical addresses.
+- Return correct status code in case of catching an exception
+  in rest controllers.
 
 Version 5.1.5
 - update zeepConfig.cmake to include required link file
