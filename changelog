@@ -4,6 +4,7 @@ Version 5.1.6
   easier than only numerical addresses.
 - Return correct status code in case of catching an exception
   in rest controllers.
+- Fix dependency in .cmake config file for Threads
 
 Version 5.1.5
 - update zeepConfig.cmake to include required link file
