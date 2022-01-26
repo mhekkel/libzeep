@@ -86,8 +86,6 @@ set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/streambuf.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/value-serializer.hpp
-	# "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config.hpp>"
-	# "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include/zeep/config.hpp>"
 	${CMAKE_SOURCE_DIR}/include/zeep/config.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/xml/document.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/xml/parser.hpp
@@ -205,6 +203,7 @@ install(
 	DIRECTORY include/zeep
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	COMPONENT Devel
+	PATTERN "config.hpp.in" EXCLUDE
 )
 
 install(

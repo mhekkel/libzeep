@@ -12,3 +12,4 @@ doc/autodoc.xml
 msvc/
 doc/Jamfile.v2
 CMakeSettings.json
+include/zeep/config.hpp
