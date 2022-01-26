@@ -13,10 +13,6 @@ include(CMakePackageConfigHelpers)
 include(Dart)
 include(GenerateExportHeader)
 
-set(PACKAGE ${PROJECT_NAME})
-set(PACKAGE_VERSION ${PROJECT_VERSION})
-add_definitions(-DVERSION=${PACKAGE_VERSION})
-
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -55,38 +51,24 @@ if(MSVC)
 		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/zeep")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/zeep" CACHE PATH "..." FORCE)
 	endif()
-
-	# Find out the processor type for the target
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-		set(COFF_TYPE "x64")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-		set(COFF_TYPE "x86")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-		set(COFF_TYPE "arm64")
-	else()
-		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
-	endif()	
-
-	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
 # Optionally use mrc to create resources
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_program(MRC mrc)
+	find_package(Mrc)
 
-	if(MRC)
+	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
 	else()
-		message("Using resources not possible since mrc was not found")
+		message(STATUS "Not using resources since mrc was not found")
 	endif()
 
-	if(USE_RSRC STREQUAL "ON")
-		set(USE_RSRC 1)
-
-		message("Using resources compiled with ${MRC}")
-		add_compile_definitions(USE_RSRC)
+	if(USE_RSRC)
+		message("Using resources compiled with ${MRC_EXECUTABLE}")
+		set(WEBAPP_USES_RESOURCES 1)
+		mrc_write_header(${CMAKE_BINARY_DIR}/mrsrc.hpp)
 	endif()
 endif()
 
@@ -104,6 +86,8 @@ set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/streambuf.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/value-serializer.hpp
+	# "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config.hpp>"
+	# "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include/zeep/config.hpp>"
 	${CMAKE_SOURCE_DIR}/include/zeep/config.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/xml/document.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/xml/parser.hpp
@@ -258,6 +242,15 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
+# Config file
+
+set(HTTP_SERVER_HAS_PREFORK UNIX)
+set(LIBZEEP_VERSION ${PROJECT_VERSION})
+set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+configure_file("${CMAKE_SOURCE_DIR}/include/zeep/config.hpp.in" "${CMAKE_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
+
 # pkgconfig support
 
 set(prefix      ${CMAKE_INSTALL_PREFIX})
@@ -390,11 +383,6 @@ if(ZEEP_BUILD_TESTS)
 
 	if(USE_RSRC)
 		list(APPEND zeep_tests http/rsrc_webapp)
-
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj
-			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml ${COFF_SPEC}
-		)
-	
 	endif()
 
 	foreach(TEST IN LISTS zeep_tests)
@@ -403,16 +391,15 @@ if(ZEEP_BUILD_TESTS)
 
 		set(ZEEP_TEST "${ZEEP_TEST}-test")
 		set(ZEEP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test/${ZEEP_TEST}.cpp")
-		set(ZEEP_TEST_RESOURCE "")
-
-		if("${TEST}" STREQUAL "http/rsrc_webapp" AND USE_RSRC)
-			set(ZEEP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/rsrc_webapp_rsrc.obj)
-		endif()
 
 		add_executable(${ZEEP_TEST} ${ZEEP_TEST_SOURCE} $<TARGET_OBJECTS:client_test> ${ZEEP_TEST_RESOURCE})
 
 		if("${TEST}" STREQUAL "http/processor")
 			target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
+		endif()
+
+		if(USE_RSRC AND ("${TEST}" STREQUAL "http/processor" OR "${TEST}" STREQUAL "http/rsrc_webapp"))
+			mrc_target_resources(${ZEEP_TEST} ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
 		endif()
 
 		target_include_directories(${ZEEP_TEST} PRIVATE

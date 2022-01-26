@@ -1,4 +1,0 @@
-const char kRevision[] = R"('
-libzeep-version: @PACKAGE_VERSION@
-Date:   @DATE@
-')";
