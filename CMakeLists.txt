@@ -82,7 +82,14 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time regex)
 
-set(ZEEP_HEADERS
+if(UNIX)
+	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
+	if(HAVE_SYS_WAIT_H)
+		set(HTTP_SERVER_HAS_PREFORK 1)
+	endif()
+endif()
+
+list(APPEND ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/streambuf.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/value-serializer.hpp
@@ -109,7 +116,6 @@ set(ZEEP_HEADERS
 	${CMAKE_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/http/connection.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/http/server.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/preforked-server.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/http/daemon.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/http/error-handler.hpp
 	${CMAKE_SOURCE_DIR}/include/zeep/http/reply.hpp
@@ -141,7 +147,6 @@ set(ZEEP_SRC
 	${CMAKE_SOURCE_DIR}/lib-http/src/html-controller.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/login-controller.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/message-parser.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/preforked-server.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/reply.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/request.cpp
 	${CMAKE_SOURCE_DIR}/lib-http/src/rest-controller.cpp
@@ -162,6 +167,11 @@ set(ZEEP_SRC
 	${CMAKE_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
 	${CMAKE_SOURCE_DIR}/lib-xml/src/xpath.cpp
 )
+
+if(HTTP_SERVER_HAS_PREFORK)
+	list(APPEND ZEEP_HEADERS ${CMAKE_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
+	list(APPEND ZEEP_SRC ${CMAKE_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
+endif()
 
 add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -243,7 +253,6 @@ write_basic_package_version_file(
 
 # Config file
 
-set(HTTP_SERVER_HAS_PREFORK UNIX)
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
