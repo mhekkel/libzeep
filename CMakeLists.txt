@@ -183,7 +183,7 @@ target_include_directories(zeep
 	${Boost_INCLUDE_DIR}
 )
 
-target_link_libraries(zeep PUBLIC Boost::regex Boost::date_time Threads::Threads std::filesystem)
+target_link_libraries(zeep PUBLIC Boost::regex Boost::date_time Threads::Threads ${STDCPPFS_LIBRARY})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -416,7 +416,7 @@ if(ZEEP_BUILD_TESTS)
 			${CMAKE_SOURCE_DIR}/include
 		)
 
-		target_link_libraries(${ZEEP_TEST} PRIVATE zeep std::filesystem Boost::program_options)
+		target_link_libraries(${ZEEP_TEST} PRIVATE zeep ${STDCPPFS_LIBRARY} Boost::program_options)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
