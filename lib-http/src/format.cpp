@@ -157,16 +157,19 @@ Decimal<T>::Decimal(T x)
 		x /= f;
 	}
 	
-	while (std::fabs(x) >= 1.0)
+	if (x != 0)
 	{
-		x *= 0.1;
-		++m_exp10;
-	}
-	
-	while (std::fabs(x) < 0.1)
-	{
-		x *= 10.0;
-		--m_exp10;
+		while (std::fabs(x) >= 1.0)
+		{
+			x *= 0.1;
+			++m_exp10;
+		}
+		
+		while (std::fabs(x) < 0.1)
+		{
+			x *= 10.0;
+			--m_exp10;
+		}
 	}
 	
 	m_crunched = x;
