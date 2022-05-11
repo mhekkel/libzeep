@@ -1,5 +1,4 @@
 lib/
-lib-http/src/mrsrc.h
 lib-xml/test/XML-Test-Suite/
 tests/
 .vs/
