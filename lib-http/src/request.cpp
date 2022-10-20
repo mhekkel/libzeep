@@ -341,8 +341,6 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 				l = i + 1;
 			}
 		}
-
-		replace_all(result, "\r\n", "\n");
 	}
 	
 	return make_tuple(result, found);
