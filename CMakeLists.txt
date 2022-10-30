@@ -174,6 +174,7 @@ if(HTTP_SERVER_HAS_PREFORK)
 endif()
 
 add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
+add_library(zeep::zeep ALIAS zeep)
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(zeep
