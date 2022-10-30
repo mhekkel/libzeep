@@ -68,7 +68,7 @@ else()
 	if(USE_RSRC)
 		message("Using resources compiled with ${MRC_EXECUTABLE}")
 		set(WEBAPP_USES_RESOURCES 1)
-		mrc_write_header(${CMAKE_BINARY_DIR}/mrsrc.hpp)
+		mrc_write_header(${PROJECT_BINARY_DIR}/mrsrc.hpp)
 	endif()
 endif()
 
