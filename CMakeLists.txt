@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(libzeep VERSION 5.1.8 LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(GNUInstallDirs)
 include(CheckFunctionExists)
@@ -90,87 +90,87 @@ if(UNIX)
 endif()
 
 list(APPEND ZEEP_HEADERS
-	${CMAKE_SOURCE_DIR}/include/zeep/crypto.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/streambuf.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/value-serializer.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/config.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/document.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/parser.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/xpath.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/node.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/character-classification.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/serialize.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/xml/doctype.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/type-traits.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/to_element.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/element.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/factory.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/serializer.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/parser.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/type_traits.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/from_element.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/json/iterator.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/controller.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/message-parser.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/connection.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/server.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/daemon.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/error-handler.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/reply.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/template-processor.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/header.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/request.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/rest-controller.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/soap-controller.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/html-controller.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/security.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/uri.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/el-processing.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/http/login-controller.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/unicode-support.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/nvp.hpp
-	${CMAKE_SOURCE_DIR}/include/zeep/exception.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/crypto.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/streambuf.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/value-serializer.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/config.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/document.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/parser.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/xpath.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/node.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/character-classification.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/serialize.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/xml/doctype.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/type-traits.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/to_element.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/element.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/factory.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/serializer.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/parser.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/type_traits.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/from_element.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/json/iterator.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/controller.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/message-parser.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/connection.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/server.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/daemon.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/error-handler.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/reply.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/template-processor.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/header.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/request.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/rest-controller.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/soap-controller.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/html-controller.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/security.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/uri.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/el-processing.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/login-controller.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/unicode-support.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/nvp.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/exception.hpp
 )
 
 set(ZEEP_SRC
-	${CMAKE_SOURCE_DIR}/lib-http/src/connection.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/controller.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/crypto.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/daemon.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/el-processing.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/error-handler.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/format.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/glob.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/html-controller.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/login-controller.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/message-parser.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/reply.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/request.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/rest-controller.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/security.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/server.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/uri.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/soap-controller.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/tag-processor-v2.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/tag-processor.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/template-processor.cpp
-	${CMAKE_SOURCE_DIR}/lib-http/src/signals.cpp
-	${CMAKE_SOURCE_DIR}/lib-json/src/element.cpp
-	${CMAKE_SOURCE_DIR}/lib-json/src/json-parser.cpp
-	${CMAKE_SOURCE_DIR}/lib-xml/src/character-classification.cpp
-	${CMAKE_SOURCE_DIR}/lib-xml/src/doctype.cpp
-	${CMAKE_SOURCE_DIR}/lib-xml/src/document.cpp
-	${CMAKE_SOURCE_DIR}/lib-xml/src/node.cpp
-	${CMAKE_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
-	${CMAKE_SOURCE_DIR}/lib-xml/src/xpath.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/crypto.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/daemon.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/el-processing.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/error-handler.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/format.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/glob.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/html-controller.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/login-controller.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/message-parser.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/reply.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/request.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/rest-controller.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/security.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/server.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/uri.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/soap-controller.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/tag-processor-v2.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/tag-processor.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/template-processor.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/signals.cpp
+	${PROJECT_SOURCE_DIR}/lib-json/src/element.cpp
+	${PROJECT_SOURCE_DIR}/lib-json/src/json-parser.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/character-classification.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/doctype.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/document.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/node.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/xpath.cpp
 )
 
 if(HTTP_SERVER_HAS_PREFORK)
-	list(APPEND ZEEP_HEADERS ${CMAKE_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
-	list(APPEND ZEEP_SRC ${CMAKE_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
+	list(APPEND ZEEP_HEADERS ${PROJECT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
+	list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
 endif()
 
 add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
@@ -178,7 +178,7 @@ set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(zeep
 	PUBLIC
-	"$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	${Boost_INCLUDE_DIR}
 )
@@ -257,7 +257,7 @@ set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-configure_file("${CMAKE_SOURCE_DIR}/include/zeep/config.hpp.in" "${CMAKE_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
 
 # pkgconfig support
 
@@ -308,7 +308,7 @@ if(ZEEP_BUILD_DOC)
 	if(UNIX)
 		set(QUICKBOOK_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/quickbook.sh")
 
-		configure_file(${CMAKE_SOURCE_DIR}/doc/tools/quickbook.sh.in
+		configure_file(${PROJECT_SOURCE_DIR}/doc/tools/quickbook.sh.in
 			${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
 			@ONLY)
 		file(COPY ${CMAKE_CURRENT_BINARY_DIR}/tmp/quickbook.sh
@@ -319,15 +319,15 @@ if(ZEEP_BUILD_DOC)
 		set(QUICKBOOK_SCRIPT ${QUICKBOOK})
 	endif()
 
-	configure_file(${CMAKE_SOURCE_DIR}/doc/Jamfile.v2.in ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
+	configure_file(${PROJECT_SOURCE_DIR}/doc/Jamfile.v2.in ${PROJECT_SOURCE_DIR}/doc/Jamfile.v2 @ONLY)
 	
-	add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/doc/html/index.html
-			${CMAKE_SOURCE_DIR}/doc/html ${CMAKE_SOURCE_DIR}/doc/bin
-			${CMAKE_SOURCE_DIR}/doc/autodoc.xml
-		COMMAND ${BJAM} ${CMAKE_SOURCE_DIR}/doc
-		DEPENDS ${CMAKE_SOURCE_DIR}/doc/Jamfile.v2)
-	add_custom_target(doc ALL DEPENDS ${CMAKE_SOURCE_DIR}/doc/html/index.html)
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
+	add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/doc/html/index.html
+			${PROJECT_SOURCE_DIR}/doc/html ${PROJECT_SOURCE_DIR}/doc/bin
+			${PROJECT_SOURCE_DIR}/doc/autodoc.xml
+		COMMAND ${BJAM} ${PROJECT_SOURCE_DIR}/doc
+		DEPENDS ${PROJECT_SOURCE_DIR}/doc/Jamfile.v2)
+	add_custom_target(doc ALL DEPENDS ${PROJECT_SOURCE_DIR}/doc/html/index.html)
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
 endif()
 
 # Test applications
@@ -340,17 +340,17 @@ if(ZEEP_BUILD_TESTS)
 
 	# data files for the parser test
 
-	add_library(client_test OBJECT ${CMAKE_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
+	add_library(client_test OBJECT ${PROJECT_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
 	target_include_directories(client_test PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${CMAKE_CURRENT_BINARY_DIR}  # for config.h
-		${CMAKE_SOURCE_DIR}/include
+		${PROJECT_SOURCE_DIR}/include
 		${Boost_INCLUDE_DIR}
 	)
 
 	# data files for the parser test
-	set(XML_CONF_TAR ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
-	set(XML_CONF_FILE ${CMAKE_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
+	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
+	set(XML_CONF_FILE ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
 
 	if (NOT EXISTS ${XML_CONF_FILE})
 		if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
@@ -359,13 +359,13 @@ if(ZEEP_BUILD_TESTS)
 			if(TAR)
 				add_custom_command(OUTPUT ${XML_CONF_FILE}
 					COMMAND ${TAR} xf ${XML_CONF_TAR}
-					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib-xml/test/)
+					WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/lib-xml/test/)
 			else()
 				message(FATAL_ERROR "Please extract the archive ${XML_CONF_TAR} manually or update your cmake version to at least 3.18")
 			endif()
 		else()
 			file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
-				DESTINATION ${CMAKE_SOURCE_DIR}/lib-xml/test/
+				DESTINATION ${PROJECT_SOURCE_DIR}/lib-xml/test/
 				VERBOSE)
 		endif()
 	endif()
@@ -407,13 +407,13 @@ if(ZEEP_BUILD_TESTS)
 		endif()
 
 		if(USE_RSRC AND ("${TEST}" STREQUAL "http/processor" OR "${TEST}" STREQUAL "http/rsrc_webapp"))
-			mrc_target_resources(${ZEEP_TEST} ${CMAKE_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
+			mrc_target_resources(${ZEEP_TEST} ${PROJECT_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
 		endif()
 
 		target_include_directories(${ZEEP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
-			${CMAKE_SOURCE_DIR}/include
+			${PROJECT_SOURCE_DIR}/include
 		)
 
 		target_link_libraries(${ZEEP_TEST} PRIVATE zeep ${STDCPPFS_LIBRARY} Boost::program_options)
@@ -444,7 +444,7 @@ if(ZEEP_BUILD_TESTS)
 
 		add_test(NAME ${ZEEP_TEST}
 			COMMAND $<TARGET_FILE:${ZEEP_TEST}> ${ZEEP_TEST_ARGS}
-			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test)
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test)
 
 	endforeach()
 endif()
