@@ -76,11 +76,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
-set(Boost_DETAILED_FAILURE_MSG ON)
-if(NOT BUILD_SHARED_LIBS)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
-find_package(Boost 1.70.0 REQUIRED COMPONENTS program_options system date_time regex)
+find_package(Boost 1.70.0 REQUIRED)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -184,7 +180,7 @@ target_include_directories(zeep
 	${Boost_INCLUDE_DIR}
 )
 
-target_link_libraries(zeep PUBLIC Boost::regex Boost::date_time Threads::Threads ${STDCPPFS_LIBRARY})
+target_link_libraries(zeep PUBLIC Boost::boost Threads::Threads ${STDCPPFS_LIBRARY})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -223,7 +219,7 @@ install(
 	COMPONENT Devel
 )
 
-configure_package_config_file(Config.cmake.in
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
 	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR
@@ -267,7 +263,7 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libzeep.pc.in
+configure_file(${PROJECT_SOURCE_DIR}/cmake/libzeep.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
 	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
@@ -338,6 +334,8 @@ option(ZEEP_BUILD_TESTS "Build test executables" OFF)
 if(ZEEP_BUILD_TESTS)
 
 	enable_testing()
+
+	find_package(libcfp REQUIRED)
 
 	# data files for the parser test
 
@@ -417,7 +415,7 @@ if(ZEEP_BUILD_TESTS)
 			${PROJECT_SOURCE_DIR}/include
 		)
 
-		target_link_libraries(${ZEEP_TEST} PRIVATE zeep ${STDCPPFS_LIBRARY} Boost::program_options)
+		target_link_libraries(${ZEEP_TEST} PRIVATE zeep ${STDCPPFS_LIBRARY} libcfp::libcfp)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions

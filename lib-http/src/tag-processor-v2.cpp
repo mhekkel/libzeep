@@ -11,7 +11,6 @@
 #include <zeep/http/tag-processor.hpp>
 
 namespace fs = std::filesystem;
-namespace pt = boost::posix_time;
 
 namespace zeep::http
 {

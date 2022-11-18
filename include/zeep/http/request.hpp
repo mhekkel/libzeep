@@ -11,11 +11,11 @@
 
 #include <zeep/config.hpp>
 
+#include <chrono>
 #include <istream>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <zeep/http/header.hpp>
 #include <zeep/json/element.hpp>
@@ -120,7 +120,7 @@ class request
 	void set_payload(const std::string& payload)							{ m_payload = payload; }
 
 	/// \brief Return the time at which this request was received
-	boost::posix_time::ptime get_timestamp() const { return m_timestamp; }
+	std::chrono::system_clock::time_point get_timestamp() const { return m_timestamp; }
 
 	/// \brief Return the value in the Accept header for type
 	float get_accept(const char* type) const;
@@ -261,7 +261,7 @@ class request
 	std::string m_payload;  						///< For POST requests
 	bool m_close = false;  							///< Whether 'Connection: close' was specified
 
-	boost::posix_time::ptime m_timestamp = boost::posix_time::second_clock::local_time();
+	std::chrono::system_clock::time_point m_timestamp = std::chrono::system_clock::now();
 	json::element m_credentials;					///< The credentials as found in the validated access-token
 
 	std::string m_remote_address;					///< Address of connecting client

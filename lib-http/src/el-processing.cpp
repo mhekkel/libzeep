@@ -1515,17 +1515,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 
 				ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
 				if (ss.fail())	// hmmmm, lets try the ISO format then
-				{
-					try
-					{
-						auto pt = zeep::value_serializer<boost::posix_time::ptime>::from_string(params[0].as<std::string>());
-						t = boost::posix_time::to_tm(pt);
-					}
-					catch(const std::exception& e)
-					{
-						throw std::runtime_error("Invalid date");
-					}
-				}
+					ss >> std::get_time(&t, "%Y-%m-%dT%H:%M:%SZ");
 				
 				std::wostringstream os;
 

@@ -4,8 +4,7 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
+// #include <chrono>
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/security.hpp>
@@ -13,8 +12,6 @@
 #include <zeep/http/uri.hpp>
 
 #include "glob.hpp"
-
-namespace pt = boost::posix_time;
 
 namespace zeep::http
 {

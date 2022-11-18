@@ -12,7 +12,6 @@
 #include "glob.hpp"
 
 namespace fs = std::filesystem;
-namespace pt = boost::posix_time;
 
 namespace zeep::http
 {
