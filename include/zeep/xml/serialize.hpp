@@ -378,15 +378,16 @@ struct type_serializer<T, std::enable_if_t<has_serialize_v<T,serializer>>>
 	
 	static void register_type(type_map& types)
 	{
-		element sequence("xsd:sequence");
-		schema_creator schema(types, sequence);
+		element el("xsd:element", { { "name", type_name() }});
+		element &type = el.emplace_back("xsd:complexType");
+		element &seq = type.emplace_back("xsd:sequence");
+
+		schema_creator schema(types, seq);
 
 		value_type v;
-		schema.add_element("type", v);
+		v.serialize(schema, 0);
 
-		element type("xsd:complexType");
-		type.emplace_back(std::move(sequence));
-		types.emplace(type_name(), std::move(type));
+		types.emplace(type_name(), std::move(el));
 	}
 };
 
@@ -576,11 +577,15 @@ struct type_serializer
 
 	static element schema(const std::string& name, const std::string& prefix)
 	{
+		std::string type = type_name();
+		if (type.find(':') == std::string::npos)
+			type = prefix + ':' + type;
+
 		return {
 			"xsd:element",
 			{
 				{ "name", name },
-				{ "type", prefix + ':' + type_name() },
+				{ "type", type },
 				{ "minOccurs", "1" },
 				{ "maxOccurs", "1" }
 			}

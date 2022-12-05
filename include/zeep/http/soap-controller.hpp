@@ -289,18 +289,18 @@ class soap_controller : public controller
 
 			// now the wsdl operations
 			xml::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});
-			message.emplace_back("wsdl:part", { {"name", "parameters"}, { "element", "ns" + ':' + m_action }});
+			message.emplace_back("wsdl:part", { {"name", "parameters"}, { "element", "ns:" + m_action }});
 			messages[m_action + "RequestMessage"] = message;
 
 			message = xml::element("wsdl:message", {{ "name", m_action + "Message" }});
-			message.emplace_back("wsdl:part", {{ "name", "parameters"}, {"element", "ns" + ':' + m_action }});
+			message.emplace_back("wsdl:part", {{ "name", "parameters"}, {"element", "ns:" + m_action }});
 			messages[m_action + "Message"] = message;
 
 			// port type
 			xml::element operation("wsdl:operation", { { "name", m_action } });
 
-			operation.emplace_back("wsdl:input", { { "message", "ns" + ':' + m_action + "RequestMessage" } });
-			operation.emplace_back("wsdl:output", { { "message", "ns" + ':' + m_action + "Message" } });
+			operation.emplace_back("wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } });
+			operation.emplace_back("wsdl:output", { { "message", "ns:" + m_action + "Message" } });
 
 			portType.emplace_back(std::move(operation));
 

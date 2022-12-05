@@ -1,5 +1,5 @@
-#include <zeep/http/soap-controller.hpp>
 #include <zeep/exception.hpp>
+#include <zeep/http/soap-controller.hpp>
 
 #define BOOST_TEST_MODULE SOAP_Test
 #include <boost/test/included/unit_test.hpp>
@@ -14,18 +14,20 @@ struct TestStruct
 	int a;
 	string s;
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long)
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long)
 	{
-		ar & zx::make_element_nvp("a", a) & zx::make_element_nvp("s", s);
+		ar & zx::make_element_nvp("a", a)
+		   & zx::make_element_nvp("s", s);
 	}
 };
 
-static_assert(z::has_serialize_v<TestStruct,zx::serializer>, "oops");
+static_assert(z::has_serialize_v<TestStruct, zx::serializer>, "oops");
 
 struct my_test_controller : public zh::soap_controller
 {
-	my_test_controller() : zh::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
+	my_test_controller()
+		: zh::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
 	{
 		set_service("testService");
 
@@ -40,19 +42,18 @@ struct my_test_controller : public zh::soap_controller
 		return x;
 	}
 
-	void test_method_2(const std::string& s)
+	void test_method_2(const std::string &s)
 	{
 		BOOST_TEST(s == "42");
 	}
 
-	TestStruct test_method_3(const TestStruct& t)
+	TestStruct test_method_3(const TestStruct &t)
 	{
 		return { t.a + 1, t.s + to_string(t.a) };
 	}
-
 };
 
-BOOST_AUTO_TEST_CASE(soap_1)	
+BOOST_AUTO_TEST_CASE(soap_1)
 {
 	using namespace zx::literals;
 
@@ -85,7 +86,7 @@ BOOST_AUTO_TEST_CASE(soap_1)
 	}
 
 	zx::document repDoc(srep);
-	
+
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
  <soap:Body>
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(soap_1)
 	BOOST_TEST(repDoc == test);
 }
 
-BOOST_AUTO_TEST_CASE(soap_2)	
+BOOST_AUTO_TEST_CASE(soap_2)
 {
 	using namespace zx::literals;
 
@@ -129,7 +130,7 @@ BOOST_AUTO_TEST_CASE(soap_2)
 	}
 
 	zx::document repDoc(srep);
-	
+
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
  <soap:Body>
@@ -140,7 +141,7 @@ BOOST_AUTO_TEST_CASE(soap_2)
 	BOOST_TEST(repDoc == test);
 }
 
-BOOST_AUTO_TEST_CASE(soap_3)	
+BOOST_AUTO_TEST_CASE(soap_3)
 {
 	using namespace zx::literals;
 
@@ -176,7 +177,7 @@ BOOST_AUTO_TEST_CASE(soap_3)
 	}
 
 	zx::document repDoc(srep);
-	
+
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
  <soap:Body>
@@ -223,7 +224,7 @@ BOOST_AUTO_TEST_CASE(soap_3f)
 	}
 
 	zx::document repDoc(srep);
-	
+
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
  <soap:Body>
@@ -247,5 +248,4 @@ BOOST_AUTO_TEST_CASE(soap_w1)
 	doc.emplace_back(srv.make_wsdl());
 
 	cerr << setw(2) << doc << endl;
-
 }
