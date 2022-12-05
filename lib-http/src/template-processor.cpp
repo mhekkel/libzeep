@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <iostream>
 
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/template-processor.hpp>

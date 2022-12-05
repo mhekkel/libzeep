@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include <iostream>
 
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>

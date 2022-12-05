@@ -15,6 +15,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>

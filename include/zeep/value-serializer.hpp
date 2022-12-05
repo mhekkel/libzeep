@@ -14,14 +14,10 @@
 
 #include <zeep/config.hpp>
 
-// We're using Howard Hinands date functions
-
-#include <date/date.h>
-
 #include <regex>
 
-#include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+// We're using Howard Hinands date functions
+#include <date/date.h>
 
 #include <zeep/exception.hpp>
 
@@ -290,7 +286,7 @@ struct value_serializer<date::sys_days>
 {
 	static constexpr const char *type_name() { return "xsd:date"; }
 
-	/// to_string the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
+	/// to_string the date as YYYY-MM-DD
 	static std::string to_string(const date::sys_days &v)
 	{
 		std::ostringstream ss;

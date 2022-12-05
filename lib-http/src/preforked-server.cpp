@@ -6,6 +6,7 @@
 
 #include <zeep/config.hpp>
 
+#include <iostream>
 #include <cerrno>
 #include <chrono>
 #include <functional>

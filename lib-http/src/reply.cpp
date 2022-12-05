@@ -242,7 +242,7 @@ void reply::set_version(int version_major, int version_minor)
 			m_data->rdbuf()->pubseekoff(pos, std::ios_base::beg);
 		}
 
-		set_header("Content-Length", boost::lexical_cast<std::string>(length));
+		set_header("Content-Length", std::to_string(length));
 		remove_header("Transfer-Encoding");
 	}
 }

@@ -99,7 +99,7 @@ Suppose you want to serialize a value into a XML attribute, you would have to re
 
 [heading custom types]
 
-What happens during serialization is deconstruction of structured data types into parts that can be converted into text strings. For this final conversion there are __value_serializer__ helper classes. __value_serializer__ is a template and specializations for the default types are given in `<zeep/value_serializer.hpp>`. You can create your own specializations for this class for custom data types, look at the one for `boost::posix_time::ptime` for inspiration.
+What happens during serialization is deconstruction of structured data types into parts that can be converted into text strings. For this final conversion there are __value_serializer__ helper classes. __value_serializer__ is a template and specializations for the default types are given in `<zeep/value_serializer.hpp>`. You can create your own specializations for this class for custom data types, look at the one for `std::chrono::system_clock::time_point` for inspiration.
 
 [heading enums]
 

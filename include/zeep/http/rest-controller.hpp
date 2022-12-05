@@ -351,7 +351,7 @@ class rest_controller : public controller
 			{
 				const auto& [s, available] = params.get_parameter_ex(name);
 				if (available)
-					result = boost::lexical_cast<T>(s);
+					result = value_serializer<T>::from_string(s);
 			}
 			catch (const std::exception& e)
 			{
@@ -388,7 +388,7 @@ class rest_controller : public controller
 			{
 				auto p = params.get_parameter(name);
 				if (not p.empty())
-					result = boost::lexical_cast<T>(p);
+					result = value_serializer<T>::from_string(p);
 			}
 			catch(const std::exception& e)
 			{

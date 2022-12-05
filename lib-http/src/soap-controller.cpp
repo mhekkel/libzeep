@@ -166,18 +166,18 @@ xml::element soap_controller::make_wsdl()
 		{ "name", m_service + "PortType" }
 	});
 	
-	// // // and the types
-	// // xml::type_map typeMap;
-	// // detail::message_map messageMap;
+	// and the types
+	xml::type_map typeMap;
+	message_map messageMap;
 	
-	// // for (auto& mp: m_mountpoints)
-	// // 	mp->collect(typeMap, messageMap, portType, binding);
+	for (auto& mp: m_mountpoints)
+		mp->describe(typeMap, messageMap, portType, binding);
 	
-	// // for (detail::message_map::iterator m = messageMap.begin(); m != messageMap.end(); ++m)
-	// // 	wsdl->append(m->second);
+	for (auto &m : messageMap)
+		wsdl.push_back(m.second);
 	
-	// // for (xml::type_map::iterator t = typeMap.begin(); t != typeMap.end(); ++t)
-	// // 	schema->append(t->second);
+	for (auto &t : typeMap)
+		schema.push_back(t.second);
 	
 	// finish with the wsdl:service
 	auto& service = wsdl.emplace_back("wsdl:service",

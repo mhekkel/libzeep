@@ -174,7 +174,7 @@ SYNOPSIS
         ...
 
        my_server server("0.0.0.0", 10333);
-       boost::thread t(boost::bind(&amp;my_server::run, &amp;server));
+       std::thread t(std::bind(&amp;my_server::run, &amp;server));
        // and wait for a signal to stop using e.g. sigwait(3)
 
 

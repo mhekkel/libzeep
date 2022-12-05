@@ -532,6 +532,7 @@ element& element::operator=(const element& e)
 {
 	if (this != &e)
 	{
+		m_qname = e.m_qname;
 		m_nodes = e.m_nodes;
 		m_attributes = e.m_attributes;
 	}

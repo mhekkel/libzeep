@@ -5,6 +5,7 @@
 //            http://www.boost.org/LICENSE_1_0.txt)
 
 #include <chrono>
+#include <iostream>
 
 #include <zeep/http/connection.hpp>
 #include <zeep/http/controller.hpp>
@@ -186,7 +187,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 		if (client.empty())
 		{
 			boost::asio::ip::address addr = socket.remote_endpoint().address();
-			client = boost::lexical_cast<std::string>(addr);
+			client = addr.to_string();
 		}
 
 		req.set_remote_address(client);

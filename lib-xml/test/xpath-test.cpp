@@ -66,7 +66,7 @@ bool run_test(const xml::element& test)
 	
 	bool result = true;
 	
-	if (ns.size() != boost::lexical_cast<unsigned int>(test.get_attribute("expected-size")))
+	if (ns.size() != std::stoul(test.get_attribute("expected-size")))
 	{
 		cout << "incorrect number of nodes in returned node-set" << endl
 			 << "expected: " << test.get_attribute("expected-size") << endl;
