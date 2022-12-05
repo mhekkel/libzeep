@@ -122,7 +122,7 @@ class soap_controller : public controller
 	template <typename Callback, typename... ArgNames>
 	void map_action(const char *actionName, Callback callback, ArgNames... names)
 	{
-		auto mp = m_mountpoints.emplace_back(new mount_point<Callback>(actionName, this, callback, names...));
+		m_mountpoints.emplace_back(new mount_point<Callback>(actionName, this, callback, names...));
 	}
 
 	/// \brief Create a WSDL based on the registered actions
@@ -240,53 +240,52 @@ class soap_controller : public controller
 			return v;
 		}
 
-		virtual void collect_types(xml::element &seq, const std::string &ns)
+		virtual void collect_types(xml::type_map &types, xml::element &seq, const std::string &ns)
 		{
 			if constexpr (sizeof...(Args) > 0)
-				collect_types(seq, ns, std::make_index_sequence<N>());
+				collect_types(types, seq, ns, std::make_index_sequence<N>());
 		}
 
 		template <std::size_t... I>
-		void collect_types(xml::element &seq, const std::string &ns, std::index_sequence<I...> ix)
+		void collect_types(xml::type_map &types, xml::element &seq, const std::string &ns, std::index_sequence<I...> ix)
 		{
-			(collect_type<I>(seq, ns), ...);
+			(collect_type<I>(types, seq, ns), ...);
 		}
 
 		template <std::size_t I>
-		void collect_type(xml::element &seq, const std::string &ns)
+		void collect_type(xml::type_map &types, xml::element &seq, const std::string &ns)
 		{
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
-			seq.emplace_back(xml::type_serializer<type>::schema(m_names[I], ns));
+
+			xml::schema_creator sc(types, seq);
+
+			sc.add_element(m_names[I], type{});
 		}
 
 		virtual void describe(type_map &types, message_map &messages,
 			xml::element &portType, xml::element &binding)
 		{
 			// the request type
-			{
-				xml::element requestType("xsd:element", { { "name", m_action + "Request" } });
-				auto &complexType = requestType.emplace_back("xsd:complexType");
-				auto &sequence = complexType.emplace_back("xsd:sequence");
+			xml::element requestType("xsd:element", { { "name", m_action } });
+			auto &complexType = requestType.emplace_back("xsd:complexType");
 
-				collect_types(sequence, "ns");
-	
-				types[m_action + "Request"] = requestType;
-			}
+			collect_types(types, complexType.emplace_back("xsd:sequence"), "ns");
+
+			types[m_action + "Request"] = requestType;
 
 			// and the response type
+			xml::element responseType("xsd:element", { { "name", m_action + "Response" } });
+
+			if constexpr (not std::is_void_v<Result>)
 			{
-				xml::element responseType("xsd:element", { { "name", m_action + "Response" } });
+				auto &complexType = responseType.emplace_back("xsd:complexType");
+				auto &sequence = complexType.emplace_back("xsd:sequence");
 
-				if constexpr (not std::is_void_v<Result>)
-				{
-					auto &complexType = responseType.emplace_back("xsd:complexType");
-					auto &sequence = complexType.emplace_back("xsd:sequence");
-
-					sequence.push_back(xml::type_serializer<Result>::schema("Response", "ns"));
-				}
-
-				types[m_action + "Response"] = responseType;
+				xml::schema_creator sc(types, sequence);
+				sc.add_element("Response", Result{});
 			}
+
+			types[m_action + "Response"] = responseType;
 
 			// now the wsdl operations
 			xml::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});

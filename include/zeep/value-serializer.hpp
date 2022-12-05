@@ -16,10 +16,11 @@
 
 #include <regex>
 
-// We're using Howard Hinands date functions
-#include <date/date.h>
-
 #include <zeep/exception.hpp>
+
+#if __has_include(<date/date.h>)
+#include <date/date.h>
+#endif
 
 namespace zeep
 {
@@ -225,6 +226,9 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 
 // --------------------------------------------------------------------
 // date/time support
+// We're using Howard Hinands date functions here. If available...
+
+#if __has_include(<date/date.h>)
 
 /// \brief to_string/from_string for std::chrono::system_clock::time_point
 /// time is always assumed to be UTC
@@ -309,5 +313,7 @@ struct value_serializer<date::sys_days>
 		return result;
 	}
 };
+
+#endif
 
 } // namespace zeep

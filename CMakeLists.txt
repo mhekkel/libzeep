@@ -185,7 +185,7 @@ target_include_directories(zeep
 	${Boost_INCLUDE_DIR}
 )
 
-target_link_libraries(zeep PUBLIC Boost::boost Threads::Threads ${STDCPPFS_LIBRARY})
+target_link_libraries(zeep PUBLIC Boost::boost Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)

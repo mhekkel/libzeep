@@ -173,66 +173,8 @@ struct schema_creator
 // --------------------------------------------------------------------
 
 template<typename T, typename = void>
-struct type_serializer
-{
-	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
-	using value_serializer_type = value_serializer<value_type>;
+struct type_serializer;
 
-	static constexpr const char* type_name() { return value_serializer_type::type_name(); }
-
-	static std::string serialize_value(const T& value)
-	{
-		return value_serializer_type::to_string(value);
-	}
-
-	static T deserialize_value(const std::string& value)
-	{
-		return value_serializer_type::from_string(value);
-	}
-
-	static void serialize_child(element& n, const char* name, const value_type& value)
-	{
-		assert(name);
-
-		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			n.set_content(value_serializer_type::to_string(value));
-		else
-			n.emplace_back(name).set_content(value_serializer_type::to_string(value));
-	}
-
-	static void deserialize_child(const element& n, const char* name, value_type& value)
-	{
-		assert(name);
-
-		value = {};
-
-		if (strlen(name) == 0 or strcmp(name, ".") == 0)
-			value = value_serializer_type::from_string(n.get_content());
-		else
-		{
-			auto e = std::find_if(n.begin(), n.end(), [name](auto& e) { return e.name() == name; });
-			if (e != n.end())
-				value = value_serializer_type::from_string(e->get_content());
-		}
-	}
-
-	static element schema(const std::string& name, const std::string& prefix)
-	{
-		return {
-			"xsd:element",
-			{
-				{ "name", name },
-				{ "type", prefix + ':' + type_name() },
-				{ "minOccurs", "1" },
-				{ "maxOccurs", "1" }
-			}
-		};
-	}
-
-	static void register_type(type_map& types)
-	{
-	}
-};
 
 template<typename T, size_t N>
 struct type_serializer<T[N]>
@@ -588,6 +530,68 @@ struct type_serializer<T, std::enable_if_t<is_serializable_array_type_v<T,serial
 	}
 };
 
+template<typename T, typename U>
+struct type_serializer
+{
+	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
+	using value_serializer_type = value_serializer<value_type>;
+
+	static constexpr const char* type_name() { return value_serializer_type::type_name(); }
+
+	static std::string serialize_value(const T& value)
+	{
+		return value_serializer_type::to_string(value);
+	}
+
+	static T deserialize_value(const std::string& value)
+	{
+		return value_serializer_type::from_string(value);
+	}
+
+	static void serialize_child(element& n, const char* name, const value_type& value)
+	{
+		assert(name);
+
+		if (strlen(name) == 0 or strcmp(name, ".") == 0)
+			n.set_content(value_serializer_type::to_string(value));
+		else
+			n.emplace_back(name).set_content(value_serializer_type::to_string(value));
+	}
+
+	static void deserialize_child(const element& n, const char* name, value_type& value)
+	{
+		assert(name);
+
+		value = {};
+
+		if (strlen(name) == 0 or strcmp(name, ".") == 0)
+			value = value_serializer_type::from_string(n.get_content());
+		else
+		{
+			auto e = std::find_if(n.begin(), n.end(), [name](auto& e) { return e.name() == name; });
+			if (e != n.end())
+				value = value_serializer_type::from_string(e->get_content());
+		}
+	}
+
+	static element schema(const std::string& name, const std::string& prefix)
+	{
+		return {
+			"xsd:element",
+			{
+				{ "name", name },
+				{ "type", prefix + ':' + type_name() },
+				{ "minOccurs", "1" },
+				{ "maxOccurs", "1" }
+			}
+		};
+	}
+
+	static void register_type(type_map& types)
+	{
+	}
+};
+
 // And finally, the implementation of serializer, deserializer and schema_creator.
 
 template<typename T>
@@ -662,9 +666,9 @@ template<typename T>
 schema_creator& schema_creator::add_element(const char* name, const T& value)
 {
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
-	using type_serializer = type_serializer<value_type, serializer>;
+	using type_serializer = type_serializer<value_type>;
 	
-	m_node.emplace(type_serializer::schema(name, m_prefix));
+	m_node.emplace_back(type_serializer::schema(name, m_prefix));
 
 	std::string type_name = type_serializer::type_name();
 

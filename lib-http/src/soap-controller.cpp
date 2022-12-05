@@ -174,10 +174,10 @@ xml::element soap_controller::make_wsdl()
 		mp->describe(typeMap, messageMap, portType, binding);
 	
 	for (auto &m : messageMap)
-		wsdl.push_back(m.second);
+		wsdl.emplace_back(std::move(m.second));
 	
 	for (auto &t : typeMap)
-		schema.push_back(t.second);
+		schema.emplace_back(std::move(t.second));
 	
 	// finish with the wsdl:service
 	auto& service = wsdl.emplace_back("wsdl:service",

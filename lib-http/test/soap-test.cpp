@@ -21,6 +21,8 @@ struct TestStruct
 	}
 };
 
+static_assert(z::has_serialize_v<TestStruct,zx::serializer>, "oops");
+
 struct my_test_controller : public zh::soap_controller
 {
 	my_test_controller() : zh::soap_controller("ws", "http://www.hekkelman.com/libzeep/soap")
