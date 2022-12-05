@@ -156,26 +156,31 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 	}
 	else
 	{
-		if (fs::exists(m_pid_file))
-			try
-			{
-				fs::remove(m_pid_file);
-			}
-			catch (...)
-			{
-			}
+		std::error_code ec;
+
+		if (fs::exists(m_pid_file, ec))
+			fs::remove(m_pid_file, ec);
 
 		fs::path pidDir = fs::path(m_pid_file).parent_path();
-		if (not fs::is_directory(pidDir))
-			fs::create_directories(pidDir);
+		if (not fs::is_directory(pidDir, ec))
+			fs::create_directories(pidDir, ec);
+		
+		if (ec)
+			std::cerr << "Creating directory for pid file failed: " << ec.message() << std::endl;
 
 		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
-		if (not fs::is_directory(outLogDir))
-			fs::create_directories(outLogDir);
+		if (not fs::is_directory(outLogDir, ec))
+			fs::create_directories(outLogDir, ec);
+
+		if (ec)
+			std::cerr << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << std::endl;
 
 		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
-		if (not fs::is_directory(errLogDir))
-			fs::create_directories(errLogDir);
+		if (not fs::is_directory(errLogDir, ec))
+			fs::create_directories(errLogDir, ec);
+
+		if (ec)
+			std::cerr << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << std::endl;
 
 		try
 		{
@@ -207,17 +212,25 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 		}
 
 		daemonize();
-
-		run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
-
-		if (fs::exists(m_pid_file))
-			try
+		
+		for (;;)
+		{
+			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
+			if (hupped)
 			{
-				fs::remove(m_pid_file);
+				std::cerr << "Server was interrupted, will attempt to resume" << std::endl;
+				continue;
 			}
-			catch (...)
-			{
-			}
+			
+			break;
+		}
+
+
+		if (fs::exists(m_pid_file, ec))
+			fs::remove(m_pid_file, ec);
+		
+		if (ec)
+			std::cerr << "Removing pid file failed: " << ec.message() << std::endl;
 	}
 
 	return result;

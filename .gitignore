@@ -12,3 +12,7 @@ msvc/
 doc/Jamfile.v2
 CMakeSettings.json
 include/zeep/config.hpp
+examples/bin/
+examples/obj/
+examples/obj.dbg/
+

@@ -27,6 +27,9 @@ endif
 CXXFLAGS			+= $(DEFINES:%=-D%)
 CXXFLAGS			+= $(WARNINGS:%=-W%)
 
+CXXFLAGS			+= $(shell pkg-config --cflags libzeep)
+LDFLAGS				+= $(shell pkg-config --libs libzeep)
+
 OBJDIR = obj
 ifeq "$(DEBUG)" "1"
 	OBJDIR	:= $(OBJDIR).dbg
@@ -65,7 +68,7 @@ endef
 EXAMPLES = \
 	http-server-0 http-server-1 http-server-2 \
 	serialize-xml synopsis-json synopsis-xml validating-xml-sample xpath-sample \
-	synopsis-el-1 security-sample rest-sample rest-sample-2
+	synopsis-el-1 security-sample rest-sample rest-sample-2 daemon-sample
 
 $(foreach part,$(EXAMPLES),$(eval $(call EXAMPLE_template,$(part))))
 
@@ -76,3 +79,5 @@ all: examples
 
 FORCE:
 
+test:
+	echo $(CXXFLAGS)

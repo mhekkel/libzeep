@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 5.1.8 LANGUAGES CXX)
+project(libzeep VERSION 6.0.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -77,6 +77,11 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 find_package(Boost 1.70.0 REQUIRED)
+
+find_package(date QUIET)
+if (NOT(date_FOUND))
+	add_subdirectory(date EXCLUDE_FROM_ALL)
+endif()
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -335,7 +340,10 @@ if(ZEEP_BUILD_TESTS)
 
 	enable_testing()
 
-	find_package(libcfp REQUIRED)
+	find_package(libmcfp QUIET)
+	if(NOT libmcfp_FOUND)
+		add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+	endif()
 
 	# data files for the parser test
 
@@ -415,7 +423,7 @@ if(ZEEP_BUILD_TESTS)
 			${PROJECT_SOURCE_DIR}/include
 		)
 
-		target_link_libraries(${ZEEP_TEST} PRIVATE zeep ${STDCPPFS_LIBRARY} libcfp::libcfp)
+		target_link_libraries(${ZEEP_TEST} PRIVATE zeep ${STDCPPFS_LIBRARY} libmcfp::libmcfp)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions

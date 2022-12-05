@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <set>
 
-#include <cfp/cfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
@@ -351,22 +351,22 @@ int main(int argc, char* argv[])
 {
 	int result = 0;
 
-	auto &config = cfp::config::instance();
+	auto &config = mcfp::config::instance();
 
 	config.init(
 		"usage: parser-test [options]",
-		cfp::make_option("help,h", "produce help message"),
-		cfp::make_option("verbose,v", "verbose output"),
-		cfp::make_option<string>("id", "ID for the test to run from the test suite"),
-		cfp::make_option<vector<string>>("skip", "Skip this test, can be specified multiple times"),
-		cfp::make_option<vector<string>>("questionable", "Questionable tests, do not consider failure of these to be an error"),
-		cfp::make_option<int>("edition", "XML 1.0 specification edition to test, default is 5, 0 which means run all tests"),
-		cfp::make_option("trace", "Trace productions in parser"),
-		cfp::make_option<string>("type", "Type of test to run (valid|not-wf|invalid|error)"),
-		cfp::make_option<string>("single", "Test a single XML file"),
-		cfp::make_option<string>("dump", "Dump the structure of a single XML file"),
-		cfp::make_option("print-ids", "Print the ID's of failed tests"),
-		cfp::make_option<string>("conf", "Configuration file")
+		mcfp::make_option("help,h", "produce help message"),
+		mcfp::make_option("verbose,v", "verbose output"),
+		mcfp::make_option<string>("id", "ID for the test to run from the test suite"),
+		mcfp::make_option<vector<string>>("skip", "Skip this test, can be specified multiple times"),
+		mcfp::make_option<vector<string>>("questionable", "Questionable tests, do not consider failure of these to be an error"),
+		mcfp::make_option<int>("edition", "XML 1.0 specification edition to test, default is 5, 0 which means run all tests"),
+		mcfp::make_option("trace", "Trace productions in parser"),
+		mcfp::make_option<string>("type", "Type of test to run (valid|not-wf|invalid|error)"),
+		mcfp::make_option<string>("single", "Test a single XML file"),
+		mcfp::make_option<string>("dump", "Dump the structure of a single XML file"),
+		mcfp::make_option("print-ids", "Print the ID's of failed tests"),
+		mcfp::make_option<string>("conf", "Configuration file")
 	);
 
 	std::error_code ec;
