@@ -61,7 +61,7 @@ bool tag_processor_v1::process_el(const scope& scope, std::string& s)
 	return replaced;
 }
 
-void tag_processor_v1::process_xml(xml::node *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	xml::text* text = dynamic_cast<xml::text*>(node);
 
@@ -121,7 +121,7 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, [[maybe_
 	}
 }
 
-void tag_processor_v1::process_tag(const std::string& tag, xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_tag(const std::string& tag, xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 		 if (tag == "include")	process_include(node, scope, dir, loader);
 	else if (tag == "if")		process_if(node, scope, dir, loader);
@@ -137,7 +137,7 @@ void tag_processor_v1::process_tag(const std::string& tag, xml::element *node, c
 	else throw exception("unimplemented <m1:" + tag + "> tag");
 }
 
-void tag_processor_v1::process_include(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_include(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	// an include directive, load file and include resulting content
 	std::string file = node->get_attribute("file");
@@ -157,7 +157,7 @@ void tag_processor_v1::process_include(xml::element *node, const scope& scope, [
 	parent->insert(node, std::move(doc.front()));
 }
 
-void tag_processor_v1::process_if(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_if(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	std::string test = node->get_attribute("test");
 	if (evaluate_el(scope, test))
@@ -173,7 +173,7 @@ void tag_processor_v1::process_if(xml::element *node, const scope& scope, [[mayb
 	}
 }
 
-void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	using json::detail::value_type;
 
@@ -201,7 +201,7 @@ void tag_processor_v1::process_iterate(xml::element *node, const scope& scope, [
 	}
 }
 
-void tag_processor_v1::process_for(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_for(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	object b = evaluate_el(scope, node->get_attribute("begin"));
 	object e = evaluate_el(scope, node->get_attribute("end"));
@@ -234,7 +234,7 @@ protected:
 	//	char_type do_decimal_point() const	{ return dsp; }
 };
 
-void tag_processor_v1::process_number(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs::path /*dir*/, basic_template_processor& /*loader*/)
 {
 	std::string number = node->get_attribute("n");
 	std::string format = node->get_attribute("f");
@@ -277,7 +277,7 @@ void tag_processor_v1::process_number(xml::element *node, const scope& scope, [[
 	parent->nodes().emplace(node, zeep::xml::text(number));
 }
 
-void tag_processor_v1::process_options(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_options(xml::element *node, const scope& scope, fs::path /*dir*/, basic_template_processor& /*loader*/)
 {
 	using ::zeep::json::detail::value_type;
 
@@ -320,7 +320,7 @@ void tag_processor_v1::process_options(xml::element *node, const scope& scope, [
 	}
 }
 
-void tag_processor_v1::process_option(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_option(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	std::string value = node->get_attribute("value");
 	if (not value.empty())
@@ -347,7 +347,7 @@ void tag_processor_v1::process_option(xml::element *node, const scope& scope, [[
 	}
 }
 
-void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	std::string name = node->get_attribute("name");
 	if (not name.empty())
@@ -409,12 +409,12 @@ void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, 
 // 	s.put(var, url);
 // }
 
-void tag_processor_v1::process_param([[maybe_unused]] xml::element *node, [[maybe_unused]] const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_param(xml::element */*node*/, const scope& /*scope*/, fs::path /*dir*/, basic_template_processor& /*loader*/)
 {
 	throw exception("Invalid XML, cannot have a stand-alone mrs:param element");
 }
 
-void tag_processor_v1::process_embed(xml::element *node, const scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader)
+void tag_processor_v1::process_embed(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
 {
 	// an embed directive, load xml from attribute and include parsed content
 	std::string xml = scope[node->get_attribute("var")].as<std::string>();

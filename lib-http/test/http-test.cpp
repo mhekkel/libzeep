@@ -86,10 +86,14 @@ BOOST_AUTO_TEST_CASE(webapp_6)
 		"--xYzZY\r\n"
 		"Content-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\n"
 		"Content-Encoding: gzip\r\n"
-		"Content-Type: chemical/x-cif\r\n\r\nello, world!\n\r\n"
+		"Content-Type: chemical/x-cif\r\n"
+		"\r\n"
+		"hello, world!\n\r\n"
 		"--xYzZY\r\n"
 		"Content-Disposition: form-data; name=\"mtz-file\"; filename=\"1cbs_map.mtz\"\r\n"
-		"Content-Type: text/plain\r\n\r\nnd again, hello!\n\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"And again, hello!\n\r\n"
 		"--xYzZY--\r\n");
 
 	auto fp1 = req.get_file_parameter("pdb-file");

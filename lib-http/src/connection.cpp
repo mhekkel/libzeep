@@ -91,7 +91,7 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 	}
 }
 
-void connection::handle_write(boost::system::error_code ec, [[maybe_unused]] size_t bytes_transferred)
+void connection::handle_write(boost::system::error_code ec, size_t /*bytes_transferred*/)
 {
 	if (not ec)
 	{

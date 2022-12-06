@@ -303,7 +303,7 @@ void basic_template_processor::create_reply_from_template(const std::string& fil
 	reply.set_content(doc);
 }
 
-void basic_template_processor::init_scope([[maybe_unused]] scope& scope)
+void basic_template_processor::init_scope(scope& /*scope*/)
 {
 }
 

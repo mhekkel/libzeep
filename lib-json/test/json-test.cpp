@@ -27,7 +27,7 @@ struct MyPOD2
 	}
 
 	template<typename Archive>
-	void serialize(Archive& ar, [[maybe_unused]] unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("f-f", f)
 		   & zeep::make_nvp("v", v)
@@ -49,7 +49,7 @@ struct MyPOD
 	}
 
 	template<typename Archive>
-	void serialize(Archive& ar, [[maybe_unused]] unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("s-s", s)
 		   & zeep::make_nvp("i-i", i)
@@ -261,7 +261,7 @@ struct MyPOD3
 	MyEnum a;
 	
 	template<typename Archive>
-	void serialize(Archive& ar, [[maybe_unused]] unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("a", a)
 		   ;

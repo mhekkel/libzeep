@@ -33,7 +33,7 @@ class login_error_handler : public error_handler
 		return true;
 	}
 
-	virtual bool create_error_reply([[maybe_unused]] const request &req, [[maybe_unused]] status_type status, [[maybe_unused]] const std::string &message, [[maybe_unused]] reply &rep)
+	virtual bool create_error_reply(const request &/*req*/, const request &/*req*/, const request &/*req*/, const request &/*req*/)
 	{
 		return false;
 	}

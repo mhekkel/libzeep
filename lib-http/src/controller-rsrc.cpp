@@ -309,7 +309,7 @@ namespace mrsrc
 			return m_end - m_current;
 		}
 
-		pos_type seekoff(off_type off, std::ios_base::seekdir dir, [[maybe_unused]] std::ios_base::openmode which)
+		pos_type seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode /*which*/)
 		{
 			switch (dir)
 			{
@@ -338,7 +338,7 @@ namespace mrsrc
 			return m_current - m_begin;
 		}
 
-		pos_type seekpos(pos_type pos, [[maybe_unused]] std::ios_base::openmode which)
+		pos_type seekpos(pos_type pos, std::ios_base::openmode /*which*/)
 		{
 			m_current = m_begin + pos;
 

@@ -215,7 +215,7 @@ void document::write(std::ostream& os, format_info fmt) const
 
 // --------------------------------------------------------------------
 
-void document::XmlDeclHandler([[maybe_unused]] encoding_type encoding, bool standalone, float version)
+void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, float version)
 {
 	m_has_xml_decl = true;
 	// m_encoding = encoding;
@@ -279,7 +279,7 @@ void document::StartElementHandler(const std::string& name, const std::string& u
 	m_namespaces.clear();
 }
 
-void document::EndElementHandler([[maybe_unused]] const std::string& name, [[maybe_unused]] const std::string& uri)
+void document::EndElementHandler(const std::string& /*name*/, const std::string& /*name*/)
 {
 	if (m_cdata != nullptr)
 		throw exception("CDATA section not closed");
@@ -348,7 +348,7 @@ void document::StartNamespaceDeclHandler(const std::string& prefix, const std::s
 	m_namespaces.push_back(make_pair(prefix, uri));
 }
 
-void document::EndNamespaceDeclHandler([[maybe_unused]] const std::string& prefix)
+void document::EndNamespaceDeclHandler(const std::string& /*prefix*/)
 {
 }
 

@@ -50,7 +50,7 @@ class parse_result
 	constexpr explicit operator bool() const noexcept { return m_value == true_value; }
 };
 
-constexpr parse_result indeterminate = parse_result(parse_result::indeterminate_value);
+constexpr parse_result::value_type indeterminate = parse_result::indeterminate_value;
 
 constexpr parse_result operator and(parse_result lhs, parse_result rhs)
 {
@@ -86,9 +86,14 @@ constexpr parse_result operator or(bool lhs, parse_result rhs)
 	return lhs ? parse_result(true) : rhs;
 }
 
+constexpr parse_result operator==(parse_result lhs, parse_result::value_type rhs)
+{
+	return lhs.m_value == rhs;
+}
+
 constexpr parse_result operator==(parse_result lhs, parse_result rhs)
 {
-	return (lhs.m_value == parse_result::indeterminate_value or rhs.m_value == parse_result::indeterminate_value) ? indeterminate : ((lhs and rhs) or (not lhs and not rhs));
+	return (lhs == indeterminate or rhs == indeterminate) ? indeterminate : ((lhs and rhs) or (not lhs and not rhs));
 }
 
 // --------------------------------------------------------------------

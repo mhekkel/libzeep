@@ -43,7 +43,7 @@ controller::~controller()
 {
 }
 
-bool controller::dispatch_request([[maybe_unused]] boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
+bool controller::dispatch_request(boost::asio::ip::tcp::socket& /*socket*/, request& req, reply& rep)
 {
 	bool result = false;
 

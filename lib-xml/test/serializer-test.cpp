@@ -18,7 +18,7 @@ struct st_1
 	string	s;
 
 	template<class Archive>
-	void serialize(Archive& ar, [[maybe_unused]] unsigned long v)
+	void serialize(Archive& ar, unsigned long /*v*/)
 	{
 		ar & ZEEP_ELEMENT_NAME_VALUE(i) & ZEEP_ELEMENT_NAME_VALUE(s);
 	}
@@ -57,7 +57,7 @@ struct S
 	bool operator==(const S& s) const { return a == s.a and b == s.b and c == s.c; }
 
 	template<typename Archive>
-	void serialize(Archive& ar, [[maybe_unused]] unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & element_nvp("a", a)
 			& element_nvp("b", b)

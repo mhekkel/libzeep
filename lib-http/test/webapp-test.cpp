@@ -46,18 +46,18 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 			mount_post("test", &my_webapp::handle_post_test);
 		}
 
-		virtual void handle_test([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 
-		virtual void handle_get_test([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_get_test(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("get", "text/plain");
 		}
 
-		virtual void handle_post_test([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_post_test(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("post", "text/plain");
@@ -141,37 +141,37 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 			mount("{css,scripts}/", &my_webapp::handle_testf);
 		}
 
-		virtual void handle_test1([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test1(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("1", "text/plain");
 		}
 
-		virtual void handle_test2([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test2(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2", "text/plain");
 		}
 
-		virtual void handle_test2b([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test2b(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2b", "text/plain");
 		}
 
-		virtual void handle_test3([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test3(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("3", "text/plain");
 		}
 
-		virtual void handle_test4([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_test4(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("4", "text/plain");
 		}
 
-		virtual void handle_testf([[maybe_unused]] const zeep::http::request& request, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& reply)
+		virtual void handle_testf(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("f", "text/plain");
@@ -232,7 +232,7 @@ class hello_controller : public zeep::http::html_controller
 		mount("", &hello_controller::handle_index);
 	}
 
-	void handle_index([[maybe_unused]] const zeep::http::request& req, [[maybe_unused]] const zeep::http::scope& scope, zeep::http::reply& rep)
+	void handle_index(const zeep::http::request& /*req*/, const zeep::http::scope& /*scope*/, zeep::http::reply& rep)
 	{
 		rep = zeep::http::reply::stock_reply(zeep::http::ok);
 		rep.set_content("Hello", "text/plain");
