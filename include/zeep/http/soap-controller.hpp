@@ -247,13 +247,13 @@ class soap_controller : public controller
 		}
 
 		template <std::size_t... I>
-		void collect_types(xml::type_map &types, xml::element &seq, const std::string &ns, std::index_sequence<I...> ix)
+		void collect_types(xml::type_map &types, xml::element &seq, const std::string &ns, [[maybe_unused]] std::index_sequence<I...> ix)
 		{
 			(collect_type<I>(types, seq, ns), ...);
 		}
 
 		template <std::size_t I>
-		void collect_type(xml::type_map &types, xml::element &seq, const std::string &ns)
+		void collect_type(xml::type_map &types, xml::element &seq, [[maybe_unused]] const std::string &ns)
 		{
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
 

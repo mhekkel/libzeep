@@ -47,7 +47,7 @@ private:
 struct state_any : public state_base
 {
 	virtual std::tuple<bool, bool>
-	allow(const std::string& name) { return std::make_tuple(true, true); }
+	allow([[maybe_unused]] const std::string& name) { return std::make_tuple(true, true); }
 	virtual bool allow_char_data() { return true; }
 	virtual bool allow_empty() { return true; }
 };
@@ -55,7 +55,7 @@ struct state_any : public state_base
 struct state_empty : public state_base
 {
 	virtual std::tuple<bool, bool>
-	allow(const std::string& name) { return std::make_tuple(false, true); }
+	allow([[maybe_unused]] const std::string& name) { return std::make_tuple(false, true); }
 	virtual bool allow_empty() { return true; }
 	virtual bool must_be_empty() { return true; }
 };

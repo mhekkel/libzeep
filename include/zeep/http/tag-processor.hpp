@@ -92,7 +92,7 @@ class tag_processor_v1 : public tag_processor
 	void process_options(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_option(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_checkbox(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_url(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	// void process_url(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_param(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_embed(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 

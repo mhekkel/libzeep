@@ -313,7 +313,7 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 
 // -----------------------------------------------------------------------
 
-void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, std::filesystem::path dir, basic_template_processor& loader)
+void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	for (;;)
 	{
@@ -405,14 +405,14 @@ void tag_processor_v2::process_node(xml::node* node, const scope& parentScope, s
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_if(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_template_processor& loader, bool unless) ->AttributeAction
+auto tag_processor_v2::process_attr_if([[maybe_unused]] xml::element* element, xml::attribute* attr, scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader, bool unless) ->AttributeAction
 {
 	return ((not evaluate_el(scope, attr->value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_assert(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_template_processor& loader) ->AttributeAction
+auto tag_processor_v2::process_attr_assert([[maybe_unused]] xml::element* element, xml::attribute* attr, scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader) ->AttributeAction
 {
 	if (not evaluate_el_assert(scope, attr->value()))
 		throw zeep::exception("Assertion failed for '" + attr->value() + "'");
@@ -421,7 +421,7 @@ auto tag_processor_v2::process_attr_assert(xml::element* element, xml::attribute
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_template_processor& loader, bool escaped) ->AttributeAction
+auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* attr, scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader, bool escaped) ->AttributeAction
 {
 	json::element obj = evaluate_el(scope, attr->value());
 
@@ -457,7 +457,7 @@ auto tag_processor_v2::process_attr_text(xml::element* element, xml::attribute* 
 
 // --------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_template_processor& loader) -> AttributeAction
+auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute* attr, scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader) -> AttributeAction
 {
 	auto vo = evaluate_el(scope, attr->value());
 	std::string v;
@@ -498,7 +498,7 @@ auto tag_processor_v2::process_attr_switch(xml::element* element, xml::attribute
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* attr, scope& scope, fs::path dir, basic_template_processor& loader) -> AttributeAction
+auto tag_processor_v2::process_attr_with([[maybe_unused]] xml::element* element, xml::attribute* attr, scope& scope, [[maybe_unused]] fs::path dir, [[maybe_unused]] basic_template_processor& loader) -> AttributeAction
 {
 	evaluate_el_with(scope, attr->value());
 	return AttributeAction::none;
@@ -506,7 +506,7 @@ auto tag_processor_v2::process_attr_with(xml::element* element, xml::attribute* 
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
@@ -561,7 +561,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	auto v = evaluate_el_attr(scope, attr->value());
 	for (auto vi: v)
@@ -572,7 +572,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::eleme
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	auto s = attr->value();
 
@@ -585,7 +585,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::el
 // --------------------------------------------------------------------
 
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
-	xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+	xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	auto s = attr->value();
 
@@ -599,7 +599,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	auto type = attr->value();
 
@@ -849,7 +849,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element* node, xml::attribute* attr, [[maybe_unused]] scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	auto mode = attr->value();
 
@@ -883,7 +883,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::ele
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	for (;;)
 	{
@@ -920,7 +920,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml::element* node, xml::attribute* attr, scope& scope, [[maybe_unused]] std::filesystem::path dir, [[maybe_unused]] basic_template_processor& loader)
 {
 	for (;;)
 	{

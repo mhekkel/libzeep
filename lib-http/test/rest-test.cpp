@@ -140,12 +140,12 @@ class e_rest_controller : public zeep::http::rest_controller
 	}
 
 	// CRUD routines
-	string post_opname(Opname opname)
+	string post_opname([[maybe_unused]] Opname opname)
 	{
 		return {};
 	}
 
-	void put_opname(string opnameId, Opname opname)
+	void put_opname([[maybe_unused]] string opnameId, [[maybe_unused]] Opname opname)
 	{
 		{};
 	}
@@ -155,7 +155,7 @@ class e_rest_controller : public zeep::http::rest_controller
 		return { {}, {} };
 	}
 
-	void set_opnames(Opnames opnames)
+	void set_opnames([[maybe_unused]] Opnames opnames)
 	{
 	}
 
@@ -177,11 +177,11 @@ class e_rest_controller : public zeep::http::rest_controller
 		return {};
 	}
 
-	void delete_opname(string id)
+	void delete_opname([[maybe_unused]] string id)
 	{
 	}
 
-	GrafiekData get_grafiek(grafiek_type type, aggregatie_type aggregatie)
+	GrafiekData get_grafiek([[maybe_unused]] grafiek_type type, [[maybe_unused]] aggregatie_type aggregatie)
 	{
 		return{};
 	}

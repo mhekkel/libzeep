@@ -575,11 +575,9 @@ struct type_serializer
 		}
 	}
 
-	static element schema(const std::string& name, const std::string& prefix)
+	static element schema(const std::string& name, [[maybe_unused]] const std::string& prefix)
 	{
 		std::string type = type_name();
-		if (type.find(':') == std::string::npos)
-			type = prefix + ':' + type;
 
 		return {
 			"xsd:element",
@@ -592,7 +590,7 @@ struct type_serializer
 		};
 	}
 
-	static void register_type(type_map& types)
+	static void register_type([[maybe_unused]] type_map& types)
 	{
 	}
 };
@@ -668,7 +666,7 @@ deserializer& deserializer::deserialize_attribute(const char* name, T& value)
 }
 
 template<typename T>
-schema_creator& schema_creator::add_element(const char* name, const T& value)
+schema_creator& schema_creator::add_element(const char* name, [[maybe_unused]] const T& value)
 {
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;
@@ -685,7 +683,7 @@ schema_creator& schema_creator::add_element(const char* name, const T& value)
 }
 
 template<typename T>
-schema_creator& schema_creator::add_attribute(const char* name, const T& value)
+schema_creator& schema_creator::add_attribute(const char* name, [[maybe_unused]] const T& value)
 {
 	using value_type = typename std::remove_const_t<typename std::remove_reference_t<T>>;
 	using type_serializer = type_serializer<value_type>;

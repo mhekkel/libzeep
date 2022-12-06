@@ -146,7 +146,7 @@ class html_controller : public controller
 	///
 	/// The default implementation does nothing, derived implementations may
 	/// want to add some default data to the scope.
-	virtual void init_scope(scope& scope) {}
+	virtual void init_scope([[maybe_unused]] scope& scope) {}
 
   private:
 

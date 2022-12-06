@@ -268,15 +268,17 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		if (not std::regex_match(s, m, kRX))
 			throw std::runtime_error("Invalid date format");
 
+		std::istringstream is(s);
+
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
-				parse("%FT%TZ", result);
+				is >> parse("%FT%TZ", result);
 			else
-				parse("%FT%T%0z", result);
+				is >> parse("%FT%T%0z", result);
 		}
 		else
-			parse("%FT%T", result);
+			is >> parse("%FT%T", result);
 		
 		return result;
 	}
@@ -308,7 +310,8 @@ struct value_serializer<date::sys_days>
 
 		date::sys_days result;
 
-		parse("%F", result);
+		std::istringstream is(s);
+		is >> parse("%F", result);
 		
 		return result;
 	}
