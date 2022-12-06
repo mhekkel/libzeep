@@ -14,7 +14,7 @@ include(Dart)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Filesystem REQUIRED)
@@ -77,11 +77,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 find_package(Boost 1.70.0 REQUIRED)
-
-find_package(date QUIET)
-if (NOT(date_FOUND))
-	add_subdirectory(date EXCLUDE_FROM_ALL)
-endif()
+find_package(date REQUIRED)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
