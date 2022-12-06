@@ -11,6 +11,8 @@
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
 
+#include <filesystem>
+
 namespace zeep::http
 {
 
