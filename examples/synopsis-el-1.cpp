@@ -1,4 +1,7 @@
-// compile: clang++ -o synopsis-json synopsis-json.cpp -I ../../include/  ../../lib/libzeep-json.a ../../lib/libzeep-generic.a -std=c++17 -lstdc++fs -I ~/projects/boost_1_73_0/
+//           Copyright Maarten L. Hekkelman, 2022
+//  Distributed under the Boost Software License, Version 1.0.
+//     (See accompanying file LICENSE_1_0.txt or copy at
+//           http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
 #include <cassert>

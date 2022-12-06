@@ -45,12 +45,6 @@ if(MSVC)
 
 	get_WIN32_WINNT(ver)
 	add_definitions(-D_WIN32_WINNT=${ver})
-
-	# On Windows, do not install in the system location by default
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message("The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/zeep")
-		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/zeep" CACHE PATH "..." FORCE)
-	endif()
 endif()
 
 # Optionally use mrc to create resources
