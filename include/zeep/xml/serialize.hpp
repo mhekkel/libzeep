@@ -529,6 +529,26 @@ struct type_serializer<T, std::enable_if_t<is_serializable_array_type_v<T,serial
 	{
 		type_serializer::deserialize_array(n, name, value, priority_tag<2>{});
 	}
+
+	static element schema(const std::string& name, const std::string& /*prefix*/)
+	{
+		std::string type = type_name();
+
+		return {
+			"xsd:element",
+			{
+				{ "name", name },
+				{ "type", type },
+				{ "minOccurs", "0" },
+				{ "maxOccurs", "unbounded" }
+			}
+		};
+	}
+
+	static void register_type(type_map& types)
+	{
+		type_serializer_type::register_type(types);
+	}
 };
 
 template<typename T, typename U>

@@ -86,11 +86,12 @@ class soap_controller : public controller
 	/// \brief constructor
 	///
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
+	/// \param service      The name of the service
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	soap_controller(const std::string &prefix_path, const std::string &ns)
+	soap_controller(const std::string &prefix_path, const std::string &service, const std::string &ns)
 		: controller(prefix_path)
 		, m_ns(ns)
-		, m_service("b")
+		, m_service(service)
 	{
 		while (m_prefix_path.front() == '/')
 			m_prefix_path.erase(0, 1);

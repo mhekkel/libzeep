@@ -191,9 +191,11 @@ xml::element soap_controller::make_wsdl()
 		{ "binding", "ns:" + m_service }
 	});
 	
+	std::string location = get_server().get_context_name() + "/" + m_location;
+
 	port.emplace_back("soap:address",
 	{
-		{ "location", m_location }
+		{ "location", location }
 	});
 	
 	return wsdl;

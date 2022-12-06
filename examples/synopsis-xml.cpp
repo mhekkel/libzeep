@@ -1,3 +1,4 @@
+#include <iostream>
 #include <zeep/xml/document.hpp>
 
 //[ synopsis_xml_main

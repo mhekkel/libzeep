@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include <zeep/xml/document.hpp>
 
