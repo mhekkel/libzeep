@@ -262,7 +262,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 
 		time_type result;
 
-		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|+-\d{2}:\d{2})?)");
+		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[-+]\d{2}:\d{2})?)");
 		std::smatch m;
 
 		if (not std::regex_match(s, m, kRX))
@@ -279,7 +279,10 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		}
 		else
 			is >> parse("%FT%T", result);
-		
+
+		if (is.bad() or is.fail())
+			throw std::runtime_error("invalid formatted date");
+
 		return result;
 	}
 };
@@ -311,7 +314,10 @@ struct value_serializer<date::sys_days>
 		date::sys_days result;
 
 		std::istringstream is(s);
-		is >> parse("%F", result);
+		from_stream(is, "%F", result);
+
+		if (is.bad() or is.fail())
+			throw std::runtime_error("invalid formatted date");
 		
 		return result;
 	}

@@ -308,6 +308,88 @@ BOOST_AUTO_TEST_CASE(test_schema)
 
 }
 
+struct date_t1
+{
+	date::sys_days sd;
+
+	template<typename Archive>
+	void serialize(Archive &ar, unsigned long)
+	{
+		ar & zeep::make_nvp("d", sd);
+	}
+};
+
+BOOST_AUTO_TEST_CASE(test_date_1)
+{
+	using namespace zeep::xml::literals;
+	using namespace date;
+
+	auto doc = "<d>2022-12-06</d>"_xml;
+
+	zeep::xml::deserializer ds(*doc.root());
+
+	date_t1 t1;
+	ds.deserialize_element(t1);
+
+	BOOST_CHECK(t1.sd == 2022_y/12/6);
+}
+
+BOOST_AUTO_TEST_CASE(test_date_2)
+{
+	using namespace zeep::xml::literals;
+	using namespace date;
+
+	date_t1 t1{ 1966_y/6/27 };
+
+	zeep::xml::document doc;
+	zeep::xml::serializer s(doc);
+
+	s.serialize_element(t1);
+
+	BOOST_CHECK(doc == "<d>1966-06-27</d>"_xml);
+}
+
+struct time_t1
+{
+	std::chrono::system_clock::time_point st;
+
+	template<typename Archive>
+	void serialize(Archive &ar, unsigned long)
+	{
+		ar & zeep::make_nvp("t", st);
+	}
+};
+
+BOOST_AUTO_TEST_CASE(test_time_1)
+{
+	using namespace zeep::xml::literals;
+	using namespace date;
+
+	auto doc = "<t>2022-12-06T00:01:02.34Z</t>"_xml;
+
+	zeep::xml::deserializer ds(*doc.root());
+
+	time_t1 t1;
+	ds.deserialize_element(t1);
+
+	BOOST_CHECK(t1.st == sys_days{2022_y/12/6} + 0h + 1min + 2.34s);
+}
+
+BOOST_AUTO_TEST_CASE(test_time_2)
+{
+	using namespace zeep::xml::literals;
+	using namespace date;
+
+	time_t1 t1{ sys_days{2022_y/12/6} + 1h + 2min + 3s };
+
+	zeep::xml::document doc;
+	zeep::xml::serializer s(doc);
+
+	s.serialize_element(t1);
+
+	BOOST_CHECK(doc == "<t>2022-12-06T01:02:03Z</t>"_xml);
+}
+
 // BOOST_AUTO_TEST_CASE(test_s_2)
 // {
 // 	st_1 s1 = { 1, "aap" };
