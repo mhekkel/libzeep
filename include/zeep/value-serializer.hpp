@@ -14,6 +14,7 @@
 
 #include <zeep/config.hpp>
 
+#include <iomanip>
 #include <regex>
 
 #include <zeep/exception.hpp>
