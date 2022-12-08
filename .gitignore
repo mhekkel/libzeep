@@ -15,4 +15,4 @@ include/zeep/config.hpp
 examples/bin/
 examples/obj/
 examples/obj.dbg/
-
+examples/.gdb_history
