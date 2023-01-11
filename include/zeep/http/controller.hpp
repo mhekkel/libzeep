@@ -72,6 +72,9 @@ class controller
 	/// \brief return a specific header line from the original request
 	std::string get_header(const char *name) const;
 
+	/// \brief Fill in the OPTIONS in reply \a rep for a request \a req
+	virtual void get_options(const request &req, reply &rep);
+
   protected:
 	controller(const controller &) = delete;
 	controller &operator=(const controller &) = delete;

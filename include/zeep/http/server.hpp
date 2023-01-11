@@ -17,6 +17,7 @@
 
 #include <boost/asio.hpp>
 
+#include <zeep/http/access-control.hpp>
 #include <zeep/http/reply.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/http/template-processor.hpp>
@@ -80,6 +81,18 @@ class basic_server
 	{
 		return m_allowed_methods;
 	}
+
+	/// \brief Set the access_control object
+	void set_access_control(access_control *ac)
+	{
+		m_access_control.reset(ac);
+	}
+
+	/// \brief Fill in the OPTIONS for a request \a req into reply \a rep
+	virtual void get_options_for_request(const request &req, reply &rep);
+
+	/// \brief Set the CORS headers for a request \a req into reply \a rep
+	virtual void set_access_control_headers(const request &req, reply &rep);
 
 	/// \brief Set the context_name
 	///
@@ -196,6 +209,7 @@ class basic_server
 	std::list<controller *> m_controllers;
 	std::list<error_handler *> m_error_handlers;
 	std::set<std::string> m_allowed_methods;
+	std::unique_ptr<access_control> m_access_control;
 };
 
 // --------------------------------------------------------------------

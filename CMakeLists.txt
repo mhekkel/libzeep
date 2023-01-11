@@ -102,6 +102,7 @@ list(APPEND ZEEP_HEADERS
 	${PROJECT_SOURCE_DIR}/include/zeep/json/from_element.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/json/iterator.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/access-control.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/controller.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/message-parser.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
@@ -126,6 +127,7 @@ list(APPEND ZEEP_HEADERS
 )
 
 set(ZEEP_SRC
+	${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp

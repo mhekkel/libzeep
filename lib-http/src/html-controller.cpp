@@ -63,11 +63,7 @@ bool html_controller::handle_request(request& req, reply& rep)
 	if (handler != m_dispatch_table.end())
 	{
 		if (req.get_method() == "OPTIONS")
-		{
-			rep = reply::stock_reply(ok);
-			rep.set_header("Allow", "GET,HEAD,POST,OPTIONS");
-			rep.set_content("", "text/plain");
-		}
+			get_options(req, rep);
 		else
 			handler->handler(req, scope, rep);
 
