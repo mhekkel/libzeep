@@ -19,11 +19,11 @@ class hello_controller : public zeep::http::html_controller
         /*<< Mount the handler `handle_index`, this is on =/= >>*/
         map_get("", &hello_controller::handle_index, "name");
 
-		/*<< Mount the handler on =/index.html= as well>>*/
-		map_get("index.html", &hello_controller::handle_index, "name");
+        /*<< Mount the handler on =/index.html= as well>>*/
+        map_get("index.html", &hello_controller::handle_index, "name");
 
-		/*<< And mount the handler on a path containing the 'name'>>*/
-		map_get("hello/{name}", &hello_controller::handle_index, "name");
+        /*<< And mount the handler on a path containing the 'name'>>*/
+        map_get("hello/{name}", &hello_controller::handle_index, "name");
     }
 
     zeep::http::reply handle_index(const zeep::http::scope& scope, std::optional<std::string> user)
@@ -31,7 +31,7 @@ class hello_controller : public zeep::http::html_controller
         zeep::http::scope sub(scope);
         sub.put("name", user.value_or("world"));
 
-		return get_template_processor().create_reply_from_template("hello.xhtml", sub);
+        return get_template_processor().create_reply_from_template("hello.xhtml", sub);
     }
 };
 

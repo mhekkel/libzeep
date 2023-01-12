@@ -1,5 +1,5 @@
 [/
-	Documentation for libzeep version 5.0
+	Documentation for libzeep version 6.0
 
           Copyright Maarten L. Hekkelman, 2020
  Distributed under the Boost Software License, Version 1.0.
@@ -9,7 +9,7 @@
 
 [book libzeep
     [quickbook 1.7]
-    [version 5.0]
+    [version 6.0]
     [id quickbook]
     [copyright 2020 Maarten L. Hekkelman]
     [authors [Hekkelman, Maarten L.]]

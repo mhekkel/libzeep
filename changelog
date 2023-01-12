@@ -1,6 +1,8 @@
 Version 6.0.0
 - Dropped boost::date_time and other boost libraries
 - Fix daemon::reload
+- New html_controller routines that mimic the rest_controller mapping
+- Added access control object, for CORS handling
 
 Version 5.1.8
 - Fix bug in parsing binary multipart/form-data parameters
