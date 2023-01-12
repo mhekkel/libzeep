@@ -175,3 +175,16 @@ And configure and build the app:
 cmake .
 cmake --build .
 ```
+
+And then run it:
+
+```bash
+./http-server
+```
+
+Now you can access the result using the following URL's:
+
+* http://localhost:8080/
+* http://localhost:8080/index.html?name=maarten
+* http://localhost:8080/hello/maarten
+
