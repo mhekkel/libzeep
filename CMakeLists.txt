@@ -117,7 +117,6 @@ list(APPEND ZEEP_HEADERS
 	${PROJECT_SOURCE_DIR}/include/zeep/http/rest-controller.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/soap-controller.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/html-controller.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/html-controller-2.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/security.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/uri.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/el-processing.hpp
@@ -139,7 +138,6 @@ set(ZEEP_SRC
 	${PROJECT_SOURCE_DIR}/lib-http/src/format.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/glob.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/html-controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/html-controller-2.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/login-controller.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/message-parser.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/reply.cpp

@@ -190,13 +190,13 @@ reply &reply::operator=(reply &&rhs)
 		m_version_major = rhs.m_version_major;
 		m_version_minor = rhs.m_version_minor;
 		m_status = rhs.m_status;
-		m_data = rhs.m_data; rhs.m_data = nullptr;
-		m_headers = rhs.m_headers;
-		m_content = rhs.m_content;
+		m_data = std::exchange(rhs.m_data, nullptr);
+		m_headers = std::move(rhs.m_headers);
+		m_content = std::move(rhs.m_content);
 		m_chunked = rhs.m_chunked;
 
 		memcpy(m_size_buffer, rhs.m_size_buffer, sizeof(m_size_buffer));
-		m_status_line = rhs.m_status_line;
+		m_status_line = std::move(rhs.m_status_line);
 	}
 
 	return *this;
