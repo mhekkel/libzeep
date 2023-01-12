@@ -4,7 +4,7 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // In this example we don't want to use rsrc based templates
-#undef WEBAPP_USES_RESOURCES
+#define WEBAPP_USES_RESOURCES 0
 
 //[ simple_http_server_2
 #include <zeep/http/server.hpp>

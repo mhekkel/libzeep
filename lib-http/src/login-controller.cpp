@@ -51,11 +51,11 @@ void login_controller::set_server(basic_server *server)
 {
 	controller::set_server(server);
 
-	assert(get_server().has_security_context());
-	if (not get_server().has_security_context())
+	assert(server->has_security_context());
+	if (not server->has_security_context())
 		throw std::runtime_error("The HTTP server has no security context");
 
-	auto &sc = get_server().get_security_context();
+	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});
 
 	server->add_error_handler(new login_error_handler(this));
@@ -159,7 +159,7 @@ bool login_controller::handle_request(request &req, reply &rep)
 				throw status_type::forbidden;
 
 			std::string redirect_to{ "/" };
-			auto context = get_server().get_context_name();
+			auto context = get_context_name();
 			if (not context.empty())
 				redirect_to += context + '/';
 			uri = req.get_parameter("uri");
@@ -173,7 +173,7 @@ bool login_controller::handle_request(request &req, reply &rep)
 
 			try
 			{
-				get_server().get_security_context().verify_username_password(username, password, rep);
+				get_server()->get_security_context().verify_username_password(username, password, rep);
 			}
 			catch (const invalid_password_exception &e)
 			{
@@ -201,7 +201,7 @@ bool login_controller::handle_request(request &req, reply &rep)
 	else if (uri == "logout")
 	{
 		std::string redirect_to{ "/" };
-		auto context = get_server().get_context_name();
+		auto context = get_context_name();
 		if (not context.empty())
 			redirect_to += context + '/';
 		uri = req.get_parameter("uri");

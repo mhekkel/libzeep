@@ -174,6 +174,14 @@ class basic_template_processor
 	/// \brief create a reply based on a template
 	virtual void create_reply_from_template(const std::string& file, const scope& scope, reply& reply);
 
+	/// \brief create a reply based on a template, alternate version
+	reply create_reply_from_template(const std::string& file, const scope& scope)
+	{
+		reply result = reply::stock_reply(ok);
+		create_reply_from_template(file, scope, result);
+		return result;
+	}
+
 	/// \brief Initialize the scope object
 	virtual void init_scope(scope& scope);
 
