@@ -142,9 +142,8 @@ class html_controller : public controller
 	}
 
 	// --------------------------------------------------------------------
-
-
   public:
+
 	using param = header;
 
 	/// \brief helper class for pulling parameter values out of the request
@@ -468,6 +467,26 @@ class html_controller : public controller
 		std::array<const char*, N>	m_names;
 	};
 
+	/// assign a handler function to a path in the server's namespace, new version
+	/// Usually called like this:
+	/// \code{.cpp}
+	///   map("page", &my_controller::page_handler, "param");
+	/// \endcode
+	/// Where page_handler is defined as:
+	/// \code{.cpp}
+	/// zeep::http::reply my_controller::page_handler(const scope& scope, std::optional<int> param);
+	/// \endcode
+	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
+	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
+	/// as well as semi-colons that define separate paths.
+	/// Also, patterns ending in / are interpreted as ending in /\*\*
+	///
+	/// path             | matches
+	/// ---------------- | --------------------------------------------
+	/// `**``/``*.js`    | matches x.js, a/b/c.js, etc
+	/// `{css,scripts}/` | matches e.g. css/1/first.css and scripts/index.js
+	/// a;b;c            | matches either a, b or c
+	///
 	/// The \a mountPoint parameter is the local part of the mount point.
 	/// It can contain parameters enclosed in curly brackets.
 	///
