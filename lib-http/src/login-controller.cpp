@@ -125,8 +125,15 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 {
 	auto doc = load_login_form(req);
 
+	auto csrf_cookie = req.get_cookie("csrf-token");
+	if (csrf_cookie.empty())
+	{
+		csrf_cookie = encode_base64url(random_hash());
+		reply.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+	}
+
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
-		csrf->set_attribute("value", req.get_cookie("csrf-token"));
+		csrf->set_attribute("value", csrf_cookie);
 
 	for (auto uri : doc.find("//input[@name='uri']"))
 		uri->set_attribute("value", req.get_uri());
@@ -148,8 +155,17 @@ bool login_controller::handle_request(request &req, reply &rep)
 		if (req.get_method() == "GET")
 		{
 			auto doc = load_login_form(req);
+
+			auto csrf_cookie = req.get_cookie("csrf-token");
+			if (csrf_cookie.empty())
+			{
+				csrf_cookie = encode_base64url(random_hash());
+				rep.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+			}
+
 			for (auto csrf : doc.find("//input[@name='_csrf']"))
-				csrf->set_attribute("value", req.get_cookie("csrf-token"));
+				csrf->set_attribute("value", csrf_cookie);
+
 			rep.set_content(doc);
 		}
 		else if (req.get_method() == "POST")
