@@ -78,6 +78,12 @@ bool is_valid_uri(const std::string& url)
 	return std::regex_match(url, kURIRx);
 }
 
+bool is_fully_qualified_uri(const std::string& uri)
+{
+	std::smatch m;
+	return std::regex_match(uri, m, kURIRx) and m[1].matched and m[3].matched;
+}
+
 // --------------------------------------------------------------------
 
 struct uri_impl
@@ -92,6 +98,19 @@ struct uri_impl
 	std::string m_query;
 	std::string m_fragment;
 	bool m_absolutePath = false;
+
+	void set_path(const std::filesystem::path &p)
+	{
+		m_path = p;
+		m_absolutePath = p.is_absolute();
+
+		std::ostringstream os;
+		os << m_scheme << "://" << m_host;
+		if (not m_absolutePath)
+			os << '/';
+		os << m_path.string();
+		m_s = os.str();
+	}
 };
 
 // --------------------------------------------------------------------
@@ -138,6 +157,19 @@ uri& uri::operator=(const uri &u)
 		uri tmp(u);
 		swap(tmp);
 	}
+
+	return *this;
+}
+
+uri::uri(uri &&u)
+	: m_impl(std::exchange(u.m_impl, nullptr))
+{
+}
+
+uri& uri::operator=(uri &&u)
+{
+	if (this != &u)
+		m_impl = std::exchange(u.m_impl, nullptr);
 
 	return *this;
 }
@@ -195,6 +227,17 @@ std::string uri::get_query() const
 std::string uri::get_fragment() const
 {
 	return m_impl->m_fragment;
+}
+
+void uri::set_path(const std::filesystem::path &p)
+{
+	m_impl->set_path(p);
+}
+
+uri operator/(uri uri, const std::filesystem::path &rhs)
+{
+	uri.set_path(uri.get_path() / rhs);
+	return uri;
 }
 
 // --------------------------------------------------------------------

@@ -189,7 +189,17 @@ class scope
 
 	/// \brief put variable in the scope with \a name and \a value
 	template <typename T>
-	void put(const std::string &name, const T &value);
+	void put(const std::string &name, const T &value)
+	{
+		m_data[name] = value;
+	}
+
+	/// \brief put variable in the scope with \a name and \a value
+	template <typename T>
+	void put(const std::string &name, T &&value)
+	{
+		m_data[name] = std::forward<T&&>(value);
+	}
 
 	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
 	template <typename ForwardIterator>
@@ -271,18 +281,6 @@ class scope
 
 	nodeset_map m_nodesets;
 };
-
-template <typename T>
-inline void scope::put(const std::string &name, const T &value)
-{
-	m_data[name] = value;
-}
-
-template <>
-inline void scope::put(const std::string &name, const object &value)
-{
-	m_data[name] = value;
-}
 
 template <typename ForwardIterator>
 inline void scope::put(const std::string &name, ForwardIterator begin, ForwardIterator end)

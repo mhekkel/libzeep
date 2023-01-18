@@ -177,12 +177,26 @@ bool login_controller::handle_request(request &req, reply &rep)
 			std::string redirect_to{ "/" };
 			auto context = get_context_name();
 			if (not context.empty())
-				redirect_to += context + '/';
+			{
+				if (is_fully_qualified_uri(context))
+					redirect_to = context;
+				else
+					redirect_to += context;
+			}
 			uri = req.get_parameter("uri");
 			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")) and is_valid_uri(uri))
-				redirect_to += uri;
+			{
+				if (is_fully_qualified_uri(uri))
+					redirect_to = uri;
+				else
+				{
+					if (redirect_to.back() != '/' and uri.front() != '/')
+						redirect_to += '/';
+					redirect_to += uri;
+				}
+			}
 
-			rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
+			rep = reply::redirect(redirect_to);
 
 			auto username = req.get_parameter("username");
 			auto password = req.get_parameter("password");
@@ -219,12 +233,26 @@ bool login_controller::handle_request(request &req, reply &rep)
 		std::string redirect_to{ "/" };
 		auto context = get_context_name();
 		if (not context.empty())
-			redirect_to += context + '/';
+		{
+			if (is_fully_qualified_uri(context))
+				redirect_to = context;
+			else
+				redirect_to += context;
+		}
 		uri = req.get_parameter("uri");
 		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
-			redirect_to += uri;
+		{
+			if (is_fully_qualified_uri(uri))
+				redirect_to = uri;
+			else
+			{
+				if (redirect_to.back() != '/' and uri.front() != '/')
+					redirect_to += '/';
+				redirect_to += uri;
+			}
+		}
 
-		rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
+		rep = reply::redirect(redirect_to);
 		rep.set_delete_cookie("access_token");
 
 		result = true;

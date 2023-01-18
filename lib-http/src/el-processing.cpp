@@ -1184,21 +1184,13 @@ object interpreter::parse_link_template_expr()
 
 	int braces = 0;
 
+	auto context = m_scope.get_context_name();
+
 	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
 	if (m_lookahead == token_type::div)
 	{
 		match(token_type::div);
-
-		auto context = m_scope.get_context_name();
-		if (not context.empty())
-		{
-			if (is_valid_uri(context) and not uri(context).get_scheme().empty())
-				path = context + '/';
-			else
-				path = '/' + context + '/';
-		}
-		else
-			path = "/";
+		path = '/';
 	}
 
 	while (m_lookahead != token_type::lparen and m_lookahead != token_type::eof)
@@ -1215,6 +1207,12 @@ object interpreter::parse_link_template_expr()
 
 		switch (m_lookahead)
 		{
+			case token_type::bar:
+				match(m_lookahead);
+				path += parse_literal_substitution().as<std::string>();
+				match(token_type::bar);
+				break;
+
 			case token_type::variable_template:
 			case token_type::selection_template:
 				path += parse_template_expr().as<std::string>();
@@ -1227,9 +1225,36 @@ object interpreter::parse_link_template_expr()
 				break;
 
 			default:
+			{
 				path += m_token_string;
 				match(m_lookahead);
 				break;
+			}
+		}
+	}
+
+	// fully qualified url's should be used as is
+	if (not is_fully_qualified_uri(path))
+	{
+		auto context = m_scope.get_context_name();
+
+		if (not context.empty())
+		{
+			// in case of a path starting with a forward slash, we prefix the URL with the context_name of the server
+			if (path.front() == '/')
+				path = context + path;
+			else
+			{
+				auto requested = m_scope.get_request().get_uri();
+
+				while (not requested.empty() and requested.back() != '/')
+					requested.pop_back();
+
+				if (not requested.empty() and requested.front() == '/' and context.back() == '/')
+					context.pop_back();
+
+				path = context + requested + path;
+			}
 		}
 	}
 
@@ -1513,12 +1538,8 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 		{
 			if (params.size() == 2 and params[0].is_string())
 			{
-				tm t = {};
-				std::istringstream ss(params[0].as<std::string>());
-
-				ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
-				if (ss.fail()) // hmmmm, lets try the ISO format then
-					ss >> std::get_time(&t, "%Y-%m-%dT%H:%M:%SZ");
+				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(params[0].as<std::string>());
+				auto t = std::chrono::system_clock::to_time_t(st);
 
 				std::wostringstream os;
 
@@ -1527,7 +1548,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
 				std::wstring time = myconv.from_bytes(params[1].as<std::string>());
 
-				os << std::put_time(&t, time.c_str());
+				os << std::put_time(std::localtime(&t), time.c_str());
 
 				result = os.str();
 			}

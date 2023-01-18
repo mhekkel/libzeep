@@ -57,13 +57,16 @@ class uri
 	std::string get_host() const;				
 
 	/// \brief Return the path
-	std::filesystem::path get_path() const;		
+	std::filesystem::path get_path() const;
 
 	/// \brief Return the query
 	std::string get_query() const;				
 
 	/// \brief Return the fragment
 	std::string get_fragment() const;
+
+	/// \brief Set the path to \a path
+	void set_path(const std::filesystem::path &path);
 
 	std::string string() const;					///< Return the URI as a string
 
@@ -75,11 +78,17 @@ class uri
 	struct uri_impl *m_impl;
 };
 
+uri operator/(uri uri, const std::filesystem::path &rhs);
+
 // --------------------------------------------------------------------
 
 /// \brief Simply check the URI in \a uri, returns true if the uri is valid
 /// \param uri		The URI to check
 bool is_valid_uri(const std::string& uri);
+
+/// \brief Check the URI in \a uri, returns true if the uri is fully qualified (has a scheme and path)
+/// \param uri		The URI to check
+bool is_fully_qualified_uri(const std::string& uri);
 
 // --------------------------------------------------------------------
 
