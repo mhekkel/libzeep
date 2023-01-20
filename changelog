@@ -3,6 +3,7 @@ Version 6.0.0
 - Fix daemon::reload
 - New html_controller routines that mimic the rest_controller mapping
 - Added access control object, for CORS handling
+- Changed serialising of std::chrono time_point values.
 
 Version 5.1.8
 - Fix bug in parsing binary multipart/form-data parameters

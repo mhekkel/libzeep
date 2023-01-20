@@ -246,8 +246,7 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	static std::string to_string(const time_type &v)
 	{
 		std::ostringstream ss;
-		auto v_t = std::chrono::system_clock::to_time_t(v);
-		ss << std::put_time(std::gmtime(&v_t), "%FT%TZ");
+		ss << date::format("%FT%TZ", v);
 		return ss.str();
 	}
 
@@ -300,8 +299,7 @@ struct value_serializer<date::sys_days>
 	static std::string to_string(const date::sys_days &v)
 	{
 		std::ostringstream ss;
-		auto v_t = std::chrono::system_clock::to_time_t(v);
-		ss << std::put_time(std::gmtime(&v_t), "%F");
+		ss << date::format("%F", v);
 		return ss.str();
 	}
 

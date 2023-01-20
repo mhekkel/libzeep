@@ -387,7 +387,8 @@ BOOST_AUTO_TEST_CASE(test_time_2)
 
 	s.serialize_element(t1);
 
-	BOOST_CHECK(doc == "<t>2022-12-06T01:02:03Z</t>"_xml);
+	BOOST_CHECK(doc == "<t>2022-12-06T01:02:03Z</t>"_xml or
+		doc == "<t>2022-12-06T01:02:03.000000000Z</t>"_xml);
 }
 
 // BOOST_AUTO_TEST_CASE(test_s_2)
