@@ -46,7 +46,7 @@ daemon::daemon(server_factory_type &&factory, const std::string &pid_file,
 }
 
 daemon::daemon(server_factory_type &&factory, const char *name)
-	: daemon(std::forward<server_factory_type>(factory), "/var/run/"s + name,
+	: daemon(std::move(factory), "/var/run/"s + name,
 		  "/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
 {
 }

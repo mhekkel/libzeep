@@ -37,7 +37,7 @@ xml::element make_envelope(xml::element&& data)
 		{ "soap:encodingStyle", "http://www.w3.org/2003/05/soap-encoding" }
 	});
 	auto& body = env.emplace_back("soap:Body");
-	body.emplace_back(std::forward<xml::element>(data));
+	body.emplace_back(std::move(data));
 	
 	return env;
 }

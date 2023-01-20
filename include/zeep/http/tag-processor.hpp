@@ -134,7 +134,7 @@ class tag_processor_v2 : public tag_processor
 	/// \brief It is possible to extend this processor with custom handlers
 	void register_attr_handler(const std::string& attr, attr_handler&& handler)
 	{
-		m_attr_handlers.emplace(attr, std::forward<attr_handler>(handler));
+		m_attr_handlers.emplace(attr, std::move(handler));
 	}
 
   protected:

@@ -1162,7 +1162,7 @@ class node_list : public basic_node_list<node>
 
 	void push_back(node &&e)
 	{
-		emplace(end(), std::forward<node>(e));
+		emplace(end(), std::move(e));
 	}
 
 	template <typename ENodeType, std::enable_if_t<std::is_base_of_v<node, ENodeType>, int> = 0>
