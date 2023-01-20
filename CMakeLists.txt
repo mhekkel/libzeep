@@ -57,7 +57,7 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_package(Mrc)
+	find_package(Mrc QUIET)
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
