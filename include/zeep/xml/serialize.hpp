@@ -11,6 +11,7 @@
 
 #include <zeep/config.hpp>
 
+#include <cstring>
 #include <regex>
 #include <optional>
 
@@ -249,7 +250,7 @@ struct type_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 	{
 		assert(name);
 
-		if (strlen(name) == 0 or strcmp(name, ".") == 0)
+		if (std::strlen(name) == 0 or std::strcmp(name, ".") == 0)
 			n.set_content(value_serializer_type::to_string(value));
 		else
 			n.emplace_back(name).set_content(value_serializer_type::to_string(value));

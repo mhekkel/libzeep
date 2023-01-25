@@ -7,6 +7,7 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <utility>
 
 #include <zeep/http/uri.hpp>
 
