@@ -13,7 +13,7 @@
 #include <zeep/config.hpp>
 
 #include <zeep/xml/document.hpp>
-#include <zeep/http/controller.hpp>
+#include <zeep/http/html-controller.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -27,7 +27,7 @@ namespace zeep::http
 ///
 /// There is a html version of this controller as well, that one is a bit nicer
 
-class login_controller : public controller
+class login_controller : public html_controller
 {
   public:
 	login_controller(const std::string& prefix_path = "/");
@@ -37,9 +37,6 @@ class login_controller : public controller
 	/// Makes sure the server has a security context and adds rules
 	/// to this security context to allow access to the /login page
 	virtual void set_server(basic_server* server);
-
-	/// \brief will handle the actual requests
-	virtual bool handle_request(request& req, reply& rep);
 
 	/// \brief return the XHTML login form, subclasses can override this to provide custom login forms
 	///
@@ -56,6 +53,15 @@ class login_controller : public controller
 	/// \param req		The request that triggered this call
 	/// \param rep		Write the reply in this object
 	virtual void create_unauth_reply(const request& req, reply& reply);
+
+	/// \brief Handle a GET on /login
+	reply handle_get_login(const scope &scope);
+
+	/// \brief Handle a POST on /login
+	reply handle_post_login(const scope &scope, const std::string &username, const std::string &password);
+
+	/// \brief Handle a GET or POST on /logout
+	reply handle_logout(const scope &scope);
 };
 
 }
