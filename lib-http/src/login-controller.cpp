@@ -175,30 +175,8 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	if (csrf != req.get_cookie("csrf-token"))
 		throw status_type::forbidden;
 
-	std::string redirect_to{ "/" };
-	auto context = get_context_name();
-	if (not context.empty())
-	{
-		if (is_fully_qualified_uri(context))
-			redirect_to = context;
-		else
-			redirect_to += context;
-	}
-
 	auto uri = req.get_parameter("uri");
-	if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")) and is_valid_uri(uri))
-	{
-		if (is_fully_qualified_uri(uri))
-			redirect_to = uri;
-		else
-		{
-			if (redirect_to.back() != '/' and uri.front() != '/')
-				redirect_to += '/';
-			redirect_to += uri;
-		}
-	}
-
-	auto rep = reply::redirect(redirect_to);
+	auto rep = create_redirect_for_request(req);
 
 	try
 	{
@@ -222,7 +200,6 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 		rep.set_content(doc);
 
 		std::cerr << e.what() << '\n';
-
 	}
 
 	return rep;
@@ -232,6 +209,14 @@ reply login_controller::handle_logout(const scope &scope)
 {
 	auto &req = scope.get_request();
 
+	auto rep = create_redirect_for_request(req);
+	rep.set_delete_cookie("access_token");
+
+	return rep;
+}
+
+reply login_controller::create_redirect_for_request(const request &req)
+{
 	std::string redirect_to{ "/" };
 	auto context = get_context_name();
 	if (not context.empty())
@@ -255,9 +240,10 @@ reply login_controller::handle_logout(const scope &scope)
 		}
 	}
 
-	auto rep = reply::redirect(redirect_to);
-	rep.set_delete_cookie("access_token");
-	return rep;
+	return reply::redirect(redirect_to);
 }
 
+
 } // namespace zeep::http
+
+

@@ -268,6 +268,13 @@ class security_context
 	/// \param rep			Then zeep::http::reply object that will be send back to the browser
 	void verify_username_password(const std::string& username, const std::string& password, reply &rep);
 
+	/// \brief verify the username/password combination and return true if valid
+	///
+	/// \param username		The name for the user
+	/// \param password		The password for the user
+	/// \result             True in case of valid combination
+	bool verify_username_password(const std::string& username, const std::string& password);
+
 	/// \brief return reference to the user_service object
 	user_service& get_user_service() const			{ return m_users; }
 

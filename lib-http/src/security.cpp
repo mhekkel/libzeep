@@ -143,26 +143,39 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 
 // --------------------------------------------------------------------
 
-void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)
+bool security_context::verify_username_password(const std::string &username, const std::string &raw_password)
 {
+	bool result = false;
+
 	try
 	{
 		auto user = m_users.load_user(username);
 
-		bool match = false;
 		for (auto const &[name, pwenc] : m_known_password_encoders)
 		{
 			if (user.password.compare(0, name.length(), name) != 0)
 				continue;
 
-			match = pwenc->matches(raw_password, user.password);
+			result = pwenc->matches(raw_password, user.password);
 			break;
 		}
+	}
+	catch (...)
+	{
+		result = false;
+	}
 
-		if (not match)
+	return result;
+}
+
+void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)
+{
+	try
+	{
+		if (not verify_username_password(username, raw_password))
 			throw invalid_password_exception();
 
-		add_authorization_headers(rep, user);
+		add_authorization_headers(rep, m_users.load_user(username));
 	}
 	catch (const std::exception &)
 	{
