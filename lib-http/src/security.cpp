@@ -24,6 +24,24 @@ namespace
 
 // --------------------------------------------------------------------
 
+bool user_service::user_is_valid(const std::string& username) const
+{
+	bool result = false;
+
+	try
+	{
+		auto user = load_user(username);
+		result = user.username == username;
+	}
+	catch (...)
+	{
+	}
+
+	return result;	
+}
+
+// --------------------------------------------------------------------
+
 void security_context::validate_request(request &req) const
 {
 	bool allow = m_default_allow;
@@ -66,15 +84,9 @@ void security_context::validate_request(request &req) const
 			if (not credentials.is_object() or not credentials["role"].is_array())
 				break;
 			
-			try
-			{
-				// make sure users exists.
-				m_users.load_user(credentials["username"].as<std::string>());
-			}
-			catch (...)
-			{
+			// make sure user still exists.
+			if (not m_users.user_is_valid(credentials["username"].as<std::string>()))
 				break;
-			}
 
 			for (auto role : credentials["role"])
 				roles.insert(role.as<std::string>());

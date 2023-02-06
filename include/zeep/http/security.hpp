@@ -138,6 +138,9 @@ class user_service
 
 	/// \brief return the user_details for a user named \a username
 	virtual user_details load_user(const std::string& username) const = 0;
+
+	/// \brief return true if a user named \a username is allowed to access this web application
+	virtual bool user_is_valid(const std::string& username) const;
 };
 
 // --------------------------------------------------------------------
