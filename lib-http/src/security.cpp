@@ -65,6 +65,16 @@ void security_context::validate_request(request &req) const
 
 			if (not credentials.is_object() or not credentials["role"].is_array())
 				break;
+			
+			try
+			{
+				// make sure users exists.
+				m_users.load_user(credentials["username"].as<std::string>());
+			}
+			catch (...)
+			{
+				break;
+			}
 
 			for (auto role : credentials["role"])
 				roles.insert(role.as<std::string>());
