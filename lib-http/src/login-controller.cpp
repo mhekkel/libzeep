@@ -232,11 +232,14 @@ reply login_controller::create_redirect_for_request(const request &req)
 	{
 		if (is_fully_qualified_uri(uri))
 			redirect_to = uri;
-		else
+		else if (uri != "/")
 		{
 			if (redirect_to.back() != '/' and uri.front() != '/')
 				redirect_to += '/';
 			redirect_to += uri;
+
+			for (auto p = redirect_to.find("//"); p != std::string::npos; p = redirect_to.find("//", p))
+				redirect_to.erase(p, 1);
 		}
 	}
 
