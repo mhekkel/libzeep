@@ -43,7 +43,7 @@ controller::~controller()
 {
 }
 
-bool controller::dispatch_request(boost::asio::ip::tcp::socket& socket, request& req, reply& rep)
+bool controller::dispatch_request(boost::asio::ip::tcp::socket& /*socket*/, request& req, reply& rep)
 {
 	bool result = false;
 
@@ -128,6 +128,12 @@ bool controller::has_role(const std::string& role) const
 std::string controller::get_header(const char *name) const
 {
 	return s_request ? s_request->get_header(name) : "";
+}
+
+void controller::get_options(const request &req, reply &rep)
+{
+	if (m_server)
+		m_server->get_options_for_request(req, rep);
 }
 
 }

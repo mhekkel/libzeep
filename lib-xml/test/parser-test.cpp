@@ -10,8 +10,9 @@
 #include <regex>
 #include <fstream>
 #include <filesystem>
+#include <set>
 
-#include <boost/program_options.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
@@ -23,7 +24,6 @@
 using namespace std;
 using namespace zeep;
 
-namespace po = boost::program_options;
 namespace fs = std::filesystem;
 
 int VERBOSE;
@@ -351,47 +351,48 @@ int main(int argc, char* argv[])
 {
 	int result = 0;
 
-	po::options_description desc("Allowed options");
-	desc.add_options()
-		("help", "produce help message")
-		("verbose", "verbose output")
-		("id", po::value<string>(), "ID for the test to run from the test suite")
-		("skip", po::value<vector<string>>(),	"Skip this test, can be specified multiple times")
-		("questionable", po::value<vector<string>>(), "Questionable tests, do not consider failure of these to be an error")
-		("test", "Run SUN test suite")
-		("edition", po::value<int>(), "XML 1.0 specification edition to test, default is 5, 0 which means run all tests")
-		("trace", "Trace productions in parser")
-		("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
-		("single", po::value<string>(), "Test a single XML file")
-		("dump", po::value<string>(), "Dump the structure of a single XML file")
-		("print-ids", "Print the ID's of failed tests")
-		("conf", po::value<string>(), "Configuration file")
-	;
-	
-	po::positional_options_description p;
-	p.add("test", -1);
+	auto &config = mcfp::config::instance();
 
-	po::variables_map vm;
-	po::store(po::command_line_parser(argc, argv).
-			  options(desc).positional(p).run(), vm);
-	po::notify(vm);
+	config.init(
+		"usage: parser-test [options]",
+		mcfp::make_option("help,h", "produce help message"),
+		mcfp::make_option("verbose,v", "verbose output"),
+		mcfp::make_option<string>("id", "ID for the test to run from the test suite"),
+		mcfp::make_option<vector<string>>("skip", "Skip this test, can be specified multiple times"),
+		mcfp::make_option<vector<string>>("questionable", "Questionable tests, do not consider failure of these to be an error"),
+		mcfp::make_option<int>("edition", "XML 1.0 specification edition to test, default is 5, 0 which means run all tests"),
+		mcfp::make_option("trace", "Trace productions in parser"),
+		mcfp::make_option<string>("type", "Type of test to run (valid|not-wf|invalid|error)"),
+		mcfp::make_option<string>("single", "Test a single XML file"),
+		mcfp::make_option<string>("dump", "Dump the structure of a single XML file"),
+		mcfp::make_option("print-ids", "Print the ID's of failed tests"),
+		mcfp::make_option<string>("conf", "Configuration file")
+	);
 
-	if (vm.count("help"))
+	std::error_code ec;
+	config.parse(argc, argv, ec);
+	if (ec)
 	{
-		cout << desc << endl;
+		std::cerr << "error parsing arguments: " << ec.message() << std::endl;
+		exit(1);
+	}
+
+	if (config.count("help"))
+	{
+		cout << config << endl;
 		return 1;
 	}
 	
-	VERBOSE = static_cast<int>(vm.count("verbose"));
-	TRACE = static_cast<int>(vm.count("trace"));
+	VERBOSE = config.count("verbose");
+	TRACE = config.count("trace");
 
 	fs::path savedwd = fs::current_path();
 	
 	try
 	{
-		if (vm.count("single"))
+		if (config.count("single"))
 		{
-			fs::path path(vm["single"].as<string>());
+			fs::path path(config.get<string>("single"));
 
 			std::ifstream file(path, ios::binary);
 			if (not file.is_open())
@@ -402,9 +403,9 @@ int main(int argc, char* argv[])
 
 			run_valid_test(file, dir);
 		}
-		else if (vm.count("dump"))
+		else if (config.count("dump"))
 		{
-			fs::path path(vm["dump"].as<string>());
+			fs::path path(config.get<string>("dump"));
 
 			std::ifstream file(path, ios::binary);
 			if (not file.is_open())
@@ -420,27 +421,27 @@ int main(int argc, char* argv[])
 		else
 		{
 			fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
-			if (vm.count("test"))
-				xmlconfFile = vm["test"].as<string>();
+			if (config.operands().size() == 1)
+				xmlconfFile = config.operands().front();
 			
 			if (not fs::exists(xmlconfFile))
 				throw std::runtime_error("Config file not found: " + xmlconfFile.string());
 			
 			string id;
-			if (vm.count("id"))
-				id = vm["id"].as<string>();
+			if (config.has("id"))
+				id = config.get<string>("id");
 			
 			vector<string> skip;
-			if (vm.count("skip"))
-				skip = vm["skip"].as<vector<string>>();
+			if (config.has("skip"))
+				skip = config.get<vector<string>>("skip");
 
 			string type;
-			if (vm.count("type"))
-				type = vm["type"].as<string>();
+			if (config.count("type"))
+				type = config.get<string>("type");
 
 			int edition = 5;
-			if (vm.count("edition"))
-				edition = vm["edition"].as<int>();
+			if (config.count("edition"))
+				edition = config.get<int>("edition");
 			
 			vector<string> failed_ids;
 			
@@ -454,8 +455,8 @@ int main(int argc, char* argv[])
 				 << "  " << should_have_failed << " should have failed but didn't" << endl;
 
 			vector<string> questionable;
-			if (vm.count("questionable"))
-				questionable = vm["questionable"].as<vector<string>>();
+			if (config.count("questionable"))
+				questionable = config.get<vector<string>>("questionable");
 			
 			set<string> erronous;
 			for (auto fid: failed_ids)
@@ -467,7 +468,7 @@ int main(int argc, char* argv[])
 			if (not erronous.empty())
 				result = 1;
 
-			if (vm.count("print-ids") and not failed_ids.empty())
+			if (config.count("print-ids") and not failed_ids.empty())
 			{
 				cout << endl;
 				if (erronous.empty())

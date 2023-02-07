@@ -51,9 +51,9 @@ void parser::reset()
 	m_http_version_minor = 0;
 }
 
-boost::tribool parser::parse_header_lines(char ch)
+parse_result parser::parse_header_lines(char ch)
 {
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 	
 	// parse the header lines, consisting of
 	// NAME: VALUE
@@ -174,9 +174,9 @@ boost::tribool parser::parse_header_lines(char ch)
 	return result;
 }
 
-boost::tribool parser::parse_chunk(char ch)
+parse_result parser::parse_chunk(char ch)
 {
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 	
 	switch (m_state)
 	{
@@ -250,9 +250,9 @@ boost::tribool parser::parse_chunk(char ch)
 	return result;
 }
 
-boost::tribool parser::parse_content(char ch)
+parse_result parser::parse_content(char ch)
 {
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 	
 	// here we simply read m_chunk_size of bytes and finish
 	if (m_collect_payload)
@@ -274,7 +274,7 @@ request_parser::request_parser()
 {
 }
 
-boost::tribool request_parser::parse(std::streambuf& text)
+parse_result request_parser::parse(std::streambuf& text)
 {
 	if (m_parser == NULL)
 	{
@@ -282,17 +282,17 @@ boost::tribool request_parser::parse(std::streambuf& text)
 		m_parsing_content = false;
 	}
 
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 	
 	bool is_parsing_content = m_parsing_content;
-	while (text.in_avail() > 0 and boost::indeterminate(result))
+	while (text.in_avail() > 0 and result == indeterminate)
 	{
 		result = (this->*m_parser)(static_cast<char>(text.sbumpc()));
 
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
 			is_parsing_content = true;
-			result = boost::indeterminate;
+			result = indeterminate;
 		}
 	}
 
@@ -305,9 +305,9 @@ request request_parser::get_request()
 		std::move(m_headers), std::move(m_payload));
 }
 
-boost::tribool request_parser::parse_initial_line(char ch)
+parse_result request_parser::parse_initial_line(char ch)
 {
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 	
 	// a state machine to parse the initial request line
 	// which consists of:
@@ -382,7 +382,7 @@ void reply_parser::reset()
 	m_status_line.clear();
 }
 
-boost::tribool reply_parser::parse(std::streambuf& text)
+parse_result reply_parser::parse(std::streambuf& text)
 {
 	if (m_parser == NULL)
 	{
@@ -390,17 +390,17 @@ boost::tribool reply_parser::parse(std::streambuf& text)
 		m_parsing_content = false;
 	}
 
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 
 	bool is_parsing_content = m_parsing_content;
-	while (text.in_avail() and boost::indeterminate(result))
+	while (text.in_avail() and result == indeterminate)
 	{
 		result = (this->*m_parser)(static_cast<char>(text.sbumpc()));
 
 		if (result and is_parsing_content == false and m_parsing_content == true)
 		{
 			is_parsing_content = true;
-			result = boost::indeterminate;
+			result = indeterminate;
 		}
 	}
 
@@ -412,9 +412,9 @@ reply reply_parser::get_reply()
 	return { static_cast<status_type>(m_status), {m_http_version_major, m_http_version_minor }, std::move(m_headers), std::move(m_payload) };
 }
 
-boost::tribool reply_parser::parse_initial_line(char ch)
+parse_result reply_parser::parse_initial_line(char ch)
 {
-	boost::tribool result = boost::indeterminate;
+	parse_result result = indeterminate;
 	
 	// a state machine to parse the initial reply line
 	// which consists of:

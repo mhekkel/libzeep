@@ -6,7 +6,7 @@
 #pragma once
 
 /*! \file zeep/nvp.hpp
-	\brief File containing the name_value_pair class
+    \brief File containing the name_value_pair class
 */
 
 #include <zeep/config.hpp>
@@ -19,24 +19,27 @@ namespace zeep
 ///	This class is very similar to the one used in boost::serialization,
 /// it is used to bind a name to a member variable.
 
-template<typename T>
+template <typename T>
 class name_value_pair
 {
   public:
-	name_value_pair(const char* name, T& value)
-		: m_name(name), m_value(value) {}
+	name_value_pair(const char *name, T &value)
+		: m_name(name)
+		, m_value(value)
+	{
+	}
 
-	const char* name() const		{ return m_name; }
-	T&			value() const		{ return m_value; }
-	const T&	const_value() const	{ return m_value; }
+	const char *name() const { return m_name; }
+	T &value() const { return m_value; }
+	const T &const_value() const { return m_value; }
 
   private:
-	const char* m_name;
-	T&			m_value;
+	const char *m_name;
+	T &m_value;
 };
 
-template<typename T>
-name_value_pair<T> make_nvp(const char* name, T& v)
+template <typename T>
+name_value_pair<T> make_nvp(const char *name, T &v)
 {
 	return name_value_pair<T>(name, v);
 }

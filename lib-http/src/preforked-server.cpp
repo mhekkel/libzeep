@@ -6,10 +6,10 @@
 
 #include <zeep/config.hpp>
 
+#include <iostream>
 #include <cerrno>
+#include <chrono>
 #include <functional>
-
-#include <boost/date_time/local_time/local_time.hpp>
 
 #if HTTP_SERVER_HAS_PREFORK
 
@@ -109,19 +109,18 @@ class child_process
 		{
 			kill(m_pid, SIGKILL);
 
-			using namespace boost::posix_time;
-			auto now = second_clock::local_time();
+			const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
 			int status;
 			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED) != -1)
 			{
 				if (WIFSIGNALED(status))
-					std::cerr << now << " child " << m_pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+					std::cerr << std::put_time(std::localtime(&now_t), "%F %T") << " child " << m_pid << " terminated by signal " << WTERMSIG(status) << std::endl;
 				else
-					std::cerr << now << " child terminated normally" << std::endl;
+					std::cerr << std::put_time(std::localtime(&now_t), "%F %T") << " child terminated normally" << std::endl;
 			}
 			else
-				std::cerr << now << "error in waitpid: " << strerror(errno) << std::endl;
+				std::cerr << std::put_time(std::localtime(&now_t), "%F %T") << "error in waitpid: " << strerror(errno) << std::endl;
 		}
 	}
 

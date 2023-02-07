@@ -244,7 +244,7 @@ class element_
 	element_& operator=(const element_ &) = delete;
 
 	element_(const std::string& name, bool declared, bool external)
-		: m_name(name), m_allowed(nullptr), m_declared(declared) {}
+		: m_name(name), m_allowed(nullptr), m_declared(declared), m_external(external) {}
 
 	~element_();
 
@@ -267,7 +267,7 @@ class element_
 	std::string m_name;
 	attribute_list m_attlist;
 	content_spec_ptr m_allowed;
-	bool m_declared;
+	bool m_declared, m_external;
 };
 
 // --------------------------------------------------------------------

@@ -138,6 +138,9 @@ class user_service
 
 	/// \brief return the user_details for a user named \a username
 	virtual user_details load_user(const std::string& username) const = 0;
+
+	/// \brief return true if a user named \a username is allowed to access this web application
+	virtual bool user_is_valid(const std::string& username) const;
 };
 
 // --------------------------------------------------------------------
@@ -267,6 +270,13 @@ class security_context
 	/// \param password		The password for the user
 	/// \param rep			Then zeep::http::reply object that will be send back to the browser
 	void verify_username_password(const std::string& username, const std::string& password, reply &rep);
+
+	/// \brief verify the username/password combination and return true if valid
+	///
+	/// \param username		The name for the user
+	/// \param password		The password for the user
+	/// \result             True in case of valid combination
+	bool verify_username_password(const std::string& username, const std::string& password);
 
 	/// \brief return reference to the user_service object
 	user_service& get_user_service() const			{ return m_users; }

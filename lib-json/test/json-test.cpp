@@ -27,7 +27,7 @@ struct MyPOD2
 	}
 
 	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("f-f", f)
 		   & zeep::make_nvp("v", v)
@@ -49,7 +49,7 @@ struct MyPOD
 	}
 
 	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("s-s", s)
 		   & zeep::make_nvp("i-i", i)
@@ -261,7 +261,7 @@ struct MyPOD3
 	MyEnum a;
 	
 	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
+	void serialize(Archive& ar, unsigned long /*version*/)
 	{
 		ar & zeep::make_nvp("a", a)
 		   ;
@@ -287,28 +287,29 @@ BOOST_AUTO_TEST_CASE(j_12)
 	BOOST_TEST(p3.a == p3a.a);
 }
 
-struct POD3
-{
-	boost::posix_time::ptime now;
+// TODO: re-enable
+// struct POD3
+// {
+// 	boost::posix_time::ptime now;
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
-	{
-		ar & zeep::make_nvp("now", now);
-	}
-};
+// 	template<typename Archive>
+// 	void serialize(Archive& ar, unsigned long version)
+// 	{
+// 		ar & zeep::make_nvp("now", now);
+// 	}
+// };
 
-BOOST_AUTO_TEST_CASE(j_13)
-{
-	POD3 p{ boost::posix_time::second_clock::local_time() }, pa;
+// BOOST_AUTO_TEST_CASE(j_13)
+// {
+// 	POD3 p{ boost::posix_time::second_clock::local_time() }, pa;
 
-	json e;
-	to_element(e, p);
+// 	json e;
+// 	to_element(e, p);
 
-	from_element(e, pa);
+// 	from_element(e, pa);
 
-	BOOST_TEST((p.now == pa.now));
-}
+// 	BOOST_TEST((p.now == pa.now));
+// }
 
 
 

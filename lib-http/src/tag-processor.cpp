@@ -3,11 +3,12 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include <iostream>
+
 #include <zeep/http/template-processor.hpp>
 #include <zeep/http/tag-processor.hpp>
 
 namespace fs = std::filesystem;
-namespace pt = boost::posix_time;
 
 namespace zeep::http
 {
@@ -233,7 +234,7 @@ protected:
 	//	char_type do_decimal_point() const	{ return dsp; }
 };
 
-void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
+void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs::path /*dir*/, basic_template_processor& /*loader*/)
 {
 	std::string number = node->get_attribute("n");
 	std::string format = node->get_attribute("f");
@@ -276,7 +277,7 @@ void tag_processor_v1::process_number(xml::element *node, const scope& scope, fs
 	parent->nodes().emplace(node, zeep::xml::text(number));
 }
 
-void tag_processor_v1::process_options(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
+void tag_processor_v1::process_options(xml::element *node, const scope& scope, fs::path /*dir*/, basic_template_processor& /*loader*/)
 {
 	using ::zeep::json::detail::value_type;
 
@@ -374,41 +375,41 @@ void tag_processor_v1::process_checkbox(xml::element *node, const scope& scope, 
 	}
 }
 
-void tag_processor_v1::process_url(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
-{
-	// std::string var = node->get_attr("var");
+// void tag_processor_v1::process_url(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
+// {
+// 	std::string var = node->get_attr("var");
 
-	// parameter_map parameters;
-	// get_parameters(scope, parameters);
+// 	parameter_map parameters;
+// 	get_parameters(scope, parameters);
 
-	// for (zeep::xml::element *e : *node)
-	// {
-	// 	if (e->ns() == m_ns and e->name() == "param")
-	// 	{
-	// 		std::string name = e->get_attr("name");
-	// 		std::string value = e->get_attr("value");
+// 	for (zeep::xml::element *e : *node)
+// 	{
+// 		if (e->ns() == m_ns and e->name() == "param")
+// 		{
+// 			std::string name = e->get_attr("name");
+// 			std::string value = e->get_attr("value");
 
-	// 		process_el(scope, value);
-	// 		parameters.replace(name, value);
-	// 	}
-	// }
+// 			process_el(scope, value);
+// 			parameters.replace(name, value);
+// 		}
+// 	}
 
-	// std::string url = scope["baseuri"].as<std::string>();
+// 	std::string url = scope["baseuri"].as<std::string>();
 
-	// bool first = true;
-	// for (parameter_map::value_type p : parameters)
-	// {
-	// 	url += (first ? '?' : '&');
-	// 	first = false;
+// 	bool first = true;
+// 	for (parameter_map::value_type p : parameters)
+// 	{
+// 		url += (first ? '?' : '&');
+// 		first = false;
 
-	// 	url += zeep::http::encode_url(p.first) + '=' + zeep::http::encode_url(p.second.as<std::string>());
-	// }
+// 		url += zeep::http::encode_url(p.first) + '=' + zeep::http::encode_url(p.second.as<std::string>());
+// 	}
 
-	// scope& s(const_cast<scope& >(scope));
-	// s.put(var, url);
-}
+// 	scope& s(const_cast<scope& >(scope));
+// 	s.put(var, url);
+// }
 
-void tag_processor_v1::process_param(xml::element *node, const scope& scope, fs::path dir, basic_template_processor& loader)
+void tag_processor_v1::process_param(xml::element */*node*/, const scope& /*scope*/, fs::path /*dir*/, basic_template_processor& /*loader*/)
 {
 	throw exception("Invalid XML, cannot have a stand-alone mrs:param element");
 }

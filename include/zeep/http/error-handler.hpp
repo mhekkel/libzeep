@@ -30,7 +30,7 @@ class error_handler
 	/// load this XHTML template using the server's template_processor.
 	/// If that fails or error_template is empty, a simple stock message
 	/// is returned.
-	error_handler(const std::string& error_template = "error.xhtml");
+	error_handler(const std::string& error_template = "error");
 	virtual ~error_handler();
 
 	/// \brief set the server object we're bound to

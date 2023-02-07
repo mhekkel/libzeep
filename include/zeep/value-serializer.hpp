@@ -6,119 +6,121 @@
 #pragma once
 
 /*! \file zeep/value-serializer.hpp
-	\brief File containing the common serialization code in libzeep
+    \brief File containing the common serialization code in libzeep
 
-	Serialization in libzeep is used by both the XML and the JSON sub libraries.
-	Code that is common is found here.
+    Serialization in libzeep is used by both the XML and the JSON sub libraries.
+    Code that is common is found here.
 */
 
 #include <zeep/config.hpp>
 
+#include <iomanip>
 #include <regex>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/gregorian/gregorian.hpp>
-
 #include <zeep/exception.hpp>
+
+#if __has_include(<date/date.h>)
+#include <date/date.h>
+#endif
 
 namespace zeep
 {
 
 // --------------------------------------------------------------------
-/// \brief A template boilerplate for conversion of basic types to or 
+/// \brief A template boilerplate for conversion of basic types to or
 /// from strings.
 ///
 /// Each specialization should provide a static to_string and a from_string
 /// method as well as a type_name method. This type_name is used in e.g.
 /// constructing WSDL files.
 
-template<typename T, typename = void>
+template <typename T, typename = void>
 struct value_serializer;
 
-template<>
+template <>
 struct value_serializer<bool>
 {
-	static constexpr const char* type_name() 				{ return "xsd:boolean"; }
-	static std::string to_string(bool value)				{ return value ? "true" : "false"; }
-	static bool from_string(const std::string& value)		{ return value == "true" or value == "1" or value == "yes"; }
+	static constexpr const char *type_name() { return "xsd:boolean"; }
+	static std::string to_string(bool value) { return value ? "true" : "false"; }
+	static bool from_string(const std::string &value) { return value == "true" or value == "1" or value == "yes"; }
 };
 
-template<>
+template <>
 struct value_serializer<std::string>
 {
-	static constexpr const char* type_name() 				{ return "xsd:string"; }
-	static std::string to_string(const std::string& value)	{ return value; }
-	static std::string from_string(const std::string& value){ return value; }
+	static constexpr const char *type_name() { return "xsd:string"; }
+	static std::string to_string(const std::string &value) { return value; }
+	static std::string from_string(const std::string &value) { return value; }
 };
 
-template<>
+template <>
 struct value_serializer<int8_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:byte"; }
-	static std::string to_string(int8_t value)				{ return std::to_string(value);	}
-	static int8_t from_string(const std::string& value)		{ return static_cast<int8_t>(std::stoi(value)); }
+	static constexpr const char *type_name() { return "xsd:byte"; }
+	static std::string to_string(int8_t value) { return std::to_string(value); }
+	static int8_t from_string(const std::string &value) { return static_cast<int8_t>(std::stoi(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<uint8_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:unsignedByte"; }
-	static std::string to_string(uint8_t value)				{ return std::to_string(value);	}
-	static uint8_t from_string(const std::string& value)	{ return static_cast<uint8_t>(std::stoul(value)); }
+	static constexpr const char *type_name() { return "xsd:unsignedByte"; }
+	static std::string to_string(uint8_t value) { return std::to_string(value); }
+	static uint8_t from_string(const std::string &value) { return static_cast<uint8_t>(std::stoul(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<int16_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:short"; }
-	static std::string to_string(int16_t value)				{ return std::to_string(value);	}
-	static int16_t from_string(const std::string& value)	{ return static_cast<int16_t>(std::stoi(value)); }
+	static constexpr const char *type_name() { return "xsd:short"; }
+	static std::string to_string(int16_t value) { return std::to_string(value); }
+	static int16_t from_string(const std::string &value) { return static_cast<int16_t>(std::stoi(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<uint16_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:unsignedShort"; }
-	static std::string to_string(uint16_t value)			{ return std::to_string(value);	}
-	static uint16_t from_string(const std::string& value)	{ return static_cast<uint16_t>(std::stoul(value)); }
+	static constexpr const char *type_name() { return "xsd:unsignedShort"; }
+	static std::string to_string(uint16_t value) { return std::to_string(value); }
+	static uint16_t from_string(const std::string &value) { return static_cast<uint16_t>(std::stoul(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<int32_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:int"; }
-	static std::string to_string(int32_t value)				{ return std::to_string(value);	}
-	static int32_t from_string(const std::string& value)	{ return std::stoi(value); }
+	static constexpr const char *type_name() { return "xsd:int"; }
+	static std::string to_string(int32_t value) { return std::to_string(value); }
+	static int32_t from_string(const std::string &value) { return std::stoi(value); }
 };
 
-template<>
+template <>
 struct value_serializer<uint32_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:unsignedInt"; }
-	static std::string to_string(uint32_t value)			{ return std::to_string(value);	}
-	static uint32_t from_string(const std::string& value)	{ return static_cast<uint32_t>(std::stoul(value)); }
+	static constexpr const char *type_name() { return "xsd:unsignedInt"; }
+	static std::string to_string(uint32_t value) { return std::to_string(value); }
+	static uint32_t from_string(const std::string &value) { return static_cast<uint32_t>(std::stoul(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<int64_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:long"; }
-	static std::string to_string(int64_t value)				{ return std::to_string(value);	}
-	static int64_t from_string(const std::string& value)	{ return static_cast<int64_t>(std::stoll(value)); }
+	static constexpr const char *type_name() { return "xsd:long"; }
+	static std::string to_string(int64_t value) { return std::to_string(value); }
+	static int64_t from_string(const std::string &value) { return static_cast<int64_t>(std::stoll(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<uint64_t>
 {
-	static constexpr const char* type_name()				{ return "xsd:unsignedLong"; }
-	static std::string to_string(uint64_t value)			{ return std::to_string(value);	}
-	static uint64_t from_string(const std::string& value)	{ return static_cast<uint64_t>(std::stoull(value)); }
+	static constexpr const char *type_name() { return "xsd:unsignedLong"; }
+	static std::string to_string(uint64_t value) { return std::to_string(value); }
+	static uint64_t from_string(const std::string &value) { return static_cast<uint64_t>(std::stoull(value)); }
 };
 
-template<>
+template <>
 struct value_serializer<float>
 {
-	static constexpr const char* type_name()				{ return "xsd:float"; }
+	static constexpr const char *type_name() { return "xsd:float"; }
 	// static std::string to_string(float value)				{ return std::to_string(value);	}
 	static std::string to_string(float value)
 	{
@@ -126,13 +128,13 @@ struct value_serializer<float>
 		s << value;
 		return s.str();
 	}
-	static float from_string(const std::string& value)		{ return std::stof(value); }
+	static float from_string(const std::string &value) { return std::stof(value); }
 };
 
-template<>
+template <>
 struct value_serializer<double>
 {
-	static constexpr const char* type_name()				{ return "xsd:double"; }
+	static constexpr const char *type_name() { return "xsd:double"; }
 	// static std::string to_string(double value)				{ return std::to_string(value);	}
 	static std::string to_string(double value)
 	{
@@ -140,7 +142,7 @@ struct value_serializer<double>
 		s << value;
 		return s.str();
 	}
-	static double from_string(const std::string& value)		{ return std::stod(value); }
+	static double from_string(const std::string &value) { return std::stod(value); }
 };
 
 /// \brief value_serializer for enum values
@@ -153,18 +155,18 @@ struct value_serializer<double>
 ///
 /// A recent addition is the init() call to initialize the instance
 
-template<typename T>
+template <typename T>
 struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 {
 	std::string m_type_name;
 
-	using value_map_type = std::map<T,std::string>;
+	using value_map_type = std::map<T, std::string>;
 	using value_map_value_type = typename value_map_type::value_type;
 
 	value_map_type m_value_map;
 
 	/// \brief Initialize a new instance of value_serializer for this enum, with name and a set of name/value pairs
-	static void init(const char* name, std::initializer_list<value_map_value_type> values)
+	static void init(const char *name, std::initializer_list<value_map_value_type> values)
 	{
 		instance(name).m_value_map = value_map_type(values);
 	}
@@ -175,26 +177,27 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 		instance().m_value_map = value_map_type(values);
 	}
 
-	static value_serializer& instance(const char* name = nullptr) {
+	static value_serializer &instance(const char *name = nullptr)
+	{
 		static value_serializer s_instance;
 		if (name and s_instance.m_type_name.empty())
 			s_instance.m_type_name = name;
 		return s_instance;
 	}
 
-	value_serializer& operator()(T v, const std::string& name)
+	value_serializer &operator()(T v, const std::string &name)
 	{
 		m_value_map[v] = name;
 		return *this;
 	}
 
-	value_serializer& operator()(const std::string& name, T v)
+	value_serializer &operator()(const std::string &name, T v)
 	{
 		m_value_map[v] = name;
 		return *this;
 	}
 
-	static const char* type_name()
+	static const char *type_name()
 	{
 		return instance().m_type_name;
 	}
@@ -204,10 +207,10 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 		return instance().m_value_map[value];
 	}
 
-	static T from_string(const std::string& value)
+	static T from_string(const std::string &value)
 	{
 		T result = {};
-		for (auto& t: instance().m_value_map)
+		for (auto &t : instance().m_value_map)
 			if (t.second == value)
 			{
 				result = t.first;
@@ -224,274 +227,101 @@ struct value_serializer<T, std::enable_if_t<std::is_enum_v<T>>>
 
 // --------------------------------------------------------------------
 // date/time support
+// We're using Howard Hinands date functions here. If available...
 
-/// \brief to_string/from_string for boost::posix_time::ptime
-/// boost::posix_time::ptime values are always assumed to be UTC
+#if __has_include(<date/date.h>)
 
-template<>
-struct value_serializer<boost::posix_time::ptime>
+/// \brief to_string/from_string for std::chrono::system_clock::time_point
+/// time is always assumed to be UTC
+/// For a specification, see https://www.iso20022.org/standardsrepository/type/ISODateTime
+
+template <>
+struct value_serializer<std::chrono::system_clock::time_point>
 {
-	static constexpr const char* type_name() { return "xsd:dateTime"; }
-	
-	/// to_string the boost::posix_time::ptime as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
-	static std::string to_string(const boost::posix_time::ptime& v)
+	using time_type = std::chrono::system_clock::time_point;
+
+	static constexpr const char *type_name() { return "xsd:dateTime"; }
+
+	/// to_string the time as YYYY-MM-DDThh:mm:ssZ (zero UTC offset)
+	static std::string to_string(const time_type &v)
 	{
-		return boost::posix_time::to_iso_extended_string(v).append("Z");
+		std::ostringstream ss;
+		ss << date::format("%FT%TZ", v);
+		return ss.str();
 	}
 
 	/// from_string according to ISO8601 rules.
 	/// If Zulu time is specified, then the parsed xsd:dateTime is returned.
 	/// If an UTC offset is present, then the offset is subtracted from the xsd:dateTime, this yields UTC.
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
-	static boost::posix_time::ptime from_string(const std::string& s)
+	static time_type from_string(const std::string &s)
 	{
-		// We accept 3 general formats:
-		//  1: date fields separated with dashes, time fields separated with colons, eg. 2013-02-17T15:25:20,502104+01:00
-		//  2: date fields not separated, time fields separated with colons, eg. 20130217T15:25:20,502104+01:00
-		//  3: date fields not separated, time fields not separated, eg. 20130217T152520,502104+01:00
+		using namespace std::literals;
+		using namespace date;
+		using namespace std::chrono;
 
-		// Apart from the separators, the 3 regexes are basically the same, i.e. they have the same fields
-		// Note: std::regex is threadsafe, so we can declare these statically
+		time_type result;
 
-		// Format 1:
-		// ^(-?\d{4})-(\d{2})-(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-		//  ^         ^       ^       ^      ^ ^      ^ ^      ^    ^          ^^   ^     ^      ^ ^
-		//  |         |       |       |      | |      | |      |    |          ||   |     |      | |
-		//  |         |       |       |      | |      | |      |    |          ||   |     |      | [16] UTC minutes offset
-		//  |         |       |       |      | |      | |      |    |          ||   |     |      [15] have UTC minutes offset?
-		//  |         |       |       |      | |      | |      |    |          ||   |     [14] UTC hour offset
-		//  |         |       |       |      | |      | |      |    |          ||   [13] UTC offset sign
-		//  |         |       |       |      | |      | |      |    |          |[12] Zulu time
-		//  |         |       |       |      | |      | |      |    |          [11] have time zone?
-		//  |         |       |       |      | |      | |      |    [10] fractional seconds
-		//  |         |       |       |      | |      | |      [9] have fractional seconds
-		//  |         |       |       |      | |      | [8] seconds
-		//  |         |       |       |      | |      [7] have seconds?
-		//  |         |       |       |      | [6] minutes
-		//  |         |       |       |      [5] have minutes?
-		//  |         |       |       [4] hours
-		//  |         |       [3] day
-		//  |         [2] month
-		//  [1] year
-		static std::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-
-		// Format 2:
-		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})(:(\d{2})(:(\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-		static std::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})(:(\\d{2})(:(\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-
-		// Format 3:
-		// ^(-?\d{4})(\d{2})(\d{2})T(\d{2})((\d{2})((\d{2})([.,]\d+)?)?)?((Z)|([-+])(\d{2})(:(\d{2}))?)?$
-		static std::regex re3("^(-?\\d{4})(\\d{2})(\\d{2})T(\\d{2})((\\d{2})((\\d{2})([.,]\\d+)?)?)?((Z)|([-+])(\\d{2})(:(\\d{2}))?)?$");
-
-		static const int f_year              =  1;
-		static const int f_month             =  2;
-		static const int f_day               =  3;
-		static const int f_hours             =  4;
-		static const int f_have_minutes      =  5;
-		static const int f_minutes           =  6;
-		static const int f_have_seconds      =  7;
-		static const int f_seconds           =  8;
-		static const int f_have_frac         =  9;
-		static const int f_frac              = 10;
-		static const int f_have_tz           = 11;
-		static const int f_zulu              = 12;
-		static const int f_offs_sign         = 13;
-		static const int f_offs_hours        = 14;
-		static const int f_have_offs_minutes = 15;
-		static const int f_offs_minutes      = 16;
-
+		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[-+]\d{2}:\d{2})?)");
 		std::smatch m;
-		if (not std::regex_match(s, m, re1)) {
-			if (not std::regex_match(s, m, re2)) {
-				if (not std::regex_match(s, m, re3)) {
-					throw exception("Bad dateTime format");
-				}
-			}
+
+		if (not std::regex_match(s, m, kRX))
+			throw std::runtime_error("Invalid date format");
+
+		std::istringstream is(s);
+
+		if (m[1].matched)
+		{
+			if (m[1] == "Z")
+				is >> parse("%FT%TZ", result);
+			else
+				is >> parse("%FT%T%0z", result);
 		}
+		else
+			is >> parse("%FT%T", result);
 
-		boost::gregorian::date d(
-		  static_cast<uint16_t>(std::stoi(m[f_year]))
-		, static_cast<uint16_t>(std::stoi(m[f_month]))
-		, static_cast<uint16_t>(std::stoi(m[f_day]))
-		);
-
-		int hours = std::stoi(m[f_hours]);
-		int minutes = 0, seconds = 0;
-		if (m.length(f_have_minutes)) {
-			minutes = std::stoi(m[f_minutes]);
-			if (m.length(f_have_seconds)) {
-				seconds = std::stoi(m[f_seconds]);
-			}
-		}
-		boost::posix_time::time_duration t(hours, minutes, seconds);
-
-		if (m.length(f_have_frac)) {
-			double frac = std::stod("0." + m[f_frac].str());
-			t += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
-		}
-
-		boost::posix_time::ptime result = boost::posix_time::ptime(d, t);
-
-		if (m.length(f_have_tz)) {
-			if (not m.length(f_zulu)) {
-				std::string sign = m[f_offs_sign];
-				hours = std::stoi(m[f_offs_hours]);
-				minutes = 0;
-				if (m.length(f_have_offs_minutes)) {
-					minutes = std::stoi(m[f_offs_minutes]);
-				}
-				boost::posix_time::time_duration offs(hours, minutes, 0);
-				if (sign == "+") {
-					result -= offs;
-				} else {
-					result += offs;
-				}
-			}
-		} else {
-			// Boost has no clear way of instantiating the *current* timezone, so
-			// it's not possible to convert from local to UTC, using boost::local_time classes
-			// For now, settle on using mktime...
-			std::tm tm = boost::posix_time::to_tm(result);
-			tm.tm_isdst = -1;
-			std::time_t t2 = mktime(&tm);
-			result = boost::posix_time::from_time_t(t2);
-		}
+		if (is.bad() or is.fail())
+			throw std::runtime_error("invalid formatted date");
 
 		return result;
 	}
 };
 
-/// \brief to_string/from_string for boost::gregorian::date
-/// boost::gregorian::date values are assumed to be floating, i.e. we don't accept timezone info in dates
+/// \brief to_string/from_string for date::sys_days
+/// For a specification, see https://www.iso20022.org/standardsrepository/type/ISODateTime
 
-template<>
-struct value_serializer<boost::gregorian::date>
+template <>
+struct value_serializer<date::sys_days>
 {
-	static constexpr const char* type_name() { return "xsd:date"; }
+	static constexpr const char *type_name() { return "xsd:date"; }
 
-	/// to_string the boost::gregorian::date as YYYY-MM-DD
-	static std::string to_string(const boost::gregorian::date& v)
+	/// to_string the date as YYYY-MM-DD
+	static std::string to_string(const date::sys_days &v)
 	{
-		return boost::gregorian::to_iso_extended_string(v);
+		std::ostringstream ss;
+		ss << date::format("%F", v);
+		return ss.str();
 	}
 
-	/// from_string boost::gregorian::date according to ISO8601 rules, but without timezone.
-	static boost::gregorian::date from_string(const std::string& s)
+	/// from_string according to ISO8601 rules.
+	static date::sys_days from_string(const std::string &s)
 	{
-		// We accept 2 general formats:
-		//  1: date fields separated with dashes, eg. 2013-02-17
-		//  2: date fields not separated, eg. 20130217
+		using namespace std::literals;
+		using namespace date;
+		using namespace std::chrono;
 
-		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
-		// Note: std::regex is threadsafe, so we can declare these statically
+		date::sys_days result;
 
-		// Format 1:
-		// ^(-?\d{4})-(\d{2})-(\d{2})$
-		//  ^         ^       ^
-		//  |         |       |
-		//  |         |       |
-		//  |         |       [3] day
-		//  |         [2] month
-		//  [1] year
-		static std::regex re1("^(-?\\d{4})-(\\d{2})-(\\d{2})$");
+		std::istringstream is(s);
+		from_stream(is, "%F", result);
 
-		// Format 2:
-		// ^(-?\d{4})(\d{2})(\d{2})$
-		static std::regex re2("^(-?\\d{4})(\\d{2})(\\d{2})$");
-
-		static const int f_year              =  1;
-		static const int f_month             =  2;
-		static const int f_day               =  3;
-
-		std::smatch m;
-		if (not std::regex_match(s, m, re1)) {
-			if (not std::regex_match(s, m, re2)) {
-				throw exception("Bad date format");
-			}
-		}
-
-		return boost::gregorian::date(
-				  static_cast<uint16_t>(std::stoi(m[f_year]))
-				, static_cast<uint16_t>(std::stoi(m[f_month]))
-				, static_cast<uint16_t>(std::stoi(m[f_day]))
-				);
-	}
-};
-
-/// \brief to_string/from_string for boost::posix_time::time_duration
-/// boost::posix_time::time_duration values are assumed to be floating, i.e. we don't accept timezone info in times
-
-template<>
-struct value_serializer<boost::posix_time::time_duration>
-{
-	static constexpr const char* type_name() { return "xsd:time"; }
-
-	/// to_string the boost::posix_time::time_duration as hh:mm:ss,ffffff
-	static std::string to_string(const boost::posix_time::time_duration& v)
-	{
-		return boost::posix_time::to_simple_string(v);
-	}
-
-	/// from_string boost::posix_time::time_duration according to ISO8601 rules, but without timezone.
-	static boost::posix_time::time_duration from_string(const std::string& s)
-	{
-		// We accept 2 general formats:
-		//  1: time fields separated with colons, eg. 15:25:20,502104
-		//  2: time fields not separated, eg. 152520,502104
-
-		// Apart from the separators, the 2 regexes are basically the same, i.e. they have the same fields
-		// Note: std::regex is threadsafe, so we can declare these statically
-
-		// Format 1:
-		// ^(\d{2})(:(\d{2})(:(\d{2})([.,](\d+))?)?)?$
-		//  ^      ^ ^      ^ ^      ^    ^
-		//  |      | |      | |      |    |
-		//  |      | |      | |      |    [7] fractional seconds
-		//  |      | |      | |      [6] have fractional seconds
-		//  |      | |      | [5] seconds
-		//  |      | |      [4] have seconds?
-		//  |      | [3] minutes
-		//  |      [2] have minutes?
-		//  [1] hours
-		static std::regex re1("^(\\d{2})(:(\\d{2})(:(\\d{2})([.,](\\d+))?)?)?$");
-
-		// Format 2:
-		// ^(\d{2})((\d{2})((\d{2})([.,](\d+))?)?)?$
-		static std::regex re2("^(\\d{2})((\\d{2})((\\d{2})([.,](\\d+))?)?)?$");
-
-		static const int f_hours             =  1;
-		static const int f_have_minutes      =  2;
-		static const int f_minutes           =  3;
-		static const int f_have_seconds      =  4;
-		static const int f_seconds           =  5;
-		static const int f_have_frac         =  6;
-		static const int f_frac              =  7;
-
-		std::smatch m;
-		if (not std::regex_match(s, m, re1)) {
-			if (not std::regex_match(s, m, re2)) {
-				throw exception("Bad time format");
-			}
-		}
-
-		int hours = std::stoi(m[f_hours]);
-		int minutes = 0, seconds = 0;
-		if (m.length(f_have_minutes)) {
-			minutes = std::stoi(m[f_minutes]);
-			if (m.length(f_have_seconds)) {
-				seconds = std::stoi(m[f_seconds]);
-			}
-		}
-
-		boost::posix_time::time_duration result = boost::posix_time::time_duration(hours, minutes, seconds);
-
-		if (m.length(f_have_frac)) {
-			double frac = std::stod(std::string(".").append(std::string(m[f_frac])));
-			result += boost::posix_time::microseconds(static_cast<int64_t>((frac + .5) * 1e6));
-		}
+		if (is.bad() or is.fail())
+			throw std::runtime_error("invalid formatted date");
 		
 		return result;
 	}
 };
+
+#endif
 
 } // namespace zeep

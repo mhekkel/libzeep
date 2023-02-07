@@ -15,6 +15,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/preforked-server.hpp>
@@ -45,7 +46,7 @@ daemon::daemon(server_factory_type &&factory, const std::string &pid_file,
 }
 
 daemon::daemon(server_factory_type &&factory, const char *name)
-	: daemon(std::forward<server_factory_type>(factory), "/var/run/"s + name,
+	: daemon(std::move(factory), "/var/run/"s + name,
 		  "/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
 {
 }
@@ -61,34 +62,29 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	}
 	else
 	{
-		try
+		boost::asio::io_context io_context;
+		boost::asio::ip::tcp::endpoint endpoint;
+
+		boost::system::error_code ec;
+		auto addr = boost::asio::ip::make_address(address, ec);
+		if (not ec)
+			endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+		else
 		{
-			boost::asio::io_context io_context;
-			boost::asio::ip::tcp::endpoint endpoint;
-
-			try
-			{
-				endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
-			}
-			catch (const std::exception &e)
-			{
-				boost::asio::ip::tcp::resolver resolver(io_context);
-				boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
-			}
-
-			boost::asio::ip::tcp::acceptor acceptor(io_context);
-			acceptor.open(endpoint.protocol());
-			acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-			acceptor.bind(endpoint);
-			acceptor.listen();
-
-			acceptor.close();
+			boost::asio::ip::tcp::resolver resolver(io_context);
+			boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+			endpoint = *resolver.resolve(query);
 		}
-		catch (exception &e)
-		{
-			throw std::runtime_error(std::string("Is server running already? ") + e.what());
-		}
+
+		boost::asio::ip::tcp::acceptor acceptor(io_context);
+		acceptor.open(endpoint.protocol());
+		acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+		acceptor.bind(endpoint, ec);
+		if (ec)
+			throw std::runtime_error(std::string("Is server running already? ") + ec.message());
+		acceptor.listen();
+
+		acceptor.close();
 
 		signal_catcher sc;
 		sc.block();
@@ -156,26 +152,31 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 	}
 	else
 	{
-		if (fs::exists(m_pid_file))
-			try
-			{
-				fs::remove(m_pid_file);
-			}
-			catch (...)
-			{
-			}
+		std::error_code ec;
+
+		if (fs::exists(m_pid_file, ec))
+			fs::remove(m_pid_file, ec);
 
 		fs::path pidDir = fs::path(m_pid_file).parent_path();
-		if (not fs::is_directory(pidDir))
-			fs::create_directories(pidDir);
+		if (not fs::is_directory(pidDir, ec))
+			fs::create_directories(pidDir, ec);
+		
+		if (ec)
+			std::cerr << "Creating directory for pid file failed: " << ec.message() << std::endl;
 
 		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
-		if (not fs::is_directory(outLogDir))
-			fs::create_directories(outLogDir);
+		if (not fs::is_directory(outLogDir, ec))
+			fs::create_directories(outLogDir, ec);
+
+		if (ec)
+			std::cerr << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << std::endl;
 
 		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
-		if (not fs::is_directory(errLogDir))
-			fs::create_directories(errLogDir);
+		if (not fs::is_directory(errLogDir, ec))
+			fs::create_directories(errLogDir, ec);
+
+		if (ec)
+			std::cerr << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << std::endl;
 
 		try
 		{
@@ -207,17 +208,25 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 		}
 
 		daemonize();
-
-		run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
-
-		if (fs::exists(m_pid_file))
-			try
+		
+		for (;;)
+		{
+			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
+			if (hupped)
 			{
-				fs::remove(m_pid_file);
+				std::cerr << "Server was interrupted, will attempt to resume" << std::endl;
+				continue;
 			}
-			catch (...)
-			{
-			}
+			
+			break;
+		}
+
+
+		if (fs::exists(m_pid_file, ec))
+			fs::remove(m_pid_file, ec);
+		
+		if (ec)
+			std::cerr << "Removing pid file failed: " << ec.message() << std::endl;
 	}
 
 	return result;
@@ -408,7 +417,7 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 		sigfillset(&new_mask);
 		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-		preforked_server server([=]()
+		preforked_server server([=,this]()
 			{
 			try
 			{

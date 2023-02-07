@@ -4,17 +4,14 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
+#include <iostream>
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/security.hpp>
-#include <zeep/json/parser.hpp>
 #include <zeep/http/uri.hpp>
+#include <zeep/json/parser.hpp>
 
 #include "glob.hpp"
-
-namespace pt = boost::posix_time;
 
 namespace zeep::http
 {
@@ -22,12 +19,30 @@ namespace zeep::http
 namespace
 {
 #define BASE64URL "(?:[-_A-Za-z0-9]{4})*(?:[-_A-Za-z0-9]{2,3})?"
-std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$" );
+	std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$");
+} // namespace
+
+// --------------------------------------------------------------------
+
+bool user_service::user_is_valid(const std::string& username) const
+{
+	bool result = false;
+
+	try
+	{
+		auto user = load_user(username);
+		result = user.username == username;
+	}
+	catch (...)
+	{
+	}
+
+	return result;	
 }
 
 // --------------------------------------------------------------------
 
-void security_context::validate_request(request& req) const
+void security_context::validate_request(request &req) const
 {
 	bool allow = m_default_allow;
 
@@ -49,7 +64,7 @@ void security_context::validate_request(request& req) const
 			std::smatch m;
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
-			
+
 			json::element JOSEHeader;
 			json::parse_json(decode_base64url(m[1].str()), JOSEHeader);
 
@@ -68,10 +83,14 @@ void security_context::validate_request(request& req) const
 
 			if (not credentials.is_object() or not credentials["role"].is_array())
 				break;
-
-			for (auto role: credentials["role"])
-				roles.insert(role.as<std::string>());
 			
+			// make sure user still exists.
+			if (not m_users.user_is_valid(credentials["username"].as<std::string>()))
+				break;
+
+			for (auto role : credentials["role"])
+				roles.insert(role.as<std::string>());
+
 			req.set_credentials(std::move(credentials));
 
 			break;
@@ -80,11 +99,11 @@ void security_context::validate_request(request& req) const
 		// first check if this page is allowed without any credentials
 		// that means, the first rule that matches this uri should allow
 		// access.
-		for (auto& rule: m_rules)
+		for (auto &rule : m_rules)
 		{
 			if (not glob_match(path, rule.m_pattern))
 				continue;
-			
+
 			if (rule.m_roles.empty())
 				allow = true;
 			else
@@ -131,7 +150,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 		{ "username", user.username }
 	};
 
-	for (auto& role: user.roles)
+	for (auto &role : user.roles)
 		credentials["role"].push_back(role);
 
 	auto h1 = encode_base64url(JOSEHeader.as<std::string>());
@@ -146,26 +165,39 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 
 // --------------------------------------------------------------------
 
-void security_context::verify_username_password(const std::string& username, const std::string& raw_password, reply &rep)
+bool security_context::verify_username_password(const std::string &username, const std::string &raw_password)
 {
+	bool result = false;
+
 	try
 	{
 		auto user = m_users.load_user(username);
-		
-		bool match = false;
-		for (auto const& [name, pwenc]: m_known_password_encoders)
+
+		for (auto const &[name, pwenc] : m_known_password_encoders)
 		{
 			if (user.password.compare(0, name.length(), name) != 0)
 				continue;
-			
-			match = pwenc->matches(raw_password, user.password);
+
+			result = pwenc->matches(raw_password, user.password);
 			break;
 		}
+	}
+	catch (...)
+	{
+		result = false;
+	}
 
-		if (not match)
+	return result;
+}
+
+void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)
+{
+	try
+	{
+		if (not verify_username_password(username, raw_password))
 			throw invalid_password_exception();
 
-		add_authorization_headers(rep, user);
+		add_authorization_headers(rep, m_users.load_user(username));
 	}
 	catch (const std::exception &)
 	{
@@ -175,7 +207,7 @@ void security_context::verify_username_password(const std::string& username, con
 
 // --------------------------------------------------------------------
 
-std::pair<std::string,bool> security_context::get_csrf_token(request& req)
+std::pair<std::string, bool> security_context::get_csrf_token(request &req)
 {
 	// See if we need to add a new csrf token
 	bool csrf_is_new = false;
@@ -189,4 +221,4 @@ std::pair<std::string,bool> security_context::get_csrf_token(request& req)
 	return { csrf, csrf_is_new };
 }
 
-}
+} // namespace zeep::http

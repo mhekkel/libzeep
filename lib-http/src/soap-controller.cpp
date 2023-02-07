@@ -37,7 +37,7 @@ xml::element make_envelope(xml::element&& data)
 		{ "soap:encodingStyle", "http://www.w3.org/2003/05/soap-encoding" }
 	});
 	auto& body = env.emplace_back("soap:Body");
-	body.emplace_back(std::forward<xml::element>(data));
+	body.emplace_back(std::move(data));
 	
 	return env;
 }
@@ -166,18 +166,18 @@ xml::element soap_controller::make_wsdl()
 		{ "name", m_service + "PortType" }
 	});
 	
-	// // // and the types
-	// // xml::type_map typeMap;
-	// // detail::message_map messageMap;
+	// and the types
+	xml::type_map typeMap;
+	message_map messageMap;
 	
-	// // for (auto& mp: m_mountpoints)
-	// // 	mp->collect(typeMap, messageMap, portType, binding);
+	for (auto& mp: m_mountpoints)
+		mp->describe(typeMap, messageMap, portType, binding);
 	
-	// // for (detail::message_map::iterator m = messageMap.begin(); m != messageMap.end(); ++m)
-	// // 	wsdl->append(m->second);
+	for (auto &m : messageMap)
+		wsdl.emplace_back(std::move(m.second));
 	
-	// // for (xml::type_map::iterator t = typeMap.begin(); t != typeMap.end(); ++t)
-	// // 	schema->append(t->second);
+	for (auto &t : typeMap)
+		schema.emplace_back(std::move(t.second));
 	
 	// finish with the wsdl:service
 	auto& service = wsdl.emplace_back("wsdl:service",
@@ -191,9 +191,11 @@ xml::element soap_controller::make_wsdl()
 		{ "binding", "ns:" + m_service }
 	});
 	
+	std::string location = get_context_name() + "/" + m_location;
+
 	port.emplace_back("soap:address",
 	{
-		{ "location", m_location }
+		{ "location", location }
 	});
 	
 	return wsdl;

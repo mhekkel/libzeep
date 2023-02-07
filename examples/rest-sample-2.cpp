@@ -1,5 +1,10 @@
+//           Copyright Maarten L. Hekkelman, 2022
+//  Distributed under the Boost Software License, Version 1.0.
+//     (See accompanying file LICENSE_1_0.txt or copy at
+//           http://www.boost.org/LICENSE_1_0.txt)
+
 // In this example we don't want to use rsrc based templates
-#undef WEBAPP_USES_RESOURCES
+#define WEBAPP_USES_RESOURCES 0
 
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/http/html-controller.hpp>

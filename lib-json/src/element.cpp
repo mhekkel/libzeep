@@ -816,96 +816,11 @@ void serialize(std::ostream& os, const element& v)
 	}
 }
 
-// void serialize(std::ostream& os, const element& v, int indent, int level)
-// {
-//     switch (v.m_type)
-//     {
-//         case value_type::array:
-//         {
-//             auto& a = *v.m_data.m_array;
-//             if (a.empty())
-//                 os << std::setw(level * indent) << "[]" << std::endl;
-//             else
-//             {
-//                 os << std::setw(level * indent) << '[' << std::endl;
-//                 for (size_t i = 0; i < a.size(); ++i)
-//                 {
-//                     serialize(os, a[i], indent, level + 1);
-//                     if (i + 1 < a.size())
-//                         os << ',';
-//                     os << std::endl;
-//                 }
-//                 os << std::setw(level * indent) << ']';
-//             }
-//             break;
-//         }
-
-//         case value_type::boolean:
-//         {
-//             auto& b = *v.m_data.m_boolean;
-//             os << std::setw(level * indent) << std::boolalpha << b;
-//             break;
-//         }
-
-//         case value_type::null:
-//             os << std::setw(level * indent) << "null";
-//             break;
-
-//         case value_type::number_float:
-//             os << std::setw(level * indent) << v.m_data.m_float;
-//             break;
-
-//         case value_type::number_int:
-//             os << std::setw(level * indent) << v.m_data.m_int;
-//             break;
-
-//         case value_type::number_uint:
-//             os << std::setw(level * indent) << v.m_data.m_uint;
-//             break;
-
-//         case value_type::object:
-//         {
-//             auto& o = *v.m_data.m_object;
-//             if (o.empty())
-//                 os << std::setw(level * indent) << "{}" << std::endl;
-//             else
-//             {
-//                 os << std::setw(level * indent) << '{' << std::endl;
-//                 for (size_t i = 0; i < a.size(); ++i)
-//                 {
-
-
-//                     os << 
-//                     serialize(os, a[i], indent, level + 1);
-//                     if (i + 1 < a.size())
-//                         os << ',';
-//                     os << std::endl;
-//                 }
-//                 os << std::setw(level * indent) << ']';
-//             }
-//             break;
-//         }
-
-//         case value_type::string:
-//             os << std::setw(level * indent) << *v.m_data.m_string;
-//             break;
-//     }
-// }
-
 // --------------------------------------------------------------------
-
-element parse(const std::string& s)
-{
-	return element();
-}
 
 std::ostream& operator<<(std::ostream& os, const element& v)
 {
-	// int indentation = os.width();
-	// os.width(0);
-
 	serialize(os, v);
-
 	return os;
 }
 

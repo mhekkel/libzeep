@@ -11,13 +11,15 @@
 
 #include <zeep/config.hpp>
 
-#include <thread>
+#include <chrono>
 #include <mutex>
+#include <thread>
 
 #include <boost/asio.hpp>
 
-#include <zeep/http/request.hpp>
+#include <zeep/http/access-control.hpp>
 #include <zeep/http/reply.hpp>
+#include <zeep/http/request.hpp>
 #include <zeep/http/template-processor.hpp>
 
 namespace zeep::http
@@ -37,40 +39,39 @@ class error_handler;
 class basic_server
 {
   public:
-
 	/// \brief Simple server, no security, no template processor
 	basic_server();
 
 	/// \brief Simple server, no security, create default template processor with \a docroot
-	basic_server(const std::string& docroot)
+	basic_server(const std::string &docroot)
 		: basic_server()
 	{
 		set_template_processor(new template_processor(docroot));
 	}
 
 	/// \brief server with a security context for limited access
-	basic_server(security_context* s_ctxt);
+	basic_server(security_context *s_ctxt);
 
 	/// \brief server with a security context for limited access, create default template processor with \a docroot
-	basic_server(security_context* s_ctxt, const std::string& docroot)
+	basic_server(security_context *s_ctxt, const std::string &docroot)
 		: basic_server(s_ctxt)
 	{
 		set_template_processor(new template_processor(docroot));
 	}
 
-	basic_server(const basic_server&) = delete;
-	basic_server& operator=(const basic_server&) = delete;
+	basic_server(const basic_server &) = delete;
+	basic_server &operator=(const basic_server &) = delete;
 
 	virtual ~basic_server();
 
 	/// \brief Get the security context provided in the constructor
-	security_context& get_security_context() 		{ return *m_security_context; }
+	security_context &get_security_context() { return *m_security_context; }
 
 	/// \brief Test if a security context was provided in the constructor
-	bool has_security_context() const				{ return (bool)m_security_context; }
+	bool has_security_context() const { return (bool)m_security_context; }
 
 	/// \brief Set the set of allowed methods (default is "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE")
-	void set_allowed_methods(const std::set<std::string>& methods)
+	void set_allowed_methods(const std::set<std::string> &methods)
 	{
 		m_allowed_methods = methods;
 	}
@@ -81,41 +82,53 @@ class basic_server
 		return m_allowed_methods;
 	}
 
+	/// \brief Set the access_control object
+	void set_access_control(access_control *ac)
+	{
+		m_access_control.reset(ac);
+	}
+
+	/// \brief Fill in the OPTIONS for a request \a req into reply \a rep
+	virtual void get_options_for_request(const request &req, reply &rep);
+
+	/// \brief Set the CORS headers for a request \a req into reply \a rep
+	virtual void set_access_control_headers(const request &req, reply &rep);
+
 	/// \brief Set the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	void set_context_name(const std::string& context_name)			{ m_context_name = context_name; }
+	void set_context_name(const std::string &context_name) { m_context_name = context_name; }
 
 	/// \brief Get the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	std::string get_context_name() const							{ return m_context_name; }
+	std::string get_context_name() const { return m_context_name; }
 
 	/// \brief Add controller to the list of controllers
 	///
 	/// When a request is received, the list of controllers get a chance
 	/// of handling it, in the order of which they were added to this server.
 	/// If none of the controller handle the request the not_found error is returned.
-	void add_controller(controller* c);
+	void add_controller(controller *c);
 
 	/// \brief Add an error handler
 	///
 	/// Errors are handled by the error handler list. The last added handler
 	/// is called first.
-	void add_error_handler(error_handler* eh);
+	void add_error_handler(error_handler *eh);
 
 	/// \brief Set the template processor
 	///
 	/// A template processor handles loading templates and processing
 	/// the contents.
-	void set_template_processor(basic_template_processor* template_processor);
+	void set_template_processor(basic_template_processor *template_processor);
 
 	/// \brief Get the template processor
 	///
 	/// A template processor handles loading templates and processing
 	/// the contents. This will throw if the processor has not been set
 	/// yet.
-	basic_template_processor& get_template_processor()
+	basic_template_processor &get_template_processor()
 	{
 		if (not m_template_processor)
 			throw std::logic_error("Template processor not specified yet");
@@ -127,7 +140,7 @@ class basic_server
 	/// A template processor handles loading templates and processing
 	/// the contents. This will throw if the processor has not been set
 	/// yet.
-	const basic_template_processor& get_template_processor() const
+	const basic_template_processor &get_template_processor() const
 	{
 		if (not m_template_processor)
 			throw std::logic_error("Template processor not specified yet");
@@ -141,7 +154,7 @@ class basic_server
 	}
 
 	/// \brief Bind the server to address \a address and port \a port
-	virtual void bind(const std::string& address, unsigned short port);
+	virtual void bind(const std::string &address, unsigned short port);
 
 	/// \brief Run as many as \a nr_of_threads threads simultaneously
 	virtual void run(int nr_of_threads);
@@ -150,7 +163,7 @@ class basic_server
 	virtual void stop();
 
 	/// \brief to extend the log entry for a current request, use this ostream:
-	static std::ostream& get_log();
+	static std::ostream &get_log();
 
 	/// \brief log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
 	void set_log_forwarded(bool v) { m_log_forwarded = v; }
@@ -162,26 +175,25 @@ class basic_server
 	unsigned short get_port() const { return m_port; }
 
 	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
-	virtual boost::asio::io_context& get_io_context() = 0;
+	virtual boost::asio::io_context &get_io_context() = 0;
 
 	/// \brief get_executor has to be public since we need it to call notify_fork from child code
 	boost::asio::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
 
   protected:
-
 	/// \brief the default entry logger
-	virtual void log_request(const std::string& client,
-							 const request& req, const reply& rep,
-							 const boost::posix_time::ptime& start,
-							 const std::string& referer, const std::string& userAgent,
-							 const std::string& entry) noexcept;
+	virtual void log_request(const std::string &client,
+		const request &req, const reply &rep,
+		const std::chrono::system_clock::time_point &start,
+		const std::string &referer, const std::string &userAgent,
+		const std::string &entry) noexcept;
 
   private:
 	friend class preforked_server_base;
 	friend class connection;
 
-	virtual void handle_request(boost::asio::ip::tcp::socket& socket,
-								request& req, reply& rep);
+	virtual void handle_request(boost::asio::ip::tcp::socket &socket,
+		request &req, reply &rep);
 
 	void handle_accept(boost::system::error_code ec);
 
@@ -191,12 +203,13 @@ class basic_server
 	std::string m_address;
 	unsigned short m_port;
 	bool m_log_forwarded;
-	std::string m_context_name;		/// \brief This is required for proxied servers e.g.
+	std::string m_context_name; /// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
 	std::unique_ptr<basic_template_processor> m_template_processor;
-	std::list<controller*> m_controllers;
-	std::list<error_handler*> m_error_handlers;
+	std::list<controller *> m_controllers;
+	std::list<error_handler *> m_error_handlers;
 	std::set<std::string> m_allowed_methods;
+	std::unique_ptr<access_control> m_access_control;
 };
 
 // --------------------------------------------------------------------
@@ -209,15 +222,24 @@ class server : public basic_server
 	server() {}
 
 	/// \brief Simple server, no security, create default template processor with \a docroot
-	server(const std::string& docroot) : basic_server(docroot) {}
+	server(const std::string &docroot)
+		: basic_server(docroot)
+	{
+	}
 
 	/// \brief server with a security context for limited access
-	server(security_context* s_ctxt) : basic_server(s_ctxt) {}
+	server(security_context *s_ctxt)
+		: basic_server(s_ctxt)
+	{
+	}
 
 	/// \brief server with a security context for limited access, create default template processor with \a docroot
-	server(security_context* s_ctxt, const std::string& docroot) : basic_server(s_ctxt, docroot) {}
+	server(security_context *s_ctxt, const std::string &docroot)
+		: basic_server(s_ctxt, docroot)
+	{
+	}
 
-	boost::asio::io_context& get_io_context() override
+	boost::asio::io_context &get_io_context() override
 	{
 		return m_io_context;
 	}

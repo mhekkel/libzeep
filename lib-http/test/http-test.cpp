@@ -83,7 +83,18 @@ BOOST_AUTO_TEST_CASE(request_params_1)
 BOOST_AUTO_TEST_CASE(webapp_6)
 {
 	zh::request req("GET", "/", {1, 0}, { { "Content-Type", "multipart/form-data; boundary=xYzZY" } },
-		"--xYzZY\r\nContent-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\nContent-Encoding: gzip\r\nContent-Type: chemical/x-cif\r\n\r\nhello, world!\n\r\n--xYzZY\r\nContent-Disposition: form-data; name=\"mtz-file\"; filename=\"1cbs_map.mtz\"\r\nContent-Type: text/plain\r\n\r\nAnd again, hello!\n\r\n--xYzZY--\r\n");
+		"--xYzZY\r\n"
+		"Content-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\n"
+		"Content-Encoding: gzip\r\n"
+		"Content-Type: chemical/x-cif\r\n"
+		"\r\n"
+		"hello, world!\n\r\n"
+		"--xYzZY\r\n"
+		"Content-Disposition: form-data; name=\"mtz-file\"; filename=\"1cbs_map.mtz\"\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"And again, hello!\n\r\n"
+		"--xYzZY--\r\n");
 
 	auto fp1 = req.get_file_parameter("pdb-file");
 	BOOST_CHECK_EQUAL(fp1.filename, "1cbs.cif.gz");

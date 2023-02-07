@@ -3,11 +3,7 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-// In this example we don't want to use rsrc based templates
-#define WEBAPP_USES_RESOURCES 0
-
-#include <zeep/http/rest-controller.hpp>
-#include <zeep/http/html-controller.hpp>
+#include <zeep/http/soap-controller.hpp>
 
 //[ cart_items
 struct Item
@@ -39,17 +35,17 @@ struct Cart
 };
 //]
 
-//[ shop_rest_controller
-class shop_rest_controller : public zeep::http::rest_controller
+//[ shop_soap_controller
+class shop_soap_controller : public zeep::http::soap_controller
 {
   public:
-    shop_rest_controller()
-        : zeep::http::rest_controller("/cart")
+    shop_soap_controller()
+        : zeep::http::soap_controller("/ws", "cart", "https://www.hekkelman.com/libzeep/soap-sample")
     {
-        map_post_request("", &shop_rest_controller::create_cart, "client");
-        map_get_request("{id}", &shop_rest_controller::get_cart, "id");
-        map_post_request("{id}/item", &shop_rest_controller::add_cart_item, "id", "name");
-        map_delete_request("{id}/item", &shop_rest_controller::delete_cart_item, "id", "name");
+        map_action("create", &shop_soap_controller::create_cart, "client");
+        map_action("retrieve", &shop_soap_controller::get_cart, "id");
+        map_action("update", &shop_soap_controller::add_cart_item, "id", "name");
+        map_action("delete", &shop_soap_controller::delete_cart_item, "id", "name");
     }
 
     int create_cart(const std::string& client)
@@ -59,7 +55,7 @@ class shop_rest_controller : public zeep::http::rest_controller
         return cartID;
     }
 
-    Cart& get_cart(int cartID)
+    Cart get_cart(int cartID)
     {
         auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
         if (oi == m_carts.end())
@@ -69,7 +65,11 @@ class shop_rest_controller : public zeep::http::rest_controller
 
     Cart add_cart_item(int cartID, const std::string& item)
     {
-        Cart& cart = get_cart(cartID);
+        auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
+        if (oi == m_carts.end())
+            throw std::invalid_argument("No such cart");
+
+        Cart &cart = *oi;
 
         auto ii = std::find_if(cart.items.begin(), cart.items.end(), [&](auto& i) { return i.name == item; });
         if (ii == cart.items.end())
@@ -82,7 +82,11 @@ class shop_rest_controller : public zeep::http::rest_controller
 
     Cart delete_cart_item(int cartID, const std::string& item)
     {
-        Cart& cart = get_cart(cartID);
+        auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
+        if (oi == m_carts.end())
+            throw std::invalid_argument("No such cart");
+
+        Cart &cart = *oi;
 
         auto ii = std::find_if(cart.items.begin(), cart.items.end(), [&](auto& i) { return i.name == item; });
         if (ii != cart.items.end())
@@ -100,24 +104,7 @@ class shop_rest_controller : public zeep::http::rest_controller
 };
 //]
 
-int shop_rest_controller::sNextCartID = 1;
-
-//[ shop_html_controller
-class shop_html_controller : public zeep::http::html_controller
-{
-  public:
-    shop_html_controller()
-    {
-        mount("", &shop_html_controller::handle_index);
-        mount("{css,scripts}/", &shop_html_controller::handle_file);
-    }
-
-    void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
-    {
-        get_template_processor().create_reply_from_template("shop.xhtml", scope, rep);
-    }
-};
-//]
+int shop_soap_controller::sNextCartID = 1;
 
 //[ shop_main
 int main()
@@ -125,8 +112,7 @@ int main()
     /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
     zeep::http::server srv("docroot");
 
-    srv.add_controller(new shop_html_controller());
-    srv.add_controller(new shop_rest_controller());
+    srv.add_controller(new shop_soap_controller());
 
     srv.bind("::", 8080);
 

@@ -215,7 +215,7 @@ void document::write(std::ostream& os, format_info fmt) const
 
 // --------------------------------------------------------------------
 
-void document::XmlDeclHandler(encoding_type encoding, bool standalone, float version)
+void document::XmlDeclHandler(encoding_type /*encoding*/, bool standalone, float version)
 {
 	m_has_xml_decl = true;
 	// m_encoding = encoding;
@@ -279,10 +279,38 @@ void document::StartElementHandler(const std::string& name, const std::string& u
 	m_namespaces.clear();
 }
 
-void document::EndElementHandler(const std::string& name, const std::string& uri)
+void document::EndElementHandler(const std::string& /*name*/, const std::string& /*name*/)
 {
 	if (m_cdata != nullptr)
 		throw exception("CDATA section not closed");
+
+#if 0 // This check is not needed since it can never happen anyway
+	std::string qname = name;
+	if (not uri.empty())
+	{
+		std::string prefix;
+		bool found;
+
+		auto i = std::find_if(m_namespaces.begin(), m_namespaces.end(),
+			[uri](auto& ns) { return ns.second == uri; });
+
+		if (i != m_namespaces.end())
+		{
+			prefix = i->first;
+			found = true;
+		}
+		else
+			std::tie(prefix, found) = m_cur->prefix_for_namespace(uri);
+	
+		if (prefix.empty() and not found)
+			throw exception("namespace not found: " + uri);
+
+		if (not prefix.empty())
+			qname = prefix + ':' + name;
+	}
+
+	assert(m_cur->name() == qname);
+#endif
 
 	m_cur = m_cur->parent();
 }
@@ -320,7 +348,7 @@ void document::StartNamespaceDeclHandler(const std::string& prefix, const std::s
 	m_namespaces.push_back(make_pair(prefix, uri));
 }
 
-void document::EndNamespaceDeclHandler(const std::string& prefix)
+void document::EndNamespaceDeclHandler(const std::string& /*prefix*/)
 {
 }
 

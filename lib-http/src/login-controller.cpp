@@ -5,12 +5,13 @@
 
 #include <zeep/config.hpp>
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 
+#include <zeep/http/error-handler.hpp>
 #include <zeep/http/login-controller.hpp>
 #include <zeep/http/security.hpp>
-#include <zeep/http/error-handler.hpp>
 #include <zeep/http/uri.hpp>
 
 namespace fs = std::filesystem;
@@ -21,52 +22,57 @@ namespace zeep::http
 class login_error_handler : public error_handler
 {
   public:
-	login_error_handler(login_controller* c)
-		: m_login_controller(c) {}
+	login_error_handler(login_controller *c)
+		: m_login_controller(c)
+	{
+	}
 
-
-	virtual bool create_unauth_reply(const request& req, reply& reply)
+	virtual bool create_unauth_reply(const request &req, reply &reply)
 	{
 		m_login_controller->create_unauth_reply(req, reply);
 		return true;
 	}
 
-	virtual bool create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
+	virtual bool create_error_reply(const request &/*req*/, const request &/*req*/, const request &/*req*/, const request &/*req*/)
 	{
 		return false;
 	}
 
   private:
-	login_controller* m_login_controller;
+	login_controller *m_login_controller;
 };
 
-
-login_controller::login_controller(const std::string& prefix_path)
-	: http::controller(prefix_path)
+login_controller::login_controller(const std::string &prefix_path)
+	: html_controller(prefix_path)
 {
+	map_get("login", &login_controller::handle_get_login);
+	map_post("login", &login_controller::handle_post_login, "username", "password");
+
+	map_get("logout", &login_controller::handle_logout);
+	map_post("logout", &login_controller::handle_logout);
 }
 
-void login_controller::set_server(basic_server* server)
+void login_controller::set_server(basic_server *server)
 {
 	controller::set_server(server);
 
-	assert(get_server().has_security_context());
-	if (not get_server().has_security_context())
+	assert(server->has_security_context());
+	if (not server->has_security_context())
 		throw std::runtime_error("The HTTP server has no security context");
 
-	auto& sc = get_server().get_security_context();
+	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});
 
 	server->add_error_handler(new login_error_handler(this));
 }
 
-xml::document login_controller::load_login_form(const request& req) const
+xml::document login_controller::load_login_form(const request &req) const
 {
 	if (m_server->has_template_processor())
 	{
 		try
 		{
-			auto& tp = m_server->get_template_processor();
+			auto &tp = m_server->get_template_processor();
 
 			xml::document doc;
 			doc.set_preserve_cdata(true);
@@ -77,7 +83,7 @@ xml::document login_controller::load_login_form(const request& req) const
 
 			return doc;
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception &ex)
 		{
 			std::cerr << ex.what() << std::endl;
 		}
@@ -120,100 +126,126 @@ xml::document login_controller::load_login_form(const request& req) const
 </html>)"_xml;
 }
 
-void login_controller::create_unauth_reply(const request& req, reply& reply)
+void login_controller::create_unauth_reply(const request &req, reply &reply)
 {
 	auto doc = load_login_form(req);
 
-	for (auto csrf: doc.find("//input[@name='_csrf']"))
-		csrf->set_attribute("value", req.get_cookie("csrf-token"));
+	auto csrf_cookie = req.get_cookie("csrf-token");
+	if (csrf_cookie.empty())
+	{
+		csrf_cookie = encode_base64url(random_hash());
+		reply.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+	}
 
-	for (auto uri: doc.find("//input[@name='uri']"))
+	for (auto csrf : doc.find("//input[@name='_csrf']"))
+		csrf->set_attribute("value", csrf_cookie);
+
+	for (auto uri : doc.find("//input[@name='uri']"))
 		uri->set_attribute("value", req.get_uri());
 
 	reply.set_content(doc);
 	reply.set_status(status_type::unauthorized);
 }
 
-bool login_controller::handle_request(request& req, reply& rep)
+reply login_controller::handle_get_login(const scope &scope)
 {
-	bool result = false;
+	auto &req = scope.get_request();
+	auto doc = load_login_form(req);
 
-	std::string uri = get_prefixless_path(req);
+	reply rep = reply::stock_reply(ok);
 
-	if (uri == "login")
+	auto csrf_cookie = req.get_cookie("csrf-token");
+	if (csrf_cookie.empty())
 	{
-		result = true;
-
-		if (req.get_method() == "GET")
-		{
-			auto doc = load_login_form(req);
-			for (auto csrf: doc.find("//input[@name='_csrf']"))
-				csrf->set_attribute("value", req.get_cookie("csrf-token"));
-			rep.set_content(doc);
-		}
-		else if (req.get_method() == "POST")
-		{
-			auto csrf = req.get_parameter("_csrf");
-			if (csrf != req.get_cookie("csrf-token"))
-				throw status_type::forbidden;
-
-			std::string redirect_to{"/"};
-			auto context = get_server().get_context_name();
-			if (not context.empty())
-				redirect_to += context + '/';
-			uri = req.get_parameter("uri");
-			if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*login$)")) and is_valid_uri(uri))
-				redirect_to += uri;
-
-			rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
-
-			auto username = req.get_parameter("username");
-			auto password = req.get_parameter("password");
-
-			try
-			{
-				get_server().get_security_context().verify_username_password(username, password, rep);
-			}
-			catch (const invalid_password_exception& e)
-			{
-				auto doc = load_login_form(req);
-				for (auto csrf_attr: doc.find("//input[@name='_csrf']"))
-					csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
-
-				auto user = doc.find_first("//input[@name='username']");
-				user->set_attribute("value", username);
-
-				auto pw = doc.find_first("//input[@name='password']");
-				pw->set_attribute("class", pw->get_attribute("class") + " is-invalid");
-
-				for (auto i_uri: doc.find("//input[@name='uri']"))
-					i_uri->set_attribute("value", uri);
-
-				rep.set_content(doc);
-
-				std::cerr << e.what() << '\n';
-			}
-		}
-		else
-			result = false;
+		csrf_cookie = encode_base64url(random_hash());
+		rep.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
 	}
-	else if (uri == "logout")
+
+	for (auto csrf : doc.find("//input[@name='_csrf']"))
+		csrf->set_attribute("value", csrf_cookie);
+
+	rep.set_content(doc);
+	return rep;
+}
+
+reply login_controller::handle_post_login(const scope &scope, const std::string &username, const std::string &password)
+{
+	auto &req = scope.get_request();
+	auto csrf = req.get_parameter("_csrf");
+	if (csrf != req.get_cookie("csrf-token"))
+		throw status_type::forbidden;
+
+	auto uri = req.get_parameter("uri");
+	auto rep = create_redirect_for_request(req);
+
+	try
 	{
-		std::string redirect_to{"/"};
-		auto context = get_server().get_context_name();
-		if (not context.empty())
-			redirect_to += context + '/';
-		uri = req.get_parameter("uri");
-		if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
+		get_server()->get_security_context().verify_username_password(username, password, rep);
+	}
+	catch (const invalid_password_exception &e)
+	{
+		auto doc = load_login_form(req);
+		for (auto csrf_attr : doc.find("//input[@name='_csrf']"))
+			csrf_attr->set_attribute("value", req.get_cookie("csrf-token"));
+
+		auto user = doc.find_first("//input[@name='username']");
+		user->set_attribute("value", username);
+
+		auto pw = doc.find_first("//input[@name='password']");
+		pw->set_attribute("class", pw->get_attribute("class") + " is-invalid");
+
+		for (auto i_uri : doc.find("//input[@name='uri']"))
+			i_uri->set_attribute("value", uri);
+
+		rep.set_content(doc);
+
+		std::cerr << e.what() << '\n';
+	}
+
+	return rep;
+}
+
+reply login_controller::handle_logout(const scope &scope)
+{
+	auto &req = scope.get_request();
+
+	auto rep = create_redirect_for_request(req);
+	rep.set_delete_cookie("access_token");
+
+	return rep;
+}
+
+reply login_controller::create_redirect_for_request(const request &req)
+{
+	std::string redirect_to{ "/" };
+	auto context = get_context_name();
+	if (not context.empty())
+	{
+		if (is_fully_qualified_uri(context))
+			redirect_to = context;
+		else
+			redirect_to += context;
+	}
+
+	auto uri = req.get_parameter("uri");
+	if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
+	{
+		if (is_fully_qualified_uri(uri))
+			redirect_to = uri;
+		else if (uri != "/")
+		{
+			if (redirect_to.back() != '/' and uri.front() != '/')
+				redirect_to += '/';
 			redirect_to += uri;
 
-		rep = reply::redirect(fs::path(redirect_to).lexically_normal().generic_string());
-		rep.set_delete_cookie("access_token");
-
-		result = true;
+			for (auto p = redirect_to.find("//"); p != std::string::npos; p = redirect_to.find("//", p))
+				redirect_to.erase(p, 1);
+		}
 	}
 
-	return result;
+	return reply::redirect(redirect_to);
 }
 
-}
+} // namespace zeep::http
+
+

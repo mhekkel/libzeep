@@ -3,8 +3,9 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
+#include <chrono>
+#include <fstream>
+#include <iostream>
 
 #include <zeep/xml/xpath.hpp>
 #include <zeep/http/template-processor.hpp>
@@ -57,9 +58,6 @@ std::istream* file_loader::load_file(const std::string& file, std::error_code& e
 
 void basic_template_processor::handle_file(const http::request& request, const scope& scope, http::reply& reply)
 {
-	using namespace boost::local_time;
-	using namespace boost::posix_time;
-
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].as<std::string>(), ec);
 
@@ -69,36 +67,19 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		return;
 	}
 
-	auto lastWriteTime = std::chrono::duration_cast<std::chrono::seconds>(ft - decltype(ft)::clock::time_point{}).count();
-
-	// // std::chrono::time_point<std::filesystem::__file_clock> tp(ft);
-	// ptime()
-
-	// std::chrono::system_clock::from_time_t()
-
-	// // auto lastWriteTime = decltype(ft)::clock::to_time_t(ft);
-
-	// boost::chrono::duration_cast
-
-	// std::chrono::file_clock;
-	// ptime fpt(ft);
-	// auto lastWriteTime = to_time_t()
+	using namespace std::chrono;
+    auto fileDate = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
 	std::string ifModifiedSince;
 	for (const http::header& h : request.get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
 		{
-			local_date_time modifiedSince(local_sec_clock::local_time(time_zone_ptr()));
+			std::istringstream ss { h.value };
+			std::tm tm;
+			ss >> std::get_time(&tm, "%a, %d %b %Y %H:%M:%S GMT");
 
-			local_time_input_facet *lif1(new local_time_input_facet("%a, %d %b %Y %H:%M:%S GMT"));
-
-			std::stringstream ss;
-			ss.imbue(std::locale(std::locale::classic(), lif1));
-			ss.str(h.value);
-			ss >> modifiedSince;
-
-			local_date_time fileDate(from_time_t(lastWriteTime), time_zone_ptr());
+			auto modifiedSince = system_clock::from_time_t(std::mktime(&tm));
 
 			if (fileDate <= modifiedSince)
 			{
@@ -151,15 +132,9 @@ void basic_template_processor::handle_file(const http::request& request, const s
 
 	reply.set_content(out.str(), mimetype);
 
-	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
-	local_time_facet *lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
-
 	std::stringstream s;
-	s.imbue(std::locale(std::cout.getloc(), lf));
-
-	ptime pt = from_time_t(lastWriteTime);
-	local_date_time t2(pt, time_zone_ptr());
-	s << t2;
+	std::time_t lastWriteTime = system_clock::to_time_t(fileDate);
+	s << std::put_time(std::gmtime(&lastWriteTime), "%a, %d %b %Y %H:%M:%S GMT");
 
 	reply.set_header("Last-Modified", s.str());
 }
@@ -328,7 +303,7 @@ void basic_template_processor::create_reply_from_template(const std::string& fil
 	reply.set_content(doc);
 }
 
-void basic_template_processor::init_scope(scope& scope)
+void basic_template_processor::init_scope(scope& /*scope*/)
 {
 }
 

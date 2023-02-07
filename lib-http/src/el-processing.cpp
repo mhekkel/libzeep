@@ -10,14 +10,14 @@
 
 #include <zeep/config.hpp>
 
-#include <locale>
 #include <codecvt>
+#include <locale>
 
 #include <zeep/crypto.hpp>
-#include <zeep/unicode-support.hpp>
 #include <zeep/http/el-processing.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/http/uri.hpp>
+#include <zeep/unicode-support.hpp>
 
 #include "format.hpp"
 
@@ -26,37 +26,34 @@ namespace zeep::http
 
 bool is_name_start_char(unicode uc)
 {
-	return
-		uc == L':' or
-		(uc >= L'A' and uc <= L'Z') or
-		uc == L'_' or
-		(uc >= L'a' and uc <= L'z') or
-		(uc >= 0x0C0 and uc <= 0x0D6) or
-		(uc >= 0x0D8 and uc <= 0x0F6) or
-		(uc >= 0x0F8 and uc <= 0x02FF) or
-		(uc >= 0x0370 and uc <= 0x037D) or
-		(uc >= 0x037F and uc <= 0x01FFF) or
-		(uc >= 0x0200C and uc <= 0x0200D) or
-		(uc >= 0x02070 and uc <= 0x0218F) or
-		(uc >= 0x02C00 and uc <= 0x02FEF) or
-		(uc >= 0x03001 and uc <= 0x0D7FF) or
-		(uc >= 0x0F900 and uc <= 0x0FDCF) or
-		(uc >= 0x0FDF0 and uc <= 0x0FFFD) or
-		(uc >= 0x010000 and uc <= 0x0EFFFF);	
+	return uc == L':' or
+	       (uc >= L'A' and uc <= L'Z') or
+	       uc == L'_' or
+	       (uc >= L'a' and uc <= L'z') or
+	       (uc >= 0x0C0 and uc <= 0x0D6) or
+	       (uc >= 0x0D8 and uc <= 0x0F6) or
+	       (uc >= 0x0F8 and uc <= 0x02FF) or
+	       (uc >= 0x0370 and uc <= 0x037D) or
+	       (uc >= 0x037F and uc <= 0x01FFF) or
+	       (uc >= 0x0200C and uc <= 0x0200D) or
+	       (uc >= 0x02070 and uc <= 0x0218F) or
+	       (uc >= 0x02C00 and uc <= 0x02FEF) or
+	       (uc >= 0x03001 and uc <= 0x0D7FF) or
+	       (uc >= 0x0F900 and uc <= 0x0FDCF) or
+	       (uc >= 0x0FDF0 and uc <= 0x0FFFD) or
+	       (uc >= 0x010000 and uc <= 0x0EFFFF);
 }
 
 bool is_name_char(unicode uc)
 {
-	return
-		uc == '-' or
-		uc == '.' or
-		(uc >= '0' and uc <= '9') or
-		uc == 0x0B7 or
-		is_name_start_char(uc) or
-		(uc >= 0x00300 and uc <= 0x0036F) or
-		(uc >= 0x0203F and uc <= 0x02040);
+	return uc == '-' or
+	       uc == '.' or
+	       (uc >= '0' and uc <= '9') or
+	       uc == 0x0B7 or
+	       is_name_start_char(uc) or
+	       (uc >= 0x00300 and uc <= 0x0036F) or
+	       (uc >= 0x0203F and uc <= 0x02040);
 }
-
 
 using request = http::request;
 using object = json::element;
@@ -127,18 +124,20 @@ struct interpreter
 	using unicode = uint32_t;
 
 	interpreter(const scope &scope)
-		: m_scope(scope) {}
+		: m_scope(scope)
+	{
+	}
 
 	// template <class OutputIterator, class Match>
 	// OutputIterator operator()(Match &m, OutputIterator out, std::regex::match_flag_type);
 
 	object evaluate(const std::string &s);
 
-	std::vector<std::pair<std::string,std::string>> evaluate_attr_expr(const std::string& s);
+	std::vector<std::pair<std::string, std::string>> evaluate_attr_expr(const std::string &s);
 
-	bool evaluate_assert(const std::string& s);
-	void evaluate_with(scope& scope, const std::string& s);
-	object evaluate_link(const std::string& s);
+	bool evaluate_assert(const std::string &s);
+	void evaluate_with(scope &scope, const std::string &s);
+	object evaluate_link(const std::string &s);
 
 	bool process(std::string &s);
 
@@ -149,16 +148,16 @@ struct interpreter
 	void retract();
 	void get_next_token();
 
-	object parse_expr();				// or_expr ( '?' expr ':' expr )?
-	object parse_or_expr();				// and_expr ( 'or' and_expr)*
-	object parse_and_expr();			// equality_expr ( 'and' equality_expr)*
-	object parse_equality_expr();		// relational_expr ( ('=='|'!=') relational_expr )?
-	object parse_relational_expr();		// additive_expr ( ('<'|'<='|'>='|'>') additive_expr )*
-	object parse_additive_expr();		// multiplicative_expr ( ('+'|'-') multiplicative_expr)*
-	object parse_multiplicative_expr(); // unary_expr (('%'|'/') unary_expr)*
-	object parse_unary_expr();			// ('-')? primary_expr
-	object parse_primary_expr();		// '(' expr ')' | number | string
-	object parse_literal_substitution();// '|xxx ${var}|'
+	object parse_expr();                 // or_expr ( '?' expr ':' expr )?
+	object parse_or_expr();              // and_expr ( 'or' and_expr)*
+	object parse_and_expr();             // equality_expr ( 'and' equality_expr)*
+	object parse_equality_expr();        // relational_expr ( ('=='|'!=') relational_expr )?
+	object parse_relational_expr();      // additive_expr ( ('<'|'<='|'>='|'>') additive_expr )*
+	object parse_additive_expr();        // multiplicative_expr ( ('+'|'-') multiplicative_expr)*
+	object parse_multiplicative_expr();  // unary_expr (('%'|'/') unary_expr)*
+	object parse_unary_expr();           // ('-')? primary_expr
+	object parse_primary_expr();         // '(' expr ')' | number | string
+	object parse_literal_substitution(); // '|xxx ${var}|'
 	object parse_template_expr();
 
 	object parse_link_template_expr();
@@ -167,7 +166,7 @@ struct interpreter
 
 	object parse_utility_expr();
 
-	object call_method(const std::string& className, const std::string& method, std::vector<object>& params);
+	object call_method(const std::string &className, const std::string &method, std::vector<object> &params);
 
 	const scope &m_scope;
 	token_type m_lookahead;
@@ -205,7 +204,7 @@ object interpreter::evaluate(const std::string &s)
 			result = parse_expr();
 		match(token_type::eof);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		using namespace std::literals;
 		result = "Error parsing expression: "s + e.what();
@@ -214,9 +213,9 @@ object interpreter::evaluate(const std::string &s)
 	return result;
 }
 
-std::vector<std::pair<std::string,std::string>> interpreter::evaluate_attr_expr(const std::string& s)
+std::vector<std::pair<std::string, std::string>> interpreter::evaluate_attr_expr(const std::string &s)
 {
-	std::vector<std::pair<std::string,std::string>> result;
+	std::vector<std::pair<std::string, std::string>> result;
 
 	m_ptr = s.begin();
 	m_end = s.end();
@@ -227,7 +226,7 @@ std::vector<std::pair<std::string,std::string>> interpreter::evaluate_attr_expr(
 		std::string var = m_token_string;
 		match(token_type::object);
 
-		match (token_type::assign);
+		match(token_type::assign);
 
 		auto value = parse_expr();
 
@@ -235,7 +234,7 @@ std::vector<std::pair<std::string,std::string>> interpreter::evaluate_attr_expr(
 
 		if (m_lookahead != token_type::comma)
 			break;
-		
+
 		match(token_type::comma);
 	}
 
@@ -244,7 +243,7 @@ std::vector<std::pair<std::string,std::string>> interpreter::evaluate_attr_expr(
 	return result;
 }
 
-bool interpreter::evaluate_assert(const std::string& s)
+bool interpreter::evaluate_assert(const std::string &s)
 {
 	bool result = true;
 
@@ -264,7 +263,7 @@ bool interpreter::evaluate_assert(const std::string& s)
 
 		if (m_lookahead != token_type::comma)
 			break;
-		
+
 		match(token_type::comma);
 	}
 
@@ -273,7 +272,7 @@ bool interpreter::evaluate_assert(const std::string& s)
 	return result;
 }
 
-void interpreter::evaluate_with(scope& scope, const std::string& s)
+void interpreter::evaluate_with(scope &scope, const std::string &s)
 {
 	m_ptr = s.begin();
 	m_end = s.end();
@@ -288,7 +287,7 @@ void interpreter::evaluate_with(scope& scope, const std::string& s)
 		auto value = parse_expr();
 
 		scope.put(name, value);
-		
+
 		if (m_lookahead == token_type::comma)
 		{
 			match(token_type::comma);
@@ -299,7 +298,7 @@ void interpreter::evaluate_with(scope& scope, const std::string& s)
 	match(token_type::eof);
 }
 
-object interpreter::evaluate_link(const std::string& s)
+object interpreter::evaluate_link(const std::string &s)
 {
 	object result;
 
@@ -316,13 +315,13 @@ object interpreter::evaluate_link(const std::string& s)
 			case token_type::fragment_separator:
 				result = parse_fragment_expr();
 				break;
-			
+
 			case token_type::link_template:
 				match(token_type::link_template);
 				result = parse_fragment_expr();
 				match(token_type::rbrace);
 				break;
-			
+
 			default:
 				m_expect_fragment_spec = true;
 				result = parse_primary_expr();
@@ -331,7 +330,7 @@ object interpreter::evaluate_link(const std::string& s)
 
 		match(token_type::eof);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		using namespace std::literals;
 		result = "Error parsing expression: "s + e.what();
@@ -483,274 +482,273 @@ void interpreter::get_next_token()
 
 		switch (state)
 		{
-		case State::Start:
-			switch (ch)
-			{
-			case 0:
-				token = token_type::eof;
-				break;
-			case '(':
-				token = token_type::lparen;
-				break;
-			case ')':
-				token = token_type::rparen;
-				break;
-			case '[':
-				token = token_type::lbracket;
-				break;
-			case ']':
-				token = token_type::rbracket;
-				break;
-			case '{':
-				token = token_type::lbrace;
-				break;
-			case '}':
-				token = token_type::rbrace;
-				break;
-			case '?':
-				state = State::Question;
-				break;
-			case '/':
-				token = token_type::div;
-				break;
-			case '+':
-				token = token_type::plus;
-				break;
-			case '-':
-				token = token_type::minus;
-				break;
-			case '.':
-				token = token_type::dot;
-				break;
-			case ',':
-				token = token_type::comma;
-				break;
-			case '|':
-				token = token_type::bar;
-				break;
-			case '=':
-				state = State::Equals;
-				break;
-			case '!':
-				state = State::ExclamationMark;
-				break;
-			case '<':
-				state = State::LessThan;
-				break;
-			case '>':
-				state = State::GreaterThan;
-				break;
-			case ':':
-				state = State::Colon;
+			case State::Start:
+				switch (ch)
+				{
+					case 0:
+						token = token_type::eof;
+						break;
+					case '(':
+						token = token_type::lparen;
+						break;
+					case ')':
+						token = token_type::rparen;
+						break;
+					case '[':
+						token = token_type::lbracket;
+						break;
+					case ']':
+						token = token_type::rbracket;
+						break;
+					case '{':
+						token = token_type::lbrace;
+						break;
+					case '}':
+						token = token_type::rbrace;
+						break;
+					case '?':
+						state = State::Question;
+						break;
+					case '/':
+						token = token_type::div;
+						break;
+					case '+':
+						token = token_type::plus;
+						break;
+					case '-':
+						token = token_type::minus;
+						break;
+					case '.':
+						token = token_type::dot;
+						break;
+					case ',':
+						token = token_type::comma;
+						break;
+					case '|':
+						token = token_type::bar;
+						break;
+					case '=':
+						state = State::Equals;
+						break;
+					case '!':
+						state = State::ExclamationMark;
+						break;
+					case '<':
+						state = State::LessThan;
+						break;
+					case '>':
+						state = State::GreaterThan;
+						break;
+					case ':':
+						state = State::Colon;
+						break;
+
+					case '*':
+					case '$':
+					case '#':
+					case '@':
+					case '~':
+						state = State::TemplateStart;
+						break;
+
+					case ' ':
+					case '\n':
+					case '\r':
+					case '\t':
+						if (m_return_whitespace)
+							token = token_type::whitespace;
+						else
+							m_token_string.clear();
+						break;
+					case '\'':
+						state = State::Literal;
+						break;
+
+					default:
+						if (ch >= '0' and ch <= '9')
+						{
+							m_token_number_int = ch - '0';
+							state = State::Number;
+						}
+						else if (is_name_start_char(ch))
+							state = State::Name;
+						else
+							token = token_type::error;
+						// throw zeep::exception("invalid character (" + to_hex(ch) + ") in expression");
+				}
 				break;
 
-			case '*':
-			case '$':
-			case '#':
-			case '@':
-			case '~':
-				state = State::TemplateStart;
-				break;
-
-			case ' ':
-			case '\n':
-			case '\r':
-			case '\t':
-				if (m_return_whitespace)
-					token = token_type::whitespace;
+			case State::TemplateStart:
+				if (ch == '{')
+				{
+					switch (m_token_string[0])
+					{
+						case '$': token = token_type::variable_template; break;
+						case '*': token = token_type::selection_template; break;
+						case '#': token = token_type::message_template; break;
+						case '@': token = token_type::link_template; break;
+						case '~': token = token_type::fragment_template; break;
+						default: assert(false);
+					}
+				}
 				else
-					m_token_string.clear();
-				break;
-			case '\'':
-				state = State::Literal;
+				{
+					retract();
+					if (m_token_string[0] == '*')
+						token = token_type::mult;
+					else if (m_token_string[0] == '#')
+						state = State::Hash;
+					else
+						token = token_type::error;
+					// else
+					// 	throw zeep::exception("invalid character (" + std::string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
+				}
 				break;
 
-			default:
+			case State::Equals:
+				if (ch != '=')
+				{
+					retract();
+					token = token_type::assign;
+				}
+				else
+					token = token_type::eq;
+				break;
+
+			case State::Question:
+				if (ch == ':')
+					token = token_type::elvis;
+				else
+				{
+					retract();
+					token = token_type::if_;
+				}
+				break;
+
+			case State::ExclamationMark:
+				if (ch != '=')
+				{
+					retract();
+					token = token_type::error;
+					// throw zeep::exception("unexpected character ('!') in expression");
+				}
+				token = token_type::ne;
+				break;
+
+			case State::LessThan:
+				if (ch == '=')
+					token = token_type::le;
+				else
+				{
+					retract();
+					token = token_type::lt;
+				}
+				break;
+
+			case State::GreaterThan:
+				if (ch == '=')
+					token = token_type::ge;
+				else
+				{
+					retract();
+					token = token_type::gt;
+				}
+				break;
+
+			case State::Number:
+				if (ch >= '0' and ch <= '9')
+					m_token_number_int = 10 * m_token_number_int + (ch - '0');
+				else if (ch == '.')
+				{
+					m_token_number_float = static_cast<double>(m_token_number_int);
+					fraction = 0.1;
+					state = State::NumberFraction;
+				}
+				else
+				{
+					retract();
+					token = token_type::number_int;
+				}
+				break;
+
+			case State::NumberFraction:
 				if (ch >= '0' and ch <= '9')
 				{
-					m_token_number_int = ch - '0';
-					state = State::Number;
+					m_token_number_float += fraction * (ch - '0');
+					fraction /= 10;
 				}
-				else if (is_name_start_char(ch))
-					state = State::Name;
 				else
-					token = token_type::error;
-					// throw zeep::exception("invalid character (" + to_hex(ch) + ") in expression");
-			}
-			break;
-
-		case State::TemplateStart:
-			if (ch == '{')
-			{
-				switch (m_token_string[0])
 				{
-					case '$':	token = token_type::variable_template; break;
-					case '*':	token = token_type::selection_template; break;
-					case '#':	token = token_type::message_template; break;
-					case '@':	token = token_type::link_template; break;
-					case '~':	token = token_type::fragment_template; break;
-					default: assert(false);
+					retract();
+					token = token_type::number_float;
 				}
-			}
-			else
-			{
-				retract();
-				if (m_token_string[0] == '*')
-					token = token_type::mult;
-				else if (m_token_string[0] == '#')
-					state = State::Hash;
-				else
+				break;
+
+			case State::Name:
+				if (ch == '.' or ch == ':' or not is_name_char(ch))
+				{
+					retract();
+					if (m_token_string == "div")
+						token = token_type::div;
+					else if (m_token_string == "mod")
+						token = token_type::mod;
+					else if (m_token_string == "and")
+						token = token_type::and_;
+					else if (m_token_string == "or")
+						token = token_type::or_;
+					else if (m_token_string == "not")
+						token = token_type::not_;
+					else if (m_token_string == "lt")
+						token = token_type::lt;
+					else if (m_token_string == "le")
+						token = token_type::le;
+					else if (m_token_string == "ge")
+						token = token_type::ge;
+					else if (m_token_string == "gt")
+						token = token_type::gt;
+					else if (m_token_string == "ne")
+						token = token_type::ne;
+					else if (m_token_string == "eq")
+						token = token_type::eq;
+					else if (m_token_string == "true")
+						token = token_type::true_;
+					else if (m_token_string == "false")
+						token = token_type::false_;
+					else if (m_token_string == "in")
+						token = token_type::in;
+					else
+						token = token_type::object;
+				}
+				break;
+
+			case State::Literal:
+				if (ch == 0)
 					token = token_type::error;
-				// else
-				// 	throw zeep::exception("invalid character (" + std::string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
-			}
-			break;
-
-		case State::Equals:
-			if (ch != '=')
-			{
-				retract();
-				token = token_type::assign;
-			}
-			else
-				token = token_type::eq;
-			break;
-
-		case State::Question:
-			if (ch == ':')
-				token = token_type::elvis;
-			else
-			{
-				retract();
-				token = token_type::if_;
-			}
-			break;
-
-		case State::ExclamationMark:
-			if (ch != '=')
-			{
-				retract();
-				token = token_type::error;
-				// throw zeep::exception("unexpected character ('!') in expression");
-			}
-			token = token_type::ne;
-			break;
-
-		case State::LessThan:
-			if (ch == '=')
-				token = token_type::le;
-			else
-			{
-				retract();
-				token = token_type::lt;
-			}
-			break;
-
-		case State::GreaterThan:
-			if (ch == '=')
-				token = token_type::ge;
-			else
-			{
-				retract();
-				token = token_type::gt;
-			}
-			break;
-
-		case State::Number:
-			if (ch >= '0' and ch <= '9')
-				m_token_number_int = 10 * m_token_number_int + (ch - '0');
-			else if (ch == '.')
-			{
-				m_token_number_float = static_cast<double>(m_token_number_int);
-				fraction = 0.1;
-				state = State::NumberFraction;
-			}
-			else
-			{
-				retract();
-				token = token_type::number_int;
-			}
-			break;
-
-		case State::NumberFraction:
-			if (ch >= '0' and ch <= '9')
-			{
-				m_token_number_float += fraction * (ch - '0');
-				fraction /= 10;
-			}
-			else
-			{
-				retract();
-				token = token_type::number_float;
-			}
-			break;
-
-		case State::Name:
-			if (ch == '.' or ch == ':' or not is_name_char(ch))
-			{
-				retract();
-				if (m_token_string == "div")
-					token = token_type::div;
-				else if (m_token_string == "mod")
-					token = token_type::mod;
-				else if (m_token_string == "and")
-					token = token_type::and_;
-				else if (m_token_string == "or")
-					token = token_type::or_;
-				else if (m_token_string == "not")
-					token = token_type::not_;
-				else if (m_token_string == "lt")
-					token = token_type::lt;
-				else if (m_token_string == "le")
-					token = token_type::le;
-				else if (m_token_string == "ge")
-					token = token_type::ge;
-				else if (m_token_string == "gt")
-					token = token_type::gt;
-				else if (m_token_string == "ne")
-					token = token_type::ne;
-				else if (m_token_string == "eq")
-					token = token_type::eq;
-				else if (m_token_string == "true")
-					token = token_type::true_;
-				else if (m_token_string == "false")
-					token = token_type::false_;
-				else if (m_token_string == "in")
-					token = token_type::in;
-				else
-					token = token_type::object;
-			}
-			break;
-
-		case State::Literal:
-			if (ch == 0)
-				token = token_type::error;
 				// throw zeep::exception("run-away string, missing quote character?");
-			else if (ch == '\'')
-			{
-				token = token_type::string;
-				m_token_string = m_token_string.substr(1, m_token_string.length() - 2);
-			}
-			break;
-		
-		case State::Hash:
-			if (ch == '.' or not is_name_char(ch))
-			{
-				retract();
-				token = token_type::hash;
-			}
-			break;
-		
-		case State::Colon:
-			if (ch == ':')
-				token = token_type::fragment_separator;
-			else
-			{
-				retract();
-				token = token_type::else_;
-			}
-			break;
-		
+				else if (ch == '\'')
+				{
+					token = token_type::string;
+					m_token_string = m_token_string.substr(1, m_token_string.length() - 2);
+				}
+				break;
+
+			case State::Hash:
+				if (ch == '.' or not is_name_char(ch))
+				{
+					retract();
+					token = token_type::hash;
+				}
+				break;
+
+			case State::Colon:
+				if (ch == ':')
+					token = token_type::fragment_separator;
+				else
+				{
+					retract();
+					token = token_type::else_;
+				}
+				break;
 		}
 	}
 
@@ -760,7 +758,7 @@ void interpreter::get_next_token()
 object interpreter::parse_expr()
 {
 	object result;
-	
+
 	result = parse_or_expr();
 
 	if (m_lookahead == token_type::if_)
@@ -841,42 +839,42 @@ object interpreter::parse_relational_expr()
 	object result = parse_additive_expr();
 	switch (m_lookahead)
 	{
-	case token_type::lt:
-		match(m_lookahead);
-		result = (result < parse_additive_expr());
-		break;
-	case token_type::le:
-		match(m_lookahead);
-		result = (result <= parse_additive_expr());
-		break;
-	case token_type::ge:
-		match(m_lookahead);
-		result = (parse_additive_expr() <= result);
-		break;
-	case token_type::gt:
-		match(m_lookahead);
-		result = (parse_additive_expr() < result);
-		break;
-	case token_type::not_:
-	{
-		match(token_type::not_);
-		match(token_type::in);
+		case token_type::lt:
+			match(m_lookahead);
+			result = (result < parse_additive_expr());
+			break;
+		case token_type::le:
+			match(m_lookahead);
+			result = (result <= parse_additive_expr());
+			break;
+		case token_type::ge:
+			match(m_lookahead);
+			result = (parse_additive_expr() <= result);
+			break;
+		case token_type::gt:
+			match(m_lookahead);
+			result = (parse_additive_expr() < result);
+			break;
+		case token_type::not_:
+		{
+			match(token_type::not_);
+			match(token_type::in);
 
-		object list = parse_additive_expr();
+			object list = parse_additive_expr();
 
-		result = not list.contains(result);
-		break;
-	}
-	case token_type::in:
-	{
-		match(m_lookahead);
-		object list = parse_additive_expr();
+			result = not list.contains(result);
+			break;
+		}
+		case token_type::in:
+		{
+			match(m_lookahead);
+			object list = parse_additive_expr();
 
-		result = list.contains(result);
-		break;
-	}
-	default:
-		break;
+			result = list.contains(result);
+			break;
+		}
+		default:
+			break;
 	}
 	return result;
 }
@@ -957,7 +955,7 @@ object interpreter::parse_template_expr()
 			m_return_whitespace = save_return_white_space;
 			match(token_type::rbrace);
 			break;
-		
+
 		case token_type::link_template:
 			match(token_type::link_template);
 			result = parse_link_template_expr();
@@ -1118,9 +1116,9 @@ object interpreter::parse_primary_expr()
 
 					if (not result.is_null())
 					{
-						if (result.type() == object::value_type::array and not (result.empty() or index.empty()))
+						if (result.type() == object::value_type::array and not(result.empty() or index.empty()))
 							result = result[index.as<int>()];
-						else if (result.type() == object::value_type::object and not (result.empty() or index.empty()))
+						else if (result.type() == object::value_type::object and not(result.empty() or index.empty()))
 							result = result[index.as<std::string>()];
 						else
 							result = object::value_type::null;
@@ -1165,7 +1163,7 @@ object interpreter::parse_literal_substitution()
 			case token_type::message_template:
 				result += parse_template_expr().as<std::string>();
 				break;
-			
+
 			default:
 				result += m_token_string;
 				match(m_lookahead);
@@ -1189,12 +1187,8 @@ object interpreter::parse_link_template_expr()
 	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
 	if (m_lookahead == token_type::div)
 	{
-		path = '/';
 		match(token_type::div);
-
-		auto context = m_scope.get_context_name();
-		if (not context.empty())
-			path += context + '/';
+		path = '/';
 	}
 
 	while (m_lookahead != token_type::lparen and m_lookahead != token_type::eof)
@@ -1211,21 +1205,54 @@ object interpreter::parse_link_template_expr()
 
 		switch (m_lookahead)
 		{
+			case token_type::bar:
+				match(m_lookahead);
+				path += parse_literal_substitution().as<std::string>();
+				match(token_type::bar);
+				break;
+
 			case token_type::variable_template:
 			case token_type::selection_template:
 				path += parse_template_expr().as<std::string>();
 				break;
-			
+
 			case token_type::lbrace:
 				path += m_token_string;
 				match(token_type::lbrace);
 				++braces;
 				break;
-			
+
 			default:
+			{
 				path += m_token_string;
 				match(m_lookahead);
 				break;
+			}
+		}
+	}
+
+	// fully qualified url's should be used as is
+	if (not is_fully_qualified_uri(path))
+	{
+		auto context = m_scope.get_context_name();
+
+		if (not context.empty())
+		{
+			// in case of a path starting with a forward slash, we prefix the URL with the context_name of the server
+			if (path.front() == '/')
+				path = context + path;
+			else
+			{
+				auto requested = m_scope.get_request().get_uri();
+
+				while (not requested.empty() and requested.back() != '/')
+					requested.pop_back();
+
+				if (not requested.empty() and requested.front() == '/' and context.back() == '/')
+					context.pop_back();
+
+				path = context + requested + path;
+			}
 		}
 	}
 
@@ -1233,7 +1260,7 @@ object interpreter::parse_link_template_expr()
 	{
 		match(token_type::lparen);
 
-		std::map<std::string,std::string> parameters;
+		std::map<std::string, std::string> parameters;
 
 		for (;;)
 		{
@@ -1255,8 +1282,7 @@ object interpreter::parse_link_template_expr()
 					{
 						path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
 						p += value.length();
-					}
-					while ((p = path.find('{' + name + '}', p)) != std::string::npos);
+					} while ((p = path.find('{' + name + '}', p)) != std::string::npos);
 				}
 			}
 			else
@@ -1277,7 +1303,7 @@ object interpreter::parse_link_template_expr()
 		{
 			path += '?';
 			auto n = parameters.size();
-			for (auto p: parameters)
+			for (auto p : parameters)
 			{
 				path += encode_url(p.first);
 
@@ -1297,7 +1323,7 @@ object interpreter::parse_link_template_expr()
 
 object interpreter::parse_fragment_expr()
 {
-	object result{ {"fragment-spec", true } };
+	object result{ { "fragment-spec", true } };
 
 	if (m_lookahead == token_type::fragment_separator)
 		result["template"] = "this";
@@ -1355,7 +1381,7 @@ object interpreter::parse_selector()
 		}
 		else
 			xpath += "//";
-		
+
 		if (m_lookahead == token_type::object)
 		{
 			std::string name = m_token_string;
@@ -1363,9 +1389,9 @@ object interpreter::parse_selector()
 
 			if (m_lookahead == token_type::lparen and
 				(name == "text" or
-				 name == "comment" or
-				 name == "processing-instruction" or
-				 name == "node"))
+					name == "comment" or
+					name == "processing-instruction" or
+					name == "node"))
 			{
 				match(m_lookahead);
 				match(token_type::rparen);
@@ -1377,11 +1403,12 @@ object interpreter::parse_selector()
 					xpath += name;
 				else
 					xpath +=
-						"*[name()='"+name+"' or "
-						"attribute::*[namespace-uri() = $ns and "
-							"(local-name() = 'ref' or local-name() = 'fragment') and "
-							"starts-with(string(), '" + name + "')]"
-						"]";
+						"*[name()='" + name + "' or "
+											  "attribute::*[namespace-uri() = $ns and "
+											  "(local-name() = 'ref' or local-name() = 'fragment') and "
+											  "starts-with(string(), '" +
+						name + "')]"
+							   "]";
 
 				if (m_lookahead == token_type::lparen)
 				{
@@ -1405,7 +1432,7 @@ object interpreter::parse_selector()
 		}
 		else
 			xpath += "*";
-		
+
 		while (m_lookahead == token_type::lbracket or
 			   m_lookahead == token_type::dot or
 			   m_lookahead == token_type::hash)
@@ -1417,8 +1444,7 @@ object interpreter::parse_selector()
 					{
 						xpath += m_token_string;
 						match(m_lookahead);
-					}
-					while (m_lookahead != token_type::rbracket and m_lookahead != token_type::eof);
+					} while (m_lookahead != token_type::rbracket and m_lookahead != token_type::eof);
 					xpath += m_token_string;
 					match(token_type::rbracket);
 					break;
@@ -1434,7 +1460,7 @@ object interpreter::parse_selector()
 					result["by-id"] = true;
 					match(m_lookahead);
 					break;
-				
+
 				default:
 					break;
 			}
@@ -1463,7 +1489,7 @@ object interpreter::parse_utility_expr()
 		while (m_lookahead != token_type::rparen)
 		{
 			params.push_back(parse_expr());
-			
+
 			if (m_lookahead == token_type::comma)
 			{
 				match(token_type::comma);
@@ -1478,7 +1504,7 @@ object interpreter::parse_utility_expr()
 	return call_method(className, method, params);
 }
 
-object interpreter::call_method(const std::string& className, const std::string& method, std::vector<object>& params)
+object interpreter::call_method(const std::string &className, const std::string &method, std::vector<object> &params)
 {
 	object result;
 
@@ -1487,22 +1513,22 @@ object interpreter::call_method(const std::string& className, const std::string&
 
 	// if (result.is_null())
 	// 	throw runtime_error("Undefined class for utility object call: " + className);
-	
+
 	return result;
 }
 
 // --------------------------------------------------------------------
 // some expression utility objects
 
-expression_utility_object_base::instance* expression_utility_object_base::s_head;
+expression_utility_object_base::instance *expression_utility_object_base::s_head;
 
 class date_expr_util_object : public expression_utility_object<date_expr_util_object>
 {
   public:
-	static constexpr const char*	name()		{ return "dates"; }
+	static constexpr const char *name() { return "dates"; }
 
-	virtual object evaluate(const scope& scope, const std::string& method,
-		const std::vector<object>& params) const
+	virtual object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const
 	{
 		object result;
 
@@ -1510,32 +1536,24 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 		{
 			if (params.size() == 2 and params[0].is_string())
 			{
-				tm t = {};
-				std::istringstream ss(params[0].as<std::string>());
+				auto t = params[0].as<std::string>();
+				auto f = params[1].as<std::string>();
 
-				ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
-				if (ss.fail())	// hmmmm, lets try the ISO format then
-				{
-					try
-					{
-						auto pt = zeep::value_serializer<boost::posix_time::ptime>::from_string(params[0].as<std::string>());
-						t = boost::posix_time::to_tm(pt);
-					}
-					catch(const std::exception& e)
-					{
-						throw std::runtime_error("Invalid date");
-					}
-				}
-				
+				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(t);
+
+#if __has_include(<date/date.h>)
+				std::ostringstream os;
+				os << date::format(scope.get_request().get_locale(), f, st);
+#else
 				std::wostringstream os;
-
 				os.imbue(scope.get_request().get_locale());
 
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-				std::wstring time = myconv.from_bytes(params[1].as<std::string>());
+				std::wstring time = myconv.from_bytes(f);
 
-				os << std::put_time(&t, time.c_str());
-
+				auto t = std::chrono::system_clock::to_time_t(st);
+				os << std::put_time(std::gmtime(&t), time.c_str());
+#endif
 				result = os.str();
 			}
 		}
@@ -1547,10 +1565,10 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 class number_expr_util_object : public expression_utility_object<number_expr_util_object>
 {
   public:
-	static constexpr const char*	name()		{ return "numbers"; }
+	static constexpr const char *name() { return "numbers"; }
 
-	virtual object evaluate(const scope& scope, const std::string& method,
-		const std::vector<object>& params) const
+	virtual object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const
 	{
 		object result;
 
@@ -1561,7 +1579,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 				int intDigits = 1;
 				if (params.size() >= 2 and params[1].is_number_int())
 					intDigits = params[1].as<int>();
-				
+
 				int decimals = 0;
 				if (params.size() >= 3 and params[2].is_number_int())
 					decimals = params[2].as<int>();
@@ -1581,7 +1599,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 			{
 				double nr = params[0].as<double>();
 
-				const char kBase[] = {'B', 'K', 'M', 'G', 'T', 'P', 'E'}; // whatever
+				const char kBase[] = { 'B', 'K', 'M', 'G', 'T', 'P', 'E' }; // whatever
 
 				int base = 0;
 
@@ -1606,10 +1624,10 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 class request_expr_util_object : public expression_utility_object<request_expr_util_object>
 {
   public:
-	static constexpr const char*	name()		{ return "request"; }
+	static constexpr const char *name() { return "request"; }
 
-	virtual object evaluate(const scope& scope, const std::string& method,
-		const std::vector<object>& params) const
+	virtual object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const
 	{
 		object result;
 
@@ -1619,7 +1637,7 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 			result = scope.get_request().get_uri();
 		else if ((method == "getParameter") and params.size() == 1)
 			result = scope.get_request().get_parameter(params[0].as<std::string>().c_str());
-		
+
 		return result;
 	}
 } s_request_instance;
@@ -1627,10 +1645,10 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 class security_expr_util_object : public expression_utility_object<security_expr_util_object>
 {
   public:
-	static constexpr const char*	name()		{ return "security"; }
+	static constexpr const char *name() { return "security"; }
 
-	virtual object evaluate(const scope& scope, const std::string& method,
-		const std::vector<object>& params) const
+	virtual object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const
 	{
 		object result;
 
@@ -1665,7 +1683,7 @@ bool process_el(const scope &scope, std::string &text)
 	return interpreter.process(text);
 }
 
-std::string process_el_2(const scope& scope, const std::string& text)
+std::string process_el_2(const scope &scope, const std::string &text)
 {
 	std::string s = text;
 
@@ -1679,25 +1697,25 @@ object evaluate_el(const scope &scope, const std::string &text)
 	return interpreter.evaluate(text);
 }
 
-std::vector<std::pair<std::string,std::string>> evaluate_el_attr(const scope& scope, const std::string& text)
+std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_attr_expr(text);
 }
 
-bool evaluate_el_assert(const scope& scope, const std::string& text)
+bool evaluate_el_assert(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_assert(text);
 }
 
-void evaluate_el_with(scope& scope, const std::string& text)
+void evaluate_el_with(scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	interpreter.evaluate_with(scope, text);
 }
 
-object evaluate_el_link(const scope& scope, const std::string& text)
+object evaluate_el_link(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_link(text);
@@ -1719,7 +1737,10 @@ std::ostream &operator<<(std::ostream &lhs, const scope &rhs)
 }
 
 scope::scope()
-	: m_next(nullptr), m_depth(0), m_req(nullptr), m_server(nullptr)
+	: m_next(nullptr)
+	, m_depth(0)
+	, m_req(nullptr)
+	, m_server(nullptr)
 {
 }
 
@@ -1734,12 +1755,18 @@ scope::scope(const scope &next)
 }
 
 scope::scope(const request &req)
-	: m_next(nullptr), m_depth(0), m_req(&req), m_server(nullptr)
+	: m_next(nullptr)
+	, m_depth(0)
+	, m_req(&req)
+	, m_server(nullptr)
 {
 }
 
-scope::scope(const basic_server& server, const request &req)
-	: m_next(nullptr), m_depth(0), m_req(&req), m_server(&server)
+scope::scope(const basic_server *server, const request &req)
+	: m_next(nullptr)
+	, m_depth(0)
+	, m_req(&req)
+	, m_server(server)
 {
 }
 
@@ -1748,9 +1775,9 @@ object &scope::operator[](const std::string &name)
 	return lookup(name);
 }
 
-const object& scope::lookup(const std::string &name, bool includeSelected) const
+const object &scope::lookup(const std::string &name, bool includeSelected) const
 {
-	const object* result = nullptr;
+	const object *result = nullptr;
 
 	auto i = m_data.find(name);
 	if (i != m_data.end())
@@ -1765,18 +1792,18 @@ const object& scope::lookup(const std::string &name, bool includeSelected) const
 		static object s_null;
 		result = &s_null;
 	}
-		
+
 	return *result;
 }
 
-const object& scope::operator[](const std::string &name) const
+const object &scope::operator[](const std::string &name) const
 {
 	return lookup(name);
 }
 
-object& scope::lookup(const std::string &name)
+object &scope::lookup(const std::string &name)
 {
-	object* result = nullptr;
+	object *result = nullptr;
 
 	auto i = m_data.find(name);
 	if (i != m_data.end())
@@ -1789,11 +1816,11 @@ object& scope::lookup(const std::string &name)
 		m_data[name] = object();
 		result = &m_data[name];
 	}
-		
+
 	return *result;
 }
 
-const request& scope::get_request() const
+const request &scope::get_request() const
 {
 	// if (m_next)
 	// 	return m_next->get_request();
@@ -1804,9 +1831,7 @@ const request& scope::get_request() const
 
 std::string scope::get_context_name() const
 {
-	if (not m_server)
-		throw zeep::exception("Invalid scope, no server");
-	return m_server->get_context_name();
+	return m_server ? m_server->get_context_name() : "";
 }
 
 json::element scope::get_credentials() const
@@ -1816,31 +1841,31 @@ json::element scope::get_credentials() const
 	return m_req->get_credentials();
 }
 
-void scope::select_object(const object& o)
+void scope::select_object(const object &o)
 {
 	m_selected = o;
 }
 
-auto scope::get_nodeset(const std::string& name) const -> node_set_type
+auto scope::get_nodeset(const std::string &name) const -> node_set_type
 {
 	if (m_nodesets.count(name))
 	{
 		node_set_type result;
 
 		// return a clone of the stored nodes.
-		for (auto& n: m_nodesets.at(name))
+		for (auto &n : m_nodesets.at(name))
 			result.emplace_back(n->clone());
 
 		return result;
 	}
-	
+
 	if (m_next == nullptr)
 		return {};
 
 	return m_next->get_nodeset(name);
 }
 
-void scope::set_nodeset(const std::string& name, node_set_type&& nodes)
+void scope::set_nodeset(const std::string &name, node_set_type &&nodes)
 {
 	m_nodesets.emplace(std::make_pair(name, std::move(nodes)));
 }

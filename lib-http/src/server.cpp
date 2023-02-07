@@ -4,8 +4,8 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
+#include <iostream>
 
 #include <zeep/http/connection.hpp>
 #include <zeep/http/controller.hpp>
@@ -32,13 +32,8 @@ namespace detail
 basic_server::basic_server()
 	: m_log_forwarded(true)
 	, m_security_context(nullptr)
-	, m_allowed_methods{"GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE"}
+	, m_allowed_methods{ "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE" }
 {
-	using namespace boost::local_time;
-
-	local_time_facet *lf(new local_time_facet("[%d/%b/%Y:%H:%M:%S %z]"));
-	std::cout.imbue(std::locale(std::cout.getloc(), lf));
-
 	// add a default error handler
 	add_error_handler(new error_handler());
 }
@@ -76,11 +71,11 @@ void basic_server::bind(const std::string &address, unsigned short port)
 	// then bind the address here
 	boost::asio::ip::tcp::endpoint endpoint;
 
-	try
-	{
-		endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
-	}
-	catch (const std::exception &e)
+	boost::system::error_code ec;
+	auto addr = boost::asio::ip::make_address(address, ec);
+	if (not ec)
+		endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+	else
 	{
 		boost::asio::ip::tcp::resolver resolver(get_io_context());
 		boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
@@ -94,6 +89,21 @@ void basic_server::bind(const std::string &address, unsigned short port)
 	m_acceptor->async_accept(m_new_connection->get_socket(),
 		[this](boost::system::error_code ec)
 		{ this->handle_accept(ec); });
+}
+
+void basic_server::get_options_for_request(const request &req, reply &rep)
+{
+	rep = reply::stock_reply(no_content);
+	rep.set_header("Allow", join(m_allowed_methods, ","));
+	rep.set_header("Cache-Control", "max-age=86400");
+
+	set_access_control_headers(req, rep);
+}
+
+void basic_server::set_access_control_headers([[maybe_unused]] const request &req, reply &rep)
+{
+	if (m_access_control)
+		m_access_control->get_access_control_headers(rep);
 }
 
 void basic_server::add_controller(controller *c)
@@ -155,14 +165,12 @@ std::ostream &basic_server::get_log()
 
 void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request &req, reply &rep)
 {
-	using namespace boost::posix_time;
-
 	// we're pessimistic
 	rep = reply::stock_reply(not_found);
 
 	// set up a logging stream and collect logging information
 	detail::s_log.reset(new std::ostringstream);
-	ptime start = second_clock::local_time();
+	auto start = std::chrono::system_clock::now();
 
 	std::string referer("-"), userAgent("-"), accept, client;
 
@@ -194,7 +202,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 		if (client.empty())
 		{
 			boost::asio::ip::address addr = socket.remote_endpoint().address();
-			client = boost::lexical_cast<std::string>(addr);
+			client = addr.to_string();
 		}
 
 		req.set_remote_address(client);
@@ -226,10 +234,10 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 				break;
 		}
 
-		if (method == "HEAD")
+		if (method == "HEAD" or method == "OPTIONS")
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
-			rep.set_cookie("csrf-token", csrf, {{"HttpOnly", ""}, {"SameSite", "Lax"}, {"Path", "/"}});
+			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
 
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (starts_with(rep.get_content_type(), "application/xhtml+xml") and
@@ -238,6 +246,8 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 		{
 			rep.set_content_type("text/html; charset=utf-8");
 		}
+
+		set_access_control_headers(req, rep);
 	}
 	catch (...)
 	{
@@ -260,7 +270,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 
 void basic_server::log_request(const std::string &client,
 	const request &req, const reply &rep,
-	const boost::posix_time::ptime &start,
+	const std::chrono::system_clock::time_point &start,
 	const std::string &referer, const std::string &userAgent,
 	const std::string &entry) noexcept
 {
@@ -269,9 +279,7 @@ void basic_server::log_request(const std::string &client,
 		// protect the output stream from garbled log messages
 		std::unique_lock<std::mutex> lock(detail::s_log_lock);
 
-		using namespace boost::local_time;
-
-		local_date_time start_local(start, time_zone_ptr());
+		const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
 
 		auto credentials = req.get_credentials();
 		std::string username = credentials.is_object() ? credentials["username"].as<std::string>() : "";
@@ -283,7 +291,7 @@ void basic_server::log_request(const std::string &client,
 		std::cout << client << ' '
 				  << "-" << ' '
 				  << username << ' '
-				  << start_local << ' '
+				  << std::put_time(std::localtime(&now_t), "[%d/%b/%Y:%H:%M:%S %z]") << ' '
 				  << '"' << req.get_method() << ' ' << req.get_uri() << ' '
 				  << "HTTP/" << major << '.' << minor << "\" "
 				  << rep.get_status() << ' '

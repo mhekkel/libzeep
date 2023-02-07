@@ -1,9 +1,13 @@
-// compile: clang++ -o validating-xml-sample validating-xml-sample.cpp -I ../../include/  ../../lib/libzeep-xml.a ../../lib/libzeep-generic.a -std=c++17 -lstdc++fs -I ~/projects/boost_1_73_0/ && ./validating-xml-sample
+//           Copyright Maarten L. Hekkelman, 2022
+//  Distributed under the Boost Software License, Version 1.0.
+//     (See accompanying file LICENSE_1_0.txt or copy at
+//           http://www.boost.org/LICENSE_1_0.txt)
 
 //[ xml_validation_sample
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include <zeep/xml/document.hpp>
 

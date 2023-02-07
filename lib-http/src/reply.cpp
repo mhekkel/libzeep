@@ -4,8 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/local_time/local_time.hpp>
-
+#include <chrono>
 #include <numeric>
 
 #include <zeep/http/reply.hpp>
@@ -116,16 +115,9 @@ reply::reply(status_type status, std::tuple<int, int> version)
 	, m_version_minor(std::get<1>(version))
 	, m_data(nullptr)
 {
-	using namespace boost::local_time;
-	using namespace boost::posix_time;
-
-	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
-	local_time_facet *lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
-
 	std::stringstream s;
-	s.imbue(std::locale(std::locale(), lf));
-
-	s << t;
+	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	s << std::put_time(std::gmtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
 
 	set_header("Date", s.str());
 	set_header("Server", "libzeep");
@@ -198,13 +190,13 @@ reply &reply::operator=(reply &&rhs)
 		m_version_major = rhs.m_version_major;
 		m_version_minor = rhs.m_version_minor;
 		m_status = rhs.m_status;
-		m_data = rhs.m_data; rhs.m_data = nullptr;
-		m_headers = rhs.m_headers;
-		m_content = rhs.m_content;
+		m_data = std::exchange(rhs.m_data, nullptr);
+		m_headers = std::move(rhs.m_headers);
+		m_content = std::move(rhs.m_content);
 		m_chunked = rhs.m_chunked;
 
 		memcpy(m_size_buffer, rhs.m_size_buffer, sizeof(m_size_buffer));
-		m_status_line = rhs.m_status_line;
+		m_status_line = std::move(rhs.m_status_line);
 	}
 
 	return *this;
@@ -250,7 +242,7 @@ void reply::set_version(int version_major, int version_minor)
 			m_data->rdbuf()->pubseekoff(pos, std::ios_base::beg);
 		}
 
-		set_header("Content-Length", boost::lexical_cast<std::string>(length));
+		set_header("Content-Length", std::to_string(length));
 		remove_header("Transfer-Encoding");
 	}
 }
@@ -310,16 +302,11 @@ void reply::set_cookie(const char *name, const std::string &value, std::initiali
 
 void reply::set_delete_cookie(const char *name)
 {
-	using namespace boost::local_time;
-	using namespace boost::posix_time;
-
-	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
-	local_time_facet *lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
+    using namespace std::literals;
 
 	std::stringstream s;
-	s.imbue(std::locale(std::locale(), lf));
-
-	s << (t - hours(24));
+	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() - 24h);
+	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
 
 	set_cookie(name, "", {{"Expires", '"' + s.str() + '"'}});
 }

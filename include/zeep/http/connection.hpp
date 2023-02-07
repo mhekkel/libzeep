@@ -13,8 +13,7 @@
 
 #include <memory>
 
-#include <boost/asio/streambuf.hpp>
-#include <boost/asio/posix/stream_descriptor.hpp>
+#include <boost/asio.hpp>
 
 #include <zeep/http/message-parser.hpp>
 
@@ -31,19 +30,19 @@ class connection
 {
   public:
 	connection(connection &) = delete;
-	connection& operator=(connection &) = delete;
+	connection &operator=(connection &) = delete;
 
-	connection(boost::asio::io_context& service, basic_server& handler);
+	connection(boost::asio::io_context &service, basic_server &handler);
 
 	void start();
 	void handle_read(boost::system::error_code ec, size_t bytes_transferred);
 	void handle_write(boost::system::error_code ec, size_t bytes_transferred);
 
-	boost::asio::ip::tcp::socket& get_socket() { return m_socket; }
+	boost::asio::ip::tcp::socket &get_socket() { return m_socket; }
 
   private:
 	boost::asio::ip::tcp::socket m_socket;
-	basic_server& m_server;
+	basic_server &m_server;
 	reply m_reply;
 	request_parser m_request_parser;
 	bool m_keep_alive = false;

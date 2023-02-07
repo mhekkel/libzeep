@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/mhekkel/libzeep.svg?branch=master)](https://travis-ci.org/mhekkel/libzeep)
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
 About libzeep
@@ -17,7 +16,7 @@ of building interactive web applications and thought I should bring that
 simplicity to the C++ world. After all, my applications need raw speed and
 no, Java is not fast.
 
-The current incarnation of libzeep, version 5.0, is a completely refactored
+The current incarnation of libzeep, version 6.0, is a completely refactored
 set of libraries. One for manipulating XML, one for handling JSON and one for
 building web applications.
 
@@ -65,32 +64,127 @@ order to have resources support in libzeep.
 
 The commands to build libzeep from the command line are e.g.:
 
-```
-	git clone https://github.com/mhekkel/libzeep
-	cd libzeep
-	mkdir build
-	cd build
-	cmake .. -DZEEP_BUILD_TESTS=ON
-	cmake --build .
-	ctest
-	cmake --install .
+```bash
+    git clone https://github.com/mhekkel/libzeep
+    cd libzeep
+    mkdir build
+    cd build
+    cmake .. -DZEEP_BUILD_TESTS=ON
+    cmake --build .
+    ctest
+    cmake --install .
 
 ```
 
 On Windows, assuming you have [boost](https://boost.org) installed in C:\Boost, 
 the steps would probably look something like (using powershell):
 
-```
-	git clone https://github.com/mhekkel/libzeep
-	cd libzeep
-	mkdir build
-	cd build
-	cmake .. -DZEEP_BUILD_TESTS=ON -DBOOST_ROOT=C:\Boost
-	cmake --build . --config Release
-	ctest -C Release
-	cmake --install . --config Release
+```bash
+    git clone https://github.com/mhekkel/libzeep
+    cd libzeep
+    mkdir build
+    cd build
+    cmake .. -DZEEP_BUILD_TESTS=ON -DBOOST_ROOT=C:\Boost
+    cmake --build . --config Release
+    ctest -C Release
+    cmake --install . --config Release
 
 ```
 
 The windows version will by default install in your local AppData folder.
 Use the --prefix option to specify another location.
+
+Creating a simple web application
+---------------------------------
+
+Create a template in xhtml first, store this as `hello.xhtml` in a directory called `docroot`:
+
+```xml
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:z="http://www.hekkelman.com/libzeep/m2">
+  <head>
+    <title>Hello</title>
+  </head>
+  <p>Hello, <span z:text="${name ?: 'world'}"/>!</p>
+</html>
+```
+
+Then create a source file called `http-server.cpp` with the following content:
+
+```c++
+#define WEBAPP_USES_RESOURCES 0
+
+#include <zeep/http/server.hpp>
+#include <zeep/http/html-controller.hpp>
+#include <zeep/http/template-processor.hpp>
+
+class hello_controller : public zeep::http::html_controller
+{
+  public:
+    hello_controller()
+    {
+        map_get("", &hello_controller::handle_index, "name");
+        map_get("index.html", &hello_controller::handle_index, "name");
+        map_get("hello/{name}", &hello_controller::handle_index, "name");
+    }
+
+    zeep::http::reply handle_index(const zeep::http::scope& scope,
+        std::optional<std::string> user)
+    {
+        zeep::http::scope sub(scope);
+        sub.put("name", user.value_or("world"));
+
+        return get_template_processor().create_reply_from_template("hello.xhtml", sub);
+    }
+};
+
+int main()
+{
+    zeep::http::server srv(std::filesystem::canonical("docroot"));
+
+    srv.add_controller(new hello_controller());
+
+    srv.bind("::", 8080);
+    srv.run(2);
+
+    return 0;
+}
+```
+
+Create a `CMakeLists.txt` file:
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+
+project(http-server LANGUAGES CXX)
+
+set(CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(zeep REQUIRED)
+
+add_executable(http-server http-server.cpp)
+target_link_libraries(http-server zeep::zeep)
+```
+
+And configure and build the app:
+
+```bash
+cmake .
+cmake --build .
+```
+
+And then run it:
+
+```bash
+./http-server
+```
+
+Now you can access the result using the following URL's:
+
+* http://localhost:8080/
+* http://localhost:8080/index.html?name=maarten
+* http://localhost:8080/hello/maarten
+

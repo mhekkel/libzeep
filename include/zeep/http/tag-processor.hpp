@@ -92,7 +92,7 @@ class tag_processor_v1 : public tag_processor
 	void process_options(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_option(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_checkbox(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_url(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	// void process_url(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_param(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 	void process_embed(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
 
@@ -134,7 +134,7 @@ class tag_processor_v2 : public tag_processor
 	/// \brief It is possible to extend this processor with custom handlers
 	void register_attr_handler(const std::string& attr, attr_handler&& handler)
 	{
-		m_attr_handlers.emplace(attr, std::forward<attr_handler>(handler));
+		m_attr_handlers.emplace(attr, std::move(handler));
 	}
 
   protected:

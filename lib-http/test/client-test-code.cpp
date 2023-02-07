@@ -37,7 +37,7 @@ zh::reply simple_request(uint16_t port, const std::string& req)
 
 	for (;;)
 	{
-		boost::array<char, 128> buf;
+		std::array<char, 128> buf;
 		boost::system::error_code error;
 
 		size_t len = socket.read_some(boost::asio::buffer(buf), error);
