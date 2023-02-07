@@ -1,7 +1,16 @@
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
-About libzeep
-=============
+libzeep
+=======
+
+TL;DR
+-----
+Libzeep is a web application framework written in C++. To see a starter project
+visit the [libzeep-webapp-starter](https://github.com/mhekkel/libzeep-webapp-starter.git)
+page.
+
+About
+-----
 
 Libzeep was originally developed to make it easy to create SOAP servers. And since
 working with SOAP means working with XML and no decent C++ XML library
