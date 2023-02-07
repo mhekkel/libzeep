@@ -29,6 +29,13 @@ const basic_template_processor& html_controller::get_template_processor() const
 
 // --------------------------------------------------------------------
 
+void html_controller::mount_point_v2_simple::call(const scope &scope, const parameter_pack &, reply &rep)
+{
+	rep = m_controller.get_template_processor().create_reply_from_template(m_template, scope);
+}
+
+// --------------------------------------------------------------------
+
 void html_controller::handle_file(const request& request, const scope& scope, reply& reply)
 {
 	get_template_processor().handle_file(request, scope, reply);
