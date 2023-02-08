@@ -345,3 +345,79 @@ BOOST_AUTO_TEST_CASE(j_test_array_1)
 	BOOST_TEST(v == v2);
 }
 
+struct St
+{
+	std::chrono::time_point<std::chrono::system_clock> m_t;
+
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long)
+	{
+		ar & zeep::make_nvp("t", m_t);
+	}
+
+	bool operator==(const St& se) const
+	{
+		return m_t == se.m_t;
+	}
+
+	friend std::ostream &operator<<(std::ostream &os, const St &st)
+	{
+		os << date::format("%FT%TZ", st.m_t);
+		return os;
+	}
+};
+
+BOOST_AUTO_TEST_CASE(j_serialize_time_1)
+{
+	St t1, t2;
+
+	json e;
+	to_element(e, t1);
+	from_element(e, t2);
+
+	BOOST_TEST(t1 == t2);
+
+	t1.m_t = std::chrono::system_clock::now();
+
+	to_element(e, t1);
+	from_element(e, t2);
+
+	BOOST_TEST(t1 == t2);
+}
+
+using time_type_t = std::chrono::time_point<std::chrono::system_clock>;
+
+std::ostream &operator<<(std::ostream &os, time_type_t t)
+{
+	return os;
+};
+
+std::ostream &operator<<(std::ostream &os, std::optional<time_type_t> t)
+{
+	return os;
+};
+
+BOOST_AUTO_TEST_CASE(j_serialize_time_2)
+{
+	time_type_t t1 = std::chrono::system_clock::now(), t2;
+
+	json e;
+	to_element(e, t1);
+	from_element(e, t2);
+
+	BOOST_TEST((t1 == t2) == true);
+}
+
+
+BOOST_AUTO_TEST_CASE(j_serialize_time_3)
+{
+	using opt_time_t = std::optional<time_type_t>;
+
+	opt_time_t t1 = std::chrono::system_clock::now(), t2;
+
+	json e;
+	to_element(e, t1);
+	from_element(e, t2);
+
+	BOOST_TEST((t1 == t2) == true);
+}

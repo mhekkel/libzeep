@@ -24,7 +24,7 @@ struct serializer
 	struct serializer_impl {};
 
 	template<typename T>
-	struct serializer_impl<T, std::enable_if_t<not detail::is_compatible_type_v<T> and is_type_with_value_serializer_v<T>>>
+	struct serializer_impl<T, std::enable_if_t<not detail::is_compatible_type_v<T> and has_value_serializer_v<T>>>
 	{
 		using value_serializer = zeep::value_serializer<T>;
 
@@ -145,7 +145,7 @@ struct deserializer
 	struct deserializer_impl {};
 
 	template<typename T>
-	struct deserializer_impl<T, std::enable_if_t<not detail::is_compatible_type_v<T> and is_type_with_value_serializer_v<T>>>
+	struct deserializer_impl<T, std::enable_if_t<not detail::is_compatible_type_v<T> and has_value_serializer_v<T>>>
 	{
 		using value_serializer = zeep::value_serializer<T>;
 
@@ -220,7 +220,7 @@ struct deserializer
 	template<typename T>
 	struct deserializer_impl<T, std::enable_if_t<detail::is_serializable_optional_type_v<T,deserializer>>>
 	{
-		static void deserialize(T& data, element_type& e)
+		static void deserialize(T& data, const element_type& e)
 		{
 			using value_deserializer_impl = deserializer_impl<typename T::value_type>;
 
