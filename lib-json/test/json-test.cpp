@@ -387,16 +387,6 @@ BOOST_AUTO_TEST_CASE(j_serialize_time_1)
 
 using time_type_t = std::chrono::time_point<std::chrono::system_clock>;
 
-std::ostream &operator<<(std::ostream &os, time_type_t t)
-{
-	return os;
-};
-
-std::ostream &operator<<(std::ostream &os, std::optional<time_type_t> t)
-{
-	return os;
-};
-
 BOOST_AUTO_TEST_CASE(j_serialize_time_2)
 {
 	time_type_t t1 = std::chrono::system_clock::now(), t2;

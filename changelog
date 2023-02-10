@@ -1,6 +1,7 @@
 Version 6.0.1
 - Fixed some issues in serializing and detection templates
   to enable serializing std::optional<time_point>.
+- Added option to timeout JWT access tokens
 
 Version 6.0.0
 - Dropped boost::date_time and other boost libraries
