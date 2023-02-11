@@ -186,7 +186,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	using namespace date;
 	using namespace std::chrono;
 
-	add_authorization_headers(rep, user, std::chrono::years{1});
+	add_authorization_headers(rep, user, m_default_jwt_exp);
 }
 
 // --------------------------------------------------------------------

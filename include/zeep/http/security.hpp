@@ -215,6 +215,7 @@ class security_context
 		: m_secret(secret)
 		, m_users(users)
 		, m_default_allow(defaultAccessAllowed)
+		, m_default_jwt_exp(std::chrono::years{1})
 	{
 		register_password_encoder<pbkdf2_sha256_password_encoder>();
 	}
@@ -312,6 +313,9 @@ class security_context
 	void set_validate_csrf(bool validate) { m_validate_csrf = validate; }
 	bool get_validate_csrf() const { return m_validate_csrf; }
 
+	std::chrono::system_clock::duration get_jwt_exp() const { return m_default_jwt_exp; }
+	void set_jwt_exp(std::chrono::system_clock::duration exp) { m_default_jwt_exp = exp; }
+
   private:
 	security_context(const security_context &) = delete;
 	security_context &operator=(const security_context &) = delete;
@@ -328,6 +332,7 @@ class security_context
 	bool m_validate_csrf = false;
 	std::vector<rule> m_rules;
 	std::vector<std::tuple<std::string, std::unique_ptr<password_encoder>>> m_known_password_encoders;
+	std::chrono::system_clock::duration m_default_jwt_exp;
 };
 
 } // namespace zeep::http
