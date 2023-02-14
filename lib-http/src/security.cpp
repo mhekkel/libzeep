@@ -47,6 +47,15 @@ bool user_service::user_is_valid(const std::string &username) const
 
 // --------------------------------------------------------------------
 
+security_context::security_context(const std::string &secret, user_service &users, bool defaultAccessAllowed)
+	: m_secret(secret)
+	, m_users(users)
+	, m_default_allow(defaultAccessAllowed)
+	, m_default_jwt_exp(date::years{1})
+{
+	register_password_encoder<pbkdf2_sha256_password_encoder>();
+}
+
 void security_context::validate_request(request &req) const
 {
 	bool allow = m_default_allow;

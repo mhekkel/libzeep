@@ -211,14 +211,7 @@ class security_context
 	///
 	/// Create a security context for server \a s with validator \a validator and
 	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
-	security_context(const std::string &secret, user_service &users, bool defaultAccessAllowed = false)
-		: m_secret(secret)
-		, m_users(users)
-		, m_default_allow(defaultAccessAllowed)
-		, m_default_jwt_exp(std::chrono::years{1})
-	{
-		register_password_encoder<pbkdf2_sha256_password_encoder>();
-	}
+	security_context(const std::string &secret, user_service &users, bool defaultAccessAllowed = false);
 
 	/// \brief register a custom password encoder
 	///
