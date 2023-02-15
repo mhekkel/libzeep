@@ -74,6 +74,9 @@ class reply
 	reply &operator=(const reply &);
 	reply &operator=(reply &&);
 
+	/// Simple way to check if a reply is valid
+	explicit operator bool() const { return m_status == ok; }
+
 	void reset();
 
 	void set_version(int version_major, int version_minor);
