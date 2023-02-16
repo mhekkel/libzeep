@@ -239,6 +239,14 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 		else if (csrf_is_new)
 			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
 
+		if (not m_context_name.empty() and
+			(rep.get_status() == moved_permanently or rep.get_status() == moved_temporarily))
+		{
+			auto location = rep.get_header("location");
+			if (location.front() == '/')
+				rep.set_header("location", m_context_name + location);
+		}
+
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (starts_with(rep.get_content_type(), "application/xhtml+xml") and
 			not contains(accept, "application/xhtml+xml") and

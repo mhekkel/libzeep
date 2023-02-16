@@ -236,9 +236,11 @@ reply login_controller::create_redirect_for_request(const request &req)
 		{
 			if (redirect_to.back() != '/' and uri.front() != '/')
 				redirect_to += '/';
+
+			auto p = redirect_to.length() - 1;
 			redirect_to += uri;
 
-			for (auto p = redirect_to.find("//"); p != std::string::npos; p = redirect_to.find("//", p))
+			while ((p = redirect_to.find("//", p)) != std::string::npos)
 				redirect_to.erase(p, 1);
 		}
 	}
