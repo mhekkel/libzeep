@@ -42,12 +42,19 @@ std::istream* file_loader::load_file(const std::string& file, std::error_code& e
 	if (p.has_root_path())
 		p = fs::relative(p, p.root_path());
 
-	std::ifstream* result = new std::ifstream(m_docroot / p, std::ios::binary);
-	if (not result->is_open())
-	{
-		delete result;
-		result = nullptr;
+	std::ifstream* result = nullptr;
+
+	if (not fs::is_regular_file(m_docroot / p))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
+	else
+	{
+		result = new std::ifstream(m_docroot / p, std::ios::binary);
+		if (not result->is_open())
+		{
+			delete result;
+			result = nullptr;
+			ec = std::make_error_code(std::errc::no_such_file_or_directory);
+		}
 	}
 	
 	return result;	

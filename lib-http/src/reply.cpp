@@ -5,6 +5,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <chrono>
+#include <iostream>
 #include <numeric>
 
 #include <zeep/http/reply.hpp>
@@ -423,6 +424,9 @@ void reply::set_content(std::istream *idata, const std::string &contentType)
 	m_status = ok;
 	m_chunked = true;
 
+	// this may throw, if it does, it won't kill the application when throwing in data_to_buffers
+	(void)m_data->rdbuf()->sgetn(m_buffer.data(), m_buffer.size());
+
 	set_header("Content-Type", contentType);
 	set_header("Transfer-Encoding", "chunked");
 	remove_header("Content-Length");
@@ -460,7 +464,15 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 		const unsigned int kMaxChunkSize = 10240;
 
 		m_buffer.resize(kMaxChunkSize);
-		std::streamsize n = m_data->rdbuf()->sgetn(m_buffer.data(), m_buffer.size());
+		std::streamsize n = 0;
+		try
+		{
+			n = m_data->rdbuf()->sgetn(m_buffer.data(), m_buffer.size());
+		}
+		catch (...)
+		{
+			std::cerr << "Exception in reading from file" << std::endl;
+		}
 
 		// chunked encoding?
 		if (m_chunked)
