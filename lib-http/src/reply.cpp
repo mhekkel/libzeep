@@ -424,9 +424,6 @@ void reply::set_content(std::istream *idata, const std::string &contentType)
 	m_status = ok;
 	m_chunked = true;
 
-	// this may throw, if it does, it won't kill the application when throwing in data_to_buffers
-	(void)m_data->rdbuf()->sgetn(m_buffer.data(), m_buffer.size());
-
 	set_header("Content-Type", contentType);
 	set_header("Transfer-Encoding", "chunked");
 	remove_header("Content-Length");
