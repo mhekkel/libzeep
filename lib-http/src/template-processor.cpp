@@ -125,6 +125,8 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		mimetype = "application/xhtml+xml";
 	else if (file.extension() == ".ico")
 		mimetype = "image/x-icon";
+	else if (file.extension() == ".json" or file.extension() == ".schema")
+		mimetype = "application/json";
 
 	reply.set_content(in.release(), mimetype);
 
