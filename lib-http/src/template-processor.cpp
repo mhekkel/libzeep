@@ -100,17 +100,6 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		return;
 	}
 
-	std::stringstream out;
-
-	for (;;)
-	{
-		char buffer[1024];
-		auto r = in->readsome(buffer, sizeof(buffer));
-		if (r <= 0)
-			break;
-		out.write(buffer, r);
-	}
-
 	std::string mimetype = "text/plain";
 
 	if (file.extension() == ".css")
@@ -130,7 +119,7 @@ void basic_template_processor::handle_file(const http::request& request, const s
 	else if (file.extension() == ".ico")
 		mimetype = "image/x-icon";
 
-	reply.set_content(out.str(), mimetype);
+	reply.set_content(in.release(), mimetype);
 
 	std::stringstream s;
 	std::time_t lastWriteTime = system_clock::to_time_t(fileDate);
