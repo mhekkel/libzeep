@@ -245,7 +245,7 @@ reply login_controller::create_redirect_for_request(const request &req)
 		}
 	}
 
-	return reply::redirect(redirect_to);
+	return reply::redirect(redirect_to, see_other);
 }
 
 } // namespace zeep::http
