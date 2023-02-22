@@ -127,6 +127,10 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		mimetype = "image/x-icon";
 	else if (file.extension() == ".json" or file.extension() == ".schema")
 		mimetype = "application/json";
+	else if (file.extension() == ".bz2")
+		mimetype = "application/x-bzip2";
+	else if (file.extension() == ".gz")
+		mimetype = "application/gzip";
 
 	reply.set_content(in.release(), mimetype);
 
