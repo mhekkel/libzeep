@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		req.set_method("POST");
 		req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
 		reply = simple_request(port, req);
-		BOOST_TEST(reply.get_status() == zh::moved_temporarily);
+		BOOST_TEST(reply.get_status() == zh::see_other);
 
 		auto accessToken = reply.get_cookie("access_token");
 		req.set_cookie("access_token", accessToken);

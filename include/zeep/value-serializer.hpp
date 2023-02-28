@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <map>
 #include <regex>
+#include <sstream>
 
 #include <zeep/exception.hpp>
 
@@ -257,13 +258,9 @@ struct value_serializer<std::chrono::system_clock::time_point>
 	/// If no UTC offset is present, then the xsd:dateTime is assumed to be local time and converted to UTC.
 	static time_type from_string(const std::string &s)
 	{
-		using namespace std::literals;
-		using namespace date;
-		using namespace std::chrono;
-
 		time_type result;
 
-		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[-+]\d{2}:\d{2})?)");
+		std::regex kRX(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[-+]\d{2}:\d{2})?)");
 		std::smatch m;
 
 		if (not std::regex_match(s, m, kRX))
@@ -274,12 +271,12 @@ struct value_serializer<std::chrono::system_clock::time_point>
 		if (m[1].matched)
 		{
 			if (m[1] == "Z")
-				is >> parse("%FT%TZ", result);
+				date::from_stream(is, "%FT%TZ", result);
 			else
-				is >> parse("%FT%T%0z", result);
+				date::from_stream(is, "%FT%T%0z", result);
 		}
 		else
-			is >> parse("%FT%T", result);
+			date::from_stream(is, "%FT%T", result);
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
@@ -299,24 +296,18 @@ struct value_serializer<date::sys_days>
 	/// to_string the date as YYYY-MM-DD
 	static std::string to_string(const date::sys_days &v)
 	{
-		using namespace date;
-		using namespace std::chrono;
-
 		std::ostringstream ss;
-		to_stream(ss, "%F", v);
+		date::to_stream(ss, "%F", v);
 		return ss.str();
 	}
 
 	/// from_string according to ISO8601 rules.
 	static date::sys_days from_string(const std::string &s)
 	{
-		using namespace date;
-		using namespace std::chrono;
-
 		date::sys_days result;
 
 		std::istringstream is(s);
-		from_stream(is, "%F", result);
+		date::from_stream(is, "%F", result);
 
 		if (is.bad() or is.fail())
 			throw std::runtime_error("invalid formatted date");
