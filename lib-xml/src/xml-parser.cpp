@@ -8,6 +8,7 @@
 #include <map>
 #include <sstream>
 #include <array>
+#include <memory>
 
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>

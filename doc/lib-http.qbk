@@ -1,5 +1,5 @@
 [/
-    Documentation for libzeep version 5.0
+    Documentation for libzeep version 6.0
 
           Copyright Maarten L. Hekkelman, 2020
  Distributed under the Boost Software License, Version 1.0.
@@ -101,6 +101,15 @@ The path specified in `mount` is `{,index,index.html}` which is a glob pattern, 
 	[[={css,scripts}/=]	[matches e.g. =css/1/first.css= and =scripts/index.js=]]
 	[[=a;b;c=]			[matches either =a=, =b= or =c=]]
 ]
+
+The way *mount* works in the __html_controller__ class was a bit oldfashioned and inflexible. Especially compared to the __rest_controller__ class.
+
+So version 6 of libzeep brings a new way of *mounting*, to avoid conflicts now called *mapping*. The signature of handlers is now changed to take a couple of arguments, using std::optional if they are not required. Conversion of types is done automatically. The handler also takes a __scope__ as first parameter and returns the __reply__ object.
+
+How this works in practice is what you can see here:
+
+[import ../examples/http-server-3.cpp]
+[simple_http_server_3]
 
 [endsect]
 

@@ -987,14 +987,11 @@ element_set element::find(const char *path) const
 	return xpath(path).evaluate<element>(*this);
 }
 
-element* element::find_first(const char *path) const
+element::iterator element::find_first(const char *path)
 {
 	element_set s = xpath(path).evaluate<element>(*this);
 
-	element *result = nullptr;
-	if (not s.empty())
-		result = s.front();
-	return result;
+	return s.empty() ? end() : iterator(*this, s.front());
 }
 
 void element::validate()

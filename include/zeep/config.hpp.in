@@ -17,13 +17,17 @@
 /// this and restart the client thereby guaranteeing a better
 /// uptime.
 
+#ifndef HTTP_SERVER_HAS_PREFORK
 #cmakedefine01 HTTP_SERVER_HAS_PREFORK
+#endif
 
 /// The webapp class in libzeep can use resources to load files.
 /// In this case you need the resource compiler 'mrc' obtainable
 /// from https://github.com/mhekkel/mrc
 
+#ifndef WEBAPP_USES_RESOURCES
 #cmakedefine01 WEBAPP_USES_RESOURCES
+#endif
 
 /// The current version of libzeep
 

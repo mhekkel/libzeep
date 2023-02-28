@@ -57,8 +57,14 @@ class controller
 	}
 
 	/// \brief return the server object we're bound to
-	const basic_server &get_server() const { return *m_server; }
-	basic_server &get_server() { return *m_server; }
+	const basic_server *get_server() const { return m_server; }
+	basic_server *get_server() { return m_server; }
+
+	/// \brief return the context name, if specified. Empty string otherwise
+	std::string get_context_name() const
+	{
+		return m_server ? m_server->get_context_name() : "";
+	}
 
 	/// \brief get the credentials for the current request
 	json::element get_credentials() const;
@@ -71,6 +77,9 @@ class controller
 
 	/// \brief return a specific header line from the original request
 	std::string get_header(const char *name) const;
+
+	/// \brief Fill in the OPTIONS in reply \a rep for a request \a req
+	virtual void get_options(const request &req, reply &rep);
 
   protected:
 	controller(const controller &) = delete;

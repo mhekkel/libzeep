@@ -71,11 +71,11 @@ void basic_server::bind(const std::string &address, unsigned short port)
 	// then bind the address here
 	boost::asio::ip::tcp::endpoint endpoint;
 
-	try
-	{
-		endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
-	}
-	catch (const std::exception &e)
+	boost::system::error_code ec;
+	auto addr = boost::asio::ip::make_address(address, ec);
+	if (not ec)
+		endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+	else
 	{
 		boost::asio::ip::tcp::resolver resolver(get_io_context());
 		boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
@@ -89,6 +89,21 @@ void basic_server::bind(const std::string &address, unsigned short port)
 	m_acceptor->async_accept(m_new_connection->get_socket(),
 		[this](boost::system::error_code ec)
 		{ this->handle_accept(ec); });
+}
+
+void basic_server::get_options_for_request(const request &req, reply &rep)
+{
+	rep = reply::stock_reply(no_content);
+	rep.set_header("Allow", join(m_allowed_methods, ","));
+	rep.set_header("Cache-Control", "max-age=86400");
+
+	set_access_control_headers(req, rep);
+}
+
+void basic_server::set_access_control_headers([[maybe_unused]] const request &req, reply &rep)
+{
+	if (m_access_control)
+		m_access_control->get_access_control_headers(rep);
 }
 
 void basic_server::add_controller(controller *c)
@@ -219,10 +234,18 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 				break;
 		}
 
-		if (method == "HEAD")
+		if (method == "HEAD" or method == "OPTIONS")
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
 			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+
+		if (not m_context_name.empty() and
+			(rep.get_status() == moved_permanently or rep.get_status() == moved_temporarily))
+		{
+			auto location = rep.get_header("location");
+			if (location.front() == '/')
+				rep.set_header("location", m_context_name + location);
+		}
 
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
 		if (starts_with(rep.get_content_type(), "application/xhtml+xml") and
@@ -231,6 +254,8 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 		{
 			rep.set_content_type("text/html; charset=utf-8");
 		}
+
+		set_access_control_headers(req, rep);
 	}
 	catch (...)
 	{

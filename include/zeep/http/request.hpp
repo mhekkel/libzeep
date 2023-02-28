@@ -14,8 +14,7 @@
 #include <chrono>
 #include <istream>
 
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
 
 #include <zeep/http/header.hpp>
 #include <zeep/json/element.hpp>

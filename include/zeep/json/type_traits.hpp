@@ -243,7 +243,8 @@ struct is_serializable_optional_type<T, Archive,
 {
 	static constexpr bool value =
 		detail::is_compatible_type_v<typename T::value_type> or
-		has_serialize_v<typename T::value_type, Archive>;
+		has_serialize_v<typename T::value_type, Archive> or
+		has_value_serializer_v<typename T::value_type>;
 };
 
 template<typename T, typename Archive>

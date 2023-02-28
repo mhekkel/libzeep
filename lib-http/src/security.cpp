@@ -4,14 +4,14 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
+#include "glob.hpp"
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/security.hpp>
-#include <zeep/json/parser.hpp>
 #include <zeep/http/uri.hpp>
+#include <zeep/json/parser.hpp>
 
-#include "glob.hpp"
+#include <iostream>
 
 namespace zeep::http
 {
@@ -19,12 +19,44 @@ namespace zeep::http
 namespace
 {
 #define BASE64URL "(?:[-_A-Za-z0-9]{4})*(?:[-_A-Za-z0-9]{2,3})?"
-std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$" );
+	std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$");
+} // namespace
+
+// --------------------------------------------------------------------
+
+bool user_service::user_is_valid(const json::element &credentials) const
+{
+	return user_is_valid(credentials["username"].as<std::string>());
+}
+
+bool user_service::user_is_valid(const std::string &username) const
+{
+	bool result = false;
+
+	try
+	{
+		auto user = load_user(username);
+		result = user.username == username;
+	}
+	catch (...)
+	{
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
 
-void security_context::validate_request(request& req) const
+security_context::security_context(const std::string &secret, user_service &users, bool defaultAccessAllowed)
+	: m_secret(secret)
+	, m_users(users)
+	, m_default_allow(defaultAccessAllowed)
+	, m_default_jwt_exp(date::years{1})
+{
+	register_password_encoder<pbkdf2_sha256_password_encoder>();
+}
+
+void security_context::validate_request(request &req) const
 {
 	bool allow = m_default_allow;
 
@@ -46,7 +78,7 @@ void security_context::validate_request(request& req) const
 			std::smatch m;
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
-			
+
 			json::element JOSEHeader;
 			json::parse_json(decode_base64url(m[1].str()), JOSEHeader);
 
@@ -63,12 +95,25 @@ void security_context::validate_request(request& req) const
 			json::element credentials;
 			json::parse_json(decode_base64url(m[2].str()), credentials);
 
+			// check exp
+			using namespace std::chrono;
+
+			auto exp = credentials["exp"].as<int64_t>();
+			auto exp_t = time_point<system_clock>() + seconds{exp};
+			
+			if (system_clock::now() > exp_t)
+				break; // expired
+
 			if (not credentials.is_object() or not credentials["role"].is_array())
 				break;
 
-			for (auto role: credentials["role"])
+			// make sure user still exists.
+			if (not m_users.user_is_valid(credentials))
+				break;
+
+			for (auto role : credentials["role"])
 				roles.insert(role.as<std::string>());
-			
+
 			req.set_credentials(std::move(credentials));
 
 			break;
@@ -77,11 +122,11 @@ void security_context::validate_request(request& req) const
 		// first check if this page is allowed without any credentials
 		// that means, the first rule that matches this uri should allow
 		// access.
-		for (auto& rule: m_rules)
+		for (auto &rule : m_rules)
 		{
 			if (not glob_match(path, rule.m_pattern))
 				continue;
-			
+
 			if (rule.m_roles.empty())
 				allow = true;
 			else
@@ -115,54 +160,79 @@ void security_context::validate_request(request& req) const
 
 // --------------------------------------------------------------------
 
-void security_context::add_authorization_headers(reply &rep, const user_details user)
+void security_context::add_authorization_headers(reply &rep, const user_details user,
+	std::chrono::system_clock::duration exp)
 {
 	using namespace json::literals;
+
+	using namespace date;
+	using namespace std::chrono;
 
 	auto JOSEHeader = R"({
 		"typ": "JWT",
 		"alg": "HS256"
 	})"_json;
 
+	auto exp_t = duration_cast<seconds>(system_clock::now() + exp - system_clock::time_point()).count();
+
 	json::element credentials{
-		{ "username", user.username }
+		{ "username", user.username },
+		{ "exp", exp_t }
 	};
 
-	for (auto& role: user.roles)
+	for (auto &role : user.roles)
 		credentials["role"].push_back(role);
 
 	auto h1 = encode_base64url(JOSEHeader.as<std::string>());
 	auto h2 = encode_base64url(credentials.as<std::string>());
 	auto h3 = encode_base64url(hmac_sha256(h1 + '.' + h2, m_secret));
 
-	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3, {
-		{ "HttpOnly", "" },
-		{ "SameSite", "Lax" }
-	});
+	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3, { { "HttpOnly", "" }, { "SameSite", "Lax" } });
+}
+
+void security_context::add_authorization_headers(reply &rep, const user_details user)
+{
+	using namespace date;
+	using namespace std::chrono;
+
+	add_authorization_headers(rep, user, m_default_jwt_exp);
 }
 
 // --------------------------------------------------------------------
 
-void security_context::verify_username_password(const std::string& username, const std::string& raw_password, reply &rep)
+bool security_context::verify_username_password(const std::string &username, const std::string &raw_password)
 {
+	bool result = false;
+
 	try
 	{
 		auto user = m_users.load_user(username);
-		
-		bool match = false;
-		for (auto const& [name, pwenc]: m_known_password_encoders)
+
+		for (auto const &[name, pwenc] : m_known_password_encoders)
 		{
 			if (user.password.compare(0, name.length(), name) != 0)
 				continue;
-			
-			match = pwenc->matches(raw_password, user.password);
+
+			result = pwenc->matches(raw_password, user.password);
 			break;
 		}
+	}
+	catch (...)
+	{
+		result = false;
+	}
 
-		if (not match)
+	return result;
+}
+
+void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)
+{
+	try
+	{
+		if (not verify_username_password(username, raw_password))
 			throw invalid_password_exception();
 
-		add_authorization_headers(rep, user);
+		add_authorization_headers(rep, m_users.load_user(username));
 	}
 	catch (const std::exception &)
 	{
@@ -172,7 +242,7 @@ void security_context::verify_username_password(const std::string& username, con
 
 // --------------------------------------------------------------------
 
-std::pair<std::string,bool> security_context::get_csrf_token(request& req)
+std::pair<std::string, bool> security_context::get_csrf_token(request &req)
 {
 	// See if we need to add a new csrf token
 	bool csrf_is_new = false;
@@ -186,4 +256,4 @@ std::pair<std::string,bool> security_context::get_csrf_token(request& req)
 	return { csrf, csrf_is_new };
 }
 
-}
+} // namespace zeep::http

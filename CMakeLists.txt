@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 6.0.0 LANGUAGES CXX)
+project(libzeep VERSION 6.0.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -14,7 +14,7 @@ include(Dart)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Filesystem REQUIRED)
@@ -52,7 +52,7 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_package(Mrc)
+	find_package(Mrc QUIET)
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
@@ -103,6 +103,7 @@ list(APPEND ZEEP_HEADERS
 	${PROJECT_SOURCE_DIR}/include/zeep/json/from_element.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/json/iterator.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/access-control.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/controller.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/message-parser.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
@@ -127,6 +128,7 @@ list(APPEND ZEEP_HEADERS
 )
 
 set(ZEEP_SRC
+	${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp

@@ -50,7 +50,10 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 
 		try
 		{
-			mp->call(params, rep);
+			if (req.get_method() == "OPTIONS")
+				get_options(req, rep);
+			else
+				mp->call(params, rep);
 		}
 		catch (status_type s)
 		{

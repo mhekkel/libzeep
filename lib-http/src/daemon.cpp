@@ -46,7 +46,7 @@ daemon::daemon(server_factory_type &&factory, const std::string &pid_file,
 }
 
 daemon::daemon(server_factory_type &&factory, const char *name)
-	: daemon(std::forward<server_factory_type>(factory), "/var/run/"s + name,
+	: daemon(std::move(factory), "/var/run/"s + name,
 		  "/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
 {
 }
@@ -62,34 +62,29 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	}
 	else
 	{
-		try
+		boost::asio::io_context io_context;
+		boost::asio::ip::tcp::endpoint endpoint;
+
+		boost::system::error_code ec;
+		auto addr = boost::asio::ip::make_address(address, ec);
+		if (not ec)
+			endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+		else
 		{
-			boost::asio::io_context io_context;
-			boost::asio::ip::tcp::endpoint endpoint;
-
-			try
-			{
-				endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
-			}
-			catch (const std::exception &)
-			{
-				boost::asio::ip::tcp::resolver resolver(io_context);
-				boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
-			}
-
-			boost::asio::ip::tcp::acceptor acceptor(io_context);
-			acceptor.open(endpoint.protocol());
-			acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-			acceptor.bind(endpoint);
-			acceptor.listen();
-
-			acceptor.close();
+			boost::asio::ip::tcp::resolver resolver(io_context);
+			boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+			endpoint = *resolver.resolve(query);
 		}
-		catch (exception &e)
-		{
-			throw std::runtime_error(std::string("Is server running already? ") + e.what());
-		}
+
+		boost::asio::ip::tcp::acceptor acceptor(io_context);
+		acceptor.open(endpoint.protocol());
+		acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+		acceptor.bind(endpoint, ec);
+		if (ec)
+			throw std::runtime_error(std::string("Is server running already? ") + ec.message());
+		acceptor.listen();
+
+		acceptor.close();
 
 		signal_catcher sc;
 		sc.block();

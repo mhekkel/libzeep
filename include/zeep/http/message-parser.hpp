@@ -48,6 +48,7 @@ class parse_result
 	}
 
 	constexpr explicit operator bool() const noexcept { return m_value == true_value; }
+	constexpr bool operator not() const noexcept { return m_value == false_value; }
 };
 
 constexpr parse_result::value_type indeterminate = parse_result::indeterminate_value;

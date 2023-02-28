@@ -130,4 +130,10 @@ std::string controller::get_header(const char *name) const
 	return s_request ? s_request->get_header(name) : "";
 }
 
+void controller::get_options(const request &req, reply &rep)
+{
+	if (m_server)
+		m_server->get_options_for_request(req, rep);
+}
+
 }

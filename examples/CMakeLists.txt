@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(zeep REQUIRED)
 
-list(APPEND examples http-server-0 http-server-1 http-server-2
+list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
 	serialize-xml synopsis-json synopsis-xml validating-xml-sample xpath-sample
 	synopsis-el-1 security-sample rest-sample rest-sample-2 daemon-sample
 	soap-sample)

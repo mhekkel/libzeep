@@ -6,15 +6,15 @@
 #include <random>
 
 #include <zeep/crypto.hpp>
-#include <zeep/streambuf.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/message-parser.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/streambuf.hpp>
 
-#include "client-test-code.hpp"
 #include "../src/signals.hpp"
+#include "client-test-code.hpp"
 
 using namespace std;
 namespace z = zeep;
@@ -22,7 +22,7 @@ namespace zx = zeep::xml;
 
 using webapp = zeep::http::html_controller;
 
-void compare(zeep::xml::document& a, zeep::xml::document& b)
+void compare(zeep::xml::document &a, zeep::xml::document &b)
 {
 	BOOST_CHECK_EQUAL(a, b);
 	if (a != b)
@@ -40,24 +40,25 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 	class my_webapp : public webapp
 	{
 	  public:
-		my_webapp() {
+		my_webapp()
+		{
 			// mount("test", &my_webapp::handle_test);
 			mount_get("test", &my_webapp::handle_get_test);
 			mount_post("test", &my_webapp::handle_post_test);
 		}
 
-		virtual void handle_test(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 
-		virtual void handle_get_test(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_get_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("get", "text/plain");
 		}
 
-		virtual void handle_post_test(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_post_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("post", "text/plain");
@@ -122,7 +123,7 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 // <div>fragment-2</div>)"_xml;
 
 // 	compare(doc, test2);
-	
+
 // }
 
 // test various ways of mounting handlers
@@ -131,7 +132,8 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 	class my_webapp : public webapp
 	{
 	  public:
-		my_webapp() {
+		my_webapp()
+		{
 			mount("test", &my_webapp::handle_test1);
 			mount("*/*.x", &my_webapp::handle_test2);
 			mount("**/*.x", &my_webapp::handle_test2b);
@@ -141,42 +143,41 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 			mount("{css,scripts}/", &my_webapp::handle_testf);
 		}
 
-		virtual void handle_test1(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_test1(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("1", "text/plain");
 		}
 
-		virtual void handle_test2(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_test2(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2", "text/plain");
 		}
 
-		virtual void handle_test2b(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_test2b(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2b", "text/plain");
 		}
 
-		virtual void handle_test3(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_test3(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("3", "text/plain");
 		}
 
-		virtual void handle_test4(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_test4(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("4", "text/plain");
 		}
 
-		virtual void handle_testf(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+		virtual void handle_testf(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("f", "text/plain");
 		}
-
 
 	} app;
 
@@ -225,14 +226,14 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 
 class hello_controller : public zeep::http::html_controller
 {
-	public:
+  public:
 	hello_controller()
 		: zeep::http::html_controller("/")
 	{
 		mount("", &hello_controller::handle_index);
 	}
 
-	void handle_index(const zeep::http::request& /*req*/, const zeep::http::scope& /*scope*/, zeep::http::reply& rep)
+	void handle_index(const zeep::http::request & /*req*/, const zeep::http::scope & /*scope*/, zeep::http::reply &rep)
 	{
 		rep = zeep::http::reply::stock_reply(zeep::http::ok);
 		rep.set_content("Hello", "text/plain");
@@ -243,11 +244,12 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 {
 	// start up a http server with a html_controller and stop it again
 
-	zeep::http::daemon d([]() {
+	zeep::http::daemon d([]()
+		{
 		auto server = new zeep::http::server;
 		server->add_controller(new hello_controller());
-		return server;
-	}, "zeep-http-test");
+		return server; },
+		"zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
@@ -266,7 +268,7 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 		BOOST_TEST(reply.get_status() == zeep::http::ok);
 		BOOST_TEST(reply.get_content() == "Hello");
 	}
-	catch (const std::exception& ex)
+	catch (const std::exception &ex)
 	{
 		std::cerr << ex.what() << std::endl;
 	}
@@ -274,28 +276,27 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
-
 }
 
 BOOST_AUTO_TEST_CASE(webapp_10)
 {
-    zeep::http::server srv;
+	zeep::http::server srv;
 
 	srv.add_controller(new hello_controller());
 
-	std::thread t([&srv]() mutable {
+	std::thread t([&srv]() mutable
+		{
 		
 		using namespace std::chrono_literals;
 		std::this_thread::sleep_for(2s);
 
-		srv.stop();
-	});
+		srv.stop(); });
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-    srv.bind("::", port);
-    srv.run(2);
+	srv.bind("::", port);
+	srv.run(2);
 
 	t.join();
 }
@@ -317,4 +318,176 @@ BOOST_AUTO_TEST_CASE(split_1)
 	BOOST_ASSERT(p.size() == 2);
 	BOOST_CHECK_EQUAL(p[0], "een");
 	BOOST_CHECK_EQUAL(p[1], "twee");
+}
+
+// --------------------------------------------------------------------
+
+// // test various ways of mounting handlers
+// BOOST_AUTO_TEST_CASE(webapp_5)
+// {
+// 	class my_webapp : public webapp_2
+// 	{
+// 	  public:
+// 		my_webapp() {
+// 			mount("test", &my_webapp::handle_test1);
+// 			mount("*/*.x", &my_webapp::handle_test2);
+// 			mount("**/*.x", &my_webapp::handle_test2b);
+// 			mount("test/*", &my_webapp::handle_test3);
+// 			mount("test/**", &my_webapp::handle_test4);
+
+// 			mount("{css,scripts}/", &my_webapp::handle_testf);
+// 		}
+
+// 		virtual void handle_test1(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 			reply.set_content("1", "text/plain");
+// 		}
+
+// 		virtual void handle_test2(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 			reply.set_content("2", "text/plain");
+// 		}
+
+// 		virtual void handle_test2b(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 			reply.set_content("2b", "text/plain");
+// 		}
+
+// 		virtual void handle_test3(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 			reply.set_content("3", "text/plain");
+// 		}
+
+// 		virtual void handle_test4(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 			reply.set_content("4", "text/plain");
+// 		}
+
+// 		virtual void handle_testf(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
+// 		{
+// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+// 			reply.set_content("f", "text/plain");
+// 		}
+
+// 	} app;
+
+// 	zeep::http::request req("GET", "/test");
+// 	zeep::http::reply rep;
+
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "1");
+
+// 	req.set_uri("/test/x");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "3");
+
+// 	req.set_uri("/test/x/x");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "4");
+
+// 	req.set_uri("iew.x");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
+
+// 	req.set_uri("x/iew.x");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "2");
+
+// 	req.set_uri("x/x/iew.x");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
+
+// 	req.set_uri("css/styles/my-style.css");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+
+// 	req.set_uri("scripts/x.js");
+// 	app.handle_request(req, rep);
+// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
+// 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+// }
+
+class hello_controller_2 : public zeep::http::html_controller
+{
+  public:
+	hello_controller_2()
+		: zeep::http::html_controller("/")
+	{
+		map_get("", &hello_controller_2::handle_index, "user");
+		map_get("hello/{user}", &hello_controller_2::handle_hello, "user");
+	}
+
+	zeep::http::reply handle_index([[maybe_unused]] const zeep::http::scope &scope, std::optional<std::string> user)
+	{
+		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		rep.set_content("Hello, " + user.value_or("world") + "!", "text/plain");
+		return rep;
+	}
+
+	zeep::http::reply handle_hello([[maybe_unused]] const zeep::http::scope &scope, std::string user)
+	{
+		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		rep.set_content("Hello, " + user + "!", "text/plain");
+		return rep;
+	}
+};
+
+BOOST_AUTO_TEST_CASE(controller_2_1)
+{
+	// start up a http server with a html_controller and stop it again
+
+	zeep::http::daemon d([]()
+		{
+		auto server = new zeep::http::server;
+		server->add_controller(new hello_controller_2());
+		return server; },
+		"zeep-http-test");
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "::", port));
+
+	std::cerr << "started daemon at port " << port << std::endl;
+
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(2s);
+
+	try
+	{
+		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello, world!");
+
+		reply = simple_request(port, "GET /?user=maarten HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+
+		reply = simple_request(port, "GET /hello/maarten HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+	}
+	catch (const std::exception &ex)
+	{
+		std::cerr << ex.what() << std::endl;
+	}
+
+	zeep::signal_catcher::signal_hangup(t);
+
+	t.join();
 }

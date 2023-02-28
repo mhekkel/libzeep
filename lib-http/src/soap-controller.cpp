@@ -37,7 +37,7 @@ xml::element make_envelope(xml::element&& data)
 		{ "soap:encodingStyle", "http://www.w3.org/2003/05/soap-encoding" }
 	});
 	auto& body = env.emplace_back("soap:Body");
-	body.emplace_back(std::forward<xml::element>(data));
+	body.emplace_back(std::move(data));
 	
 	return env;
 }
@@ -191,9 +191,7 @@ xml::element soap_controller::make_wsdl()
 		{ "binding", "ns:" + m_service }
 	});
 	
-	std::string location = m_server != nullptr ?
-		location = m_server->get_context_name() + "/" + m_location :
-		m_location;
+	std::string location = get_context_name() + "/" + m_location;
 
 	port.emplace_back("soap:address",
 	{

@@ -13,8 +13,7 @@
 
 #include <memory>
 
-#include <boost/asio/posix/stream_descriptor.hpp>
-#include <boost/asio/streambuf.hpp>
+#include <boost/asio.hpp>
 
 #include <zeep/http/message-parser.hpp>
 

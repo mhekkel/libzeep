@@ -149,7 +149,24 @@ template<typename T, typename S>
 inline constexpr bool is_serializable_type_v = is_serializable_type<T,S>::value;
 
 template<typename T>
-inline constexpr bool is_type_with_value_serializer_v = std::experimental::is_detected_v<serialize_value_t,T>;
+using vs_to_string_function = decltype(zeep::value_serializer<T>::to_string(std::declval<T&>()));
+
+template<typename T>
+using vs_from_string_function = decltype(zeep::value_serializer<T>::from_string(std::declval<const std::string&>()));
+
+template<typename T, typename = void>
+struct has_value_serializer : std::false_type {};
+
+template<typename T>
+struct has_value_serializer<T>
+{
+	static constexpr bool value =
+		std::experimental::is_detected_v<vs_to_string_function,T> and
+		std::experimental::is_detected_v<vs_from_string_function,T>;
+};
+
+template<typename T>
+inline constexpr bool has_value_serializer_v = has_value_serializer<T>::value;
 
 template<typename T, typename S, typename = void>
 struct is_serializable_array_type : std::false_type {};

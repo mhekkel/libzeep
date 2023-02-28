@@ -42,12 +42,19 @@ std::istream* file_loader::load_file(const std::string& file, std::error_code& e
 	if (p.has_root_path())
 		p = fs::relative(p, p.root_path());
 
-	std::ifstream* result = new std::ifstream(m_docroot / p, std::ios::binary);
-	if (not result->is_open())
-	{
-		delete result;
-		result = nullptr;
+	std::ifstream* result = nullptr;
+
+	if (not fs::is_regular_file(m_docroot / p))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
+	else
+	{
+		result = new std::ifstream(m_docroot / p, std::ios::binary);
+		if (not result->is_open())
+		{
+			delete result;
+			result = nullptr;
+			ec = std::make_error_code(std::errc::no_such_file_or_directory);
+		}
 	}
 	
 	return result;	
@@ -100,17 +107,6 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		return;
 	}
 
-	std::stringstream out;
-
-	for (;;)
-	{
-		char buffer[1024];
-		auto r = in->readsome(buffer, sizeof(buffer));
-		if (r <= 0)
-			break;
-		out.write(buffer, r);
-	}
-
 	std::string mimetype = "text/plain";
 
 	if (file.extension() == ".css")
@@ -129,8 +125,14 @@ void basic_template_processor::handle_file(const http::request& request, const s
 		mimetype = "application/xhtml+xml";
 	else if (file.extension() == ".ico")
 		mimetype = "image/x-icon";
+	else if (file.extension() == ".json" or file.extension() == ".schema")
+		mimetype = "application/json";
+	else if (file.extension() == ".bz2")
+		mimetype = "application/x-bzip2";
+	else if (file.extension() == ".gz")
+		mimetype = "application/gzip";
 
-	reply.set_content(out.str(), mimetype);
+	reply.set_content(in.release(), mimetype);
 
 	using namespace date;
 	using namespace std::chrono;
