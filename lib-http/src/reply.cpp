@@ -115,9 +115,11 @@ reply::reply(status_type status, std::tuple<int, int> version)
 	, m_version_minor(std::get<1>(version))
 	, m_data(nullptr)
 {
+	using namespace date;
+	using namespace std::chrono;
+
 	std::stringstream s;
-	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	s << std::put_time(std::gmtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
+	to_stream(s, "%a, %d %b %Y %H:%M:%S GMT", system_clock::now());
 
 	set_header("Date", s.str());
 	set_header("Server", "libzeep");

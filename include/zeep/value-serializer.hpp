@@ -15,6 +15,7 @@
 #include <zeep/config.hpp>
 
 #include <iomanip>
+#include <map>
 #include <regex>
 
 #include <zeep/exception.hpp>
@@ -299,16 +300,17 @@ struct value_serializer<date::sys_days>
 	/// to_string the date as YYYY-MM-DD
 	static std::string to_string(const date::sys_days &v)
 	{
+		using namespace date;
+		using namespace std::chrono;
+
 		std::ostringstream ss;
-		auto v_t = std::chrono::system_clock::to_time_t(v);
-		ss << std::put_time(std::gmtime(&v_t), "%F");
+		to_stream(ss, "%F", v);
 		return ss.str();
 	}
 
 	/// from_string according to ISO8601 rules.
 	static date::sys_days from_string(const std::string &s)
 	{
-		using namespace std::literals;
 		using namespace date;
 		using namespace std::chrono;
 

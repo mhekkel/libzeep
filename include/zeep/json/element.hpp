@@ -17,6 +17,8 @@
 #include <zeep/json/serializer.hpp>
 #include <zeep/json/iterator.hpp>
 
+#include <map>
+
 namespace zeep::json
 {
 

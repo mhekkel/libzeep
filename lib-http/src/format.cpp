@@ -7,6 +7,7 @@
 #include <codecvt>
 #include <cmath>
 #include <deque>
+#include <iostream>
 
 #include <zeep/unicode-support.hpp>
 

@@ -279,8 +279,8 @@ class soap_controller : public controller
 
 			if constexpr (not std::is_void_v<Result>)
 			{
-				auto &complexType = responseType.emplace_back("xsd:complexType");
-				auto &sequence = complexType.emplace_back("xsd:sequence");
+				auto &complexType2 = responseType.emplace_back("xsd:complexType");
+				auto &sequence = complexType2.emplace_back("xsd:sequence");
 
 				xml::schema_creator sc(types, sequence);
 				sc.add_element("Response", Result{});

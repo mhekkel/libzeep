@@ -71,7 +71,7 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 			{
 				endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
 			}
-			catch (const std::exception &e)
+			catch (const std::exception &)
 			{
 				boost::asio::ip::tcp::resolver resolver(io_context);
 				boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));

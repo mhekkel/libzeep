@@ -11,8 +11,9 @@
 #include <zeep/config.hpp>
 
 #include <optional>
+#include <valarray>
 
-#include <zeep/json/type_traits.hpp>
+#include "zeep/json/type_traits.hpp"
 
 namespace zeep::json::detail
 {

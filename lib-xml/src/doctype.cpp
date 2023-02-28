@@ -272,7 +272,8 @@ struct state_seq : public state_base
 	virtual void reset()
 	{
 		m_state = 0;
-		std::for_each(m_states.begin(), m_states.end(), [](auto state) { state->reset(); });
+		for (auto state: m_states)
+			state->reset();;
 	}
 
 	virtual bool allow_char_data()
@@ -377,7 +378,8 @@ struct state_choice : public state_base
 	virtual void reset()
 	{
 		m_state = 0;
-		std::for_each(m_states.begin(), m_states.end(), [](auto& state) { state->reset(); });
+		for (auto state: m_states)
+			state->reset();
 	}
 
 	virtual bool allow_char_data() { return m_mixed; }
