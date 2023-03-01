@@ -157,6 +157,8 @@ set(ZEEP_SRC
 	${PROJECT_SOURCE_DIR}/lib-xml/src/character-classification.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/doctype.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/document.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.hpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/node.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/xpath.cpp

@@ -13,6 +13,8 @@
 #include <zeep/xml/parser.hpp>
 #include <zeep/xml/doctype.hpp>
 
+#include "html-named-characters.hpp"
+
 namespace zeep::xml
 {
 
@@ -858,6 +860,7 @@ struct parser_imp
 	bool m_validating;
 	bool m_validating_ns;
 	bool m_has_dtd;
+	bool m_is_html5 = false;	// needed to see if we can use built in named characters
 	XMLToken m_lookahead;
 	std::string m_token;
 
@@ -956,7 +959,16 @@ const doctype::entity& parser_imp::get_general_entity(const std::string& name) c
 						  [name](auto e) { return e->name() == name; });
 
 	if (e == m_general_entities.end())
+	{
+		if (m_is_html5)
+		{
+			auto c = get_named_character(name.c_str());
+			if (c != nullptr)
+				return *c;
+		}
+
 		not_well_formed("undefined entity reference '" + name + "'");
+	}
 
 	if ((*e)->is_external() and m_standalone)
 		not_valid("Document cannot be standalone since entity " + name + " is defined externally");
@@ -1898,6 +1910,9 @@ void parser_imp::doctypedecl()
 
 				if (not is_valid_system_literal(uri))
 					not_well_formed("invalid system literal");
+				
+				if (m_root_element == "html" and uri == "about:legacy-compat")
+					m_is_html5 = true;
 			}
 			else if (m_token == "PUBLIC")
 			{
