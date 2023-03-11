@@ -10,6 +10,7 @@
 #include <utility>
 
 #include <zeep/http/uri.hpp>
+#include <zeep/unicode-support.hpp>
 
 namespace zeep::http
 {
@@ -69,71 +70,61 @@ namespace zeep::http
 
 // --------------------------------------------------------------------
 
-const std::regex kURIRx(URI);
+// const std::regex kURIRx(URI);
 
 // --------------------------------------------------------------------
-/// \brief Is \a url a valid url?
 
-bool is_valid_uri(const std::string& url)
+// Let's try a parser, since regular expressions can crash
+
+constexpr bool is_gen_delim(char ch)
 {
-	return std::regex_match(url, kURIRx);
+	return ch == '[' or ch == ']' or ch == ':' or ch == '/' or ch == '?' or ch == '#' or ch == '@';
 }
 
-bool is_fully_qualified_uri(const std::string& uri)
+constexpr bool is_sub_delim(char ch)
 {
-	std::smatch m;
-	return std::regex_match(uri, m, kURIRx) and m[1].matched and m[3].matched;
+	return ch == '!' or ch == '$' or ch == '&' or ch == '\'' or ch == '(' or ch == ')' or ch == '*' or ch == '+' or ch == ',' or ch == ';' or ch == '=';		
 }
 
-// --------------------------------------------------------------------
+constexpr bool is_reserved(char ch)
+{
+	return is_gen_delim(ch) or is_sub_delim(ch);
+}
+
+constexpr bool is_unreserved(char ch)
+{
+	return ch == '-' or ch == '.' or ch == '_' or ch == '~' or
+		(ch >= 'A' and ch <= 'Z') or (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9');
+}
+
+constexpr bool is_scheme_start(char ch)
+{
+	return (ch >= 'A' and ch <= 'Z') or (ch >= 'a' and ch <= 'z');
+}
+
+constexpr bool is_scheme(char ch)
+{
+	return is_scheme_start(ch) or ch == '-' or ch == '+' or ch == '.' or (ch >= 0 and ch <= '9');
+}
+
+constexpr bool is_xdigit(char ch)
+{
+	return (ch >= '0' and ch <= '9') or
+		(ch >= 'a' and ch <= 'f') or
+		(ch >= 'A' and ch <= 'F');
+}
 
 struct uri_impl
 {
-	uri_impl(const std::string& uri)
-		: m_s(uri)
+	uri_impl() = default;
+	uri_impl(const uri_impl &) = default;
+
+	uri_impl(const std::string& s)
 	{
-		parse();
+		parse(s);
 	}
 
-	// Let's try a parser, since regular expressions can crash
-
-	constexpr bool is_gen_delim(char ch) const
-	{
-		return ch == '[' or ch == ']' or ch == ':' or ch == '/' or ch == '?' or ch == '#' or ch == '@';
-	}
-
-	constexpr bool is_sub_delim(char ch) const
-	{
-		return ch == '!' or ch == '$' or ch == '&' or ch == '\'' or ch == '(' or ch == ')' or ch == '*' or ch == '+' or ch == ',' or ch == ';' or ch == '=';		
-	}
-
-	constexpr bool is_reserved(char ch) const
-	{
-		return is_gen_delim(ch) or is_sub_delim(ch);
-	}
-
-	constexpr bool is_unreserved(char ch) const
-	{
-		return ch == '-' or ch == '.' or ch == '_' or ch == '~' or
-			(ch >= 'A' and ch <= 'Z') or (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9');
-	}
-
-	constexpr bool is_scheme_start(char ch) const
-	{
-		return (ch >= 'A' and ch <= 'Z') or (ch >= 'a' and ch <= 'z');
-	}
-
-	constexpr bool is_scheme(char ch) const
-	{
-		return is_scheme_start(ch) or ch == '-' or ch == '+' or ch == '.' or (ch >= 0 and ch <= '9');
-	}
-
-	constexpr bool is_xdigit(char ch) const
-	{
-		return (ch >= '0' and ch <= '9') or
-			(ch >= 'a' and ch <= 'f') or
-			(ch >= 'A' and ch <= 'F');
-	}
+	void transform(const uri_impl &base);
 
 	bool is_pct_encoded(const char *&cp)
 	{
@@ -161,7 +152,7 @@ struct uri_impl
 		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or *cp == '@' or is_pct_encoded(cp);
 	}
 
-	void parse();
+	void parse(const std::string &s);
 
 	const char *parse_scheme(const char *ch);
 	const char *parse_hierpart(const char *ch);
@@ -174,29 +165,57 @@ struct uri_impl
 	const char *parse_host(const char *ch);
 	const char *parse_port(const char *ch);
 
-	std::string m_s;
+	bool empty() const
+	{
+		return m_scheme.empty() and m_userinfo.empty() and m_host.empty() and m_path.empty() and m_query.empty() and m_fragment.empty();
+	}
+
+	void remove_dot_segments();
+
+	void write(std::ostream &os)
+	{
+		if (not m_scheme.empty())
+			os << m_scheme << ':';
+
+		bool write_slash = m_absolutePath;
+
+		if (not (m_userinfo.empty() and m_host.empty()))
+		{
+			os << "//";
+
+			if (not m_userinfo.empty())
+				os << m_userinfo << '@';
+			
+			os << m_host;
+			if (m_port != 0)
+				os << ':' << m_port;
+			
+			write_slash = true;
+		}
+		
+		for (auto segment : m_path)
+		{
+			if (write_slash)
+				os << '/';
+			write_slash = true;
+			os << encode_url(segment);
+		}
+
+		if (not m_query.empty())
+			os << '?' << encode_url(m_query);
+		
+		if (not m_fragment.empty())
+			os << '#' << encode_url(m_fragment);
+	}
 
 	std::string m_scheme;
 	std::string m_userinfo;
 	std::string m_host;
 	uint16_t m_port;
-	std::filesystem::path m_path;
+	std::vector<std::string> m_path;
 	std::string m_query;
 	std::string m_fragment;
 	bool m_absolutePath = false;
-
-	void set_path(const std::filesystem::path &p)
-	{
-		m_path = p;
-		m_absolutePath = p.is_absolute();
-
-		std::ostringstream os;
-		os << m_scheme << "://" << m_host;
-		if (not m_absolutePath)
-			os << '/';
-		os << m_path.string();
-		m_s = os.str();
-	}
 };
 
 const char *uri_impl::parse_scheme(const char *cp)
@@ -212,6 +231,7 @@ const char *uri_impl::parse_scheme(const char *cp)
 		if (*cp == ':')
 		{
 			m_scheme.assign(b, cp);
+			to_lower(m_scheme);
 			++cp;
 		}
 		else
@@ -223,8 +243,6 @@ const char *uri_impl::parse_scheme(const char *cp)
 
 const char *uri_impl::parse_hierpart(const char *cp)
 {
-	auto b = cp;
-
 	if (*cp == '/')
 	{
 		++cp;
@@ -234,21 +252,21 @@ const char *uri_impl::parse_hierpart(const char *cp)
 
 			cp = parse_authority(cp);
 
-			b = cp;
+			if (*cp == '/' and cp[1] == '/')
+				m_absolutePath = true;
 
-			if (*cp == '/')
+			while (*cp == '/')
 			{
-				do
-				{
-					++cp;
-					cp = parse_segment(cp);
-
-				} while (*cp == '/');
+				++cp;
+				cp = parse_segment(cp);
 			}
 		}
 		else
 		{
-			cp - parse_segment_nz(cp);
+			m_absolutePath = true;
+
+			cp = parse_segment_nz(cp);
+
 			while (*cp == '/')
 			{
 				++cp;
@@ -265,8 +283,6 @@ const char *uri_impl::parse_hierpart(const char *cp)
 			cp = parse_segment(cp);
 		}
 	}
-
-	
 
 	return cp;
 }
@@ -312,13 +328,13 @@ const char *uri_impl::parse_host(const char *cp)
 		while (*cp != 0 and *cp != ']');
 
 		if (*cp != ']')
-			throw zeep::exception("invalid uri");
+			throw uri_parse_error();
 
 		++cp;
 
 		static std::regex rx(IP_LITERAL);
 		if (not std::regex_match(b, cp, rx))
-			throw zeep::exception("invalid uri");
+			throw uri_parse_error();
 	}
 	else
 	{
@@ -327,39 +343,52 @@ const char *uri_impl::parse_host(const char *cp)
 	}
 
 	m_host.assign(b, cp);
+	to_lower(m_host);
 
 	if (m_host.empty())
-		throw zeep::exception("invalid uri");
+		throw uri_parse_error();
 
 	return cp;
 }
 
 const char *uri_impl::parse_segment(const char *cp)
 {
+	auto b = cp;
+
 	while (is_pchar(cp))
 		++cp;
+
+	m_path.emplace_back(decode_url({b, cp - b}));
+
 	return cp;
 }
 
 const char *uri_impl::parse_segment_nz(const char *cp)
 {
-	if (not is_pchar(cp))
-		throw zeep::exception("invalid uri");
-	while (is_pchar(cp))
-		++cp;
+	cp = parse_segment(cp);
+
+	if (m_path.back().empty())
+		throw uri_parse_error();
+
 	return cp;
 }
 
 const char *uri_impl::parse_segment_nz_nc(const char *cp)
 {
+	auto b = cp;
+
 	if (not (is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp)))
-		throw zeep::exception("invalid uri");
+		throw uri_parse_error();
+
 	while (is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp))
 		++cp;
+
+	m_path.emplace_back(decode_url({b, cp - b}));
+
 	return cp;
 }
 
-void uri_impl::parse()
+void uri_impl::parse(const std::string &s)
 {
 	m_scheme.clear();
 	m_userinfo.clear();
@@ -370,61 +399,115 @@ void uri_impl::parse()
 	m_fragment.clear();
 	m_absolutePath = false;
 
-	auto cp = parse_scheme(m_s.c_str());
+	auto cp = parse_scheme(s.c_str());
 	cp = parse_hierpart(cp);
 	
 	if (*cp == '?')
 	{
 		++cp;
+		auto b = cp;
+
 		while (*cp == '?' or *cp == '/' or is_pchar(cp))
 			++cp;
+		
+		m_query.assign(b, cp);
 	}
 
 	if (*cp == '#')
 	{
 		++cp;
+		auto b = cp;
+
 		while (*cp == '?' or *cp == '/' or is_pchar(cp))
 			++cp;
+		
+		m_fragment.assign(b, cp);
 	}
 
-	if (*cp != 0 or (cp - m_s.c_str()) != m_s.length())
-		throw zeep::exception("Invalid URI");
+	remove_dot_segments();
+
+	if (*cp != 0 or (cp - s.c_str()) != s.length())
+		throw uri_parse_error();
+}
+
+void uri_impl::remove_dot_segments()
+{
+	std::vector<std::string> out;
+
+	auto in = m_path.begin();
+	while (in != m_path.end())
+	{
+		if (*in == ".")
+		{
+			++in;
+			continue;
+		}
+
+		if (*in == "..")
+		{
+			if (not out.empty())
+				out.pop_back();
+			++in;
+			continue;
+		}
+
+		out.push_back(*in);
+		++in;
+		continue;
+	}
+
+	std::swap(m_path, out);
+}
+
+void uri_impl::transform(const uri_impl &base)
+{
+	if (m_scheme.empty())
+	{
+		m_scheme = base.m_scheme;
+		
+		if (m_host.empty() and m_userinfo.empty())
+		{
+			if (m_path.empty())
+			{
+				m_absolutePath = base.m_absolutePath;
+				m_path = base.m_path;
+				if (m_query.empty())
+					m_query = base.m_query;
+			}
+			else if (not m_absolutePath)
+			{
+				m_absolutePath = true;
+				if (base.m_path.size() > 1)
+					m_path.insert(m_path.begin(), base.m_path.begin(), base.m_path.end() - 1);
+				remove_dot_segments();
+			}
+			m_userinfo = base.m_userinfo;
+			m_host = base.m_host;
+			m_port = base.m_port;
+		}
+	}
 }
 
 // --------------------------------------------------------------------
 
+uri::uri()
+	: m_impl(new uri_impl())
+{
+}
+
 uri::uri(const std::string &url)
 	: m_impl(new uri_impl{url})
 {
-	// const std::regex rx(URI);
+}
 
-	// std::smatch m;
-	// if (std::regex_match(url, m, rx))
-	// {
-	// 	m_impl->m_scheme = m[1];
-	// 	m_impl->m_host = m[3];
-
-	// 	if (not m_impl->m_host.empty() and m_impl->m_host.front() == '[' and m_impl->m_host.back() == ']')
-	// 		m_impl->m_host = m_impl->m_host.substr(1, m_impl->m_host.length() - 2);
-
-	// 	if (m[5].matched)
-	// 		m_impl->m_path = m[5].str();
-	// 	else if (m[6].matched)
-	// 		m_impl->m_path = m[6].str();
-	// 	else if (m[7].matched)
-	// 		m_impl->m_path = m[7].str();
-		
-	// 	m_impl->m_query = m[8];
-	// 	m_impl->m_fragment = m[9];
-
-	// 	m_impl->m_absolutePath = m_impl->m_host.empty() and m[6].matched;
-	// }
-	// else
-	// 	throw uri_parse_error(url);
+uri::uri(const std::string &s, const uri &base)
+	: m_impl(new uri_impl{s})
+{
+	m_impl->transform(*base.m_impl);
 }
 
 uri::uri(const uri &u)
-	: uri(u.string())
+	: m_impl(new uri_impl(*u.m_impl))
 {
 }
 
@@ -459,7 +542,7 @@ uri::~uri()
 
 bool uri::empty() const
 {
-	return m_impl->m_s.empty();
+	return m_impl->empty();
 }
 
 bool uri::is_absolute() const
@@ -474,7 +557,9 @@ void uri::swap(uri &u) noexcept
 
 std::string uri::string() const
 {
-	return m_impl->m_s;
+	std::ostringstream os;
+	os << *this;
+	return os.str();
 }
 
 std::string uri::get_scheme() const
@@ -487,13 +572,11 @@ std::string uri::get_host() const
 	return m_impl->m_host;
 }
 
-std::filesystem::path uri::get_path() const
+uri uri::get_path() const
 {
-	std::filesystem::path result;
-
-	for (auto p: m_impl->m_path)
-		result /= decode_url(p.string());
-	
+	uri result;
+	result.m_impl->m_absolutePath = m_impl->m_absolutePath;
+	result.m_impl->m_path = m_impl->m_path;
 	return result;
 }
 
@@ -509,20 +592,27 @@ std::string uri::get_fragment() const
 
 void uri::set_path(const std::filesystem::path &p)
 {
-	m_impl->set_path(p);
+	// m_impl->set_path(p);
+
+	m_impl->m_path.clear();
+	for (auto pi : p)
+		m_impl->m_path.push_back(pi.string());
+	
+	m_impl->remove_dot_segments();
 }
 
-uri operator/(uri uri, const std::filesystem::path &rhs)
-{
-	uri.set_path(uri.get_path() / rhs);
-	return uri;
-}
+// uri operator/(uri uri, const std::filesystem::path &rhs)
+// {
+// 	uri.set_path(uri.get_path() / rhs);
+// 	return uri;
+// }
 
 // --------------------------------------------------------------------
 
 std::ostream &operator<<(std::ostream &os, const uri &url)
 {
-	os << url.string();
+	url.m_impl->write(os);
+
 	return os;
 }
 
@@ -560,16 +650,6 @@ std::string decode_url(std::string_view s)
 // --------------------------------------------------------------------
 // encode_url function
 
-const unsigned char kURLAcceptable[96] =
-{/* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
-	0,0,0,0,0,0,0,0,0,0,7,6,0,7,7,4,		/* 2x   !"#$%&'()*+,-./	 */
-	7,7,7,7,7,7,7,7,7,7,0,0,0,0,0,0,		/* 3x  0123456789:;<=>?	 */
-	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 4x  @ABCDEFGHIJKLMNO  */
-	7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,7,		/* 5X  PQRSTUVWXYZ[\]^_	 */
-	0,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,		/* 6x  `abcdefghijklmno	 */
-	7,7,7,7,7,7,7,7,7,7,7,0,0,0,0,0			/* 7X  pqrstuvwxyz{\}~	DEL */
-};
-
 std::string encode_url(std::string_view s)
 {
 	const char kHex[] = "0123456789abcdef";
@@ -579,7 +659,7 @@ std::string encode_url(std::string_view s)
 	for (auto c = s.begin(); c != s.end(); ++c)
 	{
 		unsigned char a = (unsigned char)*c;
-		if (not (a >= 32 and a < 128 and (kURLAcceptable[a - 32] & 4)))
+		if (not is_unreserved(a))
 		{
 			result += '%';
 			result += kHex[a >> 4];
@@ -591,5 +671,38 @@ std::string encode_url(std::string_view s)
 
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+bool is_valid_uri(const std::string& s)
+{
+	bool result = true;
+	try
+	{
+		uri u(s);
+	}
+	catch (...)
+	{
+		result = false;
+	}
+	return result;
+}
+
+bool is_fully_qualified_uri(const std::string& s)
+{
+	bool result = true;
+	try
+	{
+		uri u(s);
+		result = not (u.get_scheme().empty() or u.get_path().empty());
+	}
+	catch (...)
+	{
+		result = false;
+	}
+	return result;
+}
+
+
 
 } // namespace zeep::http
