@@ -190,7 +190,7 @@ void tag_processor_v2::process_text(xml::text &text, const scope &scope)
 		else
 		{
 			s.replace(i - 2, j - i + 4, m);
-			b = i + m.length();
+			b = i - 2 + m.length();
 		}
 	}
 
