@@ -134,9 +134,11 @@ void basic_template_processor::handle_file(const http::request& request, const s
 
 	reply.set_content(in.release(), mimetype);
 
+	using namespace date;
+	using namespace std::chrono;
+
 	std::stringstream s;
-	std::time_t lastWriteTime = system_clock::to_time_t(fileDate);
-	s << std::put_time(std::gmtime(&lastWriteTime), "%a, %d %b %Y %H:%M:%S GMT");
+	to_stream(s, "%a, %d %b %Y %H:%M:%S GMT", fileDate);
 
 	reply.set_header("Last-Modified", s.str());
 }

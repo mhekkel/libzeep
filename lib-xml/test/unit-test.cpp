@@ -5,6 +5,7 @@
 
 #include <zeep/xml/document.hpp>
 #include <zeep/exception.hpp>
+#include "../lib-xml/src/html-named-characters.hpp"
 
 using namespace std;
 namespace zx = zeep::xml;
@@ -599,4 +600,34 @@ BOOST_AUTO_TEST_CASE(security_test_1)
 	n.set_attribute("a", "a\xf6\"b");
 	std::stringstream ss;
 	BOOST_CHECK_THROW(ss << n, zeep::exception);
+}
+
+BOOST_AUTO_TEST_CASE(named_char_1)
+{
+	const zx::doctype::general_entity *c;
+
+	c = zx::get_named_character("AElig");
+	BOOST_TEST(c != nullptr);
+	BOOST_TEST(c->get_replacement() == "Æ");
+
+	c = zx::get_named_character("zwnj");
+	BOOST_TEST(c != nullptr);
+	BOOST_TEST(c->get_replacement() == "‌");
+
+	c = zx::get_named_character("supseteq");
+	BOOST_TEST(c != nullptr);
+	BOOST_TEST(c->get_replacement() == "⊇");
+}
+
+BOOST_AUTO_TEST_CASE(named_char_2)
+{
+	using namespace zx::literals;
+
+	auto a = R"(<!DOCTYPE html SYSTEM "about:legacy-compat" ><test xmlns:m="http://www.hekkelman.com">&supseteq;</test>)"_xml;
+
+	auto b = R"(<test xmlns:m="http://www.hekkelman.com">⊇</test>)"_xml;
+
+	BOOST_TEST((a == b) == true);
+	if (not (a == b))
+		std::cout << std::setw(2) << a << std::endl << b << std::endl;
 }

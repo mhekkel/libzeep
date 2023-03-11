@@ -3,6 +3,7 @@
 
 #include <zeep/config.hpp>
 
+#include <array>
 #include <iostream>
 #include <deque>
 
@@ -347,6 +348,8 @@ BOOST_AUTO_TEST_CASE(test_date_2)
 	s.serialize_element(t1);
 
 	BOOST_CHECK(doc == "<d>1966-06-27</d>"_xml);
+	if (not (doc == "<d>1966-06-27</d>"_xml))
+		std::cout << std::setw(2) << doc << std::endl;
 }
 
 struct time_t1
@@ -388,7 +391,8 @@ BOOST_AUTO_TEST_CASE(test_time_2)
 	s.serialize_element(t1);
 
 	BOOST_CHECK(doc == "<t>2022-12-06T01:02:03Z</t>"_xml or
-		doc == "<t>2022-12-06T01:02:03.000000000Z</t>"_xml);
+		doc == "<t>2022-12-06T01:02:03.000000000Z</t>"_xml or
+		doc == "<t>2022-12-06T01:02:03.0000000Z</t>"_xml);
 }
 
 // BOOST_AUTO_TEST_CASE(test_s_2)

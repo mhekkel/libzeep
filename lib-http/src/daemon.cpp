@@ -505,10 +505,10 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 
 		if (pid != -1)
 		{
-			if (WIFSIGNALED(status))
+			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
 				std::cerr << "child " << pid << " terminated by signal " << WTERMSIG(status) << std::endl;
-			else
-				std::cerr << "child terminated normally" << std::endl;
+			// else
+			// 	std::cerr << "child terminated normally" << std::endl;
 		}
 
 		// did the client crash within the time window?

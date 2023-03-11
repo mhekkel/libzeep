@@ -45,6 +45,7 @@ if(MSVC)
 
 	get_WIN32_WINNT(ver)
 	add_definitions(-D_WIN32_WINNT=${ver})
+	add_definitions(-DNOMINMAX=1)
 endif()
 
 # Optionally use mrc to create resources
@@ -71,7 +72,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 find_package(Boost 1.70.0 REQUIRED)
-find_package(date REQUIRED)
+find_package(date 3 REQUIRED)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -156,6 +157,8 @@ set(ZEEP_SRC
 	${PROJECT_SOURCE_DIR}/lib-xml/src/character-classification.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/doctype.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/document.cpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.hpp
+	${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/node.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
 	${PROJECT_SOURCE_DIR}/lib-xml/src/xpath.cpp

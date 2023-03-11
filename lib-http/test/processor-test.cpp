@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 
 		auto doc = R"(<?xml version="1.0"?>
 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-	<test m:text="${#dates.format('2019-08-07 12:14', '%e %B %Y, %H:%M')}" />
+	<test m:text="${#dates.format('2019-08-07T12:14:00', '%e %B %Y, %H:%M')}" />
 	</data>
 		)"_xml;
 
