@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(uri_2)
 	zeep::http::uri url("http://user:pass@[::1]/segment/index.html?query#frag");
 
 	BOOST_CHECK_EQUAL(url.get_scheme(), "http");
-	BOOST_CHECK_EQUAL(url.get_host(), "::1");
+	BOOST_CHECK_EQUAL(url.get_host(), "[::1]");
 	BOOST_CHECK_EQUAL(url.get_path().generic_string(), "segment/index.html");
 	BOOST_CHECK_EQUAL(url.get_query(), "query");
 	BOOST_CHECK_EQUAL(url.get_fragment(), "frag");
