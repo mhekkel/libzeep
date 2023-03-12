@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		// OK, fetch the login form then and pry the csrf token out of it
 		req.set_method("GET");
 		reply = simple_request(port, req);
-		BOOST_TEST(reply.get_status() == zh::ok);
+		BOOST_REQUIRE(reply.get_status() == zh::ok);
 
 		// copy the cookie
 		auto csrfCookie = reply.get_cookie("csrf-token");

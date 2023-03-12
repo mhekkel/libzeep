@@ -80,13 +80,19 @@ namespace zeep::http
 
 uri::uri(const std::string &url)
 {
+	parse(url.c_str());
+	remove_dot_segments();
+}
+
+uri::uri(const char *url)
+{
 	parse(url);
 	remove_dot_segments();
 }
 
 uri::uri(const std::string &url, const uri &base)
 {
-	parse(url);
+	parse(url.c_str());
 	transform(base);
 	remove_dot_segments();
 }
@@ -106,7 +112,14 @@ void uri::swap(uri &u)
 std::string uri::string() const
 {
 	std::ostringstream os;
-	os << *this;
+	write(os, true);
+	return os.str();
+}
+
+std::string uri::unencoded_string() const
+{
+	std::ostringstream os;
+	write(os, false);
 	return os.str();
 }
 
@@ -211,7 +224,7 @@ const char *uri::parse_hierpart(const char *cp)
 		{
 			m_absolutePath = true;
 
-			cp = parse_segment_nz(cp);
+			cp = parse_segment(cp);
 
 			while (*cp == '/')
 			{
@@ -334,7 +347,7 @@ const char *uri::parse_segment_nz_nc(const char *cp)
 	return cp;
 }
 
-void uri::parse(const std::string &s)
+void uri::parse(const char *s)
 {
 	m_scheme.clear();
 	m_userinfo.clear();
@@ -345,7 +358,7 @@ void uri::parse(const std::string &s)
 	m_fragment.clear();
 	m_absolutePath = false;
 
-	auto b = s.c_str();
+	auto b = s;
 
 	auto cp = parse_scheme(b);
 	cp = parse_hierpart(cp);
@@ -372,7 +385,8 @@ void uri::parse(const std::string &s)
 		m_fragment.assign(b, cp);
 	}
 
-	if (*cp != 0 or static_cast<std::string::size_type>(cp - b) != s.length())
+	// if (*cp != 0 or static_cast<std::string::size_type>(cp - b) != s.length())
+	if (*cp != 0)
 		throw uri_parse_error();
 }
 
@@ -452,7 +466,7 @@ void uri::transform(const uri &base)
 
 // --------------------------------------------------------------------
 
-void uri::write(std::ostream &os) const
+void uri::write(std::ostream &os, bool encoded) const
 {
 	static const char kHex[] = "0123456789abcdef";
 
@@ -485,7 +499,7 @@ void uri::write(std::ostream &os) const
 
 		for (auto c : segment)
 		{
-			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
+			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
 				os << c;
 			else
 				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
@@ -498,7 +512,7 @@ void uri::write(std::ostream &os) const
 
 		for (auto c : m_query)
 		{
-			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
 				os << c;
 			else
 				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
@@ -511,7 +525,7 @@ void uri::write(std::ostream &os) const
 
 		for (auto c : m_fragment)
 		{
-			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
 				os << c;
 			else
 				os << '%' << (kHex[c >> 4]) << kHex[c & 15];

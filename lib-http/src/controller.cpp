@@ -14,36 +14,18 @@
 namespace zeep::http
 {
 
-thread_local request* controller::s_request = nullptr;
+thread_local request *controller::s_request = nullptr;
 
-controller::controller(const std::string& prefix_path)
+controller::controller(const std::string &prefix_path)
 	: m_prefix_path(prefix_path)
 {
-	while (not m_prefix_path.empty())
-	{
-		// strip leading slashes
-		if (m_prefix_path.front() == '/')
-		{
-			m_prefix_path.erase(m_prefix_path.begin());
-			continue;
-		}
-
-		// and trailing slashes
-		if (m_prefix_path.back() == '/')
-		{
-			m_prefix_path.pop_back();
-			continue;
-		}
-
-		break;
-	}
 }
 
 controller::~controller()
 {
 }
 
-bool controller::dispatch_request(boost::asio::ip::tcp::socket& /*socket*/, request& req, reply& rep)
+bool controller::dispatch_request(boost::asio::ip::tcp::socket & /*socket*/, request &req, reply &rep)
 {
 	bool result = false;
 
@@ -62,49 +44,46 @@ bool controller::dispatch_request(boost::asio::ip::tcp::socket& /*socket*/, requ
 	return result;
 }
 
-bool controller::path_matches_prefix(const std::string& path) const
+bool controller::path_matches_prefix(const uri &path) const
 {
 	bool result = m_prefix_path.empty();
-	
+
 	if (not result)
 	{
-		std::string::size_type offset = 0;
-		while (offset < path.length() and path[offset] == '/')
-			++offset;
+		auto ab = m_prefix_path.get_segments().begin(), ae = m_prefix_path.get_segments().end();
+		auto bb = path.get_segments().begin(), be = path.get_segments().end();
 
-		result = path.compare(offset, m_prefix_path.length(), m_prefix_path) == 0;
-
-		if (result)
-			result = path.length() == m_prefix_path.length() + offset or path[offset + m_prefix_path.length()] == '/';
+		do
+		{
+			result = ab != ae and bb != be and *ab == *bb;
+			++ab;
+			++bb;
+		}
+		while (result and ab != ae);
 	}
 
 	return result;
 }
 
-std::string controller::get_prefixless_path(const request& req) const
+uri controller::get_prefixless_path(const request &req) const
 {
-	uri u(req.get_uri(), uri(m_prefix_path));
-	return u.string();
+	auto path = req.get_uri().get_path();
 
-#warning "TODO: Needs fix"
-	// auto result = uri.is_absolute()
-	// 	? uri.get_path().lexically_relative("/")
-	// 	: uri.get_path();
-	// auto result = u.get_path().string();
+	auto ab = m_prefix_path.get_segments().begin(), ae = m_prefix_path.get_segments().end();
+	auto bb = path.get_segments().begin(), be = path.get_segments().end();
 
-	// if (not m_prefix_path.empty())
-	// {
-	// 	result = result.lexically_relative(m_prefix_path);
+	while (ab != ae and bb != be)
+	{
+		if (*ab != *be)
+			throw zeep::exception("Controller does not have the same prefix as the request");
+		++ab;
+		++bb;
+	}
 
-	// 	if (not result.empty() and result.begin()->string() == "..")
-	// 	{
-	// 		// assert(false);
-	// 		throw std::logic_error("Controller does not have the prefix path for this request");
-	// 	}
-	// }
+	static_assert(std::is_constructible_v<std::string, typename std::vector<std::string>::iterator::value_type>, "test");
 
-	// return result == "." ? "" : result.generic_string();
 
+	return { bb, be };
 }
 
 json::element controller::get_credentials() const
@@ -123,7 +102,7 @@ std::string controller::get_remote_address() const
 	return result;
 }
 
-bool controller::has_role(const std::string& role) const
+bool controller::has_role(const std::string &role) const
 {
 	auto credentials = get_credentials();
 	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
@@ -140,4 +119,4 @@ void controller::get_options(const request &req, reply &rep)
 		m_server->get_options_for_request(req, rep);
 }
 
-}
+} // namespace zeep::http

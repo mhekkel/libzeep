@@ -39,8 +39,20 @@ class uri
 	/// \brief constructor that parses the URI in \a s, throws exception if not valid
 	uri(const std::string &s);
 
+	/// \brief constructor that parses the URI in \a s, throws exception if not valid
+	uri(const char *s);
+
 	/// \brief constructor that parses the URI in \a s relative to the baseuri in \a base, throws exception if not valid
 	uri(const std::string &s, const uri &base);
+
+	/// \brief constructor taking two iterators into path segments, for a relative path
+	template<typename InputIterator, std::enable_if_t<std::is_constructible_v<std::string, typename InputIterator::value_type>, int> = 0>
+	uri(InputIterator b, InputIterator e)
+		: uri()
+	{
+		for (auto i = b; i != e; ++i)
+			m_path.emplace_back(*i);
+	}
 
 	~uri() = default;
 
@@ -165,11 +177,13 @@ class uri
 	/// \brief Return the uri as a string
 	std::string string() const;
 
+	/// \brief Return the uri as a string, without encoded characters
+	std::string unencoded_string() const;
 
 	/// \brief Write the uri in \a u to the stream \a os
 	friend std::ostream &operator<<(std::ostream &os, const uri &u)
 	{
-		u.write(os);
+		u.write(os, true);
 		return os;
 	}
 
@@ -180,6 +194,20 @@ class uri
 	friend uri operator/(uri lhs, const uri &rhs)
 	{
 		return lhs /= rhs;
+	}
+
+	/// \brief Comparison
+	bool operator==(const uri &rhs) const
+	{
+		return 
+			m_scheme == rhs.m_scheme and
+			m_userinfo == rhs.m_userinfo and
+			m_host == rhs.m_host and
+			m_port == rhs.m_port and
+			m_path == rhs.m_path and
+			m_query == rhs.m_query and
+			m_fragment == rhs.m_fragment and
+			m_absolutePath == rhs.m_absolutePath;
 	}
 
   private:
@@ -275,7 +303,7 @@ class uri
 		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or *cp == '@' or is_pct_encoded(cp);
 	}
 
-	void parse(const std::string &s);
+	void parse(const char *s);
 	void transform(const uri &base);
 	void remove_dot_segments();
 
@@ -290,7 +318,7 @@ class uri
 	const char *parse_host(const char *ch);
 	const char *parse_port(const char *ch);
 
-	void write(std::ostream &os) const;
+	void write(std::ostream &os, bool encoded) const;
 
 	// --------------------------------------------------------------------
 

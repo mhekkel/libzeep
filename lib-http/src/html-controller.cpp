@@ -46,12 +46,13 @@ void html_controller::handle_file(const request& request, const scope& scope, re
 
 bool html_controller::handle_request(request& req, reply& rep)
 {
-	std::string uri = get_prefixless_path(req);
+	auto uri = get_prefixless_path(req);
+	auto path = uri.string();
 
 	// set up the scope by putting some globals in it
 	scope scope(get_server(), req);
 
-	scope.put("baseuri", uri);
+	scope.put("baseuri", path);
 
 	init_scope(scope);
 
@@ -65,13 +66,13 @@ bool html_controller::handle_request(request& req, reply& rep)
 
 		if (mp->m_path_params.empty())
 		{
-			if (mp->m_path != uri)
+			if (mp->m_path != path)
 				continue;
 		}
 		else
 		{
 			std::smatch m;
-			if (not std::regex_match(uri, m, mp->m_rx))
+			if (not std::regex_match(path, m, mp->m_rx))
 				continue;
 
 			for (size_t i = 0; i < mp->m_path_params.size(); ++i)
@@ -94,9 +95,9 @@ bool html_controller::handle_request(request& req, reply& rep)
 	if (not result)
 	{
 		auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
-			[uri, method=req.get_method()](const mount_point& m)
+			[&uri, method=req.get_method()](const mount_point& m)
 			{
-				// return m.path == uri and
+				// return m.path == path and
 				return glob_match(uri, m.path) and
 					(	method == "HEAD" or
 						method == "OPTIONS" or

@@ -17,6 +17,7 @@
 #include <boost/asio.hpp>
 
 #include <zeep/http/header.hpp>
+#include <zeep/http/uri.hpp>
 #include <zeep/json/element.hpp>
 
 namespace zeep::http
@@ -77,7 +78,7 @@ class request
 	using param = header;	// alias name
 	using cookie_directive = header;	
 
-	request(const std::string& method, const std::string& uri, std::tuple<int,int> version = { 1, 0 },
+	request(const std::string& method, const uri& uri, std::tuple<int,int> version = { 1, 0 },
 		std::vector<header>&& headers = {}, std::string&& payload = {});
 
 	request(const request& req);
@@ -98,10 +99,10 @@ class request
 	const std::string& get_method() const									{ return m_method; }
 
 	/// \brief Return the original URI as requested
-	std::string get_uri() const												{ return m_uri; }
+	uri get_uri() const														{ return m_uri; }
 
 	/// \brief Set the URI
-	void set_uri(const std::string& uri)									{ m_uri = uri; }
+	void set_uri(const uri& uri)											{ m_uri = uri; }
 
 	/// \brief Get the address of the connecting remote
 	std::string get_remote_address() const									{ return m_remote_address; }
@@ -109,7 +110,7 @@ class request
 	/// \brief Get the entire request line (convenience method)
 	std::string get_request_line() const
 	{
-		return get_method() + ' ' + get_uri() + " HTTP/" + std::string(m_version, m_version + 3);
+		return m_method + ' ' + m_uri.string() + " HTTP/" + std::string(m_version, m_version + 3);
 	}
 
 	/// \brief Return the payload
@@ -254,7 +255,7 @@ class request
 	uint16_t m_local_port = 80;						///< Local endpoint port
 
 	std::string m_method = "UNDEFINED";				///< POST, GET, etc.
-	std::string m_uri;								///< The uri as requested
+	uri m_uri;										///< The uri as requested
 	char m_version[3];								///< The version string
 	std::vector<header> m_headers;					///< A list with zeep::http::header values
 	std::string m_payload;  						///< For POST requests
@@ -266,6 +267,7 @@ class request
 	std::string m_remote_address;					///< Address of connecting client
 
 	mutable std::unique_ptr<std::locale> m_locale;
+	mutable std::string m_request_line;
 };
 
 } // namespace zeep::http

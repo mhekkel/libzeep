@@ -11,11 +11,12 @@
 
 #include <zeep/config.hpp>
 
-#include <boost/asio/buffer.hpp>
-
 #include <zeep/http/header.hpp>
+#include <zeep/http/uri.hpp>
 #include <zeep/json/element.hpp>
 #include <zeep/xml/document.hpp>
+
+#include <boost/asio/buffer.hpp>
 
 namespace zeep::http
 {
@@ -151,8 +152,8 @@ class reply
 	static reply stock_reply(status_type inStatus, const std::string &info);
 
 	/// Create a standard redirect reply with the specified \a location
-	static reply redirect(const std::string &location);
-	static reply redirect(const std::string &location, status_type status);
+	static reply redirect(const uri &location);
+	static reply redirect(const uri &location, status_type status);
 
 	void set_status(status_type status) { m_status = status; }
 	status_type get_status() const { return m_status; }

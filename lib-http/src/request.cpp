@@ -9,14 +9,13 @@
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/json/parser.hpp>
-#include <zeep/http/uri.hpp>
 
 namespace fs = std::filesystem;
 
 namespace zeep::http
 {
 
-request::request(const std::string& method, const std::string& uri, std::tuple<int,int> version,
+request::request(const std::string& method, const uri& uri, std::tuple<int,int> version,
 		std::vector<header>&& headers, std::string&& payload)
 	: m_method(method)
 	, m_uri(uri)
@@ -199,7 +198,7 @@ void request::remove_header(const char* name)
 		m_headers.end());
 }
 
-std::pair<std::string,bool> get_urlencoded_parameter(const std::string& s, const char* name)
+std::pair<std::string,bool> get_urldecoded_parameter(const std::string& s, const char* name)
 {
 	std::string::size_type b = 0;
 	std::string result;
@@ -240,17 +239,16 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 
 	if (starts_with(contentType, "application/x-www-form-urlencoded"))
 	{
-		tie(result, found) = get_urlencoded_parameter(m_payload, name);
+		tie(result, found) = get_urldecoded_parameter(m_payload, name);
 		if (found)
 			return std::make_tuple(result, true);
 	}
 
-	uri uri(m_uri);
-	auto query = uri.get_query();
+	auto query = m_uri.get_query();
 
 	if (not query.empty())
 	{
-		tie(result, found) = get_urlencoded_parameter(query, name);
+		tie(result, found) = get_urldecoded_parameter(query, name);
 		if (found)
 			return std::make_tuple(result, true);
 	}
@@ -358,10 +356,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 			ps = m_payload;
 	}
 	else if (m_method == "GET" or m_method == "PUT")
-	{
-		uri uri(m_uri);
-		ps = uri.get_query();
-	}
+		ps = m_uri.get_query();
 
 	std::multimap<std::string,std::string> parameters;
 
@@ -392,67 +387,6 @@ std::multimap<std::string,std::string> request::get_parameters() const
 			parameters.emplace(decode_url(name), decode_url(value));
 		}
 	}
-
-	// std::multimap<std::string,std::string> parameters;
-
-	// for (auto m : { "POST", "GET" })
-	// {
-	// 	std::string ps;
-
-	// 	// skip m_payload unless this is a POST
-
-	// 	switch (m)
-	// 	{
-	// 		case "POST":
-	// 			if (m_method == m)
-	// 			{
-	// 				std::string contentType = get_header("Content-Type");
-					
-	// 				if (starts_with(contentType, "application/x-www-form-urlencoded"))
-	// 					ps = m_payload;
-	// 			}
-	// 			break;
-			
-	// 		case "GET":
-	// 		{
-	// 			std::string::size_type d = m_uri.find('?');
-	// 			if (d != std::string::npos)
-	// 				ps = m_uri.substr(d + 1);
-	// 			break;
-	// 		}
-
-	// 		default:
-	// 			;
-	// 	}
-
-	// 	while (not ps.empty())
-	// 	{
-	// 		std::string::size_type e = ps.find_first_of("&;");
-	// 		std::string param;
-			
-	// 		if (e != std::string::npos)
-	// 		{
-	// 			param = ps.substr(0, e);
-	// 			ps.erase(0, e + 1);
-	// 		}
-	// 		else
-	// 			swap(param, ps);
-			
-	// 		if (not param.empty())
-	// 		{
-	// 			std::string name, value;
-		
-	// 			std::string::size_type d = param.find('=');
-	// 			if (d != std::string::npos)
-	// 			{
-	// 				name = param.substr(0, d);
-	// 				value = param.substr(d + 1);
-	// 			}
-
-	// 			parameters.emplace(decode_url(name), decode_url(value));
-	// 		}
-	// 	}
-	// }
 
 	return parameters;
 }
@@ -801,11 +735,6 @@ std::locale& request::get_locale() const
 	return *m_locale;
 }
 
-// std::string request::get_request_line() const
-// {
-// 	return to_string(m_method) + std::string{' '} + m_uri + " HTTP/" + std::to_string(m_http_version_major) + '.' + std::to_string(m_http_version_minor);
-// }
-
 void request::set_header(const std::string& name, const std::string& value)
 {
 	bool set = false;
@@ -837,16 +766,15 @@ std::vector<boost::asio::const_buffer> request::to_buffers() const
 {
 	std::vector<boost::asio::const_buffer> result;
 
-	// m_request_line = get_request_line();
+	m_request_line = get_request_line();
 
-	// m_request_line = m_method + ' ' + m_uri + " HTTP/" + std::to_string(m_http_version_major) + '.' + std::to_string(m_http_version_minor);
-
-	result.push_back(boost::asio::buffer(m_method));
-	result.push_back(boost::asio::buffer(kSpace));
-	result.push_back(boost::asio::buffer(m_uri));
-	result.push_back(boost::asio::buffer(kHTTPSlash));
-	result.push_back(boost::asio::buffer(m_version));
+	// result.push_back(boost::asio::buffer(m_method));
+	// result.push_back(boost::asio::buffer(kSpace));
+	// result.push_back(boost::asio::buffer(m_uri));
+	// result.push_back(boost::asio::buffer(kHTTPSlash));
+	// result.push_back(boost::asio::buffer(m_version));
 	
+	result.push_back(boost::asio::buffer(m_request_line));
 	result.push_back(boost::asio::buffer(kCRLF));
 	
 	for (const header& h: m_headers)

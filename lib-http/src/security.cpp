@@ -62,10 +62,7 @@ void security_context::validate_request(request &req) const
 
 	for (;;)
 	{
-		std::string path = uri(req.get_uri()).get_path().string();
-
-		if (path.front() != '/')
-			path.insert(path.begin(), '/');
+		auto path = req.get_uri();
 
 		std::set<std::string> roles;
 

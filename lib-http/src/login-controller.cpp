@@ -141,7 +141,7 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 		csrf->set_attribute("value", csrf_cookie);
 
 	for (auto uri : doc.find("//input[@name='uri']"))
-		uri->set_attribute("value", req.get_uri());
+		uri->set_attribute("value", req.get_uri().string());
 
 	reply.set_content(doc);
 	reply.set_status(status_type::unauthorized);
@@ -175,7 +175,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	if (csrf != req.get_cookie("csrf-token"))
 		throw status_type::forbidden;
 
-	auto uri = req.get_parameter("uri");
+	uri uri(req.get_parameter("uri"));
 	auto rep = create_redirect_for_request(req);
 
 	try
@@ -195,7 +195,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 		pw->set_attribute("class", pw->get_attribute("class") + " is-invalid");
 
 		for (auto i_uri : doc.find("//input[@name='uri']"))
-			i_uri->set_attribute("value", uri);
+			i_uri->set_attribute("value", uri.string());
 
 		rep.set_content(doc);
 
@@ -217,35 +217,8 @@ reply login_controller::handle_logout(const scope &scope)
 
 reply login_controller::create_redirect_for_request(const request &req)
 {
-	std::string redirect_to{ "/" };
-	auto context = get_context_name();
-	if (not context.empty())
-	{
-		if (is_fully_qualified_uri(context))
-			redirect_to = context;
-		else
-			redirect_to += context;
-	}
-
-	auto uri = req.get_parameter("uri");
-	if (not uri.empty() and not std::regex_match(uri, std::regex(R"(.*logout$)")) and is_valid_uri(uri))
-	{
-		if (is_fully_qualified_uri(uri))
-			redirect_to = uri;
-		else if (uri != "/")
-		{
-			if (redirect_to.back() != '/' and uri.front() != '/')
-				redirect_to += '/';
-
-			auto p = redirect_to.length() - 1;
-			redirect_to += uri;
-
-			while ((p = redirect_to.find("//", p)) != std::string::npos)
-				redirect_to.erase(p, 1);
-		}
-	}
-
-	return reply::redirect(redirect_to, see_other);
+	uri uri(req.get_parameter("uri"), get_context_name());
+	return reply::redirect(uri, see_other);
 }
 
 } // namespace zeep::http

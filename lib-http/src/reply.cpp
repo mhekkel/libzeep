@@ -569,7 +569,7 @@ reply reply::stock_reply(status_type status)
 	return stock_reply(status, "");
 }
 
-reply reply::redirect(const std::string &location, status_type status)
+reply reply::redirect(const uri &location, status_type status)
 {
 	reply result;
 
@@ -580,18 +580,14 @@ reply reply::redirect(const std::string &location, status_type status)
 		"<html><head><title>" + text + "</title></head><body><h1>" +
  		std::to_string(status) + ' ' + text + "</h1></body></html>";
 
-	// Check if the location is a valid URL
-	if (not is_valid_uri(location))
-		throw exception("Invalid redirect location");
-
-	result.set_header("Location", location);
+	result.set_header("Location", location.string());
 	result.set_header("Content-Length", std::to_string(result.m_content.length()));
 	result.set_header("Content-Type", "text/html; charset=utf-8");
 
 	return result;
 }
 
-reply reply::redirect(const std::string &location)
+reply reply::redirect(const uri &location)
 {
 	return redirect(location, moved_temporarily);
 }

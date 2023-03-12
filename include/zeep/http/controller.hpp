@@ -42,13 +42,13 @@ class controller
 	virtual bool handle_request(request &req, reply &rep) = 0;
 
 	/// \brief returns the defined prefix path
-	std::string get_prefix() const { return m_prefix_path; }
+	uri get_prefix() const { return m_prefix_path; }
 
 	/// \brief return whether this uri request path matches our prefix
-	bool path_matches_prefix(const std::string &path) const;
+	bool path_matches_prefix(const uri &path) const;
 
 	/// \brief return the path with the prefix path stripped off
-	std::string get_prefixless_path(const request &req) const;
+	uri get_prefixless_path(const request &req) const;
 
 	/// \brief bind this controller to \a server
 	virtual void set_server(basic_server *server)
@@ -85,7 +85,7 @@ class controller
 	controller(const controller &) = delete;
 	controller &operator=(const controller &) = delete;
 
-	std::string m_prefix_path;
+	uri m_prefix_path;
 	basic_server *m_server = nullptr;
 	static thread_local request *s_request;
 };

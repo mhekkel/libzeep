@@ -16,7 +16,6 @@
 #include <zeep/crypto.hpp>
 #include <zeep/http/el-processing.hpp>
 #include <zeep/http/server.hpp>
-#include <zeep/http/uri.hpp>
 #include <zeep/unicode-support.hpp>
 
 #include "format.hpp"
@@ -1231,30 +1230,8 @@ object interpreter::parse_link_template_expr()
 		}
 	}
 
-	// fully qualified url's should be used as is
-	if (not is_fully_qualified_uri(path))
-	{
-		auto context = m_scope.get_context_name();
-
-		if (not context.empty())
-		{
-			// in case of a path starting with a forward slash, we prefix the URL with the context_name of the server
-			if (path.front() == '/')
-				path = context + path;
-			else
-			{
-				auto requested = m_scope.get_request().get_uri();
-
-				while (not requested.empty() and requested.back() != '/')
-					requested.pop_back();
-
-				if (not requested.empty() and requested.front() == '/' and context.back() == '/')
-					context.pop_back();
-
-				path = context + requested + path;
-			}
-		}
-	}
+	auto context = m_scope.get_context_name();
+	path = uri(path, context).string();
 
 	if (m_lookahead == token_type::lparen)
 	{
@@ -1632,9 +1609,9 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 		object result;
 
 		if (method == "getRequestURI")
-			result = scope.get_request().get_uri();
+			result = scope.get_request().get_uri().string();
 		else if (method == "getRequestURL")
-			result = scope.get_request().get_uri();
+			result = scope.get_request().get_uri().string();
 		else if ((method == "getParameter") and params.size() == 1)
 			result = scope.get_request().get_parameter(params[0].as<std::string>().c_str());
 

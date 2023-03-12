@@ -93,9 +93,9 @@ class soap_controller : public controller
 		, m_ns(ns)
 		, m_service(service)
 	{
-		while (m_prefix_path.front() == '/')
-			m_prefix_path.erase(0, 1);
-		m_location = m_prefix_path;
+		// while (m_prefix_path.front() == '/')
+		// 	m_prefix_path.erase(0, 1);
+		m_location = m_prefix_path.string();
 	}
 
 	~soap_controller()

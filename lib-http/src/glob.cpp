@@ -5,8 +5,8 @@
 
 #include <regex>
 
-#include <zeep/unicode-support.hpp>
 #include "glob.hpp"
+#include <zeep/unicode-support.hpp>
 
 // --------------------------------------------------------------------
 
@@ -15,106 +15,106 @@ namespace zeep::http
 namespace
 {
 
-bool Match(const char* pattern, const char* name)
-{
-	for (;;)
+	bool Match(const char *pattern, const char *name)
 	{
-		char op = *pattern;
-
-		switch (op)
+		for (;;)
 		{
-			case 0:
-				return *name == 0;
-			case '*':
-			{
-				// separate shortcut
-				if (pattern[1] == '*' and pattern[2] == '/' and Match(pattern + 3, name))
-					return true;
+			char op = *pattern;
 
-				// ends with **
-				if (pattern[1] == '*' and pattern[2] == 0)
-					return true;
-				
-				// ends with *
-				if (pattern[1] == 0)
+			switch (op)
+			{
+				case 0:
+					return *name == 0;
+				case '*':
 				{
+					// separate shortcut
+					if (pattern[1] == '*' and pattern[2] == '/' and Match(pattern + 3, name))
+						return true;
+
+					// ends with **
+					if (pattern[1] == '*' and pattern[2] == 0)
+						return true;
+
+					// ends with *
+					if (pattern[1] == 0)
+					{
+						while (*name)
+						{
+							if (*name == '/' or *name == '\\')
+								return false;
+							++name;
+						}
+						return true;
+					}
+
+					// contains **
+					if (pattern[1] == '*')
+					{
+						while (*name)
+						{
+							if (Match(pattern + 2, name))
+								return true;
+							++name;
+						}
+						return false;
+					}
+
+					// contains just *
 					while (*name)
 					{
-						if (*name == '/' or *name == '\\')
+						if (Match(pattern + 1, name))
+							return true;
+						if (*name == '/')
 							return false;
 						++name;
 					}
-					return true;
-				}
 
-				// contains **
-				if (pattern[1] == '*')
-				{
-					while (*name)
-					{
-						if (Match(pattern + 2, name))
-							return true;
-						++name;
-					}
 					return false;
 				}
-
-				// contains just *
-				while (*name)
-				{
-					if (Match(pattern + 1, name))
-						return true;
-					if (*name == '/')
+				case '?':
+					if (*name)
+						return Match(pattern + 1, name + 1);
+					else
 						return false;
-					++name;
-				}
-
-				return false;
+				default:
+					if ((*name == '/' and op == '\\') or
+						(*name == '\\' and op == '/') or
+						tolower(*name) == tolower(op))
+					{
+						++name;
+						++pattern;
+					}
+					else
+						return false;
+					break;
 			}
-			case '?':
-				if (*name)
-					return Match(pattern + 1, name + 1);
-				else
-					return false;
-			default:
-				if ((*name == '/' and op == '\\') or
-					(*name == '\\' and op == '/') or
-					tolower(*name) == tolower(op))
-				{
-					++name;
-					++pattern;
-				}
-				else
-					return false;
-				break;
 		}
 	}
-}
 
-void expand_group(const std::string& pattern, std::vector<std::string>& expanded)
-{
-	static std::regex rx(R"(\{([^{},]*,[^{}]*)\})");
-
-	std::smatch m;
-	if (std::regex_search(pattern, m, rx))
+	void expand_group(const std::string &pattern, std::vector<std::string> &expanded)
 	{
-		std::vector<std::string> options;
+		static std::regex rx(R"(\{([^{},]*,[^{}]*)\})");
 
-		std::string group = m[1].str();
-		split(options, group, ",", false);
+		std::smatch m;
+		if (std::regex_search(pattern, m, rx))
+		{
+			std::vector<std::string> options;
 
-		for (std::string& option : options)
-			expand_group(m.prefix().str() + option + m.suffix().str(), expanded);
+			std::string group = m[1].str();
+			split(options, group, ",", false);
+
+			for (std::string &option : options)
+				expand_group(m.prefix().str() + option + m.suffix().str(), expanded);
+		}
+		else
+			expanded.push_back(pattern);
 	}
-	else
-		expanded.push_back(pattern);
-}
 
-}
+} // namespace
 
 // --------------------------------------------------------------------
 
-bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
+bool glob_match(const std::filesystem::path &path, std::string glob_pattern)
 {
 	bool result = path.empty() and glob_pattern.empty();
 
@@ -125,12 +125,10 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 	split(patterns, glob_pattern, ";");
 
 	std::vector<std::string> expandedpatterns;
-	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string& pattern)
-	{
-		expand_group(pattern, expandedpatterns);
-	});
+	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string &pattern)
+		{ expand_group(pattern, expandedpatterns); });
 
-	for (std::string& pat : expandedpatterns)
+	for (std::string &pat : expandedpatterns)
 	{
 		if ((path.empty() and pat.empty()) or
 			Match(pat.c_str(), path.generic_string().c_str()))
@@ -143,5 +141,33 @@ bool glob_match(const std::filesystem::path& path, std::string glob_pattern)
 	return result;
 }
 
+// --------------------------------------------------------------------
+
+bool glob_match(const uri &path, std::string glob_pattern)
+{
+	bool result = path.empty() and glob_pattern.empty();
+
+	if (not glob_pattern.empty() and glob_pattern.back() == '/')
+		glob_pattern += "**";
+
+	std::vector<std::string> patterns;
+	split(patterns, glob_pattern, ";");
+
+	std::vector<std::string> expandedpatterns;
+	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string &pattern)
+		{ expand_group(pattern, expandedpatterns); });
+
+	for (std::string &pat : expandedpatterns)
+	{
+		if ((path.empty() and pat.empty()) or
+			Match(pat.c_str(), path.get_path().string().c_str()))
+		{
+			result = true;
+			break;
+		}
+	}
+
+	return result;
 }
 
+} // namespace zeep::http
