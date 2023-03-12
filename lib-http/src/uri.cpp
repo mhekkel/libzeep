@@ -114,6 +114,8 @@ constexpr bool is_xdigit(char ch)
 		(ch >= 'A' and ch <= 'F');
 }
 
+const char kHex[] = "0123456789abcdef";
+
 struct uri_impl
 {
 	uri_impl() = default;
@@ -198,14 +200,41 @@ struct uri_impl
 			if (write_slash)
 				os << '/';
 			write_slash = true;
-			os << encode_url(segment);
+
+			for (auto c : segment)
+			{
+				if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
+					os << c;
+				else
+					os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+			}
 		}
 
 		if (not m_query.empty())
-			os << '?' << encode_url(m_query);
+		{
+			os << '?';
+
+			for (auto c : m_query)
+			{
+				if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+					os << c;
+				else
+					os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+			}
+		}
 		
 		if (not m_fragment.empty())
-			os << '#' << encode_url(m_fragment);
+		{
+			os << '#';
+
+			for (auto c : m_fragment)
+			{
+				if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+					os << c;
+				else
+					os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+			}
+		}
 	}
 
 	std::string m_scheme;
@@ -274,7 +303,7 @@ const char *uri_impl::parse_hierpart(const char *cp)
 			}
 		}
 	}
-	else if (*cp != '?' and *cp != '#')
+	else if (*cp != '?' and *cp != '#' and *cp != 0)
 	{
 		cp = parse_segment_nz(cp);
 		while (*cp == '/')
@@ -424,8 +453,6 @@ void uri_impl::parse(const std::string &s)
 		m_fragment.assign(b, cp);
 	}
 
-	remove_dot_segments();
-
 	if (*cp != 0 or (cp - s.c_str()) != s.length())
 		throw uri_parse_error();
 }
@@ -435,11 +462,19 @@ void uri_impl::remove_dot_segments()
 	std::vector<std::string> out;
 
 	auto in = m_path.begin();
+
 	while (in != m_path.end())
 	{
 		if (*in == ".")
 		{
 			++in;
+			
+			if (in == m_path.end())
+			{
+				out.push_back({});
+				break;
+			}
+
 			continue;
 		}
 
@@ -447,7 +482,15 @@ void uri_impl::remove_dot_segments()
 		{
 			if (not out.empty())
 				out.pop_back();
+
 			++in;
+
+			if (in == m_path.end())
+			{
+				out.push_back({});
+				break;
+			}
+
 			continue;
 		}
 
@@ -498,12 +541,14 @@ uri::uri()
 uri::uri(const std::string &url)
 	: m_impl(new uri_impl{url})
 {
+	m_impl->remove_dot_segments();
 }
 
 uri::uri(const std::string &s, const uri &base)
 	: m_impl(new uri_impl{s})
 {
 	m_impl->transform(*base.m_impl);
+	m_impl->remove_dot_segments();
 }
 
 uri::uri(const uri &u)
