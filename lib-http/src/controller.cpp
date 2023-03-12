@@ -83,24 +83,28 @@ bool controller::path_matches_prefix(const std::string& path) const
 
 std::string controller::get_prefixless_path(const request& req) const
 {
-	uri uri(req.get_uri());
+	uri u(req.get_uri(), uri(m_prefix_path));
+	return u.string();
 
-	auto result = uri.is_absolute()
-		? uri.get_path().lexically_relative("/")
-		: uri.get_path();
+#warning "TODO: Needs fix"
+	// auto result = uri.is_absolute()
+	// 	? uri.get_path().lexically_relative("/")
+	// 	: uri.get_path();
+	// auto result = u.get_path().string();
 
-	if (not m_prefix_path.empty())
-	{
-		result = result.lexically_relative(m_prefix_path);
+	// if (not m_prefix_path.empty())
+	// {
+	// 	result = result.lexically_relative(m_prefix_path);
 
-		if (not result.empty() and result.begin()->string() == "..")
-		{
-			// assert(false);
-			throw std::logic_error("Controller does not have the prefix path for this request");
-		}
-	}
+	// 	if (not result.empty() and result.begin()->string() == "..")
+	// 	{
+	// 		// assert(false);
+	// 		throw std::logic_error("Controller does not have the prefix path for this request");
+	// 	}
+	// }
 
-	return result == "." ? "" : result.generic_string();
+	// return result == "." ? "" : result.generic_string();
+
 }
 
 json::element controller::get_credentials() const

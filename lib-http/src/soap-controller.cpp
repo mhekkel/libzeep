@@ -66,7 +66,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 {
 	bool result = false;
 
-	std::string p = uri(req.get_uri()).get_path().generic_string();
+	std::string p = uri(req.get_uri()).get_path().string();
 	while (p.front() == '/')
 		p.erase(0, 1);
 	

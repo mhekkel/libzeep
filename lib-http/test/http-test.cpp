@@ -282,4 +282,40 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 	t.join();
 }
 
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(long_filename_test_1)
+{
+	// start up a http server and stop it again
+
+	zh::daemon d([]() {
+		auto s = new zh::server;
+		s->add_controller(new my_controller());
+		return s;
+	}, "zeep-http-test");
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+
+	std::cerr << "started daemon at port " << port << std::endl;
+
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
+
+	try
+	{
+		auto reply = simple_request(port, "GET /%E3%80%82%E7%84%B6%E8%80%8C%EF%BC%8C%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84%E6%98%AF%EF%BC%8C%E8%AF%A5%E7%BD%91%E7%AB%99%E5%B7%B2%E7%BB%8F%E5%BE%88%E4%B9%85%E6%B2%A1%E6%9C%89%E6%9B%B4%E6%96%B0%E4%BA%86%EF%BC%8C%E5%9B%A0%E6%AD%A4%E5%8F%AF%E8%83%BD%E6%97%A0%E6%B3%95%E6%8F%90%E4%BE%9B%E6%9C%80%E6%96%B0%E7%9A%84%E8%BD%AF%E4%BB%B6%E7%89%88%E6%9C%AC%E5%92%8C%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90%E3%80%82 HTTP/1.1\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+
+	zeep::signal_catcher::signal_hangup(t);
+
+	t.join();
+}
 
