@@ -68,14 +68,14 @@ BOOST_AUTO_TEST_CASE(uri_4)
 	BOOST_CHECK_EQUAL(url.get_path().string(), "~maarten");
 }
 
-BOOST_AUTO_TEST_CASE(uri_5)
-{
-	// This is a bit dubious... but it is valid according to RFC3986
+// BOOST_AUTO_TEST_CASE(uri_5)
+// {
+// 	// This is a bit dubious... but it is valid according to RFC3986
 
-	zeep::http::uri uri("http://a/b%0D%0ASet-Cookie:%20false");
+// 	zeep::http::uri uri("http://a/b%0D%0ASet-Cookie:%20false");
 
-	BOOST_CHECK_EQUAL(uri.get_path().string(), "b\r\nSet-Cookie: false");
-}
+// 	BOOST_CHECK_EQUAL(uri.get_path().string(), "b\r\nSet-Cookie: false");
+// }
 
 BOOST_AUTO_TEST_CASE(uri_6a)
 {

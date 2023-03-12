@@ -74,180 +74,53 @@ namespace zeep::http
 
 // --------------------------------------------------------------------
 
-// Let's try a parser, since regular expressions can crash
 
-constexpr bool is_gen_delim(char ch)
-{
-	return ch == '[' or ch == ']' or ch == ':' or ch == '/' or ch == '?' or ch == '#' or ch == '@';
-}
-
-constexpr bool is_sub_delim(char ch)
-{
-	return ch == '!' or ch == '$' or ch == '&' or ch == '\'' or ch == '(' or ch == ')' or ch == '*' or ch == '+' or ch == ',' or ch == ';' or ch == '=';		
-}
-
-constexpr bool is_reserved(char ch)
-{
-	return is_gen_delim(ch) or is_sub_delim(ch);
-}
-
-constexpr bool is_unreserved(char ch)
-{
-	return ch == '-' or ch == '.' or ch == '_' or ch == '~' or
-		(ch >= 'A' and ch <= 'Z') or (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9');
-}
-
-constexpr bool is_scheme_start(char ch)
-{
-	return (ch >= 'A' and ch <= 'Z') or (ch >= 'a' and ch <= 'z');
-}
-
-constexpr bool is_scheme(char ch)
-{
-	return is_scheme_start(ch) or ch == '-' or ch == '+' or ch == '.' or (ch >= 0 and ch <= '9');
-}
-
-constexpr bool is_xdigit(char ch)
-{
-	return (ch >= '0' and ch <= '9') or
-		(ch >= 'a' and ch <= 'f') or
-		(ch >= 'A' and ch <= 'F');
-}
 
 const char kHex[] = "0123456789abcdef";
 
-struct uri_impl
+
+// --------------------------------------------------------------------
+
+uri::uri(const std::string &url)
 {
-	uri_impl() = default;
-	uri_impl(const uri_impl &) = default;
+	parse(url);
+	remove_dot_segments();
+}
 
-	uri_impl(const std::string& s)
-	{
-		parse(s);
-	}
+uri::uri(const std::string &url, const uri &base)
+{
+	parse(url);
+	transform(base);
+	remove_dot_segments();
+}
 
-	void transform(const uri_impl &base);
+std::string uri::string() const
+{
+	std::ostringstream os;
+	os << *this;
+	return os.str();
+}
 
-	bool is_pct_encoded(const char *&cp)
-	{
-		bool result = false;
-		if (*cp == '%' and is_xdigit(cp[1]) and is_xdigit(cp[2]))
-		{
-			result = true;
-			cp += 2;
-		}
-		return result;
-	}
+uri uri::get_path() const
+{
+	uri result;
+	result.m_absolutePath = m_absolutePath;
+	result.m_path = m_path;
+	return result;
+}
 
-	bool is_userinfo(const char *&cp)
-	{
-		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or is_pct_encoded(cp);
-	}
+void uri::set_path(const std::filesystem::path &p)
+{
+	m_path.clear();
+	for (auto pi : p)
+		m_path.push_back(pi.string());
+	
+	remove_dot_segments();
+}
 
-	bool is_reg_name(const char *&cp)
-	{
-		return is_unreserved(*cp) or is_sub_delim(*cp) or is_pct_encoded(cp);
-	}
+// --------------------------------------------------------------------
 
-	bool is_pchar(const char *&cp)
-	{
-		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or *cp == '@' or is_pct_encoded(cp);
-	}
-
-	void parse(const std::string &s);
-
-	const char *parse_scheme(const char *ch);
-	const char *parse_hierpart(const char *ch);
-	const char *parse_authority(const char *ch);
-	const char *parse_segment(const char *ch);
-	const char *parse_segment_nz(const char *ch);
-	const char *parse_segment_nz_nc(const char *ch);
-
-	const char *parse_userinfo(const char *ch);
-	const char *parse_host(const char *ch);
-	const char *parse_port(const char *ch);
-
-	bool empty() const
-	{
-		return m_scheme.empty() and m_userinfo.empty() and m_host.empty() and m_path.empty() and m_query.empty() and m_fragment.empty();
-	}
-
-	void remove_dot_segments();
-
-	void write(std::ostream &os)
-	{
-		if (not m_scheme.empty())
-			os << m_scheme << ':';
-
-		bool write_slash = m_absolutePath;
-
-		if (not (m_userinfo.empty() and m_host.empty()))
-		{
-			os << "//";
-
-			if (not m_userinfo.empty())
-				os << m_userinfo << '@';
-			
-			os << m_host;
-			if (m_port != 0)
-				os << ':' << m_port;
-			
-			write_slash = true;
-		}
-		
-		for (auto segment : m_path)
-		{
-			if (write_slash)
-				os << '/';
-			write_slash = true;
-
-			for (auto c : segment)
-			{
-				if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
-					os << c;
-				else
-					os << '%' << (kHex[c >> 4]) << kHex[c & 15];
-			}
-		}
-
-		if (not m_query.empty())
-		{
-			os << '?';
-
-			for (auto c : m_query)
-			{
-				if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
-					os << c;
-				else
-					os << '%' << (kHex[c >> 4]) << kHex[c & 15];
-			}
-		}
-		
-		if (not m_fragment.empty())
-		{
-			os << '#';
-
-			for (auto c : m_fragment)
-			{
-				if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
-					os << c;
-				else
-					os << '%' << (kHex[c >> 4]) << kHex[c & 15];
-			}
-		}
-	}
-
-	std::string m_scheme;
-	std::string m_userinfo;
-	std::string m_host;
-	uint16_t m_port;
-	std::vector<std::string> m_path;
-	std::string m_query;
-	std::string m_fragment;
-	bool m_absolutePath = false;
-};
-
-const char *uri_impl::parse_scheme(const char *cp)
+const char *uri::parse_scheme(const char *cp)
 {
 	auto b = cp;
 
@@ -270,7 +143,7 @@ const char *uri_impl::parse_scheme(const char *cp)
 	return cp;
 }
 
-const char *uri_impl::parse_hierpart(const char *cp)
+const char *uri::parse_hierpart(const char *cp)
 {
 	if (*cp == '/')
 	{
@@ -316,7 +189,7 @@ const char *uri_impl::parse_hierpart(const char *cp)
 	return cp;
 }
 
-const char *uri_impl::parse_authority(const char *cp)
+const char *uri::parse_authority(const char *cp)
 {
 	auto b = cp;
 
@@ -345,7 +218,7 @@ const char *uri_impl::parse_authority(const char *cp)
 	return cp;
 }
 
-const char *uri_impl::parse_host(const char *cp)
+const char *uri::parse_host(const char *cp)
 {
 	auto b = cp;
 
@@ -380,19 +253,19 @@ const char *uri_impl::parse_host(const char *cp)
 	return cp;
 }
 
-const char *uri_impl::parse_segment(const char *cp)
+const char *uri::parse_segment(const char *cp)
 {
 	auto b = cp;
 
 	while (is_pchar(cp))
 		++cp;
 
-	m_path.emplace_back(decode_url({b, cp - b}));
+	m_path.emplace_back(decode_url({b, static_cast<std::string::size_type>(cp - b)}));
 
 	return cp;
 }
 
-const char *uri_impl::parse_segment_nz(const char *cp)
+const char *uri::parse_segment_nz(const char *cp)
 {
 	cp = parse_segment(cp);
 
@@ -402,7 +275,7 @@ const char *uri_impl::parse_segment_nz(const char *cp)
 	return cp;
 }
 
-const char *uri_impl::parse_segment_nz_nc(const char *cp)
+const char *uri::parse_segment_nz_nc(const char *cp)
 {
 	auto b = cp;
 
@@ -412,12 +285,12 @@ const char *uri_impl::parse_segment_nz_nc(const char *cp)
 	while (is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp))
 		++cp;
 
-	m_path.emplace_back(decode_url({b, cp - b}));
+	m_path.emplace_back(decode_url({b, static_cast<std::string::size_type>(cp - b)}));
 
 	return cp;
 }
 
-void uri_impl::parse(const std::string &s)
+void uri::parse(const std::string &s)
 {
 	m_scheme.clear();
 	m_userinfo.clear();
@@ -428,7 +301,9 @@ void uri_impl::parse(const std::string &s)
 	m_fragment.clear();
 	m_absolutePath = false;
 
-	auto cp = parse_scheme(s.c_str());
+	auto b = s.c_str();
+
+	auto cp = parse_scheme(b);
 	cp = parse_hierpart(cp);
 	
 	if (*cp == '?')
@@ -453,11 +328,11 @@ void uri_impl::parse(const std::string &s)
 		m_fragment.assign(b, cp);
 	}
 
-	if (*cp != 0 or (cp - s.c_str()) != s.length())
+	if (*cp != 0 or static_cast<std::string::size_type>(cp - b) != s.length())
 		throw uri_parse_error();
 }
 
-void uri_impl::remove_dot_segments()
+void uri::remove_dot_segments()
 {
 	std::vector<std::string> out;
 
@@ -502,7 +377,7 @@ void uri_impl::remove_dot_segments()
 	std::swap(m_path, out);
 }
 
-void uri_impl::transform(const uri_impl &base)
+void uri::transform(const uri &base)
 {
 	if (m_scheme.empty())
 	{
@@ -533,132 +408,67 @@ void uri_impl::transform(const uri_impl &base)
 
 // --------------------------------------------------------------------
 
-uri::uri()
-	: m_impl(new uri_impl())
+void uri::write(std::ostream &os) const
 {
-}
+	if (not m_scheme.empty())
+		os << m_scheme << ':';
 
-uri::uri(const std::string &url)
-	: m_impl(new uri_impl{url})
-{
-	m_impl->remove_dot_segments();
-}
+	bool write_slash = m_absolutePath;
 
-uri::uri(const std::string &s, const uri &base)
-	: m_impl(new uri_impl{s})
-{
-	m_impl->transform(*base.m_impl);
-	m_impl->remove_dot_segments();
-}
-
-uri::uri(const uri &u)
-	: m_impl(new uri_impl(*u.m_impl))
-{
-}
-
-uri& uri::operator=(const uri &u)
-{
-	if (&u != this)
+	if (not (m_userinfo.empty() and m_host.empty()))
 	{
-		uri tmp(u);
-		swap(tmp);
+		os << "//";
+
+		if (not m_userinfo.empty())
+			os << m_userinfo << '@';
+		
+		os << m_host;
+		if (m_port != 0)
+			os << ':' << m_port;
+		
+		write_slash = true;
+	}
+	
+	for (auto segment : m_path)
+	{
+		if (write_slash)
+			os << '/';
+		write_slash = true;
+
+		for (auto c : segment)
+		{
+			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
+				os << c;
+			else
+				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+		}
 	}
 
-	return *this;
-}
+	if (not m_query.empty())
+	{
+		os << '?';
 
-uri::uri(uri &&u)
-	: m_impl(std::exchange(u.m_impl, nullptr))
-{
-}
-
-uri& uri::operator=(uri &&u)
-{
-	if (this != &u)
-		m_impl = std::exchange(u.m_impl, nullptr);
-
-	return *this;
-}
-
-uri::~uri()
-{
-	delete m_impl;
-}
-
-bool uri::empty() const
-{
-	return m_impl->empty();
-}
-
-bool uri::is_absolute() const
-{
-	return m_impl->m_absolutePath;
-}
-
-void uri::swap(uri &u) noexcept
-{
-	std::swap(m_impl, u.m_impl);
-}
-
-std::string uri::string() const
-{
-	std::ostringstream os;
-	os << *this;
-	return os.str();
-}
-
-std::string uri::get_scheme() const
-{
-	return m_impl->m_scheme;
-}
-
-std::string uri::get_host() const
-{
-	return m_impl->m_host;
-}
-
-uri uri::get_path() const
-{
-	uri result;
-	result.m_impl->m_absolutePath = m_impl->m_absolutePath;
-	result.m_impl->m_path = m_impl->m_path;
-	return result;
-}
-
-std::string uri::get_query() const
-{
-	return m_impl->m_query;
-}
-
-std::string uri::get_fragment() const
-{
-	return m_impl->m_fragment;
-}
-
-void uri::set_path(const std::filesystem::path &p)
-{
-	// m_impl->set_path(p);
-
-	m_impl->m_path.clear();
-	for (auto pi : p)
-		m_impl->m_path.push_back(pi.string());
+		for (auto c : m_query)
+		{
+			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+				os << c;
+			else
+				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+		}
+	}
 	
-	m_impl->remove_dot_segments();
-}
+	if (not m_fragment.empty())
+	{
+		os << '#';
 
-// uri operator/(uri uri, const std::filesystem::path &rhs)
-// {
-// 	uri.set_path(uri.get_path() / rhs);
-// 	return uri;
-// }
-
-// --------------------------------------------------------------------
-
-std::ostream &operator<<(std::ostream &os, const uri &url)
-{
-	url.m_impl->write(os);
-
-	return os;
+		for (auto c : m_fragment)
+		{
+			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+				os << c;
+			else
+				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+		}
+	}
 }
 
 // --------------------------------------------------------------------
@@ -704,7 +514,7 @@ std::string encode_url(std::string_view s)
 	for (auto c = s.begin(); c != s.end(); ++c)
 	{
 		unsigned char a = (unsigned char)*c;
-		if (not is_unreserved(a))
+		if (not uri::is_unreserved(a))
 		{
 			result += '%';
 			result += kHex[a >> 4];
@@ -747,7 +557,6 @@ bool is_fully_qualified_uri(const std::string& s)
 	}
 	return result;
 }
-
 
 
 } // namespace zeep::http
