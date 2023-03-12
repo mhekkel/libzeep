@@ -11,8 +11,6 @@
 #include <zeep/exception.hpp>
 #include <zeep/unicode-support.hpp>
 
-#include <filesystem>
-
 namespace zeep::http
 {
 
@@ -39,10 +37,10 @@ class uri
 	uri() = default;
 
 	/// \brief constructor that parses the URI in \a s, throws exception if not valid
-	explicit uri(const std::string &s);
+	uri(const std::string &s);
 
 	/// \brief constructor that parses the URI in \a s relative to the baseuri in \a base, throws exception if not valid
-	explicit uri(const std::string &s, const uri &base);
+	uri(const std::string &s, const uri &base);
 
 	~uri() = default;
 
@@ -50,6 +48,8 @@ class uri
 	uri(uri &&u) = default;
 	uri &operator=(const uri &u) = default;
 	uri &operator=(uri &&u) = default;
+
+	void swap(uri &u);
 
 	// --------------------------------------------------------------------
 	
@@ -129,11 +129,11 @@ class uri
 	/// \brief Return a uri containing only the path
 	uri get_path() const;
 
-	/// \brief Set the path to \a path
-	void set_path(const std::filesystem::path &path);
-
-	/// \brief Set the path to \a path
-	void set_path(const std::vector<std::string> &path);
+	/// \brief Get the individual segments of the path
+	const std::vector<std::string> &get_segments() const
+	{
+		return m_path;
+	}
 
 	/// \brief Set the path to \a path
 	void set_path(const std::string &path);
@@ -165,10 +165,21 @@ class uri
 	/// \brief Return the uri as a string
 	std::string string() const;
 
+
+	/// \brief Write the uri in \a u to the stream \a os
 	friend std::ostream &operator<<(std::ostream &os, const uri &u)
 	{
 		u.write(os);
 		return os;
+	}
+
+	/// \brief Extend path
+	uri &operator/=(const uri &rhs);
+
+	/// \brief Extend path
+	friend uri operator/(uri lhs, const uri &rhs)
+	{
+		return lhs /= rhs;
 	}
 
   private:
@@ -292,12 +303,6 @@ class uri
 	std::string m_fragment;
 	bool m_absolutePath = false;
 };
-
-/// @brief Append \a rhs to the uri in \a uri and return the result
-/// @param uri The uri to extend
-/// @param rhs The path to add to the uri
-/// @return The newly constructed uri
-uri operator/(uri uri, const std::filesystem::path &rhs);
 
 // --------------------------------------------------------------------
 

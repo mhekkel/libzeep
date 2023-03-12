@@ -16,6 +16,10 @@ namespace zeep::http
 {
 
 // ah, the beauty of regular expressions!
+// ....
+// Unfortunately, the implementation of many regular expression
+// libraries is sub-optimal. And thus we don't use this magic
+// anymore, apart from matching the IP_LITERAL part for a host.
 
 #define GEN_DELIMS		R"([][]:/?#@])"
 #define SUB_DELIMS		R"([!$&'()*+,;=])"
@@ -74,13 +78,6 @@ namespace zeep::http
 
 // --------------------------------------------------------------------
 
-
-
-const char kHex[] = "0123456789abcdef";
-
-
-// --------------------------------------------------------------------
-
 uri::uri(const std::string &url)
 {
 	parse(url);
@@ -92,6 +89,18 @@ uri::uri(const std::string &url, const uri &base)
 	parse(url);
 	transform(base);
 	remove_dot_segments();
+}
+
+void uri::swap(uri &u)
+{
+	std::swap(m_scheme, u.m_scheme);
+	std::swap(m_userinfo, u.m_userinfo);
+	std::swap(m_host, u.m_host);
+	std::swap(m_port, u.m_port);
+	std::swap(m_path, u.m_path);
+	std::swap(m_query, u.m_query);
+	std::swap(m_fragment, u.m_fragment);
+	std::swap(m_absolutePath, u.m_absolutePath);
 }
 
 std::string uri::string() const
@@ -109,13 +118,48 @@ uri uri::get_path() const
 	return result;
 }
 
-void uri::set_path(const std::filesystem::path &p)
+void uri::set_path(const std::string &path)
 {
 	m_path.clear();
-	for (auto pi : p)
-		m_path.push_back(pi.string());
-	
+	m_absolutePath = false;
+
+	auto cp = path.c_str();
+
+	if (*cp == '/')
+	{
+		m_absolutePath = true;
+		++cp;
+	}
+
+	cp = parse_segment(cp);
+
+	while (*cp == '/')
+	{
+		++cp;
+		cp = parse_segment(cp);
+	}
+
 	remove_dot_segments();
+}
+
+uri &uri::operator/=(const uri &rhs)
+{
+	if (m_path.empty())
+	{
+		m_absolutePath = rhs.m_absolutePath;
+		m_path = rhs.m_path;
+	}
+	else
+	{
+		if (m_path.back().empty())
+			m_path.pop_back();
+		
+		m_path.insert(m_path.end(), rhs.m_path.begin(), rhs.m_path.end());
+	}
+
+	remove_dot_segments();
+
+	return *this;
 }
 
 // --------------------------------------------------------------------
@@ -383,7 +427,7 @@ void uri::transform(const uri &base)
 	{
 		m_scheme = base.m_scheme;
 		
-		if (m_host.empty() and m_userinfo.empty())
+		if (not has_authority())
 		{
 			if (m_path.empty())
 			{
@@ -410,12 +454,16 @@ void uri::transform(const uri &base)
 
 void uri::write(std::ostream &os) const
 {
+	static const char kHex[] = "0123456789abcdef";
+
+	// --------------------------------------------------------------------
+
 	if (not m_scheme.empty())
 		os << m_scheme << ':';
 
 	bool write_slash = m_absolutePath;
 
-	if (not (m_userinfo.empty() and m_host.empty()))
+	if (has_authority())
 	{
 		os << "//";
 
@@ -557,6 +605,5 @@ bool is_fully_qualified_uri(const std::string& s)
 	}
 	return result;
 }
-
 
 } // namespace zeep::http

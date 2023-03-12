@@ -68,14 +68,14 @@ BOOST_AUTO_TEST_CASE(uri_4)
 	BOOST_CHECK_EQUAL(url.get_path().string(), "~maarten");
 }
 
-// BOOST_AUTO_TEST_CASE(uri_5)
-// {
-// 	// This is a bit dubious... but it is valid according to RFC3986
+BOOST_AUTO_TEST_CASE(uri_5)
+{
+	// This is a bit dubious... but it is valid according to RFC3986
 
-// 	zeep::http::uri uri("http://a/b%0D%0ASet-Cookie:%20false");
+	zeep::http::uri uri("http://a/b%0D%0ASet-Cookie:%20false");
 
-// 	BOOST_CHECK_EQUAL(uri.get_path().string(), "b\r\nSet-Cookie: false");
-// }
+	BOOST_CHECK_EQUAL(uri.get_segments().front(), "b\r\nSet-Cookie: false");
+}
 
 BOOST_AUTO_TEST_CASE(uri_6a)
 {
@@ -146,4 +146,29 @@ BOOST_AUTO_TEST_CASE(normalize_2)
 	        //    ; for strict parsers
 	BOOST_TEST(zeep::http::uri("http:g"       , base).string() == "http:g");
                     //   /  "http://a/b/c/g" ; for backward compatibility
+}
+
+BOOST_AUTO_TEST_CASE(path_1)
+{
+	zeep::http::uri t("http://a/b");
+
+	t.set_path("c");			BOOST_TEST(t.get_path().string() == "c");
+	t.set_path("/c");			BOOST_TEST(t.get_path().string() == "/c");
+	t.set_path("/c/");			BOOST_TEST(t.get_path().string() == "/c/");
+	t.set_path("c/d");			BOOST_TEST(t.get_path().string() == "c/d");
+	t.set_path("/c/d");			BOOST_TEST(t.get_path().string() == "/c/d");
+	t.set_path("/c/d/");		BOOST_TEST(t.get_path().string() == "/c/d/");
+}
+
+BOOST_AUTO_TEST_CASE(path_2)
+{
+	zeep::http::uri t("http://a/b");
+	zeep::http::uri u;
+
+	u = t / zeep::http::uri("c");			BOOST_TEST(u.string() == "http://a/b/c");
+	u = t / zeep::http::uri("/c");			BOOST_TEST(u.string() == "http://a/b/c");
+	u = t / zeep::http::uri("/c/");			BOOST_TEST(u.string() == "http://a/b/c/");
+	u = t / zeep::http::uri("c/d");			BOOST_TEST(u.string() == "http://a/b/c/d");
+	u = t / zeep::http::uri("/c/d");		BOOST_TEST(u.string() == "http://a/b/c/d");
+	u = t / zeep::http::uri("/c/d/");		BOOST_TEST(u.string() == "http://a/b/c/d/");
 }
