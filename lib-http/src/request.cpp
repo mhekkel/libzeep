@@ -244,7 +244,7 @@ std::tuple<std::string,bool> request::get_parameter_ex(const char* name) const
 			return std::make_tuple(result, true);
 	}
 
-	auto query = m_uri.get_query();
+	auto query = m_uri.get_query(false);
 
 	if (not query.empty())
 	{
@@ -356,7 +356,7 @@ std::multimap<std::string,std::string> request::get_parameters() const
 			ps = m_payload;
 	}
 	else if (m_method == "GET" or m_method == "PUT")
-		ps = m_uri.get_query();
+		ps = m_uri.get_query(false);
 
 	std::multimap<std::string,std::string> parameters;
 

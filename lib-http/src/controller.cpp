@@ -55,6 +55,12 @@ bool controller::path_matches_prefix(const uri &path) const
 
 		do
 		{
+			if (ab->empty() and ab + 1 == ae)
+			{
+				result = true;
+				break;
+			}
+
 			result = ab != ae and bb != be and *ab == *bb;
 			++ab;
 			++bb;
@@ -74,14 +80,15 @@ uri controller::get_prefixless_path(const request &req) const
 
 	while (ab != ae and bb != be)
 	{
-		if (*ab != *be)
+		if (ab->empty() and ab + 1 == ae)
+			break;
+
+		if (*ab != *bb)
 			throw zeep::exception("Controller does not have the same prefix as the request");
+
 		++ab;
 		++bb;
 	}
-
-	static_assert(std::is_constructible_v<std::string, typename std::vector<std::string>::iterator::value_type>, "test");
-
 
 	return { bb, be };
 }

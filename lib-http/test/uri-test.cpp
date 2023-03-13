@@ -50,8 +50,8 @@ BOOST_AUTO_TEST_CASE(uri_2)
 	BOOST_CHECK_EQUAL(url.get_scheme(), "http");
 	BOOST_CHECK_EQUAL(url.get_host(), "[::1]");
 	BOOST_CHECK_EQUAL(url.get_path().string(), "segment/index.html");
-	BOOST_CHECK_EQUAL(url.get_query(), "query");
-	BOOST_CHECK_EQUAL(url.get_fragment(), "frag");
+	BOOST_CHECK_EQUAL(url.get_query(false), "query");
+	BOOST_CHECK_EQUAL(url.get_fragment(false), "frag");
 }
 
 BOOST_AUTO_TEST_CASE(uri_3)

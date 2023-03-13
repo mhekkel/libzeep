@@ -68,7 +68,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 
 	auto p = get_prefixless_path(req);
 	
-	if (req.get_method() == "POST" and p == m_prefix_path)
+	if (req.get_method() == "POST" and p.empty())
 	{
 		result = true;
 

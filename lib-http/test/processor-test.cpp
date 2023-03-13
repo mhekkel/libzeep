@@ -693,7 +693,7 @@ BOOST_AUTO_TEST_CASE(test_23)
 <span>link/b</span>
 <span>link?b=b&amp;test=test%26</span>
 <span>link/bb</span>
-<span>link?c=bla%20met%20%3c%20en%20%3d</span>
+<span>link?c=bla%20met%20%3C%20en%20%3D</span>
 </data>
 	)"_xml;
 

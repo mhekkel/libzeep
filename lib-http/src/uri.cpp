@@ -15,6 +15,11 @@
 namespace zeep::http
 {
 
+namespace
+{
+const char kHex[] = "0123456789ABCDEF";
+}
+
 // ah, the beauty of regular expressions!
 // ....
 // Unfortunately, the implementation of many regular expression
@@ -153,6 +158,46 @@ void uri::set_path(const std::string &path)
 	}
 
 	remove_dot_segments();
+}
+
+void uri::set_query(const std::string &query, bool encode)
+{
+	if (encode)
+	{
+		std::ostringstream os;
+
+		for (auto c : query)
+		{
+			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+				os << c;
+			else
+				os << '%' << kHex[c >> 4] << kHex[c & 15];
+		}
+
+		m_query = os.str();
+	}
+	else
+		m_query = query;
+}
+
+void uri::set_fragment(const std::string &fragment, bool encode)
+{
+	if (encode)
+	{
+		std::ostringstream os;
+
+		for (auto c : fragment)
+		{
+			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
+				os << c;
+			else
+				os << '%' << kHex[c >> 4] << kHex[c & 15];
+		}
+
+		m_fragment = os.str();
+	}
+	else
+		m_fragment = fragment;
 }
 
 uri &uri::operator/=(const uri &rhs)
@@ -452,7 +497,6 @@ void uri::transform(const uri &base)
 			}
 			else if (not m_absolutePath)
 			{
-				m_absolutePath = true;
 				if (base.m_path.size() > 1)
 					m_path.insert(m_path.begin(), base.m_path.begin(), base.m_path.end() - 1);
 				remove_dot_segments();
@@ -468,8 +512,6 @@ void uri::transform(const uri &base)
 
 void uri::write(std::ostream &os, bool encoded) const
 {
-	static const char kHex[] = "0123456789abcdef";
-
 	// --------------------------------------------------------------------
 
 	if (not m_scheme.empty())
@@ -502,35 +544,15 @@ void uri::write(std::ostream &os, bool encoded) const
 			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
 				os << c;
 			else
-				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
+				os << '%' << kHex[c >> 4] << kHex[c & 15];
 		}
 	}
 
 	if (not m_query.empty())
-	{
-		os << '?';
-
-		for (auto c : m_query)
-		{
-			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
-				os << c;
-			else
-				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
-		}
-	}
+		os << '?' << m_query;
 	
 	if (not m_fragment.empty())
-	{
-		os << '#';
-
-		for (auto c : m_fragment)
-		{
-			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
-				os << c;
-			else
-				os << '%' << (kHex[c >> 4]) << kHex[c & 15];
-		}
-	}
+		os << '#' << m_fragment;
 }
 
 // --------------------------------------------------------------------
@@ -569,8 +591,6 @@ std::string decode_url(std::string_view s)
 
 std::string encode_url(std::string_view s)
 {
-	const char kHex[] = "0123456789abcdef";
-
 	std::string result;
 	
 	for (auto c = s.begin(); c != s.end(); ++c)

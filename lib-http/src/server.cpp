@@ -221,13 +221,10 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 			std::tie(csrf, csrf_is_new) = m_security_context->get_csrf_token(req);
 		}
 
-		// parse the uri
-		std::string path = uri(req.get_uri()).get_path().string();
-
 		// do the actual work.
 		for (auto c : m_controllers)
 		{
-			if (not c->path_matches_prefix(path))
+			if (not c->path_matches_prefix(req.get_uri()))
 				continue;
 
 			if (c->dispatch_request(socket, req, rep))

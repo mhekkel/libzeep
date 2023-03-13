@@ -1230,9 +1230,6 @@ object interpreter::parse_link_template_expr()
 		}
 	}
 
-	auto context = m_scope.get_context_name();
-	path = uri(path, context).string();
-
 	if (m_lookahead == token_type::lparen)
 	{
 		match(token_type::lparen);
@@ -1292,6 +1289,9 @@ object interpreter::parse_link_template_expr()
 			}
 		}
 	}
+
+	auto context = m_scope.get_context_name();
+	path = uri(path, context).string();
 
 	return path;
 }

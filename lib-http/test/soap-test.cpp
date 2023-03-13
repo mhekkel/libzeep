@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(soap_1)
 	zh::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_TEST(rep.get_status() == 200);
+	BOOST_REQUIRE(rep.get_status() == 200);
 
 	std::stringstream srep;
 	srep << rep;
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(soap_2)
 	zh::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_TEST(rep.get_status() == 200);
+	BOOST_REQUIRE(rep.get_status() == 200);
 
 	std::stringstream srep;
 	srep << rep;
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(soap_3)
 	zh::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_TEST(rep.get_status() == 200);
+	BOOST_REQUIRE(rep.get_status() == 200);
 
 	std::stringstream srep;
 	srep << rep;

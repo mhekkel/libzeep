@@ -16,6 +16,28 @@ namespace zeep::http
 
 // --------------------------------------------------------------------
 
+/// \brief Simply check the URI in \a uri, returns true if the uri is valid
+/// \param uri		The URI to check
+bool is_valid_uri(const std::string &uri);
+
+/// \brief Check the URI in \a uri, returns true if the uri is fully qualified (has a scheme and path)
+/// \param uri		The URI to check
+bool is_fully_qualified_uri(const std::string &uri);
+
+// --------------------------------------------------------------------
+
+/// \brief Decode a URL using the RFC rules
+/// \param s  The URL that needs to be decoded
+/// \return	  The decoded URL
+std::string decode_url(std::string_view s);
+
+/// \brief Encode a URL using the RFC rules
+/// \param s  The URL that needs to be encoded
+/// \return	  The encoded URL
+std::string encode_url(std::string_view s);
+
+// --------------------------------------------------------------------
+
 /// \brief the exception thrown by libzeep when an invalid uri is passed to
 ///        the uri constructor.
 class uri_parse_error : public zeep::exception
@@ -151,28 +173,22 @@ class uri
 	void set_path(const std::string &path);
 
 	/// \brief Return the query
-	std::string get_query() const
+	std::string get_query(bool decoded) const
 	{
-		return m_query;
+		return decoded ? decode_url(m_query) : m_query;
 	}
 
-	/// \brief Set the query to \a query
-	void set_query(const std::string &query)
-	{
-		m_query = query;
-	}
+	/// \brief Set the query to \a query and optionally encode it based on \a encode
+	void set_query(const std::string &query, bool encode);
 
 	/// \brief Return the fragment
-	std::string get_fragment() const
+	std::string get_fragment(bool decoded) const
 	{
-		return m_fragment;
+		return decoded ? decode_url(m_fragment) : m_fragment;
 	}
 
-	/// \brief Set the fragment to \a fragment
-	void set_fragment(const std::string &fragment)
-	{
-		m_fragment = fragment;
-	}
+	/// \brief Set the fragment to \a fragment and optionally encode it based on \a encode
+	void set_fragment(const std::string &fragment, bool encode);
 
 	/// \brief Return the uri as a string
 	std::string string() const;
@@ -331,27 +347,5 @@ class uri
 	std::string m_fragment;
 	bool m_absolutePath = false;
 };
-
-// --------------------------------------------------------------------
-
-/// \brief Simply check the URI in \a uri, returns true if the uri is valid
-/// \param uri		The URI to check
-bool is_valid_uri(const std::string &uri);
-
-/// \brief Check the URI in \a uri, returns true if the uri is fully qualified (has a scheme and path)
-/// \param uri		The URI to check
-bool is_fully_qualified_uri(const std::string &uri);
-
-// --------------------------------------------------------------------
-
-/// \brief Decode a URL using the RFC rules
-/// \param s  The URL that needs to be decoded
-/// \return	  The decoded URL
-std::string decode_url(std::string_view s);
-
-/// \brief Encode a URL using the RFC rules
-/// \param s  The URL that needs to be encoded
-/// \return	  The encoded URL
-std::string encode_url(std::string_view s);
 
 } // namespace zeep::http
