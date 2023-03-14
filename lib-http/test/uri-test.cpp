@@ -172,3 +172,52 @@ BOOST_AUTO_TEST_CASE(path_2)
 	u = t / zeep::http::uri("/c/d");		BOOST_TEST(u.string() == "http://a/b/c/d");
 	u = t / zeep::http::uri("/c/d/");		BOOST_TEST(u.string() == "http://a/b/c/d/");
 }
+
+BOOST_AUTO_TEST_CASE(relative_1)
+{
+	zeep::http::uri base("http://a/b/c/d;p?q");
+	zeep::http::uri u;
+
+	BOOST_TEST(zeep::http::uri("g:h"                 ).relative(base).string() == "g:h");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g"      ).relative(base).string() == "g");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g/"     ).relative(base).string() == "g/");
+	BOOST_TEST(zeep::http::uri("http://a/g"          ).relative(base).string() == "/g");
+	BOOST_TEST(zeep::http::uri("http://g"            ).relative(base).string() == "//g");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/d;p?y"  ).relative(base).string() == "?y");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g?y"    ).relative(base).string() == "g?y");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/d;p?q#s").relative(base).string() == "#s");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g#s"    ).relative(base).string() == "g#s");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g?y#s"  ).relative(base).string() == "g?y#s");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/;x"     ).relative(base).string() == ";x");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g;x"    ).relative(base).string() == "g;x");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/g;x?y#s").relative(base).string() == "g;x?y#s");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/d;p?q"  ).relative(base).string() == "");
+	BOOST_TEST(zeep::http::uri("http://a/b/c/"       ).relative(base).string() == ".");
+	BOOST_TEST(zeep::http::uri("http://a/b/"         ).relative(base).string() == "..");
+	BOOST_TEST(zeep::http::uri("http://a/b/g"        ).relative(base).string() == "../g");
+}
+
+BOOST_AUTO_TEST_CASE(relative_2)
+{
+	zeep::http::uri base("http://a/b/c/d;p?q");
+	zeep::http::uri u;
+
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("g:h"                 ).relative(base).string(), base).string() == "g:h"                 );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g"      ).relative(base).string(), base).string() == "http://a/b/c/g"      );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g/"     ).relative(base).string(), base).string() == "http://a/b/c/g/"     );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/g"          ).relative(base).string(), base).string() == "http://a/g"          );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://g"            ).relative(base).string(), base).string() == "http://g"            );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?y"  ).relative(base).string(), base).string() == "http://a/b/c/d;p?y"  );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g?y"    ).relative(base).string(), base).string() == "http://a/b/c/g?y"    );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?q#s").relative(base).string(), base).string() == "http://a/b/c/d;p?q#s");
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g#s"    ).relative(base).string(), base).string() == "http://a/b/c/g#s"    );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g?y#s"  ).relative(base).string(), base).string() == "http://a/b/c/g?y#s"  );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/;x"     ).relative(base).string(), base).string() == "http://a/b/c/;x"     );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g;x"    ).relative(base).string(), base).string() == "http://a/b/c/g;x"    );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/g;x?y#s").relative(base).string(), base).string() == "http://a/b/c/g;x?y#s");
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?q"  ).relative(base).string(), base).string() == "http://a/b/c/d;p?q"  );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/c/"       ).relative(base).string(), base).string() == "http://a/b/c/"       );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/"         ).relative(base).string(), base).string() == "http://a/b/"         );
+	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/g"        ).relative(base).string(), base).string() == "http://a/b/g"        );
+}
+

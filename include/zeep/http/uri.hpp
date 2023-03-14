@@ -51,7 +51,11 @@ class uri_parse_error : public zeep::exception
 
 // --------------------------------------------------------------------
 
-/// \brief Simple class, should be extended to have setters, one day
+/// \brief A class modelling a URI based on RFC 3986 https://www.rfc-editor.org/rfc/rfc3986
+///
+/// All components are stored separately. Scheme and host are converted to lower case.
+/// Path segments are stored decoded whereas query and fragment are stored encoded.
+/// This is to avoid double encoding and ease post processing of queries e.g.
 class uri
 {
   public:
@@ -112,7 +116,7 @@ class uri
 		return not m_fragment.empty();
 	}
 
-	/// \brief Return true if url is empty (not useful I guess, you cannot construct an empty url yet)
+	/// \brief Return true if url is empty
 	bool empty() const
 	{
 		return not (
@@ -127,16 +131,20 @@ class uri
 	}
 
 	/// \brief Return the scheme
-	std::string get_scheme() const
+	const std::string &get_scheme() const
 	{
 		return m_scheme;
 	}
 
 	/// \brief Set the scheme to \a scheme
-	void set_scheme(const std::string &scheme);
+	void set_scheme(const std::string &scheme)
+	{
+		m_scheme = scheme;
+		zeep::to_lower(m_scheme);
+	}
 
 	/// \brief Return the user info
-	std::string get_userinfo() const
+	const std::string &get_userinfo() const
 	{
 		return m_userinfo;
 	}
@@ -148,7 +156,7 @@ class uri
 	}
 
 	/// \brief Return the host
-	std::string get_host() const
+	const std::string &get_host() const
 	{
 		return m_host;
 	}
@@ -226,6 +234,13 @@ class uri
 			m_absolutePath == rhs.m_absolutePath;
 	}
 
+	/// \brief return the uri relative from \a base.
+	///
+	/// If the scheme and authority of this and \a base
+	/// a relative uri will be returned with the path
+	/// of base removed from this path. 
+	uri relative(const uri &base) const;
+
   private:
 	
 	enum class char_class : uint8_t
@@ -249,7 +264,7 @@ class uri
 		12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,  0,  0,  0,  4,  0		
 	};
 
-	inline friend constexpr bool is_char_class(char ch, char_class mask)
+	static inline constexpr bool is_char_class(char ch, char_class mask)
 	{
 		return ch > 0 and (kCharClassTable[static_cast<uint8_t>(ch)] bitand static_cast<char>(mask)) != 0;
 	}
@@ -324,15 +339,12 @@ class uri
 	void remove_dot_segments();
 
 	const char *parse_scheme(const char *ch);
-	const char *parse_hierpart(const char *ch);
 	const char *parse_authority(const char *ch);
+	const char *parse_host(const char *ch);
+	const char *parse_hierpart(const char *ch);
 	const char *parse_segment(const char *ch);
 	const char *parse_segment_nz(const char *ch);
 	const char *parse_segment_nz_nc(const char *ch);
-
-	const char *parse_userinfo(const char *ch);
-	const char *parse_host(const char *ch);
-	const char *parse_port(const char *ch);
 
 	void write(std::ostream &os, bool encoded) const;
 

@@ -220,6 +220,74 @@ uri &uri::operator/=(const uri &rhs)
 	return *this;
 }
 
+uri uri::relative(const uri &base) const
+{
+	uri result;
+
+	if (m_scheme == base.m_scheme and m_userinfo == base.m_userinfo and m_host == base.m_host and m_port == base.m_port)
+	{
+		auto ab = m_path.begin(), ae = m_path.end();
+		auto bb = base.m_path.begin(), be = base.m_path.end();
+
+		result.m_absolutePath = true;
+
+		while (ab != ae and bb != be and *ab == *bb)
+		{
+			result.m_absolutePath = false;
+			++ab;
+			++bb;
+		}
+
+		if (ab == ae and bb == be)
+			result.m_path.emplace_back("");
+		else if (not result.m_absolutePath)
+		{
+			while (bb != be and bb + 1 != be)
+			{
+				result.m_path.emplace_back("..");
+				++bb;
+			}
+		}
+
+		if (ab != ae)
+		{
+			result.m_path.insert(result.m_path.end(), ab, ae);
+
+			if (result.m_path.back().empty())
+			{
+				if (result.m_path.size() == 1)
+					result.m_path.back() = ".";
+				else if (result.m_path[result.m_path.size() - 2] == "..")
+					result.m_path.pop_back();
+			}
+		}
+
+		if (m_query != base.m_query)
+			result.m_query = m_query;
+		
+		result.m_fragment = m_fragment;
+	}
+	else
+	{
+		if (m_scheme != base.m_scheme)
+			result.m_scheme = m_scheme;
+		
+		if (m_userinfo != base.m_userinfo or m_host != base.m_host or m_port != base.m_port)
+		{
+			result.m_userinfo = m_userinfo;
+			result.m_host = m_host;
+			result.m_port = m_port;
+		}
+
+		result.m_absolutePath = m_absolutePath;
+		result.m_path = m_path;
+		result.m_query = m_query;
+		result.m_fragment = m_fragment;
+	}
+
+	return result;
+}
+
 // --------------------------------------------------------------------
 
 const char *uri::parse_scheme(const char *cp)
