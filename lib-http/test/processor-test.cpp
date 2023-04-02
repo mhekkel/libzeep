@@ -443,6 +443,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 		auto doc = R"(<?xml version="1.0"?>
 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
 	<test m:text="${#numbers.formatDecimal(12345.6789, 1, 2)}" />
+	<test m:text="${#numbers.formatDecimal(-12.34, 1, 2)}" />
 	<test m:text="${#numbers.formatDiskSize(12345, 2)}" />
 	</data>
 		)"_xml;
@@ -450,6 +451,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 		auto doc_test = R"(<?xml version="1.0"?>
 	<data>
 	<test>12,345.68</test>
+	<test>-12.34</test>
 	<test>12.06 K</test>
 	</data>
 		)"_xml;

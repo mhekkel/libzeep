@@ -314,7 +314,11 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 {
 	Decimal<double> dec(d);
 	
-	return dec.formatFixed(integerDigits, decimalDigits, loc);
+	std::string result;
+	if (d < 0)
+		result = "-";
+	result += dec.formatFixed(integerDigits, decimalDigits, loc);
+	return result;
 }
 
 }
