@@ -218,6 +218,8 @@ reply login_controller::handle_logout(const scope &scope)
 reply login_controller::create_redirect_for_request(const request &req)
 {
 	uri uri(req.get_parameter("uri"), get_context_name());
+	if (uri.empty())
+		uri = "/";
 	return reply::redirect(uri, see_other);
 }
 
