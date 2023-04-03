@@ -6,13 +6,13 @@
 
 #include <zeep/config.hpp>
 
-#include <zeep/http/security.hpp>
 #include <zeep/http/error-handler.hpp>
+#include <zeep/http/security.hpp>
 
 namespace zeep::http
 {
 
-error_handler::error_handler(const std::string& error_template)
+error_handler::error_handler(const std::string &error_template)
 	: m_error_template(error_template)
 {
 }
@@ -21,67 +21,39 @@ error_handler::~error_handler()
 {
 }
 
-bool error_handler::create_error_reply(const request& req, std::exception_ptr eptr, reply& reply)
+bool error_handler::create_error_reply(const request &/*req*/, std::exception_ptr /*eptr*/, reply &/*reply*/)
 {
-	bool result = false;
-
-	try
-	{
-		if (eptr)
-			std::rethrow_exception(eptr);
-	}
-	catch (const status_type& s)
-	{
-		result = create_error_reply(req, s, get_status_description(s), reply);
-	}
-	catch (const unauthorized_exception&)
-	{
-		result = create_unauth_reply(req, reply);
-	}
-	catch (const std::exception& ex)
-	{
-		result = create_error_reply(req, internal_server_error, ex.what(), reply);
-	}
-	catch (...)
-	{
-		result = create_error_reply(req, internal_server_error, "unhandled exception", reply);
-	}
-
-	return result;
+	return false;
 }
 
-bool error_handler::create_unauth_reply(const request& req, reply& rep)
+bool error_handler::create_unauth_reply(const request &req, reply &rep)
 {
 	return create_error_reply(req, unauthorized, "You don't have access to this page", rep);
 }
 
-bool error_handler::create_error_reply(const request& req, status_type status, reply& rep)
+bool error_handler::create_error_reply(const request &req, status_type status, reply &rep)
 {
 	return create_error_reply(req, status, get_status_description(status), rep);
 }
 
-bool error_handler::create_error_reply(const request& req, status_type status, const std::string& message, reply& rep)
+bool error_handler::create_error_reply(const request &req, status_type status, const std::string &message, reply &rep)
 {
 	bool handled = false;
 
 	if (not m_error_template.empty() and m_server->has_template_processor())
 	{
-		auto& template_processor = m_server->get_template_processor();
+		auto &template_processor = m_server->get_template_processor();
 
 		scope scope(*get_server(), req);
 
-		object error
-		{
+		object error{
 			{ "nr", static_cast<int>(status) },
 			{ "head", get_status_text(status) },
 			{ "description", get_status_description(status) },
 			{ "message", message },
 			{ "request",
-				{
-					{ "method", req.get_method() },
-					{ "uri", req.get_uri().string() }
-				}
-			}
+				{ { "method", req.get_method() },
+					{ "uri", req.get_uri().string() } } }
 		};
 
 		auto credentials = req.get_credentials();
@@ -95,7 +67,7 @@ bool error_handler::create_error_reply(const request& req, status_type status, c
 			template_processor.create_reply_from_template(m_error_template, scope, rep);
 			handled = true;
 		}
-		catch(const std::exception&)
+		catch (const std::exception &)
 		{
 			using namespace xml::literals;
 
@@ -165,7 +137,7 @@ body, html {
 	if (not handled)
 	{
 		rep = reply::stock_reply(status, message);
-		handled = true;		
+		handled = true;
 	}
 	else
 		rep.set_status(status);
@@ -173,4 +145,35 @@ body, html {
 	return true;
 }
 
+// --------------------------------------------------------------------
+
+bool default_error_handler::create_error_reply(const request &req, std::exception_ptr eptr, reply &reply)
+{
+	bool result = false;
+
+	try
+	{
+		if (eptr)
+			std::rethrow_exception(eptr);
+	}
+	catch (const status_type &s)
+	{
+		result = error_handler::create_error_reply(req, s, get_status_description(s), reply);
+	}
+	catch (const unauthorized_exception &)
+	{
+		result = error_handler::create_unauth_reply(req, reply);
+	}
+	catch (const std::exception &ex)
+	{
+		result = error_handler::create_error_reply(req, internal_server_error, ex.what(), reply);
+	}
+	catch (...)
+	{
+		result = error_handler::create_error_reply(req, internal_server_error, "unhandled exception", reply);
+	}
+
+	return result;
 }
+
+} // namespace zeep::http

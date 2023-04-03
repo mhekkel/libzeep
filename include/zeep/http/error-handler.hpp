@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// definition of the base class zeep::error_handler, the default 
+/// definition of the base class zeep::error_handler, the default
 /// creates very simple HTTP replies. Override to do something more fancy.
 
 #include <zeep/config.hpp>
@@ -24,23 +24,16 @@ namespace zeep::http
 class error_handler
 {
   public:
-	/// \brief constructor
-	///
-	/// If \a error_template is not empty, the error handler will try to 
-	/// load this XHTML template using the server's template_processor.
-	/// If that fails or error_template is empty, a simple stock message
-	/// is returned.
-	error_handler(const std::string& error_template = "error");
 	virtual ~error_handler();
 
 	/// \brief set the server object we're bound to
-	void set_server(basic_server* s)				{ m_server = s; }
+	void set_server(basic_server *s) { m_server = s; }
 
 	/// \brief get the server object we're bound to
-	basic_server* get_server()					{ return m_server; }
+	basic_server *get_server() { return m_server; }
 
 	/// \brief set the server object we're bound to
-	const basic_server* get_server() const		{ return m_server; }
+	const basic_server *get_server() const { return m_server; }
 
 	/// \brief Create an error reply for an exception
 	///
@@ -49,7 +42,7 @@ class error_handler
 	/// \param eptr		The captured exception, use std::rethrow_exception to use this
 	/// \param reply	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request& req, std::exception_ptr eptr, reply& reply);
+	virtual bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply);
 
 	/// \brief Create an error reply for the error containing a validation header
 	///
@@ -58,7 +51,7 @@ class error_handler
 	/// \param req		The request that triggered this call
 	/// \param reply	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_unauth_reply(const request& req, reply& reply);
+	virtual bool create_unauth_reply(const request &req, reply &reply);
 
 	/// \brief Create an error reply for the error
 	///
@@ -67,7 +60,7 @@ class error_handler
 	/// \param status	The status code, describing the error
 	/// \param reply	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request& req, status_type status, reply& reply);
+	virtual bool create_error_reply(const request &req, status_type status, reply &reply);
 
 	/// \brief Create an error reply for the error with an additional message for the user
 	///
@@ -78,14 +71,35 @@ class error_handler
 	/// \param message	The message describing the error
 	/// \param reply	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request& req, status_type status, const std::string& message, reply& reply);
+	virtual bool create_error_reply(const request &req, status_type status, const std::string &message, reply &reply);
 
   protected:
-	error_handler(const error_handler&) = delete;
-	error_handler& operator=(const error_handler&) = delete;
+	/// \brief constructor
+	///
+	/// If \a error_template is not empty, the error handler will try to
+	/// load this XHTML template using the server's template_processor.
+	/// If that fails or error_template is empty, a simple stock message
+	/// is returned.
+	error_handler(const std::string &error_template = "error");
 
-	basic_server*	m_server = nullptr;
+	error_handler(const error_handler &) = delete;
+	error_handler &operator=(const error_handler &) = delete;
+
+	basic_server *m_server = nullptr;
 	std::string m_error_template;
 };
 
-}
+// --------------------------------------------------------------------
+
+class default_error_handler : public error_handler
+{
+  public:
+	default_error_handler(const std::string &error_template = "error")
+		: error_handler(error_template)
+	{
+	}
+
+	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply) override;
+};
+
+} // namespace zeep::http

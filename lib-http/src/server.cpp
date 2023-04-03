@@ -35,7 +35,7 @@ basic_server::basic_server()
 	, m_allowed_methods{ "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE" }
 {
 	// add a default error handler
-	add_error_handler(new error_handler());
+	add_error_handler(new default_error_handler());
 }
 
 basic_server::basic_server(security_context *s_cntxt)
