@@ -168,6 +168,18 @@ class uri
 		zeep::to_lower(m_host);
 	}
 
+	/// \brief Return the port
+	uint16_t get_port() const
+	{
+		return m_port;
+	}
+
+	/// \brief Set the port to \a port
+	void set_port(uint16_t port)
+	{
+		m_port = port;
+	}
+
 	/// \brief Return a uri containing only the path
 	uri get_path() const;
 
