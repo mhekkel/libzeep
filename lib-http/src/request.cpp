@@ -66,7 +66,7 @@ request& request::operator=(const request& req)
 	return *this;
 }
 
-void request::set_local_endpoint(boost::asio::ip::tcp::socket& socket)
+void request::set_local_endpoint(asio_ns::ip::tcp::socket& socket)
 {
 	m_local_address = socket.local_endpoint().address().to_string();
 	m_local_port = socket.local_endpoint().port();
@@ -762,38 +762,38 @@ const char
 		;
 }
 
-std::vector<boost::asio::const_buffer> request::to_buffers() const
+std::vector<asio_ns::const_buffer> request::to_buffers() const
 {
-	std::vector<boost::asio::const_buffer> result;
+	std::vector<asio_ns::const_buffer> result;
 
 	m_request_line = get_request_line();
 
-	// result.push_back(boost::asio::buffer(m_method));
-	// result.push_back(boost::asio::buffer(kSpace));
-	// result.push_back(boost::asio::buffer(m_uri));
-	// result.push_back(boost::asio::buffer(kHTTPSlash));
-	// result.push_back(boost::asio::buffer(m_version));
+	// result.push_back(asio_ns::buffer(m_method));
+	// result.push_back(asio_ns::buffer(kSpace));
+	// result.push_back(asio_ns::buffer(m_uri));
+	// result.push_back(asio_ns::buffer(kHTTPSlash));
+	// result.push_back(asio_ns::buffer(m_version));
 	
-	result.push_back(boost::asio::buffer(m_request_line));
-	result.push_back(boost::asio::buffer(kCRLF));
+	result.push_back(asio_ns::buffer(m_request_line));
+	result.push_back(asio_ns::buffer(kCRLF));
 	
 	for (const header& h: m_headers)
 	{
-		result.push_back(boost::asio::buffer(h.name));
-		result.push_back(boost::asio::buffer(kNameValueSeparator));
-		result.push_back(boost::asio::buffer(h.value));
-		result.push_back(boost::asio::buffer(kCRLF));
+		result.push_back(asio_ns::buffer(h.name));
+		result.push_back(asio_ns::buffer(kNameValueSeparator));
+		result.push_back(asio_ns::buffer(h.value));
+		result.push_back(asio_ns::buffer(kCRLF));
 	}
 
-	result.push_back(boost::asio::buffer(kCRLF));
-	result.push_back(boost::asio::buffer(m_payload));
+	result.push_back(asio_ns::buffer(kCRLF));
+	result.push_back(asio_ns::buffer(m_payload));
 
 	return result;
 }
 
 std::ostream& operator<<(std::ostream& io, const request& req)
 {
-	std::vector<boost::asio::const_buffer> buffers = req.to_buffers();
+	std::vector<asio_ns::const_buffer> buffers = req.to_buffers();
 
 	for (auto& b: buffers)
 		io.write(static_cast<const char*>(b.data()), b.size());

@@ -6,7 +6,7 @@
 
 #include <zeep/config.hpp>
 
-#include <boost/asio.hpp>
+#include "zeep/http/asio.hpp"
 
 #include <zeep/http/connection.hpp>
 #include <zeep/http/server.hpp>
@@ -21,7 +21,7 @@ connection* get_pointer(const std::shared_ptr<connection>& p)
 	return p.get();
 }
 
-connection::connection(boost::asio::io_context& service, basic_server& handler)
+connection::connection(asio_ns::io_context& service, basic_server& handler)
 	: m_socket(service), m_server(handler), m_bufs(m_buffer.prepare(4096))
 {
 }
@@ -30,11 +30,11 @@ void connection::start()
 {
 	m_bufs = m_buffer.prepare(4096);
 	m_socket.async_read_some(m_bufs,
-		[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+		[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 			{ self->handle_read(ec, bytes_transferred); });
 }
 
-void connection::handle_read(boost::system::error_code ec, size_t bytes_transferred)
+void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transferred)
 {
 	if (not ec)
 	{
@@ -67,8 +67,8 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 
 			auto buffers = m_reply.to_buffers();
 
-			boost::asio::async_write(m_socket, buffers,
-				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+			asio_ns::async_write(m_socket, buffers,
+				[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 					{ self->handle_write(ec, bytes_transferred); });
 		}
 		else if (not result)
@@ -77,21 +77,21 @@ void connection::handle_read(boost::system::error_code ec, size_t bytes_transfer
 
 			auto buffers = m_reply.to_buffers();
 
-			boost::asio::async_write(m_socket, buffers,
-				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+			asio_ns::async_write(m_socket, buffers,
+				[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 					{ self->handle_write(ec, bytes_transferred); });
 		}
 		else
 		{
 			m_bufs = m_buffer.prepare(4096);
 			m_socket.async_read_some(m_bufs,
-				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+				[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 					{ self->handle_read(ec, bytes_transferred); });
 		}
 	}
 }
 
-void connection::handle_write(boost::system::error_code ec, size_t /*bytes_transferred*/)
+void connection::handle_write(asio_system_ns::error_code ec, size_t /*bytes_transferred*/)
 {
 	if (not ec)
 	{
@@ -99,8 +99,8 @@ void connection::handle_write(boost::system::error_code ec, size_t /*bytes_trans
 		
 		if (not buffers.empty())
 		{
-			boost::asio::async_write(m_socket, buffers,
-				[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+			asio_ns::async_write(m_socket, buffers,
+				[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 					{ self->handle_write(ec, bytes_transferred); });
 		}
 		else if (m_keep_alive)
@@ -114,7 +114,7 @@ void connection::handle_write(boost::system::error_code ec, size_t /*bytes_trans
 			{
 				m_bufs = m_buffer.prepare(4096);
 				m_socket.async_read_some(m_bufs,
-					[self=shared_from_this()](boost::system::error_code ec, size_t bytes_transferred)
+					[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 						{ self->handle_read(ec, bytes_transferred); });
 			}
 		}

@@ -301,6 +301,16 @@ parse_result request_parser::parse(std::streambuf& text)
 
 request request_parser::get_request()
 {
+	if (iequals(m_method, "CONNECT"))
+	{
+		// Special case, uri should be of the form HOST:PORT
+
+		if (not is_valid_connect_host(m_uri))
+			throw zeep::exception("Invalid host for CONNECT");
+		
+		m_uri = "http://" + m_uri;
+	}
+
 	return request(m_method, std::move(m_uri), { m_http_version_major, m_http_version_minor },
 		std::move(m_headers), std::move(m_payload));
 }

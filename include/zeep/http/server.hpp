@@ -15,7 +15,7 @@
 #include <mutex>
 #include <thread>
 
-#include <boost/asio.hpp>
+#include "zeep/http/asio.hpp"
 
 #include <zeep/http/access-control.hpp>
 #include <zeep/http/reply.hpp>
@@ -175,10 +175,10 @@ class basic_server
 	unsigned short get_port() const { return m_port; }
 
 	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
-	virtual boost::asio::io_context &get_io_context() = 0;
+	virtual asio_ns::io_context &get_io_context() = 0;
 
 	/// \brief get_executor has to be public since we need it to call notify_fork from child code
-	boost::asio::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
+	asio_ns::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
 
   protected:
 	/// \brief the default entry logger
@@ -192,12 +192,12 @@ class basic_server
 	friend class preforked_server_base;
 	friend class connection;
 
-	virtual void handle_request(boost::asio::ip::tcp::socket &socket,
+	virtual void handle_request(asio_ns::ip::tcp::socket &socket,
 		request &req, reply &rep);
 
-	void handle_accept(boost::system::error_code ec);
+	void handle_accept(asio_system_ns::error_code ec);
 
-	std::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor;
+	std::shared_ptr<asio_ns::ip::tcp::acceptor> m_acceptor;
 	std::list<std::thread> m_threads;
 	std::shared_ptr<connection> m_new_connection;
 	std::string m_address;
@@ -239,7 +239,7 @@ class server : public basic_server
 	{
 	}
 
-	boost::asio::io_context &get_io_context() override
+	asio_ns::io_context &get_io_context() override
 	{
 		return m_io_context;
 	}
@@ -252,7 +252,7 @@ class server : public basic_server
 	}
 
   private:
-	boost::asio::io_context m_io_context;
+	asio_ns::io_context m_io_context;
 };
 
 } // namespace zeep::http

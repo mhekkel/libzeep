@@ -62,23 +62,23 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	}
 	else
 	{
-		boost::asio::io_context io_context;
-		boost::asio::ip::tcp::endpoint endpoint;
+		asio_ns::io_context io_context;
+		asio_ns::ip::tcp::endpoint endpoint;
 
-		boost::system::error_code ec;
-		auto addr = boost::asio::ip::make_address(address, ec);
+		asio_system_ns::error_code ec;
+		auto addr = asio_ns::ip::make_address(address, ec);
 		if (not ec)
-			endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+			endpoint = asio_ns::ip::tcp::endpoint(addr, port);
 		else
 		{
-			boost::asio::ip::tcp::resolver resolver(io_context);
-			boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+			asio_ns::ip::tcp::resolver resolver(io_context);
+			asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
 			endpoint = *resolver.resolve(query);
 		}
 
-		boost::asio::ip::tcp::acceptor acceptor(io_context);
+		asio_ns::ip::tcp::acceptor acceptor(io_context);
 		acceptor.open(endpoint.protocol());
-		acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+		acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 		acceptor.bind(endpoint, ec);
 		if (ec)
 			throw std::runtime_error(std::string("Is server running already? ") + ec.message());
@@ -180,23 +180,23 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 
 		try
 		{
-			boost::asio::io_context io_context;
+			asio_ns::io_context io_context;
 
-			boost::asio::ip::tcp::endpoint endpoint;
+			asio_ns::ip::tcp::endpoint endpoint;
 			try
 			{
-				endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
+				endpoint = asio_ns::ip::tcp::endpoint(asio_ns::ip::make_address(address), port);
 			}
 			catch (const std::exception &e)
 			{
-				boost::asio::ip::tcp::resolver resolver(io_context);
-				boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+				asio_ns::ip::tcp::resolver resolver(io_context);
+				asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
 				endpoint = *resolver.resolve(query);
 			}
 
-			boost::asio::ip::tcp::acceptor acceptor(io_context);
+			asio_ns::ip::tcp::acceptor acceptor(io_context);
 			acceptor.open(endpoint.protocol());
-			acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+			acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 			acceptor.bind(endpoint);
 			acceptor.listen();
 

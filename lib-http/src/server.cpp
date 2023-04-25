@@ -65,29 +65,29 @@ void basic_server::bind(const std::string &address, unsigned short port)
 	m_address = address;
 	m_port = port;
 
-	m_acceptor.reset(new boost::asio::ip::tcp::acceptor(get_io_context()));
+	m_acceptor.reset(new asio_ns::ip::tcp::acceptor(get_io_context()));
 	m_new_connection.reset(new connection(get_io_context(), *this));
 
 	// then bind the address here
-	boost::asio::ip::tcp::endpoint endpoint;
+	asio_ns::ip::tcp::endpoint endpoint;
 
-	boost::system::error_code ec;
-	auto addr = boost::asio::ip::make_address(address, ec);
+	asio_system_ns::error_code ec;
+	auto addr = asio_ns::ip::make_address(address, ec);
 	if (not ec)
-		endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+		endpoint = asio_ns::ip::tcp::endpoint(addr, port);
 	else
 	{
-		boost::asio::ip::tcp::resolver resolver(get_io_context());
-		boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+		asio_ns::ip::tcp::resolver resolver(get_io_context());
+		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
 		endpoint = *resolver.resolve(query);
 	}
 
 	m_acceptor->open(endpoint.protocol());
-	m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+	m_acceptor->set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	m_acceptor->bind(endpoint);
 	m_acceptor->listen();
 	m_acceptor->async_accept(m_new_connection->get_socket(),
-		[this](boost::system::error_code ec)
+		[this](asio_system_ns::error_code ec)
 		{ this->handle_accept(ec); });
 }
 
@@ -121,7 +121,7 @@ void basic_server::add_error_handler(error_handler *eh)
 void basic_server::run(int nr_of_threads)
 {
 	// keep the server at work until we call stop
-	auto work = boost::asio::make_work_guard(get_io_context());
+	auto work = asio_ns::make_work_guard(get_io_context());
 
 	for (int i = 0; i < nr_of_threads; ++i)
 		m_threads.emplace_back([this]()
@@ -144,14 +144,14 @@ void basic_server::stop()
 	m_acceptor.reset();
 }
 
-void basic_server::handle_accept(boost::system::error_code ec)
+void basic_server::handle_accept(asio_system_ns::error_code ec)
 {
 	if (not ec)
 	{
 		m_new_connection->start();
 		m_new_connection.reset(new connection(get_io_context(), *this));
 		m_acceptor->async_accept(m_new_connection->get_socket(),
-			[this](boost::system::error_code ec)
+			[this](asio_system_ns::error_code ec)
 			{ this->handle_accept(ec); });
 	}
 }
@@ -163,7 +163,7 @@ std::ostream &basic_server::get_log()
 	return *detail::s_log;
 }
 
-void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request &req, reply &rep)
+void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req, reply &rep)
 {
 	// we're pessimistic
 	rep = reply::stock_reply(not_found);
@@ -201,7 +201,7 @@ void basic_server::handle_request(boost::asio::ip::tcp::socket &socket, request 
 		// causing aborting exceptions, so I moved it here.
 		if (client.empty())
 		{
-			boost::asio::ip::address addr = socket.remote_endpoint().address();
+			asio_ns::ip::address addr = socket.remote_endpoint().address();
 			client = addr.to_string();
 		}
 

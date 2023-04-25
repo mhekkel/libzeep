@@ -708,4 +708,12 @@ bool is_fully_qualified_uri(const std::string& s)
 	return result;
 }
 
+bool is_valid_connect_host(const std::string &host)
+{
+	std::regex rx(HOST ":" PORT);
+
+	return std::regex_match(host, rx);
+}
+
+
 } // namespace zeep::http

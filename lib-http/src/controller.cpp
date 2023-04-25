@@ -25,7 +25,7 @@ controller::~controller()
 {
 }
 
-bool controller::dispatch_request(boost::asio::ip::tcp::socket & /*socket*/, request &req, reply &rep)
+bool controller::dispatch_request(asio_ns::ip::tcp::socket & /*socket*/, request &req, reply &rep)
 {
 	bool result = false;
 

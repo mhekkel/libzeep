@@ -203,8 +203,8 @@ BOOST_AUTO_TEST_CASE(rest_1)
 
 	zeep::http::reply rep;
 
-	boost::asio::io_context io_context;
-	boost::asio::ip::tcp::socket s(io_context);
+	asio_ns::io_context io_context;
+	asio_ns::ip::tcp::socket s(io_context);
 
 	zeep::http::request req{ "GET", "/ajax/all_data" };
 

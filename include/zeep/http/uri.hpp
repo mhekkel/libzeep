@@ -24,6 +24,10 @@ bool is_valid_uri(const std::string &uri);
 /// \param uri		The URI to check
 bool is_fully_qualified_uri(const std::string &uri);
 
+/// \brief Check the parameter in \a host is of the form HOST:PORT as required by CONNECT
+/// \param host		The host string to check
+bool is_valid_connect_host(const std::string &host);
+
 // --------------------------------------------------------------------
 
 /// \brief Decode a URL using the RFC rules

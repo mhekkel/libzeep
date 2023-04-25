@@ -14,7 +14,7 @@
 #include <chrono>
 #include <istream>
 
-#include <boost/asio.hpp>
+#include "zeep/http/asio.hpp"
 
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
@@ -87,7 +87,7 @@ class request
 	request &operator=(const request &rhs);
 
 	/// \brief Fetch the local address from the connected socket
-	void set_local_endpoint(boost::asio::ip::tcp::socket &socket);
+	void set_local_endpoint(asio_ns::ip::tcp::socket &socket);
 	std::tuple<std::string, uint16_t> get_local_endpoint() const { return { m_local_address, m_local_port }; }
 
 	/// \brief Get the HTTP version requested
@@ -223,7 +223,7 @@ class request
 	/// \brief Return the content of this request in a sequence of const_buffers
 	///
 	/// Can be used in code that sends HTTP requests
-	std::vector<boost::asio::const_buffer> to_buffers() const;
+	std::vector<asio_ns::const_buffer> to_buffers() const;
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
 	std::locale &get_locale() const;

@@ -431,32 +431,32 @@ void reply::set_content(std::istream *idata, const std::string &contentType)
 	remove_header("Content-Length");
 }
 
-std::vector<boost::asio::const_buffer> reply::to_buffers() const
+std::vector<asio_ns::const_buffer> reply::to_buffers() const
 {
-	std::vector<boost::asio::const_buffer> result;
+	std::vector<asio_ns::const_buffer> result;
 
 	m_status_line =
 		"HTTP/" + std::to_string(m_version_major) + '.' + std::to_string(m_version_minor) + ' ' + std::to_string(m_status) + ' ' + get_status_text(m_status) + kCRLF;
 
-	result.push_back(boost::asio::buffer(m_status_line));
+	result.push_back(asio_ns::buffer(m_status_line));
 
 	for (const header &h : m_headers)
 	{
-		result.push_back(boost::asio::buffer(h.name));
-		result.push_back(boost::asio::buffer(kNameValueSeparator));
-		result.push_back(boost::asio::buffer(h.value));
-		result.push_back(boost::asio::buffer(kCRLF));
+		result.push_back(asio_ns::buffer(h.name));
+		result.push_back(asio_ns::buffer(kNameValueSeparator));
+		result.push_back(asio_ns::buffer(h.value));
+		result.push_back(asio_ns::buffer(kCRLF));
 	}
 
-	result.push_back(boost::asio::buffer(kCRLF));
-	result.push_back(boost::asio::buffer(m_content));
+	result.push_back(asio_ns::buffer(kCRLF));
+	result.push_back(asio_ns::buffer(m_content));
 
 	return result;
 }
 
-std::vector<boost::asio::const_buffer> reply::data_to_buffers()
+std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 {
-	std::vector<boost::asio::const_buffer> result;
+	std::vector<asio_ns::const_buffer> result;
 
 	if (m_data != nullptr)
 	{
@@ -478,9 +478,9 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 		{
 			if (n == 0)
 			{
-				result.push_back(boost::asio::buffer(kZERO));
-				result.push_back(boost::asio::buffer(kCRLF));
-				result.push_back(boost::asio::buffer(kCRLF));
+				result.push_back(asio_ns::buffer(kZERO));
+				result.push_back(asio_ns::buffer(kCRLF));
+				result.push_back(asio_ns::buffer(kCRLF));
 				delete m_data;
 				m_data = nullptr;
 			}
@@ -497,16 +497,16 @@ std::vector<boost::asio::const_buffer> reply::data_to_buffers()
 					n >>= 4;
 				}
 
-				result.push_back(boost::asio::buffer(p, e - p));
-				result.push_back(boost::asio::buffer(kCRLF));
-				result.push_back(boost::asio::buffer(&m_buffer[0], l));
-				result.push_back(boost::asio::buffer(kCRLF));
+				result.push_back(asio_ns::buffer(p, e - p));
+				result.push_back(asio_ns::buffer(kCRLF));
+				result.push_back(asio_ns::buffer(&m_buffer[0], l));
+				result.push_back(asio_ns::buffer(kCRLF));
 			}
 		}
 		else
 		{
 			if (n > 0)
-				result.push_back(boost::asio::buffer(&m_buffer[0], n));
+				result.push_back(asio_ns::buffer(&m_buffer[0], n));
 			else
 			{
 				delete m_data;
@@ -595,7 +595,7 @@ reply reply::redirect(const uri &location)
 size_t reply::size() const
 {
 	auto buffers = to_buffers();
-	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto &buffer) { return m + boost::asio::buffer_size(buffer); });
+	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto &buffer) { return m + asio_ns::buffer_size(buffer); });
 }
 
 std::ostream &operator<<(std::ostream &lhs, const reply &rhs)

@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include <boost/asio.hpp>
+#include "zeep/http/asio.hpp"
 
 #include <zeep/http/message-parser.hpp>
 
@@ -32,22 +32,22 @@ class connection
 	connection(connection &) = delete;
 	connection &operator=(connection &) = delete;
 
-	connection(boost::asio::io_context &service, basic_server &handler);
+	connection(asio_ns::io_context &service, basic_server &handler);
 
 	void start();
-	void handle_read(boost::system::error_code ec, size_t bytes_transferred);
-	void handle_write(boost::system::error_code ec, size_t bytes_transferred);
+	void handle_read(asio_system_ns::error_code ec, size_t bytes_transferred);
+	void handle_write(asio_system_ns::error_code ec, size_t bytes_transferred);
 
-	boost::asio::ip::tcp::socket &get_socket() { return m_socket; }
+	asio_ns::ip::tcp::socket &get_socket() { return m_socket; }
 
   private:
-	boost::asio::ip::tcp::socket m_socket;
+	asio_ns::ip::tcp::socket m_socket;
 	basic_server &m_server;
 	reply m_reply;
 	request_parser m_request_parser;
 	bool m_keep_alive = false;
-	boost::asio::streambuf m_buffer;
-	boost::asio::streambuf::mutable_buffers_type m_bufs;
+	asio_ns::streambuf m_buffer;
+	asio_ns::streambuf::mutable_buffers_type m_bufs;
 };
 
 } // namespace zeep::http

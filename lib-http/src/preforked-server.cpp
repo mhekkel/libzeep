@@ -26,9 +26,9 @@
 namespace zeep::http
 {
 
-bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket &socket)
+bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 {
-	using native_handle_type = boost::asio::ip::tcp::socket::native_handle_type;
+	using native_handle_type = asio_ns::ip::tcp::socket::native_handle_type;
 
 #if __APPLE__
 	// macos is special...
@@ -51,7 +51,7 @@ bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket &socket
 	msg.msg_name = nullptr;
 	msg.msg_namelen = 0;
 
-	boost::asio::ip::tcp::socket::endpoint_type peer_endpoint;
+	asio_ns::ip::tcp::socket::endpoint_type peer_endpoint;
 
 	struct iovec iov[1];
 	iov[0].iov_base = peer_endpoint.data();
@@ -94,7 +94,7 @@ bool read_socket_from_parent(int fd_socket, boost::asio::ip::tcp::socket &socket
 class child_process
 {
   public:
-	child_process(std::function<basic_server *(void)> constructor, boost::asio::io_context &io_context, boost::asio::ip::tcp::acceptor &acceptor, int nr_of_threads)
+	child_process(std::function<basic_server *(void)> constructor, asio_ns::io_context &io_context, asio_ns::ip::tcp::acceptor &acceptor, int nr_of_threads)
 		: m_constructor(constructor)
 		, m_acceptor(acceptor)
 		, m_socket(io_context)
@@ -127,14 +127,14 @@ class child_process
 	void stop();
 
   private:
-	void handle_accept(const boost::system::error_code &ec);
+	void handle_accept(const asio_system_ns::error_code &ec);
 
 	void start();
 	void run();
 
 	std::function<basic_server *(void)> m_constructor;
-	boost::asio::ip::tcp::acceptor &m_acceptor;
-	boost::asio::ip::tcp::socket m_socket;
+	asio_ns::ip::tcp::acceptor &m_acceptor;
+	asio_ns::ip::tcp::socket m_socket;
 	int m_nr_of_threads;
 
 	int m_pid = -1;
@@ -238,7 +238,7 @@ void child_process::stop()
 	}
 }
 
-void child_process::handle_accept(const boost::system::error_code &ec)
+void child_process::handle_accept(const asio_system_ns::error_code &ec)
 {
 	if (ec)
 	{
@@ -251,7 +251,7 @@ void child_process::handle_accept(const boost::system::error_code &ec)
 		if (m_pid == -1 or m_fd == -1)
 			start();
 
-		using native_handle_type = boost::asio::ip::tcp::socket::native_handle_type;
+		using native_handle_type = asio_ns::ip::tcp::socket::native_handle_type;
 
 		struct msghdr msg;
 		union
@@ -304,7 +304,7 @@ void child_process::handle_accept(const boost::system::error_code &ec)
 
 		try
 		{
-			boost::asio::write(m_socket, buffers);
+			asio_ns::write(m_socket, buffers);
 		}
 		catch (const std::exception &e)
 		{
@@ -334,23 +334,23 @@ void preforked_server::run(const std::string &address, short port, int nr_of_pro
 	// first wait until we are allowed to start listening
 	std::unique_lock<std::mutex> lock(m_lock);
 
-	boost::asio::ip::tcp::acceptor acceptor(m_io_context);
+	asio_ns::ip::tcp::acceptor acceptor(m_io_context);
 
 	// then bind the address here
-	boost::asio::ip::tcp::endpoint endpoint;
+	asio_ns::ip::tcp::endpoint endpoint;
 	try
 	{
-		endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port);
+		endpoint = asio_ns::ip::tcp::endpoint(asio_ns::ip::make_address(address), port);
 	}
 	catch (const std::exception &e)
 	{
-		boost::asio::ip::tcp::resolver resolver(m_io_context);
-		boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+		asio_ns::ip::tcp::resolver resolver(m_io_context);
+		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
 		endpoint = *resolver.resolve(query);
 	}
 
 	acceptor.open(endpoint.protocol());
-	acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	acceptor.bind(endpoint);
 	acceptor.listen();
 
@@ -360,7 +360,7 @@ void preforked_server::run(const std::string &address, short port, int nr_of_pro
 	{
 		threads.emplace_back([this, nr_of_threads, &acceptor]()
 			{
-			auto work = boost::asio::make_work_guard(m_io_context);
+			auto work = asio_ns::make_work_guard(m_io_context);
 
 			child_process p(m_constructor, m_io_context, acceptor, nr_of_threads);
 			

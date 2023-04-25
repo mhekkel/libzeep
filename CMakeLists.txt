@@ -4,6 +4,8 @@ project(libzeep VERSION 6.0.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" OFF)
+
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -11,6 +13,7 @@ include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
+include(FindPkgConfig)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
@@ -71,7 +74,19 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
-find_package(Boost 1.70.0 REQUIRED)
+if(USE_BOOST_ASIO)
+	find_package(Boost 1.81 COMPONENTS headers REQUIRED)
+	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
+	message(STATUS "Using asio from boost")
+
+	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+else()
+	pkg_check_modules(ASIO asio>=1.26 REQUIRED IMPORTED_TARGET)
+	message(STATUS "Using standalone asio")
+
+	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+endif()
+
 find_package(date 3 REQUIRED)
 
 if(UNIX)
@@ -103,6 +118,7 @@ list(APPEND ZEEP_HEADERS
 	${PROJECT_SOURCE_DIR}/include/zeep/json/from_element.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/json/iterator.hpp
+	${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/access-control.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/controller.hpp
 	${PROJECT_SOURCE_DIR}/include/zeep/http/message-parser.hpp
@@ -180,7 +196,7 @@ target_include_directories(zeep
 	${Boost_INCLUDE_DIR}
 )
 
-target_link_libraries(zeep PUBLIC Boost::boost Threads::Threads date::date ${STDCPPFS_LIBRARY})
+target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(zeep PRIVATE -undefined dynamic_lookup)
@@ -333,6 +349,8 @@ option(ZEEP_BUILD_TESTS "Build test executables" OFF)
 
 if(ZEEP_BUILD_TESTS)
 
+	find_package(Boost REQUIRED)
+
 	enable_testing()
 
 	find_package(libmcfp QUIET)
@@ -343,12 +361,13 @@ if(ZEEP_BUILD_TESTS)
 	# data files for the parser test
 
 	add_library(client_test OBJECT ${PROJECT_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
+
 	target_include_directories(client_test PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		${PROJECT_SOURCE_DIR}/include
-		${Boost_INCLUDE_DIR}
 	)
+	target_link_libraries(client_test PRIVATE Boost::boost)
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)

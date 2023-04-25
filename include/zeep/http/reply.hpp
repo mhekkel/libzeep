@@ -16,7 +16,7 @@
 #include <zeep/json/element.hpp>
 #include <zeep/xml/document.hpp>
 
-#include <boost/asio/buffer.hpp>
+#include "zeep/http/asio.hpp"
 
 namespace zeep::http
 {
@@ -141,11 +141,11 @@ class reply
 		return m_content;
 	}
 
-	/// return the content of the reply as an array of boost::asio::const_buffer objects
-	std::vector<boost::asio::const_buffer> to_buffers() const;
+	/// return the content of the reply as an array of asio_ns::const_buffer objects
+	std::vector<asio_ns::const_buffer> to_buffers() const;
 
 	/// for istream data, if the returned buffer array is empty, the data is done
-	std::vector<boost::asio::const_buffer> data_to_buffers();
+	std::vector<asio_ns::const_buffer> data_to_buffers();
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
