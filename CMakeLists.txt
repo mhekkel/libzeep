@@ -69,7 +69,6 @@ else()
 	if(USE_RSRC)
 		message("Using resources compiled with ${MRC_EXECUTABLE}")
 		set(WEBAPP_USES_RESOURCES 1)
-		mrc_write_header(${PROJECT_BINARY_DIR}/mrsrc.hpp)
 	endif()
 endif()
 
@@ -87,6 +86,8 @@ else()
 	if(MSVC)
 		find_file(ASIO asio.hpp)
 	else()
+		include(FindPkgConfig)
+
 		pkg_check_modules(ASIO asio>=1.26 REQUIRED IMPORTED_TARGET)
 	endif()
 
