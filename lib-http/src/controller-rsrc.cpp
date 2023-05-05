@@ -113,11 +113,11 @@ class rsrc
 
 	rsrc(std::filesystem::path path);
 
-	std::string name() const { return rsrc_data::instance().name(m_impl->m_name); }
+	std::string name() const { return m_impl ? rsrc_data::instance().name(m_impl->m_name) : ""; }
 
-	const char *data() const { return rsrc_data::instance().data(m_impl->m_data); }
+	const char *data() const { return m_impl ? rsrc_data::instance().data(m_impl->m_data) : nullptr; }
 
-	unsigned long size() const { return m_impl->m_size; }
+	unsigned long size() const { return m_impl ? m_impl->m_size : 0; }
 
 	explicit operator bool() const { return m_impl != NULL and m_impl->m_size > 0; }
 
