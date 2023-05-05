@@ -50,6 +50,8 @@ if(MSVC)
     endif()
 
 	add_definitions(-DNOMINMAX)
+
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 # Optionally use mrc to create resources
