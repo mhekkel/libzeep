@@ -5,6 +5,16 @@
 
 namespace z = zeep;
 
+BOOST_AUTO_TEST_CASE(cc_1)
+{
+	for (int ch = 0; ch <= 255; ++ch)
+	{
+		std::cout << ch << ' ' << char(ch) << std::endl;
+		BOOST_TEST((std::isalpha(ch) != 0) == z::http::uri::is_scheme_start(ch));
+		BOOST_TEST((std::isxdigit(ch) != 0) == z::http::uri::is_xdigit(ch));
+	}
+}
+
 BOOST_AUTO_TEST_CASE(uri_1)
 {
 	zeep::http::is_valid_uri("http://a/");

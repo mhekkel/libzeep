@@ -76,7 +76,7 @@ class uri
 	uri(const std::string &s, const uri &base);
 
 	/// \brief constructor taking two iterators into path segments, for a relative path
-	template<typename InputIterator, std::enable_if_t<std::is_constructible_v<std::string, typename InputIterator::value_type>, int> = 0>
+	template <typename InputIterator, std::enable_if_t<std::is_constructible_v<std::string, typename InputIterator::value_type>, int> = 0>
 	uri(InputIterator b, InputIterator e)
 		: uri()
 	{
@@ -94,7 +94,7 @@ class uri
 	void swap(uri &u);
 
 	// --------------------------------------------------------------------
-	
+
 	bool has_scheme() const
 	{
 		return not m_scheme.empty();
@@ -102,7 +102,7 @@ class uri
 
 	bool has_authority() const
 	{
-		return not (m_userinfo.empty() and m_host.empty() and m_port == 0);
+		return not(m_userinfo.empty() and m_host.empty() and m_port == 0);
 	}
 
 	bool has_path() const
@@ -123,9 +123,8 @@ class uri
 	/// \brief Return true if url is empty
 	bool empty() const
 	{
-		return not (
-			has_scheme() or has_authority() or has_path() or has_query() or has_fragment()
-		);
+		return not(
+			has_scheme() or has_authority() or has_path() or has_query() or has_fragment());
 	}
 
 	/// \brief Return true if the path is absolute
@@ -239,91 +238,94 @@ class uri
 	/// \brief Comparison
 	bool operator==(const uri &rhs) const
 	{
-		return 
-			m_scheme == rhs.m_scheme and
-			m_userinfo == rhs.m_userinfo and
-			m_host == rhs.m_host and
-			m_port == rhs.m_port and
-			m_path == rhs.m_path and
-			m_query == rhs.m_query and
-			m_fragment == rhs.m_fragment and
-			m_absolutePath == rhs.m_absolutePath;
+		return m_scheme == rhs.m_scheme and
+		       m_userinfo == rhs.m_userinfo and
+		       m_host == rhs.m_host and
+		       m_port == rhs.m_port and
+		       m_path == rhs.m_path and
+		       m_query == rhs.m_query and
+		       m_fragment == rhs.m_fragment and
+		       m_absolutePath == rhs.m_absolutePath;
 	}
 
 	/// \brief return the uri relative from \a base.
 	///
 	/// If the scheme and authority of this and \a base
 	/// a relative uri will be returned with the path
-	/// of base removed from this path. 
+	/// of base removed from this path.
 	uri relative(const uri &base) const;
 
   private:
-	
 	enum class char_class : uint8_t
 	{
-		gen_delim		= 1 << 0,
-		sub_delim		= 1 << 1,
-		reserved		= gen_delim | sub_delim,
-		unreserved		= 1 << 2,
-		scheme			= 1 << 3,
+		gen_delim = 1 << 0,
+		sub_delim = 1 << 1,
+		reserved = gen_delim | sub_delim,
+		unreserved = 1 << 2,
+		scheme = 1 << 3,
+		hexdigit = 1 << 4,
+		alpha = 1 << 5
 	};
 
-	static constexpr uint8_t kCharClassTable[] =
-	{
+	static constexpr uint8_t kCharClassTable[] = {
 		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
 		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
 		 0,  2,  0,  1,  2,  0,  2,  2,  2,  2,  2, 10,  2, 12, 12,  1, 
-		12, 12, 12, 12, 12, 12, 12, 12, 12, 12,  1,  2,  0,  2,  0,  1, 
-		 1, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 
-		12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,  1,  0,  1,  0,  4, 
-		 0, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 
-		12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,  0,  0,  0,  4,  0		
+		28, 28, 28, 28, 28, 28, 28, 28, 28, 28,  1,  2,  0,  2,  0,  1, 
+		 1, 60, 60, 60, 60, 60, 60, 44, 44, 44, 44, 44, 44, 44, 44, 44, 
+		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  1,  0,  1,  0,  4, 
+		 0, 60, 60, 60, 60, 60, 60, 44, 44, 44, 44, 44, 44, 44, 44, 44, 
+		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  0,  0,  0,  4,  0, 
 	};
 
-	static inline constexpr bool is_char_class(char ch, char_class mask)
+  public:
+
+	static inline constexpr bool is_char_class(int ch, char_class mask)
 	{
-		return ch > 0 and (kCharClassTable[static_cast<uint8_t>(ch)] bitand static_cast<char>(mask)) != 0;
+		return ch > 0 and ch < 128 and (kCharClassTable[static_cast<uint8_t>(ch)] bitand static_cast<char>(mask)) != 0;
 	}
 
-	static inline constexpr bool is_gen_delim(char ch)
+	static inline constexpr bool is_gen_delim(int ch)
 	{
 		return is_char_class(ch, char_class::gen_delim);
 	}
 
-	static inline constexpr bool is_sub_delim(char ch)
+	static inline constexpr bool is_sub_delim(int ch)
 	{
 		return is_char_class(ch, char_class::sub_delim);
 	}
 
-	static inline constexpr bool is_reserved(char ch)
+	static inline constexpr bool is_reserved(int ch)
 	{
 		return is_char_class(ch, char_class::reserved);
 	}
 
-	static inline constexpr bool is_unreserved(char ch)
+	static inline constexpr bool is_unreserved(int ch)
 	{
 		return is_char_class(ch, char_class::unreserved);
 	}
 
-	static inline constexpr bool is_scheme_start(char ch)
+	static inline constexpr bool is_scheme_start(int ch)
 	{
-		return std::isalpha(ch);
+		return is_char_class(ch, char_class::alpha);
 	}
 
-	static inline constexpr bool is_scheme(char ch)
+	static inline constexpr bool is_scheme(int ch)
 	{
 		return is_char_class(ch, char_class::scheme);
 	}
 
-	static inline constexpr bool is_xdigit(char ch)
+	static inline constexpr bool is_xdigit(int ch)
 	{
-		return std::isxdigit(ch);
+		return is_char_class(ch, char_class::hexdigit);
 	}
 
 	friend std::string encode_url(std::string_view s);
 
+  private:
+
 	// --------------------------------------------------------------------
-	
+
 	bool is_pct_encoded(const char *&cp)
 	{
 		bool result = false;

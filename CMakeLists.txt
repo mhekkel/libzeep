@@ -4,7 +4,7 @@ project(libzeep VERSION 6.0.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" OFF)
+option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
 
 include(GNUInstallDirs)
 include(CheckFunctionExists)
@@ -13,7 +13,6 @@ include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
-include(FindPkgConfig)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
@@ -36,19 +35,21 @@ if(MSVC)
     # make msvc standards compliant...
     add_compile_options(/permissive-)
 
-	macro(get_WIN32_WINNT version)
-		if (WIN32 AND CMAKE_SYSTEM_VERSION)
-			set(ver ${CMAKE_SYSTEM_VERSION})
-			string(REPLACE "." "" ver ${ver})
-			string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
+    if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
+        add_definitions(-D _WIN32_WINNT=0x0A00)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
+        add_definitions(-D _WIN32_WINNT=0x0603)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
+        add_definitions(-D _WIN32_WINNT=0x0602)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
+        add_definitions(-D _WIN32_WINNT=0x0601)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
+        add_definitions(-D _WIN32_WINNT=0x0600)
+    else() # Windows XP (5.1)
+        add_definitions(-D _WIN32_WINNT=0x0501)
+    endif()
 
-			set(${version} "0x${ver}")
-		endif()
-	endmacro()
-
-	get_WIN32_WINNT(ver)
-	add_definitions(-D_WIN32_WINNT=${ver})
-	add_definitions(-DNOMINMAX=1)
+	add_definitions(-DNOMINMAX)
 endif()
 
 # Optionally use mrc to create resources
@@ -75,13 +76,18 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(USE_BOOST_ASIO)
-	find_package(Boost 1.81 COMPONENTS headers REQUIRED)
+	find_package(Boost 1.80 COMPONENTS headers REQUIRED)
 	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 	message(STATUS "Using asio from boost")
 
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 else()
-	pkg_check_modules(ASIO asio>=1.26 REQUIRED IMPORTED_TARGET)
+	if(MSVC)
+		find_file(ASIO asio.hpp)
+	else()
+		pkg_check_modules(ASIO asio>=1.26 REQUIRED IMPORTED_TARGET)
+	endif()
+
 	message(STATUS "Using standalone asio")
 
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
