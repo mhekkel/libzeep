@@ -1,3 +1,7 @@
+Version 6.0.2
+- When processing tags in a HTML5 environment, replace CDATA
+  sections with plain text. CDATA is not supported in HTML5.
+
 Version 6.0.1
 - Fixed some issues in serializing and detection templates
   to enable serializing std::optional<time_point>.

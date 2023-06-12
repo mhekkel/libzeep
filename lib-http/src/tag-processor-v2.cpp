@@ -318,6 +318,28 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 {
 	for (;;)
 	{
+		xml::cdata *cdata = dynamic_cast<xml::cdata *>(node);
+		if (cdata != nullptr)
+		{
+			auto doc = dynamic_cast<xml::document *>(node->root());
+			if (doc != nullptr and doc->is_html5())
+			{
+				// HTML5 does not support CDATA sections, replace it
+
+				xml::element *parent = node->parent();
+
+				auto ni = std::find_if(parent->nodes().begin(), parent->nodes().end(), [node](auto &n)
+					{ return &n == node; });
+
+				auto ti = parent->emplace(ni, xml::text(cdata->get_text()));
+
+				assert(std::next(ti) == ni);
+
+				parent->erase(ni);
+				break;
+			}
+		}
+
 		xml::text *text = dynamic_cast<xml::text *>(node);
 		if (text != nullptr)
 		{

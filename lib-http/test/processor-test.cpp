@@ -1094,9 +1094,6 @@ BOOST_AUTO_TEST_CASE(test_35)
 	scope.put("a", "aap");
 	scope.put("b", "noot");
 
-	zeep::http::template_processor p(DOCROOT);
-	zeep::http::tag_processor_v2 tp;
-
 	process_and_compare(doc, doc_test, scope);
 }
 
@@ -1120,9 +1117,6 @@ BOOST_AUTO_TEST_CASE(test_36)
 
 	scope.put("x", 2.0);
 
-	zeep::http::template_processor p(DOCROOT);
-	zeep::http::tag_processor_v2 tp;
-
 	process_and_compare(doc, doc_test, scope);
 }
 
@@ -1144,9 +1138,26 @@ BOOST_AUTO_TEST_CASE(test_37)
 
 	scope.put("a", "x");
 
-	zeep::http::template_processor p(DOCROOT);
-	zeep::http::tag_processor_v2 tp;
-
 	process_and_compare(doc, doc_test, scope);
 }
 
+BOOST_AUTO_TEST_CASE(test_38)
+{
+	auto doc = R"xml(<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html>
+<span><![CDATA[bla bla]]></span>
+</html>
+	)xml"_xml;
+
+	auto doc_test = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html>
+<span>bla bla</span>
+</html>
+	)"_xml;
+
+	zeep::http::scope scope;
+
+	scope.put("a", "x");
+
+	process_and_compare(doc, doc_test, scope);
+}
