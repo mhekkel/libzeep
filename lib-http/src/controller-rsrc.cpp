@@ -28,7 +28,7 @@ struct rsrc_imp
 };
 } // namespace mrsrc
 
-#if _MSC_VER
+#if _WIN32
 
 extern "C" const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
 extern "C" const char *gResourceDataDefault[1] = {};
@@ -74,7 +74,7 @@ class rsrc_data
   private:
 	rsrc_data()
 	{
-		if (gResourceIndex and gResourceIndex and gResourceName)
+		if (gResourceIndex and gResourceData and gResourceName)
 		{
 			m_index = gResourceIndex;
 			m_data = gResourceData;
@@ -448,14 +448,14 @@ namespace zeep::http
 
 // -----------------------------------------------------------------------
 
-#if _MSC_VER and not defined(WIN32_LEAN_AND_MEAN)
+#if _WIN32 and not defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
 rsrc_loader::rsrc_loader(const std::string &)
 {
-#if _MSC_VER
+#if _WIN32
 	char exePath[MAX_PATH] = {};
 	if (::GetModuleFileNameA(NULL, exePath, MAX_PATH) > 0)
 		mRsrcWriteTime = fs::last_write_time(exePath);

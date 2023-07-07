@@ -16,7 +16,7 @@
 //	Signal handling
 //
 
-#if _MSC_VER
+#if _WIN32
 
 #include <Windows.h>
 #include <signal.h>

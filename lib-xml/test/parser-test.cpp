@@ -1,6 +1,6 @@
 #include <iostream>
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #include <conio.h>
 #include <ctype.h>
 #endif
@@ -493,7 +493,7 @@ int main(int argc, char* argv[])
 	
 	fs::current_path(savedwd);
 
-// #if defined(_MSC_VER)
+// #if defined(_WIN32)
 // 	cout << "press any key to continue...";
 // 	char ch = _getch();
 // #endif

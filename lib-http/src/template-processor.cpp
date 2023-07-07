@@ -204,7 +204,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 
 	if (not data)
 	{
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 		char msg[1024] = "";
 
 		DWORD dw = ::GetLastError();

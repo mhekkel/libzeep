@@ -152,11 +152,10 @@ list(APPEND ZEEP_HEADERS
 	${PROJECT_SOURCE_DIR}/include/zeep/exception.hpp
 )
 
-set(ZEEP_SRC
+list(APPEND ZEEP_SRC
 	${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/crypto.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/daemon.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/el-processing.cpp
@@ -192,6 +191,10 @@ set(ZEEP_SRC
 if(HTTP_SERVER_HAS_PREFORK)
 	list(APPEND ZEEP_HEADERS ${PROJECT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
 	list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
+endif()
+
+if(USE_RSRC)
+	list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp)
 endif()
 
 add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})

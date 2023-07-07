@@ -7,7 +7,7 @@
 // Source code specifically for Unix/Linux
 // Utilitie routines to build daemon processes
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <grp.h>
 #include <pwd.h>
 #include <sys/wait.h>
@@ -106,7 +106,7 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	return result;
 }
 
-#if _MSC_VER
+#if _WIN32
 
 int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {

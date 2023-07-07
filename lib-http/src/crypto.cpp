@@ -773,7 +773,7 @@ std::string random_hash()
 
 // --------------------------------------------------------------------
 
-#if _MSC_VER
+#if _WIN32
 #	pragma warning (disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif
 
