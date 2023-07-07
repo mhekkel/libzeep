@@ -51,7 +51,11 @@ if(MSVC)
 
 	add_definitions(-DNOMINMAX)
 
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	if(BUILD_SHARED_LIBS)
+		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+	else()
+		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	endif()
 endif()
 
 # Optionally use mrc to create resources
