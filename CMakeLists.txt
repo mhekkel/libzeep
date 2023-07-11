@@ -83,7 +83,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(USE_BOOST_ASIO)
-	find_package(BOOST 1.80 COMPONENTS headers REQUIRED)
+	find_package(Boost 1.80 COMPONENTS headers REQUIRED)
 	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 	message(STATUS "Using asio from boost")
 
@@ -363,8 +363,7 @@ endif()
 option(ZEEP_BUILD_TESTS "Build test executables" OFF)
 
 if(ZEEP_BUILD_TESTS)
-
-	find_package(BOOST REQUIRED)
+	find_package(Boost REQUIRED)
 
 	enable_testing()
 
