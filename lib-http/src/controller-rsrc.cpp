@@ -28,7 +28,7 @@ struct rsrc_imp
 };
 } // namespace mrsrc
 
-#if _WIN32
+#if _MSC_VER
 
 extern "C" const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
 extern "C" const char *gResourceDataDefault[1] = {};
@@ -43,9 +43,15 @@ extern "C" const char gResourceName[];
 #pragma comment(linker, "/alternatename:gResourceName=gResourceNameDefault")
 
 #else
-extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
-extern const __attribute__((weak)) char gResourceData[];
-extern const __attribute__((weak)) char gResourceName[];
+
+extern "C" __attribute__((weak, alias("gResourceIndexDefault"))) const mrsrc::rsrc_imp gResourceIndex[];
+extern "C" __attribute__((weak, alias("gResourceDataDefault"))) const char gResourceData[];
+extern "C" __attribute__((weak, alias("gResourceNameDefault"))) const char gResourceName[];
+
+const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
+const char *gResourceDataDefault[1] = {};
+const char *gResourceNameDefault[1] = {};
+
 #endif
 
 namespace mrsrc
@@ -74,12 +80,9 @@ class rsrc_data
   private:
 	rsrc_data()
 	{
-		if (gResourceIndex and gResourceData and gResourceName)
-		{
-			m_index = gResourceIndex;
-			m_data = gResourceData;
-			m_name = gResourceName;
-		}
+		m_index = gResourceIndex;
+		m_data = gResourceData;
+		m_name = gResourceName;
 	}
 
 	rsrc_imp m_dummy = {};

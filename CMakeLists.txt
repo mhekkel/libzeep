@@ -160,6 +160,7 @@ list(APPEND ZEEP_SRC
 	${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
+	${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/crypto.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/daemon.cpp
 	${PROJECT_SOURCE_DIR}/lib-http/src/el-processing.cpp
@@ -195,10 +196,6 @@ list(APPEND ZEEP_SRC
 if(HTTP_SERVER_HAS_PREFORK)
 	list(APPEND ZEEP_HEADERS ${PROJECT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
 	list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
-endif()
-
-if(USE_RSRC)
-	list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp)
 endif()
 
 add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
@@ -444,7 +441,7 @@ if(ZEEP_BUILD_TESTS)
 		endif()
 
 		if(USE_RSRC AND ("${TEST}" STREQUAL "http/processor" OR "${TEST}" STREQUAL "http/rsrc_webapp"))
-			mrc_target_resources(${ZEEP_TEST} ${PROJECT_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
+			mrc_target_resources(${ZEEP_TEST} RESOURCES ${PROJECT_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
 		endif()
 
 		target_include_directories(${ZEEP_TEST} PRIVATE
