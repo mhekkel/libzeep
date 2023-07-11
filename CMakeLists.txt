@@ -31,10 +31,7 @@ endif()
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-if(MSVC)
-    # make msvc standards compliant...
-    add_compile_options(/permissive-)
-
+if(WIN32)
     if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
         add_definitions(-D _WIN32_WINNT=0x0A00)
     elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
@@ -50,6 +47,11 @@ if(MSVC)
     endif()
 
 	add_definitions(-DNOMINMAX)
+endif()
+
+if(MSVC)
+    # make msvc standards compliant...
+    add_compile_options(/permissive-)
 
 	if(BUILD_SHARED_LIBS)
 		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
@@ -62,7 +64,7 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_package(Mrc QUIET)
+	find_package(MRC 1.3.9 QUIET)
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
@@ -81,13 +83,13 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(USE_BOOST_ASIO)
-	find_package(Boost 1.80 COMPONENTS headers REQUIRED)
+	find_package(BOOST 1.80 COMPONENTS headers REQUIRED)
 	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 	message(STATUS "Using asio from boost")
 
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 else()
-	if(MSVC)
+	if(WIN32)
 		find_file(ASIO asio.hpp)
 	else()
 		include(FindPkgConfig)
@@ -362,7 +364,7 @@ option(ZEEP_BUILD_TESTS "Build test executables" OFF)
 
 if(ZEEP_BUILD_TESTS)
 
-	find_package(Boost REQUIRED)
+	find_package(BOOST REQUIRED)
 
 	enable_testing()
 
