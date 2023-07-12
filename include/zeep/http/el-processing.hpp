@@ -93,7 +93,7 @@ void evaluate_el_with(scope &scope, const std::string &text);
 ///
 ///	The expression found in \a text is processed and the result is
 ///	returned as a link template object. This function is called from
-/// el::include/el::replace/el::insert attributes.
+/// el::include, el::replace and el::insert attributes.
 ///
 /// \param scope  The scope for the el scripts
 /// \param text   The text containing the link specification
@@ -209,7 +209,7 @@ class scope
 	///
 	/// \param name				The name of the variable to return
 	/// \param includeSelected	If this is true, and the variable was not found as a regular variable
-	///							in the current scope, the selected objects will be search for members
+	///							in the current scope, the selected objects will be searched for members
 	///							with \a name This is used by the tag processing lib v2 in _z2:object_
 	/// \return					The value found or null if there was no such variable.
 	const object &lookup(const std::string &name, bool includeSelected = false) const;
@@ -220,9 +220,6 @@ class scope
 	/// \brief return variable with \a name
 	///
 	/// \param name				The name of the variable to return
-	/// \param includeSelected	If this is true, and the variable was not found as a regular variable
-	///							in the current scope, the selected objects will be search for members
-	///							with \a name This is used by the tag processing lib v2 in _z2:object_
 	/// \return					The value found or null if there was no such variable.
 	object &lookup(const std::string &name);
 

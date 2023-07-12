@@ -51,7 +51,7 @@ class login_controller : public html_controller
 	///
 	/// An error handler may call this method to create a decent login screen.
 	/// \param req		The request that triggered this call
-	/// \param rep		Write the reply in this object
+	/// \param reply	Write the reply in this object
 	virtual void create_unauth_reply(const request &req, reply &reply);
 
 	/// \brief Handle a GET on /login

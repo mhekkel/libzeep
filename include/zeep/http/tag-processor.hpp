@@ -43,7 +43,7 @@ class tag_processor
 	/// \param node		The XML zeep::xml::node (element) to manipulate
 	/// \param scope	The zeep::http::scope containing the variables and request
 	/// \param dir		The path to the docroot, the directory containing the XHTML templates
-	/// \param webapp	The instance of webapp that called this function
+	/// \param loader	The template processor to use to load resources
 	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader) = 0;
 
   protected:

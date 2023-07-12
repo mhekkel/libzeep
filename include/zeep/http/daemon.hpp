@@ -38,9 +38,9 @@ class daemon
 	/// \brief constructor with separately specified files
 	///
 	/// \param factory			The function object that creates server instances
-	/// \param pid_file			The file that will contain the process ID, usually in /var/run/<process_name>
-	/// \param stdout_log_file	The file that will contain the stdout log, usually in /var/log/<process_name>/access.log
-	/// \param stderr_log_file	The file that will contain the stderr log, usually in /var/log/<process_name>/error.log
+	/// \param pid_file			The file that will contain the process ID, usually in /var/run/{process_name}
+	/// \param stdout_log_file	The file that will contain the stdout log, usually in /var/log/{process_name}/access.log
+	/// \param stderr_log_file	The file that will contain the stderr log, usually in /var/log/{process_name}/error.log
 	daemon(server_factory_type&& factory, const std::string& pid_file,
 		const std::string& stdout_log_file, const std::string& stderr_log_file);
 
@@ -65,6 +65,7 @@ class daemon
 	///
 	/// \param address				The address to bind to
 	/// \param port					The port number to bind to
+	/// \param nr_of_procs			The number of worker processes to fork
 	/// \param nr_of_threads		The number of threads to pass to the server class
 	/// \param run_as_user			The user to run the forked process. Daemons are usually
 	///								started as root and should drop their privileges as soon
