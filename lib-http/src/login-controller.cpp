@@ -27,15 +27,31 @@ class login_error_handler : public error_handler
 	{
 	}
 
-	virtual bool create_unauth_reply(const request &req, reply &reply)
+	bool create_unauth_reply(const request &req, reply &reply) override
 	{
 		m_login_controller->create_unauth_reply(req, reply);
 		return true;
 	}
 
-	virtual bool create_error_reply(const request &/*req*/, const request &/*req*/, const request &/*req*/, const request &/*req*/)
+	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply) override
 	{
-		return false;
+		bool result = false;
+
+		try
+		{
+			if (eptr)
+				std::rethrow_exception(eptr);
+		}
+		catch (const unauthorized_exception &)
+		{
+			result = create_unauth_reply(req, reply);
+		}
+		catch (...)
+		{
+			result = false;
+		}
+
+		return result;
 	}
 
   private:
