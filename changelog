@@ -1,3 +1,6 @@
+Version 6.0.3
+- Fixes in login controller logic. Again.
+
 Version 6.0.2
 - When processing tags in a HTML5 environment, replace CDATA
   sections with plain text. CDATA is not supported in HTML5.
