@@ -14,6 +14,7 @@
 
 #include <zeep/config.hpp>
 
+#include <cstdint>
 #include <iomanip>
 #include <map>
 #include <regex>
