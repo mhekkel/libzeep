@@ -158,8 +158,19 @@ parse_result parser::parse_header_lines(char ch)
 						}
 						else
 							m_parsing_content = false;
+					
+						break;
 					}
-					else if (iequals(h->name, "Connection") and iequals(h->value, "Close") and (m_method == "POST" or m_method == "PUT"))
+					
+					if (iequals(h->name, "Connection") and iequals(h->value, "Close") and (m_method == "POST" or m_method == "PUT"))
+					{
+						m_parser = &parser::parse_content;
+						m_parsing_content = true;
+						break;
+					}
+
+					// Apparently, a content-length is not required to indicate there is content...
+					if (iequals(h->name, "Content-Type"))
 					{
 						m_parser = &parser::parse_content;
 						m_parsing_content = true;
