@@ -115,6 +115,10 @@ class parser
 
 	parser();
 
+	parse_result post_process_headers();
+
+	bool find_last_token(const header& h, const std::string& t) const;
+
 	state_parser m_parser;
 	int m_state;
 	unsigned int m_chunk_size;
@@ -141,6 +145,8 @@ class request_parser : public parser
 
   private:
 	parse_result parse_initial_line(char ch);
+
+	// parse_result post_process_headers() override;
 };
 
 class reply_parser : public parser

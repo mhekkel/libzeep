@@ -6,10 +6,10 @@
 
 #include <zeep/config.hpp>
 
-#include <sstream>
-
 #include <zeep/http/message-parser.hpp>
 #include <zeep/unicode-support.hpp>
+
+#include <charconv>
 
 namespace zeep::http 
 {
@@ -132,55 +132,65 @@ parse_result parser::parse_header_lines(char ch)
 		
 		case 20:
 			if (ch == '\n')
-			{
-				result = true;
-
-				for (std::vector<header>::iterator h = m_headers.begin(); h != m_headers.end(); ++h)
-				{
-					if (iequals(h->name, "Transfer-Encoding") and iequals(h->value, "chunked"))
-					{
-						m_parser = &parser::parse_chunk;
-						m_state = 0;
-						m_parsing_content = true;
-						break;
-					}
-
-					if (iequals(h->name, "Content-Length"))
-					{
-						std::stringstream s(h->value);
-						s >> m_chunk_size;
-
-						if (m_chunk_size > 0)
-						{
-							m_parser = &parser::parse_content;
-							m_parsing_content = true;
-							m_payload.reserve(m_chunk_size);
-						}
-						else
-							m_parsing_content = false;
-					
-						break;
-					}
-					
-					if (iequals(h->name, "Connection") and iequals(h->value, "Close") and (m_method == "POST" or m_method == "PUT"))
-					{
-						m_parser = &parser::parse_content;
-						m_parsing_content = true;
-					}
-
-					// Apparently, a content-length is not required to indicate there is content...
-					if (iequals(h->name, "Content-Type"))
-					{
-						m_parser = &parser::parse_content;
-						m_parsing_content = true;
-					}
-				}
-			}
+				result = post_process_headers();
 			else
 				result = false;
 			break;
 	}
 	
+	return result;
+}
+
+bool parser::find_last_token(const header& h, const std::string& t) const
+{
+	bool result = false;
+	if (h.value.length() >= t.length())
+	{
+		auto ix = h.value.length() - t.length();
+
+		result = iequals(h.value.substr(ix), t);
+		if (result)
+			result = ix == 0 or h.value[ix] == ' ' or h.value[ix] == ',';
+	}
+	
+	return result;
+}
+
+parse_result parser::post_process_headers()
+{
+	parse_result result = true;
+
+	auto i = find_if(m_headers.begin(), m_headers.end(), [](const header& h) { return iequals(h.name, "transfer-encoding"); });
+	if (i != m_headers.end())
+	{
+		if (find_last_token(*i, "chunked"))
+		{
+			m_parser = &parser::parse_chunk;
+			m_state = 0;
+			m_parsing_content = true;
+		}
+		else
+			result = false;
+	}
+	else
+	{
+		i = find_if(m_headers.begin(), m_headers.end(), [](const header& h) { return iequals(h.name, "content-length"); });
+		if (i != m_headers.end())
+		{
+			auto r = std::from_chars(i->value.data(), i->value.data() + i->value.length(), m_chunk_size);
+			if (r.ec != std::errc())
+				result = false;
+			else if (m_chunk_size)
+			{
+				m_parser = &parser::parse_content;
+				m_parsing_content = true;
+				m_payload.reserve(m_chunk_size);
+			}
+			else
+				m_parsing_content = false;
+		}
+	}
+
 	return result;
 }
 
@@ -227,10 +237,11 @@ parse_result parser::parse_chunk(char ch)
 		case 3:
 			if (ch == '\n')
 			{
-				std::stringstream s(m_data);
-				s >> std::hex >> m_chunk_size;
+				auto r = std::from_chars(m_data.data(), m_data.data() + m_data.length(), m_chunk_size, 16);
 
-				if (m_chunk_size > 0)
+				if (r.ec != std::errc{})
+					result = false;
+				else if (m_chunk_size > 0)
 				{
 					m_payload.reserve(m_payload.size() + m_chunk_size);
 					++m_state;
@@ -293,22 +304,23 @@ parse_result request_parser::parse(std::streambuf& text)
 	}
 
 	parse_result result = indeterminate;
-	
-	bool is_parsing_content = m_parsing_content;
-	while (text.in_avail() > 0 and result == indeterminate)
-	{
-		result = (this->*m_parser)(static_cast<char>(text.sbumpc()));
 
-		if (result and is_parsing_content == false and m_parsing_content == true)
+	if (m_http_version_major == 0 and m_http_version_minor == 9)
+		result = true;
+	else
+	{
+		bool is_parsing_content = m_parsing_content;
+		while (text.in_avail() > 0 and result == indeterminate)
 		{
-			is_parsing_content = true;
-			result = indeterminate;
+			result = (this->*m_parser)(static_cast<char>(text.sbumpc()));
+
+			if (result and is_parsing_content == false and m_parsing_content == true)
+			{
+				is_parsing_content = true;
+				result = indeterminate;
+			}
 		}
 	}
-
-	// If no content-length was given, assume we have all data.
-	if (result == indeterminate and m_chunk_size == 0)
-		result = true;
 
 	return result;
 }
@@ -353,6 +365,12 @@ parse_result request_parser::parse_initial_line(char ch)
 		case 1:
 			if (ch == ' ')
 				++m_state;
+			else if (ch == '\r' or ch == '\n')
+			{
+				m_http_version_major = 0;
+				m_http_version_minor = 9;
+				result = true;
+			}
 			else if (iscntrl(ch))
 				result = false;
 			else
@@ -391,6 +409,11 @@ parse_result request_parser::parse_initial_line(char ch)
 	
 	return result;
 }
+
+// parse_result request_parser::post_process_headers()
+// {
+// 	return parser::post_process_headers();
+// }
 
 // --------------------------------------------------------------------
 // 
