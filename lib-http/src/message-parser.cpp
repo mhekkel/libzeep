@@ -166,7 +166,6 @@ parse_result parser::parse_header_lines(char ch)
 					{
 						m_parser = &parser::parse_content;
 						m_parsing_content = true;
-						break;
 					}
 
 					// Apparently, a content-length is not required to indicate there is content...
@@ -269,7 +268,7 @@ parse_result parser::parse_content(char ch)
 	if (m_collect_payload)
 		m_payload += ch;
 
-	if (--m_chunk_size == 0)
+	if (m_payload.length() == m_chunk_size)
 	{
 		result = true;
 		m_parsing_content = false;
@@ -306,6 +305,10 @@ parse_result request_parser::parse(std::streambuf& text)
 			result = indeterminate;
 		}
 	}
+
+	// If no content-length was given, assume we have all data.
+	if (result == indeterminate and m_chunk_size == 0)
+		result = true;
 
 	return result;
 }
