@@ -491,4 +491,4 @@ if(ZEEP_BUILD_TESTS)
 	endforeach()
 endif()
 
-add_subdirectory(examples)
+# add_subdirectory(examples)
