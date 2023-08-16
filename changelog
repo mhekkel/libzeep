@@ -2,6 +2,7 @@ Version 6.0.4
 - Fix message parser to accept HTTP messages without a
   content-length but with a content-type header.
 - Include <cstdint> at more locations
+- Include version string code (https://github.com/mhekkel/version-string.cmake)
 
 Version 6.0.3
 - Fixes in login controller logic. Again.
