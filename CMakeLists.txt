@@ -14,6 +14,7 @@ include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
 include(GenerateExportHeader)
+include(VersionString)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -114,6 +115,8 @@ if(UNIX)
 		set(HTTP_SERVER_HAS_PREFORK 1)
 	endif()
 endif()
+
+write_version_header("${PROJECT_SOURCE_DIR}/lib-xml/src" LIB_NAME "libzeep")
 
 list(APPEND ZEEP_HEADERS
 	${PROJECT_SOURCE_DIR}/include/zeep/crypto.hpp
@@ -487,3 +490,5 @@ if(ZEEP_BUILD_TESTS)
 
 	endforeach()
 endif()
+
+add_subdirectory(examples)
