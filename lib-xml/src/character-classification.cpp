@@ -6,6 +6,11 @@
 
 #include <zeep/xml/character-classification.hpp>
 
+// And this is a nice place to include the revision header
+// since code in this object file is used by all other modules
+
+#include "revision.hpp"
+
 namespace zeep::xml
 {
 
