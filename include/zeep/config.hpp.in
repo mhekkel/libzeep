@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2020
+//        Copyright Maarten L. Hekkelman, 2014-2023
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -36,17 +36,3 @@
 #define LIBZEEP_VERSION_MINOR @LIBZEEP_VERSION_MINOR@
 #define LIBZEEP_VERSION_PATCH @LIBZEEP_VERSION_PATCH@
 
-// Some warnings that we don't like in MSVC:
-
-#if defined(_MSC_VER)
-
-#define _CRT_SECURE_NO_WARNINGS 1
-#define NOMINMAX 1
-
-// #	pragma warning (disable : 4355)	// this is used in Base Initializer list
-// #	pragma warning (disable : 4996)	// unsafe function or variable
-// #	pragma warning (disable : 4068)	// unknown pragma
-#pragma warning (disable : 4996)	// stl copy()
-// #	pragma warning (disable : 4800)	// BOOL conversion
-
-#endif
