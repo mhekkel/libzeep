@@ -331,9 +331,7 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 				auto ni = std::find_if(parent->nodes().begin(), parent->nodes().end(), [node](auto &n)
 					{ return &n == node; });
 
-				[[__maybe_unused__]] auto ti = parent->emplace(ni, xml::text(cdata->get_text()));
-				assert(std::next(ti) == ni);
-
+				parent->emplace(ni, xml::text(cdata->get_text()));
 				parent->erase(ni);
 				break;
 			}
