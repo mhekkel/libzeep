@@ -23,13 +23,12 @@ std::string decimal_point(std::locale loc)
 	
 	if (std::has_facet<std::numpunct<char8_t>>(loc))
 		result = std::use_facet<std::numpunct<char8_t>>(loc).decimal_point();
-	// else if (std::has_facet<std::numpunct<wchar_t>>(loc))
-	// {
-	// 	std::wstring s{ std::use_facet<std::numpunct<wchar_t>>(loc).decimal_point() };
-		
-	// 	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-	// 	result = conv.to_bytes(s);
-	// }
+	else if (std::has_facet<std::numpunct<wchar_t>>(loc))
+		zeep::append(result, std::use_facet<std::numpunct<wchar_t>>(loc).decimal_point());
+	else if (std::has_facet<std::numpunct<char>>(loc))
+		result = std::use_facet<std::numpunct<char>>(loc).decimal_point();
+	else
+		result = { '.' };
 
 	return result;
 }
@@ -40,13 +39,12 @@ std::string thousands_sep(std::locale loc)
 	
 	if (std::has_facet<std::numpunct<char8_t>>(loc))
 		result = std::use_facet<std::numpunct<char8_t>>(loc).thousands_sep();
-	// else if (std::has_facet<std::numpunct<wchar_t>>(loc))
-	// {
-	// 	std::wstring s{ std::use_facet<std::numpunct<wchar_t>>(loc).thousands_sep() };
-		
-	// 	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-	// 	result = conv.to_bytes(s);
-	// }
+	else if (std::has_facet<std::numpunct<wchar_t>>(loc))
+		zeep::append(result, std::use_facet<std::numpunct<wchar_t>>(loc).thousands_sep());
+	else if (std::has_facet<std::numpunct<char>>(loc))
+		result = std::use_facet<std::numpunct<char>>(loc).thousands_sep();
+	else
+		result = { ',' };
 
 	return result;
 }
@@ -57,8 +55,10 @@ std::string grouping(std::locale loc)
 	
 	if (std::has_facet<std::numpunct<char8_t>>(loc))
 		result = std::use_facet<std::numpunct<char8_t>>(loc).grouping();
-	// else if (std::has_facet<std::numpunct<wchar_t>>(loc))
-	// 	result = std::use_facet<std::numpunct<wchar_t>>(loc).grouping();
+	else if (std::has_facet<std::numpunct<wchar_t>>(loc))
+		result = std::use_facet<std::numpunct<wchar_t>>(loc).grouping();
+	else if (std::has_facet<std::numpunct<char>>(loc))
+		result = std::use_facet<std::numpunct<char>>(loc).grouping();
 
 	return result;
 }

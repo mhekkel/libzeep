@@ -487,8 +487,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 // 	</data>
 // 		)"_xml;
 
-// 		zeep::http::request req;
-// 		req.headers.push_back({ "Accept-Language", "fr_FR, en-US;q=0.7, en;q=0.3" });
+// 		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "fr_FR, en-US;q=0.7, en;q=0.3" } });
 
 // 		zeep::http::scope scope(req);
 // 		scope.put("ok", true);
