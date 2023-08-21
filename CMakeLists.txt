@@ -24,8 +24,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_DEBUG_POSTFIX d)
 
 # When building with ninja-multiconfig, build both debug and release by default
-set(CMAKE_CROSS_CONFIGS "Debug;Release")
-set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+	set(CMAKE_CROSS_CONFIGS "Debug;Release")
+	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+endif()
 
 find_package(Filesystem REQUIRED)
 

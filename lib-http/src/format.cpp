@@ -7,6 +7,7 @@
 #include <codecvt>
 #include <cmath>
 #include <deque>
+#include <locale>
 #include <iostream>
 
 #include <zeep/unicode-support.hpp>
@@ -20,13 +21,15 @@ std::string decimal_point(std::locale loc)
 {
 	std::string result;
 	
-	if (std::has_facet<std::numpunct<wchar_t>>(loc))
-	{
-		std::wstring s{ std::use_facet<std::numpunct<wchar_t>>(loc).decimal_point() };
+	if (std::has_facet<std::numpunct<char8_t>>(loc))
+		result = std::use_facet<std::numpunct<char8_t>>(loc).decimal_point();
+	// else if (std::has_facet<std::numpunct<wchar_t>>(loc))
+	// {
+	// 	std::wstring s{ std::use_facet<std::numpunct<wchar_t>>(loc).decimal_point() };
 		
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-		result = conv.to_bytes(s);
-	}
+	// 	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+	// 	result = conv.to_bytes(s);
+	// }
 
 	return result;
 }
@@ -35,13 +38,15 @@ std::string thousands_sep(std::locale loc)
 {
 	std::string result;
 	
-	if (std::has_facet<std::numpunct<wchar_t>>(loc))
-	{
-		std::wstring s{ std::use_facet<std::numpunct<wchar_t>>(loc).thousands_sep() };
+	if (std::has_facet<std::numpunct<char8_t>>(loc))
+		result = std::use_facet<std::numpunct<char8_t>>(loc).thousands_sep();
+	// else if (std::has_facet<std::numpunct<wchar_t>>(loc))
+	// {
+	// 	std::wstring s{ std::use_facet<std::numpunct<wchar_t>>(loc).thousands_sep() };
 		
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-		result = conv.to_bytes(s);
-	}
+	// 	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+	// 	result = conv.to_bytes(s);
+	// }
 
 	return result;
 }
@@ -50,8 +55,10 @@ std::string grouping(std::locale loc)
 {
 	std::string result;
 	
-	if (std::has_facet<std::numpunct<wchar_t>>(loc))
-		result = std::use_facet<std::numpunct<wchar_t>>(loc).grouping();
+	if (std::has_facet<std::numpunct<char8_t>>(loc))
+		result = std::use_facet<std::numpunct<char8_t>>(loc).grouping();
+	// else if (std::has_facet<std::numpunct<wchar_t>>(loc))
+	// 	result = std::use_facet<std::numpunct<wchar_t>>(loc).grouping();
 
 	return result;
 }
