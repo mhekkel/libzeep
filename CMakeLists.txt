@@ -20,7 +20,12 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Build debug library with d postfix
 set(CMAKE_DEBUG_POSTFIX d)
+
+# When building with ninja-multiconfig, build both debug and release by default
+set(CMAKE_CROSS_CONFIGS "Debug;Release")
+set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
 
 find_package(Filesystem REQUIRED)
 
@@ -65,13 +70,13 @@ else()
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
+
+		if(USE_RSRC)
+			message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
+			set(WEBAPP_USES_RESOURCES 1)
+		endif()
 	else()
 		message(STATUS "Not using resources since mrc was not found")
-	endif()
-
-	if(USE_RSRC)
-		message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
-		set(WEBAPP_USES_RESOURCES 1)
 	endif()
 endif()
 
@@ -87,7 +92,7 @@ if(USE_BOOST_ASIO)
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 else()
 	if(WIN32)
-		find_file(ASIO asio.hpp)
+		find_path(ASIO_INCLUDE_DIR asio.hpp)
 	else()
 		include(FindPkgConfig)
 
