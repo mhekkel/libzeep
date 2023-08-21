@@ -20,6 +20,8 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_DEBUG_POSTFIX d)
+
 find_package(Filesystem REQUIRED)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -53,12 +55,6 @@ endif()
 if(MSVC)
 	# make msvc standards compliant...
 	add_compile_options(/permissive-)
-
-	if(BUILD_SHARED_LIBS)
-		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-	else()
-		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-	endif()
 endif()
 
 # Optionally use mrc to create resources
@@ -70,11 +66,7 @@ else()
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
 	else()
-		if(USE_RSRC)
-			message(FATAL_ERROR "Cannot use resources since mrc was not found")
-		else()
-			message(STATUS "Not using resources since mrc was not found")
-		endif()
+		message(STATUS "Not using resources since mrc was not found")
 	endif()
 
 	if(USE_RSRC)
@@ -107,7 +99,10 @@ else()
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-find_package(date 3 REQUIRED)
+find_package(date 3)
+if(NOT date_FOUND)
+	message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+endif()
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -250,18 +245,14 @@ install(
 	PATTERN "config.hpp.in" EXCLUDE
 )
 
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
-
 configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR
 )
 
 write_basic_package_version_file(
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
-	COMPATIBILITY SameMajorVersion
+	COMPATIBILITY AnyNewerVersion
 )
 
 install(FILES
@@ -276,7 +267,7 @@ set_target_properties(zeep PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-	COMPATIBLE_INTERFACE_STRING ${zeep_MAJOR_VERSION}
+	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
 )
 
 # Config file
@@ -483,4 +474,4 @@ if(ZEEP_BUILD_TESTS)
 	endforeach()
 endif()
 
-add_subdirectory(examples)
+# add_subdirectory(examples)
