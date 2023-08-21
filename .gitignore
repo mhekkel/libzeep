@@ -18,3 +18,5 @@ examples/obj/
 examples/obj.dbg/
 include/zeep/http/asio.hpp
 lib-xml/src/revision.hpp
+debug/
+release/

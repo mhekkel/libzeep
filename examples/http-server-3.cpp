@@ -38,7 +38,7 @@ class hello_controller : public zeep::http::html_controller
 int main()
 {
     /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
-    zeep::http::server srv(std::filesystem::canonical("docroot"));
+    zeep::http::server srv(std::filesystem::canonical("docroot").string());
 
     srv.add_controller(new hello_controller());
 
