@@ -1,5 +1,7 @@
 Version 6.0.5
 - Fix SONAME (should have been updated to 6 of course)
+- Changed code in format to no longer use std::codecvt_utf8
+- support for building with stand alone ASIO
 
 Version 6.0.4
 - Fix message parser to accept HTTP messages without a
