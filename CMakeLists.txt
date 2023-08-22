@@ -12,7 +12,6 @@ include(CheckIncludeFiles)
 include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
-include(Dart)
 include(GenerateExportHeader)
 include(VersionString)
 
@@ -93,16 +92,8 @@ if(USE_BOOST_ASIO)
 
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 else()
-	if(WIN32)
-		find_path(ASIO_INCLUDE_DIR asio.hpp)
-	else()
-		include(FindPkgConfig)
-
-		pkg_check_modules(ASIO asio>=1.26 REQUIRED IMPORTED_TARGET)
-	endif()
-
+	find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
 	message(STATUS "Using standalone asio")
-
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
@@ -283,18 +274,6 @@ set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
-
-# pkgconfig support
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
-
-configure_file(${PROJECT_SOURCE_DIR}/cmake/libzeep.pc.in
-	${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
-	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Documentation
 option(ZEEP_BUILD_DOC "Build documentation" OFF)
