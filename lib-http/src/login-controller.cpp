@@ -27,15 +27,31 @@ class login_error_handler : public error_handler
 	{
 	}
 
-	virtual bool create_unauth_reply(const request &req, reply &reply)
+	bool create_unauth_reply(const request &req, reply &reply) override
 	{
 		m_login_controller->create_unauth_reply(req, reply);
 		return true;
 	}
 
-	virtual bool create_error_reply(const request &/*req*/, const request &/*req*/, const request &/*req*/, const request &/*req*/)
+	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply) override
 	{
-		return false;
+		bool result = false;
+
+		try
+		{
+			if (eptr)
+				std::rethrow_exception(eptr);
+		}
+		catch (const unauthorized_exception &)
+		{
+			result = create_unauth_reply(req, reply);
+		}
+		catch (...)
+		{
+			result = false;
+		}
+
+		return result;
 	}
 
   private:
@@ -79,7 +95,10 @@ xml::document login_controller::load_login_form(const request &req) const
 
 			tp.load_template("login", doc);
 
-			tp.process_tags(doc.child(), { get_server(), req });
+			scope sc{ get_server(), req };
+			sc.put("uri", req.get_uri().string());
+
+			tp.process_tags(doc.child(), sc);
 
 			return doc;
 		}
@@ -217,27 +236,15 @@ reply login_controller::handle_logout(const scope &scope)
 
 reply login_controller::create_redirect_for_request(const request &req)
 {
-	uri url;
+	uri url = get_context_name();
 
 	if (req.has_parameter("uri"))
-	{
-		auto s = req.get_parameter("uri");
-		if (zeep::http::is_fully_qualified_uri(s))
-			url = s;
-		else if (s == "/")
-			url = get_context_name();
-		else
-			url = uri(s, get_context_name());
-	}
-	else
-	{
-		url = get_context_name();
-		if (url.get_path().empty())
-			url.set_path("/");
-	}
+		url /= req.get_parameter("uri");
+
+	if (url.get_path().empty())
+		url.set_path("/");
+
 	return reply::redirect(url, see_other);
 }
 
 } // namespace zeep::http
-
-

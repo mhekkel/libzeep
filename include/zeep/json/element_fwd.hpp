@@ -8,9 +8,10 @@
 /// \file
 /// forward declarations required for zeep::json::element, the JSON object in libzeep
 
-#include <array>
-
 #include <zeep/config.hpp>
+
+#include <array>
+#include <cstdint>
 
 namespace zeep::json
 {

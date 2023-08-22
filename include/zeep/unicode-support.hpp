@@ -12,6 +12,7 @@
 #include <zeep/config.hpp>
 #include <zeep/exception.hpp>
 
+#include <cstdint>
 #include <locale>
 #include <vector>
 #include <string>

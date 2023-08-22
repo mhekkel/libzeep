@@ -11,6 +11,8 @@
 #include <zeep/exception.hpp>
 #include <zeep/unicode-support.hpp>
 
+#include <cstdint>
+
 namespace zeep::http
 {
 

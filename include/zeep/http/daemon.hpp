@@ -12,6 +12,7 @@
 
 #include <zeep/config.hpp>
 
+#include <cstdint>
 #include <string>
 #include <functional>
 

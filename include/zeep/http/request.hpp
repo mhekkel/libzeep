@@ -20,6 +20,8 @@
 #include <zeep/http/uri.hpp>
 #include <zeep/json/element.hpp>
 
+#include <cstdint>
+
 namespace zeep::http
 {
 

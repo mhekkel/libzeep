@@ -65,11 +65,22 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 				m_keep_alive = true;
 			}
 
-			auto buffers = m_reply.to_buffers();
+			if (req.get_version() == std::make_tuple(0, 9))
+			{
+				auto buffers = asio_ns::buffer(m_reply.get_content());
 
-			asio_ns::async_write(m_socket, buffers,
-				[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-					{ self->handle_write(ec, bytes_transferred); });
+				asio_ns::async_write(m_socket, buffers,
+					[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+						{ self->handle_write(ec, bytes_transferred); });
+			}
+			else
+			{
+				auto buffers = m_reply.to_buffers();
+
+				asio_ns::async_write(m_socket, buffers,
+					[self=shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+						{ self->handle_write(ec, bytes_transferred); });
+			}
 		}
 		else if (not result)
 		{
