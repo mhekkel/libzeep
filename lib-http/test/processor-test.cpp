@@ -369,6 +369,8 @@ BOOST_AUTO_TEST_CASE(test_14)
 	try
 	{
 		std::locale l("nl_NL.UTF-8");
+		if (l.name() != "nl_NL.UTF-8")
+			throw std::runtime_error("locale name not equal, not installed?");
 
 		auto doc = R"(<?xml version="1.0"?>
 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -400,10 +402,11 @@ BOOST_AUTO_TEST_CASE(test_14)
 
 BOOST_AUTO_TEST_CASE(test_15)
 {
-#if not __APPLE__
 	try
 	{
 		std::locale l("da_DK.UTF-8");
+		if (l.name() != "da_DK.UTF-8")
+			throw std::runtime_error("locale name not equal, not installed?");
 
 		auto doc = R"(<?xml version="1.0"?>
 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -431,7 +434,6 @@ BOOST_AUTO_TEST_CASE(test_15)
 	{
 		std::cerr << "skipping test 15 since locale da_DK.UTF-8 is not available" << std::endl;
 	}
-#endif
 }
 
 BOOST_AUTO_TEST_CASE(test_16)
@@ -439,6 +441,8 @@ BOOST_AUTO_TEST_CASE(test_16)
 	try
 	{
 		std::locale l("en_GB.UTF-8");
+		if (l.name() != "en_GB.UTF-8")
+			throw std::runtime_error("locale name not equal, not installed?");
 
 		auto doc = R"(<?xml version="1.0"?>
 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
