@@ -1,3 +1,6 @@
+Version 6.0.6
+- Dropped support for GNU autotools, pkgconfig
+
 Version 6.0.5
 - Fix SONAME (should have been updated to 6 of course)
 
