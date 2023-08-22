@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libzeep VERSION 6.0.4.1 LANGUAGES CXX)
+project(libzeep VERSION 6.0.6 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -12,7 +12,6 @@ include(CheckIncludeFiles)
 include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
-include(Dart)
 include(GenerateExportHeader)
 include(VersionString)
 
@@ -20,12 +19,21 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Build debug library with d postfix
+set(CMAKE_DEBUG_POSTFIX d)
+
+# When building with ninja-multiconfig, build both debug and release by default
+if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+	set(CMAKE_CROSS_CONFIGS "Debug;Release")
+	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+endif()
+
 find_package(Filesystem REQUIRED)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 elseif(MSVC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
 # Build shared libraries by default (not my cup of tea, but hey)
@@ -33,32 +41,26 @@ option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(WIN32)
-    if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
-        add_definitions(-D _WIN32_WINNT=0x0A00)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
-        add_definitions(-D _WIN32_WINNT=0x0603)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
-        add_definitions(-D _WIN32_WINNT=0x0602)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
-        add_definitions(-D _WIN32_WINNT=0x0601)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
-        add_definitions(-D _WIN32_WINNT=0x0600)
-    else() # Windows XP (5.1)
-        add_definitions(-D _WIN32_WINNT=0x0501)
-    endif()
+	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
+		add_definitions(-D _WIN32_WINNT=0x0A00)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
+		add_definitions(-D _WIN32_WINNT=0x0603)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
+		add_definitions(-D _WIN32_WINNT=0x0602)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
+		add_definitions(-D _WIN32_WINNT=0x0601)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
+		add_definitions(-D _WIN32_WINNT=0x0600)
+	else() # Windows XP (5.1)
+		add_definitions(-D _WIN32_WINNT=0x0501)
+	endif()
 
 	add_definitions(-DNOMINMAX)
 endif()
 
 if(MSVC)
-    # make msvc standards compliant...
-    add_compile_options(/permissive-)
-
-	if(BUILD_SHARED_LIBS)
-		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-	else()
-		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-	endif()
+	# make msvc standards compliant...
+	add_compile_options(/permissive-)
 endif()
 
 # Optionally use mrc to create resources
@@ -69,17 +71,13 @@ else()
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
-	else()
-		if(USE_RSRC)
-			message(FATAL_ERROR "Cannot use resources since mrc was not found")
-		else()
-			message(STATUS "Not using resources since mrc was not found")
-		endif()
-	endif()
 
-	if(USE_RSRC)
-		message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
-		set(WEBAPP_USES_RESOURCES 1)
+		if(USE_RSRC)
+			message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
+			set(WEBAPP_USES_RESOURCES 1)
+		endif()
+	else()
+		message(STATUS "Not using resources since mrc was not found")
 	endif()
 endif()
 
@@ -88,34 +86,31 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(USE_BOOST_ASIO)
-	find_package(Boost 1.80 COMPONENTS headers REQUIRED)
+	find_package(Boost 1.80 REQUIRED)
 	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 	message(STATUS "Using asio from boost")
 
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 else()
-	if(WIN32)
-		find_file(ASIO asio.hpp)
-	else()
-		include(FindPkgConfig)
-
-		pkg_check_modules(ASIO asio>=1.26 REQUIRED IMPORTED_TARGET)
-	endif()
-
+	find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
 	message(STATUS "Using standalone asio")
-
 	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-find_package(date 3 REQUIRED)
+find_package(date 3)
+if(NOT date_FOUND)
+	message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+endif()
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
+
 	if(HAVE_SYS_WAIT_H)
 		set(HTTP_SERVER_HAS_PREFORK 1)
 	endif()
 endif()
 
+# Generate the revision.hpp file
 write_version_header("${PROJECT_SOURCE_DIR}/lib-xml/src" LIB_NAME "libzeep")
 
 list(APPEND ZEEP_HEADERS
@@ -215,22 +210,19 @@ target_include_directories(zeep
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-	${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_link_options(zeep PRIVATE -undefined dynamic_lookup)
-endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+if(USE_BOOST_ASIO)
+	target_link_libraries(zeep PUBLIC Boost::headers)
+endif()
 
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
-set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
-
-generate_export_header(zeep EXPORT_FILE_NAME zeep/zeep_export.hpp)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+	target_link_options(zeep PRIVATE -undefined dynamic_lookup)
+endif()
 
 # Install rules
-
 install(TARGETS zeep
 	EXPORT zeepTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -251,61 +243,37 @@ install(
 	PATTERN "config.hpp.in" EXCLUDE
 )
 
-install(
-	FILES "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep_export.hpp"
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/zeep
-	COMPONENT Devel
-)
-
 configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR
+)
+
+write_basic_package_version_file(
+	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+	COMPATIBILITY AnyNewerVersion
 )
 
 install(FILES
-		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake"
-		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
 	COMPONENT Devel
 )
 
-set(zeep_MAJOR_VERSION 5)
+set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeep PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION 5.1
-	INTERFACE_zeep_MAJOR_VERSION 5)
-
-set_property(TARGET zeep APPEND PROPERTY
-  COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
-)
-
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY AnyNewerVersion
+	SOVERSION ${PROJECT_VERSION_MAJOR}
+	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
 )
 
 # Config file
-
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
-
-# pkgconfig support
-
-set(prefix      ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
-
-configure_file(${PROJECT_SOURCE_DIR}/cmake/libzeep.pc.in
-	${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in @ONLY)
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc
-	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc.in)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzeep.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Documentation
 option(ZEEP_BUILD_DOC "Build documentation" OFF)
@@ -367,7 +335,6 @@ if(ZEEP_BUILD_DOC)
 endif()
 
 # Test applications
-
 option(ZEEP_BUILD_TESTS "Build test executables" OFF)
 
 if(ZEEP_BUILD_TESTS)
@@ -376,17 +343,17 @@ if(ZEEP_BUILD_TESTS)
 	enable_testing()
 
 	find_package(libmcfp QUIET)
+
 	if(NOT libmcfp_FOUND)
 		add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
 	endif()
 
 	# data files for the parser test
-
 	add_library(client_test OBJECT ${PROJECT_SOURCE_DIR}/lib-http/test/client-test-code.cpp)
 
 	target_include_directories(client_test PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include
-		${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+		${CMAKE_CURRENT_BINARY_DIR} # for config.h
 		${PROJECT_SOURCE_DIR}/include
 	)
 	target_link_libraries(client_test PRIVATE Boost::boost)
@@ -395,7 +362,7 @@ if(ZEEP_BUILD_TESTS)
 	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
 	set(XML_CONF_FILE ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite/xmlconf/xmlconf.xml)
 
-	if (NOT EXISTS ${XML_CONF_FILE})
+	if(NOT EXISTS ${XML_CONF_FILE})
 		if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
 			find_program(TAR tar)
 
@@ -415,8 +382,7 @@ if(ZEEP_BUILD_TESTS)
 
 	add_custom_target(XML_CONF ALL DEPENDS ${XML_CONF_FILE})
 
-	#  unit parser serializer xpath json crypto http processor webapp soap rest security uri
-
+	# unit parser serializer xpath json crypto http processor webapp soap rest security uri
 	list(APPEND zeep_tests
 		xml/unit
 		xml/parser
@@ -449,13 +415,13 @@ if(ZEEP_BUILD_TESTS)
 			target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
 		endif()
 
-		if(USE_RSRC AND ("${TEST}" STREQUAL "http/processor" OR "${TEST}" STREQUAL "http/rsrc_webapp"))
+		if(USE_RSRC AND("${TEST}" STREQUAL "http/processor" OR "${TEST}" STREQUAL "http/rsrc_webapp"))
 			mrc_target_resources(${ZEEP_TEST} ${PROJECT_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
 		endif()
 
 		target_include_directories(${ZEEP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
-			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+			${CMAKE_CURRENT_BINARY_DIR} # for config.h
 			${PROJECT_SOURCE_DIR}/include
 		)
 
@@ -475,7 +441,7 @@ if(ZEEP_BUILD_TESTS)
 
 		if("${TEST}" STREQUAL "xml/parser")
 			# Some tests should be skipped
-			list(APPEND ZEEP_TEST_ARGS 
+			list(APPEND ZEEP_TEST_ARGS
 				ibm-valid-P28-ibm28v02.xml ibm-valid-P29-ibm29v01.xml ibm-valid-P29-ibm29v02.xml
 				ibm-1-1-valid-P03-ibm03v09.xml rmt-e2e-34 rmt-e2e-55 rmt-054 rmt-ns10-006 rmt-e3e-13)
 			list(TRANSFORM ZEEP_TEST_ARGS PREPEND "--questionable=")
@@ -488,7 +454,6 @@ if(ZEEP_BUILD_TESTS)
 		add_test(NAME ${ZEEP_TEST}
 			COMMAND $<TARGET_FILE:${ZEEP_TEST}> ${ZEEP_TEST_ARGS}
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/lib-${ZEEP_TEST_DIR}/test)
-
 	endforeach()
 endif()
 
