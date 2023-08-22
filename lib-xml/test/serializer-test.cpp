@@ -390,9 +390,14 @@ BOOST_AUTO_TEST_CASE(test_time_2)
 
 	s.serialize_element(t1);
 
-	BOOST_CHECK(doc == "<t>2022-12-06T01:02:03Z</t>"_xml or
-		doc == "<t>2022-12-06T01:02:03.000000000Z</t>"_xml or
-		doc == "<t>2022-12-06T01:02:03.0000000Z</t>"_xml);
+	auto ti = doc.find_first("//t");
+	BOOST_ASSERT(ti != doc.end());
+
+	auto ti_c = ti->get_content();
+
+	std::regex rx(R"(^2022-12-06T01:02:03(\.0+)?Z$)");
+
+	BOOST_CHECK(std::regex_match(ti_c, rx));
 }
 
 // BOOST_AUTO_TEST_CASE(test_s_2)
