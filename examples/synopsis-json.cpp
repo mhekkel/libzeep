@@ -38,7 +38,6 @@ void test_enum()
     using json = zeep::json::element;
 
 //[ enum_support
-
 	enum class MyEnum { aap, noot, mies };
 	zeep::value_serializer<MyEnum>::init("MyEnum",
 	{
@@ -46,11 +45,9 @@ void test_enum()
 		{ MyEnum::noot, "noot" },
 		{ MyEnum::mies, "mies" }
 	});
-//]
-//[ enum_usage
+
 	json j{ MyEnum::aap };
 	assert(j.as<std::string>() == "aap");
-
 //]
 }
 
