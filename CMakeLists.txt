@@ -86,7 +86,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(USE_BOOST_ASIO)
-	find_package(Boost 1.80 COMPONENTS headers REQUIRED)
+	find_package(Boost 1.80 REQUIRED)
 	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 	message(STATUS "Using asio from boost")
 
@@ -419,7 +419,7 @@ if(ZEEP_BUILD_TESTS)
 		endif()
 
 		if(USE_RSRC AND("${TEST}" STREQUAL "http/processor" OR "${TEST}" STREQUAL "http/rsrc_webapp"))
-			mrc_target_resources(${ZEEP_TEST} RESOURCES ${PROJECT_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
+			mrc_target_resources(${ZEEP_TEST} ${PROJECT_SOURCE_DIR}/lib-http/test/fragment-file.xhtml)
 		endif()
 
 		target_include_directories(${ZEEP_TEST} PRIVATE

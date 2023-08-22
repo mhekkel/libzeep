@@ -44,9 +44,9 @@ extern "C" const char gResourceName[];
 
 #else
 
-extern "C" __attribute__((weak, alias("gResourceIndexDefault"))) const mrsrc::rsrc_imp gResourceIndex[];
-extern "C" __attribute__((weak, alias("gResourceDataDefault"))) const char gResourceData[];
-extern "C" __attribute__((weak, alias("gResourceNameDefault"))) const char gResourceName[];
+extern "C" __attribute__((weak, alias("gResourceIndexDefault"))) const mrsrc::rsrc_imp gResourceIndex[1];
+extern "C" __attribute__((weak, alias("gResourceDataDefault"))) const char gResourceData[1];
+extern "C" __attribute__((weak, alias("gResourceNameDefault"))) const char gResourceName[1];
 
 const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
 const char *gResourceDataDefault[1] = {};
