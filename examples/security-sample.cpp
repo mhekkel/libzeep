@@ -66,7 +66,7 @@ int main()
     //]
 
     //[ start_server
-    /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
+    /* Use the server constructor that takes the path to a docroot so it will construct a template processor */
     zeep::http::server srv(sc, "docroot");
 
     srv.add_controller(new hello_controller());

@@ -9,7 +9,6 @@
 [def __rest_controller__ [classref zeep::http::rest_controller `rest_controller`]]
 [def __soap_controller__ [classref zeep::http::soap_controller `soap_controller`]] -->
 
-
 ## Introduction
 
 The goal of libzeep is to provide a library that makes creating web applications as easy as possible. A lot of frameworks already exist to help building these interactive web apps written in languages ranging from Java to Python to more exotic stuff like Ruby and Laravel. The [Spring](https://spring.io) version stands out between these since it is well designed and offers tons of features and still is fairly easy to work with. But all of these have one flaw in common, they're not written in C++ and thus lack the raw performance.
@@ -27,9 +26,10 @@ The third controller is the __soap_controller__. Similar to the REST controller,
 Starting an HTTP server is easy. Simply create the __http_server__ object, [memberref zeep::http::server::bind `bind`] it to an address and call run specifying how many threads to run simultaneously. Something like this:
 
 ```{literalinclude} ../examples/http-server-0.cpp
+:start-after: //[ most_simple_http_server
+:end-before: //]
 :language: c++
 ```
-<!-- [most_simple_http_server] -->
 
 Running this code will create a server that listens to port 8080 on localhost and will return ``NOT FOUND`` for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative: use controllers.
 
@@ -38,13 +38,12 @@ Running this code will create a server that listens to port 8080 on localhost an
 A __http_server__ can have one or more controllers. Each controller handles requests that have URI's that start with a specified prefix. In this example we have a controller that handles any request, since it has a prefix that is effectively the same as the root. It returns a simple reply.
 
 ```{literalinclude} ../examples/http-server-1.cpp
+:start-after: //[ simple_http_server
+:end-before: //]
 :language: c++
 ```
-<!-- [simple_http_server] -->
 
 Still a not so useful example. Fortunately there are several implementations of [classref zeep::http::controller `controller`] that we can use.
-
-
 
 ### HTML Controller
 
@@ -54,16 +53,20 @@ The handler method has next to the __request__ and __reply__ parameter an additi
 
 A handler can of course create simple replies, just as in the previous example. But you can also use templates. Note that the constructor of __html_controller__ takes a second parameter that is called docroot. This should contain the path to the directory containing the templates.
 
-[note The docroot parameter is ignored when you create a html controller based on resources, see section on resources further in this documentation.]
+:::{note}
+The docroot parameter is ignored when you create a html controller based on resources, see section on resources further in this documentation.
+:::
 
 Our __html_controller__ indirectly inherits [classref zeep::http::template_processor `template_processor`] and this is the class that uses the `docroot` parameter. This class takes care of processing template files. It loads them and uses the registered tag processors and the `scope` to fill in the blanks and process the constructs found in the template.
 
 ```{literalinclude} ../examples/http-server-2.cpp
 :language: c++
+:start-after: //[ simple_http_server_2
+:end-before: //]
 ```
-<!-- [simple_http_server_2] -->
 
 This example uses the file docroot/hello.xhtml which should contain:
+
 ```xml
 <!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -75,7 +78,7 @@ This example uses the file docroot/hello.xhtml which should contain:
 </html>
 ```
 
-Now build and run this code, and you can access your welcome page at [If you want to see another name, use e.g. http://localhost:8080/?name=maarten instead.
+Now build and run this code, and you can access your welcome page at [If you want to see another name, use e.g. <http://localhost:8080/?name=maarten> instead.
 
 Several remarks here.
 
@@ -89,24 +92,23 @@ The path specified in `mount` is `{,index,index.html}` which is a glob pattern, 
 :widths: auto
 
 | path | matches |
-|--|--|
+|------|---------|
 | `**/*.js` | matches `x.js`, `a/b/c.js`, etc |
 | `{css,scripts}/` | matches e.g. `css/1/first.css` and `scripts/index.js` |
 | `a;b;c` | matches either `a`, `b` or `c` |
 :::
 
-The way *mount* works in the __html_controller__ class was a bit oldfashioned and inflexible. Especially compared to the __rest_controller__ class.
+The way _mount_ works in the __html_controller__ class was a bit oldfashioned and inflexible. Especially compared to the __rest_controller__ class.
 
 So version 6 of libzeep brings a new way of *mounting*, to avoid conflicts now called *mapping*. The signature of handlers is now changed to take a couple of arguments, using std::optional if they are not required. Conversion of types is done automatically. The handler also takes a __scope__ as first parameter and returns the __reply__ object.
 
 How this works in practice is what you can see here:
 
 ```{literalinclude} ../examples/http-server-3.cpp
+:start-after: //[ simple_http_server_3
+:end-before: //]
 :language: c++
 ```
-<!-- [simple_http_server_3] -->
-
-
 
 ## Request and Reply
 
@@ -155,7 +157,7 @@ The content of the payload can be set using the various [memberref zeep::http::r
 
 
 
-##:xhtml-template XHTML Template Processing
+## XHTML Template Processing
 
 [def __template_processor__ [classref zeep::http::template_processor `template_processor`]]
 
@@ -174,7 +176,7 @@ The [memberref zeep::http::basic_template_processor::load_template `load_templat
 Since we're using a XML parser/library to load template, they should be strict XMTML. It is possible to make these files somewhat HTML 5 like by adding the doctype
 
 ```xml
-  <!DOCTYPE html SYSTEM "about:legacy-compat">
+<!DOCTYPE html SYSTEM "about:legacy-compat">
 ```
 
 The tags inside a template can be processed using a tag_processor. Tag processors are linked to element and attributes in the template using XML namespaces. 
@@ -189,20 +191,26 @@ Libzeep comes with two tag_processor implementations, the first [classref zeep::
 
 [def __json_object__ [classref zeep::json::element `json::element`]]
 
-``el`` is the abbreviation for /Expression Language/. It is a script language that tries to be like
-[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. libzeep comes with code to evaluate ``el`` expressions.
+``el`` is the abbreviation for _Expression Language_. It is a script language that tries to be like
+[Unified Expression Language](http://en.wikipedia.org/wiki/Unified_Expression_Language). libzeep comes with code to evaluate ``el`` expressions.
 The language has the concept of variables and these can be created in the C++ code using the __json_object__ class.
 Variables created this way are then stored in a __scope__ object and passed along to the processing code.
 
 To give an example:
+
 ```{literalinclude} ../examples/synopsis-el-1.cpp
 :language: c++
+:start-after: //[ fill_scope
+:end-before: //]
 ```
-<!-- [fill_scope] -->
 
 And then you can process some ``expression language`` construct like this:
 
-[evaluate_el]
+```{literalinclude} ../examples/synopsis-el-1.cpp
+:language: c++
+:start-after: //[ evaluate_el
+:end-before: //]
+```
 
 And if you then print out the result it should give you something like:
 
@@ -230,8 +238,9 @@ The language has literals:
 | expression | evaluates to |
 | -- | -- |
 | `'my text string'` | Text literal |
-| `0 3.14` | Numeric literal, note that scientific notation is not supported |
-| `true false` | Boolean literal |
+| `42` | Numeric literal |
+| `3.14` | Numeric literal, note that scientific notation is not supported |
+| `true` | Boolean literal |
 | `null` | Null literal |
 | `user greeting` | token |
 :::
@@ -258,27 +267,56 @@ Operators:
 | `! not` | unary operators, negate |
 | `> < >= <= gt lt ge le` | operators to compare values |
 | `== != eq ne` | operators to check for equality |
-| `a ? b` | conditional operator: if a then return b else null |
-| `a ? b : c` | conditional operator: if a then return b else return c |
-| `a ?: b` | conditional operator: if a then return a else return b |
+| a `?` b | conditional operator: if a then return b else null |
+| a `?` b `:` c | conditional operator: if a then return b else return c |
+| a `?:` b | conditional operator: if a then return a else return b |
 :::
 
 When using variables, accessing their content follows the same rules as in Javascript. Arrays have a member function `length`.
 
-A few predefined utility objects are predefined. These are #dates, #numbers, #request and #security.
+A few predefined utility objects are predefined. These are `#dates`, `#numbers`, `#request` and `#security`.
 
-:::{table} Predefined objects and their methods
+```{eval-rst}
 
-| object.method | Description |
-|--|--|
-| `#dates.format(date,format)` | This method takes two parameters, a preferrably ISO formatted date and a format string.<br />    The result will be the output of [`std::put_time`](https://en.cppreference.com/w/cpp/io/manip/put_time). |
-| `#numbers.formatDecimal(number,int_digits,decimals)` | This method takes up to three parameters, a number that needs to be formatted,<br />    an int_digits parameter that specifies the minimum number of integral digits to use and<br />    a decimals parameter that specifies how many decimals to use.<br /><br />    The number is formatted using the locale matching the language specified in the Accept HTTP request header. However, if that locale is not available the default locale is used.<br /><br />    Defaults for int_digits is 1 and decimals is 0.<br /><br />    Example output: `${#numbers.formatDecimal(pi,2,4)}` is ``03.1415`` when the locale to use is en_US. |
-| `#numbers.formatDiskSize(number,decimals)` | This method takes up to two parameters, a number that needs to be formatted,<br />    and a decimals parameter that specifies how many decimals to use.<br />	.<br />    The number is divided by 1024 until it fits three int digits and the suffix is<br />    adjusted accordingly.<br />	.<br />    Default for decimals is 0.<br />	.<br />    Example output: `${#numbers.formatDiskSize(20480,2)}` is ``2.00K`` when the locale to use is en_US. |
-| `#request.getRequestURI()` | Returns the original URI in the HTTP request. |
-| `#security.authorized()` | Returns whether the uses has successfully logged in. |
-| `#security.username()` |  Returns the username for the current user. |
-| `#security.hasRole(role)` | Returns whether the uses has the role as specified by the parameter. |
-:::
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+| object.method                                        | Description                                                                              |
++======================================================+==========================================================================================+
+| ``#dates.format(date,format)``                       | This method takes two parameters, a preferrably ISO formatted date and a format string.  |
+|                                                      | The result will be the output of `std::put_time`_.                                       |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+|``#numbers.formatDecimal(number,int_digits,decimals)``| This method takes up to three parameters, a number that needs to be formatted, an        |
+|                                                      | int_digits parameter that specifies the minimum number of integral digits to use and     |
+|                                                      | a decimals parameter that specifies how many decimals to use.                            |
+|                                                      |                                                                                          |
+|                                                      | The number is formatted using the locale matching the language specified in the Accept   |
+|                                                      | HTTP request header. However, if that locale is not available the default locale is used.|
+|                                                      |                                                                                          |
+|                                                      | Defaults for int_digits is 1 and decimals is 0.                                          |
+|                                                      |                                                                                          |
+|                                                      | Example output: ``${#numbers.formatDecimal(pi,2,4)}`` is **03.1415** when the locale to  |
+|                                                      | use is en_US.                                                                            |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+| ``#numbers.formatDiskSize(number,decimals)``         | This method takes up to two parameters, a number that needs to be formatted,             |
+|                                                      | and a decimals parameter that specifies how many decimals to use.                        |
+|                                                      |                                                                                          |
+|                                                      | The number is divided by 1024 until it fits three int digits and the suffix is           |
+|                                                      | adjusted accordingly.                                                                    |
+|                                                      | Default for decimals is 0.                                                               |
+|                                                      |                                                                                          |
+|                                                      | Example output: ``${#numbers.formatDiskSize(20480,2)}`` is **2.00K** when the locale to  |
+|                                                      | use is en_US.                                                                            |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+| ``#request.getRequestURI()``                         | Returns the original URI in the HTTP request.                                            |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+| ``#security.authorized()``                           | Returns whether the uses has successfully logged in.                                     |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+| ``#security.username()``                             | Returns the username for the current user.                                               |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+| ``#security.hasRole(role)``                          | Returns whether the uses has the role as specified by the parameter.                     |
++------------------------------------------------------+------------------------------------------------------------------------------------------+
+
+.. _std::put_time: https://en.cppreference.com/w/cpp/io/manip/put_time
+```
 
 ## tag_processor_v1
 
@@ -325,7 +363,7 @@ a way to add your own processing tags using an `add_processor` method but that h
 |                  | ``'#.##0'`` and ``'#.##0B'`` for now. The first formats an integer value using thousand       |                                       |
 |                  | separators, the second tries to format the integer value in a power of two multiplier         |    <zeep:number n="1024" f="0.00#B"/> |
 |                  | (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc.                                       |                                       |
-|                  |                                                                                               | Will output ``1K``                    |
+|                  |                                                                                               | Will output `1K`                      |
 +------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
 | options          | This tag will insert multiple =<option>= tags for each element in the `collection` parameter. | .. code-block:: xml                   |
 |                  | This `collection` paramter can contain an array of strings or it can contain an array of      |                                       |
@@ -365,32 +403,6 @@ a way to add your own processing tags using an `add_processor` method but that h
 +------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
 ```
 
-
-
-
-
-
-
-<!-- 
-
-:::{table} List of predefined processing tags
-
-| tag name (without prefix) | Description | Example |
-| -- | -- | -- |
-| include | Takes one parameter named `file` and replaces the tag with the processed content of this file | ``<zeep:include file="menu.xhtml"/>`` |
-| if | Takes one parameter named `test` containing an `el` script. This script is evaluated and if the result is not empty, zero or false, the content of the `if` tags is inserted in the output. Otherwise, the content is discarded. | ``<zeep:if test="${not empty name}">``<br/>``Hello ${name}``<br/>``</zeep:if>`` |
-| iterate | Takes two parameters, `collection` which contains an `el` script that evaluates to an array `el::object` and a name in `var`. The content of the `iterate` tag is included for each value of `collection` and `var` will contain the current value. | ``<ul><zeep:iterate collection="${names}" var="name">``<br/>``<li>${name}</li>``<br/>``</zeep:iterate></ul>`` |
-| for | Takes three parameters. The parameters `begin` and `end` should evaluate to a number.<br/>The parameter `var` contains a name that will be used to hold the current value when inserting the content of the `for` tag in each iteration of the for loop between `begin` and `end`. | ``<zeep:for begin="1" end="3" var="i">``<br/>``${i},``<br/>``</zeep:for>`` |
-| number | Format the number in the `n` parameter using the `f` format. This is limited to the formats ``'#.##0'`` and ``'#.##0B'`` for now. The first formats an integer value using thousand separators, the second tries to format the integer value in a power of two multiplier (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc. | ``<zeep:number n="1024" f="0.00#B"/>`` Will output ``1K`` |
-| options | This tag will insert multiple ``<option>`` tags for each element in the `collection` parameter. This `collection` paramter can contain an array of strings or it can contain an array of `el::object`. In the latter case, you can specify a `value` and `label` parameter to name the value and label fields of these objects. A `selected` parameter can be used to select the current value of the options. | ``<zeep:options collection="${names}" value="id" label="fullName" selected="1" />`` |
-| option | Generate a single ``<option>`` tag with a value as specified in the `value` parameter.<br/>If `selected` evaluates to the same value as `value`, the option is selected.<br/>The content of the ``<option>`` tag is inserted in the final tag. | ``<zeep:option value="1" selected="${user}">``<br/>``John Doe``</br>``</zeep:option>`` |
-| checkbox | Create an ``<input>`` tag with type `checkbox`. The parameter `name` is used as name attribute and the parameter `checked` is evaluated to see if the checkbox should be in checked mode. | ``<zeep:checkbox name='cb1' checked='${true}'>``<br/>``Check me``<br/>``</zeep:checkbox>`` |
-| url | The url processing tag creates a new variable in the current scope with the name as specified in the `var` parameter. It then creates a list of all original HTTP parameters for the current page. You can override these parameter, and add new ones, by adding ``<param>`` tags in the ``<url>`` tag. | ``<zeep:url var="next">``<br/>``<zeep:param name='page' value='${page + 1}'/>``<br/>``<zeep:url>``<br/>``<a href="${next}">Next page</a>`` |
-| param | see ``url`` above.|
-| embed | This tag takes the content of the `var` parameter which should contain valid XML and puts the processed value in the document. | ``<zeep:embed var="&lt;em&gt;hello, world!&lt;/em&gt;"/>`` |
-:::
- -->
-
 ## tag_processor_v2
 
 Tag processor version 2 is an implementation of the documentation for [Thymeleaf](https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html).
@@ -400,196 +412,228 @@ There are some notable differences between Thymeleaf and libzeep though, libzeep
 
 ### tags
 
-There is only one tag this tag processor processes, which is ``<z:block>``, for the rest this processor only processes attributes. 
+There is only one tag this tag processor processes, which is ``<z:block>``, for the rest this processor only processes attributes.
 
 ### attributes
 
 Some attributes are treated special, these are listed below. For the other tags the general rule is that if the tag has the prefix for the ``v2`` namespace, the value of the attribute will be evaluated and the result will be placed in an attribute without the prefix. Possibly overwriting an already existing attribute with that name.
 
-So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable ``id`` contains ``'two'`` the result will be ``<span id="two"/>``
+So, e.g. if you have
+
+```xml
+<span id="one" z:id="${id}"/>
+```
+
+and the variable ``id`` contains ``'two'`` the result will be
+
+```xml
+<span id="two"/>
+```
 
 ### special attributes
 
-[table processed attributes
-[[attribute]		[remarks]]
-[[``assert``]			[ If the value of this attribute evaluates to `true`, an exception will be thrown. ]]
-[[``attr``]			[
-            The value of this attribute is an expression consisting of one or more comma separated statements that assign a value to an attribute. e.g.
+```{eval-rst}
 
-            ``
-              <img z:attr="width=${width},height=${height}"/>
-            ``
-            
-            will result in the following when the value of the variables ``width`` and ``height`` is `100`.
+.. table:: processed attributes
 
-            ``
-              <img width="100" height="100/>
-            ``
-          ]]
-[[``classappend``, ``styleappend``]
-          [
-            The value is evaluated and the result is appended to the ``class`` or ``style`` attribute respectively.<br/>]]
-[[``each``]			[
-            The expression in the value should have a name for a variable, optinally followed by a comma and the name for an iterator-info variable. Then a colon followed by an expression whose result after evaluation is an array.
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | attribute      | remarks                                                                                                                                         +
+   +================+=================================================================================================================================================+
+   | ``assert``     | If the value of this attribute evaluates to `true`, an exception will be thrown.                                                                |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``attr``       | The value of this attribute is an expression consisting of one or more comma separated statements that assign a value to an attribute. e.g.     |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <img z:attr="width=${width},height=${height}"/>                                                                                              |
+   |                |                                                                                                                                                 |
+   |                | will result in the following when the value of the variables ``width`` and ``height`` is `100`.                                                 |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <img width="100" height="100/>                                                                                                               |
+   |                |                                                                                                                                                 |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   |``classappend``,| The value is evaluated and the result is appended to the ``class`` or ``style`` attribute respectively.                                         |
+   |``styleappend`` |                                                                                                                                                 |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``each``       | The expression in the value should have a name for a variable, optinally followed by a comma and the name for an iterator-info variable. Then a |
+   |                | colon followed by an expression whose result after evaluation is an array.                                                                      |
+   |                |                                                                                                                                                 |
+   |                | The tag containing this attribute will be repeated as many times as there are elements in the array. Each copy will then be evaluated with the  |
+   |                | name value set to the current value in the array.                                                                                               |
+   |                |                                                                                                                                                 |
+   |                | Example, consider this snippet                                                                                                                  |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <tr z:each="a, i: ${ { 'aap', 'noot', 'mies' } }">                                                                                           |
+   |                |      <td z:text="${i.count}"/>                                                                                                                  |
+   |                |      <td z:text="${a}"/>                                                                                                                        |
+   |                |    </tr>                                                                                                                                        |
+   |                |                                                                                                                                                 |
+   |                | will result in                                                                                                                                  |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <tr>                                                                                                                                         |
+   |                |      <td>1</td>                                                                                                                                 |
+   |                |      <td>aap</td>                                                                                                                               |
+   |                |    </tr>                                                                                                                                        |
+   |                |    <tr>                                                                                                                                         |
+   |                |      <td>2</td>                                                                                                                                 |
+   |                |      <td>noot</td>                                                                                                                              |
+   |                |    </tr>                                                                                                                                        |
+   |                |    <tr>                                                                                                                                         |
+   |                |      <td>3</td>                                                                                                                                 |
+   |                |      <td>mies</td>                                                                                                                              |
+   |                |    </tr>                                                                                                                                        |
+   |                |                                                                                                                                                 |
+   |                | The iterator-info variable can be used to get info about the current value.                                                                     |
+   |                |                                                                                                                                                 |
+   |                | .. table:: iterator members                                                                                                                     |
+   |                |                                                                                                                                                 |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | name        | description                                        |                                                                          |
+   |                |   +=============+====================================================+                                                                          |
+   |                |   | ``count``   | counting number starting at one.                   |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``index``   | counting number starting at zero.                  |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``even``    | boolean indicating whether this is an even element |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``odd``     | boolean indicating whether this is an odd element  |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``size``    | size of the total array/collection                 |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``first``   | boolean indicating the first element               |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``last``    | boolean indicating the last element                |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   |                |   | ``current`` | the value of the current element                   |                                                                          |
+   |                |   +-------------+----------------------------------------------------+                                                                          |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``if``,        | The attribute value is evaluated and if the result is `true` respectively `false` the containing tag is preserved, otherwise it is deleted.     |
+   | ``unless``     |                                                                                                                                                 |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``include``,   | These three statements are used to pull in fragments of markup. The value of the attribute is evaluated and should contain a fragment           |
+   | ``insert``,    | specification. The contents of this fragment are then copied to the destination. The three attributes differ in the following way:              |
+   | ``replace``    |                                                                                                                                                 |
+   |                | .. table:: variable list                                                                                                                        |
+   |                |                                                                                                                                                 |
+   |                |    +---------+-------------------------------------------------------------------------------+                                                  |
+   |                |    | insert  | The complete fragment is inserted inside the body of the containing tag       |                                                  |
+   |                |    +---------+-------------------------------------------------------------------------------+                                                  |
+   |                |    | replace | The complete fragment is replaces the containing tag                          |                                                  |
+   |                |    +---------+-------------------------------------------------------------------------------+                                                  |
+   |                |    | include | The content of the fragment is inserted inside the body of the containing tag |                                                  |
+   |                |    +---------+-------------------------------------------------------------------------------+                                                  |
+   |                |                                                                                                                                                 |
+   |                | Example, when the fragment is                                                                                                                   |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <span z:fragment="f">hello</span>                                                                                                            |
+   |                |                                                                                                                                                 |
+   |                | the following markup:                                                                                                                           |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <div z:insert="~{::f}"/>                                                                                                                     |
+   |                |    <div z:replace="~{::f}"/>                                                                                                                    |
+   |                |    <div z:include="~{::f}"/>                                                                                                                    |
+   |                |                                                                                                                                                 |
+   |                | will result in:                                                                                                                                 |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <div><span>hello</span></div>                                                                                                                |
+   |                |    <span>hello</span>                                                                                                                           |
+   |                |    <div>hello</div>                                                                                                                             |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``inline``     | The processor processes occurrences of \[\[ ... \]\] or \[\( ... \)\] by evaluating what is in between those brackets.                          |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <div>Hello, [[${name ?: 'world'}]]</div>                                                                                                     |
+   |                |                                                                                                                                                 |
+   |                | will result in (when name = 'scott'):                                                                                                           |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <div>Hello, scott</div>                                                                                                                      |
+   |                |                                                                                                                                                 |
+   |                | Using this attribute, you can do even more fancy things. If the value of this attribute is ``javascript``, the replacement will be valid in a   |
+   |                | javascript context by properly quoting double quotes e.g. And it will process commented values properly, as in:                                 |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <script z:inline='javascript'>let x = /*[[${var}]]*/ null;</script>                                                                          |
+   |                |                                                                                                                                                 |
+   |                | Might result in:                                                                                                                                |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |
+   |                |    <script>let x = "He said \"bla bla bla\"";</script>                                                                                          |
+   |                | If the inline attribute has value ``text``, the whole body of the tag will be evaluated as ``el``.                                              |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``switch``,    | Example:                                                                                                                                        |
+   | ``case``       |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |            
+   |                |    <div z:switch="${user.role}">                                                                                                                | 
+   |                |      <span z:case="'admin'">Admin</span>                                                                                                        |
+   |                |      <span z:case="*">Some other user</span>                                                                                                    |
+   |                |    </div>                                                                                                                                       |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``text``,      | The simplest, replace the body of the tag with the result of the evaluation of the content of this attribute.                                   |
+   | ``utext``      |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |            
+   |                |    <span z:text="${name}"/>                                                                                                                     |
+   |                |                                                                                                                                                 |            
+   |                | Will result in:                                                                                                                                 |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |            
+   |                |    <span>scott</span>                                                                                                                           |
+   |                |                                                                                                                                                 |            
+   |                | The ``text`` variant will quote special characters like <, > and &. The ``utext`` variant will not, but beware, if the result is not valid XML  |
+   |                | an exception is thrown.                                                                                                                         |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+   | ``with``       | Assign a value to a variable. Example:                                                                                                          |
+   |                |                                                                                                                                                 |
+   |                | .. code-block:: xml                                                                                                                             |
+   |                |                                                                                                                                                 |            
+   |                |    <div z:with="n=${name}">                                                                                                                     |
+   |                |      <span z:text="${n}"/>                                                                                                                      |
+   |                |    </div>                                                                                                                                       |
+   +----------------+-------------------------------------------------------------------------------------------------------------------------------------------------+
+```
 
-            The tag containing this attribute will be repeated as many times as there are elements in the array. Each copy will then be evaluated with the name value set to the current value in the array.
-
-            Example, consider this snippet
-
-            ``
-              <tr z:each="a, i: ${ { 'aap', 'noot', 'mies' } }">
-                <td z:text="${i.count}"/>
-                <td z:text="${a}"/>
-              </tr>]
-            ``
-
-            will result in
-
-            ``
-              <tr>
-                <td>1</td>
-                <td>aap</td>
-              </tr>
-              <tr>
-                <td>2</td>
-                <td>noot</td>
-              </tr>
-              <tr>
-                <td>3</td>
-                <td>mies</td>
-              </tr>
-            ``
-
-            The iterator-info variable can be used to get info about the current value.
-
-            [table iterator members
-            [[name][description]]
-            [[count][counting number starting at one.]]
-            [[index][counting number starting at zero.]]
-            [[even][boolean indicating whether this is an even element]]
-            [[odd][boolean indicating whether this is an odd element]]
-            [[size][size of the total array/collection]]
-            [[first][boolean indicating the first element]]
-            [[last][boolean indicating the last element]]
-            [[current][the value of the current element]]
-            ]
-
-          ]]
-[[``if``, ``unless``]
-          [
-            The attribute value is evaluated and if the result is `true` respectively `false` the containing tag is preserved, otherwise it is deleted.<br/>]]
-[[``include``, ``insert``, ``replace``]
-          [
-            These three statements are used to pull in fragments of markup. The value of the attribute is evaluated and should contain a fragment specification. The contents of this fragment are then copied to the destination. The three attributes differ in the following way:
-
-            [variablelist
-            [[insert][The complete fragment is inserted inside the body of the containing tag]]
-            [[replace][The complete fragment is replaces the containing tag]]
-            [[include][The content of the fragment is inserted inside the body of the containing tag]]
-            ]
-
-            Example, when the fragment is `<span z:fragment="f">hello</span>` the following markup:
-
-            ``
-              <div z:insert="~{::f}/>
-              <div z:replace="~{::f}/>
-              <div z:include="~{::f}/>
-            ``
-
-            will result in:
-
-            ``
-              <div><span>hello</span></div>
-              <span>hello</span>
-              <div>hello</div>
-            ``						
-
-          ]]
-[[``inline``]			[
-            The processor processes occurrences of \[\[ ... \]\] or \[\( ... \)\] by evaluating what is in between those brackets.
-
-            ``
-              <div>Hello, [[${name ?: 'world'}]]</div>
-            ``
-
-            will result in (when name = 'scott'):
-
-            ``
-              <div>Hello, scott</div>
-            ``
-
-            Using this attribute, you can do even more fancy things. If the value of this attribute is ``javascript``, the replacement will be valid in a javascript context by properly quoting double quotes e.g. And it will process commented values properly, as in:
-
-            ``
-              <script z:inline='javascript'>let x = /*[[${var}]]*/ null;</script>
-            ``
-
-            Might result in:
-
-            ``
-              <script>let x = "He said \"bla bla bla\"";</script>
-            ``
-
-            If the inline attribute has value ``text``, the whole body of the tag will be evaluated as ``el``.<br/>]]
-[[``switch``, ``case``]	[
-            Example:
-
-            ``
-              <div z:switch="${user.role}">
-                <span z:case="'admin'">Admin</span>
-                <span z:case="*">Some other user</span>
-              </div>
-            ``
-          ]]
-[[``text``, ``utext``]	[
-            The simplest, replace the body of the tag with the result of the evaluation of the content of this attribute.
-
-            ``
-              <span z:text="${name}"/>
-            ``
-
-            Will result in:
-
-            ``
-              <span>scott</span>
-            ``
-
-            The ``text`` variant will quote special characters like <, > and &. The ``utext`` variant will not, but beware, if the result is not valid XML an exception is thrown.<br/>]]
-[[``with``]			[
-            Assign a value to a variable. Example:
-
-            ``
-              <div z:with="n=${name}">
-                <span z:text="${n}"/>
-              </div>
-            ``
-
-]]
-
-]
-
-
-
-
-
-##:rest-controller REST Controller
+## REST Controller
 
 The __rest_controller__ class is similar to the __html_controller__ in that it allows you to map a request to a member function. The difference however is that the REST controller translates parameters from HTTP requests into arguments for your method and translates the result of the method back into JSON to be returned to the client. Lets walk through an example again to show how this works.
 
+We begin our example by declaring some shopping cart objects. These are plain structs that also define a `serialize` method for use with serialization.
+
 ```{literalinclude} ../examples/rest-sample.cpp
+:start-after: //[ cart_items
+:end-before: //]
 :language: c++
 ```
 
-We begin our example by declaring some shopping cart objects. These are plain structs that also define a `serialize` method for use with serialization.
-
-[cart_items]
-
 Now we create a REST controller that will handle the creation of a new cart and adding and deleting items from this cart. We use standard CRUD REST syntax for this, so e.g. the cart ID is part of the path in the URI for adding and deleting items.
 
-[shop_rest_controller]
+```{literalinclude} ../examples/rest-sample.cpp
+:start-after: //[ shop_rest_controller
+:end-before: //]
+:language: c++
+```
 
-The calls to this rest controller are in the ``scripts/shop.js`` file. Have a look at that file to see how it works. To give you an idea, this is the snippet that is called after clicking the /add/ link for an item.[teletype]
+The calls to this rest controller are in the ``scripts/shop.js`` file. Have a look at that file to see how it works. To give you an idea, this is the snippet that is called after clicking the _add_ link for an item.
 
+```javascript
   addToCart(item) {
     const fd = new FormData();
     fd.append("name", item);
@@ -601,18 +645,24 @@ The calls to this rest controller are in the ``scripts/shop.js`` file. Have a lo
         alert(`Failed to add ${item} to cart`);
       });
   }
+```
 
 The page, script and stylesheet are served by a __html_controller__.
 
-[shop_html_controller]
+```{literalinclude} ../examples/rest-sample.cpp
+:start-after: //[ shop_html_controller
+:end-before: //]
+:language: c++
 
 And tie everything together.
 
-[shop_main]
+```{literalinclude} ../examples/rest-sample.cpp
+:start-after: //[ shop_main
+:end-before: //]
+:language: c++
+```
 
-
-
-##:rest-controller REST Controller (CRUD)
+## REST Controller (CRUD)
 
 The previous example is a rough example on how to use the __rest_controller__, it assumes you pass in the parameters using form data or query parameters. There's another approach, that is more elegant and easier for the developer: create a [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) interface and pass the data encoded in JSON format.
 
@@ -622,23 +672,17 @@ The server therefore looks like this:
 
 ```{literalinclude} ../examples/rest-sample-2.cpp
 :language: c++
+:start-after: //[ shop_rest_controller_2
+:end-before: //]
 ```
-
-[shop_rest_controller_2]
 
 Some ceveats: this works probably only well if you have a single ``JSON`` (or compatible) data type as main parameter and optionally one or more path parameters. The request should also have ``content-type`` equal to ``application/json`` to work properly.
 
-
-
-
-##:rest-controller SOAP Controller
+## SOAP Controller
 
 Creating SOAP controllers is also easy. But that will have to wait a bit.
 
-
-
-
-##:error-handlers Error handling
+## Error handling
 
 [def __error_handler__ [classref zeep::http::error_handler `error_handler`]]
 
@@ -646,14 +690,12 @@ During the processing of a request, an error may occur, often by throwing an std
 
 You can derive your own error handler from __error_handler__ and implement a ``create_error_reply`` member to handle some errors differently. The error handlers will be called in the reverse order of being added allowing you to override default behaviour.
 
+## Security
 
-
-##:security Security
-
-[def __security_context__ [classref zeep::http::security_context `security_context`]]
+<!-- [def __security_context__ [classref zeep::http::security_context `security_context`]]
 [def __user_service__ [classref zeep::http::user_service `user_service`]]
 [def __user_details__ [classref zeep::http::user_details `user_details`]]
-[def __simple_user_service__ [classref zeep::http::simple_user_service `simple_user_service`]]
+[def __simple_user_service__ [classref zeep::http::simple_user_service `simple_user_service`]] -->
 
 In a web application it is often required to limit access to certain URI's to authorized users. To facilitate this in libzeep, the __http_server__ object can use a __security_context__. The __security_context__ itself uses a __user_service__ to provide __user_details__ structs containing the actual data for a user.
 
@@ -663,75 +705,91 @@ The __user_service__ class returns __user_details__ based on a ``username`` via 
 
 ### example
 
-Let us walk through an example of an application using security. This web application will have two pages, a landing page at the URI =/= (but also at ``/index`` and ``/index.html``) and an admin page at ``/admin``. The latter of course will only be accessible by our admin who is called /scott/ and he uses the password /tiger/.
+Let us walk through an example of an application using security. This web application will have two pages, a landing page at the URI =/= (but also at ``/index`` and ``/index.html``) and an admin page at ``/admin``. The latter of course will only be accessible by our admin who is called _scott_ and he uses the password _tiger_.
 
 [note The code for all example code used in this documentation can be found in the doc/examples subdirectory of the libzeep distribution. ]
 
-First start by writing some template code. For this example we will have a common menu template and two templates for the two pages respectively. The interesting part of the menu template is this: [teletype]
+First start by writing some template code. For this example we will have a common menu template and two templates for the two pages respectively. The interesting part of the menu template is this: 
 
-  <div z:fragment="menu" class="w3-bar w3-border w3-light-grey">
-    <a href="/" class="w3-bar-item w3-button">Home</a>
-    <a href="/admin" class="w3-bar-item w3-button"
-       z:classappend="${#security.hasRole('ADMIN') ? '' : 'w3-text-grey w3-hover-none w3-hover-text-grey'}">Admin</a>
-    <a z:if="${not #security.authorized()}" href="/login" class="w3-bar-item w3-button w3-green w3-right">Login</a>
-    <a z:if="${#security.authorized()}" href="/logout" class="w3-bar-item w3-button w3-green w3-right">Logout</a>
-  </div> 
+```xml
+<div z:fragment="menu" class="w3-bar w3-border w3-light-grey">
+  <a href="/" class="w3-bar-item w3-button">Home</a>
+  <a href="/admin" class="w3-bar-item w3-button"
+      z:classappend="${#security.hasRole('ADMIN') ? '' : 'w3-text-grey w3-hover-none w3-hover-text-grey'}">Admin</a>
+  <a z:if="${not #security.authorized()}" href="/login" class="w3-bar-item w3-button w3-green w3-right">Login</a>
+  <a z:if="${#security.authorized()}" href="/logout" class="w3-bar-item w3-button w3-green w3-right">Logout</a>
+</div> 
+```
 
 We're using [W3.CSS](https://www.w3schools.com/w3css/default.asp) as CSS library, albeit we have stored a copy in our own docroot. The two last links in this navigation bar have the ``z:if``"..."= argument checking whether the current user is authorized. These attributes help in select which of the two will be visible, login or logout, based on the current authentication state. The ``#security`` class in our ``el`` library has two more methods called ``username`` and ``hasRole``. The last one returns true when a user has the role asked for.
 
-```{literalinclude} ../examples/security-sample.cpp
-:language: c++
-```
-
 Next we define a simple __html_controller__ that handles the two pages and also serves stylesheets and scripts.
 
-[sample_security_controller]
+```{literalinclude} ../examples/security-sample.cpp
+:language: c++
+:start-after: //[ sample_security_controller
+:end-before: //]
+```
 
-Nothing fancy here, just a simple controller returning pages based on templates. In the template we add a salutation: [teletype]
+Nothing fancy here, just a simple controller returning pages based on templates. In the template we add a salutation:
 
-  <p>Hello, <span z:text="${#security.username() ?: 'world'}"></span>!</p>
+```xml
+<p>Hello, <span z:text="${#security.username() ?: 'world'}"></span>!</p>
+```
 
 And here we see the call to ``#security.username()``. Note also the use of the elvis operator, if username is not set, 'world' is used instead.
 
 Now, in the `main` of our application we first create a __user_service__.
 
-[create_user_service]
+```{literalinclude} ../examples/security-sample.cpp
+:language: c++
+:start-after: //[ create_user_service
+:end-before: //]
+```
 
 We use the __simple_user_service__ class and provide a static list of users. The __user_service__ should return __user_details__ with an encrypted password and therefore we encrypt the plain text password here. Normally you would store this password encrypted of course. For encrypting password we use the [classref zeep::http::pbkdf2_sha256_password_encoder `pbkdf2_sha256_password_encoder`] class. You can add other password encoders based on other algorithms like bcrypt but you then have to register these yourself using [memberref zeep::http::security_context::register_password_encoder `security_context::register_password_encoder`];
 
 Now we can create the security context. This context will be passed to the __http_server__ class as a pointer and the __http_server__ will take ownership.
 
-[create_security_context]
+```{literalinclude} ../examples/security-sample.cpp
+:language: c++
+:start-after: //[ create_security_context
+:end-before: //]
+```
 
 The secret passed to the security_context is used in creating signatures for the [JWT token](https://en.wikipedia.org/wiki/JSON_Web_Token). If you store this secret, the sessions of your users will persist reboots of the server. But in this case we create a new secret after each launch and thus the tokens will expire.
 
 Now we add access rules.
 
-[add_access_rules]
+```{literalinclude} ../examples/security-sample.cpp
+:language: c++
+:start-after: //[ add_access_rules
+:end-before: //]
+```
 
 A rule specifies for a glob pattern which users can access it based on the roles these users have. If the list of roles is empty, this means all users should be able to access this URI. When a request is received, the rules are checked in order of which they were added. The first match will be used to check the roles.
 
-In this example ``/admin`` is only accessible by users having role /ADMIN/. All other URI's are allowed by everyone. Note that we could have also created the __security_context__ with the parameter defaultAccessAllowed as `true`, we then would not have needed that last rule.
+In this example ``/admin`` is only accessible by users having role _ADMIN_. All other URI's are allowed by everyone. Note that we could have also created the __security_context__ with the parameter defaultAccessAllowed as `true`, we then would not have needed that last rule.
 
 And now we can create the __http_server__, add some controller and start it.
 
-[start_server]
+```{literalinclude} ../examples/security-sample.cpp
+:language: c++
+:start-after: //[ start_server
+:end-before: //]
+```
 
 Note that we add the default [classref zeep::http::login_controller `login_controller`]. This controller takes care of handling ``/login`` and ``/logout`` requests. It will also add the required rule for ``/login`` to the __security_context__ using `add_rule("/login", {});` since otherwise the login page would not be reachable. Make sure you do not add your own rules that prevent access to this page.
 
 And that's all. You can now start this server and see that you can access ``/`` and ``/login`` without any problem but ``/admin`` will give you an authentication error. When you login using the credentials ``scott/tiger`` you can access the ``/admin`` page and you can now also click the Logout button.
 
-
-
-##:csrf CSRF protection
+## CSRF protection
 
 The __security_context__ class contains some rudimentary support for protecting against [CSRF attacks](https://en.wikipedia.org/wiki/Cross-site_request_forgery). The way it works is that the server class add a special `csrf-token` cookie to a session. This cookie is stored in the browser with the flags `SameSite=Lax` and `HttpOnly` which makes it unavailable to malicious scripts that might have been injected in your pages. If a value has been set to this cookie and the __security_context__ class has the `set_validate_csrf` flag set, each `POST` or `SUBMIT` will be checked if there is a `_csrf` parameter and this should contain the same value as the `csrf-token` cookie.
 
 So, to use this functionality, call the [memberref zeep::http::security_context::set_validate_csrf `set_validate_csrf`] method on a newly created __security_context__ instance. Next you should make sure each form or `POST` call should contain a `_csrf` parameter with the value stored in the session cookie `csrf-token`. This value can be obtained by calling [memberref zeep::http::context::get_csrf_token `zeep::http::context::get_csrf_token`].
 
-
-
-##:crypto Cryptographic routines
+## Cryptographic routines
 
 A limited number of cryptographic routines are available in `<zeep/crypto.hpp>`. These can be divided in the following categories:
 
@@ -750,5 +808,3 @@ Hashed message authentication codes can be calculated using the available hash f
 ### Key derivation
 
 Two key derivation routines are on offer, both of them PBKDF2, one using HMAC SHA1 and the other HMAC SHA256.
-
-

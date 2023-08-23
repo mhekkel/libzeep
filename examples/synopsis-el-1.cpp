@@ -15,7 +15,7 @@ int main()
     zeep::http::scope scope;
 
     //[ fill_scope
-    /*<< Fill a scope with an array of objects, each object having one element >>*/
+    /* Fill a scope with an array of objects, each object having one element */
     zeep::json::element ints{
         {
             { "value", 1 }

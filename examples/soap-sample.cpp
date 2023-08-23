@@ -109,7 +109,7 @@ int shop_soap_controller::sNextCartID = 1;
 //[ shop_main
 int main()
 {
-    /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
+    /* Use the server constructor that takes the path to a docroot so it will construct a template processor */
     zeep::http::server srv("docroot");
 
     srv.add_controller(new shop_soap_controller());

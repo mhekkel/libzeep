@@ -17,14 +17,14 @@ void test_stl()
 //[ stl_interface
     json j;
 
-    /*<< Make j an array >>*/
+    /* Make j an array */
     j = zeep::json::element::array({ 1, 2, 3 });
     j.push_back(4);
     j.emplace_back("five");
 
     assert(j == R"([ 1, 2, 3, 4, "five" ])"_json);
 
-    /*<< Now make j an object, this will erase the data and initialize a new object >>*/
+    /* Now make j an object, this will erase the data and initialize a new object */
     j = zeep::json::element::object({ { "a", true }, { "b", "2" } });
     j.emplace("c", 3);
 
@@ -59,7 +59,7 @@ void construct()
 
     json j1;
 
-    /*<< Fill a JSON object with some data, the type is detected automatically >>*/
+    /* Fill a JSON object with some data, the type is detected automatically */
     j1["b"] = true;
     j1["i"] = 1;
     j1["f"] = 2.7183;
@@ -71,7 +71,7 @@ void construct()
 
     std::cout << j1 << std::endl;
 
-    /*<< Construct a JSON object by parsing a raw string >>*/
+    /* Construct a JSON object by parsing a raw string */
 
     json j2 = R"(
     {

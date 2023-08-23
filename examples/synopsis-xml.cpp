@@ -11,7 +11,7 @@ int main()
 {
     using namespace zeep::xml::literals; 
 
-    /*<< Construct an XML document in memory using a string literal >>*/
+    /* Construct an XML document in memory using a string literal */
     auto doc = 
         R"(<persons>
             <person id="1">
@@ -24,12 +24,12 @@ int main()
             </person>
         </persons>)"_xml;
 
-    /*<< Iterate over an XPath result set >>*/
+    /* Iterate over an XPath result set */
     for (auto& person: doc.find("//person")) 
     {
         std::string firstname, lastname;
 
-        /*<< Iterate over the __element__ nodes inside the person __element__ >>*/
+        /* Iterate over the __element__ nodes inside the person __element__ */
         for (auto& name: *person)
         {
             if (name.name() == "firstname")	firstname = name.str();

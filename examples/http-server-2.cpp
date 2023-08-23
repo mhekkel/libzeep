@@ -16,7 +16,7 @@ class hello_controller : public zeep::http::html_controller
   public:
     hello_controller()
     {
-        /*<< Mount the handler `handle_index` on =/=, =/index= and =/index.html= >>*/
+        /* Mount the handler `handle_index` on `/`, `/index` and `/index.html` */
         mount("{,index,index.html}", &hello_controller::handle_index);
     }
 
@@ -33,7 +33,7 @@ class hello_controller : public zeep::http::html_controller
 
 int main()
 {
-    /*<< Use the server constructor that takes the path to a docroot so it will construct a template processor >>*/
+    /* Use the server constructor that takes the path to a docroot so it will construct a template processor */
     zeep::http::server srv("docroot");
 
     srv.add_controller(new hello_controller());

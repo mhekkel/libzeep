@@ -3,7 +3,7 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-//[ most_simple_http_server
+//[ most_simple_http_server_start
 #include <zeep/http/server.hpp>
 
 int main()

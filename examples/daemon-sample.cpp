@@ -13,7 +13,7 @@ namespace zh = zeep::http;
 class hello_controller : public zh::controller
 {
   public:
-	/*<< Specify the root path as prefix, will handle any request URI >>*/
+	/* Specify the root path as prefix, will handle any request URI */
 	hello_controller()
 		: controller("/")
 	{
@@ -21,7 +21,7 @@ class hello_controller : public zh::controller
 
 	bool handle_request(zh::request &req, zh::reply &rep)
 	{
-		/*<< Construct a simple reply with status OK (200) and content string >>*/
+		/* Construct a simple reply with status OK (200) and content string */
 		rep = zh::reply::stock_reply(zh::ok);
 		rep.set_content("Hello", "text/plain");
 		return true;

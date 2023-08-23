@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 
 int main()
 {
-    /*<< Define an entity loader function >>*/
+    /* Define an entity loader function */
     auto loader = []
         (const std::string& base, const std::string& pubid, const std::string& sysid) -> std::istream*
     {
@@ -25,17 +25,17 @@ int main()
         throw std::invalid_argument("Invalid arguments passed in loader");
     };
 
-    /*<< Create document and set the entity loader >>*/
+    /* Create document and set the entity loader */
     zeep::xml::document doc;
     doc.set_entity_loader(loader);
 
-    /*<< Read a file >>*/
+    /* Read a file */
     std::ifstream is("sample.xml");
     is >> doc;
 
     using namespace zeep::xml::literals;
 
-    /*<< Compare the doc with an in-memory constructed document, note that spaces are ignored >>*/
+    /* Compare the doc with an in-memory constructed document, note that spaces are ignored */
     if (doc == R"(<foo><bar>Hello, world!</bar></foo>)"_xml)
         std::cout << "ok" << std::endl;
 
