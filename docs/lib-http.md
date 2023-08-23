@@ -18,7 +18,7 @@ Libzeep tries to implement some of the design patterns found in Spring. There is
 
 There are three main controller classes, each targeted at a different task. The first, __html_controller__ maps requests to functions that take a __request__ and __scope__ and return a __reply__. Various routines are available to help constructing XHTML based replies based on XHTML template files. These files can contain special tags that will be processed and the values can be expressed in _expression language_.
 
-The second controller class is the __rest_controller__. This one also maps requests to functions, but this time the parameters in the request are automatically translated into function parameters and the result of the function is converted back into JSON automatically. Named parameters can be passed in the payload of a POST request, as query parameters in a GET request or as parts of the URI path, as in =GET /book/1234/title= where you request the title of book number 1234.
+The second controller class is the __rest_controller__. This one also maps requests to functions, but this time the parameters in the request are automatically translated into function parameters and the result of the function is converted back into JSON automatically. Named parameters can be passed in the payload of a POST request, as query parameters in a GET request or as parts of the URI path, as in ``GET /book/1234/title`` where you request the title of book number 1234.
 
 The third controller is the __soap_controller__. Similar to the REST controller, but this time the translation is between SOAP XML messages and parameters and vice versa.
 
@@ -31,7 +31,7 @@ Starting an HTTP server is easy. Simply create the __http_server__ object, [memb
 ```
 <!-- [most_simple_http_server] -->
 
-Running this code will create a server that listens to port 8080 on localhost and will return =NOT FOUND= for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative: use controllers.
+Running this code will create a server that listens to port 8080 on localhost and will return ``NOT FOUND`` for all requests. Not particularly useful of course. It is possible to derive a class from __http_server__ and implement [memberref zeep::http::server::handle_request `handle_request`]. But there is a better alternative: use controllers.
 
 ## Controllers
 
@@ -79,9 +79,9 @@ Now build and run this code, and you can access your welcome page at [If you wan
 
 Several remarks here.
 
-The server object is created with a =docroot= parameter. That parameter tells the server to create a default [classref zeep::http::template_processor `template_processor`] for use by the __html_controller__ objects.
+The server object is created with a ``docroot`` parameter. That parameter tells the server to create a default [classref zeep::http::template_processor `template_processor`] for use by the __html_controller__ objects.
 
-As you can see in the handler code, a check is made for a parameter called =name=. When present, its value is stored in the newly created sub-scope object. The template file contains a construct in the =<span>= element that tests for the availability of this variable and uses the default ='world'= otherwise. For more information on templates see the section on [link libzeep.http.xhtml-template xhtml templates].
+As you can see in the handler code, a check is made for a parameter called ``name``. When present, its value is stored in the newly created sub-scope object. The template file contains a construct in the ``<span>`` element that tests for the availability of this variable and uses the default ``'world'`` otherwise. For more information on templates see the section on [link libzeep.http.xhtml-template xhtml templates].
 
 The path specified in `mount` is `{,index,index.html}` which is a glob pattern, this pattern can accept the following constructs:
 
@@ -116,9 +116,9 @@ The HTTP specification for __request__ and __reply__ are sufficiently similar to
 
 ### request
 
-The __request__ encapsulates what was received. The standard HTTP request contains a method, like =GET= or =POST=. In this version of libzeep only a limited subset of methods are supported.
+The __request__ encapsulates what was received. The standard HTTP request contains a method, like ``GET`` or ``POST``. In this version of libzeep only a limited subset of methods are supported.
 
-The next part is the =uri= that was requested.
+The next part is the ``uri`` that was requested.
 
 Then we have the version, usually 1.0 or 1.1. Libzeep does not currently support anything else. When 1.1 was used, libzeep will honour the keep-alive flag.
 
@@ -126,9 +126,9 @@ Headers are stored in an array and can be accessed using [memberref zeep::http::
 
 Cookies stored in the headers can be accessed using [memberref zeep::http::request::get_cookie `get_cookie`].
 
-A __request__ may also contain a payload, usually only in case of a =POST= or =PUT=.
+A __request__ may also contain a payload, usually only in case of a ``POST`` or ``PUT``.
 
-Requests can have parameters. These can be passed url-encoded in the uri, or they can be encoded in the payload using =application/x-www-form-urlencoded= or =multipart/form-data= encoding. The various [memberref zeep::http::reply::get_parameter `get_parameter`] members allow retrieving these parameters by name, optinally passing in a default value in case the parameter was not part of the request.
+Requests can have parameters. These can be passed url-encoded in the uri, or they can be encoded in the payload using ``application/x-www-form-urlencoded`` or ``multipart/form-data`` encoding. The various [memberref zeep::http::reply::get_parameter `get_parameter`] members allow retrieving these parameters by name, optinally passing in a default value in case the parameter was not part of the request.
 
 A special case are file parameters, these are retrieved using [memberref zeep::http::reply::get_file_parameter `get_file_parameter`]. This returns a [classref zeep::http::file_param `file_param`] struct that contains information about the uploaded file. Using the [classref zeep::char_streambuf `char_streambuf`] class you can efficiently read the contents of such a file:
 
@@ -151,7 +151,7 @@ reply from a status code and an optional message.
 
 The [memberref zeep::http::reply::set_header `set_header`] and [memberref zeep::http::reply::set_cookie `set_cookie`] member functions take care of setting headers and cookies respectively.
 
-The content of the payload can be set using the various [memberref zeep::http::reply::set_content `set_content`] methods. They will set the content type header according to the data passed in. If you specify a `std::istream*` as content, and the version is set to =1.1= then the data stream will be sent in chunked transfer-encoding.
+The content of the payload can be set using the various [memberref zeep::http::reply::set_content `set_content`] methods. They will set the content type header according to the data passed in. If you specify a `std::istream*` as content, and the version is set to ``1.1`` then the data stream will be sent in chunked transfer-encoding.
 
 
 
@@ -163,9 +163,9 @@ Many web application frameworks provide a way of templating, write some boilerpl
 
 ### loading
 
-Starting with the second task just mentioned, the __template_processor__ takes a =docroot= parameter in its constructor. This docroot is the location on disk where files are located. But it is also possible to build libzeep with in-memory resources by using [=mrc=](https://github.com/mhekkel/mrc). Have a look at the example code for usage.
+Starting with the second task just mentioned, the __template_processor__ takes a ``docroot`` parameter in its constructor. This docroot is the location on disk where files are located. But it is also possible to build libzeep with in-memory resources by using [``mrc``](https://github.com/mhekkel/mrc). Have a look at the example code for usage.
 
-The [memberref zeep::http::basic_template_processor::load_file `load_file`] member of __template_processor__ loads a file from disk (or compiled resources), the [memberref zeep::http::basic_template_processor::file_time `file_time`] member can be used to get the file time of a file. This can be used to generate =304 not modified= replies instead.
+The [memberref zeep::http::basic_template_processor::load_file `load_file`] member of __template_processor__ loads a file from disk (or compiled resources), the [memberref zeep::http::basic_template_processor::file_time `file_time`] member can be used to get the file time of a file. This can be used to generate ``304 not modified`` replies instead.
 
 The [memberref zeep::http::basic_template_processor::load_template `load_template`] member loads a template file from docroot and parses the XML contained in this file into a __document__.
 
@@ -185,12 +185,12 @@ The method [memberref zeep::http::basic_template_processor::create_reply_from_te
 
 Libzeep comes with two tag_processor implementations, the first [classref zeep::http::tag_processor_v1 `tag_processor_v1`] is a legacy one and should probably not be used in new code. The second, [classref zeep::http::tag_processor_v2 `tag_processor_v2`], is inspired by [@https://www.thymeleaf.org].
 
-## Using =el= script
+## Using ``el`` script
 
 [def __json_object__ [classref zeep::json::element `json::element`]]
 
-=el= is the abbreviation for /Expression Language/. It is a script language that tries to be like
-[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. libzeep comes with code to evaluate =el= expressions.
+``el`` is the abbreviation for /Expression Language/. It is a script language that tries to be like
+[@http://en.wikipedia.org/wiki/Unified_Expression_Language]. libzeep comes with code to evaluate ``el`` expressions.
 The language has the concept of variables and these can be created in the C++ code using the __json_object__ class.
 Variables created this way are then stored in a __scope__ object and passed along to the processing code.
 
@@ -200,7 +200,7 @@ To give an example:
 ```
 <!-- [fill_scope] -->
 
-And then you can process some =expression language= construct like this:
+And then you can process some ``expression language`` construct like this:
 
 [evaluate_el]
 
@@ -208,7 +208,7 @@ And if you then print out the result it should give you something like:
 
   "1: 1, 2: 2"
 
-### =el= syntax
+### ``el`` syntax
 
 Most often you will use simple expressions:
 
@@ -217,7 +217,7 @@ Most often you will use simple expressions:
 | expression | evaluates to |
 |--|--|
 | `${ ... }` | variable |
-| `*{ ... }` | selection variable (lookup is done in the scope of variables that were selected with =z:select=, v2 processor only ) |
+| `*{ ... }` | selection variable (lookup is done in the scope of variables that were selected with ``z:select``, v2 processor only ) |
 | `@{ ... }` | link URL |
 | `~{ ... }` | fragment |
 | `#{ ... }` | message (not supported yet in libzeep) |
@@ -267,236 +267,169 @@ When using variables, accessing their content follows the same rules as in Javas
 
 A few predefined utility objects are predefined. These are #dates, #numbers, #request and #security.
 
-[table Predefined objects and their methods
-[[object.method]				[Description]]
-[[`#dates.format(date,format)`]
-  [
-    This method takes two parameters, a preferrably ISO formatted date and a format string.
-    The result will be the output of [`std::put_time`](https://en.cppreference.com/w/cpp/io/manip/put_time).
-  ]]
-[[`#numbers.formatDecimal(number,int_digits,decimals)`]
-  [
-    This method takes up to three parameters, a number that needs to be formatted,
-    an int_digits parameter that specifies the minimum number of integral digits to use and
-    a decimals parameter that specifies how many decimals to use.
+:::{table} Predefined objects and their methods
 
-    The number is formatted using the locale matching the language specified in the Accept HTTP request header. However, if that locale is not available the default locale is used.
-
-    Defaults for int_digits is 1 and decimals is 0.
-
-    Example output: `${#numbers.formatDecimal(pi,2,4)}` is =03.1415= when the locale to use is en_US.
-  ]]
-[[`#numbers.formatDiskSize(number,decimals)`]
-  [
-    This method takes up to two parameters, a number that needs to be formatted,
-    and a decimals parameter that specifies how many decimals to use.
-
-    The number is divided by 1024 until it fits three int digits and the suffix is
-    adjusted accordingly.
-
-    Default for decimals is 0.
-
-    Example output: `${#numbers.formatDiskSize(20480,2)}` is =2.00K= when the locale to use is en_US.
-  ]]
-[[`#request.getRequestURI()`]
-  [
-    Returns the original URI in the HTTP request.
-  ]]
-[[`#security.authorized()`]
-  [
-    Returns whether the uses has successfully logged in.
-  ]]
-[[`#security.username()`]
-  [
-    Returns the username for the current user.
-  ]]
-[[`#security.hasRole(role)`]
-  [
-    Returns whether the uses has the role as specified by the parameter.
-  ]]
-]
-
-
+| object.method | Description |
+|--|--|
+| `#dates.format(date,format)` | This method takes two parameters, a preferrably ISO formatted date and a format string.<br />    The result will be the output of [`std::put_time`](https://en.cppreference.com/w/cpp/io/manip/put_time). |
+| `#numbers.formatDecimal(number,int_digits,decimals)` | This method takes up to three parameters, a number that needs to be formatted,<br />    an int_digits parameter that specifies the minimum number of integral digits to use and<br />    a decimals parameter that specifies how many decimals to use.<br /><br />    The number is formatted using the locale matching the language specified in the Accept HTTP request header. However, if that locale is not available the default locale is used.<br /><br />    Defaults for int_digits is 1 and decimals is 0.<br /><br />    Example output: `${#numbers.formatDecimal(pi,2,4)}` is ``03.1415`` when the locale to use is en_US. |
+| `#numbers.formatDiskSize(number,decimals)` | This method takes up to two parameters, a number that needs to be formatted,<br />    and a decimals parameter that specifies how many decimals to use.<br />	.<br />    The number is divided by 1024 until it fits three int digits and the suffix is<br />    adjusted accordingly.<br />	.<br />    Default for decimals is 0.<br />	.<br />    Example output: `${#numbers.formatDiskSize(20480,2)}` is ``2.00K`` when the locale to use is en_US. |
+| `#request.getRequestURI()` | Returns the original URI in the HTTP request. |
+| `#security.authorized()` | Returns whether the uses has successfully logged in. |
+| `#security.username()` |  Returns the username for the current user. |
+| `#security.hasRole(role)` | Returns whether the uses has the role as specified by the parameter. |
+:::
 
 ## tag_processor_v1
 
 This tag_processor works on tags, mostly. As opposed to tag_processor_v2 which works on attributes mainly.
 The tags are in a separate XML namespace. You can change this name space
-using the `ns` parameter in the constructor, the default is =http://www.hekkelman.com/libzeep/m1=.
+using the `ns` parameter in the constructor, the default is ``http://www.hekkelman.com/libzeep/m1``.
 
 There are several predefined processing tags which are summarized below. There used to be also
 a way to add your own processing tags using an `add_processor` method but that has been dropped.
 
-[table List of predefined processing tags
-[[tag name (without prefix)][Description][Example]]
-[
-  [include]
-  [Takes one parameter named `file` and replaces the tag with the processed content of this file]
-  [ [^<zeep:include file="menu.xhtml"/>] ]
-]
-[
-  [if]
-  [Takes one parameter named `test` containing an `el` script. This script is evaluated and
-      if the result is not empty, zero or false, the content of the `if` tags is inserted in
-      the output. Otherwise, the content is discarded.]
-    
-    [[teletype]
-``
-  <zeep:if test="${not empty name}">
-    Hello ${name}
-  </zeep:if>
-``
-    ]
-]
-[
-  [iterate]
-  [Takes two parameters, `collection` which contains an `el` script that evaluates to
-       an array `el::object` and a name in `var`. The content of the `iterate` tag is
-       included for each value of `collection` and `var` will contain the current value.]
-  [
-``
-  <ul><zeep:iterate collection="${names}" var="name">
-    <li>${name}</li>
-  </zeep:iterate></ul>
-``
-  ]
-]
-[
-  [for]
-  [Takes three parameters. The parameters `begin` and `end` should evaluate to a number.
-     The parameter `var` contains a name that will be used to hold the current value
-     when inserting the content of the `for` tag in each iteration of the for
-     loop between `begin` and `end`.]
-  [
-``
-  <zeep:for begin="1" end="3" var="i">
-    ${i},
-  </zeep:for>
-``
-  ]
-]
-[
-  [number]
-  [Format the number in the `n` parameter using the `f` format. This is limited to
-  the formats ='#.##0'= and ='#.##0B'= for now. The first formats an integer value
-  using thousand separators, the second tries to format the integer value in a
-  power of two multiplier (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc.]
-  [
-``
-  <zeep:number n="1024" f="0.00#B"/>
-  Will output 1K
-``
-  ]
-]
-[
-  [options]
-  [This tag will insert multiple =<option>= tags for each element in the `collection`
-  parameter. This `collection` paramter can contain an array of strings or it can
-  contain an array of `el::object`. In the latter case, you can specify a `value` and
-  `label` parameter to name the value and label fields of these objects. A `selected`
-  parameter can be used to select the current value of the options.]
-  [
-``
-  <zeep:options collection="${names}" 
-    value="id" label="fullName" selected="1" />
-``
-  ]
-]
-[
-  [option]
-  [Generate a single =<option>= tag with a value as specified in the `value` parameter.
-  If `selected` evaluates to the same value as `value`, the option is selected.
-  The content of the =<option>= tag is inserted in the final tag.]
-  [
-``
-  <zeep:option value="1" selected="${user}">
-    John Doe
-  </zeep:option>
-``
-  ]
-]
-[
-  [checkbox]
-  [Create an =<input>= tag with type `checkbox`. The parameter `name` is used as
-  name attribute and the parameter `checked` is evaluated to see if the checkbox
-  should be in checked mode.]
-  [
-``
-  <zeep:checkbox name='cb1' checked='${true}'>
-    Check me
-  </zeep:checkbox>
-``
-  ]
-]
-[
-  [url]
-  [The url processing tag creates a new variable in the current scope with the name
-  as specified in the `var` parameter. It then creates a list of all original HTTP
-  parameters for the current page. You can override these parameter, and add new ones,
-  by adding =<param>= tags in the =<url>= tag.]
-  [
-``
-  <zeep:url var="next">
-    <zeep:param name='page' value='${page + 1}'/>
-  <zeep:url>
-  <a href="${next}">Next page</a>
-``
-  ]
-]
-[[param][see =url= above.]]
-[
-  [embed]
-  [This tag takes the content of the `var` parameter which should contain valid
-  XML and puts the processed value in the document.]
-  [
-``
-  <zeep:embed var="&lt;em&gt;hello, world!&lt;/em&gt;"/>
-``
-  ]
-]
-]
+```{eval-rst}
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| tag name         | Description                                                                                   | Example                               |
+| (without prefix) |                                                                                               |                                       |
++==================+===============================================================================================+=======================================+
+| include          | Takes one parameter named `file` and replaces the tag with the processed content of this file | .. code-block:: xml                   |
+|                  |                                                                                               |                                       |
+|                  |                                                                                               |    <zeep:include file="menu.xhtml"/>  |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| if               | Takes one parameter named `test` containing an `el` script. This script is evaluated and      | .. code-block:: xml                   |
+|                  | if the result is not empty, zero or false, the content of the `if` tags is inserted in        |                                       |
+|                  | the output. Otherwise, the content is discarded.                                              |    <zeep:if test="${not empty name}"> |
+|                  |                                                                                               |      Hello ${name}                    |
+|                  |                                                                                               |    </zeep:if>                         |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| iterate          | Takes two parameters, `collection` which contains an `el` script that evaluates to an array   | .. code-block:: xml                   |
+|                  | `el::object` and a name in `var`. The content of the `iterate` tag is included for each value |                                       |
+|                  | of `collection` and `var` will contain the current value.                                     |   <ul>                                |
+|                  |                                                                                               |     <zeep:iterate                     |
+|                  |                                                                                               |         collection="${names}"         |
+|                  |                                                                                               |         var="name">                   |
+|                  |                                                                                               |       <li>${name}</li>                |
+|                  |                                                                                               |     </zeep:iterate>                   |
+|                  |                                                                                               |   </ul>                               |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| for              | Takes three parameters. The parameters `begin` and `end` should evaluate to a number. The     | .. code-block:: xml                   |
+|                  | parameter `var` contains a name that will be used to hold the current value when inserting    |                                       |
+|                  | the content of the `for` tag in each iteration of the for loop between `begin` and `end`.     |   <zeep:for begin="1" end="3"         |
+|                  |                                                                                               |             var="i">                  |
+|                  |                                                                                               |     ${i},                             |
+|                  |                                                                                               |   </zeep:for>                         |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| number           | Format the number in the `n` parameter using the `f` format. This is limited to the formats   | .. code-block:: xml                   |
+|                  | ``'#.##0'`` and ``'#.##0B'`` for now. The first formats an integer value using thousand       |                                       |
+|                  | separators, the second tries to format the integer value in a power of two multiplier         |    <zeep:number n="1024" f="0.00#B"/> |
+|                  | (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc.                                       |                                       |
+|                  |                                                                                               | Will output ``1K``                    |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| options          | This tag will insert multiple =<option>= tags for each element in the `collection` parameter. | .. code-block:: xml                   |
+|                  | This `collection` paramter can contain an array of strings or it can contain an array of      |                                       |
+|                  | `el::object`. In the latter case, you can specify a `value` and                               |    <zeep:options                      |
+|                  | `label` parameter to name the value and label fields of these objects. A `selected`           |        collection="${names}"          |
+|                  | parameter can be used to select the current value of the options.                             |        value="id"                     |
+|                  |                                                                                               |        label="fullName"               |
+|                  |                                                                                               |        selected="1" />                |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| option           | Generate a single =<option>= tag with a value as specified in the `value` parameter. If       | .. code-block:: xml                   |
+|                  | `selected` evaluates to the same value as `value`, the option is selected.                    |                                       |
+|                  | The content of the =<option>= tag is inserted in the final tag.                               |    <zeep:option value="1"             |
+|                  |                                                                                               |                 selected="${user}">   |
+|                  |                                                                                               |      John Doe                         |
+|                  |                                                                                               |    </zeep:option>                     |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| checkbox         | Create an ``<input>`` tag with type `checkbox`. The parameter `name` is used as name          | .. code-block:: xml                   |
+|                  | attribute and the parameter `checked` is evaluated to see if the checkbox should be in        |                                       |
+|                  | checked mode.                                                                                 |    <zeep:checkbox name='cb1'          |
+|                  |                                                                                               |                   checked='${true}'>  |
+|                  |                                                                                               |      Check me                         |
+|                  |                                                                                               |    </zeep:checkbox>                   |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| url              | The url processing tag creates a new variable in the current scope with the name as specified | .. code-block:: xml                   |
+|                  | in the `var` parameter. It then creates a list of all original HTTP parameters for the        |                                       |
+|                  | current page. You can override these parameter, and add new ones, by adding ``<param>`` tags  |    <zeep:url var="next">              |
+|                  | in the ``<url>`` tag.                                                                         |      <zeep:param                      |
+|                  |                                                                                               |         name='page'                   |
+|                  |                                                                                               |         value='${page + 1}'/>         |
+|                  |                                                                                               |    <zeep:url>                         |
+|                  |                                                                                               |    <a href="${next}">Next page</a>    |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+| embed            | This tag takes the content of the `var` parameter which should contain valid XML and puts the | .. code-block:: xml                   |
+|                  | processed value in the document.                                                              |                                       |
+|                  |                                                                                               |     <zeep:embed                       |
+|                  |                                                                                               |       var="&lt;em&gt;hi&lt;/em&gt;"/> |
++------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
+```
 
+
+
+
+
+
+
+<!-- 
+
+:::{table} List of predefined processing tags
+
+| tag name (without prefix) | Description | Example |
+| -- | -- | -- |
+| include | Takes one parameter named `file` and replaces the tag with the processed content of this file | ``<zeep:include file="menu.xhtml"/>`` |
+| if | Takes one parameter named `test` containing an `el` script. This script is evaluated and if the result is not empty, zero or false, the content of the `if` tags is inserted in the output. Otherwise, the content is discarded. | ``<zeep:if test="${not empty name}">``<br/>``Hello ${name}``<br/>``</zeep:if>`` |
+| iterate | Takes two parameters, `collection` which contains an `el` script that evaluates to an array `el::object` and a name in `var`. The content of the `iterate` tag is included for each value of `collection` and `var` will contain the current value. | ``<ul><zeep:iterate collection="${names}" var="name">``<br/>``<li>${name}</li>``<br/>``</zeep:iterate></ul>`` |
+| for | Takes three parameters. The parameters `begin` and `end` should evaluate to a number.<br/>The parameter `var` contains a name that will be used to hold the current value when inserting the content of the `for` tag in each iteration of the for loop between `begin` and `end`. | ``<zeep:for begin="1" end="3" var="i">``<br/>``${i},``<br/>``</zeep:for>`` |
+| number | Format the number in the `n` parameter using the `f` format. This is limited to the formats ``'#.##0'`` and ``'#.##0B'`` for now. The first formats an integer value using thousand separators, the second tries to format the integer value in a power of two multiplier (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc. | ``<zeep:number n="1024" f="0.00#B"/>`` Will output ``1K`` |
+| options | This tag will insert multiple ``<option>`` tags for each element in the `collection` parameter. This `collection` paramter can contain an array of strings or it can contain an array of `el::object`. In the latter case, you can specify a `value` and `label` parameter to name the value and label fields of these objects. A `selected` parameter can be used to select the current value of the options. | ``<zeep:options collection="${names}" value="id" label="fullName" selected="1" />`` |
+| option | Generate a single ``<option>`` tag with a value as specified in the `value` parameter.<br/>If `selected` evaluates to the same value as `value`, the option is selected.<br/>The content of the ``<option>`` tag is inserted in the final tag. | ``<zeep:option value="1" selected="${user}">``<br/>``John Doe``</br>``</zeep:option>`` |
+| checkbox | Create an ``<input>`` tag with type `checkbox`. The parameter `name` is used as name attribute and the parameter `checked` is evaluated to see if the checkbox should be in checked mode. | ``<zeep:checkbox name='cb1' checked='${true}'>``<br/>``Check me``<br/>``</zeep:checkbox>`` |
+| url | The url processing tag creates a new variable in the current scope with the name as specified in the `var` parameter. It then creates a list of all original HTTP parameters for the current page. You can override these parameter, and add new ones, by adding ``<param>`` tags in the ``<url>`` tag. | ``<zeep:url var="next">``<br/>``<zeep:param name='page' value='${page + 1}'/>``<br/>``<zeep:url>``<br/>``<a href="${next}">Next page</a>`` |
+| param | see ``url`` above.|
+| embed | This tag takes the content of the `var` parameter which should contain valid XML and puts the processed value in the document. | ``<zeep:embed var="&lt;em&gt;hello, world!&lt;/em&gt;"/>`` |
+:::
+ -->
 
 ## tag_processor_v2
 
 Tag processor version 2 is an implementation of the documentation for [Thymeleaf](https://www.thymeleaf.org/doc/tutorials/3.0/usingthymeleaf.html).
 This documententation is a bit sparse, for now you might be better off reading the one at the Thymeleaf site.
 
-There are some notable differences between Thymeleaf and libzeep though, libzeep does not support the concept of =messages= yet, so using this for localization is not going to work. Furthermore, the Thymeleaf library is written in Java and assumes all data constructs are Java object. Of course that is different in libzeep.
+There are some notable differences between Thymeleaf and libzeep though, libzeep does not support the concept of ``messages`` yet, so using this for localization is not going to work. Furthermore, the Thymeleaf library is written in Java and assumes all data constructs are Java object. Of course that is different in libzeep.
 
 ### tags
 
-There is only one tag this tag processor processes, which is =<z:block>=, for the rest this processor only processes attributes. 
+There is only one tag this tag processor processes, which is ``<z:block>``, for the rest this processor only processes attributes. 
 
 ### attributes
 
-Some attributes are treated special, these are listed below. For the other tags the general rule is that if the tag has the prefix for the =v2= namespace, the value of the attribute will be evaluated and the result will be placed in an attribute without the prefix. Possibly overwriting an already existing attribute with that name.
+Some attributes are treated special, these are listed below. For the other tags the general rule is that if the tag has the prefix for the ``v2`` namespace, the value of the attribute will be evaluated and the result will be placed in an attribute without the prefix. Possibly overwriting an already existing attribute with that name.
 
-So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= contains ='two'= the result will be ``<span id="two"/>``
+So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable ``id`` contains ``'two'`` the result will be ``<span id="two"/>``
 
 ### special attributes
 
 [table processed attributes
 [[attribute]		[remarks]]
-[[=assert=]			[ If the value of this attribute evaluates to `true`, an exception will be thrown. ]]
-[[=attr=]			[
+[[``assert``]			[ If the value of this attribute evaluates to `true`, an exception will be thrown. ]]
+[[``attr``]			[
             The value of this attribute is an expression consisting of one or more comma separated statements that assign a value to an attribute. e.g.
 
             ``
               <img z:attr="width=${width},height=${height}"/>
             ``
             
-            will result in the following when the value of the variables =width= and =height= is `100`.
+            will result in the following when the value of the variables ``width`` and ``height`` is `100`.
 
             ``
               <img width="100" height="100/>
             ``
           ]]
-[[=classappend=, =styleappend=]
+[[``classappend``, ``styleappend``]
           [
-            The value is evaluated and the result is appended to the =class= or =style= attribute respectively.
-          ]]
-[[=each=]			[
+            The value is evaluated and the result is appended to the ``class`` or ``style`` attribute respectively.<br/>]]
+[[``each``]			[
             The expression in the value should have a name for a variable, optinally followed by a comma and the name for an iterator-info variable. Then a colon followed by an expression whose result after evaluation is an array.
 
             The tag containing this attribute will be repeated as many times as there are elements in the array. Each copy will then be evaluated with the name value set to the current value in the array.
@@ -542,11 +475,10 @@ So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= con
             ]
 
           ]]
-[[=if=, =unless=]
+[[``if``, ``unless``]
           [
-            The attribute value is evaluated and if the result is `true` respectively `false` the containing tag is preserved, otherwise it is deleted.
-          ]]
-[[=include=, =insert=, =replace=]
+            The attribute value is evaluated and if the result is `true` respectively `false` the containing tag is preserved, otherwise it is deleted.<br/>]]
+[[``include``, ``insert``, ``replace``]
           [
             These three statements are used to pull in fragments of markup. The value of the attribute is evaluated and should contain a fragment specification. The contents of this fragment are then copied to the destination. The three attributes differ in the following way:
 
@@ -573,7 +505,7 @@ So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= con
             ``						
 
           ]]
-[[=inline=]			[
+[[``inline``]			[
             The processor processes occurrences of \[\[ ... \]\] or \[\( ... \)\] by evaluating what is in between those brackets.
 
             ``
@@ -586,7 +518,7 @@ So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= con
               <div>Hello, scott</div>
             ``
 
-            Using this attribute, you can do even more fancy things. If the value of this attribute is =javascript=, the replacement will be valid in a javascript context by properly quoting double quotes e.g. And it will process commented values properly, as in:
+            Using this attribute, you can do even more fancy things. If the value of this attribute is ``javascript``, the replacement will be valid in a javascript context by properly quoting double quotes e.g. And it will process commented values properly, as in:
 
             ``
               <script z:inline='javascript'>let x = /*[[${var}]]*/ null;</script>
@@ -598,9 +530,8 @@ So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= con
               <script>let x = "He said \"bla bla bla\"";</script>
             ``
 
-            If the inline attribute has value =text=, the whole body of the tag will be evaluated as =el=.
-          ]]
-[[=switch=, =case=]	[
+            If the inline attribute has value ``text``, the whole body of the tag will be evaluated as ``el``.<br/>]]
+[[``switch``, ``case``]	[
             Example:
 
             ``
@@ -610,7 +541,7 @@ So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= con
               </div>
             ``
           ]]
-[[=text=, =utext=]	[
+[[``text``, ``utext``]	[
             The simplest, replace the body of the tag with the result of the evaluation of the content of this attribute.
 
             ``
@@ -623,9 +554,8 @@ So, e.g. if you have ``<span id="one" z:id="${id}"/>`` and the variable =id= con
               <span>scott</span>
             ``
 
-            The =text= variant will quote special characters like <, > and &. The =utext= variant will not, but beware, if the result is not valid XML an exception is thrown.
-          ]]
-[[=with=]			[
+            The ``text`` variant will quote special characters like <, > and &. The ``utext`` variant will not, but beware, if the result is not valid XML an exception is thrown.<br/>]]
+[[``with``]			[
             Assign a value to a variable. Example:
 
             ``
@@ -658,7 +588,7 @@ Now we create a REST controller that will handle the creation of a new cart and 
 
 [shop_rest_controller]
 
-The calls to this rest controller are in the =scripts/shop.js= file. Have a look at that file to see how it works. To give you an idea, this is the snippet that is called after clicking the /add/ link for an item.[teletype]
+The calls to this rest controller are in the ``scripts/shop.js`` file. Have a look at that file to see how it works. To give you an idea, this is the snippet that is called after clicking the /add/ link for an item.[teletype]
 
   addToCart(item) {
     const fd = new FormData();
@@ -686,7 +616,7 @@ And tie everything together.
 
 The previous example is a rough example on how to use the __rest_controller__, it assumes you pass in the parameters using form data or query parameters. There's another approach, that is more elegant and easier for the developer: create a [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) interface and pass the data encoded in JSON format.
 
-To make this work, we rework the previous example. The data items =Cart= and =Item= remain the same, they already have a `serialize` method. The real difference is in the JavaScript code, in the previous example all work was done by the server, the JavaScript only called separate methods to fill the items list and the server responded with the new Cart content. In this example however, management of the cart content is done by the JavaScript and the updated cart is then sent using a =PUT= to the server.
+To make this work, we rework the previous example. The data items ``Cart`` and ``Item`` remain the same, they already have a `serialize` method. The real difference is in the JavaScript code, in the previous example all work was done by the server, the JavaScript only called separate methods to fill the items list and the server responded with the new Cart content. In this example however, management of the cart content is done by the JavaScript and the updated cart is then sent using a ``PUT`` to the server.
 
 The server therefore looks like this:
 
@@ -696,7 +626,7 @@ The server therefore looks like this:
 
 [shop_rest_controller_2]
 
-Some ceveats: this works probably only well if you have a single =JSON= (or compatible) data type as main parameter and optionally one or more path parameters. The request should also have =content-type= equal to =application/json= to work properly.
+Some ceveats: this works probably only well if you have a single ``JSON`` (or compatible) data type as main parameter and optionally one or more path parameters. The request should also have ``content-type`` equal to ``application/json`` to work properly.
 
 
 
@@ -712,9 +642,9 @@ Creating SOAP controllers is also easy. But that will have to wait a bit.
 
 [def __error_handler__ [classref zeep::http::error_handler `error_handler`]]
 
-During the processing of a request, an error may occur, often by throwing an std::exception. The default __error_handler__ class takes care of catching exceptions and turn these in sensible error replies. A default error_handler is created in the __http_server__ constructor and this one uses the default =error.xhtml= template in =docroot=, or a built in template if that file does not exist.
+During the processing of a request, an error may occur, often by throwing an std::exception. The default __error_handler__ class takes care of catching exceptions and turn these in sensible error replies. A default error_handler is created in the __http_server__ constructor and this one uses the default ``error.xhtml`` template in ``docroot``, or a built in template if that file does not exist.
 
-You can derive your own error handler from __error_handler__ and implement a =create_error_reply= member to handle some errors differently. The error handlers will be called in the reverse order of being added allowing you to override default behaviour.
+You can derive your own error handler from __error_handler__ and implement a ``create_error_reply`` member to handle some errors differently. The error handlers will be called in the reverse order of being added allowing you to override default behaviour.
 
 
 
@@ -727,13 +657,13 @@ You can derive your own error handler from __error_handler__ and implement a =cr
 
 In a web application it is often required to limit access to certain URI's to authorized users. To facilitate this in libzeep, the __http_server__ object can use a __security_context__. The __security_context__ itself uses a __user_service__ to provide __user_details__ structs containing the actual data for a user.
 
-The __user_details__ structure contains the =username=, encrypted =password= and a list of =roles= this user can play. The roles are simple text strings and should preferrably be very short, like ='USER'= or ='ADMIN'=. 
+The __user_details__ structure contains the ``username``, encrypted ``password`` and a list of ``roles`` this user can play. The roles are simple text strings and should preferrably be very short, like ``'USER'`` or ``'ADMIN'``. 
 
-The __user_service__ class returns __user_details__ based on a =username= via the pure virtual method [memberref zeep::http::user_service::load_user `load_user`]. A __simple_user_service__ class is available to create very simple user services based on static data. In a real world application you should implement your own user_service and store user information in e.g. a database.
+The __user_service__ class returns __user_details__ based on a ``username`` via the pure virtual method [memberref zeep::http::user_service::load_user `load_user`]. A __simple_user_service__ class is available to create very simple user services based on static data. In a real world application you should implement your own user_service and store user information in e.g. a database.
 
 ### example
 
-Let us walk through an example of an application using security. This web application will have two pages, a landing page at the URI =/= (but also at =/index= and =/index.html=) and an admin page at =/admin=. The latter of course will only be accessible by our admin who is called /scott/ and he uses the password /tiger/.
+Let us walk through an example of an application using security. This web application will have two pages, a landing page at the URI =/= (but also at ``/index`` and ``/index.html``) and an admin page at ``/admin``. The latter of course will only be accessible by our admin who is called /scott/ and he uses the password /tiger/.
 
 [note The code for all example code used in this documentation can be found in the doc/examples subdirectory of the libzeep distribution. ]
 
@@ -747,7 +677,7 @@ First start by writing some template code. For this example we will have a commo
     <a z:if="${#security.authorized()}" href="/logout" class="w3-bar-item w3-button w3-green w3-right">Logout</a>
   </div> 
 
-We're using [W3.CSS](https://www.w3schools.com/w3css/default.asp) as CSS library, albeit we have stored a copy in our own docroot. The two last links in this navigation bar have the =z:if="..."= argument checking whether the current user is authorized. These attributes help in select which of the two will be visible, login or logout, based on the current authentication state. The =#security= class in our =el= library has two more methods called =username= and =hasRole=. The last one returns true when a user has the role asked for.
+We're using [W3.CSS](https://www.w3schools.com/w3css/default.asp) as CSS library, albeit we have stored a copy in our own docroot. The two last links in this navigation bar have the ``z:if``"..."= argument checking whether the current user is authorized. These attributes help in select which of the two will be visible, login or logout, based on the current authentication state. The ``#security`` class in our ``el`` library has two more methods called ``username`` and ``hasRole``. The last one returns true when a user has the role asked for.
 
 ```{literalinclude} ../examples/security-sample.cpp
 :language: c++
@@ -761,7 +691,7 @@ Nothing fancy here, just a simple controller returning pages based on templates.
 
   <p>Hello, <span z:text="${#security.username() ?: 'world'}"></span>!</p>
 
-And here we see the call to =#security.username()=. Note also the use of the elvis operator, if username is not set, 'world' is used instead.
+And here we see the call to ``#security.username()``. Note also the use of the elvis operator, if username is not set, 'world' is used instead.
 
 Now, in the `main` of our application we first create a __user_service__.
 
@@ -781,15 +711,15 @@ Now we add access rules.
 
 A rule specifies for a glob pattern which users can access it based on the roles these users have. If the list of roles is empty, this means all users should be able to access this URI. When a request is received, the rules are checked in order of which they were added. The first match will be used to check the roles.
 
-In this example =/admin= is only accessible by users having role /ADMIN/. All other URI's are allowed by everyone. Note that we could have also created the __security_context__ with the parameter defaultAccessAllowed as `true`, we then would not have needed that last rule.
+In this example ``/admin`` is only accessible by users having role /ADMIN/. All other URI's are allowed by everyone. Note that we could have also created the __security_context__ with the parameter defaultAccessAllowed as `true`, we then would not have needed that last rule.
 
 And now we can create the __http_server__, add some controller and start it.
 
 [start_server]
 
-Note that we add the default [classref zeep::http::login_controller `login_controller`]. This controller takes care of handling =/login= and =/logout= requests. It will also add the required rule for =/login= to the __security_context__ using `add_rule("/login", {});` since otherwise the login page would not be reachable. Make sure you do not add your own rules that prevent access to this page.
+Note that we add the default [classref zeep::http::login_controller `login_controller`]. This controller takes care of handling ``/login`` and ``/logout`` requests. It will also add the required rule for ``/login`` to the __security_context__ using `add_rule("/login", {});` since otherwise the login page would not be reachable. Make sure you do not add your own rules that prevent access to this page.
 
-And that's all. You can now start this server and see that you can access =/= and =/login= without any problem but =/admin= will give you an authentication error. When you login using the credentials =scott/tiger= you can access the =/admin= page and you can now also click the Logout button.
+And that's all. You can now start this server and see that you can access ``/`` and ``/login`` without any problem but ``/admin`` will give you an authentication error. When you login using the credentials ``scott/tiger`` you can access the ``/admin`` page and you can now also click the Logout button.
 
 
 
