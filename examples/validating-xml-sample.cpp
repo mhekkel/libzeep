@@ -3,8 +3,6 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
-//[ xml_validation_sample
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -15,6 +13,7 @@ namespace fs = std::filesystem;
 
 int main()
 {
+//[ xml_validation_sample
     /* Define an entity loader function */
     auto loader = []
         (const std::string& base, const std::string& pubid, const std::string& sysid) -> std::istream*
@@ -38,8 +37,7 @@ int main()
     /* Compare the doc with an in-memory constructed document, note that spaces are ignored */
     if (doc == R"(<foo><bar>Hello, world!</bar></foo>)"_xml)
         std::cout << "ok" << std::endl;
+//]
 
     return 0;
 }
-
-//]

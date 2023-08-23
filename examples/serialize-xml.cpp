@@ -6,6 +6,7 @@
 #include <fstream>
 #include <zeep/xml/document.hpp>
 
+//[ serialisation
 struct Person
 {
     std::string firstname;
@@ -37,3 +38,4 @@ int main()
 
     return 0;
 }
+//]

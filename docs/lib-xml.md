@@ -10,8 +10,10 @@ libzeep uses a modern C++ way of accessing and manipulating data. To give an ide
 
 ```{literalinclude} ../examples/synopsis-xml.cpp
 :language: c++
+:start-after: //[ synopsis_xml_main
+:end-before: //]
 ```
- 
+
 ### XML nodes
 
 The class __node__ is the base class for all classes in the DOM API. The class is not copy constructable and subclasses use move semantics to offer a simple API while still being memory and performance efficient. Nodes can have siblings and a parent but no children.
@@ -78,6 +80,8 @@ When we want to see the `&hello;` entity replaced with `'Hello, world!'` as spec
 
 ```{literalinclude} ../examples/validating-xml-sample.cpp
 :language: c++
+:start-after: //[ xml_validation_sample
+:end-before: //]
 ```
 
 ## Serialization
@@ -86,6 +90,8 @@ An alternative way to read/write XML files is using serialization. To do this, w
 
 ```{literalinclude} ../examples/serialize-xml.cpp
 :language: c++
+:start-after: //[ serialisation
+:end-before: //]
 ```
 
 ### attributes
@@ -111,8 +117,9 @@ There's also a new interface, somewhat more intuitive from a modern C++ viewpoin
 
 ```{literalinclude} ../examples/synopsis-json.cpp
 :language: c++
+:start-after: //[ enum_support
+:end-before: //]
 ```
-
 
 ## XPath 1.0
 
@@ -132,10 +139,10 @@ XPath constructs can reference variables. As an example, suppose you need to fin
 
 ```{literalinclude} ../examples/xpath-sample.cpp
 :language: c++
+:start-after: //[ xpath_sample
+:end-before: //]
 ```
 
 :::{note}
 Please note that the evaluation of an XPath returns pointers to XML nodes. Of course these are only valid as long as you do not modify the the document in which they are contained.
 :::
-
-

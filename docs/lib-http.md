@@ -328,79 +328,108 @@ There are several predefined processing tags which are summarized below. There u
 a way to add your own processing tags using an `add_processor` method but that has been dropped.
 
 ```{eval-rst}
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| tag name         | Description                                                                                   | Example                               |
-| (without prefix) |                                                                                               |                                       |
-+==================+===============================================================================================+=======================================+
-| include          | Takes one parameter named `file` and replaces the tag with the processed content of this file | .. code-block:: xml                   |
-|                  |                                                                                               |                                       |
-|                  |                                                                                               |    <zeep:include file="menu.xhtml"/>  |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| if               | Takes one parameter named `test` containing an `el` script. This script is evaluated and      | .. code-block:: xml                   |
-|                  | if the result is not empty, zero or false, the content of the `if` tags is inserted in        |                                       |
-|                  | the output. Otherwise, the content is discarded.                                              |    <zeep:if test="${not empty name}"> |
-|                  |                                                                                               |      Hello ${name}                    |
-|                  |                                                                                               |    </zeep:if>                         |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| iterate          | Takes two parameters, `collection` which contains an `el` script that evaluates to an array   | .. code-block:: xml                   |
-|                  | `el::object` and a name in `var`. The content of the `iterate` tag is included for each value |                                       |
-|                  | of `collection` and `var` will contain the current value.                                     |   <ul>                                |
-|                  |                                                                                               |     <zeep:iterate                     |
-|                  |                                                                                               |         collection="${names}"         |
-|                  |                                                                                               |         var="name">                   |
-|                  |                                                                                               |       <li>${name}</li>                |
-|                  |                                                                                               |     </zeep:iterate>                   |
-|                  |                                                                                               |   </ul>                               |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| for              | Takes three parameters. The parameters `begin` and `end` should evaluate to a number. The     | .. code-block:: xml                   |
-|                  | parameter `var` contains a name that will be used to hold the current value when inserting    |                                       |
-|                  | the content of the `for` tag in each iteration of the for loop between `begin` and `end`.     |   <zeep:for begin="1" end="3"         |
-|                  |                                                                                               |             var="i">                  |
-|                  |                                                                                               |     ${i},                             |
-|                  |                                                                                               |   </zeep:for>                         |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| number           | Format the number in the `n` parameter using the `f` format. This is limited to the formats   | .. code-block:: xml                   |
-|                  | ``'#.##0'`` and ``'#.##0B'`` for now. The first formats an integer value using thousand       |                                       |
-|                  | separators, the second tries to format the integer value in a power of two multiplier         |    <zeep:number n="1024" f="0.00#B"/> |
-|                  | (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc.                                       |                                       |
-|                  |                                                                                               | Will output `1K`                      |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| options          | This tag will insert multiple =<option>= tags for each element in the `collection` parameter. | .. code-block:: xml                   |
-|                  | This `collection` paramter can contain an array of strings or it can contain an array of      |                                       |
-|                  | `el::object`. In the latter case, you can specify a `value` and                               |    <zeep:options                      |
-|                  | `label` parameter to name the value and label fields of these objects. A `selected`           |        collection="${names}"          |
-|                  | parameter can be used to select the current value of the options.                             |        value="id"                     |
-|                  |                                                                                               |        label="fullName"               |
-|                  |                                                                                               |        selected="1" />                |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| option           | Generate a single =<option>= tag with a value as specified in the `value` parameter. If       | .. code-block:: xml                   |
-|                  | `selected` evaluates to the same value as `value`, the option is selected.                    |                                       |
-|                  | The content of the =<option>= tag is inserted in the final tag.                               |    <zeep:option value="1"             |
-|                  |                                                                                               |                 selected="${user}">   |
-|                  |                                                                                               |      John Doe                         |
-|                  |                                                                                               |    </zeep:option>                     |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| checkbox         | Create an ``<input>`` tag with type `checkbox`. The parameter `name` is used as name          | .. code-block:: xml                   |
-|                  | attribute and the parameter `checked` is evaluated to see if the checkbox should be in        |                                       |
-|                  | checked mode.                                                                                 |    <zeep:checkbox name='cb1'          |
-|                  |                                                                                               |                   checked='${true}'>  |
-|                  |                                                                                               |      Check me                         |
-|                  |                                                                                               |    </zeep:checkbox>                   |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| url              | The url processing tag creates a new variable in the current scope with the name as specified | .. code-block:: xml                   |
-|                  | in the `var` parameter. It then creates a list of all original HTTP parameters for the        |                                       |
-|                  | current page. You can override these parameter, and add new ones, by adding ``<param>`` tags  |    <zeep:url var="next">              |
-|                  | in the ``<url>`` tag.                                                                         |      <zeep:param                      |
-|                  |                                                                                               |         name='page'                   |
-|                  |                                                                                               |         value='${page + 1}'/>         |
-|                  |                                                                                               |    <zeep:url>                         |
-|                  |                                                                                               |    <a href="${next}">Next page</a>    |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
-| embed            | This tag takes the content of the `var` parameter which should contain valid XML and puts the | .. code-block:: xml                   |
-|                  | processed value in the document.                                                              |                                       |
-|                  |                                                                                               |     <zeep:embed                       |
-|                  |                                                                                               |       var="&lt;em&gt;hi&lt;/em&gt;"/> |
-+------------------+-----------------------------------------------------------------------------------------------+---------------------------------------+
++------------------+-----------------------------------------------------------------------------------------------+
+| tag name         | Description and Examples                                                                      |
+| (without prefix) |                                                                                               |
++==================+===============================================================================================+
+| include          | Takes one parameter named `file` and replaces the tag with the processed content of this file |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:include file="menu.xhtml"/>                                                          |
++------------------+-----------------------------------------------------------------------------------------------+
+| if               | Takes one parameter named `test` containing an `el` script. This script is evaluated and      |
+|                  | if the result is not empty, zero or false, the content of the `if` tags is inserted in        |
+|                  | the output. Otherwise, the content is discarded.                                              |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:if test="${not empty name}">                                                         |
+|                  |      Hello ${name}                                                                            |
+|                  |    </zeep:if>                                                                                 |
++------------------+-----------------------------------------------------------------------------------------------+
+| iterate          | Takes two parameters, `collection` which contains an `el` script that evaluates to an array   |
+|                  | `el::object` and a name in `var`. The content of the `iterate` tag is included for each value |
+|                  | of `collection` and `var` will contain the current value.                                     |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |   <ul>                                                                                        |
+|                  |     <zeep:iterate collection="${names}" var="name">                                           |
+|                  |       <li>${name}</li>                                                                        |
+|                  |     </zeep:iterate>                                                                           |
+|                  |   </ul>                                                                                       |
++------------------+-----------------------------------------------------------------------------------------------+
+| for              | Takes three parameters. The parameters `begin` and `end` should evaluate to a number. The     |
+|                  | parameter `var` contains a name that will be used to hold the current value when inserting    |
+|                  | the content of the `for` tag in each iteration of the for loop between `begin` and `end`.     |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |   <zeep:for begin="1" end="3" var="i">                                                        |
+|                  |     ${i},                                                                                     |
+|                  |   </zeep:for>                                                                                 |
++------------------+-----------------------------------------------------------------------------------------------+
+| number           | Format the number in the `n` parameter using the `f` format. This is limited to the formats   |
+|                  | ``'#.##0'`` and ``'#.##0B'`` for now. The first formats an integer value using thousand       |
+|                  | separators, the second tries to format the integer value in a power of two multiplier         |
+|                  | (kibi, mebi, etc.) with a suffix of `B`, `M`, `G`, etc.                                       |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:number n="1024" f="0.00#B"/>                                                         |
+|                  |                                                                                               |
+|                  | Will output `1K`                                                                              |
++------------------+-----------------------------------------------------------------------------------------------+
+| options          | This tag will insert multiple =<option>= tags for each element in the `collection` parameter. |
+|                  | This `collection` paramter can contain an array of strings or it can contain an array of      |
+|                  | `el::object`. In the latter case, you can specify a `value` and                               |
+|                  | `label` parameter to name the value and label fields of these objects. A `selected`           |
+|                  | parameter can be used to select the current value of the options.                             |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:options collection="${names}" value="id" label="fullName" selected="1" />            |
++------------------+-----------------------------------------------------------------------------------------------+
+| option           | Generate a single =<option>= tag with a value as specified in the `value` parameter. If       |
+|                  | `selected` evaluates to the same value as `value`, the option is selected.                    |
+|                  | The content of the =<option>= tag is inserted in the final tag.                               |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:option value="1" selected="${user}">                                                 |
+|                  |      John Doe                                                                                 |
+|                  |    </zeep:option>                                                                             |
++------------------+-----------------------------------------------------------------------------------------------+
+| checkbox         | Create an ``<input>`` tag with type `checkbox`. The parameter `name` is used as name          |
+|                  | attribute and the parameter `checked` is evaluated to see if the checkbox should be in        |
+|                  | checked mode.                                                                                 |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:checkbox name='cb1' checked='${true}'>                                               |
+|                  |      Check me                                                                                 |
+|                  |    </zeep:checkbox>                                                                           |
++------------------+-----------------------------------------------------------------------------------------------+
+| url              | The url processing tag creates a new variable in the current scope with the name as specified |
+|                  | in the `var` parameter. It then creates a list of all original HTTP parameters for the        |
+|                  | current page. You can override these parameter, and add new ones, by adding ``<param>`` tags  |
+|                  | in the ``<url>`` tag.                                                                         |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |    <zeep:url var="next">                                                                      |
+|                  |      <zeep:param name='page' value='${page + 1}'/>                                            |
+|                  |    <zeep:url>                                                                                 |
+|                  |    <a href="${next}">Next page</a>                                                            |
++------------------+-----------------------------------------------------------------------------------------------+
+| embed            | This tag takes the content of the `var` parameter which should contain valid XML and puts the |
+|                  | processed value in the document.                                                              |
+|                  |                                                                                               |
+|                  | .. code-block:: xml                                                                           |
+|                  |                                                                                               |
+|                  |     <zeep:embed var="&lt;em&gt;Hello, world!&lt;/em&gt;"/>                                    |
++------------------+-----------------------------------------------------------------------------------------------+
 ```
 
 ## tag_processor_v2

@@ -7,6 +7,7 @@
 #include <zeep/xml/document.hpp>
 #include <zeep/xml/xpath.hpp>
 
+//[ xpath_sample
 int main()
 {
     using namespace zeep::xml::literals;
@@ -28,3 +29,4 @@ int main()
 
     return 0;
 }
+//]
