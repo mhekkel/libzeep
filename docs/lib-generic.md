@@ -12,7 +12,8 @@ The other flag allows the compilation of code that uses resources. Resources in 
 
 ### character array streambuf
 
-Sometimes it is very convenient to have a `std::istream` reading from a `const char*` buffer, the class __char_streambuf__ allows you to do just that.
+Sometimes it is very convenient to have a `std::istream` reading from a `const char*` buffer, the class
+{ref}`:cpp:class:`zeep::char_streambuf`` allows you to do just that.
 
 ```c++
 auto sb = zeep::char_streambuf("Hello, world!");

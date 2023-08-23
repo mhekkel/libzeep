@@ -9,6 +9,7 @@ lib-xml.md
 lib-json.md
 lib-http.md
 lib-generic.md
+api/library_root.rst
 ```
 
 Indices and tables
@@ -18,4 +19,3 @@ Indices and tables
 * [genindex](#genindex)
 * [modindex](#modindex)
 * [search](#search)
-

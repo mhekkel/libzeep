@@ -17,7 +17,7 @@ release = '6.0.6'
 extensions = [
     "myst_parser",
     "breathe",
-    # "exhale"
+    "exhale"
 ]
 
 myst_enable_extensions = [ "colon_fence" ]
