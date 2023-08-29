@@ -39,13 +39,14 @@ exhale_args = {
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
     "exhaleDoxygenStdin": '''
-EXCLUDE_SYMBOLS        = std*
+EXCLUDE_SYMBOLS        = std*, zeep::json::detail*
 FILE_PATTERNS          = *.hpp
+PREDEFINED             += and=&& or=|| not=!
 INPUT                  = ../include
 ''',
     "contentsDirectives" : False,
     
-    "verboseBuild": True
+    "verboseBuild": False
 }
 
 # Tell sphinx what the primary language being documented is.
@@ -64,7 +65,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'furo'
-html_logo = 'logo.png'
+html_logo = '_static/logo.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
