@@ -30,15 +30,22 @@ exhale_args = {
     # These arguments are required
     "containmentFolder":     "./api",
     "rootFileName":          "library_root.rst",
-    "doxygenStripFromPath":  "..",
+    "doxygenStripFromPath":  "../include/",
     # Heavily encouraged optional argument (see docs)
     "rootFileTitle":         "API Reference",
     # Suggested optional arguments
-    "createTreeView":        True,
+    # "createTreeView":        True,
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
-    "exhaleDoxygenStdin":    "INPUT = ../include"
+    "exhaleDoxygenStdin": '''
+EXCLUDE_SYMBOLS        = std*
+FILE_PATTERNS          = *.hpp
+INPUT                  = ../include
+''',
+    "contentsDirectives" : False,
+    
+    "verboseBuild": True
 }
 
 # Tell sphinx what the primary language being documented is.
@@ -53,5 +60,17 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_book_theme'
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
+#
+html_theme = 'furo'
+html_logo = 'logo.png'
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_theme_options = {
+}
+
