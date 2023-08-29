@@ -38,6 +38,8 @@ struct unauthorized_exception : public zeep::exception
 
 // --------------------------------------------------------------------
 
+
+/// \brief Base class for password encoders
 class password_encoder
 {
   public:
@@ -49,6 +51,8 @@ class password_encoder
 
 // --------------------------------------------------------------------
 
+/// \brief Implementation of @ref password_encoder for the PBKDF2-SHA256 algorithm
+/// https://en.wikipedia.org/wiki/PBKDF2
 class pbkdf2_sha256_password_encoder : public password_encoder
 {
   public:

@@ -211,7 +211,8 @@ class html_controller : public controller
 		std::vector<param> m_path_parameters;
 	};
 
-	/// \brief abstract base class for mount points
+	/// \brief abstract base class for mount points, derived classes should
+	/// inherit from @ref mount_point_v2, not this class
 	struct mount_point_v2_base
 	{
 		mount_point_v2_base(const char *path, const std::string &method)
@@ -235,6 +236,7 @@ class html_controller : public controller
 	{
 	};
 
+	/// \brief templated base class for mount points
 	template <typename ControllerType, typename... Args>
 	struct mount_point_v2<reply (ControllerType::*)(const scope &scope, Args...)> : mount_point_v2_base
 	{

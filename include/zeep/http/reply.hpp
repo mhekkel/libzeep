@@ -53,7 +53,7 @@ std::string get_status_text(status_type status);
 /// Return the string describing the status_type in more detail
 std::string get_status_description(status_type status);
 
-/// \brief the class containing all to generate a HTTP reply
+/// the class containing everything you need to generate a HTTP reply
 ///
 /// Create a HTTP reply, should be either HTTP 1.0 or 1.1
 
@@ -65,6 +65,7 @@ class reply
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
 	reply(status_type status = internal_server_error, std::tuple<int, int> version = { 1, 0 });
 
+	/// Create a reply with \a status, \a version, \a headers and a \a payload
 	reply(status_type status, std::tuple<int, int> version,
 		std::vector<header> &&headers, std::string &&payload);
 
@@ -78,10 +79,13 @@ class reply
 	/// Simple way to check if a reply is valid
 	explicit operator bool() const { return m_status == ok; }
 
+	/// Clear contents and reset status and version
 	void reset();
 
+	/// Set the version to \a version_major . \a version_minor
 	void set_version(int version_major, int version_minor);
 
+	/// Set version to \a version
 	void set_version(std::tuple<int, int> version)
 	{
 		set_version(std::get<0>(version), std::get<1>(version));
@@ -90,27 +94,29 @@ class reply
 	/// Add a header with name \a name and value \a value
 	void set_header(const std::string &name, const std::string &value);
 
-	/// \brief Return the value of the header with name \a name
+	/// Return the value of the header with name \a name
 	std::string get_header(const std::string &name) const;
 
-	/// \brief Remove the header with name \a name from the list of headers
+	/// Remove the header with name \a name from the list of headers
 	void remove_header(const std::string &name);
 
 	/// Set a cookie
 	void set_cookie(const char *name, const std::string &value, std::initializer_list<cookie_directive> directives = {});
 
-	/// \brief Set a header to delete the \a name cookie
+	/// Set a header to delete the \a name cookie
 	void set_delete_cookie(const char *name);
 
 	/// Get a cookie
 	std::string get_cookie(const char *name) const;
 
+	/// Return the value of the header named content-type
 	std::string get_content_type() const
 	{
 		return get_header("Content-Type");
 	}
 
-	void set_content_type(const std::string &type) ///< Set the Content-Type header
+ 	/// Set the Content-Type header to \a type
+	void set_content_type(const std::string &type)
 	{
 		set_header("Content-Type", type);
 	}
@@ -161,7 +167,7 @@ class reply
 	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
 	size_t size() const;
 
-	/// \brief Return true if the content will be sent chunked encoded
+	/// Return true if the content will be sent chunked encoded
 	bool get_chunked() const { return m_chunked; }
 
 	/// for debugging

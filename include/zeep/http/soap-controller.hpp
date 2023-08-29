@@ -136,6 +136,8 @@ class soap_controller : public controller
 	using type_map = std::map<std::string, xml::element>;
 	using message_map = std::map<std::string, xml::element>;
 
+	/// \brief abstract base class for mount points, derived classes should
+	/// derive from @ref mount_point instead of this class
 	struct mount_point_base
 	{
 		mount_point_base(const char *action)
@@ -156,6 +158,7 @@ class soap_controller : public controller
 	{
 	};
 
+	/// \brief templated abstract base class for mount points
 	template <typename ControllerType, typename Result, typename... Args>
 	struct mount_point<Result (ControllerType::*)(Args...)> : mount_point_base
 	{

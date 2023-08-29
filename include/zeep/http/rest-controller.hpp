@@ -117,7 +117,8 @@ namespace zeep::http
 			std::vector<param> m_path_parameters;
 		};
 
-		/// \brief abstract base class for mount points
+		/// \brief abstract base class for mount points, derived classes should
+		/// derive from @ref mount_point instead of this class
 		struct mount_point_base
 		{
 			mount_point_base(const char *path, const std::string &method)
@@ -138,6 +139,7 @@ namespace zeep::http
 		{
 		};
 
+		/// \brief templated abstract base class for mount points
 		template <typename ControllerType, typename Result, typename... Args>
 		struct mount_point<Result (ControllerType::*)(Args...)> : mount_point_base
 		{

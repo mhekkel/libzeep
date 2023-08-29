@@ -22,6 +22,7 @@
 namespace zeep::json
 {
 
+/// \brief The json object class
 class element
 {
   public:

@@ -136,6 +136,7 @@ struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 template<typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
+/// Struct used to detect whether type \a T is serializable
 template<typename T, typename S>
 struct is_serializable_type
 {
@@ -157,6 +158,7 @@ using vs_from_string_function = decltype(zeep::value_serializer<T>::from_string(
 template<typename T, typename = void>
 struct has_value_serializer : std::false_type {};
 
+/// Struct used to detect if there is a value_serializer for type \a T
 template<typename T>
 struct has_value_serializer<T>
 {

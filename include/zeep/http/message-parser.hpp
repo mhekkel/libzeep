@@ -98,6 +98,8 @@ constexpr parse_result operator==(parse_result lhs, parse_result rhs)
 }
 
 // --------------------------------------------------------------------
+
+/// \brief Base class for message parsers.
 class parser
 {
   public:
@@ -134,6 +136,7 @@ class parser
 	std::string m_payload;
 };
 
+/// \brief Parser for request messages
 class request_parser : public parser
 {
   public:
@@ -149,6 +152,7 @@ class request_parser : public parser
 	// parse_result post_process_headers() override;
 };
 
+/// \brief Parser for reply messages
 class reply_parser : public parser
 {
   public:

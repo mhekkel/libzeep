@@ -102,6 +102,9 @@ object evaluate_el_link(const scope &scope, const std::string &text);
 
 // --------------------------------------------------------------------
 
+/// \brief Base class for utility objects, objects that are exposed as
+/// objects in @ref predefined-objects
+
 class expression_utility_object_base
 {
   public:
@@ -124,6 +127,8 @@ class expression_utility_object_base
 	virtual object evaluate(const scope &scope, const std::string &methodName,
 		const std::vector<object> &parameters) const = 0;
 
+	/// Struct used to store the instances of the derived classes along with
+	/// their name
 	struct instance
 	{
 		expression_utility_object_base *m_obj = nullptr;
@@ -133,6 +138,10 @@ class expression_utility_object_base
 
 	static instance *s_head;
 };
+
+/// \brief The actual base class for utility objects, objects that are exposed as
+/// objects in @ref predefined-objects
+/// Uses the https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 
 template <typename OBJ>
 class expression_utility_object : public expression_utility_object_base

@@ -273,6 +273,30 @@ BOOST_AUTO_TEST_CASE(test_s_2)
 	BOOST_TEST(os.str() == "<s><e>aap</e></s>");
 }
 
+BOOST_AUTO_TEST_CASE(test_s_3)
+{
+	zeep::value_serializer<int8_t> s8;
+
+	BOOST_TEST(s8.type_name() == "xsd:byte");
+
+	BOOST_TEST(s8.from_string("1") == 1);
+	BOOST_CHECK_THROW(s8.from_string("128"), std::system_error);
+	BOOST_CHECK_THROW(s8.from_string("x"), std::system_error);
+}
+
+BOOST_AUTO_TEST_CASE(test_s_4)
+{
+	zeep::value_serializer<uint8_t> s8;
+
+	BOOST_TEST(s8.type_name() == "xsd:unsignedByte");
+
+	BOOST_TEST(s8.from_string("1") == 1);
+	BOOST_TEST(s8.from_string("128") == 128);
+	BOOST_TEST(s8.from_string("255") == 255);
+	BOOST_CHECK_THROW(s8.from_string("256"), std::system_error);
+	BOOST_CHECK_THROW(s8.from_string("x"), std::system_error);
+}
+
 BOOST_AUTO_TEST_CASE(test_optional)
 {
 	using namespace zeep::xml::literals;

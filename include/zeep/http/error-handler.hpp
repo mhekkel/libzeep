@@ -91,6 +91,11 @@ class error_handler
 
 // --------------------------------------------------------------------
 
+/// \brief A default implementation of @ref error_handler
+///
+/// This default handler will reply with a HTML page rendered using
+/// a template named "error"
+
 class default_error_handler : public error_handler
 {
   public:

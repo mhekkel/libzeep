@@ -14,6 +14,7 @@
 
 #include <zeep/config.hpp>
 
+#include <charconv>
 #include <cstdint>
 #include <iomanip>
 #include <map>
@@ -40,6 +41,7 @@ namespace zeep
 template <typename T, typename = void>
 struct value_serializer;
 
+/// @ref value_serialize implementation for booleans
 template <>
 struct value_serializer<bool>
 {
@@ -48,6 +50,7 @@ struct value_serializer<bool>
 	static bool from_string(const std::string &value) { return value == "true" or value == "1" or value == "yes"; }
 };
 
+/// @ref value_serialize implementation for std::strings
 template <>
 struct value_serializer<std::string>
 {
@@ -56,70 +59,88 @@ struct value_serializer<std::string>
 	static std::string from_string(const std::string &value) { return value; }
 };
 
+template<typename T>
+struct char_conv_serializer
+{
+	using value_type = T;
+
+	static constexpr const char *derived_type_name()
+	{
+		using value_serializer_type = value_serializer<value_type>;
+		return value_serializer_type::type_name();
+	}
+
+	static std::string to_string(value_type value) { return std::to_string(value); }
+	static value_type from_string(const std::string &value)
+	{
+		value_type result{};
+
+		auto r = std::from_chars(value.data(), value.data() + value.length(), result);
+
+		if (r.ec != std::errc{} or r.ptr != value.data() + value.length())
+			throw std::system_error(std::make_error_code(r.ec), "Error converting value '" + value + "' to type " + derived_type_name());
+
+		return result;
+	}
+};
+
+/// @ref value_serialize implementation for small int8_t
 template <>
-struct value_serializer<int8_t>
+struct value_serializer<int8_t> : char_conv_serializer<int8_t>
 {
 	static constexpr const char *type_name() { return "xsd:byte"; }
-	static std::string to_string(int8_t value) { return std::to_string(value); }
-	static int8_t from_string(const std::string &value) { return static_cast<int8_t>(std::stoi(value)); }
 };
 
+/// @ref value_serialize implementation for uint8_t
 template <>
-struct value_serializer<uint8_t>
+struct value_serializer<uint8_t> : char_conv_serializer<uint8_t>
 {
 	static constexpr const char *type_name() { return "xsd:unsignedByte"; }
-	static std::string to_string(uint8_t value) { return std::to_string(value); }
-	static uint8_t from_string(const std::string &value) { return static_cast<uint8_t>(std::stoul(value)); }
 };
 
+/// @ref value_serialize implementation for int16_t
 template <>
-struct value_serializer<int16_t>
+struct value_serializer<int16_t> : char_conv_serializer<int16_t>
 {
 	static constexpr const char *type_name() { return "xsd:short"; }
-	static std::string to_string(int16_t value) { return std::to_string(value); }
-	static int16_t from_string(const std::string &value) { return static_cast<int16_t>(std::stoi(value)); }
 };
 
+/// @ref value_serialize implementation for uint16_t
 template <>
-struct value_serializer<uint16_t>
+struct value_serializer<uint16_t> : char_conv_serializer<uint16_t>
 {
 	static constexpr const char *type_name() { return "xsd:unsignedShort"; }
-	static std::string to_string(uint16_t value) { return std::to_string(value); }
-	static uint16_t from_string(const std::string &value) { return static_cast<uint16_t>(std::stoul(value)); }
 };
 
+/// @ref value_serialize implementation for int32_t
 template <>
-struct value_serializer<int32_t>
+struct value_serializer<int32_t> : char_conv_serializer<int32_t>
 {
 	static constexpr const char *type_name() { return "xsd:int"; }
-	static std::string to_string(int32_t value) { return std::to_string(value); }
-	static int32_t from_string(const std::string &value) { return std::stoi(value); }
 };
 
+/// @ref value_serialize implementation for uint32_t
 template <>
-struct value_serializer<uint32_t>
+struct value_serializer<uint32_t> : char_conv_serializer<uint32_t>
 {
 	static constexpr const char *type_name() { return "xsd:unsignedInt"; }
-	static std::string to_string(uint32_t value) { return std::to_string(value); }
-	static uint32_t from_string(const std::string &value) { return static_cast<uint32_t>(std::stoul(value)); }
 };
 
+/// @ref value_serialize implementation for int64_t
 template <>
-struct value_serializer<int64_t>
+struct value_serializer<int64_t> : char_conv_serializer<int64_t>
 {
 	static constexpr const char *type_name() { return "xsd:long"; }
-	static std::string to_string(int64_t value) { return std::to_string(value); }
-	static int64_t from_string(const std::string &value) { return static_cast<int64_t>(std::stoll(value)); }
 };
 
+/// @ref value_serialize implementation for uint64_t
 template <>
-struct value_serializer<uint64_t>
+struct value_serializer<uint64_t> : char_conv_serializer<uint64_t>
 {
 	static constexpr const char *type_name() { return "xsd:unsignedLong"; }
-	static std::string to_string(uint64_t value) { return std::to_string(value); }
-	static uint64_t from_string(const std::string &value) { return static_cast<uint64_t>(std::stoull(value)); }
 };
 
+/// @ref value_serialize implementation for float
 template <>
 struct value_serializer<float>
 {
@@ -134,6 +155,7 @@ struct value_serializer<float>
 	static float from_string(const std::string &value) { return std::stof(value); }
 };
 
+/// @ref value_serialize implementation for double
 template <>
 struct value_serializer<double>
 {
