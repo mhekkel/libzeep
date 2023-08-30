@@ -45,23 +45,25 @@ class login_controller : public html_controller
 	///
 	/// The _csrf value is used to guard against CSRF attacks. The uri is the location to redirect to
 	/// in case of a valid login.
+	///
+	/// \param req		The request that triggered this call
 	virtual xml::document load_login_form(const request &req) const;
 
 	/// \brief Create an error reply for an unauthorized access
 	///
 	/// An error handler may call this method to create a decent login screen.
 	/// \param req		The request that triggered this call
-	/// \param reply	Write the reply in this object
-	virtual void create_unauth_reply(const request &req, reply &reply);
+	/// \param rep		Write the reply in this object
+	virtual void create_unauth_reply(const request &req, reply &rep);
 
 	/// \brief Handle a GET on /login
-	reply handle_get_login(const scope &scope);
+	reply handle_get_login(const scope &scope_);
 
 	/// \brief Handle a POST on /login
-	reply handle_post_login(const scope &scope, const std::string &username, const std::string &password);
+	reply handle_post_login(const scope &scope_, const std::string &username, const std::string &password);
 
 	/// \brief Handle a GET or POST on /logout
-	reply handle_logout(const scope &scope);
+	reply handle_logout(const scope &scope_);
 
 	/// \brief Return a reply for a redirect to the requested or default destination.
 	reply create_redirect_for_request(const request &req);

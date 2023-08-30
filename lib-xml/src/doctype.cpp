@@ -438,7 +438,7 @@ validator::validator(content_spec_ptr allowed)
 {
 }
 
-validator::validator(const element_* e)
+validator::validator(const element* e)
 	: m_allowed(e ? e->get_allowed() : nullptr)
 {
 	if (m_allowed == nullptr)
@@ -595,7 +595,7 @@ bool content_spec_choice::element_content() const
 
 // --------------------------------------------------------------------
 
-bool attribute_::is_name(std::string& s) const
+bool attribute::is_name(std::string& s) const
 {
 	bool result = true;
 
@@ -615,7 +615,7 @@ bool attribute_::is_name(std::string& s) const
 	return result;
 }
 
-bool attribute_::is_names(std::string& s) const
+bool attribute::is_names(std::string& s) const
 {
 	bool result = true;
 
@@ -655,7 +655,7 @@ bool attribute_::is_names(std::string& s) const
 	return result;
 }
 
-bool attribute_::is_nmtoken(std::string& s) const
+bool attribute::is_nmtoken(std::string& s) const
 {
 	trim(s);
 
@@ -668,7 +668,7 @@ bool attribute_::is_nmtoken(std::string& s) const
 	return result;
 }
 
-bool attribute_::is_nmtokens(std::string& s) const
+bool attribute::is_nmtokens(std::string& s) const
 {
 	// remove leading and trailing spaces
 	trim(s);
@@ -712,7 +712,7 @@ bool attribute_::is_nmtokens(std::string& s) const
 	return result;
 }
 
-bool attribute_::validate_value(std::string& value, const entity_list& entities) const
+bool attribute::validate_value(std::string& value, const entity_list& entities) const
 {
 	bool result = true;
 
@@ -761,7 +761,7 @@ bool attribute_::validate_value(std::string& value, const entity_list& entities)
 	return result;
 }
 
-bool attribute_::is_unparsed_entity(const std::string& s, const entity_list& l) const
+bool attribute::is_unparsed_entity(const std::string& s, const entity_list& l) const
 {
 	bool result = false;
 
@@ -774,14 +774,14 @@ bool attribute_::is_unparsed_entity(const std::string& s, const entity_list& l) 
 
 // --------------------------------------------------------------------
 
-element_::~element_()
+element::~element()
 {
-	for (attribute_* attr : m_attlist)
+	for (attribute* attr : m_attlist)
 		delete attr;
 	delete m_allowed;
 }
 
-void element_::set_allowed(content_spec_ptr allowed)
+void element::set_allowed(content_spec_ptr allowed)
 {
 	if (allowed != m_allowed)
 	{
@@ -790,19 +790,19 @@ void element_::set_allowed(content_spec_ptr allowed)
 	}
 }
 
-void element_::add_attribute(attribute_* attrib)
+void element::add_attribute(attribute* attrib)
 {
-	std::unique_ptr<attribute_> attr(attrib);
+	std::unique_ptr<attribute> attr(attrib);
 	if (find_if(m_attlist.begin(), m_attlist.end(), [attrib](auto a) { return a->name() == attrib->name(); }) == m_attlist.end())
 		m_attlist.push_back(attr.release());
 }
 
-const attribute_* element_::get_attribute(const std::string& name) const
+const attribute* element::get_attribute(const std::string& name) const
 {
 	attribute_list::const_iterator dta =
 		find_if(m_attlist.begin(), m_attlist.end(), [name](auto a) { return a->name() == name; });
 
-	const attribute_* result = nullptr;
+	const attribute* result = nullptr;
 
 	if (dta != m_attlist.end())
 		result = *dta;
@@ -818,7 +818,7 @@ const attribute_* element_::get_attribute(const std::string& name) const
 // 	return { m_allowed };
 // }
 
-bool element_::empty() const
+bool element::empty() const
 {
 	return dynamic_cast<content_spec_empty *>(m_allowed) != nullptr;
 }

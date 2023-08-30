@@ -816,7 +816,7 @@ CSRF protection
 
 The :cpp:class:`zeep::http::security_context` class contains some rudimentary support for protecting against `CSRF attacks <https://en.wikipedia.org/wiki/Cross-site_request_forgery>`_. The way it works is that the server class add a special `csrf-token` cookie to a session. This cookie is stored in the browser with the flags `SameSite=Lax` and `HttpOnly` which makes it unavailable to malicious scripts that might have been injected in your pages. If a value has been set to this cookie and the :cpp:class:`zeep::http::security_context` class has the `set_validate_csrf` flag set, each `POST` or `SUBMIT` will be checked if there is a `_csrf` parameter and this should contain the same value as the `csrf-token` cookie.
 
-So, to use this functionality, call the :cpp:func:`zeep::http::security_context::set_validate_csrf` method on a newly created :cpp:class:`zeep::http::security_context` instance. Next you should make sure each form or `POST` call should contain a `_csrf` parameter with the value stored in the session cookie `csrf-token`. This value can be obtained by calling :cpp:func:`zeep::http::context::get_csrf_token`.
+So, to use this functionality, call the :cpp:func:`zeep::http::security_context::set_validate_csrf` method on a newly created :cpp:class:`zeep::http::security_context` instance. Next you should make sure each form or `POST` call should contain a `_csrf` parameter with the value stored in the session cookie `csrf-token`. This value can be obtained by calling :cpp:func:`zeep::http::scope::get_csrf_token`.
 
 Cryptographic routines
 --------------------------------------

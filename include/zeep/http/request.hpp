@@ -81,7 +81,7 @@ class request
 	using param = header; // alias name
 	using cookie_directive = header;
 
-	request(const std::string &method, const uri &uri, std::tuple<int, int> version = { 1, 0 },
+	request(const std::string &method, const uri &uri_, std::tuple<int, int> version = { 1, 0 },
 		std::vector<header> &&headers = {}, std::string &&payload = {});
 
 	request(const request &req);
@@ -105,7 +105,7 @@ class request
 	const uri &get_uri() const { return m_uri; }
 
 	/// \brief Set the URI
-	void set_uri(const uri &uri) { m_uri = uri; }
+	void set_uri(const uri &uri_) { m_uri = uri_; }
 
 	/// \brief Get the address of the connecting remote
 	const std::string &get_remote_address() const { return m_remote_address; }

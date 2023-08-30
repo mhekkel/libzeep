@@ -51,7 +51,7 @@ class password_encoder
 
 // --------------------------------------------------------------------
 
-/// \brief Implementation of @ref password_encoder for the PBKDF2-SHA256 algorithm
+/// \brief Implementation of @ref zeep::http::password_encoder for the PBKDF2-SHA256 algorithm
 /// https://en.wikipedia.org/wiki/PBKDF2
 class pbkdf2_sha256_password_encoder : public password_encoder
 {

@@ -18,6 +18,14 @@
 namespace zeep::xml
 {
 
+/// struct containing the doctype information
+struct doc_type
+{
+	std::string m_root;
+	std::string m_pubid;	/// pubid is empty for SYSTEM DOCTYPE
+	std::string m_dtd;
+};
+
 /// zeep::xml::document is the class that contains a parsed XML file.
 /// You can create an empty document and add nodes to it, or you can
 /// create it by specifying a string containing XML or an std::istream
@@ -38,13 +46,6 @@ namespace zeep::xml
 ///
 /// A document has one zeep::xml::root_node element. This root element
 /// can have only one zeep::xml::element child node.
-
-struct doc_type
-{
-	std::string m_root;
-	std::string m_pubid;	/// pubid is empty for SYSTEM DOCTYPE
-	std::string m_dtd;
-};
 
 class document : public element
 {

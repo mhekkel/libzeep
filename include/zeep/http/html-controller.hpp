@@ -48,21 +48,21 @@ class html_controller : public controller
 	const basic_template_processor &get_template_processor() const;
 
 	/// \brief Dispatch and handle the request
-	virtual bool handle_request(request &req, reply &reply);
+	virtual bool handle_request(request &req, reply &reply_);
 
 	/// \brief default file handling
 	///
 	/// This method will ask the server for the default template processor
 	/// to load the actual file. If there is no template processor set,
 	/// it will therefore throw an exception.
-	virtual void handle_file(const request &request, const scope &scope, reply &reply);
+	virtual void handle_file(const request &request_, const scope &scope_, reply &reply_);
 
 	// --------------------------------------------------------------------
 
   public:
 	/// \brief html_controller works with 'handlers' that are methods 'mounted' on a path in the requested URI
 
-	using handler_type = std::function<void(const request &request, const scope &scope, reply &reply)>;
+	using handler_type = std::function<void(const request &request_, const scope &scope_, reply &reply_)>;
 
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
@@ -80,44 +80,44 @@ class html_controller : public controller
 	///
 	/// path             | matches
 	/// ---------------- | --------------------------------------------
-	/// `**``/``*.js`    | matches x.js, a/b/c.js, etc
-	/// `{css,scripts}/` | matches e.g. css/1/first.css and scripts/index.js
+	/// **/*.js          | matches x.js, a/b/c.js, etc
+	/// {css,scripts}/   | matches e.g. css/1/first.css and scripts/index.js
 	/// a;b;c            | matches either a, b or c
 
 	/// \brief mount a callback on URI path \a path for any HTTP method
 	template <class Class>
-	void mount(const std::string &path, void (Class::*callback)(const request &request, const scope &scope, reply &reply))
+	void mount(const std::string &path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, "UNDEFINED", [server = static_cast<Class *>(this), callback](const request &request, const scope &scope, reply &reply)
-			{ (server->*callback)(request, scope, reply); });
+		mount(path, "UNDEFINED", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP GET method
 	template <class Class>
-	void mount_get(const std::string &path, void (Class::*callback)(const request &request, const scope &scope, reply &reply))
+	void mount_get(const std::string &path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, "GET", [server = static_cast<Class *>(this), callback](const request &request, const scope &scope, reply &reply)
-			{ (server->*callback)(request, scope, reply); });
+		mount(path, "GET", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP POST method
 	template <class Class>
-	void mount_post(const std::string &path, void (Class::*callback)(const request &request, const scope &scope, reply &reply))
+	void mount_post(const std::string &path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, "POST", [server = static_cast<Class *>(this), callback](const request &request, const scope &scope, reply &reply)
-			{ (server->*callback)(request, scope, reply); });
+		mount(path, "POST", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP method \a method
 	template <class Class>
-	void mount(const std::string &path, const std::string &method, void (Class::*callback)(const request &request, const scope &scope, reply &reply))
+	void mount(const std::string &path, const std::string &method, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, method, [server = static_cast<Class *>(this), callback](const request &request, const scope &scope, reply &reply)
-			{ (server->*callback)(request, scope, reply); });
+		mount(path, method, [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a handler on URI path \a path for HTTP method \a method
@@ -144,7 +144,7 @@ class html_controller : public controller
   public:
 	using param = header;
 
-	/// \brief helper class for pulling parameter values out of the request
+	/// @cond
 	struct parameter_pack
 	{
 		parameter_pack(const request &req)
@@ -211,8 +211,6 @@ class html_controller : public controller
 		std::vector<param> m_path_parameters;
 	};
 
-	/// \brief abstract base class for mount points, derived classes should
-	/// inherit from @ref mount_point_v2, not this class
 	struct mount_point_v2_base
 	{
 		mount_point_v2_base(const char *path, const std::string &method)
@@ -223,7 +221,7 @@ class html_controller : public controller
 
 		virtual ~mount_point_v2_base() {}
 
-		virtual void call(const scope &scope, const parameter_pack &params, reply &rep) = 0;
+		virtual void call(const scope &scope_, const parameter_pack &params, reply &rep) = 0;
 
 		std::string m_path;
 		std::string m_method;
@@ -238,7 +236,7 @@ class html_controller : public controller
 
 	/// \brief templated base class for mount points
 	template <typename ControllerType, typename... Args>
-	struct mount_point_v2<reply (ControllerType::*)(const scope &scope, Args...)> : mount_point_v2_base
+	struct mount_point_v2<reply (ControllerType::*)(const scope &scope_, Args...)> : mount_point_v2_base
 	{
 		using Sig = reply (ControllerType::*)(const scope &, Args...);
 		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
@@ -256,9 +254,9 @@ class html_controller : public controller
 			if (controller == nullptr)
 				throw std::runtime_error("Invalid controller for callback");
 
-			m_callback = [controller, sig](const scope &scope, Args... args)
+			m_callback = [controller, sig](const scope &scope_, Args... args)
 			{
-				return (controller->*sig)(scope, args...);
+				return (controller->*sig)(scope_, args...);
 			};
 
 			if constexpr (sizeof...(Names) > 0)
@@ -306,17 +304,17 @@ class html_controller : public controller
 			}
 		}
 
-		virtual void call(const scope &scope, const parameter_pack &params, reply &rep)
+		virtual void call(const scope &scope_, const parameter_pack &params, reply &rep)
 		{
-			auto args = collect_arguments(scope, params, std::make_index_sequence<N>());
+			auto args = collect_arguments(scope_, params, std::make_index_sequence<N>());
 			rep = std::apply(m_callback, std::move(args));
 		}
 
 		template <std::size_t... I>
-		auto collect_arguments(const scope &scope, const parameter_pack &params, std::index_sequence<I...>)
+		auto collect_arguments(const scope &scope_, const parameter_pack &params, std::index_sequence<I...>)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
-			return std::make_tuple(scope, get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
+			return std::make_tuple(scope_, get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
 		bool get_parameter(const parameter_pack &params, const char *name, bool result)
@@ -481,6 +479,8 @@ class html_controller : public controller
 		std::array<const char *, N> m_names;
 	};
 
+	/// @endcond
+
 	/// assign a handler function to a path in the server's namespace, new version
 	/// Usually called like this:
 	/// \code{.cpp}
@@ -497,8 +497,8 @@ class html_controller : public controller
 	///
 	/// path             | matches
 	/// ---------------- | --------------------------------------------
-	/// `**``/``*.js`    | matches x.js, a/b/c.js, etc
-	/// `{css,scripts}/` | matches e.g. css/1/first.css and scripts/index.js
+	/// **/*.js          | matches x.js, a/b/c.js, etc
+	/// {css,scripts}/   | matches e.g. css/1/first.css and scripts/index.js
 	/// a;b;c            | matches either a, b or c
 	///
 	/// The \a mountPoint parameter is the local part of the mount point.
@@ -507,7 +507,7 @@ class html_controller : public controller
 	/// For example, say we need a REST call to get the status of shoppingcart
 	/// where the browser will send:
 	///
-	///		`GET /ajax/cart/1234/status`
+	///		GET /ajax/cart/1234/status
 	///
 	/// Our callback will look like this, for a class my_ajax_handler constructed
 	/// with prefixPath `/ajax`:
@@ -574,6 +574,7 @@ class html_controller : public controller
 	///
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules. Similar to the previous map calls.
 
+	/// @cond
 	struct mount_point_v2_simple : public mount_point_v2_base
 	{
 		mount_point_v2_simple(const char *path, const std::string &method, const char *templateName, html_controller &controller)
@@ -583,11 +584,12 @@ class html_controller : public controller
 		{
 		}
 
-		virtual void call(const scope &scope, const parameter_pack &params, reply &rep);
+		virtual void call(const scope &scope_, const parameter_pack &params, reply &rep);
 
 		std::string m_template;
 		html_controller &m_controller;
 	};
+	/// @endcond
 
 	/// \brief map a simple page to a URI.
 	void map_get(const char *mountPoint, const char *templateName)
@@ -615,6 +617,8 @@ class html_controller : public controller
 	virtual void init_scope(scope & /*scope*/) {}
 
   private:
+
+	/// @cond
 	struct mount_point
 	{
 		mount_point(const std::string &path, const std::string &method, handler_type handler)
@@ -633,6 +637,7 @@ class html_controller : public controller
 
 	mount_point_list m_dispatch_table;
 	std::list<mount_point_v2_base *> m_mountpoints;
+	/// @endcond
 };
 
 } // namespace zeep::http

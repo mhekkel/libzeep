@@ -13,13 +13,13 @@ This library just provides code to parse and write JSON. It stores the data in a
 The JSON element
 ----------------
 
-The main data structure in this library is :cpp:class:`zeep::json::element`_, this is the representation of a JSON object and thus can contain various types of data. See this synopsis on how to use it.
+The main data structure in this library is :cpp:class:`zeep::json::element`, this is the representation of a JSON object and thus can contain various types of data. See this synopsis on how to use it.
 
 .. literalinclude:: ../examples/synopsis-json.cpp
 	:language: c++
 	:lines: 57-94
 
-There is also support for *enum*s, see the following example. The idea is, you call the :cpp:func:`zeep::value_serializer<Enum>::init` once to initialize the global mapping of enum values to strings. The name parameter is optional, but required if you use this serializer also in a SOAP controller.
+There is also support for enums, see the following example. The idea is, you call the `init` method of the value_serializer for the enum once to initialize the global mapping of enum values to strings. The name parameter is optional, but required if you use this serializer also in a SOAP controller.
 
 .. literalinclude:: ../examples/synopsis-json.cpp
 	:language: c++
@@ -28,7 +28,7 @@ There is also support for *enum*s, see the following example. The idea is, you c
 STL-like interface
 ------------------
 
-The __json_element__ class acts as an STL container, see the class reference for more information. But to give you an idea:
+The :cpp:class:`zeep::json::element` class acts as an STL container, see the class reference for more information. But to give you an idea:
 
 .. literalinclude:: ../examples/synopsis-json.cpp
 	:language: c++

@@ -501,7 +501,7 @@ struct parser_imp
 	void ignoresectcontents();
 	void markup_decl();
 	void element_decl();
-	void contentspec(doctype::element_& element);
+	void contentspec(doctype::element& element);
 	doctype::content_spec_ptr cp();
 	void attlist_decl();
 	void notation_decl();
@@ -663,7 +663,7 @@ struct parser_imp
 	// doctype support
 	const doctype::entity& get_general_entity(const std::string& name) const;
 	const doctype::entity& get_parameter_entity(const std::string& name) const;
-	const doctype::element_ *get_element(const std::string& name) const;
+	const doctype::element *get_element(const std::string& name) const;
 
 	struct save_state
 	{
@@ -893,7 +893,7 @@ struct parser_imp
 	std::set<std::string> m_ids;			// attributes of type ID should be unique
 	std::set<std::string> m_unresolved_ids; // keep track of IDREFS that were not found yet
 
-	std::unique_ptr<doctype::attribute_> m_xmlSpaceAttr;
+	std::unique_ptr<doctype::attribute> m_xmlSpaceAttr;
 };
 
 // --------------------------------------------------------------------
@@ -932,7 +932,7 @@ parser_imp::parser_imp(std::istream& data, parser& parser)
 	m_general_entities.push_back(new doctype::general_entity("apos", "&#39;"));
 	m_general_entities.push_back(new doctype::general_entity("quot", "&#34;"));
 
-	m_xmlSpaceAttr.reset(new doctype::attribute_("xml:space", doctype::AttributeType::Enumerated, { "preserve", "default" }));
+	m_xmlSpaceAttr.reset(new doctype::attribute("xml:space", doctype::AttributeType::Enumerated, { "preserve", "default" }));
 }
 
 parser_imp::~parser_imp()
@@ -949,7 +949,7 @@ parser_imp::~parser_imp()
 	for (doctype::entity *e : m_general_entities)
 		delete e;
 
-	for (doctype::element_ *e : m_doctype)
+	for (doctype::element *e : m_doctype)
 		delete e;
 }
 
@@ -987,9 +987,9 @@ const doctype::entity& parser_imp::get_parameter_entity(const std::string& name)
 	return **e;
 }
 
-const doctype::element_ *parser_imp::get_element(const std::string& name) const
+const doctype::element *parser_imp::get_element(const std::string& name) const
 {
-	const doctype::element_ *result = nullptr;
+	const doctype::element *result = nullptr;
 
 	auto e = find_if(m_doctype.begin(), m_doctype.end(),
 					 [name](auto e) { return e->name() == name; });
@@ -1684,7 +1684,7 @@ void parser_imp::parse(bool validate, bool validate_ns)
 
 	prolog();
 
-	const doctype::element_ *e = get_element(m_root_element);
+	const doctype::element *e = get_element(m_root_element);
 
 	if (m_has_dtd and e == nullptr and m_validating)
 		not_valid("Element '" + m_root_element + "' is not defined in DTD");
@@ -1985,9 +1985,9 @@ void parser_imp::doctypedecl()
 	}
 
 	// and the notations in the doctype attlists
-	for (const doctype::element_ *element : m_doctype)
+	for (const doctype::element *element : m_doctype)
 	{
-		for (const doctype::attribute_ *attr : element->get_attributes())
+		for (const doctype::attribute *attr : element->get_attributes())
 		{
 			if (attr->get_type() != doctype::AttributeType::Notation)
 				continue;
@@ -2276,7 +2276,7 @@ void parser_imp::element_decl()
 						  [name](auto e) { return e->name() == name; });
 
 	if (e == m_doctype.end())
-		e = m_doctype.insert(m_doctype.end(), new doctype::element_(name, true, m_in_external_dtd));
+		e = m_doctype.insert(m_doctype.end(), new doctype::element(name, true, m_in_external_dtd));
 	else if ((*e)->is_declared())
 		not_valid("duplicate element declaration for element '" + name + "'");
 
@@ -2290,7 +2290,7 @@ void parser_imp::element_decl()
 	match(XMLToken::GreaterThan);
 }
 
-void parser_imp::contentspec(doctype::element_& element)
+void parser_imp::contentspec(doctype::element& element)
 {
 	if (m_lookahead == XMLToken::Name)
 	{
@@ -2615,7 +2615,7 @@ void parser_imp::attlist_decl()
 					   [element](auto e) { return e->name() == element; });
 
 	if (dte == m_doctype.end())
-		dte = m_doctype.insert(m_doctype.end(), new doctype::element_(element, false, m_in_external_dtd));
+		dte = m_doctype.insert(m_doctype.end(), new doctype::element(element, false, m_in_external_dtd));
 
 	// attribute defaults
 
@@ -2630,7 +2630,7 @@ void parser_imp::attlist_decl()
 		match(XMLToken::Name);
 		s(true);
 
-		std::unique_ptr<doctype::attribute_> attribute;
+		std::unique_ptr<doctype::attribute> attribute;
 
 		// att type: several possibilities:
 		if (m_lookahead == XMLToken::OpenParenthesis) // enumeration
@@ -2671,7 +2671,7 @@ void parser_imp::attlist_decl()
 
 			match(XMLToken::CloseParenthesis);
 
-			attribute.reset(new doctype::attribute_(name, doctype::AttributeType::Enumerated, enums));
+			attribute.reset(new doctype::attribute(name, doctype::AttributeType::Enumerated, enums));
 		}
 		else
 		{
@@ -2681,21 +2681,21 @@ void parser_imp::attlist_decl()
 			std::vector<std::string> notations;
 
 			if (type == "CDATA")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::CDATA));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::CDATA));
 			else if (type == "ID")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::ID));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::ID));
 			else if (type == "IDREF")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::IDREF));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::IDREF));
 			else if (type == "IDREFS")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::IDREFS));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::IDREFS));
 			else if (type == "ENTITY")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::ENTITY));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::ENTITY));
 			else if (type == "ENTITIES")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::ENTITIES));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::ENTITIES));
 			else if (type == "NMTOKEN")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::NMTOKEN));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::NMTOKEN));
 			else if (type == "NMTOKENS")
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::NMTOKENS));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::NMTOKENS));
 			else if (type == "NOTATION")
 			{
 				s(true);
@@ -2725,7 +2725,7 @@ void parser_imp::attlist_decl()
 
 				match(XMLToken::CloseParenthesis);
 
-				attribute.reset(new doctype::attribute_(name, doctype::AttributeType::Notation, notations));
+				attribute.reset(new doctype::attribute(name, doctype::AttributeType::Notation, notations));
 			}
 			else
 				not_well_formed("invalid attribute type");
@@ -3467,7 +3467,7 @@ void parser_imp::element(doctype::validator& valid)
 	if (not valid.allow(name))
 		not_valid("element '" + name + "' not expected at this position");
 	
-	const doctype::element_ *dte = get_element(name);
+	const doctype::element *dte = get_element(name);
 
 	if (m_has_dtd and dte == nullptr and m_validating)
 		not_valid("Element '" + name + "' is not defined in DTD");
@@ -3498,7 +3498,7 @@ void parser_imp::element(doctype::validator& valid)
 
 		eq();
 
-		const doctype::attribute_ *dta = nullptr;
+		const doctype::attribute *dta = nullptr;
 		if (dte != nullptr)
 			dta = dte->get_attribute(attr_name);
 		if (dta == nullptr and not m_validating and attr_name == "xml:space")
@@ -3673,7 +3673,7 @@ void parser_imp::element(doctype::validator& valid)
 	}
 	else	// add missing attributes
 	{
-		for (const doctype::attribute_ *dta : dte->get_attributes())
+		for (const doctype::attribute *dta : dte->get_attributes())
 		{
 			std::string attr_name = dta->name();
 

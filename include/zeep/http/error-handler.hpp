@@ -40,27 +40,27 @@ class error_handler
 	/// This function is called by server with the captured exception.
 	/// \param req		The request that triggered this call
 	/// \param eptr		The captured exception, use std::rethrow_exception to use this
-	/// \param reply	Write the reply in this object
+	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply);
+	virtual bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep);
 
 	/// \brief Create an error reply for the error containing a validation header
 	///
 	/// When a authentication violation is encountered, this function is called to generate
 	/// the appropriate reply.
 	/// \param req		The request that triggered this call
-	/// \param reply	Write the reply in this object
+	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_unauth_reply(const request &req, reply &reply);
+	virtual bool create_unauth_reply(const request &req, reply &rep);
 
 	/// \brief Create an error reply for the error
 	///
 	/// An error should be returned with HTTP status code \a status. This method will create a default error page.
 	/// \param req		The request that triggered this call
 	/// \param status	The status code, describing the error
-	/// \param reply	Write the reply in this object
+	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, status_type status, reply &reply);
+	virtual bool create_error_reply(const request &req, status_type status, reply &rep);
 
 	/// \brief Create an error reply for the error with an additional message for the user
 	///
@@ -69,9 +69,9 @@ class error_handler
 	/// \param req		The request that triggered this call
 	/// \param status	The error that triggered this call
 	/// \param message	The message describing the error
-	/// \param reply	Write the reply in this object
+	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, status_type status, const std::string &message, reply &reply);
+	virtual bool create_error_reply(const request &req, status_type status, const std::string &message, reply &rep);
 
   protected:
 	/// \brief constructor
@@ -104,7 +104,7 @@ class default_error_handler : public error_handler
 	{
 	}
 
-	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply) override;
+	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep) override;
 };
 
 } // namespace zeep::http

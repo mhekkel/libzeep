@@ -24,14 +24,14 @@ namespace zeep::xml::doctype
 // --------------------------------------------------------------------
 // doctype support with full validation.
 
-class element_;
+class element;
 class attlist;
 class entity;
-class attribute_;
+class attribute;
 
 using entity_list = std::vector<entity*>;
-using element_list = std::vector<element_*>;
-using attribute_list = std::vector<attribute_*>;
+using element_list = std::vector<element*>;
+using attribute_list = std::vector<attribute*>;
 
 // --------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ class validator
 {
   public:
 	validator(content_spec_base* allowed);
-	validator(const element_* e);
+	validator(const element* e);
 
 	validator(const validator& other) = delete;
 	validator& operator=(const validator& other) = delete;
@@ -189,13 +189,13 @@ enum class AttributeDefault
 	Default
 };
 
-class attribute_
+class attribute
 {
   public:
-	attribute_(const std::string& name, AttributeType type)
+	attribute(const std::string& name, AttributeType type)
 		: m_name(name), m_type(type), m_default(AttributeDefault::None), m_external(false) {}
 
-	attribute_(const std::string& name, AttributeType type,
+	attribute(const std::string& name, AttributeType type,
 			  const std::vector<std::string> &enums)
 		: m_name(name), m_type(type), m_default(AttributeDefault::None), m_enum(enums), m_external(false) {}
 
@@ -238,22 +238,22 @@ class attribute_
 
 // --------------------------------------------------------------------
 
-class element_
+class element
 {
   public:
-	element_(const element_ &) = delete;
-	element_& operator=(const element_ &) = delete;
+	element(const element &) = delete;
+	element& operator=(const element &) = delete;
 
-	element_(const std::string& name, bool declared, bool external)
+	element(const std::string& name, bool declared, bool external)
 		: m_name(name), m_allowed(nullptr), m_declared(declared), m_external(external) {}
 
-	~element_();
+	~element();
 
 	const attribute_list& get_attributes() const { return m_attlist; }
 
-	void add_attribute(attribute_* attr);
+	void add_attribute(attribute* attr);
 
-	const attribute_* get_attribute(const std::string& name) const;
+	const attribute* get_attribute(const std::string& name) const;
 
 	const std::string& name() const { return m_name; }
 

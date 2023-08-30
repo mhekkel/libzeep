@@ -47,7 +47,7 @@ You can use std::iostream to read and write :cpp:class:`zeep::xml::document` obj
 	zeep::xml::document doc;
 	std::cin >> doc;
 
-Writing is just as simple. A warning though, round trip fidelity is not guaranteed. There are a few issues with that. First of all, the default is to replace CDATA sections in a file with their content. If this is not the desired behaviour you can call :cpp::member:`zeep::xml::document::set_preserve_cdata(true)`.
+Writing is just as simple. A warning though, round trip fidelity is not guaranteed. There are a few issues with that. First of all, the default is to replace CDATA sections in a file with their content. If this is not the desired behaviour you can call :cpp::func:`zeep::xml::document::set_preserve_cdata` with argument `true`.
 
 Another issue is that text nodes containing only white space are present in documents read from disk while these are absent by default in documents created on the fly. When writing out XML using `iostream` you can specify to wrap and indent a document. But if the document was read in, the result will have extraneous spacing.
 
@@ -62,11 +62,12 @@ That will indent with two spaces for each level.
 validation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This will not validate the XML using the DTD by default. If you do want to validate and process the DTD, you have to specify where to find this DTD and other external entities. You can either use :cpp:member:`zeep::xml::document::set_base_dir` or you can specify an entity_loader using :cpp:member:`zeep::xml::document::set_entity_loader`
+This will not validate the XML using the DTD by default. If you do want to validate and process the DTD, you have to specify where to find this DTD and other external entities. You can either use :cpp::func:`zeep::xml::document::set_base_dir` or you can specify an entity_loader using :cpp::func:`zeep::xml::document::set_entity_loader`
 
 As an example, take the following DTD file
 
 .. code-block:: xml
+
 	<!ELEMENT foo (bar)>
 	<!ELEMENT bar (#PCDATA)>
 	<!ENTITY hello "Hello, world!">
@@ -81,7 +82,7 @@ And an XML document containing
 	<bar>&hello;</bar>
 	</foo>
 
-When we want to see the `&hello;` entity replaced with `'Hello, world!'` as specified in the DTD, we need to provide a way to load this DTD. To do this, look at the following code. Of course, in this example a simple call to :cpp:member:`zeep::xml::document::set_base_dir` would have been sufficient.
+When we want to see the `&hello;` entity replaced with `'Hello, world!'` as specified in the DTD, we need to provide a way to load this DTD. To do this, look at the following code. Of course, in this example a simple call to :cpp::func:`zeep::xml::document::set_base_dir` would have been sufficient.
 
 .. literalinclude:: ../examples/validating-xml-sample.cpp
 	:language: c++

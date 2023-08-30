@@ -130,14 +130,14 @@ class soap_controller : public controller
 	xml::element make_wsdl();
 
 	/// \brief Handle the SOAP request
-	virtual bool handle_request(request &req, reply &reply);
+	virtual bool handle_request(request &req, reply &reply_);
 
   protected:
+	/// @cond
+
 	using type_map = std::map<std::string, xml::element>;
 	using message_map = std::map<std::string, xml::element>;
 
-	/// \brief abstract base class for mount points, derived classes should
-	/// derive from @ref mount_point instead of this class
 	struct mount_point_base
 	{
 		mount_point_base(const char *action)
@@ -147,7 +147,7 @@ class soap_controller : public controller
 
 		virtual ~mount_point_base() {}
 
-		virtual void call(const xml::element &request, reply &reply, const std::string &ns) = 0;
+		virtual void call(const xml::element &request, reply &reply_, const std::string &ns) = 0;
 		virtual void describe(type_map &types, message_map &messages, xml::element &portType, xml::element &binding) = 0;
 
 		std::string m_action;
@@ -193,26 +193,26 @@ class soap_controller : public controller
 				m_names[i++] = name;
 		}
 
-		virtual void call(const xml::element &request, reply &reply, const std::string &ns)
+		virtual void call(const xml::element &request, reply &rep, const std::string &ns)
 		{
-			reply.set_status(ok);
+			rep.set_status(ok);
 
 			ArgsTuple args = collect_arguments(request, std::make_index_sequence<N>());
-			invoke<Result>(std::move(args), reply, ns);
+			invoke<Result>(std::move(args), rep, ns);
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &reply, const std::string &ns)
+		void invoke(ArgsTuple &&args, reply &rep, const std::string &ns)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
 			xml::element response(m_action + "Response");
 			response.move_to_name_space("m", ns, false, false);
-			reply.set_content(make_envelope(std::move(response)));
+			rep.set_content(make_envelope(std::move(response)));
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &reply, const std::string &ns)
+		void invoke(ArgsTuple &&args, reply &rep, const std::string &ns)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -225,7 +225,7 @@ class soap_controller : public controller
 
 			auto envelope = make_envelope(std::move(response));
 
-			reply.set_content(std::move(envelope));
+			rep.set_content(std::move(envelope));
 		}
 
 		template <std::size_t... I>
@@ -332,6 +332,8 @@ class soap_controller : public controller
 
 	std::list<mount_point_base *> m_mountpoints;
 	std::string m_ns, m_location, m_service;
+
+	/// @endcond
 };
 
 } // namespace zeep::http

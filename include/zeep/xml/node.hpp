@@ -672,11 +672,12 @@ class iterator_impl
 		return iter;
 	}
 
-	template<typename IteratorType,
+	template <typename IteratorType,
 		std::enable_if_t<
 			std::is_same_v<
 				std::remove_cv_t<node_type>,
-				std::remove_cv_t<typename IteratorType::node_type>>, int> = 0>
+				std::remove_cv_t<typename IteratorType::node_type>>,
+			int> = 0>
 	bool operator==(const IteratorType &other) const
 	{
 		return m_container == other.m_container and

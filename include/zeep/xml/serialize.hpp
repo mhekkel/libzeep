@@ -444,7 +444,7 @@ struct type_serializer<std::optional<T>>
 };
 
 // nice trick to enforce order in template selection
-template<unsigned N> struct priority_tag : priority_tag < N - 1 > {};
+template<unsigned N> struct priority_tag /** @cond */ : priority_tag < N - 1 > /** @endcond */ {};
 template<> struct priority_tag<0> {};
 
 template<typename T>

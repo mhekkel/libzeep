@@ -53,7 +53,7 @@ class access_control
 		split(m_allowed_headers, allowed_headers, ",");
 	}
 
-	/// Add \allowrd_headers to the list in the header "Access-Control-Allow-Headers"
+	/// Add \a allowed_headers to the list in the header "Access-Control-Allow-Headers"
 	void add_allowed_header(const std::string &allowed_header)
 	{
 		m_allowed_headers.emplace_back(allowed_header);

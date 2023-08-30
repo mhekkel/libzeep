@@ -34,39 +34,39 @@ class basic_server;
 ///
 ///	The expression in \a text is processed and if the result of this
 /// expression is empty, false or zero then `false` is returned.
-/// \param scope  The scope for this el script
+/// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       The result of the script
-bool process_el(const scope &scope, std::string &text);
+bool process_el(const scope &scope_, std::string &text);
 
 /// \brief Process the text in \a text and return the result if the expression is valid,
 ///        the value of \a text otherwise.
 ///
 ///	If the expression in \a text is valid, it is processed and the result
 /// is returned, otherwise simply returns the text.
-/// \param scope  The scope for this el script
+/// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       The result of the script
-std::string process_el_2(const scope &scope, const std::string &text);
+std::string process_el_2(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text. The result is put in \a result
 ///
 ///	The expression in \a text is processed and the result is returned
 /// in \a result.
-/// \param scope  The scope for this el script
+/// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \result		  The result of the script
-object evaluate_el(const scope &scope, const std::string &text);
+object evaluate_el(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text and return a list of name/value pairs
 ///
 ///	The expressions found in \a text are processed and the result is
 /// 				returned as a list of name/value pairs to be used in e.g.
 ///                 processing a m2:attr attribute.
-/// \param scope  The scope for the el scripts
+/// \param scope_ The scope for the el scripts
 /// \param text   The text optionally containing el scripts.
 /// \return       list of name/value pairs
-std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope, const std::string &text);
+std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text. This should be a comma separated list
 /// of expressions that each should evaluate to true.
@@ -75,19 +75,19 @@ std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &s
 /// one of the expressions in the comma separated list evaluates to false.
 ///
 /// in \a result.
-/// \param scope  The scope for this el script
+/// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       True in case all the expressions evaluate to true
-bool evaluate_el_assert(const scope &scope, const std::string &text);
+bool evaluate_el_assert(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text and put the resulting z:with expressions in the scope
 ///
 ///	The expressions found in \a text are processed and the result is
 ///	returned as a list of name/value pairs to be used in e.g.
 /// processing a m2:attr attribute.
-/// \param scope  The scope for the el scripts
+/// \param scope_ The scope for the el scripts
 /// \param text   The text containing el scripts in the form var=val(,var=val)*.
-void evaluate_el_with(scope &scope, const std::string &text);
+void evaluate_el_with(scope &scope_, const std::string &text);
 
 /// \brief Evaluate the text in \a text as a potential link template
 ///
@@ -95,36 +95,36 @@ void evaluate_el_with(scope &scope, const std::string &text);
 ///	returned as a link template object. This function is called from
 /// el::include, el::replace and el::insert attributes.
 ///
-/// \param scope  The scope for the el scripts
+/// \param scope_ The scope for the el scripts
 /// \param text   The text containing the link specification
 /// \result		  The resulting link
-object evaluate_el_link(const scope &scope, const std::string &text);
+object evaluate_el_link(const scope &scope_, const std::string &text);
 
 // --------------------------------------------------------------------
 
 /// \brief Base class for utility objects, objects that are exposed as
-/// objects in @ref predefined-objects
+/// objects in the Expression Language API.
 
 class expression_utility_object_base
 {
   public:
 	virtual ~expression_utility_object_base() = default;
 
-	static object evaluate(const scope &scope,
+	static object evaluate(const scope &scope_,
 		const std::string &className, const std::string &methodName,
 		const std::vector<object> &parameters)
 	{
 		for (auto inst = s_head; inst != nullptr; inst = inst->m_next)
 		{
 			if (className == inst->m_name)
-				return inst->m_obj->evaluate(scope, methodName, parameters);
+				return inst->m_obj->evaluate(scope_, methodName, parameters);
 		}
 
 		return {};
 	}
 
   protected:
-	virtual object evaluate(const scope &scope, const std::string &methodName,
+	virtual object evaluate(const scope &scope_, const std::string &methodName,
 		const std::vector<object> &parameters) const = 0;
 
 	/// Struct used to store the instances of the derived classes along with
@@ -140,7 +140,7 @@ class expression_utility_object_base
 };
 
 /// \brief The actual base class for utility objects, objects that are exposed as
-/// objects in @ref predefined-objects
+/// objects in the Expression Language API.
 /// Uses the https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 
 template <typename OBJ>
@@ -207,7 +207,7 @@ class scope
 	template <typename T>
 	void put(const std::string &name, T &&value)
 	{
-		m_data[name] = std::forward<T&&>(value);
+		m_data[name] = std::forward<T &&>(value);
 	}
 
 	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
