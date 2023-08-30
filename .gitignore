@@ -1,4 +1,3 @@
-lib/
 lib-xml/test/XML-Test-Suite/
 tests/
 .vs/
@@ -12,8 +11,4 @@ include/zeep/http/asio.hpp
 lib-xml/src/revision.hpp
 debug/
 release/
-docs/lib-http.md
-doc/bin
-doc/html
 docs/api
-
