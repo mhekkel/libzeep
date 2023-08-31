@@ -91,7 +91,7 @@ if(ZEEP_BUILD_LIBRARY)
 	find_package(Threads REQUIRED)
 
 	if(USE_BOOST_ASIO)
-		find_package(Boost 1.80 REQUIRED)
+		find_package(Boost 1.74 REQUIRED)
 		set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 		message(STATUS "Using asio from boost")
 

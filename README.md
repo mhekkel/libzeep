@@ -1,4 +1,5 @@
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
+[![Documentation Status](https://readthedocs.org/projects/libzeep/badge/?version=latest)](https://libzeep.readthedocs.io/en/latest/?badge=latest)
 
 libzeep
 =======
