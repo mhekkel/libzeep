@@ -4,6 +4,10 @@ project(libzeep VERSION 6.0.6 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+option(ZEEP_BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
+option(ZEEP_BUILD_DOC "Build documentation" OFF)
+option(ZEEP_BUILD_TESTS "Build test executables" OFF)
+
 option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
 
 include(GNUInstallDirs)
@@ -15,13 +19,7 @@ include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(VersionString)
 
-option(BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
-
-if(DEFINED $ENV{READTHEDOCS})
-	set(BUILD_LIBRARY OFF)
-endif()
-
-if(BUILD_LIBRARY)
+if(ZEEP_BUILD_LIBRARY)
 	set(CXX_EXTENSIONS OFF)
 	set(CMAKE_CXX_STANDARD 20)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -283,17 +281,15 @@ if(BUILD_LIBRARY)
 	set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 	configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
 
-endif(BUILD_LIBRARY)
+endif(ZEEP_BUILD_LIBRARY)
 
 # Documentation
-option(ZEEP_BUILD_DOC "Build documentation" OFF)
 
 if(ZEEP_BUILD_DOC)
 	add_subdirectory(docs)
 endif()
 
 # Test applications
-option(ZEEP_BUILD_TESTS "Build test executables" OFF)
 
 if(ZEEP_BUILD_TESTS)
 	find_package(Boost REQUIRED)
