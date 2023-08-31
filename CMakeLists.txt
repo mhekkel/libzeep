@@ -280,7 +280,6 @@ option(ZEEP_BUILD_DOC "Build documentation" OFF)
 
 if(ZEEP_BUILD_DOC)
 	add_subdirectory(docs)
-	# install(DIRECTORY ${PROJECT_SOURCE_DIR}/doc/html DESTINATION ${CMAKE_INSTALL_DOCDIR}/${PACKAGE_NAME})
 endif()
 
 # Test applications

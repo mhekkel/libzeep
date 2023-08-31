@@ -31,8 +31,8 @@ The REST controller maps member function calls to the HTTP URI space and transla
 The SOAP controller is like the REST controller, but now digests requests wrapped in SOAP envelopes, delegates them to handler functions and returns the result back wrapped in SOAP envelopes.
 
 .. toctree::
-	:maxdepth: 2
-	:caption: Contents
+   :maxdepth: 2
+   :caption: Contents
 
 	self
 	lib-xml
