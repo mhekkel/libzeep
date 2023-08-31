@@ -12,7 +12,7 @@ extensions = [
 ]
 
 breathe_projects = {
-	"mcfp": "../build/docs/xml"
+	"libzeep": "../build/docs/xml"
 }
 
 myst_enable_extensions = [ "colon_fence" ]
