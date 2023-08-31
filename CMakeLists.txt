@@ -15,265 +15,275 @@ include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(VersionString)
 
-set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
 
-# Build debug library with d postfix
-set(CMAKE_DEBUG_POSTFIX d)
-
-# When building with ninja-multiconfig, build both debug and release by default
-if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
-	set(CMAKE_CROSS_CONFIGS "Debug;Release")
-	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+if(DEFINED $ENV{READTHEDOCS})
+	set(BUILD_LIBRARY OFF)
 endif()
 
-find_package(Filesystem REQUIRED)
+if(BUILD_LIBRARY)
+	set(CXX_EXTENSIONS OFF)
+	set(CMAKE_CXX_STANDARD 20)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-elseif(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-endif()
+	# Build debug library with d postfix
+	set(CMAKE_DEBUG_POSTFIX d)
 
-# Build shared libraries by default (not my cup of tea, but hey)
-option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
-if(WIN32)
-	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
-		add_definitions(-D _WIN32_WINNT=0x0A00)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
-		add_definitions(-D _WIN32_WINNT=0x0603)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
-		add_definitions(-D _WIN32_WINNT=0x0602)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
-		add_definitions(-D _WIN32_WINNT=0x0601)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
-		add_definitions(-D _WIN32_WINNT=0x0600)
-	else() # Windows XP (5.1)
-		add_definitions(-D _WIN32_WINNT=0x0501)
+	# When building with ninja-multiconfig, build both debug and release by default
+	if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+		set(CMAKE_CROSS_CONFIGS "Debug;Release")
+		set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
 	endif()
 
-	add_definitions(-DNOMINMAX)
-endif()
+	find_package(Filesystem REQUIRED)
 
-if(MSVC)
-	# make msvc standards compliant...
-	add_compile_options(/permissive-)
-endif()
+	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+	elseif(MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+	endif()
 
-# Optionally use mrc to create resources
-if(WIN32 AND BUILD_SHARED_LIBS)
-	message("Not using resources when building shared libraries for Windows")
-else()
-	find_package(Mrc QUIET)
+	# Build shared libraries by default (not my cup of tea, but hey)
+	option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-	if(MRC_FOUND)
-		option(USE_RSRC "Use mrc to create resources" ON)
-
-		if(USE_RSRC)
-			message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
-			set(WEBAPP_USES_RESOURCES 1)
+	if(WIN32)
+		if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
+			add_definitions(-D _WIN32_WINNT=0x0A00)
+		elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
+			add_definitions(-D _WIN32_WINNT=0x0603)
+		elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
+			add_definitions(-D _WIN32_WINNT=0x0602)
+		elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
+			add_definitions(-D _WIN32_WINNT=0x0601)
+		elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
+			add_definitions(-D _WIN32_WINNT=0x0600)
+		else() # Windows XP (5.1)
+			add_definitions(-D _WIN32_WINNT=0x0501)
 		endif()
+
+		add_definitions(-DNOMINMAX)
+	endif()
+
+	if(MSVC)
+		# make msvc standards compliant...
+		add_compile_options(/permissive-)
+	endif()
+
+	# Optionally use mrc to create resources
+	if(WIN32 AND BUILD_SHARED_LIBS)
+		message("Not using resources when building shared libraries for Windows")
 	else()
-		message(STATUS "Not using resources since mrc was not found")
+		find_package(Mrc QUIET)
+
+		if(MRC_FOUND)
+			option(USE_RSRC "Use mrc to create resources" ON)
+
+			if(USE_RSRC)
+				message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
+				set(WEBAPP_USES_RESOURCES 1)
+			endif()
+		else()
+			message(STATUS "Not using resources since mrc was not found")
+		endif()
 	endif()
-endif()
 
-set(CMAKE_THREAD_PREFER_PTHREAD)
-set(THREADS_PREFER_PTHREAD_FLAG)
-find_package(Threads REQUIRED)
+	set(CMAKE_THREAD_PREFER_PTHREAD)
+	set(THREADS_PREFER_PTHREAD_FLAG)
+	find_package(Threads REQUIRED)
 
-if(USE_BOOST_ASIO)
-	find_package(Boost 1.80 REQUIRED)
-	set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
-	message(STATUS "Using asio from boost")
+	if(USE_BOOST_ASIO)
+		find_package(Boost 1.80 REQUIRED)
+		set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
+		message(STATUS "Using asio from boost")
 
-	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
-else()
-	find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
-	message(STATUS "Using standalone asio")
-	configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
-endif()
-
-find_package(date 3)
-if(NOT date_FOUND)
-	message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
-endif()
-
-if(UNIX)
-	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
-
-	if(HAVE_SYS_WAIT_H)
-		set(HTTP_SERVER_HAS_PREFORK 1)
+		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+	else()
+		find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
+		message(STATUS "Using standalone asio")
+		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 	endif()
-endif()
 
-# Generate the revision.hpp file
-write_version_header("${PROJECT_SOURCE_DIR}/lib-xml/src" LIB_NAME "libzeep")
+	find_package(date 3)
 
-list(APPEND ZEEP_HEADERS
-	${PROJECT_SOURCE_DIR}/include/zeep/crypto.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/streambuf.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/value-serializer.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/config.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/document.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/parser.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/xpath.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/node.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/character-classification.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/serialize.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/xml/doctype.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/type-traits.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/to_element.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/element.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/factory.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/serializer.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/parser.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/type_traits.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/from_element.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/json/iterator.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/access-control.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/controller.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/message-parser.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/connection.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/server.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/daemon.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/error-handler.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/reply.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/template-processor.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/header.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/request.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/rest-controller.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/soap-controller.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/html-controller.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/security.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/uri.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/el-processing.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/http/login-controller.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/unicode-support.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/nvp.hpp
-	${PROJECT_SOURCE_DIR}/include/zeep/exception.hpp
-)
+	if(NOT date_FOUND)
+		message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+	endif()
 
-list(APPEND ZEEP_SRC
-	${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/crypto.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/daemon.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/el-processing.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/error-handler.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/format.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/glob.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/html-controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/login-controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/message-parser.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/reply.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/request.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/rest-controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/security.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/server.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/uri.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/soap-controller.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/tag-processor-v2.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/tag-processor.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/template-processor.cpp
-	${PROJECT_SOURCE_DIR}/lib-http/src/signals.cpp
-	${PROJECT_SOURCE_DIR}/lib-json/src/element.cpp
-	${PROJECT_SOURCE_DIR}/lib-json/src/json-parser.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/character-classification.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/doctype.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/document.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.hpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/node.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
-	${PROJECT_SOURCE_DIR}/lib-xml/src/xpath.cpp
-)
+	if(UNIX)
+		find_file(HAVE_SYS_WAIT_H "sys/wait.h")
 
-if(HTTP_SERVER_HAS_PREFORK)
-	list(APPEND ZEEP_HEADERS ${PROJECT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
-	list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
-endif()
+		if(HAVE_SYS_WAIT_H)
+			set(HTTP_SERVER_HAS_PREFORK 1)
+		endif()
+	endif()
 
-add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
-add_library(zeep::zeep ALIAS zeep)
-set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
+	# Generate the revision.hpp file
+	write_version_header("${PROJECT_SOURCE_DIR}/lib-xml/src" LIB_NAME "libzeep")
 
-target_include_directories(zeep
-	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
-	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
+	list(APPEND ZEEP_HEADERS
+		${PROJECT_SOURCE_DIR}/include/zeep/crypto.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/streambuf.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/value-serializer.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/config.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/document.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/parser.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/xpath.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/node.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/character-classification.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/serialize.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/xml/doctype.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/type-traits.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/to_element.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/element.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/factory.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/serializer.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/parser.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/type_traits.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/from_element.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/element_fwd.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/json/iterator.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/access-control.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/controller.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/message-parser.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/tag-processor.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/connection.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/server.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/daemon.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/error-handler.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/reply.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/template-processor.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/header.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/request.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/rest-controller.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/soap-controller.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/html-controller.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/security.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/uri.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/el-processing.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/http/login-controller.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/unicode-support.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/nvp.hpp
+		${PROJECT_SOURCE_DIR}/include/zeep/exception.hpp
+	)
 
-target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
+	list(APPEND ZEEP_SRC
+		${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/crypto.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/daemon.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/el-processing.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/error-handler.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/format.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/glob.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/html-controller.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/login-controller.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/message-parser.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/reply.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/request.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/rest-controller.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/security.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/server.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/uri.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/soap-controller.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/tag-processor-v2.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/tag-processor.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/template-processor.cpp
+		${PROJECT_SOURCE_DIR}/lib-http/src/signals.cpp
+		${PROJECT_SOURCE_DIR}/lib-json/src/element.cpp
+		${PROJECT_SOURCE_DIR}/lib-json/src/json-parser.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/character-classification.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/doctype.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/document.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.hpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/html-named-characters.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/node.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
+		${PROJECT_SOURCE_DIR}/lib-xml/src/xpath.cpp
+	)
 
-if(USE_BOOST_ASIO)
-	target_link_libraries(zeep PUBLIC Boost::headers)
-endif()
+	if(HTTP_SERVER_HAS_PREFORK)
+		list(APPEND ZEEP_HEADERS ${PROJECT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
+		list(APPEND ZEEP_SRC ${PROJECT_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
+	endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-	target_link_options(zeep PRIVATE -undefined dynamic_lookup)
-endif()
+	add_library(zeep ${ZEEP_SRC} ${ZEEP_HEADERS})
+	add_library(zeep::zeep ALIAS zeep)
+	set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# Install rules
-install(TARGETS zeep
-	EXPORT zeepTargets
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+	target_include_directories(zeep
+		PUBLIC
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	)
 
-install(EXPORT zeepTargets
-	FILE "zeepTargets.cmake"
-	NAMESPACE zeep::
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-)
+	target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
-install(
-	DIRECTORY include/zeep
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-	COMPONENT Devel
-	PATTERN "config.hpp.in" EXCLUDE
-)
+	if(USE_BOOST_ASIO)
+		target_link_libraries(zeep PUBLIC Boost::headers)
+	endif()
 
-configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
-	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-)
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+		target_link_options(zeep PRIVATE -undefined dynamic_lookup)
+	endif()
 
-write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
-	COMPATIBILITY AnyNewerVersion
-)
+	# Install rules
+	install(TARGETS zeep
+		EXPORT zeepTargets
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-install(FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-	COMPONENT Devel
-)
+	install(EXPORT zeepTargets
+		FILE "zeepTargets.cmake"
+		NAMESPACE zeep::
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	)
 
-set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(zeep PROPERTIES
-	VERSION ${PROJECT_VERSION}
-	SOVERSION ${PROJECT_VERSION_MAJOR}
-	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
-)
+	install(
+		DIRECTORY include/zeep
+		DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+		COMPONENT Devel
+		PATTERN "config.hpp.in" EXCLUDE
+	)
 
-# Config file
-set(LIBZEEP_VERSION ${PROJECT_VERSION})
-set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
+	configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
+		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
+		INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	)
+
+	write_basic_package_version_file(
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+		COMPATIBILITY AnyNewerVersion
+	)
+
+	install(FILES
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+		COMPONENT Devel
+	)
+
+	set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+	set_target_properties(zeep PROPERTIES
+		VERSION ${PROJECT_VERSION}
+		SOVERSION ${PROJECT_VERSION_MAJOR}
+		INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+		COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
+	)
+
+	# Config file
+	set(LIBZEEP_VERSION ${PROJECT_VERSION})
+	set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+	set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+	set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+	configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
+
+endif(BUILD_LIBRARY)
 
 # Documentation
 option(ZEEP_BUILD_DOC "Build documentation" OFF)
