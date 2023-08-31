@@ -3,6 +3,8 @@ Version 6.0.6
 
 Version 6.0.5
 - Fix SONAME (should have been updated to 6 of course)
+- Changed code in format to no longer use std::codecvt_utf8
+- support for building with stand alone ASIO
 
 Version 6.0.4.1
 - Do not try to build examples, that only works after installing
