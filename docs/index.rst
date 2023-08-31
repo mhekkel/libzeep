@@ -33,12 +33,12 @@ The SOAP controller is like the REST controller, but now digests requests wrappe
 .. toctree::
    :maxdepth: 2
    :caption: Contents
-
-	self
-	lib-xml
-	lib-json
-	lib-http
-	lib-generic
-	api/library_root.rst
-	genindex
+   
+   self
+   lib-xml
+   lib-json
+   lib-http
+   lib-generic
+   api/library_root.rst
+   genindex
 

@@ -12,3 +12,4 @@ lib-xml/src/revision.hpp
 debug/
 release/
 docs/api
+docs/conf.py
