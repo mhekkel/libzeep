@@ -5,6 +5,7 @@ libzeep
 
 TL;DR
 -----
+
 Libzeep is a web application framework written in C++. To see a starter project
 visit the [libzeep-webapp-starter](https://github.com/mhekkel/libzeep-webapp-starter.git)
 page.
@@ -43,7 +44,7 @@ in this case.
 
 The JSON library in itself is fairly simple. There are much better alternatives
 if you're looking for just JSON. But this implementation is required by the
-web application part. 
+web application part.
 
 And then we have a web application library. This one makes it very easy to build
 a HTTP server that serves HTML but also speaks REST and SOAP. The current
@@ -174,7 +175,6 @@ And then run it:
 
 Now you can access the result using the following URL's:
 
-* http://localhost:8080/
-* http://localhost:8080/index.html?name=maarten
-* http://localhost:8080/hello/maarten
-
+* <http://localhost:8080/>
+* <http://localhost:8080/index.html?name=maarten>
+* <http://localhost:8080/hello/maarten>

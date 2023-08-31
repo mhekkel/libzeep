@@ -7,8 +7,6 @@ One of the major parts of libzeep used to be the XML library. It contains a full
 
 The current implementation of libzeep goes much further. It is by now a swissarmy knife for building web applications in C++ including a web server implementation, a JSON library, SOAP and REST controller support and a templating engine looking suspisciously like `Thymeleaf <https://www.thymeleaf.org/>`_. Lots of the concepts used in libzeep are inspired by the Java based `Spring framework <https://spring.io/>`_.
 
-In version 5.0 the library has been split up in thre sub libraries, each targeted at different tasks.
-
 xml
 ---
 
