@@ -3,5 +3,6 @@ FILE_PATTERNS          = *.hpp
 PREDEFINED             += and=&& or=|| not=!
 GENERATE_XML           = YES
 GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
 GENERATE_TODOLIST      = NO
 INPUT                  = @DOXYGEN_INPUT_DIR@
