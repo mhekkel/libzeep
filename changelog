@@ -1,3 +1,7 @@
+Version 6.0.7
+- various cmake related fixes
+- new version string module
+
 Version 6.0.6
 - Dropped support for GNU autotools, pkgconfig
 
