@@ -80,7 +80,7 @@ The commands to build libzeep from the command line are e.g.:
 ```bash
     git clone https://github.com/mhekkel/libzeep
     cd libzeep
-    cmake -S . -B build -DZEEP_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     cmake --build build
     ctest --test-dir build
     cmake --install build

@@ -6,7 +6,6 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 option(BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
 option(BUILD_DOCUMENTATION "Build documentation" OFF)
-option(BUILD_TESTS "Build test executables" OFF)
 
 option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
 
@@ -18,6 +17,7 @@ include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(VersionString)
+include(CTest)
 
 if(BUILD_LIBRARY)
 	set(CXX_EXTENSIONS OFF)
@@ -291,7 +291,7 @@ endif()
 
 # Test applications
 
-if(BUILD_TESTS)
+if(BUILD_TESTING)
 	find_package(Boost REQUIRED)
 
 	enable_testing()
