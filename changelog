@@ -1,3 +1,7 @@
+Version 6.0.8
+- Security fix: redirect to relative URI's only on login
+- Added a new HTTP status code: 422 Unprocessable Entity
+
 Version 6.0.7
 - various cmake related fixes
 - new version string module
