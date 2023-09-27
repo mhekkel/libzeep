@@ -241,8 +241,12 @@ reply login_controller::create_redirect_for_request(const request &req)
 	if (req.has_parameter("uri"))
 		url /= req.get_parameter("uri");
 
-	if (url.get_path().empty())
-		url.set_path("/");
+	if (req.has_parameter("uri"))
+	{
+		uri requested_uri(req.get_parameter("uri"));
+		if (not requested_uri.has_authority())
+			url /= requested_uri;
+	}
 
 	return reply::redirect(url, see_other);
 }
