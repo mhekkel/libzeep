@@ -427,6 +427,7 @@ class hello_controller_2 : public zeep::http::html_controller
 	{
 		map_get("", &hello_controller_2::handle_index, "user");
 		map_get("hello/{user}", &hello_controller_2::handle_hello, "user");
+		map_get("hello/{user}/x", &hello_controller_2::handle_hello, "user");
 	}
 
 	zeep::http::reply handle_index([[maybe_unused]] const zeep::http::scope &scope, std::optional<std::string> user)
@@ -436,10 +437,10 @@ class hello_controller_2 : public zeep::http::html_controller
 		return rep;
 	}
 
-	zeep::http::reply handle_hello([[maybe_unused]] const zeep::http::scope &scope, std::string user)
+	zeep::http::reply handle_hello([[maybe_unused]] const zeep::http::scope &scope, std::optional<std::string> user)
 	{
 		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
-		rep.set_content("Hello, " + user + "!", "text/plain");
+		rep.set_content("Hello, " + user.value_or("world") + "!", "text/plain");
 		return rep;
 	}
 };
@@ -481,6 +482,16 @@ BOOST_AUTO_TEST_CASE(controller_2_1)
 
 		BOOST_TEST(reply.get_status() == zeep::http::ok);
 		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+
+		reply = simple_request(port, "GET /hello/maarten/x HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+
+		reply = simple_request(port, "GET /hello//x HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello, world!");
 	}
 	catch (const std::exception &ex)
 	{

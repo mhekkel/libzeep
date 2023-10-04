@@ -79,7 +79,7 @@ class rest_controller : public controller
 				[name](auto &pp)
 				{ return pp.name == name; });
 			if (p != m_path_parameters.end())
-				return { p->value, true };
+				return { p->value, not p->value.empty() };
 			else
 				return m_req.get_parameter_ex(name);
 		}
@@ -207,7 +207,7 @@ class rest_controller : public controller
 
 						size_t ni = i - m_names.begin();
 						m_path_params.emplace_back(m_names[ni]);
-						ps += "([^/]+)";
+						ps += "([^/]*)";
 					}
 					else
 						ps += pp.string();

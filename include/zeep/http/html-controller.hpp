@@ -152,6 +152,13 @@ class html_controller : public controller
 		{
 		}
 
+		bool has_parameter(const char *name) const
+		{
+			return std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
+				[name](auto &pp)
+				{ return pp.name == name; }) != m_path_parameters.end();
+		}
+
 		std::string get_parameter(const char *name) const
 		{
 			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
@@ -169,7 +176,7 @@ class html_controller : public controller
 				[name](auto &pp)
 				{ return pp.name == name; });
 			if (p != m_path_parameters.end())
-				return { p->value, true };
+				return { p->value, not p->value.empty() };
 			else
 				return m_req.get_parameter_ex(name);
 		}
@@ -294,7 +301,7 @@ class html_controller : public controller
 
 						size_t ni = i - m_names.begin();
 						m_path_params.emplace_back(m_names[ni]);
-						ps += "([^/]+)";
+						ps += "([^/]*)";
 					}
 					else
 						ps += pp.string();
@@ -313,7 +320,6 @@ class html_controller : public controller
 		template <std::size_t... I>
 		auto collect_arguments(const scope &scope_, const parameter_pack &params, std::index_sequence<I...>)
 		{
-			// return std::make_tuple(params.get_parameter(m_names[I])...);
 			return std::make_tuple(scope_, get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
