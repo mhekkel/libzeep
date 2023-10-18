@@ -89,5 +89,5 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 typing-extensions==4.7.1
     # via myst-parser
-urllib3==2.0.6
+urllib3==2.0.7
     # via requests
