@@ -110,7 +110,7 @@ xml::document login_controller::load_login_form(const request &req) const
 
 	using namespace xml::literals;
 
-	return R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
+	auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta charset="utf-8" />
@@ -143,6 +143,17 @@ xml::document login_controller::load_login_form(const request &req) const
 </div>
 </body>
 </html>)"_xml;
+
+	for (auto form : doc.find("//form"))
+	{
+		uri url = get_context_name();
+
+		url /= form->get_attribute("action");
+
+		form->set_attribute("action", url.string());
+	}
+
+	return doc;
 }
 
 void login_controller::create_unauth_reply(const request &req, reply &reply)
@@ -160,7 +171,12 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 		csrf->set_attribute("value", csrf_cookie);
 
 	for (auto uri : doc.find("//input[@name='uri']"))
-		uri->set_attribute("value", req.get_uri().string());
+	{
+		auto req_uri = req.get_uri().string();
+		if (req_uri == "/login" and req.has_parameter("uri"))
+			req_uri = req.get_parameter("uri");
+		uri->set_attribute("value", req_uri);
+	}
 
 	reply.set_content(doc);
 	reply.set_status(status_type::unauthorized);
