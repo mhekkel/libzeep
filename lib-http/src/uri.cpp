@@ -471,9 +471,7 @@ void uri::parse(const char *s)
 	m_fragment.clear();
 	m_absolutePath = false;
 
-	auto b = s;
-
-	auto cp = parse_scheme(b);
+	auto cp = parse_scheme(s);
 	cp = parse_hierpart(cp);
 	
 	if (*cp == '?')
