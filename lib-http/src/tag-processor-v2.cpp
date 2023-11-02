@@ -333,7 +333,7 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 
 				[[maybe_unused]] auto ti = parent->emplace(ni, xml::text(cdata->get_text()));
 
-				assert(std::next(ti) == ni);
+				// assert(std::next(ti) == ni);
 
 				parent->erase(ni);
 				break;

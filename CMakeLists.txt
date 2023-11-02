@@ -66,6 +66,7 @@ if(BUILD_LIBRARY)
 	if(MSVC)
 		# make msvc standards compliant...
 		add_compile_options(/permissive-)
+		add_link_options(/NODEFAULTLIB:library)
 	endif()
 
 	# Optionally use mrc to create resources
