@@ -249,6 +249,10 @@ if(BUILD_LIBRARY)
 		PATTERN "config.hpp.in" EXCLUDE
 	)
 
+	if(USE_BOOST_ASIO)
+		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
+	endif()
+
 	configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
 		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
 		INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
