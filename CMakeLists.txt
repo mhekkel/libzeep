@@ -4,10 +4,10 @@ project(libzeep VERSION 6.0.8 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-option(BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
-option(BUILD_DOCUMENTATION "Build documentation" OFF)
-
-option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
+option(ZEEP_BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
+option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
+option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
+option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
 
 include(GNUInstallDirs)
 include(CheckFunctionExists)
@@ -19,7 +19,7 @@ include(GenerateExportHeader)
 include(VersionString)
 include(CTest)
 
-if(BUILD_LIBRARY)
+if(ZEEP_BUILD_LIBRARY)
 	set(CXX_EXTENSIONS OFF)
 	set(CMAKE_CXX_STANDARD 20)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -90,7 +90,7 @@ if(BUILD_LIBRARY)
 	set(THREADS_PREFER_PTHREAD_FLAG)
 	find_package(Threads REQUIRED)
 
-	if(USE_BOOST_ASIO)
+	if(ZEEP_USE_BOOST_ASIO)
 		find_package(Boost 1.74 REQUIRED)
 		set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 		message(STATUS "Using asio from boost")
@@ -102,10 +102,17 @@ if(BUILD_LIBRARY)
 		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 	endif()
 
-	find_package(date 3)
+	find_package(date 3.0.1 QUIET)
 
 	if(NOT date_FOUND)
-		message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+		if(ZEEP_ALLOW_FETCH_CONTENT)
+			include(FetchContent)
+
+			FetchContent_Declare(date GIT_REPOSITORY https://github.com/HowardHinnant/date.git GIT_TAG v3.0.1)
+			FetchContent_MakeAvailable(date)
+		else()
+			message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+		endif()
 	endif()
 
 	if(UNIX)
@@ -220,7 +227,7 @@ if(BUILD_LIBRARY)
 
 	target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
-	if(USE_BOOST_ASIO)
+	if(ZEEP_USE_BOOST_ASIO)
 		target_link_libraries(zeep PUBLIC Boost::headers)
 	endif()
 
@@ -249,7 +256,7 @@ if(BUILD_LIBRARY)
 		PATTERN "config.hpp.in" EXCLUDE
 	)
 
-	if(USE_BOOST_ASIO)
+	if(ZEEP_USE_BOOST_ASIO)
 		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 	endif()
 
@@ -285,11 +292,11 @@ if(BUILD_LIBRARY)
 	set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 	configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
 
-endif(BUILD_LIBRARY)
+endif(ZEEP_BUILD_LIBRARY)
 
 # Documentation
 
-if(BUILD_DOCUMENTATION)
+if(ZEEP_BUILD_DOCUMENTATION)
 	add_subdirectory(docs)
 endif()
 

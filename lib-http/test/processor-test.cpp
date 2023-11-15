@@ -373,16 +373,16 @@ BOOST_AUTO_TEST_CASE(test_14)
 			throw std::runtime_error("locale name not equal, not installed?");
 
 		auto doc = R"(<?xml version="1.0"?>
-	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-	<test m:text="${#dates.format('2019-08-07T12:14:00', '%e %B %Y, %H:%M')}" />
-	</data>
-		)"_xml;
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+<test m:text="${#dates.format('2019-08-07T12:14:00', '%e %B %Y, %H:%M')}" />
+</data>
+	)"_xml;
 
 		auto doc_test = R"(<?xml version="1.0"?>
-	<data>
-	<test> 7 augustus 2019, 12:14</test>
-	</data>
-		)"_xml;
+<data>
+<test> 7 augustus 2019, 12:14</test>
+</data>
+	)"_xml;
 
 		zeep::http::template_processor p(DOCROOT);
 		zeep::http::tag_processor_v2 tp;
