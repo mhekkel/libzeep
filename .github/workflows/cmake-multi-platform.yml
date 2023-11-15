@@ -23,8 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        # os: [ubuntu-latest, windows-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
         include:
@@ -55,12 +54,12 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install dependencies
+    - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: >
         sudo apt-get update && sudo apt-get install libboost-dev mrc
 
-    - name: Install dependencies
+    - name: Install dependencies Windows
       if: matrix.os == 'windows-latest'
       run: >
         choco install boost-msvc-14.2
