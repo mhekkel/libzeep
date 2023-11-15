@@ -9,19 +9,6 @@ on:
     branches: [ "trunk" ]
 
 jobs:
-  depends-windows:
-    name: Install Windows dependencies
-    runs-on: windows-latest
-    steps:
-      - run: choco install boost-msvc-14.2
-
-  depends-ubuntu:
-    name: Install Ubuntu dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - run: sudo apt-get update
-      - run: sudo apt-get install libhowardhinnant-date-dev libboost-dev mrc
-  
   build:
     runs-on: ${{ matrix.os }}
 
@@ -67,6 +54,11 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: >
+        sudo apt-get update && sudo apt-get install libhowardhinnant-date-dev libboost-dev mrc
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
