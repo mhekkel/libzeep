@@ -301,9 +301,6 @@ endif()
 # Test applications
 if(BUILD_TESTING)
 	find_package(Boost REQUIRED)
-
-	enable_testing()
-
 	find_package(libmcfp QUIET)
 
 	if(NOT libmcfp_FOUND)
@@ -346,8 +343,7 @@ if(BUILD_TESTING)
 			endif()
 		else()
 			file(ARCHIVE_EXTRACT INPUT ${XML_CONF_TAR}
-				DESTINATION ${PROJECT_SOURCE_DIR}/lib-xml/test/
-				VERBOSE)
+				DESTINATION ${PROJECT_SOURCE_DIR}/lib-xml/test/)
 		endif()
 	endif()
 
