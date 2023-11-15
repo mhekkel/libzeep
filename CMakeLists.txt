@@ -291,17 +291,14 @@ if(ZEEP_BUILD_LIBRARY)
 	set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 	set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 	configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
-
 endif(ZEEP_BUILD_LIBRARY)
 
 # Documentation
-
 if(ZEEP_BUILD_DOCUMENTATION)
 	add_subdirectory(docs)
 endif()
 
 # Test applications
-
 if(BUILD_TESTING)
 	find_package(Boost REQUIRED)
 
@@ -310,7 +307,16 @@ if(BUILD_TESTING)
 	find_package(libmcfp QUIET)
 
 	if(NOT libmcfp_FOUND)
-		add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+		if(ZEEP_ALLOW_FETCH_CONTENT)
+			include(FetchContent)
+
+			FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
+			FetchContent_MakeAvailable(libmcfp)
+		elseif(EXISTS libmcfp/CMakeLists.txt)
+			add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+		else()
+			message(FATAL_ERROR "The libmcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")
+		endif()
 	endif()
 
 	# data files for the parser test
