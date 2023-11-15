@@ -19,8 +19,8 @@ jobs:
     name: Install Ubuntu dependencies
     runs-on: ubuntu-latest
     steps:
-      - run: apt-get update
-      - run: apt-get install libhowardhinnant-date-dev libboost-dev mrc
+      - run: sudo apt-get update
+      - run: sudo apt-get install libhowardhinnant-date-dev libboost-dev mrc
   
   build:
     runs-on: ${{ matrix.os }}
