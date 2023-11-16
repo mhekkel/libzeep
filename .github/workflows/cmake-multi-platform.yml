@@ -68,7 +68,6 @@ jobs:
       with:
           boost_version: 1.82.0
           platform_version: 2019
-          boost_install_dir: C:\Boost
           toolset: msvc
 
     - name: Configure CMake
