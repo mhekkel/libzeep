@@ -91,20 +91,20 @@ if(ZEEP_BUILD_LIBRARY)
 	find_package(Threads REQUIRED)
 
 	if(ZEEP_USE_BOOST_ASIO)
-		set(BOOST_INCLUDE_LIBRARIES headers test)
-		set(BOOST_ENABLE_CMAKE ON)
-
 		find_package(Boost 1.74 QUIET)
 
 		if(NOT Boost_FOUND)
 			if(ZEEP_ALLOW_FETCH_CONTENT)
 				message(STATUS "Fetching boost, may take a while...")
 
+				set(BOOST_INCLUDE_LIBRARIES asio test)
+				set(BOOST_ENABLE_CMAKE ON)
+
 				include(FetchContent)
 				FetchContent_Declare(
 					Boost
 					GIT_REPOSITORY https://github.com/boostorg/boost.git
-					GIT_TAG boost-1.74.0
+					GIT_TAG boost-1.82.0
 				)
 				FetchContent_MakeAvailable(Boost)
 
@@ -250,7 +250,11 @@ if(ZEEP_BUILD_LIBRARY)
 	target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
 	if(ZEEP_USE_BOOST_ASIO)
-		target_link_libraries(zeep PUBLIC Boost::headers)
+		if(Boost_FETCHED)
+			target_link_libraries(zeep PUBLIC Boost::asio)
+		else()
+			target_link_libraries(zeep PUBLIC Boost::boost)
+		endif()
 	endif()
 
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -278,7 +282,7 @@ if(ZEEP_BUILD_LIBRARY)
 		PATTERN "config.hpp.in" EXCLUDE
 	)
 
-	if(ZEEP_USE_BOOST_ASIO)
+	if(ZEEP_USE_BOOST_ASIO AND NOT Boost_FETCHED)
 		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 	endif()
 
@@ -322,8 +326,7 @@ endif()
 
 # Test applications
 if(BUILD_TESTING)
-
-	if(NOT Boost_FETCHED)
+	if(NOT Boost_FOUND AND NOT Boost_FETCHED)
 		find_package(Boost REQUIRED)
 	endif()
 
@@ -350,7 +353,12 @@ if(BUILD_TESTING)
 		${CMAKE_CURRENT_BINARY_DIR} # for config.h
 		${PROJECT_SOURCE_DIR}/include
 	)
-	target_link_libraries(client_test PRIVATE Boost::boost)
+
+	if(Boost_FETCHED)
+		target_link_libraries(client_test PRIVATE Boost::test)
+	else()
+		target_link_libraries(client_test PRIVATE Boost::boost)
+	endif()
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
