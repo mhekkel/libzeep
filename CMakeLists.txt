@@ -251,7 +251,7 @@ if(ZEEP_BUILD_LIBRARY)
 
 	if(ZEEP_USE_BOOST_ASIO)
 		if(Boost_FETCHED)
-			target_link_libraries(zeep PUBLIC Boost::asio)
+			target_link_libraries(zeep PRIVATE Boost::asio)
 		else()
 			target_link_libraries(zeep PUBLIC Boost::boost)
 		endif()
@@ -354,11 +354,7 @@ if(BUILD_TESTING)
 		${PROJECT_SOURCE_DIR}/include
 	)
 
-	if(Boost_FETCHED)
-		target_link_libraries(client_test PRIVATE Boost::test)
-	else()
-		target_link_libraries(client_test PRIVATE Boost::boost)
-	endif()
+	target_link_libraries(client_test PRIVATE Boost::boost)
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
