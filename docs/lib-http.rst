@@ -339,6 +339,7 @@ a way to add your own processing tags using an `add_processor` method but that h
 
 +------------------+-----------------------------------------------------------------------------------------------+
 | tag name         | Description and Examples                                                                      |
+|                  |                                                                                               |
 | (without prefix) |                                                                                               |
 +==================+===============================================================================================+
 | include          | Takes one parameter named `file` and replaces the tag with the processed content of this file |
