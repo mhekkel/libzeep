@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.24)
 
 project(libzeep VERSION 6.0.8 LANGUAGES CXX)
 
@@ -91,7 +91,26 @@ if(ZEEP_BUILD_LIBRARY)
 	find_package(Threads REQUIRED)
 
 	if(ZEEP_USE_BOOST_ASIO)
-		find_package(Boost 1.74 REQUIRED)
+
+		set(BOOST_INCLUDE_LIBRARIES headers)
+		set(BOOST_ENABLE_CMAKE ON)
+
+		find_package(Boost 1.74 QUIET)
+
+		if(NOT Boost_FOUND)
+			if(ZEEP_ALLOW_FETCH_CONTENT)
+				include(FetchContent)
+				FetchContent_Declare(
+				Boost
+				GIT_REPOSITORY https://github.com/boostorg/boost.git
+				GIT_TAG boost-1.74.0
+				)
+				FetchContent_MakeAvailable(Boost)
+			else()
+				message(FATAL_ERROR "No boost found and cannot use FetchContent")
+			endif()
+		endif()
+
 		set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 		message(STATUS "Using asio from boost")
 
