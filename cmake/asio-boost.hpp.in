@@ -5,6 +5,8 @@
 
 #pragma once
 
+#define BOOST_ASIO_STANDALONE 1
+
 #include <boost/asio.hpp>
 
 namespace asio_ns = ::boost::asio;
