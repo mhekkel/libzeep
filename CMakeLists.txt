@@ -91,33 +91,13 @@ if(ZEEP_BUILD_LIBRARY)
 	find_package(Threads REQUIRED)
 
 	if(ZEEP_USE_BOOST_ASIO)
-		find_package(Boost 1.74 QUIET)
+		find_package(Boost 1.74 REQUIRED)
 
-		if(NOT Boost_FOUND)
-			if(ZEEP_ALLOW_FETCH_CONTENT)
-				message(STATUS "Fetching boost, may take a while...")
-
-				set(BOOST_INCLUDE_LIBRARIES asio test)
-				set(BOOST_ENABLE_CMAKE ON)
-
-				include(FetchContent)
-				FetchContent_Declare(
-					Boost
-					GIT_REPOSITORY https://github.com/boostorg/boost.git
-					GIT_TAG boost-1.82.0
-				)
-				FetchContent_MakeAvailable(Boost)
-
-				set(Boost_FETCHED ON)
-			else()
-				message(FATAL_ERROR "No boost found and cannot use FetchContent")
-			endif()
-		endif()
-
-		set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
 		message(STATUS "Using asio from boost")
 
 		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+
+		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 	else()
 		find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
 		message(STATUS "Using standalone asio")
@@ -250,11 +230,7 @@ if(ZEEP_BUILD_LIBRARY)
 	target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
 	if(ZEEP_USE_BOOST_ASIO)
-		if(Boost_FETCHED)
-			target_link_libraries(zeep PRIVATE Boost::asio)
-		else()
-			target_link_libraries(zeep PUBLIC Boost::boost)
-		endif()
+		target_link_libraries(zeep PUBLIC Boost::boost)
 	endif()
 
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -281,10 +257,6 @@ if(ZEEP_BUILD_LIBRARY)
 		COMPONENT Devel
 		PATTERN "config.hpp.in" EXCLUDE
 	)
-
-	if(ZEEP_USE_BOOST_ASIO AND NOT Boost_FETCHED)
-		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
-	endif()
 
 	configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
 		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
@@ -326,10 +298,7 @@ endif()
 
 # Test applications
 if(BUILD_TESTING)
-	if(NOT Boost_FOUND AND NOT Boost_FETCHED)
-		find_package(Boost REQUIRED)
-	endif()
-
+	find_package(Boost REQUIRED)
 	find_package(libmcfp QUIET)
 
 	if(NOT libmcfp_FOUND)
@@ -354,7 +323,9 @@ if(BUILD_TESTING)
 		${PROJECT_SOURCE_DIR}/include
 	)
 
-	target_link_libraries(client_test PRIVATE Boost::boost)
+	if(ZEEP_USE_BOOST_ASIO)
+		target_link_libraries(client_test PRIVATE Boost::boost)
+	endif()
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
