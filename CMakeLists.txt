@@ -91,19 +91,20 @@ if(ZEEP_BUILD_LIBRARY)
 	find_package(Threads REQUIRED)
 
 	if(ZEEP_USE_BOOST_ASIO)
-
-		set(BOOST_INCLUDE_LIBRARIES headers)
+		set(BOOST_INCLUDE_LIBRARIES headers test)
 		set(BOOST_ENABLE_CMAKE ON)
 
 		find_package(Boost 1.74 QUIET)
 
 		if(NOT Boost_FOUND)
 			if(ZEEP_ALLOW_FETCH_CONTENT)
+				message(STATUS "Fetching boost, may take a while...")
+
 				include(FetchContent)
 				FetchContent_Declare(
-				Boost
-				GIT_REPOSITORY https://github.com/boostorg/boost.git
-				GIT_TAG boost-1.74.0
+					Boost
+					GIT_REPOSITORY https://github.com/boostorg/boost.git
+					GIT_TAG boost-1.74.0
 				)
 				FetchContent_MakeAvailable(Boost)
 			else()
@@ -319,7 +320,11 @@ endif()
 
 # Test applications
 if(BUILD_TESTING)
-	find_package(Boost REQUIRED)
+
+	if(NOT Boost_FOUND)
+		find_package(Boost REQUIRED)
+	endif()
+
 	find_package(libmcfp QUIET)
 
 	if(NOT libmcfp_FOUND)
