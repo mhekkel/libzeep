@@ -107,6 +107,8 @@ if(ZEEP_BUILD_LIBRARY)
 					GIT_TAG boost-1.74.0
 				)
 				FetchContent_MakeAvailable(Boost)
+
+				set(Boost_FETCHED ON)
 			else()
 				message(FATAL_ERROR "No boost found and cannot use FetchContent")
 			endif()
@@ -321,7 +323,7 @@ endif()
 # Test applications
 if(BUILD_TESTING)
 
-	if(NOT Boost_FOUND)
+	if(NOT Boost_FETCHED)
 		find_package(Boost REQUIRED)
 	endif()
 
