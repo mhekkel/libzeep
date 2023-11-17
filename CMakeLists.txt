@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22)
 
 project(libzeep VERSION 6.0.8 LANGUAGES CXX)
 
@@ -92,10 +92,12 @@ if(ZEEP_BUILD_LIBRARY)
 
 	if(ZEEP_USE_BOOST_ASIO)
 		find_package(Boost 1.74 REQUIRED)
-		set(ASIO_INCLUDE_DIR ${Boost_INCLUDE_DIR})
+
 		message(STATUS "Using asio from boost")
 
 		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+
+		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 	else()
 		find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
 		message(STATUS "Using standalone asio")
@@ -228,7 +230,7 @@ if(ZEEP_BUILD_LIBRARY)
 	target_link_libraries(zeep PUBLIC Threads::Threads date::date ${STDCPPFS_LIBRARY})
 
 	if(ZEEP_USE_BOOST_ASIO)
-		target_link_libraries(zeep PUBLIC Boost::headers)
+		target_link_libraries(zeep PUBLIC Boost::boost)
 	endif()
 
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -255,10 +257,6 @@ if(ZEEP_BUILD_LIBRARY)
 		COMPONENT Devel
 		PATTERN "config.hpp.in" EXCLUDE
 	)
-
-	if(ZEEP_USE_BOOST_ASIO)
-		set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
-	endif()
 
 	configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
 		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
@@ -324,7 +322,10 @@ if(BUILD_TESTING)
 		${CMAKE_CURRENT_BINARY_DIR} # for config.h
 		${PROJECT_SOURCE_DIR}/include
 	)
-	target_link_libraries(client_test PRIVATE Boost::boost)
+
+	if(ZEEP_USE_BOOST_ASIO)
+		target_link_libraries(client_test PRIVATE Boost::boost)
+	endif()
 
 	# data files for the parser test
 	set(XML_CONF_TAR ${PROJECT_SOURCE_DIR}/lib-xml/test/XML-Test-Suite.tbz)
