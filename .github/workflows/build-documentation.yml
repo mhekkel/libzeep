@@ -44,10 +44,7 @@ jobs:
           -DBUILD_TESTING=OFF
 
     - name: Run Sphinx
-      run: |
-        cmake --build build --target Sphinx-libzeep
-        ls -l ${{ steps.strings.outputs.build-output-dir }}
-        ls -l ${{ steps.strings.outputs.build-output-dir }}/docs/sphinx
+      run: cmake --build build --target Sphinx-libzeep
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v2
