@@ -1,7 +1,7 @@
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
-[![Documentation Status](https://readthedocs.org/projects/libzeep/badge/?version=latest)](https://libzeep.readthedocs.io/en/latest/?badge=latest)
 
 [![github CI](https://github.com/mhekkel/libzeep/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
+[![github CI](https://github.com/mhekkel/libzeep/actions/workflows/build-documentation.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
 
 libzeep
 =======
