@@ -37,7 +37,11 @@ jobs:
     - run: pip install -r docs/requirements.txt
 
     - name: Configure CMake
-      run: cmake -S . -B build -DBUILD_DOCUMENTATION=ON -DBUILD_TESTING=OFF
+      run: >
+          cmake -S . -B build
+          -DBUILD_DOCUMENTATION=ON
+          -DZEEP_BUILD_LIBRARY=OFF
+          -DBUILD_TESTING=OFF
 
     - name: Run Sphinx
       run: |
