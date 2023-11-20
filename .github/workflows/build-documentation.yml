@@ -45,7 +45,7 @@ jobs:
 
     - name: Run Sphinx
       run: |
-        cmake --build build --target Sphinx-libmcfp
+        cmake --build build --target Sphinx-libzeep
         ls -l ${{ steps.strings.outputs.build-output-dir }}
         ls -l ${{ steps.strings.outputs.build-output-dir }}/docs/sphinx
 
