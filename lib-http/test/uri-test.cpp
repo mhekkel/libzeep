@@ -9,7 +9,7 @@ BOOST_AUTO_TEST_CASE(cc_1)
 {
 	for (int ch = 0; ch <= 255; ++ch)
 	{
-		std::cout << ch << ' ' << char(ch) << std::endl;
+		// std::cout << ch << ' ' << char(ch) << std::endl;
 		BOOST_TEST((std::isalpha(ch) != 0) == z::http::uri::is_scheme_start(ch));
 		BOOST_TEST((std::isxdigit(ch) != 0) == z::http::uri::is_xdigit(ch));
 	}
@@ -231,3 +231,12 @@ BOOST_AUTO_TEST_CASE(relative_2)
 	BOOST_TEST(zeep::http::uri(zeep::http::uri("http://a/b/g"        ).relative(base).string(), base).string() == "http://a/b/g"        );
 }
 
+BOOST_AUTO_TEST_CASE(encoding_1)
+{
+	// http://a/höken/Ðuh?¤
+	zeep::http::uri u("http://a/h%C3%B6ken/%C3%90uh?%C2%A4");
+
+	BOOST_TEST(zeep::http::decode_url(u.get_path().string()) == "höken/Ðuh");
+	BOOST_TEST(zeep::http::decode_url(u.get_query(false)) == "¤");
+	BOOST_TEST(u.get_query(true) == "¤");
+}

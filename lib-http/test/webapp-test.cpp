@@ -492,6 +492,12 @@ BOOST_AUTO_TEST_CASE(controller_2_1)
 
 		BOOST_TEST(reply.get_status() == zeep::http::ok);
 		BOOST_TEST(reply.get_content() == "Hello, world!");
+
+		reply = simple_request(port, "GET /hello/dani%C3%ABlle/x HTTP/1.0\r\n\r\n");
+
+		BOOST_TEST(reply.get_status() == zeep::http::ok);
+		BOOST_TEST(reply.get_content() == "Hello, daniëlle!");
+
 	}
 	catch (const std::exception &ex)
 	{
