@@ -26,14 +26,14 @@ add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
                    MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
                    COMMENT "Generating docs")
 
-add_custom_target("Doxygen-${PROJECT_NAME}" ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+add_custom_target("Doxygen-libzeep" ALL DEPENDS ${DOXYGEN_INDEX_FILE})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in ${CMAKE_CURRENT_SOURCE_DIR}/conf.py @ONLY)
 
 set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
 
-add_custom_target("Sphinx-${PROJECT_NAME}" ALL
+add_custom_target("Sphinx-libzeep" ALL
                   COMMAND ${SPHINX_EXECUTABLE} -b html
 				  -Dbreathe_projects.libzeep=${DOXYGEN_OUTPUT_DIR}
                   ${SPHINX_SOURCE} ${SPHINX_BUILD}
