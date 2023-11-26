@@ -1,6 +1,11 @@
+#           Copyright Maarten L. Hekkelman, 2023
+#  Distributed under the Boost Software License, Version 1.0.
+#     (See accompanying file LICENSE_1_0.txt or copy at
+#           http://www.boost.org/LICENSE_1_0.txt)
+
 cmake_minimum_required(VERSION 3.22)
 
-project(libzeep VERSION 6.0.8 LANGUAGES CXX)
+project(libzeep VERSION 6.0.9 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
