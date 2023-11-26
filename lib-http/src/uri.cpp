@@ -610,7 +610,7 @@ void uri::write(std::ostream &os, bool encoded) const
 			if (not encoded or is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@')
 				os << c;
 			else
-				os << '%' << kHex[c >> 4] << kHex[c & 15];
+				os << '%' << kHex[(c >> 4) & 0x0f] << kHex[c & 0x0f];
 		}
 	}
 
