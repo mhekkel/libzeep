@@ -29,9 +29,6 @@ if(ZEEP_BUILD_LIBRARY)
 	set(CMAKE_CXX_STANDARD 20)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-	# Build debug library with d postfix
-	set(CMAKE_DEBUG_POSTFIX d)
-
 	# When building with ninja-multiconfig, build both debug and release by default
 	if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
 		set(CMAKE_CROSS_CONFIGS "Debug;Release")
@@ -242,16 +239,19 @@ if(ZEEP_BUILD_LIBRARY)
 		target_link_options(zeep PRIVATE -undefined dynamic_lookup)
 	endif()
 
+	# Build debug library with d postfix
+	set(CMAKE_DEBUG_POSTFIX d)
+	set_target_properties(zeep PROPERTIES DEBUG_POSTFIX "d")
+
 	# Install rules
 	install(TARGETS zeep
-		EXPORT zeepTargets
+		EXPORT zeep-targets
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-	install(EXPORT zeepTargets
-		FILE "zeepTargets.cmake"
+	install(EXPORT zeep-targets
 		NAMESPACE zeep::
 		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
 	)
@@ -263,19 +263,28 @@ if(ZEEP_BUILD_LIBRARY)
 		PATTERN "config.hpp.in" EXCLUDE
 	)
 
-	configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeepConfig.cmake.in
-		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake
+	configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/zeep-config.cmake.in
+		${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
 		INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
 	)
 
 	write_basic_package_version_file(
-		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
 		COMPATIBILITY AnyNewerVersion
 	)
 
+	file(GLOB OLD_CONFIG_FILES
+		${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepConfig*.cmake
+		${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepTargets*.cmake)
+
+	if (OLD_CONFIG_FILES)
+		message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
+		install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
+	endif()
+
 	install(FILES
-		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfig.cmake"
-		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeepConfigVersion.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
 		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
 		COMPONENT Devel
 	)
