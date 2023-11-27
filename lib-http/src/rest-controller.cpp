@@ -42,7 +42,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 			for (size_t i = 0; i < mp->m_path_params.size(); ++i)
 			{
 				std::string v = m[i + 1].str();
-				decode_url(v);
+				v = decode_url(v);
 				params.m_path_parameters.push_back({ mp->m_path_params[i], v });
 			}
 		}
