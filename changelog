@@ -1,3 +1,7 @@
+Version 6.0.10
+- Fix html_controller and rest_controller to pass
+  path parameters decoded.
+
 Version 6.0.9
 - Fix writing encoded path segments for URI's
 
