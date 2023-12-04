@@ -109,7 +109,7 @@ if(ZEEP_BUILD_LIBRARY)
 		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 	endif()
 
-	find_package(date 3.0.1 QUIET)
+	find_package(date 3.0.1 QUIET NAMES libhowardhinnant-date)
 
 	if(NOT date_FOUND)
 		if(ZEEP_ALLOW_FETCH_CONTENT)

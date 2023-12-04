@@ -13,13 +13,15 @@
 
 #include <zeep/config.hpp>
 
+#include <zeep/http/controller.hpp>
+#include <zeep/json/parser.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <tuple>
 #include <utility>
 
-#include <zeep/http/controller.hpp>
-#include <zeep/json/parser.hpp>
+#include <cassert>
 
 namespace zeep::http
 {

@@ -19,6 +19,8 @@
 
 #include <map>
 
+#include <cassert>
+
 namespace zeep::json
 {
 
