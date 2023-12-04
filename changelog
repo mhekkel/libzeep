@@ -1,6 +1,9 @@
 Version 6.0.10
 - Fix html_controller and rest_controller to pass
   path parameters decoded.
+- No longer use the date library to write out localised date/time formats
+  since the installed date library might contain ONLY_C_LOCALE defined.
+- Do not read PID file when running the foreground
 
 Version 6.0.9
 - Fix writing encoded path segments for URI's
