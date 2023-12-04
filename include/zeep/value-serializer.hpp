@@ -24,6 +24,11 @@
 #include <zeep/exception.hpp>
 
 #if __has_include(<date/date.h>)
+#if defined(ONLY_C_LOCALE) AND ONLY_C_LOCALE
+#warning "ONLY_C_LOCALE was defined building the date library, will have to unset it to make libzeep work correctly"
+#undef ONLY_C_LOCALE
+#endif
+#define ONLY_C_LOCALE 0
 #include <date/date.h>
 #endif
 
