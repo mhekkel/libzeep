@@ -1520,20 +1520,14 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 
 				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(t);
 
-#if __has_include(<date/date.h>)
-				std::ostringstream os;
-				os << date::format(scope.get_request().get_locale(), f, st);
-#else
 				std::wostringstream os;
 				os.imbue(scope.get_request().get_locale());
 
-				std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-				std::wstring time = myconv.from_bytes(f);
+				auto tt = std::chrono::system_clock::to_time_t(st);
+				auto wf = convert_s2w(f);
 
-				auto t = std::chrono::system_clock::to_time_t(st);
-				os << std::put_time(std::gmtime(&t), time.c_str());
-#endif
-				result = os.str();
+				os << std::put_time<wchar_t>(std::gmtime(&tt), wf.c_str());
+				result = convert_w2s(os.str());
 			}
 		}
 
