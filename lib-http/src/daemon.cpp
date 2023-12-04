@@ -53,57 +53,47 @@ daemon::daemon(server_factory_type &&factory, const char *name)
 
 int daemon::run_foreground(const std::string &address, uint16_t port)
 {
-	int result = 0;
+	asio_ns::io_context io_context;
+	asio_ns::ip::tcp::endpoint endpoint;
 
-	if (pid_is_for_executable())
-	{
-		std::cerr << "Server is already running." << std::endl;
-		result = 1;
-	}
+	asio_system_ns::error_code ec;
+	auto addr = asio_ns::ip::make_address(address, ec);
+	if (not ec)
+		endpoint = asio_ns::ip::tcp::endpoint(addr, port);
 	else
 	{
-		asio_ns::io_context io_context;
-		asio_ns::ip::tcp::endpoint endpoint;
-
-		asio_system_ns::error_code ec;
-		auto addr = asio_ns::ip::make_address(address, ec);
-		if (not ec)
-			endpoint = asio_ns::ip::tcp::endpoint(addr, port);
-		else
-		{
-			asio_ns::ip::tcp::resolver resolver(io_context);
-			asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-			endpoint = *resolver.resolve(query);
-		}
-
-		asio_ns::ip::tcp::acceptor acceptor(io_context);
-		acceptor.open(endpoint.protocol());
-		acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
-		acceptor.bind(endpoint, ec);
-		if (ec)
-			throw std::runtime_error(std::string("Is server running already? ") + ec.message());
-		acceptor.listen();
-
-		acceptor.close();
-
-		signal_catcher sc;
-		sc.block();
-
-		std::unique_ptr<basic_server> s(m_factory());
-		s->bind(address, port);
-		std::thread t(std::bind(&server::run, s.get(), 1));
-
-		sc.unblock();
-
-		sc.wait();
-
-		s->stop();
-
-		if (t.joinable())
-			t.join();
+		asio_ns::ip::tcp::resolver resolver(io_context);
+		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
+		endpoint = *resolver.resolve(query);
 	}
 
-	return result;
+	asio_ns::ip::tcp::acceptor acceptor(io_context);
+	acceptor.open(endpoint.protocol());
+	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
+	acceptor.bind(endpoint, ec);
+	if (ec)
+		throw std::runtime_error(std::string("Is server running already? ") + ec.message());
+	acceptor.listen();
+
+	acceptor.close();
+
+	signal_catcher sc;
+	sc.block();
+
+	std::unique_ptr<basic_server> s(m_factory());
+	s->bind(address, port);
+	std::thread t(std::bind(&server::run, s.get(), 1));
+
+	sc.unblock();
+
+	sc.wait();
+
+	s->stop();
+
+	if (t.joinable())
+		t.join();
+
+	return 0;
 }
 
 #if _WIN32
