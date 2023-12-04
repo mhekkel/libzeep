@@ -206,6 +206,59 @@ std::tuple<unicode,Iter> get_first_char(Iter ptr, Iter end)
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief Return a std::wstring for the UTF-8 encoded std::string @a s.
+ * @note This simplistic code assumes all unicode characters will fit in a wchar_t
+ * 
+ * @param s The input string
+ * @return std::wstring The recoded output string
+ */
+inline std::wstring convert_s2w(std::string_view s)
+{
+	auto b = s.begin();
+	auto e = s.end();
+
+	std::wstring result;
+
+	while (b != e)
+	{
+		const auto &[uc, i] = get_first_char(b, e);
+		if (not uc)
+			break;
+		
+		result += static_cast<wchar_t>(uc);
+		b = i;
+	}
+
+	return result;
+}
+
+/**
+ * @brief Return a std::string encoded in UTF-8 for the input std::wstring @a s.
+ * @note This simplistic code assumes input contains only UCS-2 characters which are deprecated, I know.
+ * This means UTF-16 surrogates are ruined.
+ * 
+ * @param s The input string
+ * @return std::string The recoded output string
+ */
+inline std::string convert_w2s(std::wstring_view s)
+{
+	std::string result;
+
+	for (unicode ch : s)
+		append(result, ch);
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+/**
+ * @brief Return a hexadecimal string representation for the numerical value in @a i
+ * 
+ * @param i The value to convert
+ * @return std::string The hexadecimal representation
+ */
 inline std::string to_hex(uint32_t i)
 {
 	char s[sizeof(i) * 2 + 3];

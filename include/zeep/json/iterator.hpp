@@ -10,6 +10,8 @@
 
 #include <zeep/config.hpp>
 
+#include <cassert>
+
 namespace zeep::json::detail
 {
 
