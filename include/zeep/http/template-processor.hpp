@@ -77,6 +77,7 @@ class file_loader : public resource_loader
 	std::filesystem::path m_docroot;
 };
 
+#if USE_RSRC
 // -----------------------------------------------------------------------
 /// \brief actual implementation of a zeep::resource_loader that loads resources from memory
 /// 
@@ -99,6 +100,7 @@ class rsrc_loader : public resource_loader
   private:
 	std::filesystem::file_time_type mRsrcWriteTime = {};
 };
+#endif
 
 // --------------------------------------------------------------------
 
@@ -228,11 +230,14 @@ class html_template_processor : public basic_template_processor
 };
 
 using file_based_html_template_processor = html_template_processor<file_loader>;
+
+#if USE_RSRC
 using rsrc_based_html_template_processor = html_template_processor<rsrc_loader>;
+#endif
 
 /// \brief the actual definition of zeep::template_processor
 
-#if WEBAPP_USES_RESOURCES
+#if WEBAPP_USES_RESOURCES and USE_RSRC
 using template_processor = rsrc_based_html_template_processor;
 #else
 using template_processor = file_based_html_template_processor;

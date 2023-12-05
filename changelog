@@ -1,3 +1,6 @@
+Version 6.0.11
+- Builds on macOS again, I hope
+
 Version 6.0.10
 - Fix html_controller and rest_controller to pass
   path parameters decoded.

@@ -1,11 +1,11 @@
-#           Copyright Maarten L. Hekkelman, 2023
-#  Distributed under the Boost Software License, Version 1.0.
-#     (See accompanying file LICENSE_1_0.txt or copy at
-#           http://www.boost.org/LICENSE_1_0.txt)
+# Copyright Maarten L. Hekkelman, 2023
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 cmake_minimum_required(VERSION 3.22)
 
-project(libzeep VERSION 6.0.10 LANGUAGES CXX)
+project(libzeep VERSION 6.0.11 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -181,7 +181,6 @@ if(ZEEP_BUILD_LIBRARY)
 		${PROJECT_SOURCE_DIR}/lib-http/src/access-control.cpp
 		${PROJECT_SOURCE_DIR}/lib-http/src/connection.cpp
 		${PROJECT_SOURCE_DIR}/lib-http/src/controller.cpp
-		${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp
 		${PROJECT_SOURCE_DIR}/lib-http/src/crypto.cpp
 		${PROJECT_SOURCE_DIR}/lib-http/src/daemon.cpp
 		${PROJECT_SOURCE_DIR}/lib-http/src/el-processing.cpp
@@ -213,6 +212,11 @@ if(ZEEP_BUILD_LIBRARY)
 		${PROJECT_SOURCE_DIR}/lib-xml/src/xml-parser.cpp
 		${PROJECT_SOURCE_DIR}/lib-xml/src/xpath.cpp
 	)
+
+	if(USE_RSRC)
+		list(APPEND ZEEP_SRC
+			${PROJECT_SOURCE_DIR}/lib-http/src/controller-rsrc.cpp)
+	endif()
 
 	if(HTTP_SERVER_HAS_PREFORK)
 		list(APPEND ZEEP_HEADERS ${PROJECT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
@@ -277,7 +281,7 @@ if(ZEEP_BUILD_LIBRARY)
 		${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepConfig*.cmake
 		${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepTargets*.cmake)
 
-	if (OLD_CONFIG_FILES)
+	if(OLD_CONFIG_FILES)
 		message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
 		install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
 	endif()
@@ -302,6 +306,7 @@ if(ZEEP_BUILD_LIBRARY)
 	set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 	set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 	set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
 	configure_file("${PROJECT_SOURCE_DIR}/include/zeep/config.hpp.in" "${PROJECT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
 endif(ZEEP_BUILD_LIBRARY)
 
