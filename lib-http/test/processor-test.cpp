@@ -414,11 +414,19 @@ BOOST_AUTO_TEST_CASE(test_15)
 	</data>
 		)"_xml;
 
+#ifdef __APPLE__	// no, really.. Danish macOS users are different
+		auto doc_test = R"(<?xml version="1.0"?>
+	<data>
+	<test> 7 August 2019, 12:14</test>
+	</data>
+		)"_xml;
+#else
 		auto doc_test = R"(<?xml version="1.0"?>
 	<data>
 	<test> 7 august 2019, 12:14</test>
 	</data>
 		)"_xml;
+#endif
 
 		zeep::http::template_processor p(DOCROOT);
 		zeep::http::tag_processor_v2 tp;

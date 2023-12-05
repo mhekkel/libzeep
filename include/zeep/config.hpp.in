@@ -29,6 +29,16 @@
 #cmakedefine01 WEBAPP_USES_RESOURCES
 #endif
 
+/// We can use resources to store the contents of a docroot e.g.
+/// which makes web applications really portable. However, for
+/// this feature we need a working mrc
+/// (https://github.com/mhekkel/mrc) and that is limited to
+/// Windows and operating systems using the ELF executable format.
+
+#ifndef USE_RSRC
+#cmakedefine01 USE_RSRC
+#endif
+
 /// The current version of libzeep
 
 #define LIBZEEP_VERSION "@LIBZEEP_VERSION@"
