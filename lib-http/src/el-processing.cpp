@@ -1703,7 +1703,7 @@ std::ostream &operator<<(std::ostream &lhs, const scope &rhs)
 	while (s != nullptr)
 	{
 		for (scope::data_map::value_type e : s->m_data)
-			lhs << e.first << " = " << e.second << std::endl;
+			lhs << e.first << " = " << e.second << '\n';
 		s = s->m_next;
 	}
 	return lhs;

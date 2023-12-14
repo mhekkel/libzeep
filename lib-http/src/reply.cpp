@@ -472,7 +472,7 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 		}
 		catch (...)
 		{
-			std::cerr << "Exception in reading from file" << std::endl;
+			std::clog << "Exception in reading from file\n";
 		}
 
 		// chunked encoding?
@@ -528,9 +528,9 @@ reply reply::stock_reply(status_type status, const std::string &info)
 	{
 		std::stringstream text;
 
-		text << "<html>" << std::endl
-			 << "  <body>" << std::endl
-			 << "    <h1>" << get_status_text(status) << "</h1>" << std::endl;
+		text << "<html>\n"
+			 << "  <body>\n"
+			 << "    <h1>" << get_status_text(status) << "</h1>\n";
 
 		if (not info.empty())
 		{
@@ -553,10 +553,10 @@ reply reply::stock_reply(status_type status, const std::string &info)
 				}
 			}
 
-			text << "</p>" << std::endl;
+			text << "</p>\n";
 		}
 
-		text << "  </body>" << std::endl
+		text << "  </body>\n"
 			 << "</html>";
 		result.set_content(text.str(), "text/html; charset=utf-8");
 	}

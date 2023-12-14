@@ -1343,7 +1343,7 @@ parser_imp::XMLToken parser_imp::get_next_token()
 
 	//#if DEBUG
 	//	if (VERBOSE)
-			// std::cout << "token: " << describe_token(token) << " (" << m_token << ')' << std::endl;
+			// std::cout << "token: " << describe_token(token) << " (" << m_token << ")\n";
 	//#endif
 
 	return token;
@@ -1637,7 +1637,7 @@ parser_imp::XMLToken parser_imp::get_next_content()
 
 	//#if DEBUG
 	//	if (VERBOSE)
-			// std::cout << "content: " << describe_token(token) << " (" << m_token << ')' << std::endl;
+			// std::cout << "content: " << describe_token(token) << " (" << m_token << ")\n";
 	//#endif
 
 	return token;

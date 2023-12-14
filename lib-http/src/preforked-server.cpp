@@ -69,9 +69,9 @@ bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 		if (cmptr != nullptr and cmptr->cmsg_len == CMSG_LEN(sizeof(int)))
 		{
 			if (cmptr->cmsg_level != SOL_SOCKET)
-				std::cerr << "control level != SOL_SOCKET" << std::endl;
+				std::clog << "control level != SOL_SOCKET\n";
 			else if (cmptr->cmsg_type != SCM_RIGHTS)
-				std::cerr << "control type != SCM_RIGHTS";
+				std::clog << "control type != SCM_RIGHTS";
 			else
 			{
 				/* Produces warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
@@ -115,12 +115,12 @@ class child_process
 			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED) != -1)
 			{
 				if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
-					std::cerr << std::put_time(std::localtime(&now_t), "%F %T") << " child " << m_pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+					std::clog << std::put_time(std::localtime(&now_t), "%F %T") << " child " << m_pid << " terminated by signal " << WTERMSIG(status) << '\n';
 				// else
-				// 	std::cerr << std::put_time(std::localtime(&now_t), "%F %T") << " child terminated normally" << std::endl;
+				// 	std::clog << std::put_time(std::localtime(&now_t), "%F %T") << " child terminated normally\n";
 			}
 			else
-				std::cerr << std::put_time(std::localtime(&now_t), "%F %T") << "error in waitpid: " << strerror(errno) << std::endl;
+				std::clog << std::put_time(std::localtime(&now_t), "%F %T") << "error in waitpid: " << strerror(errno) << '\n';
 		}
 	}
 
@@ -187,7 +187,7 @@ void child_process::start()
 		}
 		catch (std::exception &e)
 		{
-			std::cerr << "Exception caught: " << e.what() << std::endl;
+			std::clog << "Exception caught: " << e.what() << '\n';
 			exit(1);
 		}
 
@@ -242,7 +242,7 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 {
 	if (ec)
 	{
-		std::cerr << "Accept failed: " << ec << std::endl;
+		std::clog << "Accept failed: " << ec << '\n';
 		return;
 	}
 
@@ -289,14 +289,14 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 		int err = sendmsg(m_fd, &msg, 0);
 		if (err < 0)
 		{
-			std::cerr << "Error passing file descriptor: " << strerror(errno) << std::endl;
+			std::clog << "Error passing file descriptor: " << strerror(errno) << '\n';
 			// ec = std::make_error_code(errno);
 			stop();
 		}
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "error writing socket to client: " << e.what() << std::endl;
+		std::clog << "error writing socket to client: " << e.what() << '\n';
 
 		reply r = reply::stock_reply(service_unavailable);
 
@@ -308,7 +308,7 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 		}
 		catch (const std::exception &e)
 		{
-			std::cerr << e.what() << std::endl;
+			std::clog << e.what() << '\n';
 		}
 	}
 

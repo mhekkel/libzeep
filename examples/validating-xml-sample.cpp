@@ -36,7 +36,7 @@ int main()
 
     /* Compare the doc with an in-memory constructed document, note that spaces are ignored */
     if (doc == R"(<foo><bar>Hello, world!</bar></foo>)"_xml)
-        std::cout << "ok" << std::endl;
+        std::cout << "ok\n";
 //]
 
     return 0;

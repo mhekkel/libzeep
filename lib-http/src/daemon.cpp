@@ -137,7 +137,7 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 
 	if (pid_is_for_executable())
 	{
-		std::cerr << "Server is already running." << std::endl;
+		std::clog << "Server is already running.\n";
 		result = 1;
 	}
 	else
@@ -152,21 +152,21 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			fs::create_directories(pidDir, ec);
 		
 		if (ec)
-			std::cerr << "Creating directory for pid file failed: " << ec.message() << std::endl;
+			std::clog << "Creating directory for pid file failed: " << ec.message() << '\n';
 
 		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
 		if (not fs::is_directory(outLogDir, ec))
 			fs::create_directories(outLogDir, ec);
 
 		if (ec)
-			std::cerr << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << std::endl;
+			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
 
 		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
 		if (not fs::is_directory(errLogDir, ec))
 			fs::create_directories(errLogDir, ec);
 
 		if (ec)
-			std::cerr << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << std::endl;
+			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
 
 		try
 		{
@@ -204,7 +204,7 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
 			if (hupped)
 			{
-				std::cerr << "Server was interrupted, will attempt to resume" << std::endl;
+				std::clog << "Server was interrupted, will attempt to resume\n";
 				continue;
 			}
 			
@@ -216,7 +216,7 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			fs::remove(m_pid_file, ec);
 		
 		if (ec)
-			std::cerr << "Removing pid file failed: " << ec.message() << std::endl;
+			std::clog << "Removing pid file failed: " << ec.message() << '\n';
 	}
 
 	return result;
@@ -238,7 +238,7 @@ int daemon::stop()
 
 		result = ::kill(pid, SIGINT);
 		if (result != 0)
-			std::cerr << "Failed to stop process " << pid << ": " << strerror(errno) << std::endl;
+			std::clog << "Failed to stop process " << pid << ": " << strerror(errno) << '\n';
 		try
 		{
 			if (fs::exists(m_pid_file))
@@ -260,12 +260,12 @@ int daemon::status()
 
 	if (pid_is_for_executable())
 	{
-		std::cerr << "server is running" << std::endl;
+		std::clog << "server is running\n";
 		result = 0;
 	}
 	else
 	{
-		std::cerr << "server is not running" << std::endl;
+		std::clog << "server is not running\n";
 		result = 1;
 	}
 
@@ -289,7 +289,7 @@ int daemon::reload()
 	}
 	else
 	{
-		std::cerr << "server is not running" << std::endl;
+		std::clog << "server is not running\n";
 		result = 1;
 	}
 
@@ -302,7 +302,7 @@ void daemon::daemonize()
 
 	if (pid == -1)
 	{
-		std::cerr << "Fork failed" << std::endl;
+		std::clog << "Fork failed\n";
 		exit(1);
 	}
 
@@ -312,7 +312,7 @@ void daemon::daemonize()
 
 	if (setsid() < 0)
 	{
-		std::cerr << "Failed to create process group: " << strerror(errno) << std::endl;
+		std::clog << "Failed to create process group: " << strerror(errno) << '\n';
 		exit(1);
 	}
 
@@ -323,7 +323,7 @@ void daemon::daemonize()
 	pid = fork();
 
 	if (pid == -1)
-		std::cerr << "Fork failed" << std::endl;
+		std::clog << "Fork failed\n";
 
 	if (pid != 0)
 		_exit(0);
@@ -332,16 +332,16 @@ void daemon::daemonize()
 	std::ofstream pidFile(m_pid_file);
 	if (not pidFile.is_open())
 	{
-		std::cerr << "Failed to write to " << m_pid_file << ": " << strerror(errno) << std::endl;
+		std::clog << "Failed to write to " << m_pid_file << ": " << strerror(errno) << '\n';
 		exit(1);
 	}
 
-	pidFile << getpid() << std::endl;
+	pidFile << getpid() << '\n';
 	pidFile.close();
 
 	if (chdir("/") != 0)
 	{
-		std::cerr << "Cannot chdir to /: " << strerror(errno) << std::endl;
+		std::clog << "Cannot chdir to /: " << strerror(errno) << '\n';
 		exit(1);
 	}
 
@@ -356,7 +356,7 @@ void daemon::open_log_file()
 	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
 	if (fd_out < 0)
 	{
-		std::cerr << "Opening log file " << m_stdout_log_file << " failed" << std::endl;
+		std::clog << "Opening log file " << m_stdout_log_file << " failed\n";
 		exit(1);
 	}
 
@@ -369,7 +369,7 @@ void daemon::open_log_file()
 		fd_err = open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
 		if (fd_err < 0)
 		{
-			std::cerr << "Opening log file " << m_stderr_log_file << " failed" << std::endl;
+			std::clog << "Opening log file " << m_stderr_log_file << " failed\n";
 			exit(1);
 		}
 	}
@@ -397,11 +397,11 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 		open_log_file();
 
 		if (sig == 0)
-			std::cerr << "starting server" << std::endl;
+			std::clog << "starting server\n";
 		else
-			std::cerr << "restarting server" << std::endl;
+			std::clog << "restarting server\n";
 
-		std::cerr << "Listening to " << address << ':' << port << std::endl;
+		std::clog << "Listening to " << address << ':' << port << '\n';
 
 		sigset_t new_mask, old_mask;
 		sigfillset(&new_mask);
@@ -416,7 +416,7 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 					struct passwd* pw = getpwnam(run_as_user.c_str());
 					if (pw == NULL)
 					{
-						std::cerr << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << std::endl;
+						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
 						exit(1);
 					}
 
@@ -427,20 +427,20 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 						if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
 							setgroups(ngroups, groups.data()) == -1)
 						{
-							std::cerr << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << std::endl;
+							std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
 							exit(1);
 						}
 					}
 
 					if (setgid(pw->pw_gid) < 0)
 					{
-						std::cerr << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << std::endl;
+						std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
 						exit(1);
 					}
 
 					if (setuid(pw->pw_uid) < 0)
 					{
-						std::cerr << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << std::endl;
+						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
 						exit(1);
 					}
 				}
@@ -449,7 +449,7 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 			}
 			catch (const exception& e)
 			{
-				std::cerr << "Failed to launch server: " << e.what() << std::endl;
+				std::clog << "Failed to launch server: " << e.what() << '\n';
 				exit(1);
 			} });
 
@@ -461,10 +461,10 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 		}
 		catch (const exception &ex)
 		{
-			std::cerr << std::endl
-					  << "Exception running server: " << std::endl
-					  << ex.what() << std::endl
-					  << std::endl;
+			std::clog << '\n'
+					  << "Exception running server: \n"
+					  << ex.what() << '\n'
+					  << '\n';
 			exit(1);
 		}
 
@@ -496,9 +496,9 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 		if (pid != -1)
 		{
 			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
-				std::cerr << "child " << pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+				std::clog << "child " << pid << " terminated by signal " << WTERMSIG(status) << '\n';
 			// else
-			// 	std::cerr << "child terminated normally" << std::endl;
+			// 	std::clog << "child terminated normally\n";
 		}
 
 		// did the client crash within the time window?
@@ -510,7 +510,7 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 
 		if (++restarts >= m_max_restarts)
 		{
-			std::cerr << "aborting due to excessive restarts" << std::endl;
+			std::clog << "aborting due to excessive restarts\n";
 			break;
 		}
 	}
