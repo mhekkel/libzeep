@@ -222,14 +222,21 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		}
 
 		// do the actual work.
+		bool processed = false;
 		for (auto c : m_controllers)
 		{
 			if (not c->path_matches_prefix(req.get_uri()))
 				continue;
 
 			if (c->dispatch_request(socket, req, rep))
+			{
+				processed = true;
 				break;
+			}
 		}
+
+		if (not processed)
+			throw not_found;
 
 		if (method == "HEAD" or method == "OPTIONS")
 			rep.set_content("", rep.get_content_type());
