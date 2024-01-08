@@ -236,7 +236,19 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		}
 
 		if (not processed)
-			throw not_found;
+		{
+			for (auto eh : m_error_handlers)
+			{
+				try
+				{
+					if (eh->create_error_reply(req, not_found, rep))
+						break;
+				}
+				catch (...)
+				{
+				}
+			}
+		}
 
 		if (method == "HEAD" or method == "OPTIONS")
 			rep.set_content("", rep.get_content_type());
