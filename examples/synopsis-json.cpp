@@ -69,7 +69,7 @@ void construct()
     j1["o"] = { { "b", false }, { "i", 2 } };
     j1["o"]["s"] = "sub field";
 
-    std::cout << j1 << std::endl;
+    std::cout << j1 << '\n';
 
     /* Construct a JSON object by parsing a raw string */
 
@@ -89,7 +89,7 @@ void construct()
     }
     )"_json;
 
-    std::cout << j2 << std::endl;
+    std::cout << j2 << '\n';
 
     assert(j1 == j2);
 //]

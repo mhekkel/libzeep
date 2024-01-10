@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE(test_14)
 	}
 	catch (const std::runtime_error&)
 	{
-		std::cerr << "skipping test 14 since locale nl_NL.UTF-8 is not available" << std::endl;
+		std::clog << "skipping test 14 since locale nl_NL.UTF-8 is not available\n";
 	}
 }
 
@@ -440,7 +440,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 	}
 	catch (const std::runtime_error&)
 	{
-		std::cerr << "skipping test 15 since locale da_DK.UTF-8 is not available" << std::endl;
+		std::clog << "skipping test 15 since locale da_DK.UTF-8 is not available\n";
 	}
 }
 
@@ -477,7 +477,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 	}
 	catch (const std::runtime_error&)
 	{
-		std::cerr << "skipping test 16 since locale en_GB.UTF-8 is not available" << std::endl;
+		std::clog << "skipping test 16 since locale en_GB.UTF-8 is not available\n";
 	}
 }
 
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 // 	}
 // 	catch (const std::runtime_error& e)
 // 	{
-// 		std::cerr << "skipping test 17 since locale fr_FR.UTF-8 is not available" << std::endl;
+// 		std::clog << "skipping test 17 since locale fr_FR.UTF-8 is not available\n";
 // 	}
 // }
 
@@ -681,8 +681,8 @@ BOOST_AUTO_TEST_CASE(test_22a)
 	BOOST_TEST(doc1 == doct);
 	if (doc1 != doct)
 	{
-		std::cerr << doc1 << std::endl
-				  << doct << std::endl;
+		std::clog << doc1 << '\n'
+				  << doct << '\n';
 	}
 }
 

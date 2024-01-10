@@ -25,7 +25,7 @@ int main()
 
     /* Iterate over the result of the evaluation of this XPath, the result will consist of zeep::xml::element object pointers */
     for (auto n: xp.evaluate<zeep::xml::element>(doc, ctx))
-        std::cout << n->str() << std::endl;
+        std::cout << n->str() << '\n';
 
     return 0;
 }

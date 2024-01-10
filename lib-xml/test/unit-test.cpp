@@ -629,5 +629,5 @@ BOOST_AUTO_TEST_CASE(named_char_2)
 
 	BOOST_TEST((a == b) == true);
 	if (not (a == b))
-		std::cout << std::setw(2) << a << std::endl << b << std::endl;
+		std::cout << std::setw(2) << a << '\n' << b << '\n';
 }

@@ -34,7 +34,7 @@ int main(int argc, char *const argv[])
 
 	if (argc != 2)
 	{
-		std::cout << "No command specified, use of of start, stop, status or reload" << std::endl;
+		std::cout << "No command specified, use of of start, stop, status or reload\n";
 		exit(1);
 	}
 
@@ -58,7 +58,7 @@ int main(int argc, char *const argv[])
 		std::string address = "127.0.0.1";
 		unsigned short port = 10330;
 		std::string user = "www-data";
-		std::cout << "starting server at http://" << address << ':' << port << '/' << std::endl;
+		std::cout << "starting server at http://" << address << ":' << port << '/\n";
 		result = server.start(address, port, 1, 16, user);
 	}
 	else if (command == "stop")
@@ -69,7 +69,7 @@ int main(int argc, char *const argv[])
 		result = server.reload();
 	else
 	{
-		std::cerr << "Invalid command" << std::endl;
+		std::clog << "Invalid command\n";
 		result = 1;
 	}
 

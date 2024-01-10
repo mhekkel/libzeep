@@ -373,7 +373,7 @@ BOOST_AUTO_TEST_CASE(test_date_2)
 
 	BOOST_CHECK(doc == "<d>1966-06-27</d>"_xml);
 	if (not (doc == "<d>1966-06-27</d>"_xml))
-		std::cout << std::setw(2) << doc << std::endl;
+		std::cout << std::setw(2) << doc << '\n';
 }
 
 struct time_t1

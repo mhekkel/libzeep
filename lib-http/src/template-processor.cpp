@@ -240,7 +240,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 	}
 	catch (const std::exception& ex)
 	{
-		std::cerr << "Error parsing template: " << ex.what() << std::endl;
+		std::clog << "Error parsing template: " << ex.what() << '\n';
 		throw;
 	}
 

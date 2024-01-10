@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(rest_2)
 
 	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
 
-	std::cerr << "started daemon at port " << port << std::endl;
+	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(1s);
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(rest_2)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << e.what() << std::endl;
+		std::clog << e.what() << '\n';
 	}
 
 	zeep::signal_catcher::signal_hangup(t);

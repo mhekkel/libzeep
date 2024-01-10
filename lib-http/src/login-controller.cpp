@@ -104,7 +104,7 @@ xml::document login_controller::load_login_form(const request &req) const
 		}
 		catch (const std::exception &ex)
 		{
-			std::cerr << ex.what() << std::endl;
+			std::clog << ex.what() << '\n';
 		}
 	}
 
@@ -234,7 +234,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 
 		rep.set_content(doc);
 
-		std::cerr << e.what() << '\n';
+		std::clog << e.what() << '\n';
 	}
 
 	return rep;

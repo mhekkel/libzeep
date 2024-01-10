@@ -102,8 +102,8 @@ void tag_processor_v1::process_xml(xml::node *node, const scope& scope, fs::path
 		}
 		catch (exception& ex)
 		{
-			std::cerr << "exception: " << ex.what() << std::endl
-					  << *e << std::endl;
+			std::clog << "exception: " << ex.what() << '\n'
+					  << *e << '\n';
 		}
 	}
 	else

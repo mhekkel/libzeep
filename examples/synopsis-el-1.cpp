@@ -31,7 +31,7 @@ int main()
     auto s = zeep::http::evaluate_el(scope, "|1: ${ints[0].value}, 2: ${ints[1].value}|");
     //]
 
-    std::cout << s << std::endl;
+    std::cout << s << '\n';
 
     assert(s == "1: 1, 2: 2");
 

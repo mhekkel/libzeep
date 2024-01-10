@@ -9,7 +9,7 @@ BOOST_AUTO_TEST_CASE(cc_1)
 {
 	for (int ch = 0; ch <= 255; ++ch)
 	{
-		// std::cout << ch << ' ' << char(ch) << std::endl;
+		// std::cout << ch << ' ' << char(ch) << '\n';
 		BOOST_TEST((std::isalpha(ch) != 0) == z::http::uri::is_scheme_start(ch));
 		BOOST_TEST((std::isxdigit(ch) != 0) == z::http::uri::is_xdigit(ch));
 	}

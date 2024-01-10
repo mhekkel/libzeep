@@ -615,10 +615,10 @@ size_t expression_context::last() const
 
 void expression_context::dump()
 {
-	// std::cout << "context node: " << *m_node << std::endl
+	// std::cout << "context node: " << *m_node << '\n'
 	// 	 << "context node-set: ";
 	// copy(m_node_set.begin(), m_node_set.end(), std::ostream_iterator<node*>(std::cout, ", "));
-	// std::cout << std::endl;
+	// std::cout << '\n';
 }
 
 std::ostream& operator<<(std::ostream& lhs, expression_context& rhs)
@@ -764,7 +764,7 @@ class name_test_step_expression : public step_expression
 
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "name test step " << m_name << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "name test step " << m_name << '\n'; }
 
   protected:
 
@@ -811,7 +811,7 @@ class node_type_expression : public step_expression
 
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "node type step " << boost::core::demangle(typeid(T).name()) << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "node type step " << boost::core::demangle(typeid(T).name()) << '\n'; }
 
   private:
 	static bool			test(const node* n)					{ return dynamic_cast<const T*>(n) != nullptr; }
@@ -832,7 +832,7 @@ class root_expression : public expression
   public:
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "root" << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "root\n"; }
 };
 
 object root_expression::evaluate(expression_context& context)
@@ -856,7 +856,7 @@ class operator_expression : public expression
 	// virtual void		print(int level)
 	// 					{
 	// 						indent(level);
-	// 						std::cout << "operator " << boost::core::demangle(typeid(OP).name()) << std::endl;
+	// 						std::cout << "operator " << boost::core::demangle(typeid(OP).name()) << '\n';
 	// 						m_lhs->print(level + 1);
 	// 						m_rhs->print(level + 1);
 	// 					}
@@ -992,7 +992,7 @@ class negate_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "negate" << std::endl; m_expr->print(level + 1); }
+	// virtual void		print(int level) { indent(level); std::cout << "negate\n"; m_expr->print(level + 1); }
 
   private:
 	expression_ptr		m_expr;
@@ -1017,7 +1017,7 @@ class path_expression : public expression
 	// virtual void		print(int level)
 	// 					{
 	// 						indent(level);
-	// 						std::cout << "path" << std::endl;
+	// 						std::cout << "path\n";
 	// 						m_lhs->print(level + 1);
 	// 						m_rhs->print(level + 1);
 	// 					}
@@ -1058,7 +1058,7 @@ class predicate_expression : public expression
 	// virtual void		print(int level)
 	// 					{
 	// 						indent(level);
-	// 						std::cout << "predicate" << std::endl;
+	// 						std::cout << "predicate\n";
 	// 						m_path->print(level + 1);
 	// 						m_pred->print(level + 1);
 	// 					}
@@ -1101,7 +1101,7 @@ class variable_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "variable " << m_var << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "variable " << m_var << '\n'; }
 
   private:
 	std::string			m_var;
@@ -1122,7 +1122,7 @@ class literal_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "literal " << m_lit << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "literal " << m_lit << '\n'; }
 
   private:
 	std::string			m_lit;
@@ -1143,7 +1143,7 @@ class number_expression : public expression
 
 	virtual object		evaluate(expression_context& context);
 
-	// virtual void		print(int level) { indent(level); std::cout << "number " << m_number << std::endl; }
+	// virtual void		print(int level) { indent(level); std::cout << "number " << m_number << '\n'; }
 
   private:
 	double				m_number;
@@ -1168,7 +1168,7 @@ class core_function_expression : public expression
 	// virtual void		print(int level)
 	// 					{
 	// 						indent(level);
-	// 						std::cout << "function call " << boost::core::demangle(typeid(CF).name()) << std::endl;
+	// 						std::cout << "function call " << boost::core::demangle(typeid(CF).name()) << '\n';
 	// 						for_each(m_args.begin(), m_args.end(),
 	// 							std::bind(&expression::print, std::placeholders::_1, level + 1));
 	// 					}
@@ -1601,7 +1601,7 @@ class union_expression : public expression
 	// virtual void		print(int level)
 	// 					{
 	// 						indent(level);
-	// 						std::cout << "union" << std::endl;
+	// 						std::cout << "union\n";
 	// 						m_lhs->print(level + 1);
 	// 						m_rhs->print(level + 1);
 	// 					}
@@ -1643,7 +1643,7 @@ struct xpath_imp
 	// 	if (m_expr)
 	// 		m_expr->print(0);
 	// 	else
-	// 		std::cout << "xpath is null" << std::endl;
+	// 		std::cout << "xpath is null\n";
 	// }
 
 	void				preprocess(const std::string& path);
@@ -2215,7 +2215,7 @@ Token xpath_imp::get_next_token()
 	}
 
 //	if (VERBOSE)
-//		std::cout << "get_next_token: " << describe_token(token) << std::endl;
+//		std::cout << "get_next_token: " << describe_token(token) << '\n';
 	
 	return token;
 }

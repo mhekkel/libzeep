@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(sec_1)
 	BOOST_CHECK_EQUAL(rep.get_header("Location"), "http://example.com");
 
 /*
-	std::cerr << rep << std::endl;
+	std::clog << rep << '\n';
 
 	std::ostringstream os;
 	os << rep;
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(sec_1)
 	p.parse(sb);
 	auto r2 = p.get_reply();
 
-	std::cerr << r2 << std::endl;
+	std::clog << r2 << '\n';
 
 	BOOST_CHECK(r2.get_cookie("wrong").empty());
 */

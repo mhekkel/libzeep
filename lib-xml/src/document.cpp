@@ -171,7 +171,7 @@ void document::write(std::ostream& os, format_info fmt) const
 		os << "?>";
 		
 		if (m_wrap_prolog)
-			os << std::endl;
+			os << '\n';
 	}
 
 	if (not m_notations.empty() or m_write_doctype)
@@ -188,7 +188,7 @@ void document::write(std::ostream& os, format_info fmt) const
 		
 		if (not m_notations.empty())
 		{
-			os << " [" << std::endl;
+			os << " [\n";
 
 			for (auto& [name, sysid, pubid]: m_notations)
 			{
@@ -201,12 +201,12 @@ void document::write(std::ostream& os, format_info fmt) const
 				}
 				else
 					os << " SYSTEM \'" << sysid << '\'';
-				os << '>' << std::endl;
+				os << ">\n";
 			}
 			os << "]";
 		}
 
-		os << ">" << std::endl;
+		os << ">\n";
 	}
 
 	for (auto& n: nodes())

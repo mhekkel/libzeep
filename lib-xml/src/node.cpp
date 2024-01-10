@@ -256,7 +256,7 @@ node* comment::move()
 void comment::write(std::ostream& os, format_info fmt) const
 {
 	// if (fmt.indent_width != 0)
-	// 	os << std::endl << std::string(fmt.indent_width, ' ');
+	// 	os << '\n' << std::string(fmt.indent_width, ' ');
 
 	if (not fmt.suppress_comments)
 	{
@@ -281,7 +281,7 @@ void comment::write(std::ostream& os, format_info fmt) const
 		os << "-->";
 		
 		if (fmt.indent_width != 0)
-			os << std::endl;
+			os << '\n';
 	}
 }
 
@@ -308,12 +308,12 @@ node* processing_instruction::move()
 void processing_instruction::write(std::ostream& os, format_info fmt) const
 {
 	if (fmt.indent)
-		os << std::endl << std::string(fmt.indent_level * fmt.indent_width, ' ');
+		os << '\n' << std::string(fmt.indent_level * fmt.indent_width, ' ');
 
 	os << "<?" << m_target << ' ' << m_text << "?>";
 	
 	if (fmt.indent != 0)
-		os << std::endl;
+		os << '\n';
 }
 
 // --------------------------------------------------------------------
@@ -390,12 +390,12 @@ node* cdata::move()
 void cdata::write(std::ostream& os, format_info fmt) const
 {
 	if (fmt.indent)
-		os << std::endl << std::string(fmt.indent_level * fmt.indent_width, ' ');
+		os << '\n' << std::string(fmt.indent_level * fmt.indent_width, ' ');
 
 	os << "<![CDATA[" << m_text << "]]>";
 	
 	if (fmt.indent)
-		os << std::endl;
+		os << '\n';
 }
 
 // --------------------------------------------------------------------
@@ -435,7 +435,7 @@ node* attribute::move()
 void attribute::write(std::ostream& os, format_info fmt) const
 {
 	if (fmt.indent_width != 0)
-		os << std::endl << std::string(fmt.indent_width, ' ');
+		os << '\n' << std::string(fmt.indent_width, ' ');
 	else
 		os << ' ';
 
@@ -473,7 +473,7 @@ void attribute::write(std::ostream& os, format_info fmt) const
 // void name_space::write(std::ostream& os, format_info fmt) const
 // {
 // 	if (fmt.indent_width != 0)
-// 		os << std::endl << std::string(fmt.indent_width, ' ');
+// 		os << '\n' << std::string(fmt.indent_width, ' ');
 // 	else
 // 		os << ' ';
 
@@ -798,7 +798,7 @@ void element::write(std::ostream& os, format_info fmt) const
 	if (fmt.indent)
 	{
 		if (fmt.indent_level > 0)
-			os << std::endl;
+			os << '\n';
 		os << std::string(indentation, ' ');
 	}
 
@@ -832,7 +832,7 @@ void element::write(std::ostream& os, format_info fmt) const
 		}
 
 		if (wrote_element and fmt.indent != 0)
-			os << std::endl << std::string(indentation, ' ');
+			os << '\n' << std::string(indentation, ' ');
 
 		os << "</" << m_qname << '>';
 	}

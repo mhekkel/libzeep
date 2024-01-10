@@ -373,7 +373,7 @@ int main(int argc, char* argv[])
 	config.parse(argc, argv, ec);
 	if (ec)
 	{
-		std::cerr << "error parsing arguments: " << ec.message() << std::endl;
+		std::clog << "error parsing arguments: " << ec.message() << '\n';
 		exit(1);
 	}
 

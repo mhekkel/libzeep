@@ -222,13 +222,32 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		}
 
 		// do the actual work.
+		bool processed = false;
 		for (auto c : m_controllers)
 		{
 			if (not c->path_matches_prefix(req.get_uri()))
 				continue;
 
 			if (c->dispatch_request(socket, req, rep))
+			{
+				processed = true;
 				break;
+			}
+		}
+
+		if (not processed)
+		{
+			for (auto eh : m_error_handlers)
+			{
+				try
+				{
+					if (eh->create_error_reply(req, not_found, rep))
+						break;
+				}
+				catch (...)
+				{
+				}
+			}
 		}
 
 		if (method == "HEAD" or method == "OPTIONS")
@@ -305,9 +324,9 @@ void basic_server::log_request(const std::string &client,
 				  << '"' << userAgent << '"' << ' ';
 
 		if (entry.empty())
-			std::cout << '-' << std::endl;
+			std::cout << "-\n";
 		else
-			std::cout << '"' << entry << '"' << std::endl;
+			std::cout << std::quoted(entry) << '\n';
 	}
 	catch (...)
 	{

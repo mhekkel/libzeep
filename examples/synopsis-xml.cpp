@@ -36,7 +36,7 @@ int main()
             if (name.name() == "lastname")	lastname = name.str();
         }
 
-        std::cout << person->get_attribute("id") << ": " << lastname << ", " << firstname << std::endl;
+        std::cout << person->get_attribute("id") << ": " << lastname << ", " << firstname << '\n';
     }
 
     return 0;

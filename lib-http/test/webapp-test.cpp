@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 
 	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "::", port));
 
-	std::cerr << "started daemon at port " << port << std::endl;
+	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(2s);
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << ex.what() << std::endl;
+		std::clog << ex.what() << '\n';
 	}
 
 	zeep::signal_catcher::signal_hangup(t);
@@ -461,7 +461,7 @@ BOOST_AUTO_TEST_CASE(controller_2_1)
 
 	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "::", port));
 
-	std::cerr << "started daemon at port " << port << std::endl;
+	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(2s);
@@ -501,7 +501,7 @@ BOOST_AUTO_TEST_CASE(controller_2_1)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << ex.what() << std::endl;
+		std::clog << ex.what() << '\n';
 	}
 
 	zeep::signal_catcher::signal_hangup(t);
