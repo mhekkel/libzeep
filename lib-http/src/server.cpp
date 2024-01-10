@@ -324,9 +324,9 @@ void basic_server::log_request(const std::string &client,
 				  << '"' << userAgent << '"' << ' ';
 
 		if (entry.empty())
-			std::cout << "-\n";
+			std::cout << "-" << std::endl;
 		else
-			std::cout << std::quoted(entry) << '\n';
+			std::cout << std::quoted(entry) << std::endl;
 	}
 	catch (...)
 	{

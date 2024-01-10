@@ -147,7 +147,7 @@ void security_context::validate_request(request &req) const
 		if (req_csrf_cookie != req_csrf_param)
 		{
 			allow = false;
-			std::clog << "CSRF validation failed\n";
+			std::cerr << "CSRF validation failed\n";
 		}
 	}
 
