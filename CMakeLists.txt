@@ -315,8 +315,10 @@ if(ZEEP_BUILD_DOCUMENTATION)
 	add_subdirectory(docs)
 endif()
 
-# Test applications
-if(BUILD_TESTING)
+# Test applications, but only if we're not included as a subproject
+get_directory_property(HAS_PARENT PARENT_DIRECTORY)
+
+if(BUILD_TESTING AND NOT HAS_PARENT)
 	find_package(Boost REQUIRED)
 	find_package(libmcfp QUIET)
 
