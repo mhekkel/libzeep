@@ -107,6 +107,31 @@ document::~document()
 {
 }
 
+void document::set_base_dir(const std::string& path)
+{
+	m_dtd_dir = path;
+}
+
+encoding_type document::get_encoding() const
+{
+	return m_encoding;
+}
+
+void document::set_encoding(encoding_type enc)
+{
+	m_encoding = enc;
+}
+
+float document::get_version() const
+{
+	return m_version;
+}
+
+void document::set_version(float v)
+{
+	m_version = v;
+}
+
 // --------------------------------------------------------------------
 
 element::node_iterator document::insert_impl(const_iterator pos, node* n)
