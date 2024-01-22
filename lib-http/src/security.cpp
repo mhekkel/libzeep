@@ -51,7 +51,7 @@ security_context::security_context(const std::string &secret, user_service &user
 	: m_secret(secret)
 	, m_users(users)
 	, m_default_allow(defaultAccessAllowed)
-	, m_default_jwt_exp(date::years{1})
+	, m_default_jwt_exp(date::years{ 1 })
 {
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
 }
@@ -96,8 +96,8 @@ void security_context::validate_request(request &req) const
 			using namespace std::chrono;
 
 			auto exp = credentials["exp"].as<int64_t>();
-			auto exp_t = time_point<system_clock>() + seconds{exp};
-			
+			auto exp_t = time_point<system_clock>() + seconds{ exp };
+
 			if (system_clock::now() > exp_t)
 				break; // expired
 
@@ -184,7 +184,19 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	auto h2 = encode_base64url(credentials.as<std::string>());
 	auto h3 = encode_base64url(hmac_sha256(h1 + '.' + h2, m_secret));
 
-	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3, { { "HttpOnly", "" }, { "SameSite", "Lax" } });
+	std::stringstream s;
+	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + exp);
+	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
+
+	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3,
+		// clang-format off
+		{
+			{ "HttpOnly", "" },
+			{ "SameSite", "Lax" },
+			{ "Expires", '"' + s.str() + '"' }
+		}
+		// clang-format on
+	);
 }
 
 void security_context::add_authorization_headers(reply &rep, const user_details user)
