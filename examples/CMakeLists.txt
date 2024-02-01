@@ -11,7 +11,12 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(zeep REQUIRED)
+# Only try to find package if we're not included from the main libzeep CMakeLists.txt
+get_property(PARENT_DIRECTORY DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" PROPERTY PARENT_DIRECTORY)
+
+if("${PARENT_DIRECTORY}" STREQUAL "")
+	find_package(zeep REQUIRED)
+endif()
 
 list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
 	serialize-xml synopsis-json synopsis-xml validating-xml-sample xpath-sample
