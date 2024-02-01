@@ -41,6 +41,7 @@ jobs:
           cmake -S . -B build
           -DZEEP_BUILD_DOCUMENTATION=ON
           -DZEEP_BUILD_LIBRARY=OFF
+          -DZEEP_BUILD_EXAMPLES=OFF
           -DBUILD_TESTING=OFF
 
     - name: Run Sphinx

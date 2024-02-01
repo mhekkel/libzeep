@@ -9,12 +9,6 @@ project(libzeep VERSION 6.0.13 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-option(ZEEP_BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
-option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
-option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON)
-option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
-option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
-
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -24,6 +18,13 @@ include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(VersionString)
 include(CTest)
+include(CMakeDependentOption)
+
+option(ZEEP_BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
+option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
+option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
+option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
+cmake_dependent_option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON "ZEEP_BUILD_LIBRARY" OFF)
 
 if(ZEEP_BUILD_LIBRARY)
 	set(CXX_EXTENSIONS OFF)
