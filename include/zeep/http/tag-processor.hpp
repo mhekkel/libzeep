@@ -59,6 +59,8 @@ class tag_processor
 
 // --------------------------------------------------------------------
 
+#if ZEEP_SUPPORT_TAG_PROCESSOR_V1
+
 /// \brief A tag_processor compatible with the old version of libzeep. Works
 /// on tags only, not on attributes. Also parses any occurrence of ${}.
 /// For newer code, please consider using the v2 version only.
@@ -98,6 +100,8 @@ class tag_processor_v1 : public tag_processor
 
 	bool process_el(const scope& scope, std::string& s);
 };
+
+#endif
 
 // --------------------------------------------------------------------
 

@@ -3,6 +3,17 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#if __cpp_lib_format
+
+#include <format>
+
+std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)
+{
+	return std::vformat(loc, "{:{}.{}f}", std::make_format_args(integerDigits + decimalDigits, decimalDigits, d));
+}
+
+#else
+
 #include <regex>
 #include <codecvt>
 #include <cmath>
@@ -324,3 +335,5 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 
 }
 
+
+#endif
