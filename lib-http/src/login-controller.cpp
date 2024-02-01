@@ -264,6 +264,9 @@ reply login_controller::create_redirect_for_request(const request &req)
 			url /= requested_uri;
 	}
 
+	if (url.empty())
+		url = "/";
+
 	return reply::redirect(url, see_other);
 }
 
