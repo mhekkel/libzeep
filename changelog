@@ -1,8 +1,9 @@
 Version 6.0.13
-- Flush to access log after each request. (replacing all
+- Flush access log after each request. (replacing all
   instances of std::endl was a bit too drastic).
 - Better handling of not_found
 - Don't test when included in other project
+- Fix redirects after login/logout (this time for real, I hope)
 
 Version 6.0.12
 - Catch URI parse error in connection
