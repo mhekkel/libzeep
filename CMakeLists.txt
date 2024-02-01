@@ -11,6 +11,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 option(ZEEP_BUILD_LIBRARY "Build the library from source code, should be off when configuring on ReadTheDocs" ON)
 option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
+option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
 option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
 
@@ -313,6 +314,11 @@ endif(ZEEP_BUILD_LIBRARY)
 # Documentation
 if(ZEEP_BUILD_DOCUMENTATION)
 	add_subdirectory(docs)
+endif()
+
+# Examples
+if(ZEEP_BUILD_EXAMPLES)
+	add_subdirectory(examples)
 endif()
 
 # Test applications, but only if we're not included as a subproject

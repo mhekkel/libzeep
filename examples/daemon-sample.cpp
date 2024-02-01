@@ -19,7 +19,7 @@ class hello_controller : public zh::controller
 	{
 	}
 
-	bool handle_request(zh::request &req, zh::reply &rep)
+	bool handle_request([[maybe_unused]] zh::request &req, zh::reply &rep)
 	{
 		/* Construct a simple reply with status OK (200) and content string */
 		rep = zh::reply::stock_reply(zh::ok);
