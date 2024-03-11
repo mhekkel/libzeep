@@ -7,7 +7,6 @@
 #include <zeep/http/tag-processor.hpp>
 #include <zeep/http/template-processor.hpp>
 
-#include <iostream>
 #include <unordered_set>
 
 namespace fs = std::filesystem;
@@ -253,8 +252,6 @@ mxml::element tag_processor_v2::resolve_fragment_spec(
 mxml::element tag_processor_v2::resolve_fragment_spec(
 	mxml::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, const std::string &selector, bool byID)
 {
-std::cerr << selector << '\n';
-
 	mxml::context ctx;
 	ctx.set("ns", ns());
 
