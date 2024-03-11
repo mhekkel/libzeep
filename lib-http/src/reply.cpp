@@ -9,8 +9,9 @@
 #include <numeric>
 
 #include <zeep/http/reply.hpp>
-#include <zeep/xml/document.hpp>
 #include <zeep/http/uri.hpp>
+
+
 
 namespace zeep::http
 {
@@ -350,14 +351,14 @@ void reply::set_content(const json::element &json)
 	set_content(s.str(), "application/json");
 }
 
-void reply::set_content(const xml::element &data)
+void reply::set_content(const mxml::element &data)
 {
 	std::stringstream s;
 	s << data;
 	set_content(s.str(), "text/xml; charset=utf-8");
 }
 
-void reply::set_content(xml::document &doc)
+void reply::set_content(mxml::document &doc)
 {
 	std::stringstream s;
 

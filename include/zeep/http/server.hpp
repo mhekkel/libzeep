@@ -22,6 +22,8 @@
 #include <zeep/http/request.hpp>
 #include <zeep/http/template-processor.hpp>
 
+#include <list>
+
 namespace zeep::http
 {
 

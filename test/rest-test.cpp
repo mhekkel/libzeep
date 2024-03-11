@@ -3,7 +3,7 @@
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/exception.hpp>
-#include "../src/signals.hpp"
+#include "../lib-http/src/signals.hpp"
 
 #define BOOST_TEST_MODULE REST_Test
 #include <boost/test/included/unit_test.hpp>

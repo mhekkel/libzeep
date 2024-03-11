@@ -7,8 +7,9 @@
 #include <fstream>
 #include <iostream>
 
-#include <zeep/xml/xpath.hpp>
 #include <zeep/http/template-processor.hpp>
+
+
 
 namespace fs = std::filesystem;
 
@@ -172,7 +173,7 @@ std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_fi
 	return { found, template_file };
 }
 
-void basic_template_processor::load_template(const std::string& file, xml::document& doc)
+void basic_template_processor::load_template(const std::string& file, mxml::document& doc)
 {
 	std::string templateSelector;
 
@@ -248,7 +249,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 	{
 		// tricky? Find first matching fragment and make it the root node of the document
 
-		xml::context ctx;
+		mxml::context ctx;
 
 		// this is problematic, take the first processor namespace for now.
 		// TODO fix this
@@ -264,17 +265,17 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 			ctx.set("ns", ns);
 			break;
 		}
-		xml::xpath xp(templateSelector);
+		mxml::xpath xp(templateSelector);
 
-		std::vector<std::unique_ptr<xml::node>> result;
+		std::vector<std::unique_ptr<mxml::node>> result;
 
-		for (auto n: xp.evaluate<xml::node>(doc, ctx))
+		for (auto n: xp.evaluate<mxml::node>(doc, ctx))
 		{
-			auto e = dynamic_cast<xml::element*>(n);
+			auto e = dynamic_cast<mxml::element*>(n);
 			if (e == nullptr)
 				continue;
 
-			xml::document dest;
+			mxml::document dest;
 
 			auto& attr = e->attributes();
 
@@ -287,9 +288,10 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 			auto parent = e->parent();
 			dest.push_back(std::move(*e));
 
-			xml::fix_namespaces(dest.front(), *parent, dest.front());
+#warning "enable!"
+			// mxml::fix_namespaces(dest.front(), *parent, dest.front());
 
-			doc.swap(dest);
+			std::swap(doc, dest);
 			break;
 		}
 	}
@@ -297,7 +299,7 @@ void basic_template_processor::load_template(const std::string& file, xml::docum
 
 void basic_template_processor::create_reply_from_template(const std::string& file, const scope& scope, http::reply& reply)
 {
-	xml::document doc;
+	mxml::document doc;
 	doc.set_preserve_cdata(true);
 
 	load_template(file, doc);
@@ -311,10 +313,10 @@ void basic_template_processor::init_scope(scope& /*scope*/)
 {
 }
 
-void basic_template_processor::process_tags(xml::node* node, const scope& scope)
+void basic_template_processor::process_tags(mxml::node* node, const scope& scope)
 {
 	// only process elements
-	if (dynamic_cast<xml::element*>(node) == nullptr)
+	if (dynamic_cast<mxml::element*>(node) == nullptr)
 		return;
 
 	std::set<std::string> registeredNamespaces;
@@ -322,17 +324,17 @@ void basic_template_processor::process_tags(xml::node* node, const scope& scope)
 		registeredNamespaces.insert(tpc.first);
 
 	if (not registeredNamespaces.empty())
-		process_tags(static_cast<xml::element*>(node), scope, registeredNamespaces);
+		process_tags(static_cast<mxml::element*>(node), scope, registeredNamespaces);
 
 	// decorate all forms with a hidden input with name _csrf
 
 	auto csrf = scope.get_csrf_token();
 	if (not csrf.empty())
 	{
-		auto forms = xml::xpath(R"(//form[not(input[@name='_csrf'])])");
-		xml::context ctx;
-		for (auto& form: forms.evaluate<xml::element>(*node, ctx))
-			form->emplace_back(xml::element("input", {
+		auto forms = mxml::xpath(R"(//form[not(input[@name='_csrf'])])");
+		mxml::context ctx;
+		for (auto& form: forms.evaluate<mxml::element>(*node, ctx))
+			form->emplace_back(mxml::element("input", {
 				{ "name", "_csrf" },
 				{ "value", csrf },
 				{ "type", "hidden" }
@@ -340,7 +342,7 @@ void basic_template_processor::process_tags(xml::node* node, const scope& scope)
 	}
 }
 
-void basic_template_processor::process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces)
+void basic_template_processor::process_tags(mxml::element* node, const scope& scope, std::set<std::string> registeredNamespaces)
 {
 	std::set<std::string> nss;
 

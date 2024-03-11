@@ -14,6 +14,8 @@
 #include <zeep/http/security.hpp>
 #include <zeep/http/uri.hpp>
 
+
+
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -82,7 +84,7 @@ void login_controller::set_server(basic_server *server)
 	server->add_error_handler(new login_error_handler(this));
 }
 
-xml::document login_controller::load_login_form(const request &req) const
+mxml::document login_controller::load_login_form(const request &req) const
 {
 	if (m_server->has_template_processor())
 	{
@@ -90,7 +92,7 @@ xml::document login_controller::load_login_form(const request &req) const
 		{
 			auto &tp = m_server->get_template_processor();
 
-			xml::document doc;
+			mxml::document doc;
 			doc.set_preserve_cdata(true);
 
 			tp.load_template("login", doc);
@@ -108,7 +110,7 @@ xml::document login_controller::load_login_form(const request &req) const
 		}
 	}
 
-	using namespace xml::literals;
+	using namespace mxml::literals;
 
 	auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

@@ -17,6 +17,8 @@
 #include <zeep/http/el-processing.hpp>
 #include <zeep/json/parser.hpp>
 
+#include <list>
+
 // --------------------------------------------------------------------
 //
 

@@ -12,8 +12,9 @@
 
 #include <filesystem>
 
-#include <zeep/xml/document.hpp>
 #include <zeep/http/el-processing.hpp>
+
+#include <mxml.hpp>
 
 namespace zeep::http
 {
@@ -24,15 +25,15 @@ class basic_template_processor;
 // --------------------------------------------------------------------
 //
 
-/// \brief Abstract base class for tag_processor. 
+/// \brief Abstract base class for tag_processor.
 ///
 /// Note that this class should be light in construction, we create it every time a page is rendered.
 
 class tag_processor
 {
   public:
-	tag_processor(const tag_processor&) = delete;
-	tag_processor& operator=(const tag_processor&) = delete;
+	tag_processor(const tag_processor &) = delete;
+	tag_processor &operator=(const tag_processor &) = delete;
 
 	virtual ~tag_processor() = default;
 
@@ -40,21 +41,22 @@ class tag_processor
 	///
 	/// This function is called to modify the xml tree in \a node
 	///
-	/// \param node		The XML zeep::xml::node (element) to manipulate
+	/// \param node		The XML mxml::node (element) to manipulate
 	/// \param scope	The zeep::http::scope containing the variables and request
 	/// \param dir		The path to the docroot, the directory containing the XHTML templates
 	/// \param loader	The template processor to use to load resources
-	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader) = 0;
+	virtual void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader) = 0;
 
   protected:
-
 	/// \brief constructor
 	///
-	/// \param ns	Then XML namespace for the tags and attributes that are processed by this tag_processor 
-	tag_processor(const char* ns)
-		: m_ns(ns) {}
+	/// \param ns	Then XML namespace for the tags and attributes that are processed by this tag_processor
+	tag_processor(const char *ns)
+		: m_ns(ns)
+	{
+	}
 
-	std::string	m_ns;
+	std::string m_ns;
 };
 
 // --------------------------------------------------------------------
@@ -69,36 +71,34 @@ class tag_processor_v1 : public tag_processor
 {
   public:
 	/// \brief default namespace for this processor
-	static constexpr const char* ns() { return "http://www.hekkelman.com/libzeep/m1"; }
+	static constexpr const char *ns() { return "http://www.hekkelman.com/libzeep/m1"; }
 
 	/// \brief constructor
 	///
 	/// By default the namespace for the v1 processor is the one in ns()
-	tag_processor_v1(const char* ns = tag_processor_v1::ns());
+	tag_processor_v1(const char *ns = tag_processor_v1::ns());
 
 	/// \brief actual implementation of the tag processing.
-	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	virtual void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
 
   protected:
-
-	virtual void process_tag(const std::string& tag, xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	virtual void process_tag(const std::string &tag, mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
 
   private:
-
 	/// handler for mrs:include tags
-	void process_include(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_if(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_iterate(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_for(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_number(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_options(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_option(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_checkbox(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	// void process_url(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_param(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_embed(xml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	void process_include(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_if(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_iterate(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_for(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_number(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_options(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_option(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_checkbox(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	// void process_url(mxml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	void process_param(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_embed(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
 
-	bool process_el(const scope& scope, std::string& s);
+	bool process_el(const scope &scope, std::string &s);
 };
 
 #endif
@@ -119,60 +119,66 @@ class tag_processor_v2 : public tag_processor
 {
   public:
 	/// \brief default namespace for this processor
-	static constexpr const char* ns() { return "http://www.hekkelman.com/libzeep/m2"; }
+	static constexpr const char *ns() { return "http://www.hekkelman.com/libzeep/m2"; }
 
 	/// \brief each handler returns a code telling the processor what to do with the node
 	enum class AttributeAction
 	{
-		none, remove, replace
+		none,
+		remove,
+		replace
 	};
 
-	using attr_handler = std::function<AttributeAction(xml::element*, xml::attribute*, scope&, std::filesystem::path, basic_template_processor& loader)>;
+	using attr_handler = std::function<AttributeAction(mxml::element *, mxml::attribute &, scope &, std::filesystem::path, basic_template_processor &loader)>;
 
 	/// \brief constructor with default namespace
-	tag_processor_v2(const char* ns = tag_processor_v2::ns());
+	tag_processor_v2(const char *ns = tag_processor_v2::ns());
 
 	/// \brief process xml parses the XHTML and fills in the special tags and evaluates the el constructs
-	virtual void process_xml(xml::node* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader) override;
 
 	/// \brief It is possible to extend this processor with custom handlers
-	void register_attr_handler(const std::string& attr, attr_handler&& handler)
+	void register_attr_handler(const std::string &attr, attr_handler &&handler)
 	{
 		m_attr_handlers.emplace(attr, std::move(handler));
 	}
 
   protected:
+	void process_node(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	void process_text(mxml::node_with_text &t, const scope &scope);
+	void post_process(mxml::element *e, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader);
 
-	void process_node(xml::node* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_text(xml::text& t, const scope& scope);
-	void post_process(xml::element* e, const scope& parentScope, std::filesystem::path dir, basic_template_processor& loader);
+	// mxml::element resolve_fragment_spec(mxml::element* node, std::filesystem::path dir, basic_html_controller& controller, const std::string& spec, const scope& scope);
+	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const json::element &spec, const scope &scope);
+	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const std::string &file, const std::string &selector, bool byID);
 
-	// std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_html_controller& controller, const std::string& spec, const scope& scope);
-	std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_template_processor& loader, const json::element& spec, const scope& scope);
-	std::vector<std::unique_ptr<xml::node>> resolve_fragment_spec(xml::element* node, std::filesystem::path dir, basic_template_processor& loader, const std::string& file, const std::string& selector, bool byID);
+	// virtual void process_node_attr(mxml::node* node, const scope& scope, std::filesystem::path dir);
+	AttributeAction process_attr_if(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader, bool unless);
+	AttributeAction process_attr_assert(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_text(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader, bool escaped);
+	AttributeAction process_attr_switch(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_each(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_attr(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_with(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_generic(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_boolean_value(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_inline(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_append(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader, std::string dest, bool prepend);
+	AttributeAction process_attr_classappend(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_styleappend(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	AttributeAction process_attr_remove(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader);
 
-	// virtual void process_node_attr(xml::node* node, const scope& scope, std::filesystem::path dir);
-	AttributeAction process_attr_if(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader, bool unless);
-	AttributeAction process_attr_assert(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_text(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader, bool escaped);
-	AttributeAction process_attr_switch(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_each(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_attr(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_with(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_generic(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_boolean_value(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_inline(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_append(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader, std::string dest, bool prepend);
-	AttributeAction process_attr_classappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_styleappend(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	AttributeAction process_attr_remove(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader);
+	enum class TemplateIncludeAction
+	{
+		include,
+		insert,
+		replace
+	};
 
-	enum class TemplateIncludeAction { include, insert, replace };
-
-	AttributeAction process_attr_include(xml::element* node, xml::attribute* attr, scope& scope, std::filesystem::path dir, basic_template_processor& loader, TemplateIncludeAction tia);
+	AttributeAction process_attr_include(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader, TemplateIncludeAction tia);
 
 	std::map<std::string, attr_handler> m_attr_handlers;
-	xml::document m_template;	// copy of the entire document...
+	mxml::document m_template; // copy of the entire document...
 };
 
-}
+} // namespace zeep::http

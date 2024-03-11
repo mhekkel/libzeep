@@ -18,7 +18,7 @@
 #include <zeep/http/server.hpp>
 
 #include "client-test-code.hpp"
-#include "../src/signals.hpp"
+#include "../lib-http/src/signals.hpp"
 
 namespace z = zeep;
 namespace zx = zeep::xml;
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(server_with_security_1)
 		auto csrfCookie = reply.get_cookie("csrf-token");
 		req.set_cookie("csrf-token", csrfCookie);
 
-		zeep::xml::document form(reply.get_content());
+		mxml::document form(reply.get_content());
 		auto csrf = form.find_first("//input[@name='_csrf']");
 		BOOST_REQUIRE(csrf != nullptr);
 

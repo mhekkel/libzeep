@@ -19,7 +19,8 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/json/element.hpp>
-#include <zeep/xml/node.hpp>
+
+#include <mxml.hpp>
 
 namespace zeep::http
 {
@@ -249,9 +250,9 @@ class scope
 
 	/// \brief a nodeset for a selector, cached to avoid recusive expansion
 	///
-	/// In tag processors it is sometimes needed to take a selection of zeep::xml::nodes
+	/// In tag processors it is sometimes needed to take a selection of mxml::nodes
 	/// and reuse these, as a copy when inserting templates e.g.
-	using node_set_type = std::vector<std::unique_ptr<xml::node>>;
+	using node_set_type = mxml::element;
 
 	/// \brief return the node_set_type with name \a name
 	node_set_type get_nodeset(const std::string &name) const;

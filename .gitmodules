@@ -4,3 +4,7 @@
 [submodule "libmcfp"]
 	path = libmcfp
 	url = https://github.com/mhekkel/libmcfp.git
+[submodule "mxml"]
+	path = mxml
+	url = https://github.com/mhekkel/mxml.git
+	branch = no-module

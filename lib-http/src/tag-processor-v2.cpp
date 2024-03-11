@@ -3,12 +3,12 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <unordered_set>
-
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/tag-processor.hpp>
 #include <zeep/http/template-processor.hpp>
-#include <zeep/xml/xpath.hpp>
+
+#include <iostream>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -24,58 +24,66 @@ std::unordered_set<std::string> kFixedValueBooleanAttributes{
 
 // --------------------------------------------------------------------
 
-int attribute_precedence(const xml::attribute& attr)
+int attribute_precedence(const mxml::attribute &attr)
 {
-		 if (attr.name() == "insert" or attr.name() == "replace")	return -10;
-	else if (attr.name() == "each")									return -9;
+	if (attr.name() == "insert" or attr.name() == "replace")
+		return -10;
+	else if (attr.name() == "each")
+		return -9;
 	else if (attr.name() == "if" or attr.name() == "unless" or
-			 attr.name() == "switch" or attr.name() == "case")		return -8;
-	else if (attr.name() == "object" or attr.name() == "with")		return -7;
+			 attr.name() == "switch" or attr.name() == "case")
+		return -8;
+	else if (attr.name() == "object" or attr.name() == "with")
+		return -7;
 	else if (attr.name() == "attr" or
 			 attr.name() == "attrappend" or attr.name() == "attrprepend" or
 			 attr.name() == "classappend" or attr.name() == "styleappend")
-			 														return -6;
+		return -6;
 
-	else if (attr.name() == "text" or attr.name() == "utext")		return 1;
-	else if (attr.name() == "fragment")								return 2;
-	else if (attr.name() == "remove")								return 3;
+	else if (attr.name() == "text" or attr.name() == "utext")
+		return 1;
+	else if (attr.name() == "fragment")
+		return 2;
+	else if (attr.name() == "remove")
+		return 3;
 
-	else															return 0;
+	else
+		return 0;
 };
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::tag_processor_v2(const char* ns)
+tag_processor_v2::tag_processor_v2(const char *ns)
 	: tag_processor(ns)
 {
 	using namespace std::placeholders;
 
-	register_attr_handler("assert",			std::bind(&tag_processor_v2::process_attr_assert,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("attr",			std::bind(&tag_processor_v2::process_attr_attr,			this, _1, _2, _3, _4, _5));
-	register_attr_handler("classappend",	std::bind(&tag_processor_v2::process_attr_classappend,	this, _1, _2, _3, _4, _5));
-	register_attr_handler("each",			std::bind(&tag_processor_v2::process_attr_each,			this, _1, _2, _3, _4, _5));
-	register_attr_handler("if",				std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("include",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
-	register_attr_handler("inline",			std::bind(&tag_processor_v2::process_attr_inline,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("insert",			std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
-	register_attr_handler("replace",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
-	register_attr_handler("styleappend",	std::bind(&tag_processor_v2::process_attr_styleappend,	this, _1, _2, _3, _4, _5));
-	register_attr_handler("switch",			std::bind(&tag_processor_v2::process_attr_switch,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("text",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("unless",			std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("utext",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("with",			std::bind(&tag_processor_v2::process_attr_with,			this, _1, _2, _3, _4, _5));
+	register_attr_handler("assert", std::bind(&tag_processor_v2::process_attr_assert, this, _1, _2, _3, _4, _5));
+	register_attr_handler("attr", std::bind(&tag_processor_v2::process_attr_attr, this, _1, _2, _3, _4, _5));
+	register_attr_handler("classappend", std::bind(&tag_processor_v2::process_attr_classappend, this, _1, _2, _3, _4, _5));
+	register_attr_handler("each", std::bind(&tag_processor_v2::process_attr_each, this, _1, _2, _3, _4, _5));
+	register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("include", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
+	register_attr_handler("inline", std::bind(&tag_processor_v2::process_attr_inline, this, _1, _2, _3, _4, _5));
+	register_attr_handler("insert", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
+	register_attr_handler("replace", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
+	register_attr_handler("styleappend", std::bind(&tag_processor_v2::process_attr_styleappend, this, _1, _2, _3, _4, _5));
+	register_attr_handler("switch", std::bind(&tag_processor_v2::process_attr_switch, this, _1, _2, _3, _4, _5));
+	register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("unless", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("with", std::bind(&tag_processor_v2::process_attr_with, this, _1, _2, _3, _4, _5));
 	// register_attr_handler("remove",  std::bind(&tag_processor_v2::process_attr_remove,	this, _1, _2, _3, _4, _5));
 }
 
-void tag_processor_v2::process_xml(xml::node *node, const scope &parentScope, fs::path dir, basic_template_processor &loader)
+void tag_processor_v2::process_xml(mxml::node *node, const scope &parentScope, fs::path dir, basic_template_processor &loader)
 {
 	m_template.clear();
-	m_template.emplace_back(*static_cast<const xml::element *>(node));
+	m_template.emplace_back(*static_cast<const mxml::element *>(node));
 
 	process_node(node, parentScope, dir, loader);
 
-	auto e = dynamic_cast<xml::element *>(node);
+	auto e = dynamic_cast<mxml::element *>(node);
 	if (e != nullptr)
 		post_process(e, parentScope, dir, loader);
 }
@@ -83,7 +91,7 @@ void tag_processor_v2::process_xml(xml::node *node, const scope &parentScope, fs
 // --------------------------------------------------------------------
 // post processing: remove blocks, remove attributes with ns = ns(), process remove
 
-void tag_processor_v2::post_process(xml::element *e, const scope &parentScope, fs::path dir, basic_template_processor &loader)
+void tag_processor_v2::post_process(mxml::element *e, const scope &parentScope, fs::path dir, basic_template_processor &loader)
 {
 	auto parent = e->parent();
 
@@ -92,7 +100,7 @@ void tag_processor_v2::post_process(xml::element *e, const scope &parentScope, f
 		if (ai->get_ns() == m_ns and ai->name() == "remove" and parent != nullptr)
 		{
 			scope sub(parentScope);
-			auto action = process_attr_remove(e, ai, sub, dir, loader);
+			auto action = process_attr_remove(e, *ai, sub, dir, loader);
 
 			if (action == AttributeAction::remove)
 			{
@@ -112,12 +120,12 @@ void tag_processor_v2::post_process(xml::element *e, const scope &parentScope, f
 		for (auto &ci : e->nodes())
 			parent->nodes().insert(e, std::move(ci));
 
-		e = parent->erase(e);
+		parent->erase(e);
 		return;
 	}
 
 	// take a copy since iterators might get invalid
-	std::vector<xml::element *> children;
+	std::vector<mxml::element *> children;
 	std::transform(e->begin(), e->end(), std::back_inserter(children), [](auto &c)
 		{ return &c; });
 
@@ -136,9 +144,9 @@ void tag_processor_v2::post_process(xml::element *e, const scope &parentScope, f
 
 // -----------------------------------------------------------------------
 
-void tag_processor_v2::process_text(xml::text &text, const scope &scope)
+void tag_processor_v2::process_text(mxml::node_with_text &text, const scope &scope)
 {
-	xml::element *parent = text.parent();
+	auto parent = text.parent();
 
 	auto next = std::find_if(parent->nodes().begin(), parent->nodes().end(), [&text](auto &n)
 		{ return &n == &text; });
@@ -175,7 +183,7 @@ void tag_processor_v2::process_text(xml::text &text, const scope &scope)
 
 		if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 		{
-			xml::document subDoc("<foo>" + m + "</foo>");
+			mxml::document subDoc("<foo>" + m + "</foo>");
 			auto foo = subDoc.front();
 
 			for (auto &n : foo.nodes())
@@ -185,7 +193,7 @@ void tag_processor_v2::process_text(xml::text &text, const scope &scope)
 
 			s = s.substr(j + 2);
 			b = 0;
-			parent->nodes().emplace(next, xml::text(s));
+			parent->nodes().emplace(next, mxml::text(s));
 		}
 		else
 		{
@@ -199,8 +207,8 @@ void tag_processor_v2::process_text(xml::text &text, const scope &scope)
 
 // --------------------------------------------------------------------
 
-std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
-	xml::element *node, fs::path dir, basic_template_processor &loader, const json::element &spec, const scope &scope)
+mxml::element tag_processor_v2::resolve_fragment_spec(
+	mxml::element *node, fs::path dir, basic_template_processor &loader, const json::element &spec, const scope &scope)
 {
 	if (spec.contains("is-node-set") and spec["is-node-set"])
 		return scope.get_nodeset(spec["node-set-name"].as<std::string>());
@@ -242,17 +250,19 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 	return {};
 }
 
-std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
-	xml::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, const std::string &selector, bool byID)
+mxml::element tag_processor_v2::resolve_fragment_spec(
+	mxml::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, const std::string &selector, bool byID)
 {
-	xml::context ctx;
+std::cerr << selector << '\n';
+
+	mxml::context ctx;
 	ctx.set("ns", ns());
 
-	xml::xpath xp(selector);
+	mxml::xpath xp(selector);
 	// xp.dump();
 
-	xml::document doc;
-	xml::element *root = nullptr;
+	mxml::document doc;
+	mxml::element_container *root = nullptr;
 
 	if (file.empty() or file == "this")
 		root = m_template.root();
@@ -284,29 +294,27 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 		root = doc.root();
 	}
 
-	std::vector<std::unique_ptr<xml::node>> result;
+	mxml::element result;
 
-	for (auto n : xp.evaluate<xml::node>(*root, ctx))
+	for (auto n : xp.evaluate<mxml::node>(*root, ctx))
 	{
-		auto copy = n->clone();
+		auto ni = result.nodes().emplace_back(*n);
 
-		auto e = dynamic_cast<xml::element *>(copy);
+		if (ni->type() != mxml::node_type::element)
+			continue;
 
-		if (e != nullptr)
-		{
-			if (root != node->root())
-				fix_namespaces(*e, static_cast<xml::element &>(*n), *node);
+		auto e = static_cast<mxml::element *>(&*ni);
 
-			auto &attr = e->attributes();
+		if (root != node->root())
+			fix_namespaces(*e, *static_cast<mxml::element *>(n), *node);
 
-			if (byID) // remove the copied ID
-				attr.erase("id");
+		auto &attr = e->attributes();
 
-			attr.erase(e->prefix_tag("ref", ns()));
-			attr.erase(e->prefix_tag("fragment", ns()));
-		}
+		if (byID) // remove the copied ID
+			attr.erase("id");
 
-		result.emplace_back(copy);
+		attr.erase(e->prefix_tag("ref", ns()));
+		attr.erase(e->prefix_tag("fragment", ns()));
 	}
 
 	return result;
@@ -314,44 +322,43 @@ std::vector<std::unique_ptr<xml::node>> tag_processor_v2::resolve_fragment_spec(
 
 // -----------------------------------------------------------------------
 
-void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader)
+void tag_processor_v2::process_node(mxml::node *node, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader)
 {
 	for (;;)
 	{
-		xml::cdata *cdata = dynamic_cast<xml::cdata *>(node);
-		if (cdata != nullptr)
+		if (node->type() == mxml::node_type::cdata)
 		{
-			auto doc = dynamic_cast<xml::document *>(node->root());
-			if (doc != nullptr and doc->is_html5())
+			if (node->root()->type() == mxml::node_type::document and static_cast<mxml::document *>(node->root())->is_html5())
 			{
 				// HTML5 does not support CDATA sections, replace it
 
-				xml::element *parent = node->parent();
+				mxml::element_container *parent = node->parent();
 
-				auto ni = std::find_if(parent->nodes().begin(), parent->nodes().end(), [node](auto &n)
+				auto parent_nodes = parent->nodes();
+				auto ni = std::find_if(parent_nodes.begin(), parent_nodes.end(), [node](auto &n)
 					{ return &n == node; });
 
-				[[maybe_unused]] auto ti = parent->emplace(ni, xml::text(cdata->get_text()));
+				[[maybe_unused]] auto ti = parent_nodes.emplace(ni, mxml::text(
+																		static_cast<mxml::cdata *>(node)->get_text()));
 
 				// assert(std::next(ti) == ni); // < this fails when building with MSVC
 
-				parent->erase(ni);
+				parent_nodes.erase(ni);
 				break;
 			}
 		}
 
-		xml::text *text = dynamic_cast<xml::text *>(node);
-		if (text != nullptr)
+		if (node->type() == mxml::node_type::text or node->type() == mxml::node_type::cdata)
 		{
-			process_text(*text, parentScope);
+			process_text(*static_cast<mxml::node_with_text *>(node), parentScope);
 			break;
 		}
 
-		xml::element *e = dynamic_cast<xml::element *>(node);
+		mxml::element *e = dynamic_cast<mxml::element *>(node);
 		if (e == nullptr)
 			break;
 
-		xml::element *parent = e->parent();
+		mxml::element_container *parent = e->parent();
 		scope scope(parentScope);
 		bool inlined = false;
 
@@ -377,7 +384,7 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 					scope.select_object(evaluate_el(scope, attr->value()));
 				else if (attr->name() == "inline")
 				{
-					action = process_attr_inline(e, attr, scope, dir, loader);
+					action = process_attr_inline(e, *attr, scope, dir, loader);
 					inlined = true;
 				}
 				else
@@ -385,11 +392,11 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 					auto h = m_attr_handlers.find(attr->name());
 
 					if (h != m_attr_handlers.end())
-						action = h->second(e, attr, scope, dir, loader);
+						action = h->second(e, *attr, scope, dir, loader);
 					else if (kFixedValueBooleanAttributes.count(attr->name()))
-						action = process_attr_boolean_value(e, attr, scope, dir, loader);
+						action = process_attr_boolean_value(e, *attr, scope, dir, loader);
 					else
-						action = process_attr_generic(e, attr, scope, dir, loader);
+						action = process_attr_generic(e, *attr, scope, dir, loader);
 				}
 
 				if (action == AttributeAction::remove)
@@ -404,7 +411,7 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 		}
 		catch (const std::exception &ex)
 		{
-			parent->nodes().insert(e, xml::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
+			parent->nodes().insert(e, mxml::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
 			// parent->erase(e);
 		}
 
@@ -416,7 +423,7 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 				auto &n = *i;
 				++i;
 
-				if (inlined and dynamic_cast<xml::text *>(&n) != nullptr)
+				if (inlined and dynamic_cast<mxml::node_with_text *>(&n) != nullptr)
 					continue;
 
 				process_node(&n, scope, dir, loader);
@@ -429,25 +436,25 @@ void tag_processor_v2::process_node(xml::node *node, const scope &parentScope, s
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_if(xml::element * /*element*/, xml::attribute *attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
+auto tag_processor_v2::process_attr_if(mxml::element * /*element*/, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
 {
-	return ((not evaluate_el(scope, attr->value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
+	return ((not evaluate_el(scope, attr.value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_assert(xml::element * /*element*/, xml::attribute *attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor_v2::process_attr_assert(mxml::element * /*element*/, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
-	if (not evaluate_el_assert(scope, attr->value()))
-		throw zeep::exception("Assertion failed for '" + attr->value() + "'");
+	if (not evaluate_el_assert(scope, attr.value()))
+		throw zeep::exception("Assertion failed for '" + attr.value() + "'");
 	return AttributeAction::none;
 }
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_text(xml::element *element, xml::attribute *attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
+auto tag_processor_v2::process_attr_text(mxml::element *element, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
 {
-	json::element obj = evaluate_el(scope, attr->value());
+	json::element obj = evaluate_el(scope, attr.value());
 
 	if (not obj.is_null())
 	{
@@ -456,9 +463,7 @@ auto tag_processor_v2::process_attr_text(xml::element *element, xml::attribute *
 		if (obj.is_object() and obj.contains("is-node-set") and obj["is-node-set"])
 		{
 			auto s = scope.get_nodeset(obj["node-set-name"].as<std::string>());
-
-			for (auto &n : s)
-				text += n->str();
+			text = s.str();
 		}
 		else
 			text = obj.as<std::string>();
@@ -469,7 +474,7 @@ auto tag_processor_v2::process_attr_text(xml::element *element, xml::attribute *
 		{
 			element->set_text("");
 
-			xml::document subDoc("<foo>" + text + "</foo>");
+			mxml::document subDoc("<foo>" + text + "</foo>");
 			auto foo = subDoc.front();
 			for (auto &n : foo.nodes())
 				element->nodes().emplace(element->end(), std::move(n));
@@ -481,20 +486,20 @@ auto tag_processor_v2::process_attr_text(xml::element *element, xml::attribute *
 
 // --------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_switch(xml::element *element, xml::attribute *attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor_v2::process_attr_switch(mxml::element *element, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
-	auto vo = evaluate_el(scope, attr->value());
+	auto vo = evaluate_el(scope, attr.value());
 	std::string v;
 	if (not vo.is_null())
 		v = vo.as<std::string>();
 
-	xml::element e2(*element);
+	mxml::element e2(*element);
 	element->nodes().clear();
 
 	auto cases = e2.find(".//*[@case]");
 
-	xml::element *selected = nullptr;
-	xml::element *wildcard = nullptr;
+	mxml::element *selected = nullptr;
+	mxml::element *wildcard = nullptr;
 	for (auto c : cases)
 	{
 		auto ca = c->get_attribute(element->prefix_tag("case", ns()));
@@ -522,20 +527,20 @@ auto tag_processor_v2::process_attr_switch(xml::element *element, xml::attribute
 
 // -----------------------------------------------------------------------
 
-auto tag_processor_v2::process_attr_with(xml::element * /*element*/, xml::attribute *attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor_v2::process_attr_with(mxml::element * /*element*/, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
-	evaluate_el_with(scope, attr->value());
+	evaluate_el_with(scope, attr.value());
 	return AttributeAction::none;
 }
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader)
 {
 	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
 	std::smatch m;
-	auto s = attr->value();
+	auto s = attr.value();
 
 	if (not std::regex_match(s, m, kEachRx))
 		throw std::runtime_error("Invalid attribute value for :each");
@@ -547,7 +552,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 
 	if (collection.is_array())
 	{
-		xml::element *parent = node->parent();
+		auto *parent = node->parent();
 		assert(parent);
 
 		size_t collectionSize = collection.size();
@@ -569,11 +574,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 									   { "first", ix == 0 },
 									   { "last", ix + 1 == collectionSize } });
 
-			xml::element clone(*node);
-			clone.attributes().erase(attr->get_qname());
+			mxml::element clone(*node);
+			clone.attributes().erase(attr.get_qname());
 
 			auto i = parent->emplace(node, std::move(clone)); // insert before processing, to assign namespaces
-			process_node(i, subscope, dir, loader);
+			process_node(i.operator->(), subscope, dir, loader);
 
 			++ix;
 		}
@@ -584,9 +589,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_each(xml::eleme
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
-	auto v = evaluate_el_attr(scope, attr->value());
+	auto v = evaluate_el_attr(scope, attr.value());
 	for (auto vi : v)
 		node->set_attribute(vi.first, vi.second);
 
@@ -595,12 +600,12 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_attr(xml::eleme
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
-	auto s = attr->value();
+	auto s = attr.value();
 
 	process_el(scope, s);
-	node->set_attribute(attr->name(), s);
+	node->set_attribute(attr.name(), s);
 
 	return AttributeAction::none;
 }
@@ -608,23 +613,23 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_generic(xml::el
 // --------------------------------------------------------------------
 
 tag_processor_v2::AttributeAction tag_processor_v2::process_attr_boolean_value(
-	xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+	mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
-	auto s = attr->value();
+	auto s = attr.value();
 
 	if (evaluate_el(scope, s))
-		node->set_attribute(attr->name(), attr->name());
+		node->set_attribute(attr.name(), attr.name());
 	else
-		node->attributes().erase(attr->name());
+		node->attributes().erase(attr.name());
 
 	return AttributeAction::none;
 }
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
-	auto type = attr->value();
+	auto type = attr.value();
 
 	if (type == "javascript" or type == "css")
 	{
@@ -632,9 +637,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 
 		for (auto &n : node->nodes())
 		{
-			xml::text *text = dynamic_cast<xml::text *>(&n);
-			if (text == nullptr)
+			if (n.type() != mxml::node_type::text and n.type() != mxml::node_type::cdata)
 				continue;
+			mxml::node_with_text *text = static_cast<mxml::node_with_text *>(&n);
 
 			std::string s = text->get_text();
 			std::string t;
@@ -670,9 +675,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 	{
 		for (auto &n : node->nodes())
 		{
-			xml::text *text_p = dynamic_cast<xml::text *>(&n);
-			if (text_p == nullptr)
+			if (n.type() != mxml::node_type::text and n.type() != mxml::node_type::cdata)
 				continue;
+			mxml::node_with_text *text_p = static_cast<mxml::node_with_text *>(&n);
 
 			auto &text = *text_p;
 
@@ -707,7 +712,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 
 				if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 				{
-					xml::document subDoc("<foo>" + m + "</foo>");
+					mxml::document subDoc("<foo>" + m + "</foo>");
 					for (auto &subnode : subDoc.front().nodes())
 						node->nodes().emplace(next, std::move(subnode));
 
@@ -715,7 +720,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 
 					s = s.substr(j + 2);
 					b = 0;
-					node->nodes().insert(next, xml::text(s));
+					node->nodes().insert(next, mxml::text(s));
 				}
 				else
 				{
@@ -733,11 +738,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_inline(xml::ele
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::element *node, xml::attribute *attr, scope &parentScope, std::filesystem::path dir, basic_template_processor &loader, TemplateIncludeAction tia)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(mxml::element *node, mxml::attribute &attr, scope &parentScope, std::filesystem::path dir, basic_template_processor &loader, TemplateIncludeAction tia)
 {
 	AttributeAction result = AttributeAction::none;
 
-	auto av = attr->value();
+	auto av = attr.value();
 
 	auto o = evaluate_el_link(parentScope, av);
 	json::element params;
@@ -747,37 +752,38 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 	auto templates = resolve_fragment_spec(node, dir, loader, o, parentScope);
 
-	for (auto &templ : templates)
+	for (auto &templ : templates.nodes())
 	{
-		xml::element *el = dynamic_cast<xml::element *>(templ.get());
+		mxml::element *el = dynamic_cast<mxml::element *>(&templ);
 
 		if (el == nullptr)
 		{
 			if (tia == TemplateIncludeAction::include)
 			{
-				auto i = node->nodes().emplace(node->end(), *templ);
-				process_node(i, parentScope, dir, loader);
+				auto i = node->nodes().emplace(node->end(), templ);
+				process_node(i.operator->(), parentScope, dir, loader);
 			}
 			else
 			{
-				xml::element::node_iterator i;
-
 				if (tia == TemplateIncludeAction::insert)
-					i = node->nodes().emplace(node->end(), *templ);
+				{
+					auto i = node->nodes().emplace(node->end(), templ);
+					process_node(i.operator->(), parentScope, dir, loader);
+				}
 				else
 				{
-					i = node->parent()->nodes().emplace(node, *templ);
+					auto i = node->parent()->nodes().emplace(node, templ);
+					process_node(i.operator->(), parentScope, dir, loader);
+
 					result = AttributeAction::remove;
 				}
-
-				process_node(i, parentScope, dir, loader);
 			}
 
 			continue;
 		}
 
 		// take a full copy, and fix up the prefixes for the namespaces, if required
-		xml::element &replacement(*el);
+		mxml::element &replacement(*el);
 
 		scope scope(parentScope);
 
@@ -811,7 +817,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 					scope.put(argname, pe);
 
 					auto ns = resolve_fragment_spec(node, dir, loader, po, parentScope);
-					if (ns.empty())
+					if (ns.nodes().empty())
 						scope.put(argname, po);
 					else
 						scope.set_nodeset(argname, std::move(ns));
@@ -831,12 +837,12 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 			for (auto &child : replacement.nodes())
 			{
 				auto i = node->nodes().emplace(node->end(), std::move(child));
-				process_node(i, scope, dir, loader);
+				process_node(i.operator->(), scope, dir, loader);
 			}
 		}
 		else
 		{
-			xml::element::node_iterator i;
+			mxml::element::iterator i;
 
 			if (tia == TemplateIncludeAction::insert)
 				i = node->emplace(node->end(), std::move(replacement));
@@ -846,7 +852,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 				result = AttributeAction::remove;
 			}
 
-			auto e2 = dynamic_cast<xml::element *>(&*i);
+			auto e2 = dynamic_cast<mxml::element *>(&*i);
 			if (e2 != nullptr)
 			{
 				auto &attrs = e2->attributes();
@@ -858,12 +864,12 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 				attrs.erase(i->prefix_tag("fragment", ns()));
 			}
 
-			process_node(i, scope, dir, loader);
+			process_node(i.operator->(), scope, dir, loader);
 		}
 	}
 
 	if (result == AttributeAction::remove)
-		node->parent()->flatten_text();
+		static_cast<mxml::element *>(node->parent())->flatten_text();
 	else
 		node->flatten_text();
 
@@ -872,9 +878,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element *node, xml::attribute *attr, scope &/*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(mxml::element *node, mxml::attribute &attr, scope & /*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
 {
-	auto mode = attr->value();
+	auto mode = attr.value();
 
 	AttributeAction result = AttributeAction::none;
 
@@ -885,11 +891,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::ele
 	else if (mode == "all-but-first")
 	{
 		if (node->size() > 1)
-			node->erase(node->begin() + 1, node->end());
+			node->erase(std::next(node->begin()), node->end());
 	}
 	else if (mode == "tag")
 	{
-		auto i = xml::element::iterator(node);
+		auto i = mxml::element::iterator(node);
 
 		for (auto &c : *node)
 		{
@@ -906,11 +912,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::ele
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	for (;;)
 	{
-		auto s = attr->value();
+		auto s = attr.value();
 
 		s = process_el_2(scope, s);
 
@@ -931,9 +937,9 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 		trim(cs);
 
 		if (cs.empty())
-			c->set_text(s);
+			c->set_value(s);
 		else
-			c->set_text(cs + ' ' + s);
+			c->set_value(cs + ' ' + s);
 
 		break;
 	}
@@ -943,11 +949,11 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_classappend(xml
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml::element *node, xml::attribute *attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	for (;;)
 	{
-		auto s = attr->value();
+		auto s = attr.value();
 
 		s = process_el_2(scope, s);
 
@@ -972,14 +978,14 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_styleappend(xml
 
 		if (cs.empty())
 		{
-			c->set_text(s);
+			c->set_value(s);
 			break;
 		}
 
 		if (cs.back() == ';')
-			c->set_text(cs + ' ' + s);
+			c->set_value(cs + ' ' + s);
 		else
-			c->set_text(cs + "; " + s);
+			c->set_value(cs + "; " + s);
 
 		break;
 	}

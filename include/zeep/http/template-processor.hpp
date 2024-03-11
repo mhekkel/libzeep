@@ -18,6 +18,8 @@
 #include <zeep/http/reply.hpp>
 #include <zeep/http/tag-processor.hpp>
 
+#include <mxml.hpp>
+
 // --------------------------------------------------------------------
 //
 
@@ -128,14 +130,14 @@ class basic_template_processor
 	// tag processor support
 
 	/// \brief process all the tags in this node
-	virtual void process_tags(xml::node* node, const scope& scope);
+	virtual void process_tags(mxml::node* node, const scope& scope);
 
   protected:
 
 	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
 
 	/// \brief process only the tags with the specified namespace prefixes
-	virtual void process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces);
+	virtual void process_tags(mxml::element* node, const scope& scope, std::set<std::string> registeredNamespaces);
 
   public:
 
@@ -168,7 +170,7 @@ class basic_template_processor
   public:
 
 	/// \brief Use load_template to fetch the XHTML template file
-	virtual void load_template(const std::string& file, xml::document& doc);
+	virtual void load_template(const std::string& file, mxml::document& doc);
 
 	/// \brief Check if the argument \a file contains a valid reference to an XHTML template file and return the path, if any.
 	virtual std::tuple<bool, std::filesystem::path> is_template_file(const std::string& file);

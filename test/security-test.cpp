@@ -18,7 +18,7 @@
 #include <zeep/http/server.hpp>
 
 #include "client-test-code.hpp"
-#include "../src/signals.hpp"
+#include "../lib-http/src/signals.hpp"
 
 namespace z = zeep;
 namespace zx = zeep::xml;

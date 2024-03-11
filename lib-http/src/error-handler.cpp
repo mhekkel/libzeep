@@ -9,6 +9,8 @@
 #include <zeep/http/error-handler.hpp>
 #include <zeep/http/security.hpp>
 
+
+
 namespace zeep::http
 {
 
@@ -69,7 +71,7 @@ bool error_handler::create_error_reply(const request &req, status_type status, c
 		}
 		catch (const std::exception &)
 		{
-			using namespace xml::literals;
+			using namespace mxml::literals;
 
 			auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:z="http://www.hekkelman.com/libzeep/m2" xml:lang="en" lang="en">

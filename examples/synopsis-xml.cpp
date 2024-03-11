@@ -9,7 +9,7 @@
 //[ synopsis_xml_main
 int main()
 {
-    using namespace zeep::xml::literals; 
+    using namespace mxml::literals; 
 
     /* Construct an XML document in memory using a string literal */
     auto doc = 

@@ -20,6 +20,8 @@
 
 #include "format.hpp"
 
+
+
 namespace zeep::http
 {
 
@@ -1821,16 +1823,9 @@ void scope::select_object(const object &o)
 
 auto scope::get_nodeset(const std::string &name) const -> node_set_type
 {
-	if (m_nodesets.count(name))
-	{
-		node_set_type result;
-
-		// return a clone of the stored nodes.
-		for (auto &n : m_nodesets.at(name))
-			result.emplace_back(n->clone());
-
-		return result;
-	}
+	auto i = m_nodesets.find(name);
+	if (i != m_nodesets.end())
+		return i->second;
 
 	if (m_next == nullptr)
 		return {};

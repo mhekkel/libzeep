@@ -11,9 +11,9 @@
 /// html::controller and provides a default for /login and /logout handling.
 
 #include <zeep/config.hpp>
-
 #include <zeep/http/html-controller.hpp>
-#include <zeep/xml/document.hpp>
+
+#include <mxml.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -47,7 +47,7 @@ class login_controller : public html_controller
 	/// in case of a valid login.
 	///
 	/// \param req		The request that triggered this call
-	virtual xml::document load_login_form(const request &req) const;
+	virtual mxml::document load_login_form(const request &req) const;
 
 	/// \brief Create an error reply for an unauthorized access
 	///

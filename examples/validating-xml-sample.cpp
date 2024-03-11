@@ -25,14 +25,14 @@ int main()
     };
 
     /* Create document and set the entity loader */
-    zeep::xml::document doc;
+    mxml::document doc;
     doc.set_entity_loader(loader);
 
     /* Read a file */
     std::ifstream is("sample.xml");
     is >> doc;
 
-    using namespace zeep::xml::literals;
+    using namespace mxml::literals;
 
     /* Compare the doc with an in-memory constructed document, note that spaces are ignored */
     if (doc == R"(<foo><bar>Hello, world!</bar></foo>)"_xml)

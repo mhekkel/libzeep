@@ -13,7 +13,7 @@
 #include <zeep/http/server.hpp>
 #include <zeep/streambuf.hpp>
 
-#include "../src/signals.hpp"
+#include "../lib-http/src/signals.hpp"
 #include "client-test-code.hpp"
 
 using namespace std;
@@ -22,7 +22,7 @@ namespace zx = zeep::xml;
 
 using webapp = zeep::http::html_controller;
 
-void compare(zeep::xml::document &a, zeep::xml::document &b)
+void compare(mxml::document &a, mxml::document &b)
 {
 	BOOST_CHECK_EQUAL(a, b);
 	if (a != b)
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 
 // BOOST_AUTO_TEST_CASE(webapp_4)
 // {
-// 	using namespace zeep::xml::literals;
+// 	using namespace mxml::literals;
 
 // 	webapp app;
 // 	zx::document doc;

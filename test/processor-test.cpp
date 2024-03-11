@@ -1,48 +1,34 @@
 #include "zeep/http/asio.hpp"
 
-#define BOOST_TEST_MODULE Processor_Test
-#include <boost/test/included/unit_test.hpp>
+#include "test-main.hpp"
 
-#include <zeep/streambuf.hpp>
-#include <zeep/http/template-processor.hpp>
-#include <zeep/http/tag-processor.hpp>
 #include <zeep/http/el-processing.hpp>
+#include <zeep/http/tag-processor.hpp>
+#include <zeep/http/template-processor.hpp>
+#include <zeep/streambuf.hpp>
 
-using namespace std;
-
-#ifndef DOCROOT
-#define DOCROOT "./lib-http/test/"
-#endif
+#include <iostream>
 
 using json = zeep::json::element;
-using namespace zeep::xml::literals;
+using namespace mxml::literals;
 
-void process_and_compare(zeep::xml::document& a, zeep::xml::document& b, const zeep::http::scope& scope = {})
+void process_and_compare(mxml::document &a, mxml::document &b, const zeep::http::scope &scope = {})
 {
-	zeep::http::template_processor p(DOCROOT);
+	zeep::http::template_processor p(gDocrootDir);
 	zeep::http::tag_processor_v2 tp;
 	tp.process_xml(a.child(), scope, "", p);
- 
-	BOOST_TEST(a == b);
-	if (a != b)
-	{
-		cerr << string(80, '-') << endl
-			 << a << endl
-			 << string(80, '-') << endl
-			 << b << endl
-			 << string(80, '-') << endl;
-	}
+
+	CHECK(a == b);
 }
 
-
-BOOST_AUTO_TEST_CASE(test_0)
+TEST_CASE("test_0")
 {
 	std::string s = "application/pdf";
-	BOOST_TEST(not zeep::http::process_el({}, s));
-	BOOST_TEST(s == "application/pdf");
+	CHECK(not zeep::http::process_el({}, s));
+	CHECK(s == "application/pdf");
 }
 
-BOOST_AUTO_TEST_CASE(test_1)
+TEST_CASE("test_1")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -63,7 +49,7 @@ BOOST_AUTO_TEST_CASE(test_1)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_2)
+TEST_CASE("test_2")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -78,12 +64,12 @@ BOOST_AUTO_TEST_CASE(test_2)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("b", zeep::json::element{ "a", "b", "c"});
- 
+	scope.put("b", zeep::json::element{ "a", "b", "c" });
+
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_3)
+TEST_CASE("test_3")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -99,11 +85,11 @@ BOOST_AUTO_TEST_CASE(test_3)
 
 	zeep::http::scope scope;
 	scope.put("x", "<hallo, wereld!>");
- 
+
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_3a)
+TEST_CASE("test_3a")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -119,11 +105,11 @@ BOOST_AUTO_TEST_CASE(test_3a)
 
 	zeep::http::scope scope;
 	scope.put("x", "<b>hallo, wereld!</b>");
- 
+
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_4)
+TEST_CASE("test_4")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -139,11 +125,11 @@ BOOST_AUTO_TEST_CASE(test_4)
 
 	zeep::http::scope scope;
 	scope.put("x", "hallo, wereld!");
- 
+
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_5)
+TEST_CASE("test_5")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -159,11 +145,11 @@ BOOST_AUTO_TEST_CASE(test_5)
 
 	zeep::http::scope scope;
 	scope.put("x", "<b>hallo, wereld!</b>");
- 
+
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_6)
+TEST_CASE("test_6")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -216,12 +202,12 @@ BOOST_AUTO_TEST_CASE(test_6)
 	zeep::http::scope scope;
 	scope.put("x", "\"<b>'hallo, wereld!'</b>\"");
 	scope.put("y", "Een \"moeilijke\" string");
-	scope.put("a", zeep::json::element{ "a", "b", "c"});
- 
+	scope.put("a", zeep::json::element{ "a", "b", "c" });
+
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_8)
+TEST_CASE("test_8")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -236,12 +222,12 @@ BOOST_AUTO_TEST_CASE(test_8)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::json::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_8a)
+TEST_CASE("test_8a")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -256,12 +242,12 @@ BOOST_AUTO_TEST_CASE(test_8a)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::json::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_9)
+TEST_CASE("test_9")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -276,12 +262,12 @@ BOOST_AUTO_TEST_CASE(test_9)
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::json::element{ "a", "b", "c"});
+	scope.put("a", zeep::json::element{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_10)
+TEST_CASE("test_10")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -301,7 +287,7 @@ BOOST_AUTO_TEST_CASE(test_10)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_11)
+TEST_CASE("test_11")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -321,7 +307,7 @@ BOOST_AUTO_TEST_CASE(test_11)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_12)
+TEST_CASE("test_12")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -341,7 +327,7 @@ BOOST_AUTO_TEST_CASE(test_12)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_13)
+TEST_CASE("test_13")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -364,7 +350,7 @@ BOOST_AUTO_TEST_CASE(test_13)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_14)
+TEST_CASE("test_14")
 {
 	try
 	{
@@ -384,23 +370,23 @@ BOOST_AUTO_TEST_CASE(test_14)
 </data>
 	)"_xml;
 
-		zeep::http::template_processor p(DOCROOT);
+		zeep::http::template_processor p(gDocrootDir);
 		zeep::http::tag_processor_v2 tp;
 
-		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" }}, "");
+		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" } }, "");
 
 		zeep::http::scope scope(req);
 		scope.put("ok", true);
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error&)
+	catch (const std::runtime_error &)
 	{
 		std::clog << "skipping test 14 since locale nl_NL.UTF-8 is not available\n";
 	}
 }
 
-BOOST_AUTO_TEST_CASE(test_15)
+TEST_CASE("test_15")
 {
 	try
 	{
@@ -414,7 +400,7 @@ BOOST_AUTO_TEST_CASE(test_15)
 	</data>
 		)"_xml;
 
-#ifdef __APPLE__	// no, really.. Danish macOS users are different
+#ifdef __APPLE__ // no, really.. Danish macOS users are different
 		auto doc_test = R"(<?xml version="1.0"?>
 	<data>
 	<test> 7 August 2019, 12:14</test>
@@ -428,23 +414,23 @@ BOOST_AUTO_TEST_CASE(test_15)
 		)"_xml;
 #endif
 
-		zeep::http::template_processor p(DOCROOT);
+		zeep::http::template_processor p(gDocrootDir);
 		zeep::http::tag_processor_v2 tp;
 
-		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "da, en-US;q=0.7, en;q=0.3" }}, "");
+		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "da, en-US;q=0.7, en;q=0.3" } }, "");
 
 		zeep::http::scope scope(req);
 		scope.put("ok", true);
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error&)
+	catch (const std::runtime_error &)
 	{
 		std::clog << "skipping test 15 since locale da_DK.UTF-8 is not available\n";
 	}
 }
 
-BOOST_AUTO_TEST_CASE(test_16)
+TEST_CASE("test_16")
 {
 	try
 	{
@@ -468,20 +454,20 @@ BOOST_AUTO_TEST_CASE(test_16)
 	</data>
 		)"_xml;
 
-		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "en-GB, en-US;q=0.7, en;q=0.3" }}, "");
+		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "en-GB, en-US;q=0.7, en;q=0.3" } }, "");
 
 		zeep::http::scope scope(req);
 		scope.put("ok", true);
 
 		process_and_compare(doc, doc_test, scope);
 	}
-	catch (const std::runtime_error&)
+	catch (const std::runtime_error &)
 	{
 		std::clog << "skipping test 16 since locale en_GB.UTF-8 is not available\n";
 	}
 }
 
-// BOOST_AUTO_TEST_CASE(test_17)
+// TEST_CASE("test_17")
 // {
 // 	try
 // 	{
@@ -512,7 +498,7 @@ BOOST_AUTO_TEST_CASE(test_16)
 // 	}
 // }
 
-BOOST_AUTO_TEST_CASE(test_18)
+TEST_CASE("test_18")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -536,7 +522,7 @@ BOOST_AUTO_TEST_CASE(test_18)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_19)
+TEST_CASE("test_19")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -560,7 +546,7 @@ BOOST_AUTO_TEST_CASE(test_19)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_20)
+TEST_CASE("test_20")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -604,7 +590,7 @@ BOOST_AUTO_TEST_CASE(test_20)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_21)
+TEST_CASE("test_21")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -626,7 +612,7 @@ BOOST_AUTO_TEST_CASE(test_21)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_22)
+TEST_CASE("test_22")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -669,16 +655,16 @@ BOOST_AUTO_TEST_CASE(test_22)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_22a)
+TEST_CASE("test_22a")
 {
-	zeep::http::template_processor p(DOCROOT);
+	zeep::http::template_processor p(gDocrootDir);
 
-	zeep::xml::document doc1;
+	mxml::document doc1;
 	p.load_template("fragment-file :: frag1", doc1);
 
 	auto doct = R"(<div>fragment-1</div>)"_xml;
 
-	BOOST_TEST(doc1 == doct);
+	CHECK(doc1 == doct);
 	if (doc1 != doct)
 	{
 		std::clog << doc1 << '\n'
@@ -686,7 +672,7 @@ BOOST_AUTO_TEST_CASE(test_22a)
 	}
 }
 
-BOOST_AUTO_TEST_CASE(test_23)
+TEST_CASE("test_23")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -717,7 +703,7 @@ BOOST_AUTO_TEST_CASE(test_23)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_24)
+TEST_CASE("test_24")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -744,7 +730,7 @@ BOOST_AUTO_TEST_CASE(test_24)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_25)
+TEST_CASE("test_25")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -763,7 +749,7 @@ BOOST_AUTO_TEST_CASE(test_25)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_26)
+TEST_CASE("test_26")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -788,7 +774,7 @@ BOOST_AUTO_TEST_CASE(test_26)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_27)
+TEST_CASE("test_27")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -805,7 +791,7 @@ Error processing element 'span': Assertion failed for '1==0'<span/>
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_28)
+TEST_CASE("test_28")
 {
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -824,7 +810,7 @@ in een blok<em>met een em</em>
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_29)
+TEST_CASE("test_29")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
@@ -852,7 +838,7 @@ fragmentref
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_30)
+TEST_CASE("test_30")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:th="http://www.hekkelman.com/libzeep/m2">
@@ -877,7 +863,7 @@ BOOST_AUTO_TEST_CASE(test_30)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_31)
+TEST_CASE("test_31")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:th="http://www.hekkelman.com/libzeep/m2">
@@ -902,7 +888,7 @@ BOOST_AUTO_TEST_CASE(test_31)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_32)
+TEST_CASE("test_32")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:th="http://www.hekkelman.com/libzeep/m2">
@@ -926,7 +912,7 @@ BOOST_AUTO_TEST_CASE(test_32)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_32a)
+TEST_CASE("test_32a")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -948,7 +934,7 @@ BOOST_AUTO_TEST_CASE(test_32a)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_32b)
+TEST_CASE("test_32b")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -969,7 +955,7 @@ BOOST_AUTO_TEST_CASE(test_32b)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_32c)
+TEST_CASE("test_32c")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -990,8 +976,7 @@ BOOST_AUTO_TEST_CASE(test_32c)
 	process_and_compare(doc, doc_test, scope);
 }
 
-
-BOOST_AUTO_TEST_CASE(test_32d)
+TEST_CASE("test_32d")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1016,7 +1001,7 @@ BOOST_AUTO_TEST_CASE(test_32d)
 	process_and_compare(doc, doc_test, scope);
 }
 
-// BOOST_AUTO_TEST_CASE(test_32d)
+// TEST_CASE("test_32d")
 // {
 // 	auto doc = R"xml(<?xml version="1.0"?>
 // <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1037,7 +1022,7 @@ BOOST_AUTO_TEST_CASE(test_32d)
 // 	process_and_compare(doc, doc_test, scope);
 // }
 
-BOOST_AUTO_TEST_CASE(test_33)
+TEST_CASE("test_33")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1058,7 +1043,7 @@ BOOST_AUTO_TEST_CASE(test_33)
 	process_and_compare(doc, doc_test);
 }
 
-BOOST_AUTO_TEST_CASE(test_34)
+TEST_CASE("test_34")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1086,7 +1071,7 @@ BOOST_AUTO_TEST_CASE(test_34)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_35)
+TEST_CASE("test_35")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1108,7 +1093,7 @@ BOOST_AUTO_TEST_CASE(test_35)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_36)
+TEST_CASE("test_36")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1131,7 +1116,7 @@ BOOST_AUTO_TEST_CASE(test_36)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_37)
+TEST_CASE("test_37")
 {
 	auto doc = R"xml(<?xml version="1.0"?>
 <data xmlns:z="http://www.hekkelman.com/libzeep/m2">
@@ -1152,7 +1137,7 @@ BOOST_AUTO_TEST_CASE(test_37)
 	process_and_compare(doc, doc_test, scope);
 }
 
-BOOST_AUTO_TEST_CASE(test_38)
+TEST_CASE("test_38")
 {
 	auto doc = R"xml(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html>

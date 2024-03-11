@@ -11,12 +11,12 @@
 
 #include <zeep/config.hpp>
 
+#include "zeep/http/asio.hpp"
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
 #include <zeep/json/element.hpp>
-#include <zeep/xml/document.hpp>
 
-#include "zeep/http/asio.hpp"
+#include <mxml.hpp>
 
 namespace zeep::http
 {
@@ -116,17 +116,17 @@ class reply
 		return get_header("Content-Type");
 	}
 
- 	/// Set the Content-Type header to \a type
+	/// Set the Content-Type header to \a type
 	void set_content_type(const std::string &type)
 	{
 		set_header("Content-Type", type);
 	}
 
 	/// Set the content and the content-type header depending on the content of doc (might be xhtml)
-	void set_content(xml::document &doc);
+	void set_content(mxml::document &doc);
 
 	/// Set the content and the content-type header to text/xml
-	void set_content(const xml::element &data);
+	void set_content(const mxml::element &data);
 
 	/// Set the content and the content-type header based on JSON data
 	void set_content(const json::element &json);

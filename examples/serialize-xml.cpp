@@ -25,7 +25,7 @@ int main()
 {
     /* Read in a text document containing XML and parse it into a document object */
     std::ifstream file("test.xml");
-    zeep::xml::document doc(file);
+    mxml::document doc(file);
     
     std::vector<Person> persons;
     /* Deserialize all persons into an array */
