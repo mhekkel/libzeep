@@ -127,7 +127,8 @@ if(UNIX)
 endif()
 
 # Generate the revision.hpp file
-write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
+# write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
+write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/lib-http/src" LIB_NAME "libzeep")
 
 # Library rules
 add_library(zeep)

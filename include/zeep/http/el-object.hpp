@@ -50,7 +50,7 @@ template <typename T>
 concept ObjectType = std::is_same_v<object, std::remove_cvref_t<T>>;
 
 template <typename T>
-concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_floating_point_v<std::remove_cvref_t<T>>) and not std::is_same_v<std::remove_cvref_t<T>, bool>);
+concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_floating_point_v<std::remove_cvref_t<T>>)and not std::is_same_v<std::remove_cvref_t<T>, bool>);
 
 template <typename T>
 concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integral_v<T> and not std::is_floating_point_v<T>);
@@ -404,10 +404,28 @@ class object
 	{
 	}
 
-	object(std::initializer_list<object> v)
-		: m_type(value_type::array)
-		, m_data(v)
+	object(std::initializer_list<object> init)
 	{
+		bool isAnObject = std::all_of(init.begin(), init.end(), [](auto &ref)
+			{ return ref.is_array() and ref.m_data.m_array->size() == 2 and ref.m_data.m_array->front().is_string(); });
+
+		if (isAnObject)
+		{
+			m_type = value_type::object;
+			m_data = value_type::object;
+
+			for (auto &element : init)
+			{
+				m_data.m_object->emplace(
+					std::move(*element.m_data.m_array->front().m_data.m_string),
+					std::move(element.m_data.m_array->back()));
+			}
+		}
+		else
+		{
+			m_type = value_type::array;
+			m_data.m_array = create<array_type>(init.begin(), init.end());
+		}
 	}
 
 	template <StringType T>
@@ -696,7 +714,7 @@ class object
 	// I/O
 
 	friend std::ostream &operator<<(std::ostream &os, const object &o);
-	friend void serialize(std::ostream& os, const object& v);
+	friend void serialize(std::ostream &os, const object &v);
 
   private:
 	value_type m_type = value_type::null;
