@@ -130,7 +130,7 @@ endif()
 
 # Generate the revision.hpp file
 # write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
-write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/lib-http/src" LIB_NAME "libzeep")
+write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 
 # Library rules
 add_library(zeep)
@@ -177,42 +177,40 @@ list(APPEND ZEEP_HEADERS
 )
 
 list(APPEND ZEEP_SRC
-	lib-http/src/access-control.cpp
-	lib-http/src/connection.cpp
-	lib-http/src/controller.cpp
-	lib-http/src/crypto.cpp
-	lib-http/src/daemon.cpp
-	lib-http/src/el-object.cpp
-	lib-http/src/el-processing.cpp
-	lib-http/src/error-handler.cpp
-	lib-http/src/format.cpp
-	lib-http/src/glob.cpp
-	lib-http/src/html-controller.cpp
-	lib-http/src/login-controller.cpp
-	lib-http/src/message-parser.cpp
-	lib-http/src/reply.cpp
-	lib-http/src/request.cpp
-	lib-http/src/rest-controller.cpp
-	lib-http/src/security.cpp
-	lib-http/src/server.cpp
-	lib-http/src/uri.cpp
-	# lib-http/src/soap-controller.cpp
-	lib-http/src/tag-processor-v2.cpp
-	lib-http/src/tag-processor.cpp
-	lib-http/src/template-processor.cpp
-	lib-http/src/signals.cpp
-	# lib-json/src/element.cpp
-	# lib-json/src/json-parser.cpp
+	src/access-control.cpp
+	src/connection.cpp
+	src/controller.cpp
+	src/crypto.cpp
+	src/daemon.cpp
+	src/el-object.cpp
+	src/el-processing.cpp
+	src/error-handler.cpp
+	src/format.cpp
+	src/glob.cpp
+	src/html-controller.cpp
+	src/login-controller.cpp
+	src/message-parser.cpp
+	src/reply.cpp
+	src/request.cpp
+	src/rest-controller.cpp
+	src/security.cpp
+	src/server.cpp
+	src/uri.cpp
+	# src/soap-controller.cpp
+	src/tag-processor-v2.cpp
+	src/tag-processor.cpp
+	src/template-processor.cpp
+	src/signals.cpp
 )
 
 if(USE_RSRC)
 	list(APPEND ZEEP_SRC
-		lib-http/src/controller-rsrc.cpp)
+		src/controller-rsrc.cpp)
 endif()
 
 if(HTTP_SERVER_HAS_PREFORK)
 	list(APPEND ZEEP_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
-	list(APPEND ZEEP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lib-http/src/preforked-server.cpp)
+	list(APPEND ZEEP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/preforked-server.cpp)
 endif()
 
 target_sources(zeep

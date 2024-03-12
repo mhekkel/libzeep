@@ -4,7 +4,7 @@
 #include <zeep/nvp.hpp>
 #include <zeep/json-serializer.hpp>
 
-#include "../lib-http/src/signals.hpp"
+#include "../src/signals.hpp"
 
 #include "test-main.hpp"
 
