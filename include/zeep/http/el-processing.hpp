@@ -18,14 +18,12 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
-#include <zeep/json/element.hpp>
+#include <zeep/http/el-object.hpp>
 
 #include <mxml.hpp>
 
 namespace zeep::http
 {
-
-using object = ::zeep::json::element;
 
 class scope;
 class basic_server;

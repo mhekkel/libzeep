@@ -20,8 +20,6 @@
 
 #include "format.hpp"
 
-
-
 namespace zeep::http
 {
 
@@ -57,7 +55,6 @@ bool is_name_char(unicode uc)
 }
 
 using request = http::request;
-using object = json::element;
 
 // --------------------------------------------------------------------
 
@@ -850,11 +847,11 @@ object interpreter::parse_relational_expr()
 			break;
 		case token_type::ge:
 			match(m_lookahead);
-			result = (parse_additive_expr() <= result);
+			result = (result >= parse_additive_expr());
 			break;
 		case token_type::gt:
 			match(m_lookahead);
-			result = (parse_additive_expr() < result);
+			result = (result > parse_additive_expr());
 			break;
 		case token_type::not_:
 		{
@@ -1642,7 +1639,8 @@ class security_expr_util_object : public expression_utility_object<security_expr
 		}
 		else if (method == "username")
 		{
-			result = scope.get_credentials()["username"];
+#warning FIX
+			// result = scope.get_credentials()["username"];
 		}
 
 		return result;
@@ -1758,7 +1756,7 @@ const object &scope::lookup(const std::string &name, bool includeSelected) const
 	if (i != m_data.end())
 		result = &i->second;
 	else if (includeSelected and m_selected.contains(name))
-		result = &*m_selected.find(name);
+		result = &m_selected.at(name);
 	else if (m_next != nullptr)
 		result = &m_next->lookup(name, includeSelected);
 
