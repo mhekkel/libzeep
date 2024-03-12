@@ -1639,8 +1639,7 @@ class security_expr_util_object : public expression_utility_object<security_expr
 		}
 		else if (method == "username")
 		{
-#warning FIX
-			// result = scope.get_credentials()["username"];
+			result = scope.get_credentials()["username"].get<std::string>();
 		}
 
 		return result;
@@ -1807,7 +1806,7 @@ std::string scope::get_context_name() const
 	return m_server ? m_server->get_context_name() : "";
 }
 
-json::element scope::get_credentials() const
+nlohmann::json scope::get_credentials() const
 {
 	if (m_req == nullptr or m_server == nullptr)
 		throw zeep::exception("Invalid scope, no request, no server");

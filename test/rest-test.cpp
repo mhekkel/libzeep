@@ -1,18 +1,20 @@
-#include <random>
-
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/exception.hpp>
+#include <zeep/nvp.hpp>
+#include <zeep/json-serializer.hpp>
+
 #include "../lib-http/src/signals.hpp"
 
-#define BOOST_TEST_MODULE REST_Test
-#include <boost/test/included/unit_test.hpp>
+#include "test-main.hpp"
 
 #include "client-test-code.hpp"
 
+#include <iostream>
+#include <random>
+
 using namespace std;
 namespace z = zeep;
-namespace zx = zeep::xml;
 namespace zh = zeep::http;
 
 
@@ -34,7 +36,7 @@ enum class aggregatie_type
 	dag, week, maand, jaar
 };
 
-void to_element(zeep::json::element& e, aggregatie_type aggregatie)
+void to_json(nlohmann::json& e, aggregatie_type aggregatie)
 {
 	switch (aggregatie)
 	{
@@ -45,7 +47,7 @@ void to_element(zeep::json::element& e, aggregatie_type aggregatie)
 	}
 }
 
-void from_element(const zeep::json::element& e, aggregatie_type& aggregatie)
+void from_json(const nlohmann::json& e, aggregatie_type& aggregatie)
 {
 	if (e == "dag")				aggregatie = aggregatie_type::dag;
 	else if (e == "week")		aggregatie = aggregatie_type::week;
@@ -69,7 +71,7 @@ enum class grafiek_type
 	electriciteit_levering_laag
 };
 
-void to_element(zeep::json::element& e, grafiek_type type)
+void to_json(nlohmann::json& e, grafiek_type type)
 {
 	switch (type)
 	{
@@ -86,7 +88,7 @@ void to_element(zeep::json::element& e, grafiek_type type)
 	}
 }
 
-void from_element(const zeep::json::element& e, grafiek_type& type)
+void from_json(const nlohmann::json& e, grafiek_type& type)
 {
 		 if (e == "warmte")						 type = grafiek_type::warmte;						
 	else if (e == "electriciteit")				 type = grafiek_type::electriciteit;				
@@ -195,7 +197,7 @@ class e_rest_controller : public zeep::http::rest_controller
 	}
 };
 
-BOOST_AUTO_TEST_CASE(rest_1)	
+TEST_CASE("rest_1")	
 {
 	// simply see if the above compiles
 
@@ -208,13 +210,13 @@ BOOST_AUTO_TEST_CASE(rest_1)
 
 	zeep::http::request req{ "GET", "/ajax/all_data" };
 
-	BOOST_CHECK(rc.dispatch_request(s, req, rep));
+	CHECK(rc.dispatch_request(s, req, rep));
 	
-	BOOST_CHECK(rep.get_status() == zeep::http::ok);
-	BOOST_CHECK(rep.get_content_type() == "text/plain");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content_type() == "text/plain");
 }
 
-BOOST_AUTO_TEST_CASE(rest_2)	
+TEST_CASE("rest_2")	
 {
 	// start up a http server and stop it again
 
@@ -238,15 +240,15 @@ BOOST_AUTO_TEST_CASE(rest_2)
 	{
 		auto rep = simple_request(port, "GET /ajax/all_data HTTP/1.0\r\n\r\n");
 
-		BOOST_CHECK(rep.get_status() == zeep::http::ok);
-		BOOST_CHECK(rep.get_content_type() == "text/plain");
+		CHECK(rep.get_status() == zeep::http::ok);
+		CHECK(rep.get_content_type() == "text/plain");
 
 		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
-		BOOST_TEST(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
-		BOOST_TEST(reply.get_status() == zh::not_found);
-		BOOST_CHECK_EQUAL(reply.get_content_type(), "application/json");
+		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_content_type() == "application/json");
 	}
 	catch (const std::exception& e)
 	{

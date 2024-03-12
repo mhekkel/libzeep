@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// generic iterator classes used by zeep::json::element
+/// generic iterator classes used by zeep::nlohmann::json
 
 #include <zeep/config.hpp>
 

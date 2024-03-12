@@ -9,7 +9,8 @@
 #include <zeep/crypto.hpp>
 #include <zeep/http/security.hpp>
 #include <zeep/http/uri.hpp>
-#include <zeep/json/parser.hpp>
+
+#include <nlohmann/json.hpp>
 
 #include <iostream>
 
@@ -24,9 +25,9 @@ namespace
 
 // --------------------------------------------------------------------
 
-bool user_service::user_is_valid(const json::element &credentials) const
+bool user_service::user_is_valid(const nlohmann::json &credentials) const
 {
-	return user_is_valid(credentials["username"].as<std::string>());
+	return user_is_valid(credentials["username"].get<std::string>());
 }
 
 bool user_service::user_is_valid(const std::string &username) const
@@ -76,10 +77,9 @@ void security_context::validate_request(request &req) const
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
 
-			json::element JOSEHeader;
-			json::parse_json(decode_base64url(m[1].str()), JOSEHeader);
+			auto JOSEHeader = nlohmann::json::parse(decode_base64url(m[1].str()));
 
-			const json::element kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
+			const nlohmann::json kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
 
 			if (JOSEHeader != kJOSEHeader)
 				break;
@@ -89,13 +89,12 @@ void security_context::validate_request(request &req) const
 			if (sig != m[3].str())
 				break;
 
-			json::element credentials;
-			json::parse_json(decode_base64url(m[2].str()), credentials);
+			auto credentials = nlohmann::json::parse(decode_base64url(m[2].str()));
 
 			// check exp
 			using namespace std::chrono;
 
-			auto exp = credentials["exp"].as<int64_t>();
+			auto exp = credentials["exp"].get<int64_t>();
 			auto exp_t = time_point<system_clock>() + seconds{ exp };
 
 			if (system_clock::now() > exp_t)
@@ -109,7 +108,7 @@ void security_context::validate_request(request &req) const
 				break;
 
 			for (auto role : credentials["role"])
-				roles.insert(role.as<std::string>());
+				roles.insert(role.get<std::string>());
 
 			req.set_credentials(std::move(credentials));
 
@@ -160,8 +159,6 @@ void security_context::validate_request(request &req) const
 void security_context::add_authorization_headers(reply &rep, const user_details user,
 	std::chrono::system_clock::duration exp)
 {
-	using namespace json::literals;
-
 	using namespace date;
 	using namespace std::chrono;
 
@@ -172,7 +169,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 
 	auto exp_t = duration_cast<seconds>(system_clock::now() + exp - system_clock::time_point()).count();
 
-	json::element credentials{
+	nlohmann::json credentials{
 		{ "username", user.username },
 		{ "exp", exp_t }
 	};
@@ -180,8 +177,8 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	for (auto &role : user.roles)
 		credentials["role"].push_back(role);
 
-	auto h1 = encode_base64url(JOSEHeader.as<std::string>());
-	auto h2 = encode_base64url(credentials.as<std::string>());
+	auto h1 = encode_base64url(JOSEHeader.dump());
+	auto h2 = encode_base64url(credentials.dump());
 	auto h3 = encode_base64url(hmac_sha256(h1 + '.' + h2, m_secret));
 
 	std::stringstream s;

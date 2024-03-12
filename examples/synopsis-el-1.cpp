@@ -16,7 +16,7 @@ int main()
 
     //[ fill_scope
     /* Fill a scope with an array of objects, each object having one element */
-    zeep::json::element ints{
+    zeep::nlohmann::json ints{
         {
             { "value", 1 }
         },

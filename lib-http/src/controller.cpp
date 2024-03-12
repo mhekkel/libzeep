@@ -95,9 +95,9 @@ uri controller::get_prefixless_path(const request &req) const
 	return { bb, be };
 }
 
-json::element controller::get_credentials() const
+nlohmann::json controller::get_credentials() const
 {
-	json::element credentials;
+	nlohmann::json credentials;
 	if (s_request != nullptr)
 		credentials = s_request->get_credentials();
 	return credentials;

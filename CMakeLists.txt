@@ -116,7 +116,9 @@ endif()
 # FetchContent_Declare(mxml GIT_REPOSITORY s4.hekkelman.net:git-repo/mxml.git GIT_TAG no-module)
 # FetchContent_MakeAvailable(mxml)
 
-add_subdirectory(mxml)
+add_subdirectory(mxml EXCLUDE_FROM_ALL)
+
+find_package(nlohmann_json REQUIRED NAMES json nlohmann_json)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -140,15 +142,15 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/value-serializer.hpp
 	include/zeep/config.hpp
 	include/zeep/type-traits.hpp
-	include/zeep/json/to_element.hpp
-	include/zeep/json/element.hpp
-	include/zeep/json/factory.hpp
-	include/zeep/json/serializer.hpp
-	include/zeep/json/parser.hpp
-	include/zeep/json/type_traits.hpp
-	include/zeep/json/from_element.hpp
-	include/zeep/json/element_fwd.hpp
-	include/zeep/json/iterator.hpp
+	# include/zeep/json/to_element.hpp
+	# include/zeep/json/element.hpp
+	# include/zeep/json/factory.hpp
+	# include/zeep/json/serializer.hpp
+	# include/zeep/json/parser.hpp
+	# include/zeep/json/type_traits.hpp
+	# include/zeep/json/from_element.hpp
+	# include/zeep/json/element_fwd.hpp
+	# include/zeep/json/iterator.hpp
 	include/zeep/http/asio.hpp
 	include/zeep/http/access-control.hpp
 	include/zeep/http/controller.hpp
@@ -199,8 +201,8 @@ list(APPEND ZEEP_SRC
 	lib-http/src/tag-processor.cpp
 	lib-http/src/template-processor.cpp
 	lib-http/src/signals.cpp
-	lib-json/src/element.cpp
-	lib-json/src/json-parser.cpp
+	# lib-json/src/element.cpp
+	# lib-json/src/json-parser.cpp
 )
 
 if(USE_RSRC)
@@ -232,7 +234,7 @@ target_include_directories(zeep
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(zeep PUBLIC Threads::Threads date::date mxml::mxml)
+target_link_libraries(zeep PUBLIC Threads::Threads date::date mxml::mxml nlohmann_json::nlohmann_json)
 
 if(ZEEP_USE_BOOST_ASIO)
 	target_link_libraries(zeep PUBLIC Boost::boost)

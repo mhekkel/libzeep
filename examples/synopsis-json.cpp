@@ -12,20 +12,20 @@
 void test_stl()
 {
     using namespace zeep::json::literals; 
-    using json = zeep::json::element;
+    using json = zeep::nlohmann::json;
 
 //[ stl_interface
     json j;
 
     /* Make j an array */
-    j = zeep::json::element::array({ 1, 2, 3 });
+    j = zeep::nlohmann::json::array({ 1, 2, 3 });
     j.push_back(4);
     j.emplace_back("five");
 
     assert(j == R"([ 1, 2, 3, 4, "five" ])"_json);
 
     /* Now make j an object, this will erase the data and initialize a new object */
-    j = zeep::json::element::object({ { "a", true }, { "b", "2" } });
+    j = zeep::nlohmann::json::object({ { "a", true }, { "b", "2" } });
     j.emplace("c", 3);
 
     assert(j == R"({ "a": true, "b": "2", "c": 3 })"_json);
@@ -35,7 +35,7 @@ void test_stl()
 void test_enum()
 {
     using namespace zeep::json::literals; 
-    using json = zeep::json::element;
+    using json = zeep::nlohmann::json;
 
 //[ enum_support
 	enum class MyEnum { aap, noot, mies };
@@ -55,7 +55,7 @@ void construct()
 {
 //[ synopsis_json_main
     using namespace zeep::json::literals; 
-    using json = zeep::json::element;
+    using json = zeep::nlohmann::json;
 
     json j1;
 

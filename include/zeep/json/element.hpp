@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// Code for zeep::json::element, the JSON object in libzeep
+/// Code for zeep::nlohmann::json, the JSON object in libzeep
 
 #include <zeep/config.hpp>
 

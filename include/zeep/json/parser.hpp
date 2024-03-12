@@ -19,12 +19,12 @@
 namespace zeep::json
 {
 
-void parse_json(const std::string& json, json::element& object);
-void parse_json(std::istream& is, json::element& object);
+void parse_json(const std::string& json, nlohmann::json& object);
+void parse_json(std::istream& is, nlohmann::json& object);
 
 namespace literals
 {
-zeep::json::element operator""_json(const char* s, size_t len);
+zeep::nlohmann::json operator""_json(const char* s, size_t len);
 }
 
 } // namespace zeep::json

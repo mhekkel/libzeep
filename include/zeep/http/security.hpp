@@ -13,11 +13,11 @@
 #include <zeep/crypto.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/http/server.hpp>
-#include <zeep/json/element.hpp>
 
-#include <set>
+#include <nlohmann/json.hpp>
 
 #include <cassert>
+#include <set>
 
 // --------------------------------------------------------------------
 //
@@ -39,7 +39,6 @@ struct unauthorized_exception : public zeep::exception
 };
 
 // --------------------------------------------------------------------
-
 
 /// \brief Base class for password encoders
 class password_encoder
@@ -158,7 +157,7 @@ class user_service
 	virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
-	virtual bool user_is_valid(const json::element &credentials) const;
+	virtual bool user_is_valid(const nlohmann::json &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
 	virtual bool user_is_valid(const std::string &username) const;

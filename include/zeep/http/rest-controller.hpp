@@ -14,14 +14,14 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
-#include <zeep/json/parser.hpp>
 
+#include <nlohmann/json.hpp>
+
+#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <tuple>
 #include <utility>
-
-#include <cassert>
 
 namespace zeep::http
 {
@@ -223,7 +223,7 @@ class rest_controller : public controller
 		{
 			try
 			{
-				json::element message("ok");
+				nlohmann::json message("ok");
 				rep.set_content(message);
 				rep.set_status(ok);
 
@@ -232,7 +232,7 @@ class rest_controller : public controller
 			}
 			catch (const std::exception &e)
 			{
-				json::element message;
+				nlohmann::json message;
 				message["error"] = e.what();
 
 				rep.set_content(message);
@@ -263,7 +263,7 @@ class rest_controller : public controller
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
 		}
 
-		void set_reply(reply &rep, zeep::json::element &&v)
+		void set_reply(reply &rep, nlohmann::json &&v)
 		{
 			rep.set_content(std::move(v));
 		}
@@ -271,8 +271,7 @@ class rest_controller : public controller
 		template <typename T>
 		void set_reply(reply &rep, T &&v)
 		{
-			json::element e;
-			to_element(e, v);
+			nlohmann::json e = v;
 			rep.set_content(e);
 		}
 
@@ -344,11 +343,11 @@ class rest_controller : public controller
 			return result;
 		}
 
-		json::element get_parameter(const parameter_pack &params, const char *name, json::element result)
+		nlohmann::json get_parameter(const parameter_pack &params, const char *name, nlohmann::json result)
 		{
 			try
 			{
-				json::parse_json(params.get_parameter(name), result);
+				result = nlohmann::json::parse(params.get_parameter(name));
 			}
 			catch (const std::exception &e)
 			{
@@ -394,49 +393,30 @@ class rest_controller : public controller
 			return result;
 		}
 
-		template <typename T, std::enable_if_t<not(
-												   zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or std::is_enum_v<T> or
-												   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<json::element>>),
-								  int> = 0>
+		template <typename T>
 		T get_parameter(const parameter_pack &params, const char *name, T result)
 		{
 			try
 			{
 				auto p = params.get_parameter(name);
 				if (not p.empty())
-					result = value_serializer<T>::from_string(p);
+				{
+					using U = std::remove_cvref_t<T>;
+
+					if constexpr (nlohmann::detail::is_compatible_type<nlohmann::json, U>::value)
+					{
+						auto j = nlohmann::json::parse(p);
+						result = j.get<U>();
+					}
+					else
+						result = value_serializer<T>::from_string(p);
+				}
 			}
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
 				throw std::runtime_error("Invalid value passed for parameter "s + name);
 			}
-
-			return result;
-		}
-
-		template <typename T, std::enable_if_t<zeep::json::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
-		T get_parameter(const parameter_pack &params, const char *name, T result)
-		{
-			json::element v = params.get_parameter(name);
-
-			from_element(v, result);
-			return result;
-		}
-
-		template <typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<json::element>> or
-												   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<json::element>>,
-								  int> = 0>
-		T get_parameter(const parameter_pack &params, const char *name, T result)
-		{
-			json::element v;
-
-			if (params.m_req.get_header("content-type") == "application/json")
-				zeep::json::parse_json(params.m_req.get_payload(), v);
-			else
-				zeep::json::parse_json(params.get_parameter(name), v);
-
-			from_element(v, result);
 
 			return result;
 		}

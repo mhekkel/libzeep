@@ -14,7 +14,7 @@
 #include <iostream>
 #include <random>
 
-using json = zeep::json::element;
+using json = nlohmann::json;
 using namespace mxml::literals;
 
 TEST_CASE("test_22")

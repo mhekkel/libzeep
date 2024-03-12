@@ -10,7 +10,7 @@
 #include <zeep/exception.hpp>
 
 using namespace std;
-using json = zeep::json::element;
+using json = zeep::nlohmann::json;
 
 using namespace zeep::json::literals;
 

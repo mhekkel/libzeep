@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// various implementations of the from_element function that return the data contained in a zeep::json::element (JSON) object
+/// various implementations of the from_element function that return the data contained in a zeep::nlohmann::json (JSON) object
 
 #include <zeep/config.hpp>
 

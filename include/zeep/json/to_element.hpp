@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// various implementations of the to_element function that intializes a zeep::json::element object with some value
+/// various implementations of the to_element function that intializes a zeep::nlohmann::json object with some value
 
 #include <zeep/config.hpp>
 

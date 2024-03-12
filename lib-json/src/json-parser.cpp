@@ -24,7 +24,7 @@ class json_parser
 	{
 	}
 
-	void parse(json::element& object);
+	void parse(nlohmann::json& object);
 
   private:
 
@@ -68,9 +68,9 @@ class json_parser
 
 	void match(token_t expected);
 
-	void parse_value(json::element& e);
-	void parse_object(json::element& e);
-	void parse_array(json::element& e);
+	void parse_value(nlohmann::json& e);
+	void parse_object(nlohmann::json& e);
+	void parse_array(nlohmann::json& e);
 
 	uint8_t get_next_byte();
 	unicode get_next_unicode();
@@ -537,7 +537,7 @@ void json_parser::match(token_t expected)
 	m_lookahead = get_next_token();
 }
 
-void json_parser::parse_value(json::element& e)
+void json_parser::parse_value(nlohmann::json& e)
 {
 	switch (m_lookahead)
 	{
@@ -590,7 +590,7 @@ void json_parser::parse_value(json::element& e)
 	}
 }
 
-void json_parser::parse_object(json::element& e)
+void json_parser::parse_object(nlohmann::json& e)
 {
 	for (;;)
 	{
@@ -601,7 +601,7 @@ void json_parser::parse_object(json::element& e)
 		match(token_t::String);
 		match(token_t::Colon);
 
-		json::element v;
+		nlohmann::json v;
 		parse_value(v);
 		e.emplace(name, v);
 
@@ -612,14 +612,14 @@ void json_parser::parse_object(json::element& e)
 	}
 }
 
-void json_parser::parse_array(json::element& e)
+void json_parser::parse_array(nlohmann::json& e)
 {
 	for (;;)
 	{
 		if (m_lookahead == token_t::RightBracket or m_lookahead == token_t::Eof)
 			break;
 		
-		json::element v;
+		nlohmann::json v;
 		parse_value(v);
 		e.emplace_back(v);
 
@@ -630,7 +630,7 @@ void json_parser::parse_array(json::element& e)
 	}
 }
 
-void json_parser::parse(json::element& obj)
+void json_parser::parse(nlohmann::json& obj)
 {
 	m_lookahead = get_next_token();
 	parse_value(obj);

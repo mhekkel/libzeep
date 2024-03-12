@@ -1,7 +1,6 @@
 #include "zeep/http/asio.hpp"
 
-#define BOOST_TEST_MODULE Security_Test
-#include <boost/test/included/unit_test.hpp>
+#include "test-main.hpp"
 
 #include <random>
 #include <sstream>
@@ -21,24 +20,23 @@
 #include "../lib-http/src/signals.hpp"
 
 namespace z = zeep;
-namespace zx = zeep::xml;
 namespace zh = zeep::http;
 
-BOOST_AUTO_TEST_CASE(sec_1)
+TEST_CASE("sec_1")
 {
 	zh::reply rep;
 
-	BOOST_CHECK_THROW(rep = zh::reply::redirect("http://example.com\r\nSet-Cookie: wrong=false;"), zeep::exception);
+	CHECK_THROWS_AS(rep = zh::reply::redirect("http://example.com\r\nSet-Cookie: wrong=false;"), zeep::exception);
 
-	BOOST_CHECK_THROW(rep = zh::reply::redirect("http://example.com%0D%0ASet-Cookie: wrong=false;"), zeep::exception);
+	CHECK_THROWS_AS(rep = zh::reply::redirect("http://example.com%0D%0ASet-Cookie: wrong=false;"), zeep::exception);
 
 	rep = zh::reply::redirect("http://example.com/%0D%0ASet-Cookie:%20wrong=false;");
 
-	BOOST_CHECK_EQUAL(rep.get_header("Location"), "http://example.com/%0D%0ASet-Cookie:%20wrong=false;");
+	CHECK(rep.get_header("Location") == "http://example.com/%0D%0ASet-Cookie:%20wrong=false;");
 
 	rep = zh::reply::redirect("http://example.com");
 
-	BOOST_CHECK_EQUAL(rep.get_header("Location"), "http://example.com");
+	CHECK(rep.get_header("Location") == "http://example.com");
 
 /*
 	std::clog << rep << '\n';
@@ -60,7 +58,7 @@ BOOST_AUTO_TEST_CASE(sec_1)
 */
 }
 
-BOOST_AUTO_TEST_CASE(sec_2)
+TEST_CASE("sec_2")
 {
 	zh::simple_user_service users({
 		{ "scott", "tiger", { "USER" } }
@@ -80,7 +78,7 @@ BOOST_AUTO_TEST_CASE(sec_2)
 		zh::request req{ "GET", "/" };
 		req.set_cookie("access_token", rep.get_cookie("access_token"));
 
-		BOOST_CHECK_NO_THROW(sc.validate_request(req));
+		CHECK_NOTHROW(sc.validate_request(req));
 	}
 
 
@@ -95,7 +93,7 @@ BOOST_AUTO_TEST_CASE(sec_2)
 
 		std::this_thread::sleep_for(std::chrono::seconds{2});
 
-		BOOST_CHECK_THROW(sc.validate_request(req), zeep::exception);
+		CHECK_THROWS_AS(sc.validate_request(req), zeep::exception);
 	}
 
 }

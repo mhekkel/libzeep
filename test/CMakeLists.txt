@@ -41,15 +41,15 @@ endif()
 
 # unit parser serializer xpath json crypto http processor webapp soap rest security uri
 list(APPEND zeep_tests
-	# json/json
-	# crypto
-	# http
+	crypto
+	http
 	processor
-	# webapp
+	webapp
+	json
 	# soap
-	# rest
-	# security
-	# uri
+	rest
+	security
+	uri
 )
 
 if(USE_RSRC)

@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// forward declarations required for zeep::json::element, the JSON object in libzeep
+/// forward declarations required for zeep::nlohmann::json, the JSON object in libzeep
 
 #include <zeep/config.hpp>
 

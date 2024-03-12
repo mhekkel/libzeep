@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// various templated classes that help selecting the right conversion routines when (de-)serializing zeep::json::element (JSON) objects
+/// various templated classes that help selecting the right conversion routines when (de-)serializing zeep::nlohmann::json (JSON) objects
 
 #include <zeep/config.hpp>
 

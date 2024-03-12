@@ -306,7 +306,7 @@ void basic_server::log_request(const std::string &client,
 		const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
 
 		auto credentials = req.get_credentials();
-		std::string username = credentials.is_object() ? credentials["username"].as<std::string>() : "";
+		std::string username = credentials.is_object() ? credentials["username"].get<std::string>() : "";
 		if (username.empty())
 			username = "-";
 

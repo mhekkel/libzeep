@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// definition of the serializer classes that help serialize data into and out of zeep::json::element (JSON) objects
+/// definition of the serializer classes that help serialize data into and out of zeep::nlohmann::json (JSON) objects
 
 #include <zeep/config.hpp>
 #include <zeep/nvp.hpp>

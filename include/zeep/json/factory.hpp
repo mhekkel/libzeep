@@ -6,7 +6,7 @@
 #pragma once
 
 /// \file
-/// factory classes for constructing zeep::json::element objects
+/// factory classes for constructing zeep::nlohmann::json objects
 
 #include <zeep/config.hpp>
 

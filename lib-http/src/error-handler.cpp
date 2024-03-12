@@ -58,10 +58,9 @@ bool error_handler::create_error_reply(const request &req, status_type status, c
 					{ "uri", req.get_uri().string() } } }
 		};
 
-#warning fix
-		// auto credentials = req.get_credentials();
-		// if (credentials.is_object())
-		// 	error["request"]["username"] = credentials["user"];
+		auto credentials = req.get_credentials();
+		if (credentials.is_object())
+			error["request"]["username"] = credentials["user"].get<std::string>();
 
 		scope.put("error", error);
 

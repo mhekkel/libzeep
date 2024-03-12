@@ -1,9 +1,6 @@
 #include "zeep/http/asio.hpp"
 
-#define BOOST_TEST_MODULE WebApp_Test
-#include <boost/test/included/unit_test.hpp>
-
-#include <random>
+#include "test-main.hpp"
 
 #include <zeep/crypto.hpp>
 #include <zeep/exception.hpp>
@@ -16,26 +13,27 @@
 #include "../lib-http/src/signals.hpp"
 #include "client-test-code.hpp"
 
-using namespace std;
+#include <iostream>
+#include <random>
+
 namespace z = zeep;
-namespace zx = zeep::xml;
 
 using webapp = zeep::http::html_controller;
 
 void compare(mxml::document &a, mxml::document &b)
 {
-	BOOST_CHECK_EQUAL(a, b);
+	CHECK(a == b);
 	if (a != b)
 	{
-		cerr << string(80, '-') << endl
-			 << a << endl
-			 << string(80, '-') << endl
-			 << b << endl
-			 << string(80, '-') << endl;
+		std::cerr << std::string(80, '-') << '\n'
+			 << a << '\n'
+			 << std::string(80, '-') << '\n'
+			 << b << '\n'
+			 << std::string(80, '-') << '\n';
 	}
 }
 
-BOOST_AUTO_TEST_CASE(webapp_1)
+TEST_CASE("webapp_1")
 {
 	class my_webapp : public webapp
 	{
@@ -71,20 +69,20 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "get");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "get");
 
 	req.set_method("POST");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "post");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "post");
 
 	req.set_method("DELETE");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::not_found);
+	CHECK(rep.get_status() == zeep::http::not_found);
 }
 
-// BOOST_AUTO_TEST_CASE(webapp_2)
+// TEST_CASE("webapp_2")
 // {
 // 	webapp app;
 
@@ -98,10 +96,10 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 
 // 	app.handle_request(req, rep);
 
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::internal_server_error);
+// 	CHECK(rep.get_status() == zeep::http::internal_server_error);
 // }
 
-// BOOST_AUTO_TEST_CASE(webapp_4)
+// TEST_CASE("webapp_4")
 // {
 // 	using namespace mxml::literals;
 
@@ -127,7 +125,7 @@ BOOST_AUTO_TEST_CASE(webapp_1)
 // }
 
 // test various ways of mounting handlers
-BOOST_AUTO_TEST_CASE(webapp_5)
+TEST_CASE("webapp_5")
 {
 	class my_webapp : public webapp
 	{
@@ -185,43 +183,43 @@ BOOST_AUTO_TEST_CASE(webapp_5)
 	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "1");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "1");
 
 	req.set_uri("/test/x");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "3");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "3");
 
 	req.set_uri("/test/x/x");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "4");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "4");
 
 	req.set_uri("iew.x");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "2b");
 
 	req.set_uri("x/iew.x");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "2");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "2");
 
 	req.set_uri("x/x/iew.x");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "2b");
 
 	req.set_uri("css/styles/my-style.css");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "f");
 
 	req.set_uri("scripts/x.js");
 	app.handle_request(req, rep);
-	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content() == "f");
 }
 
 class hello_controller : public zeep::http::html_controller
@@ -240,7 +238,7 @@ class hello_controller : public zeep::http::html_controller
 	}
 };
 
-BOOST_AUTO_TEST_CASE(webapp_8)
+TEST_CASE("webapp_8")
 {
 	// start up a http server with a html_controller and stop it again
 
@@ -265,8 +263,8 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello");
 	}
 	catch (const std::exception &ex)
 	{
@@ -278,7 +276,7 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 	t.join();
 }
 
-BOOST_AUTO_TEST_CASE(webapp_10)
+TEST_CASE("webapp_10")
 {
 	zeep::http::server srv;
 
@@ -301,29 +299,29 @@ BOOST_AUTO_TEST_CASE(webapp_10)
 	t.join();
 }
 
-// a more generic set of tests, should be in a separate file I guess
+// // a more generic set of tests, should be in a separate file I guess
 
-BOOST_AUTO_TEST_CASE(split_1)
-{
-	std::vector<std::string> p;
-	zeep::split(p, ",een,twee"s, ",", false);
+// TEST_CASE("split_1")
+// {
+// 	std::vector<std::string> p;
+// 	zeep::split(p, ",een,twee"s, ",", false);
 
-	BOOST_ASSERT(p.size() == 3);
-	BOOST_CHECK_EQUAL(p[0], "");
-	BOOST_CHECK_EQUAL(p[1], "een");
-	BOOST_CHECK_EQUAL(p[2], "twee");
+// 	REQUIRE(p.size() == 3);
+// 	CHECK(p[0] == "");
+// 	CHECK(p[1] == "een");
+// 	CHECK(p[2] == "twee");
 
-	zeep::split(p, ",een,twee"s, ",", true);
+// 	zeep::split(p, ",een,twee"s, ",", true);
 
-	BOOST_ASSERT(p.size() == 2);
-	BOOST_CHECK_EQUAL(p[0], "een");
-	BOOST_CHECK_EQUAL(p[1], "twee");
-}
+// 	REQUIRE(p.size() == 2);
+// 	CHECK(p[0] == "een");
+// 	CHECK(p[1] == "twee");
+// }
 
 // --------------------------------------------------------------------
 
 // // test various ways of mounting handlers
-// BOOST_AUTO_TEST_CASE(webapp_5)
+// TEST_CASE("webapp_5")
 // {
 // 	class my_webapp : public webapp_2
 // 	{
@@ -380,43 +378,43 @@ BOOST_AUTO_TEST_CASE(split_1)
 // 	zeep::http::reply rep;
 
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "1");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "1");
 
 // 	req.set_uri("/test/x");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "3");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "3");
 
 // 	req.set_uri("/test/x/x");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "4");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "4");
 
 // 	req.set_uri("iew.x");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "2b");
 
 // 	req.set_uri("x/iew.x");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "2");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "2");
 
 // 	req.set_uri("x/x/iew.x");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "2b");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "2b");
 
 // 	req.set_uri("css/styles/my-style.css");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "f");
 
 // 	req.set_uri("scripts/x.js");
 // 	app.handle_request(req, rep);
-// 	BOOST_CHECK_EQUAL(rep.get_status(), zeep::http::ok);
-// 	BOOST_CHECK_EQUAL(rep.get_content(), "f");
+// 	CHECK(rep.get_status() == zeep::http::ok);
+// 	CHECK(rep.get_content() == "f");
 // }
 
 class hello_controller_2 : public zeep::http::html_controller
@@ -445,7 +443,7 @@ class hello_controller_2 : public zeep::http::html_controller
 	}
 };
 
-BOOST_AUTO_TEST_CASE(controller_2_1)
+TEST_CASE("controller_2_1")
 {
 	// start up a http server with a html_controller and stop it again
 
@@ -470,33 +468,33 @@ BOOST_AUTO_TEST_CASE(controller_2_1)
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello, world!");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello, world!");
 
 		reply = simple_request(port, "GET /?user=maarten HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello, maarten!");
 
 		reply = simple_request(port, "GET /hello/maarten HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello, maarten!");
 
 		reply = simple_request(port, "GET /hello/maarten/x HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello, maarten!");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello, maarten!");
 
 		reply = simple_request(port, "GET /hello//x HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello, world!");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello, world!");
 
 		reply = simple_request(port, "GET /hello/dani%C3%ABlle/x HTTP/1.0\r\n\r\n");
 
-		BOOST_TEST(reply.get_status() == zeep::http::ok);
-		BOOST_TEST(reply.get_content() == "Hello, daniëlle!");
+		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_content() == "Hello, daniëlle!");
 
 	}
 	catch (const std::exception &ex)

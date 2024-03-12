@@ -177,7 +177,7 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 {
 	std::string templateSelector;
 
-	json::element spec;
+	nlohmann::json spec;
 	std::unique_ptr<std::istream> data;
 	std::error_code ec;
 
@@ -288,8 +288,8 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 			auto parent = e->parent();
 			dest.push_back(std::move(*e));
 
-#warning "enable!"
-			// mxml::fix_namespaces(dest.front(), *parent, dest.front());
+			if (parent->type() == mxml::node_type::element)
+				mxml::fix_namespaces(dest.front(), static_cast<const mxml::element &>(*parent), dest.front());
 
 			std::swap(doc, dest);
 			break;
