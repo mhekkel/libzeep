@@ -55,13 +55,6 @@ concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_flo
 template <typename T>
 concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integral_v<T> and not std::is_floating_point_v<T>);
 
-template <typename T>
-concept ConvertibleType = (std::is_same_v<object, std::remove_cvref_t<T>> or
-						   std::is_integral_v<std::remove_cvref_t<T>> or
-						   std::is_floating_point_v<std::remove_cvref_t<T>> or
-						   std::is_same_v<bool, T> or
-						   std::is_assignable_v<std::string, T>);
-
 // --------------------------------------------------------------------
 
 class object
@@ -117,6 +110,8 @@ class object
 	template <ObjectType T>
 	struct iterator_impl
 	{
+		friend class object;
+
 		using iterator_category = std::bidirectional_iterator_tag;
 		using difference_type = T::difference_type;
 		using pointer = typename std::conditional_t<std::is_const_v<T>, typename T::const_pointer, typename T::pointer>;
@@ -414,11 +409,11 @@ class object
 			m_type = value_type::object;
 			m_data = value_type::object;
 
-			for (auto &element : init)
+			for (auto &el : init)
 			{
 				m_data.m_object->emplace(
-					std::move(*element.m_data.m_array->front().m_data.m_string),
-					std::move(element.m_data.m_array->back()));
+					std::move(*el.m_data.m_array->front().m_data.m_string),
+					std::move(el.m_data.m_array->back()));
 			}
 		}
 		else
@@ -490,7 +485,6 @@ class object
 	constexpr bool is_boolean() const noexcept { return m_type == value_type::boolean; }
 
 	constexpr value_type type() const { return m_type; }
-	// std::string type_name() const;
 
 	explicit operator bool() const noexcept
 	{
@@ -507,9 +501,8 @@ class object
 		return result;
 	}
 
-	// template <ConvertibleType T>
-	// auto as() const -> std::remove_cvref_t<T>;
-
+	// --------------------------------------------------------------------
+	
 	template <StringType T>
 	inline std::string as() const
 	{
@@ -559,6 +552,7 @@ class object
 		std::swap(a.m_data, b.m_data);
 	}
 
+	// --------------------------------------------------------------------
 	// arithmetic operators
 
 	object &operator-()
@@ -678,6 +672,7 @@ class object
 		return object(lhs) <=> rhs;
 	}
 
+	// --------------------------------------------------------------------
 	// array/object interface
 
 	bool contains(object test) const;
@@ -701,6 +696,143 @@ class object
 
 	void push_back(object &&val);
 	void push_back(const object &val);
+
+
+	template <typename... Args>
+	std::pair<iterator, bool> emplace(Args &&...args)
+	{
+		if (is_null())
+		{
+			m_type = value_type::object;
+			m_data = value_type::object;
+		}
+		else if (not is_object())
+			throw std::runtime_error("emplace only works with object type");
+
+		auto r = m_data.m_object->emplace(std::forward<Args>(args)...);
+		auto i = begin();
+		i.m_it.m_object_it = r.first;
+
+		return { i, r.second };
+	}
+
+	template <typename... Args>
+	object &emplace_back(Args &&...args)
+	{
+		if (not(is_null() or is_array()))
+			throw std::runtime_error("emplace_back only works with array type");
+
+		if (is_null())
+		{
+			m_type = value_type::array;
+			m_data = value_type::array;
+		}
+
+		return m_data.m_array->emplace_back(std::forward<Args>(args)...);
+	}
+
+	template <typename Iterator>
+		requires std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>
+	Iterator erase(Iterator pos)
+	{
+		if (pos.m_obj != this)
+			throw std::runtime_error("Invalid iterator");
+
+		auto result = end();
+
+		switch (m_type)
+		{
+			case value_type::array:
+				result.m_it.m_array_it = m_data.m_array->erase(pos.m_it.m_array_it);
+				break;
+
+			case value_type::object:
+				result.m_it.m_object_it = m_data.m_object->erase(pos.m_it.m_object_it);
+				break;
+
+			case value_type::null:
+				throw std::runtime_error("Cannot erase in null values");
+
+			default:
+				if (pos.m_it.m_p != 0)
+					throw std::runtime_error("Iterator out of range");
+
+				if (m_type == value_type::string)
+				{
+					std::allocator<string_type> alloc;
+					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_data.m_string);
+					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_data.m_string, 1);
+					m_data.m_string = nullptr;
+				}
+
+				m_type = value_type::null;
+				break;
+		}
+
+		return result;
+	}
+
+	template <typename Iterator>
+		requires std::is_same_v<Iterator, iterator> or std::is_same_v<Iterator, const_iterator>
+	Iterator erase(Iterator first, Iterator last)
+	{
+		if (first.m_obj != this or last.m_obj != this)
+			throw std::runtime_error("Invalid iterator");
+
+		auto result = end();
+
+		switch (m_type)
+		{
+			case value_type::array:
+				result.m_it.m_array_it = m_data.m_array->erase(first.m_it.m_array_it, last.m_it.m_array_it);
+				break;
+
+			case value_type::object:
+				result.m_it.m_object_it = m_data.m_object->erase(first.m_it.m_object_it, last.m_it.m_object_it);
+				break;
+
+			case value_type::null:
+				throw std::runtime_error("Cannot erase in null values");
+
+			default:
+				if (first.m_it.m_p != 0 or last.m_it.m_p != 0)
+					throw std::runtime_error("Iterator out of range");
+
+				if (m_type == value_type::string)
+				{
+					std::allocator<string_type> alloc;
+					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_data.m_string);
+					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_data.m_string, 1);
+					m_data.m_string = nullptr;
+				}
+
+				m_type = value_type::null;
+				break;
+		}
+
+		return result;
+	}
+
+	size_type erase(const std::string &key)
+	{
+		if (is_object())
+			return m_data.m_object->erase(key);
+		throw std::runtime_error("erase with a string key only works with object type");
+	}
+
+	void erase(const size_type index)
+	{
+		if (is_array())
+		{
+			if (index >= size())
+				throw std::runtime_error("Index out of range");
+			m_data.m_array->erase(m_data.m_array->begin() + static_cast<difference_type>(index));
+		}
+		else
+			throw std::runtime_error("erase with an index only works wiht array type");
+	}
+
+	// --------------------------------------------------------------------
 
 	iterator begin() { return iterator(this); }
 	iterator end() { return iterator(this, 1); }
@@ -812,221 +944,5 @@ class object
 		return object.release();
 	}
 };
-
-// namespace detail
-// {
-
-// 	template <>
-// 	struct factory<value_type::boolean>
-// 	{
-// 		static void construct(object &o, bool b)
-// 		{
-// 			o.m_type = value_type::boolean;
-// 			o.m_data = b;
-// 		}
-// 	};
-
-// 	template <>
-// 	struct factory<value_type::string>
-// 	{
-// 		static void construct(object &o, const std::string &s)
-// 		{
-// 			o.m_type = value_type::string;
-// 			o.m_data = s;
-// 		}
-
-// 		static void construct(object &o, std::string &&s)
-// 		{
-// 			o.m_type = value_type::string;
-// 			o.m_data = std::move(s);
-// 		}
-// 	};
-
-// 	template <>
-// 	struct factory<value_type::number_float>
-// 	{
-// 		static void construct(object &o, double d)
-// 		{
-// 			o.m_type = value_type::number_float;
-// 			o.m_data = d;
-// 		}
-// 	};
-
-// 	template <>
-// 	struct factory<value_type::number_int>
-// 	{
-// 		static void construct(object &o, int64_t i)
-// 		{
-// 			o.m_type = value_type::number_int;
-// 			o.m_data = i;
-// 		}
-// 	};
-
-// 	template <>
-// 	struct factory<value_type::array>
-// 	{
-// 		static void construct(object &o, const typename object::array_type &arr)
-// 		{
-// 			o.m_type = value_type::array;
-// 			o.m_data = arr;
-// 		}
-
-// 		static void construct(object &o, typename object::array_type &&arr)
-// 		{
-// 			o.m_type = value_type::array;
-// 			o.m_data = std::move(arr);
-// 		}
-
-// 		static void construct(object &o, const std::vector<bool> &arr)
-// 		{
-// 			o.m_type = value_type::array;
-// 			o.m_data = value_type::array;
-// 			o.m_data.m_array->reserve(arr.size());
-// 			std::copy(arr.begin(), arr.end(), std::back_inserter(*o.m_data.m_array));
-// 		}
-
-// 		template <ConvertibleType T>
-// 		static void construct(object &o, const std::vector<T> &arr)
-// 		{
-// 			o.m_type = value_type::array;
-// 			o.m_data = value_type::array;
-// 			o.m_data.m_array->resize(arr.size());
-// 			std::copy(arr.begin(), arr.end(), o.m_data.m_array->begin());
-// 		}
-
-// 		template <ConvertibleType T, size_t N>
-// 		static void construct(object &o, const T (&arr)[N])
-// 		{
-// 			o.m_type = value_type::array;
-// 			o.m_data = value_type::array;
-// 			o.m_data.m_array->resize(N);
-// 			std::copy(arr, arr + N, o.m_data.m_array->begin());
-// 		}
-// 	};
-
-// 	// template <>
-// 	// struct factory<value_type::object>
-// 	// {
-// 	// 	static void construct(object &o, const typename object::object_type &obj)
-// 	// 	{
-// 	// 		o.m_type = value_type::object;
-// 	// 		o.m_data = obj;
-// 	// 	}
-
-// 	// 	static void construct(object &o, typename object::object_type &&obj)
-// 	// 	{
-// 	// 		o.m_type = value_type::object;
-// 	// 		o.m_data = std::move(obj);
-// 	// 	}
-
-// 	// 	// template <typename J, typename M,
-// 	// 	// 	std::enable_if_t<not std::is_same_v<M, typename J::object_type>, int> = 0>
-// 	// 	// static void construct(object &o, const M &obj)
-// 	// 	// {
-// 	// 	// 	using std::begin;
-// 	// 	// 	using std::end;
-
-// 	// 	// 	o.m_type = value_type::object;
-// 	// 	// 	o.m_data.m_object = j.template create<typename J::object_type>(begin(obj), end(obj));
-// 	// 	// }
-// 	// };
-
-// 	template <typename T>
-// 		requires std::is_same_v<T, bool>
-// 	void to_object(object &v, T b)
-// 	{
-// 		factory<value_type::boolean>::construct(v, b);
-// 	}
-
-// 	template <StringType T>
-// 	void to_object(object &o, const T &s)
-// 	{
-// 		factory<value_type::string>::construct(o, s);
-// 	}
-
-// 	template <typename T>
-// 		requires std::is_floating_point_v<T>
-// 	void to_object(object &o, T f)
-// 	{
-// 		factory<value_type::number_float>::construct(o, f);
-// 	}
-
-// 	template <typename T>
-// 		requires std::is_integral_v<T>
-// 	void to_object(object &o, T i)
-// 	{
-// 		factory<value_type::number_int>::construct(o, i);
-// 	}
-
-// 	template <typename T>
-// 		requires std::is_same_v<T, bool>
-// 	void to_object(object &o, const std::vector<T> &v)
-// 	{
-// 		factory<value_type::array>::construct(o, v);
-// 	}
-
-// 	template <typename T>
-// 		requires(
-// 			is_compatible_array_type_v<T> /*  and
-// 	         not is_compatible_object_type_v<object, T> and
-// 	         not is_compatible_string_type_v<object, T> and
-// 	         not is_object_v<T> */
-// 			)
-// 	void to_object(object &o, const T &arr)
-// 	{
-// 		factory<value_type::array>::construct(o, arr);
-// 	}
-
-// 	template <ConvertibleType T>
-// 	void to_object(object &o, const std::valarray<T> &arr)
-// 	{
-// 		factory<value_type::array>::construct(o, std::move(arr));
-// 	}
-
-// 	template <typename T>
-// 		requires std::is_same_v<T, std::vector<object>>
-// 	void to_object(object &o, const T &arr)
-// 	{
-// 		factory<value_type::array>::construct(o, std::move(arr));
-// 	}
-
-// 	template <ConvertibleType T, size_t N>
-// 	void to_object(object &o, const T (&arr)[N])
-// 	{
-// 		factory<value_type::array>::construct(o, std::move(arr));
-// 	}
-
-// 	template <ConvertibleType T>
-// 	void to_object(object &o, const std::optional<T> &v)
-// 	{
-// 		if (v)
-// 			to_object(o, *v);
-// 	}
-
-// } // namespace detail
-
-// template <typename T>
-// template <typename Arg = T>
-// static auto ObjectSerializer<T>::to_object(object &o, Arg &&v) /* noexcept */
-// 	-> decltype(::zeep::http::to_object(o, std::forward<Arg>(v)), void())
-// {
-// 	::zeep::http::to_object(0, std::forward<Arg>(v));
-// }
-
-// template <typename T>
-// struct has_to_object_2<T>
-// 	: requires (not std::is_same_v<T, object>)
-// {
-// 	using serializer = typename object::typename object_serializer<T>;
-
-// 	static constexpr bool value = is_detected_exact<void, to_object_function, serializer, object &, T>::value;
-// };
-
-// static_assert(has_to_object_2<int>, "oh oh");
-// static_assert(has_to_object_2<float>, "oh oh");
-// static_assert(has_to_object_2<object>, "oh oh");
-// static_assert(has_to_object_2<bool>, "oh oh");
-
-// static_assert(has_to_object_v<std::string>, "oh oh");
 
 } // namespace zeep::http

@@ -6,9 +6,9 @@
 
 constexpr const char klibzeepProjectName[] = "libzeep";
 constexpr const char klibzeepVersionNumber[] = "7.0.0";
-constexpr int klibzeepBuildNumber = 1637;
-constexpr const char klibzeepRevisionGitTag[] = "35181ee*";
-constexpr const char klibzeepRevisionDate[] = "2024-03-12T09:32:17Z";
+constexpr int klibzeepBuildNumber = 1638;
+constexpr const char klibzeepRevisionGitTag[] = "cc92a64*";
+constexpr const char klibzeepRevisionDate[] = "2024-03-12T09:59:35Z";
 
 #ifndef VERSION_INFO_DEFINED
 #define VERSION_INFO_DEFINED 1
