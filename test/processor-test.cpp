@@ -9,7 +9,6 @@
 
 #include <iostream>
 
-using json = zeep::json::element;
 using namespace mxml::literals;
 
 void process_and_compare(mxml::document &a, mxml::document &b, const zeep::http::scope &scope = {})
@@ -64,7 +63,7 @@ TEST_CASE("test_2")
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("b", zeep::json::element{ "a", "b", "c" });
+	scope.put("b", zeep::http::object{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -202,7 +201,7 @@ TEST_CASE("test_6")
 	zeep::http::scope scope;
 	scope.put("x", "\"<b>'hallo, wereld!'</b>\"");
 	scope.put("y", "Een \"moeilijke\" string");
-	scope.put("a", zeep::json::element{ "a", "b", "c" });
+	scope.put("a", zeep::http::object{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -222,7 +221,7 @@ TEST_CASE("test_8")
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::json::element{ "a", "b", "c" });
+	scope.put("a", zeep::http::object{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -242,7 +241,7 @@ TEST_CASE("test_8a")
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::json::element{ "a", "b", "c" });
+	scope.put("a", zeep::http::object{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -262,7 +261,7 @@ TEST_CASE("test_9")
 	)"_xml;
 
 	zeep::http::scope scope;
-	scope.put("a", zeep::json::element{ "a", "b", "c" });
+	scope.put("a", zeep::http::object{ "a", "b", "c" });
 
 	process_and_compare(doc, doc_test, scope);
 }
@@ -514,7 +513,7 @@ TEST_CASE("test_18")
 
 	zeep::http::scope scope;
 
-	json p;
+	zeep::http::object p;
 	p["n"] = "x";
 
 	scope.put("p", p);
@@ -992,7 +991,7 @@ TEST_CASE("test_32d")
 </data>)"_xml;
 
 	zeep::http::scope scope;
-	zeep::json::element h{
+	zeep::http::object h{
 		{ "txt", "hoi" }
 	};
 
@@ -1063,9 +1062,9 @@ TEST_CASE("test_34")
 
 	zeep::http::scope scope;
 
-	json j;
-	j.push_back(json{ { "s", "S" } });
-	j.push_back(json{ { "s", "T" } });
+	zeep::http::object j;
+	j.push_back(zeep::http::object{ { "s", "S" } });
+	j.push_back(zeep::http::object{ { "s", "T" } });
 	scope.put("a", j);
 
 	process_and_compare(doc, doc_test, scope);

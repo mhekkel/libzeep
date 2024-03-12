@@ -207,7 +207,7 @@ void tag_processor_v2::process_text(mxml::node_with_text &text, const scope &sco
 // --------------------------------------------------------------------
 
 mxml::element tag_processor_v2::resolve_fragment_spec(
-	mxml::element *node, fs::path dir, basic_template_processor &loader, const json::element &spec, const scope &scope)
+	mxml::element *node, fs::path dir, basic_template_processor &loader, const object &spec, const scope &scope)
 {
 	if (spec.contains("is-node-set") and spec["is-node-set"])
 		return scope.get_nodeset(spec["node-set-name"].as<std::string>());
@@ -451,7 +451,7 @@ auto tag_processor_v2::process_attr_assert(mxml::element * /*element*/, mxml::at
 
 auto tag_processor_v2::process_attr_text(mxml::element *element, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
 {
-	json::element obj = evaluate_el(scope, attr.value());
+	object obj = evaluate_el(scope, attr.value());
 
 	if (not obj.is_null())
 	{
@@ -742,7 +742,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(mxml::e
 	auto av = attr.value();
 
 	auto o = evaluate_el_link(parentScope, av);
-	json::element params;
+	object params;
 
 	if (o.is_object())
 		params = o["selector"]["params"];
@@ -807,7 +807,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(mxml::e
 
 				if (po.is_object())
 				{
-					json::element pe{
+					object pe{
 						{ "is-node-set", true },
 						{ "node-set-name", argname }
 					};

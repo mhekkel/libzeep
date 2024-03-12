@@ -179,6 +179,7 @@ list(APPEND ZEEP_SRC
 	lib-http/src/controller.cpp
 	lib-http/src/crypto.cpp
 	lib-http/src/daemon.cpp
+	lib-http/src/el-object.cpp
 	lib-http/src/el-processing.cpp
 	lib-http/src/error-handler.cpp
 	lib-http/src/format.cpp

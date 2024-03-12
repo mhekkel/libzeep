@@ -149,7 +149,7 @@ class tag_processor_v2 : public tag_processor
 	void post_process(mxml::element *e, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader);
 
 	// mxml::element resolve_fragment_spec(mxml::element* node, std::filesystem::path dir, basic_html_controller& controller, const std::string& spec, const scope& scope);
-	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const json::element &spec, const scope &scope);
+	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const object &spec, const scope &scope);
 	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const std::string &file, const std::string &selector, bool byID);
 
 	// virtual void process_node_attr(mxml::node* node, const scope& scope, std::filesystem::path dir);

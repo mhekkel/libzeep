@@ -29,6 +29,7 @@
 #include <nlohmann/json.hpp>
 
 #include <array>
+#include <compare>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -40,203 +41,26 @@ namespace zeep::http
 
 class object;
 
-// namespace detail
-// {
-
-// 	enum class value_type
-// 	{
-// 		null,
-// 		object,
-// 		array,
-// 		string,
-// 		number_int,
-// 		number_float,
-// 		boolean
-// 	};
-
-// 	inline bool operator<(value_type lhs, value_type rhs) noexcept
-// 	{
-// 		static constexpr std::array<std::uint8_t, 7> order{
-// 			0, // null
-// 			3, // object
-// 			4, // array
-// 			5, // string
-// 			2, // number_int
-// 			2, // number_float
-// 			1  // boolean
-// 		};
-
-// 		const auto lix = static_cast<std::size_t>(lhs);
-// 		const auto rix = static_cast<std::size_t>(rhs);
-// 		return lix < order.size() and rix < order.size() and order[lix] < order[rix];
-// 	}
-
-// 	class object_reference;
-// } // namespace detail
-
-// // -
-// template <typename T>
-// struct ObjectSerializer
-// {
-// 	template <typename Arg = T>
-// 	static void to_object(object &o, Arg &&v); /* noexcept */
-// };
-
-// // --------------------------------------------------------------------
-// // type traits
-
-// template <class Default, class AlwaysVoid, template <class...> class Op, class... Args>
-// struct detector
-// {
-// 	using value_t = std::false_type;
-// 	using type = Default;
-// };
-
-// template <class Default, template <class...> class Op, class... Args>
-// struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
-// {
-// 	using value_t = std::true_type;
-// 	using type = Op<Args...>;
-// };
-
-// struct nope
-// {
-// };
-
-// template <template <class...> class Op, class... Args>
-// using is_detected = typename detector<nope, void, Op, Args...>::value_t;
-
-// template <template <class...> class Op, class... Args>
-// constexpr inline bool is_detected_v = is_detected<Op, Args...>::value;
-
-// // template<class Expected, template<class...> class Op, class... Args>
-// // using is_detected_exact = std::is_same<Expected, detector<Op, Args...>>;
-
-// template <template <class...> class Op, class... Args>
-// constexpr inline bool is_detected_exact_v = std::experimental::is_detected_exact<Op, Args...>::value;
-
-// template <typename T, typename Args...>
-// using to_object_function = decltype(T::to_object(std::declval<Args>()...));
-
-// // template <typename O, typename T>
-// // using from_object_function = decltype(from_object(std::declval(const O &), std::declval(T &)));
-
-// template <typename T, typename = void>
-// struct has_to_object : std::false_type
-// {
-// };
-
-// template <typename T>
-// 	requires(not std::is_same_v<T, object>)
-// struct has_to_object<T>
-// {
-// 	static constexpr bool value = is_detected_v<to_object_function, T>;
-// };
-
-// template <typename T>
-// inline constexpr bool has_to_object_v = has_to_object<T>::value;
-
-// template <typename T>
-// struct is_convertible_type
-// {
-// 	static constexpr bool value = has_to_object_v<T>;
-// };
-
-// template <typename T>
-// constexpr inline bool is_convertible_type_v = is_convertible_type<T>::value;
-
-// template <typename T>
-// using value_type_t = typename T::value_type;
-
-// template <typename T>
-// using iterator_t = typename T::iterator;
-
-// template <typename T>
-// struct is_compatible_array_type : std::false_type
-// {
-// };
-
-// template <typename T>
-// 	requires(
-// 		has_to_object_v<typename T::value_type> and
-// 		is_detected_v<iterator_t, T>)
-// struct is_compatible_array_type<T> : std::true_type
-// {
-// };
-
-// template <typename T>
-// inline constexpr bool is_compatible_array_type_v = is_compatible_array_type<T>::value;
-
 // // concepts
+
+template <typename T>
+concept BooleanType = std::is_same_v<bool, std::remove_cvref_t<T>>;
 
 template <typename T>
 concept ObjectType = std::is_same_v<object, std::remove_cvref_t<T>>;
 
 template <typename T>
-concept ScalarType = std::is_scalar_v<T>;
+concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_floating_point_v<std::remove_cvref_t<T>>) and not std::is_same_v<std::remove_cvref_t<T>, bool>);
 
 template <typename T>
-concept StringType = std::is_assignable_v<std::string, T>;
+concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integral_v<T> and not std::is_floating_point_v<T>);
 
 template <typename T>
 concept ConvertibleType = (std::is_same_v<object, std::remove_cvref_t<T>> or
-						   std::is_scalar_v<std::remove_cvref_t<T>> or
+						   std::is_integral_v<std::remove_cvref_t<T>> or
+						   std::is_floating_point_v<std::remove_cvref_t<T>> or
 						   std::is_same_v<bool, T> or
 						   std::is_assignable_v<std::string, T>);
-
-// // --------------------------------------------------------------------
-
-// namespace detail
-// {
-// 	// Factory class to construct objects
-// 	template <value_type>
-// 	struct factory;
-
-// 	template <typename T>
-// 		requires std::is_same_v<T, bool>
-// 	void to_object(object &v, T b);
-
-// 	template <ConvertibleType T, size_t N>
-// 	void to_object(object &o, const T (&arr)[N]);
-
-// 	template <StringType T>
-// 	void to_object(object &o, const T &s);
-
-// 	template <typename T>
-// 		requires std::is_floating_point_v<T>
-// 	void to_object(object &o, T f);
-
-// 	template <typename T>
-// 		requires std::is_integral_v<T>
-// 	void to_object(object &o, T i);
-
-// 	template <typename T>
-// 		requires std::is_same_v<T, bool>
-// 	void to_object(object &o, const std::vector<T> &v);
-
-// 	template <typename T>
-// 		requires(
-// 			is_compatible_array_type_v<T> /*  and
-// 	         not is_compatible_object_type_v<object, T> and
-// 	         not is_compatible_string_type_v<object, T> and
-// 	         not is_object_v<T> */
-// 			)
-// 	void to_object(object &o, const T &arr);
-
-// 	template <ConvertibleType T>
-// 	void to_object(object &o, const std::valarray<T> &arr);
-
-// 	template <typename T>
-// 		requires std::is_same_v<T, std::vector<object>>
-// 	void to_object(object &o, const T &arr);
-
-// 	template <ConvertibleType T, size_t N>
-// 	void to_object(object &o, const T (&arr)[N]);
-
-// 	template <ConvertibleType T>
-// 	void to_object(object &o, const std::optional<T> &v);
-
-// } // namespace detail
 
 // --------------------------------------------------------------------
 
@@ -284,8 +108,6 @@ class object
 
 	using difference_type = std::ptrdiff_t;
 	using size_type = std::size_t;
-
-	// using initializer_list_t = std::initializer_list<detail::object_reference>;
 
 	using reference = object &;
 	using const_reference = const object &;
@@ -556,7 +378,10 @@ class object
 	{
 	}
 
-	object(value_type t);
+	object(value_type t)
+		: m_type(t)
+	{
+	}
 
 	object(const object &o)
 		: m_type(o.m_type)
@@ -573,32 +398,54 @@ class object
 		}
 	}
 
-	object(const std::vector<object> &v);
+	object(const std::vector<object> &v)
+		: m_type(value_type::array)
+		, m_data(v)
+	{
+	}
 
-	object(std::initializer_list<object> v);
+	object(std::initializer_list<object> v)
+		: m_type(value_type::array)
+		, m_data(v)
+	{
+	}
 
-	object(const std::string &s);
+	template <StringType T>
+	object(const T &s)
+		: m_type(value_type::string)
+		, m_data(std::string{ s })
+	{
+	}
 
-	template <typename T>
-		requires std::is_integral_v<T>
-	object(T v);
+	template <NumberType T>
+	object(T v)
+	{
+		if constexpr (std::is_integral_v<T>)
+		{
+			m_type = value_type::number_int;
+			m_data = static_cast<int64_t>(v);
+		}
+		else if constexpr (std::is_floating_point_v<T>)
+		{
+			m_type = value_type::number_float;
+			m_data = static_cast<double>(v);
+		}
+		else
+			assert(false);
+	}
 
-	template <typename T>
-		requires std::is_floating_point_v<T>
-	object(T v);
+	template <BooleanType T>
+	object(T b)
+		: m_type(value_type::boolean)
+		, m_data(static_cast<bool>(b))
+	{
+	}
 
-	object(bool b);
-
-	object(const nlohmann::json &j);
-
-	// template <ConvertibleType T /* ,
-	//      typename U = typename std::remove_cv_t<typename std::remove_reference_t<T>>,
-	//      std::enable_if_t<not std::is_same_v<U, object> and detail::is_compatible_type_v<T>, int> = 0 */
-	// 	>
-	// object(T &&v) /* noexcept(noexcept(to_object(std::declval<object &>(), std::forward<T>(v)))) */
-	// {
-	// 	to_object(*this, std::forward<T>(v));
-	// }
+	object(const nlohmann::json &j)
+	{
+		// to be implemented
+		assert(false);
+	}
 
 	object(object &&rhs) noexcept
 	{
@@ -642,17 +489,49 @@ class object
 		return result;
 	}
 
-	template <typename T, typename U = typename std::remove_cvref_t<T>>
-	// requires (is_convertible_type_v<U> and std::is_default_constructible_v<U>)
-	T as() const; /* noexcept(noexcept(from_object(std::declval<const object &>(), std::declval<U &>()))) */
-	// {
-	// 	static_assert(std::is_default_constructible_v<U>, "Type must be default constructible to use with get()");
+	// template <ConvertibleType T>
+	// auto as() const -> std::remove_cvref_t<T>;
 
-	// 	U ret = {};
-	// 	if (not is_null())
-	// 		from_object(*this, ret);
-	// 	return ret;
-	// }
+	template <StringType T>
+	inline std::string as() const
+	{
+		if (m_type == value_type::string)
+			return *m_data.m_string;
+
+		return (std::ostringstream() << *this).str();
+	}
+
+	template <BooleanType T>
+	inline bool as() const
+	{
+		switch (m_type)
+		{
+			case value_type::boolean:
+				return m_data.m_boolean;
+			case value_type::number_int:
+				return m_data.m_int != 0;
+			case value_type::number_float:
+				return m_data.m_float != 0;
+			default:
+				return not empty();
+		}
+	}
+
+	template <NumberType T>
+	std::remove_cvref_t<T> as() const
+	{
+		switch (m_type)
+		{
+			case value_type::boolean:
+				return m_data.m_boolean;
+			case value_type::number_int:
+				return m_data.m_int;
+			case value_type::number_float:
+				return m_data.m_float;
+			default:
+				return not empty();
+		}
+	}
 
 	// --------------------------------------------------------------------
 
@@ -664,17 +543,34 @@ class object
 
 	// arithmetic operators
 
-	object &operator-();
+	object &operator-()
+	{
+		switch (m_type)
+		{
+			case value_type::number_int:
+				m_data.m_int = -m_data.m_int;
+				break;
+
+			case value_type::number_float:
+				m_data.m_float = -m_data.m_float;
+				break;
+
+			default:
+				throw std::runtime_error("Can only negate numbers");
+		}
+
+		return *this;
+	}
 
 	friend object operator+(const_reference &lhs, const_reference &rhs);
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator+(const_reference &lhs, const T &rhs)
 	{
 		return lhs + object(rhs);
 	}
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator+(const T &lhs, const_reference &rhs)
 	{
 		return object(lhs) + rhs;
@@ -682,13 +578,13 @@ class object
 
 	friend object operator-(const_reference &lhs, const_reference &rhs);
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator-(const_reference &lhs, const T &rhs)
 	{
 		return lhs - object(rhs);
 	}
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator-(const T &lhs, const_reference &rhs)
 	{
 		return object(lhs) - rhs;
@@ -696,13 +592,13 @@ class object
 
 	friend object operator*(const_reference &lhs, const_reference &rhs);
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator*(const_reference &lhs, const T &rhs)
 	{
 		return lhs * object(rhs);
 	}
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator*(const T &lhs, const_reference &rhs)
 	{
 		return object(lhs) * rhs;
@@ -710,13 +606,13 @@ class object
 
 	friend object operator/(const_reference &lhs, const_reference &rhs);
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator/(const_reference &lhs, const T &rhs)
 	{
 		return lhs / object(rhs);
 	}
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator/(const T &lhs, const_reference &rhs)
 	{
 		return object(lhs) / rhs;
@@ -724,13 +620,13 @@ class object
 
 	friend object operator%(const_reference &lhs, const_reference &rhs);
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator%(const_reference &lhs, const T &rhs)
 	{
 		return lhs % object(rhs);
 	}
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend object operator%(const T &lhs, const_reference &rhs)
 	{
 		return object(lhs) % rhs;
@@ -738,28 +634,28 @@ class object
 
 	friend bool operator==(const_reference &lhs, const_reference &rhs) noexcept;
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend bool operator==(const_reference &lhs, const T &rhs) noexcept
 	{
 		return lhs == object(rhs);
 	}
 
-	template <ScalarType T>
+	template <NumberType T>
 	friend bool operator==(const T &lhs, const_reference &rhs) noexcept
 	{
 		return object(lhs) == rhs;
 	}
 
-	friend bool operator<=>(const_reference &lhs, const_reference &rhs) noexcept;
+	friend std::partial_ordering operator<=>(const_reference &lhs, const_reference &rhs) noexcept;
 
-	template <ScalarType T>
-	friend bool operator<=>(const_reference &lhs, const T &rhs) noexcept
+	template <NumberType T>
+	friend std::partial_ordering operator<=>(const_reference &lhs, const T &rhs) noexcept
 	{
 		return lhs <=> object(rhs);
 	}
 
-	template <ScalarType T>
-	friend bool operator<=>(const T &lhs, const_reference &rhs) noexcept
+	template <NumberType T>
+	friend std::partial_ordering operator<=>(const T &lhs, const_reference &rhs) noexcept
 	{
 		return object(lhs) <=> rhs;
 	}
@@ -788,19 +684,19 @@ class object
 	void push_back(object &&val);
 	void push_back(const object &val);
 
+	iterator begin() { return iterator(this); }
+	iterator end() { return iterator(this, 1); }
 
-	iterator begin();
-	iterator end();
+	const_iterator begin() const { return const_iterator(this); }
+	const_iterator end() const { return const_iterator(this, 1); }
 
-	const_iterator begin() const;
-	const_iterator end() const;
-
-	const_iterator cbegin();
-	const_iterator cend();
+	const_iterator cbegin() { return const_iterator(this); }
+	const_iterator cend() { return const_iterator(this, 1); }
 
 	// I/O
 
 	friend std::ostream &operator<<(std::ostream &os, const object &o);
+	friend void serialize(std::ostream& os, const object& v);
 
   private:
 	value_type m_type = value_type::null;
