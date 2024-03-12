@@ -249,10 +249,11 @@ TEST_CASE("server_with_security_1")
 
 		mxml::document form(reply.get_content());
 		auto csrf = form.find_first("//input[@name='_csrf']");
-		REQUIRE(csrf != nullptr);
+		REQUIRE(csrf != form.end());
 
-		CHECK(form.find_first("//input[@name='username']") != nullptr);
-		CHECK(form.find_first("//input[@name='password']") != nullptr);
+		CHECK(form.find_first("//input[@name='username']") != form.end());
+		CHECK(form.find_first("//input[@name='password']") != form.end());
+		CHECK(form.find_first("//input[@name='not-there']") == form.end());
 
 		CHECK(csrf->get_attribute("value") == csrfCookie);
 
