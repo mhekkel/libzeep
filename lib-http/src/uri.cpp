@@ -102,16 +102,16 @@ uri::uri(const std::string &url, const uri &base)
 	remove_dot_segments();
 }
 
-void uri::swap(uri &u)
+void swap(uri &lhs, uri &rhs) noexcept
 {
-	std::swap(m_scheme, u.m_scheme);
-	std::swap(m_userinfo, u.m_userinfo);
-	std::swap(m_host, u.m_host);
-	std::swap(m_port, u.m_port);
-	std::swap(m_path, u.m_path);
-	std::swap(m_query, u.m_query);
-	std::swap(m_fragment, u.m_fragment);
-	std::swap(m_absolutePath, u.m_absolutePath);
+	std::swap(lhs.m_scheme, rhs.m_scheme);
+	std::swap(lhs.m_userinfo, rhs.m_userinfo);
+	std::swap(lhs.m_host, rhs.m_host);
+	std::swap(lhs.m_port, rhs.m_port);
+	std::swap(lhs.m_path, rhs.m_path);
+	std::swap(lhs.m_query, rhs.m_query);
+	std::swap(lhs.m_fragment, rhs.m_fragment);
+	std::swap(lhs.m_absolutePath, rhs.m_absolutePath);
 }
 
 std::string uri::string() const
@@ -324,7 +324,7 @@ const char *uri::parse_hierpart(const char *cp)
 
 			cp = parse_authority(cp);
 
-			if (*cp == '/' and cp[1] == '/')
+			if (*cp == '/')
 				m_absolutePath = true;
 
 			while (*cp == '/')
@@ -332,6 +332,9 @@ const char *uri::parse_hierpart(const char *cp)
 				++cp;
 				cp = parse_segment(cp);
 			}
+
+			if (m_path.empty() and not m_host.empty() and m_scheme == "file")
+				throw uri_parse_error();
 		}
 		else
 		{

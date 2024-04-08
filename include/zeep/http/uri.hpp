@@ -89,11 +89,19 @@ class uri
 	~uri() = default;
 
 	uri(const uri &u) = default;
-	uri(uri &&u) = default;
-	uri &operator=(const uri &u) = default;
-	uri &operator=(uri &&u) = default;
 
-	void swap(uri &u);
+	uri(uri &&u)
+	{
+		swap(*this, u);
+	}
+
+	uri &operator=(uri u) noexcept
+	{
+		swap(*this, u);
+		return *this;
+	}
+
+	friend void swap(uri &lhs, uri &rhs) noexcept;
 
 	// --------------------------------------------------------------------
 
