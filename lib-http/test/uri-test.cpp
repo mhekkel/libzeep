@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(uri_2)
 
 	BOOST_CHECK_EQUAL(url.get_scheme(), "http");
 	BOOST_CHECK_EQUAL(url.get_host(), "[::1]");
-	BOOST_CHECK_EQUAL(url.get_path().string(), "segment/index.html");
+	BOOST_CHECK_EQUAL(url.get_path().string(), "/segment/index.html");
 	BOOST_CHECK_EQUAL(url.get_query(false), "query");
 	BOOST_CHECK_EQUAL(url.get_fragment(false), "frag");
 }
@@ -68,14 +68,14 @@ BOOST_AUTO_TEST_CASE(uri_3)
 {
 	zeep::http::uri url("http://www.example.com/~maarten");
 
-	BOOST_CHECK_EQUAL(url.get_path().string(), "~maarten");
+	BOOST_CHECK_EQUAL(url.get_path().string(), "/~maarten");
 }
 
 BOOST_AUTO_TEST_CASE(uri_4)
 {
 	zeep::http::uri url("http://www.example.com/%7Emaarten");
 
-	BOOST_CHECK_EQUAL(url.get_path().string(), "~maarten");
+	BOOST_CHECK_EQUAL(url.get_path().string(), "/~maarten");
 }
 
 BOOST_AUTO_TEST_CASE(uri_5)
@@ -97,8 +97,16 @@ BOOST_AUTO_TEST_CASE(uri_6a)
 BOOST_AUTO_TEST_CASE(uri_6b)
 {
 	zeep::http::uri uri("file://a/b");
-	BOOST_CHECK(not uri.is_absolute());
-	BOOST_TEST(uri.get_path().string() == "b");
+	BOOST_CHECK(uri.is_absolute());
+	BOOST_TEST(uri.get_host() == "a");
+	BOOST_TEST(uri.get_path().string() == "/b");
+}
+
+BOOST_AUTO_TEST_CASE(uri_6c)
+{
+	BOOST_CHECK_THROW(zeep::http::uri("file://a"), zeep::http::uri_parse_error);
+	BOOST_CHECK_THROW(zeep::http::uri("file://a?b"), zeep::http::uri_parse_error);
+	BOOST_CHECK_THROW(zeep::http::uri("file://a#c"), zeep::http::uri_parse_error);
 }
 
 BOOST_AUTO_TEST_CASE(normalize_1)
@@ -236,7 +244,7 @@ BOOST_AUTO_TEST_CASE(encoding_1)
 	// http://a/höken/Ðuh?¤
 	zeep::http::uri u("http://a/h%C3%B6ken/%C3%90uh?%C2%A4");
 
-	BOOST_TEST(zeep::http::decode_url(u.get_path().string()) == "höken/Ðuh");
+	BOOST_TEST(zeep::http::decode_url(u.get_path().string()) == "/höken/Ðuh");
 	BOOST_TEST(zeep::http::decode_url(u.get_query(false)) == "¤");
 	BOOST_TEST(u.get_query(true) == "¤");
 }

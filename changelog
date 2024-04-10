@@ -1,3 +1,6 @@
+Version 6.0.14
+- Fix URI parser, some paths were not absolute
+
 Version 6.0.13
 - Flush access log after each request. (replacing all
   instances of std::endl was a bit too drastic).
