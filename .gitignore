@@ -13,3 +13,4 @@ debug/
 release/
 docs/api
 docs/conf.py
+src/revision.hpp

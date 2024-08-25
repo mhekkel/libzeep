@@ -1,3 +1,8 @@
+Version 6.0.14
+- Added variant of http::daemon with forking a daemon but
+  no preforked children. Simply a single instance with 
+  multiple threads.
+
 Version 6.0.13
 - Flush access log after each request. (replacing all
   instances of std::endl was a bit too drastic).

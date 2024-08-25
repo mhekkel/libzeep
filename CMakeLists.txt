@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(libzeep VERSION 6.0.13 LANGUAGES CXX)
+project(libzeep VERSION 6.0.14 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -247,9 +247,9 @@ if(ZEEP_BUILD_LIBRARY)
 		target_link_options(zeep PRIVATE -undefined dynamic_lookup)
 	endif()
 
-	# Build debug library with d postfix
-	set(CMAKE_DEBUG_POSTFIX d)
-	set_target_properties(zeep PROPERTIES DEBUG_POSTFIX "d")
+	# # Build debug library with d postfix
+	# set(CMAKE_DEBUG_POSTFIX d)
+	# set_target_properties(zeep PROPERTIES DEBUG_POSTFIX "d")
 
 	# Install rules
 	install(TARGETS zeep
