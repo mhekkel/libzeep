@@ -104,6 +104,12 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 	return -1;
 }
 
+int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
+{
+	assert(false);
+	return -1;
+}
+
 int daemon::stop()
 {
 	return -1;
