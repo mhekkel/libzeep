@@ -752,6 +752,13 @@ void interpreter::get_next_token()
 	}
 
 	m_lookahead = token;
+
+	if (token == token_type::number_float)
+	{
+		double vf;
+		if (auto r = std::from_chars(m_token_string.data(), m_token_string.data() + m_token_string.length(), vf); r.ec == std::errc{})
+			m_token_number_float = vf;
+	}
 }
 
 object interpreter::parse_expr()

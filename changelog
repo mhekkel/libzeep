@@ -1,3 +1,8 @@
+Version 6.0.15
+- Changed the way parsers convert a string to a float,
+  now use std::from_chars for a final conversion to
+  avoid rounding errors.
+
 Version 6.0.14
 - Fix URI parser, some paths were not absolute
 

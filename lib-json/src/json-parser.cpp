@@ -526,6 +526,13 @@ auto json_parser::get_next_token() -> token_t
 		}
 	}
 
+	if (token == token_t::Number)
+	{
+		double vf;
+		if (auto r = std::from_chars(m_token.data(), m_token.data() + m_token.length(), vf); r.ec == std::errc{})
+			m_token_float = vf;
+	}
+
 	return token;
 }
 
