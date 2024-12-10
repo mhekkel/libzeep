@@ -108,16 +108,18 @@ if(ZEEP_BUILD_LIBRARY)
 		configure_file(${PROJECT_SOURCE_DIR}/cmake/asio.hpp.in ${PROJECT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 	endif()
 
-	find_package(date 3.0.1 QUIET NAMES date libhowardhinnant-date)
+	if(NOT (TARGET date OR date_FOUND))
+		find_package(date 3.0.1 QUIET NAMES date libhowardhinnant-date)
 
-	if(NOT date_FOUND)
-		if(ZEEP_ALLOW_FETCH_CONTENT)
-			include(FetchContent)
+		if(NOT date_FOUND)
+			if(ZEEP_ALLOW_FETCH_CONTENT)
+				include(FetchContent)
 
-			FetchContent_Declare(date GIT_REPOSITORY https://github.com/HowardHinnant/date.git GIT_TAG v3.0.1)
-			FetchContent_MakeAvailable(date)
-		else()
-			message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+				FetchContent_Declare(date GIT_REPOSITORY https://github.com/HowardHinnant/date.git GIT_TAG v3.0.1)
+				FetchContent_MakeAvailable(date)
+			else()
+				message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
+			endif()
 		endif()
 	endif()
 
@@ -245,9 +247,9 @@ if(ZEEP_BUILD_LIBRARY)
 		target_link_options(zeep PRIVATE -undefined dynamic_lookup)
 	endif()
 
-	# Build debug library with d postfix
-	set(CMAKE_DEBUG_POSTFIX d)
-	set_target_properties(zeep PROPERTIES DEBUG_POSTFIX "d")
+	# # Build debug library with d postfix
+	# set(CMAKE_DEBUG_POSTFIX d)
+	# set_target_properties(zeep PROPERTIES DEBUG_POSTFIX "d")
 
 	# Install rules
 	install(TARGETS zeep
@@ -327,18 +329,21 @@ get_directory_property(HAS_PARENT PARENT_DIRECTORY)
 
 if(BUILD_TESTING AND NOT HAS_PARENT)
 	find_package(Boost REQUIRED)
-	find_package(libmcfp QUIET)
 
-	if(NOT libmcfp_FOUND)
-		if(ZEEP_ALLOW_FETCH_CONTENT)
-			include(FetchContent)
+	if(NOT (libmcfp_FOUND OR TARGET libmcfp))
+		find_package(libmcfp QUIET)
 
-			FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
-			FetchContent_MakeAvailable(libmcfp)
-		elseif(EXISTS libmcfp/CMakeLists.txt)
-			add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
-		else()
-			message(FATAL_ERROR "The libmcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")
+		if(NOT libmcfp_FOUND)
+			if(ZEEP_ALLOW_FETCH_CONTENT)
+				include(FetchContent)
+
+				FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
+				FetchContent_MakeAvailable(libmcfp)
+			elseif(EXISTS libmcfp/CMakeLists.txt)
+				add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+			else()
+				message(FATAL_ERROR "The libmcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")
+			endif()
 		endif()
 	endif()
 

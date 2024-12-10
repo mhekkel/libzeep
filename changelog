@@ -5,6 +5,9 @@ Version 6.0.15
 
 Version 6.0.14
 - Fix URI parser, some paths were not absolute
+- Added variant of http::daemon with forking a daemon but
+  no preforked children. Simply a single instance with 
+  multiple threads.
 
 Version 6.0.13
 - Flush access log after each request. (replacing all

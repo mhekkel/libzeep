@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(xml_container_and_iterators)
 	zx::element e("test");
 
 	zx::element n("a");
-	e.insert(e.begin(), move(n));
+	e.insert(e.begin(), std::move(n));
 	e.back().set_content("aap ");
 	
 	e.emplace_back("b").set_content("noot ");
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE(xml_doc)
 	zx::document doc;
 
 	zx::element e("test", { { "a", "1" }, { "b", "2" } });
-	doc.push_back(move(e));
+	doc.push_back(std::move(e));
 
 	zx::document doc2(R"(<test a="1" b="2"/>)");
 
