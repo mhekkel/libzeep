@@ -5,7 +5,7 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // Source code specifically for Unix/Linux
-// Utilitie routines to build daemon processes
+// Utility routines to build daemon processes
 
 #ifndef _WIN32
 # include <grp.h>
