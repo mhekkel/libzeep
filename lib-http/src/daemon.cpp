@@ -127,6 +127,7 @@ bool daemon::pid_is_for_executable()
 int daemon::daemonize()
 {
 	assert(false);
+	return -1;
 }
 
 #else
