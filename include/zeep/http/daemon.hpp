@@ -62,6 +62,8 @@ class daemon
 		m_restart_time_window = within_nr_of_seconds;
 	}
 
+#if HTTP_HAS_UNIX_DAEMON
+
 	/// \brief Start the daemon, forking off in the background with multiple preforked servers
 	///
 	/// \param address				The address to bind to
@@ -94,6 +96,8 @@ class daemon
 	/// \brief Force the running daemon to restart
 	int reload();
 
+#endif
+
 	/// \brief Run the server without forking to the background
 	///
 	/// For debugging purposes it is sometimes useful to start a server
@@ -103,6 +107,8 @@ class daemon
 
   private:
 
+#if HTTP_HAS_UNIX_DAEMON
+
 	int daemonize();
 	void open_log_file();
 
@@ -110,6 +116,7 @@ class daemon
 		size_t nr_of_threads, const std::string& run_as_user);
 
 	bool pid_is_for_executable();
+#endif
 
   private:
 	server_factory_type m_factory;

@@ -21,6 +21,14 @@
 #cmakedefine01 HTTP_SERVER_HAS_PREFORK
 #endif
 
+/// The http::daemon class can use fork/exec to spawn a
+/// process in the background. That's not going to work
+/// on Windows for now.
+
+#ifndef HTTP_HAS_UNIX_DAEMON
+#cmakedefine01 HTTP_HAS_UNIX_DAEMON
+#endif
+
 /// The webapp class in libzeep can use resources to load files.
 /// In this case you need the resource compiler 'mrc' obtainable
 /// from https://github.com/mhekkel/mrc

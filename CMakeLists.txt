@@ -124,6 +124,8 @@ if(ZEEP_BUILD_LIBRARY)
 	endif()
 
 	if(UNIX)
+		set(HTTP_HAS_UNIX_DAEMON 1)
+
 		find_file(HAVE_SYS_WAIT_H "sys/wait.h")
 
 		if(HAVE_SYS_WAIT_H)

@@ -20,8 +20,11 @@ endif()
 
 list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
 	serialize-xml synopsis-json synopsis-xml validating-xml-sample xpath-sample
-	synopsis-el-1 security-sample rest-sample rest-sample-2 daemon-sample
-	soap-sample)
+	synopsis-el-1 security-sample rest-sample rest-sample-2	soap-sample)
+
+if (ZEEP_HAS_UNIX_DAEMON)
+	list(APPEND examples daemon-sample)
+endif()
 
 foreach(EXAMPLE IN LISTS examples)
 	add_executable(${EXAMPLE} ${EXAMPLE}.cpp)
