@@ -140,15 +140,6 @@ inline unicode pop_last_char(std::string& s)
 	return result;
 }
 
-/// Convert a string from UCS4 to UTF-8
-inline std::string wstring_to_string(const std::wstring& s)
-{
-	std::string result;
-	for (unicode ch : s)
-		append(result, ch);
-	return result;
-}
-
 // I used to have this comment here:
 //
 //    this code only works if the input is valid utf-8
