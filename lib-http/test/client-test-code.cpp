@@ -23,7 +23,7 @@ zh::reply simple_request(uint16_t port, const std::string& req)
     asio_ns::io_context io_context;
 
     tcp::resolver resolver(io_context);
-    auto endpoint_iterator = resolver.resolve({ "localhost", std::to_string(port) });
+    auto endpoint_iterator = resolver.resolve("localhost", std::to_string(port));
 
 	tcp::socket socket(io_context);
 

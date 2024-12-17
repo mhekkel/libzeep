@@ -345,8 +345,11 @@ void preforked_server::run(const std::string &address, short port, int nr_of_pro
 	catch (const std::exception &e)
 	{
 		asio_ns::ip::tcp::resolver resolver(m_io_context);
-		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-		endpoint = *resolver.resolve(query);
+		for (auto &ep : resolver.resolve(address, std::to_string(port)))
+		{
+			endpoint = ep;
+			break;
+		}
 	}
 
 	acceptor.open(endpoint.protocol());

@@ -63,8 +63,11 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	else
 	{
 		asio_ns::ip::tcp::resolver resolver(io_context);
-		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-		endpoint = *resolver.resolve(query);
+		for (auto &ep : resolver.resolve(address, std::to_string(port)))
+		{
+			endpoint = ep;
+			break;
+		}
 	}
 
 	asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -187,8 +190,11 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			catch (const std::exception &e)
 			{
 				asio_ns::ip::tcp::resolver resolver(io_context);
-				asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
+				for (auto &ep : resolver.resolve(address, std::to_string(port)))
+				{
+					endpoint = ep;
+					break;
+				}
 			}
 
 			asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -279,8 +285,11 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_thread
 			catch (const std::exception &e)
 			{
 				asio_ns::ip::tcp::resolver resolver(io_context);
-				asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
+				for (auto &ep : resolver.resolve(address, std::to_string(port)))
+				{
+					endpoint = ep;
+					break;
+				}
 			}
 
 			asio_ns::ip::tcp::acceptor acceptor(io_context);
