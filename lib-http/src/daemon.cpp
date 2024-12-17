@@ -718,8 +718,8 @@ bool daemon::pid_is_for_executable()
 			result = strcmp(exe, path) == 0 or
 			         (ends_with(path, " (deleted)") and starts_with(path, exe));
 		}
-		else if (errno == ENOENT) // link file doesn't exist
-			result = false;
+		else if (errno == ENOENT) // link file doesn't exist (can happen on e.g. macOS)
+			result = kill(pid, 0) == 0;	// simply test using kill with signal 0. 
 		else
 			throw std::runtime_error("Failed to read executable link : "s + strerror(errno));
 	}
