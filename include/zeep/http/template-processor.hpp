@@ -206,7 +206,9 @@ class html_template_processor : public basic_template_processor
 	{
 		if (addDefaultTagProcessors)
 		{
+#if ZEEP_SUPPORT_TAG_PROCESSOR_V1
 			register_tag_processor<tag_processor_v1>();
+#endif
 			register_tag_processor<tag_processor_v2>();
 		}
 	}

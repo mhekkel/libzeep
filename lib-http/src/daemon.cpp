@@ -5,7 +5,7 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // Source code specifically for Unix/Linux
-// Utilitie routines to build daemon processes
+// Utility routines to build daemon processes
 
 #ifndef _WIN32
 # include <grp.h>
@@ -63,8 +63,11 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	else
 	{
 		asio_ns::ip::tcp::resolver resolver(io_context);
-		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-		endpoint = *resolver.resolve(query);
+		for (auto &ep : resolver.resolve(address, std::to_string(port)))
+		{
+			endpoint = ep;
+			break;
+		}
 	}
 
 	asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -96,47 +99,7 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	return 0;
 }
 
-#if _WIN32
-
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
-{
-	assert(false);
-	return -1;
-}
-
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
-{
-	assert(false);
-	return -1;
-}
-
-int daemon::stop()
-{
-	return -1;
-}
-
-int daemon::status()
-{
-	return -1;
-}
-
-int daemon::reload()
-{
-	return -1;
-}
-
-bool daemon::pid_is_for_executable()
-{
-	return false;
-}
-
-int daemon::daemonize()
-{
-	assert(false);
-	return -1;
-}
-
-#else
+#if HTTP_HAS_UNIX_DAEMON
 
 int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {
@@ -187,8 +150,11 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			catch (const std::exception &e)
 			{
 				asio_ns::ip::tcp::resolver resolver(io_context);
-				asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
+				for (auto &ep : resolver.resolve(address, std::to_string(port)))
+				{
+					endpoint = ep;
+					break;
+				}
 			}
 
 			asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -279,8 +245,11 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_thread
 			catch (const std::exception &e)
 			{
 				asio_ns::ip::tcp::resolver resolver(io_context);
-				asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
+				for (auto &ep : resolver.resolve(address, std::to_string(port)))
+				{
+					endpoint = ep;
+					break;
+				}
 			}
 
 			asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -705,8 +674,8 @@ bool daemon::pid_is_for_executable()
 			result = strcmp(exe, path) == 0 or
 			         (ends_with(path, " (deleted)") and starts_with(path, exe));
 		}
-		else if (errno == ENOENT) // link file doesn't exist
-			result = false;
+		else if (errno == ENOENT) // link file doesn't exist (can happen on e.g. macOS)
+			result = kill(pid, 0) == 0;	// simply test using kill with signal 0. 
 		else
 			throw std::runtime_error("Failed to read executable link : "s + strerror(errno));
 	}

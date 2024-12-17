@@ -11,10 +11,10 @@
 #include <zeep/config.hpp>
 
 #include <vector>
-#include <codecvt>
 #include <locale>
 
 #include <zeep/json/element_fwd.hpp>
+#include <zeep/unicode-support.hpp>
 
 namespace zeep::json::detail
 {
@@ -57,10 +57,7 @@ struct factory<value_type::string>
 	static void construct(J& j, const std::wstring& s)
 	{
 		j.m_type = value_type::string;
-	
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-		j.m_data = myconv.to_bytes(s);
-
+		j.m_data = convert_w2s(s);
 		j.validate();
 	}
 
@@ -68,10 +65,7 @@ struct factory<value_type::string>
 	static void construct(J& j, std::wstring&& s)
 	{
 		j.m_type = value_type::string;
-
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-		j.m_data = myconv.to_bytes(s);
-
+		j.m_data = convert_w2s(s);
 		j.validate();
 	}
 };

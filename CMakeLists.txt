@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(libzeep VERSION 6.0.14 LANGUAGES CXX)
+project(libzeep VERSION 6.0.15 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -26,6 +26,11 @@ option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-b
 option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
 cmake_dependent_option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON "ZEEP_BUILD_LIBRARY" OFF)
 
+# New policy for Boost, set it here
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+	cmake_policy(SET CMP0167 NEW)
+endif()
+
 if(ZEEP_BUILD_LIBRARY)
 	set(CXX_EXTENSIONS OFF)
 	set(CMAKE_CXX_STANDARD 20)
@@ -40,7 +45,7 @@ if(ZEEP_BUILD_LIBRARY)
 	find_package(Filesystem REQUIRED)
 
 	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 	elseif(MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 	endif()
@@ -124,6 +129,8 @@ if(ZEEP_BUILD_LIBRARY)
 	endif()
 
 	if(UNIX)
+		set(HTTP_HAS_UNIX_DAEMON 1)
+
 		find_file(HAVE_SYS_WAIT_H "sys/wait.h")
 
 		if(HAVE_SYS_WAIT_H)
@@ -233,7 +240,7 @@ if(ZEEP_BUILD_LIBRARY)
 
 	target_include_directories(zeep
 		PUBLIC
-		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
 
@@ -337,7 +344,7 @@ if(BUILD_TESTING AND NOT HAS_PARENT)
 			if(ZEEP_ALLOW_FETCH_CONTENT)
 				include(FetchContent)
 
-				FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
+				FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.3)
 				FetchContent_MakeAvailable(libmcfp)
 			elseif(EXISTS libmcfp/CMakeLists.txt)
 				add_subdirectory(libmcfp EXCLUDE_FROM_ALL)

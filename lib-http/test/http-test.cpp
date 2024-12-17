@@ -66,10 +66,10 @@ BOOST_AUTO_TEST_CASE(http_base64_2)
 	}
 }
 
-BOOST_AUTO_TEST_CASE(connection_read)
-{
-#pragma message("write test for avail/used")
-}
+// BOOST_AUTO_TEST_CASE(connection_read)
+// {
+// #pragma message("write test for avail/used")
+// }
 
 BOOST_AUTO_TEST_CASE(request_params_1)
 {
@@ -172,6 +172,8 @@ BOOST_AUTO_TEST_CASE(webapp_7)
 
 // Single process variant
 
+#if HTTP_HAS_UNIX_DAEMON
+
 BOOST_AUTO_TEST_CASE(webapp_8)
 {
 	// start up a http server and stop it again
@@ -217,6 +219,8 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 
 	d.stop();
 }
+
+#endif
 
 // authentication test
 BOOST_AUTO_TEST_CASE(server_with_security_1)

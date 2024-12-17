@@ -1,4 +1,15 @@
+Version 6.0.15
+- Changed the way parsers convert a string to a float,
+  now use std::from_chars for a final conversion to
+  avoid rounding errors.
+- Fix test on macOS (no /proc filesystem there)
+- Removed using codecvt_utf8 since it is deprecated
+- Removed asio::ip::tcp::resolver::query usage
+- Refactored daemon to no longer expose code that
+  requires POSIX calls like fork/exec on Windows
+
 Version 6.0.14
+- Fix URI parser, some paths were not absolute
 - Added variant of http::daemon with forking a daemon but
   no preforked children. Simply a single instance with 
   multiple threads.
