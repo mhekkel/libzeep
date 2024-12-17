@@ -57,7 +57,7 @@ struct factory<value_type::string>
 	static void construct(J& j, const std::wstring& s)
 	{
 		j.m_type = value_type::string;
-		j.m_data = wstring_to_string(s);
+		j.m_data = convert_w2s(s);
 		j.validate();
 	}
 
@@ -65,7 +65,7 @@ struct factory<value_type::string>
 	static void construct(J& j, std::wstring&& s)
 	{
 		j.m_type = value_type::string;
-		j.m_data = wstring_to_string(s);
+		j.m_data = convert_w2s(s);
 		j.validate();
 	}
 };

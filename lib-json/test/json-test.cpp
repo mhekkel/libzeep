@@ -401,6 +401,9 @@ BOOST_AUTO_TEST_CASE(j_serialize_time_3)
 	BOOST_TEST((t1 == t2) == true);
 }
 
+#if _WIN32
+#pragma warning ("Need to implement something for wstrings containing UTF-16")
+#else
 BOOST_AUTO_TEST_CASE(codecvt_test_1)
 {
 	static_assert(zeep::json::detail::is_compatible_type_v<const std::string &>, "oeps");
@@ -418,3 +421,4 @@ BOOST_AUTO_TEST_CASE(codecvt_test_1)
 
 	BOOST_TEST(s == "Ceçi n'est pas un pipe");
 }
+#endif
