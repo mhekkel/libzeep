@@ -45,9 +45,6 @@ constexpr bool is_single_byte_encoding(encoding_type enc)
 	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
 }
 
-/// Convert a string from UCS4 to UTF-8
-std::string wstring_to_string(const std::wstring& s);
-
 /// manipulate UTF-8 encoded strings
 void append(std::string& s, unicode ch);
 unicode pop_last_char(std::string& s);
@@ -140,6 +137,15 @@ inline unicode pop_last_char(std::string& s)
 		}
 	}
 	
+	return result;
+}
+
+/// Convert a string from UCS4 to UTF-8
+inline std::string wstring_to_string(const std::wstring& s)
+{
+	std::string result;
+	for (unicode ch : s)
+		append(result, ch);
 	return result;
 }
 

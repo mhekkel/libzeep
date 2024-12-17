@@ -21,41 +21,34 @@ struct MyPOD2
 	float f = -1.5;
 	std::vector<int> v = { 1, 2, 3, 4 };
 
-	bool operator==(const MyPOD2& rhs) const
+	bool operator==(const MyPOD2 &rhs) const
 	{
 		return f == rhs.f and v == rhs.v;
 	}
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long /*version*/)
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long /*version*/)
 	{
-		ar & zeep::make_nvp("f-f", f)
-		   & zeep::make_nvp("v", v)
-		   ;
+		ar &zeep::make_nvp("f-f", f) & zeep::make_nvp("v", v);
 	}
-
 };
 
 struct MyPOD
 {
-	std::string				s;
-	int						i;
-	std::optional<int>		o{13};
-	std::vector<MyPOD2>		fp{2, MyPOD2()};
+	std::string s;
+	int i;
+	std::optional<int> o{ 13 };
+	std::vector<MyPOD2> fp{ 2, MyPOD2() };
 
-	bool operator==(const MyPOD& rhs) const
+	bool operator==(const MyPOD &rhs) const
 	{
 		return s == rhs.s and i == rhs.i and o == rhs.o and fp == rhs.fp;
 	}
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long /*version*/)
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long /*version*/)
 	{
-		ar & zeep::make_nvp("s-s", s)
-		   & zeep::make_nvp("i-i", i)
-		   & zeep::make_nvp("opt", o)
-		   & zeep::make_nvp("fp", fp)
-		   ;
+		ar &zeep::make_nvp("s-s", s) & zeep::make_nvp("i-i", i) & zeep::make_nvp("opt", o) & zeep::make_nvp("fp", fp);
 	}
 };
 
@@ -126,8 +119,8 @@ BOOST_AUTO_TEST_CASE(j_5)
 
 BOOST_AUTO_TEST_CASE(j_6)
 {
-	for (string fs: { "1e3", "1.0e3", "10.0", "1.0", "1.0e-2", "0.1", 
-					  "-1e3", "-1.0e3", "-10.0", "-1.0", "-1.0e-2", "-0.1" })
+	for (string fs : { "1e3", "1.0e3", "10.0", "1.0", "1.0e-2", "0.1",
+			 "-1e3", "-1.0e3", "-10.0", "-1.0", "-1.0e-2", "-0.1" })
 	{
 		json jfloat;
 		parse_json(fs, jfloat);
@@ -148,7 +141,7 @@ BOOST_AUTO_TEST_CASE(j_6)
 
 BOOST_AUTO_TEST_CASE(j_7)
 {
-	for (string fs: { "01", "-01" })
+	for (string fs : { "01", "-01" })
 	{
 		json jf;
 		BOOST_CHECK_THROW(parse_json(fs, jf), zeep::exception);
@@ -163,7 +156,7 @@ BOOST_AUTO_TEST_CASE(j_8)
 	};
 
 	size_t i = 0;
-	for (auto& [key, value]: j.items())
+	for (auto &[key, value] : j.items())
 	{
 		switch (i++)
 		{
@@ -194,7 +187,6 @@ BOOST_AUTO_TEST_CASE(j_9)
 	BOOST_TEST(j.is_boolean());
 	BOOST_TEST(j == false);
 
-
 	zeep::json::serializer<json>::serialize(j, 1);
 	BOOST_TEST(j.is_number_int());
 	BOOST_TEST(j == 1);
@@ -216,19 +208,21 @@ BOOST_AUTO_TEST_CASE(j_9)
 	zeep::json::serializer<json>::serialize(j, i);
 	BOOST_TEST(j.is_number_int());
 	BOOST_TEST(j == 1);
-
 }
 
 BOOST_AUTO_TEST_CASE(j_10)
 {
-	static_assert(std::is_constructible<json, const char*>::value, "oi");
+	static_assert(std::is_constructible<json, const char *>::value, "oi");
 }
 
-enum class MyEnum {
-	aap, noot, mies
+enum class MyEnum
+{
+	aap,
+	noot,
+	mies
 };
 
-std::ostream& operator<<(std::ostream& os, MyEnum e)
+std::ostream &operator<<(std::ostream &os, MyEnum e)
 {
 	os << zeep::value_serializer<MyEnum>::to_string(e);
 	return os;
@@ -236,21 +230,16 @@ std::ostream& operator<<(std::ostream& os, MyEnum e)
 
 BOOST_AUTO_TEST_CASE(j_11)
 {
-	zeep::value_serializer<MyEnum>::instance()
-		("aap", MyEnum::aap)
-		("noot", MyEnum::noot)
-		("mies", MyEnum::mies);
-		
+	zeep::value_serializer<MyEnum>::instance()("aap", MyEnum::aap)("noot", MyEnum::noot)("mies", MyEnum::mies);
+
 	json e = MyEnum::aap;
 	BOOST_TEST(e.as<std::string>() == "aap");
 	// BOOST_TEST(e.as<MyEnum>() == MyEnum::aap);
 
 	// reinit the enum serializer
-	zeep::value_serializer<MyEnum>::init({
-		{ MyEnum::aap, "aap" },
+	zeep::value_serializer<MyEnum>::init({ { MyEnum::aap, "aap" },
 		{ MyEnum::noot, "noot" },
-		{ MyEnum::mies, "mies" }
-	});
+		{ MyEnum::mies, "mies" } });
 
 	e = MyEnum::noot;
 	BOOST_TEST(e.as<std::string>() == "noot");
@@ -259,12 +248,11 @@ BOOST_AUTO_TEST_CASE(j_11)
 struct MyPOD3
 {
 	MyEnum a;
-	
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long /*version*/)
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long /*version*/)
 	{
-		ar & zeep::make_nvp("a", a)
-		   ;
+		ar &zeep::make_nvp("a", a);
 	}
 };
 
@@ -279,7 +267,7 @@ BOOST_AUTO_TEST_CASE(j_12)
 
 	BOOST_TEST((p1 == p1a));
 
-	MyPOD3 p3{MyEnum::noot}, p3a;
+	MyPOD3 p3{ MyEnum::noot }, p3a;
 	to_element(e, p3);
 
 	from_element(e, p3a);
@@ -311,32 +299,34 @@ BOOST_AUTO_TEST_CASE(j_12)
 // 	BOOST_TEST((p.now == pa.now));
 // }
 
-
-
-enum class E { aap, noot, mies };
+enum class E
+{
+	aap,
+	noot,
+	mies
+};
 
 struct Se
 {
 	E m_e;
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long)
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long)
 	{
-		ar & zeep::make_nvp("e", m_e);
+		ar &zeep::make_nvp("e", m_e);
 	}
 
-	bool operator==(const Se& se) const
+	bool operator==(const Se &se) const
 	{
 		return m_e == se.m_e;
 	}
 };
 
-
 BOOST_AUTO_TEST_CASE(j_test_array_1)
 {
 	using array_type = std::vector<Se>;
 
-	array_type v{ { E::aap }, { E::noot }, { E::mies }}, v2;
+	array_type v{ { E::aap }, { E::noot }, { E::mies } }, v2;
 
 	json e;
 	to_element(e, v);
@@ -349,13 +339,13 @@ struct St
 {
 	std::chrono::time_point<std::chrono::system_clock> m_t;
 
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long)
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long)
 	{
-		ar & zeep::make_nvp("t", m_t);
+		ar &zeep::make_nvp("t", m_t);
 	}
 
-	bool operator==(const St& se) const
+	bool operator==(const St &se) const
 	{
 		return m_t == se.m_t;
 	}
@@ -398,7 +388,6 @@ BOOST_AUTO_TEST_CASE(j_serialize_time_2)
 	BOOST_TEST((t1 == t2) == true);
 }
 
-
 BOOST_AUTO_TEST_CASE(j_serialize_time_3)
 {
 	using opt_time_t = std::optional<time_type_t>;
@@ -410,4 +399,22 @@ BOOST_AUTO_TEST_CASE(j_serialize_time_3)
 	from_element(e, t2);
 
 	BOOST_TEST((t1 == t2) == true);
+}
+
+BOOST_AUTO_TEST_CASE(codecvt_test_1)
+{
+	static_assert(zeep::json::detail::is_compatible_type_v<const std::string &>, "oeps");
+	static_assert(zeep::json::detail::has_to_element_v<const std::string &>, "oeps");
+
+	// static_assert(zeep::json::detail::is_compatible_type_v<const std::wstring &>, "oeps");
+	// static_assert(zeep::json::detail::has_to_element_v<const std::wstring &>, "oeps");
+
+	std::wstring ws{ L"Ceçi n'est pas un pipe" };
+
+	zeep::json::element e(std::move(ws));
+
+	std::string s;
+	from_element(e, s);
+
+	BOOST_TEST(s == "Ceçi n'est pas un pipe");
 }
