@@ -99,47 +99,51 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	return 0;
 }
 
-#if _WIN32
+// #if _WIN32
 
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
-{
-	assert(false);
-	return -1;
-}
+// #pragma warning (disable: 4100)
 
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
-{
-	assert(false);
-	return -1;
-}
+// int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
+// {
+// 	assert(false);
+// 	return -1;
+// }
 
-int daemon::stop()
-{
-	return -1;
-}
+// int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
+// {
+// 	assert(false);
+// 	return -1;
+// }
 
-int daemon::status()
-{
-	return -1;
-}
+// int daemon::stop()
+// {
+// 	return -1;
+// }
 
-int daemon::reload()
-{
-	return -1;
-}
+// int daemon::status()
+// {
+// 	return -1;
+// }
 
-bool daemon::pid_is_for_executable()
-{
-	return false;
-}
+// int daemon::reload()
+// {
+// 	return -1;
+// }
 
-int daemon::daemonize()
-{
-	assert(false);
-	return -1;
-}
+// bool daemon::pid_is_for_executable()
+// {
+// 	return false;
+// }
 
-#else
+// int daemon::daemonize()
+// {
+// 	assert(false);
+// 	return -1;
+// }
+
+// #else
+
+#if HTTP_HAS_UNIX_DAEMON
 
 int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {

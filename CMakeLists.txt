@@ -26,6 +26,11 @@ option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-b
 option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
 cmake_dependent_option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON "ZEEP_BUILD_LIBRARY" OFF)
 
+# New policy for Boost, set it here
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+	cmake_policy(SET CMP0167 NEW)
+endif()
+
 if(ZEEP_BUILD_LIBRARY)
 	set(CXX_EXTENSIONS OFF)
 	set(CMAKE_CXX_STANDARD 20)
@@ -124,6 +129,8 @@ if(ZEEP_BUILD_LIBRARY)
 	endif()
 
 	if(UNIX)
+		set(HTTP_HAS_UNIX_DAEMON 1)
+
 		find_file(HAVE_SYS_WAIT_H "sys/wait.h")
 
 		if(HAVE_SYS_WAIT_H)
@@ -337,7 +344,7 @@ if(BUILD_TESTING AND NOT HAS_PARENT)
 			if(ZEEP_ALLOW_FETCH_CONTENT)
 				include(FetchContent)
 
-				FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
+				FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.3)
 				FetchContent_MakeAvailable(libmcfp)
 			elseif(EXISTS libmcfp/CMakeLists.txt)
 				add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
