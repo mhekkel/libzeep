@@ -1,3 +1,6 @@
+Version 6.0.16
+- Fix the reload of daemons without preforking
+
 Version 6.0.15
 - Changed the way parsers convert a string to a float,
   now use std::from_chars for a final conversion to
