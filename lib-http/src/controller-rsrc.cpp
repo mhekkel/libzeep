@@ -9,6 +9,8 @@
 #include <zeep/http/template-processor.hpp>
 #include <zeep/streambuf.hpp>
 
+#include <iostream>
+
 namespace fs = std::filesystem;
 
 // --------------------------------------------------------------------
@@ -468,8 +470,14 @@ rsrc_loader::rsrc_loader(const std::string &)
 	if (r > 0)
 	{
 		exePath[r] = 0;
-		mRsrcWriteTime = fs::last_write_time(exePath);
+
+		std::error_code ec;
+		mRsrcWriteTime = fs::last_write_time(exePath, ec);
+		if (ec)
+			mRsrcWriteTime = fs::file_time_type::clock::now();
 	}
+	else
+		mRsrcWriteTime = fs::file_time_type::clock::now();
 #endif
 }
 

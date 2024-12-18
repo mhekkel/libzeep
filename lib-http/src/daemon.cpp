@@ -341,7 +341,10 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_thread
 					t.join();
 				
 				if (sig == SIGHUP)
+				{
+					std::this_thread::sleep_for(100ms);
 					continue;
+				}
 				
 				break;
 			}
