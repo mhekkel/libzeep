@@ -1,3 +1,6 @@
+Version 6.0.17
+- Do not specify BOOST_ASIO_STANDALONE by default
+
 Version 6.0.16
 - Fix the reload of daemons without preforking
 
