@@ -1,3 +1,6 @@
+Version 6.1.0
+- Better login handling
+
 Version 6.0.15
 - Changed the way parsers convert a string to a float,
   now use std::from_chars for a final conversion to

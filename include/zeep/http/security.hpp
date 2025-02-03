@@ -126,20 +126,27 @@ struct user_details
 
 // --------------------------------------------------------------------
 
+class authentication_exception : public zeep::exception
+{
+  public:
+	authentication_exception(const char *msg)
+		: zeep::exception(msg) {}
+};
+
 /// \brief exception thrown by user_service when trying to load user_details for an unknown user
-class user_unknown_exception : public zeep::exception
+class user_unknown_exception : public authentication_exception
 {
   public:
 	user_unknown_exception()
-		: zeep::exception("user unknown"){};
+		: authentication_exception("user unknown"){};
 };
 
 /// \brief exception thrown by security_context when a username/password combo is not valid
-class invalid_password_exception : public zeep::exception
+class invalid_password_exception : public authentication_exception
 {
   public:
 	invalid_password_exception()
-		: zeep::exception("invalid password"){};
+		: authentication_exception("invalid password"){};
 };
 
 // --------------------------------------------------------------------
