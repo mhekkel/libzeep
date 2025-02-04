@@ -23,7 +23,7 @@ struct Cart
 {
     int					id;
     std::string			client;
-    std::vector<Item>	items;
+    std::vector<Item>	items{};
 
     template<typename Archive>
     void serialize(Archive& ar, unsigned long version)

@@ -5,7 +5,9 @@
 
 #pragma once
 
+#if ZEEP_BOOST_ASIO_STANDALONE
 #define BOOST_ASIO_STANDALONE 1
+#endif
 
 #include <utility>
 #include <boost/asio.hpp>

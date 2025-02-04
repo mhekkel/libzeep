@@ -99,50 +99,6 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	return 0;
 }
 
-// #if _WIN32
-
-// #pragma warning (disable: 4100)
-
-// int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
-// {
-// 	assert(false);
-// 	return -1;
-// }
-
-// int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
-// {
-// 	assert(false);
-// 	return -1;
-// }
-
-// int daemon::stop()
-// {
-// 	return -1;
-// }
-
-// int daemon::status()
-// {
-// 	return -1;
-// }
-
-// int daemon::reload()
-// {
-// 	return -1;
-// }
-
-// bool daemon::pid_is_for_executable()
-// {
-// 	return false;
-// }
-
-// int daemon::daemonize()
-// {
-// 	assert(false);
-// 	return -1;
-// }
-
-// #else
-
 #if HTTP_HAS_UNIX_DAEMON
 
 int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
@@ -322,18 +278,6 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_thread
 			signal_catcher sc;
 			sc.block();
 
-			std::unique_ptr<basic_server> server;
-			try
-			{
-				server.reset(m_factory());
-				server->bind(address, port);
-			}
-			catch (const exception &e)
-			{
-				std::clog << "Failed to launch server: " << e.what() << '\n';
-				exit(1);
-			}
-
 			// Drop privileges
 			if (not run_as_user.empty())
 			{
@@ -369,16 +313,41 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_thread
 				}
 			}
 
-			std::thread t([nr_of_threads, &server]()
-				{ server->run(nr_of_threads); });
+			for (;;)
+			{
+				sc.block();
 
-			sc.unblock();
-			sc.wait();
+				std::unique_ptr<basic_server> server;
+				try
+				{
+					server.reset(m_factory());
+					server->bind(address, port);
+				}
+				catch (const exception &e)
+				{
+					std::clog << "Failed to launch server: " << e.what() << '\n';
+					exit(1);
+				}
 
-			server->stop();
+				std::thread t([nr_of_threads, &server]()
+					{ server->run(nr_of_threads); });
 
-			if (t.joinable())
-				t.join();
+				sc.unblock();
+				int sig = sc.wait();
+
+				server->stop();
+
+				if (t.joinable())
+					t.join();
+				
+				if (sig == SIGHUP)
+				{
+					std::this_thread::sleep_for(100ms);
+					continue;
+				}
+				
+				break;
+			}
 
 			if (fs::exists(m_pid_file, ec))
 				fs::remove(m_pid_file, ec);

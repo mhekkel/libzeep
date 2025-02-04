@@ -1,6 +1,12 @@
 Version 6.1.0
 - Better login handling
 
+Version 6.0.17
+- Do not specify BOOST_ASIO_STANDALONE by default
+
+Version 6.0.16
+- Fix the reload of daemons without preforking
+
 Version 6.0.15
 - Changed the way parsers convert a string to a float,
   now use std::from_chars for a final conversion to
