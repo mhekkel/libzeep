@@ -15,6 +15,8 @@
 
 #include "html-named-characters.hpp"
 
+#include <algorithm>
+
 namespace zeep::xml
 {
 

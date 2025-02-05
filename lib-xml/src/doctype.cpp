@@ -5,13 +5,14 @@
 
 #define _SCL_SECURE_NO_WARNINGS
 
-#include <memory>
-#include <numeric>
-#include <functional>
-
 #include <zeep/exception.hpp>
 #include <zeep/xml/doctype.hpp>
 #include <zeep/xml/character-classification.hpp>
+
+#include <algorithm>
+#include <memory>
+#include <numeric>
+#include <functional>
 
 namespace zeep::xml::doctype
 {

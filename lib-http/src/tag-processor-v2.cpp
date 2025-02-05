@@ -3,12 +3,13 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <unordered_set>
-
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/tag-processor.hpp>
 #include <zeep/http/template-processor.hpp>
 #include <zeep/xml/xpath.hpp>
+
+#include <algorithm>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -24,47 +25,55 @@ std::unordered_set<std::string> kFixedValueBooleanAttributes{
 
 // --------------------------------------------------------------------
 
-int attribute_precedence(const xml::attribute& attr)
+int attribute_precedence(const xml::attribute &attr)
 {
-		 if (attr.name() == "insert" or attr.name() == "replace")	return -10;
-	else if (attr.name() == "each")									return -9;
+	if (attr.name() == "insert" or attr.name() == "replace")
+		return -10;
+	else if (attr.name() == "each")
+		return -9;
 	else if (attr.name() == "if" or attr.name() == "unless" or
-			 attr.name() == "switch" or attr.name() == "case")		return -8;
-	else if (attr.name() == "object" or attr.name() == "with")		return -7;
+			 attr.name() == "switch" or attr.name() == "case")
+		return -8;
+	else if (attr.name() == "object" or attr.name() == "with")
+		return -7;
 	else if (attr.name() == "attr" or
 			 attr.name() == "attrappend" or attr.name() == "attrprepend" or
 			 attr.name() == "classappend" or attr.name() == "styleappend")
-			 														return -6;
+		return -6;
 
-	else if (attr.name() == "text" or attr.name() == "utext")		return 1;
-	else if (attr.name() == "fragment")								return 2;
-	else if (attr.name() == "remove")								return 3;
+	else if (attr.name() == "text" or attr.name() == "utext")
+		return 1;
+	else if (attr.name() == "fragment")
+		return 2;
+	else if (attr.name() == "remove")
+		return 3;
 
-	else															return 0;
+	else
+		return 0;
 };
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::tag_processor_v2(const char* ns)
+tag_processor_v2::tag_processor_v2(const char *ns)
 	: tag_processor(ns)
 {
 	using namespace std::placeholders;
 
-	register_attr_handler("assert",			std::bind(&tag_processor_v2::process_attr_assert,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("attr",			std::bind(&tag_processor_v2::process_attr_attr,			this, _1, _2, _3, _4, _5));
-	register_attr_handler("classappend",	std::bind(&tag_processor_v2::process_attr_classappend,	this, _1, _2, _3, _4, _5));
-	register_attr_handler("each",			std::bind(&tag_processor_v2::process_attr_each,			this, _1, _2, _3, _4, _5));
-	register_attr_handler("if",				std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("include",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
-	register_attr_handler("inline",			std::bind(&tag_processor_v2::process_attr_inline,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("insert",			std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
-	register_attr_handler("replace",		std::bind(&tag_processor_v2::process_attr_include,		this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
-	register_attr_handler("styleappend",	std::bind(&tag_processor_v2::process_attr_styleappend,	this, _1, _2, _3, _4, _5));
-	register_attr_handler("switch",			std::bind(&tag_processor_v2::process_attr_switch,		this, _1, _2, _3, _4, _5));
-	register_attr_handler("text",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("unless",			std::bind(&tag_processor_v2::process_attr_if,			this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("utext",			std::bind(&tag_processor_v2::process_attr_text,			this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("with",			std::bind(&tag_processor_v2::process_attr_with,			this, _1, _2, _3, _4, _5));
+	register_attr_handler("assert", std::bind(&tag_processor_v2::process_attr_assert, this, _1, _2, _3, _4, _5));
+	register_attr_handler("attr", std::bind(&tag_processor_v2::process_attr_attr, this, _1, _2, _3, _4, _5));
+	register_attr_handler("classappend", std::bind(&tag_processor_v2::process_attr_classappend, this, _1, _2, _3, _4, _5));
+	register_attr_handler("each", std::bind(&tag_processor_v2::process_attr_each, this, _1, _2, _3, _4, _5));
+	register_attr_handler("if", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("include", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
+	register_attr_handler("inline", std::bind(&tag_processor_v2::process_attr_inline, this, _1, _2, _3, _4, _5));
+	register_attr_handler("insert", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
+	register_attr_handler("replace", std::bind(&tag_processor_v2::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
+	register_attr_handler("styleappend", std::bind(&tag_processor_v2::process_attr_styleappend, this, _1, _2, _3, _4, _5));
+	register_attr_handler("switch", std::bind(&tag_processor_v2::process_attr_switch, this, _1, _2, _3, _4, _5));
+	register_attr_handler("text", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("unless", std::bind(&tag_processor_v2::process_attr_if, this, _1, _2, _3, _4, _5, true));
+	register_attr_handler("utext", std::bind(&tag_processor_v2::process_attr_text, this, _1, _2, _3, _4, _5, false));
+	register_attr_handler("with", std::bind(&tag_processor_v2::process_attr_with, this, _1, _2, _3, _4, _5));
 	// register_attr_handler("remove",  std::bind(&tag_processor_v2::process_attr_remove,	this, _1, _2, _3, _4, _5));
 }
 
@@ -872,7 +881,7 @@ tag_processor_v2::AttributeAction tag_processor_v2::process_attr_include(xml::el
 
 // --------------------------------------------------------------------
 
-tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element *node, xml::attribute *attr, scope &/*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
+tag_processor_v2::AttributeAction tag_processor_v2::process_attr_remove(xml::element *node, xml::attribute *attr, scope & /*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
 {
 	auto mode = attr->value();
 

@@ -12,6 +12,8 @@
 
 #include "glob.hpp"
 
+#include <algorithm>
+
 namespace fs = std::filesystem;
 
 namespace zeep::http

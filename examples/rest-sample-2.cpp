@@ -9,6 +9,8 @@
 #include <zeep/http/rest-controller.hpp>
 #include <zeep/http/html-controller.hpp>
 
+#include <algorithm>
+
 //[ cart_items_2
 struct Item
 {
