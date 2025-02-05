@@ -48,7 +48,7 @@ jobs:
       run: cmake --build build --target Sphinx-libzeep
 
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v3
       with:
         path: ${{ steps.strings.outputs.build-output-dir }}/docs/sphinx
 
