@@ -1,7 +1,5 @@
 Version 6.1.0
 - Better login handling
-
-Version 6.0.17
 - Do not specify BOOST_ASIO_STANDALONE by default
 
 Version 6.0.16
