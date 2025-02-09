@@ -3,16 +3,17 @@
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
+# For the unit tests:
 find_package(Boost REQUIRED)
 
 if(NOT (mcfp_FOUND OR TARGET mcfp))
-	find_package(mcfp QUIET)
+	find_package(mcfp 1.3.5 QUIET)
 
 	if(NOT mcfp_FOUND)
 		if(ZEEP_ALLOW_FETCH_CONTENT)
 			include(FetchContent)
 
-			FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.3)
+			FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.3.5)
 			FetchContent_MakeAvailable(mcfp)
 		else()
 			message(FATAL_ERROR "The mcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")

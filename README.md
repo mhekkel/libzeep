@@ -1,10 +1,10 @@
+libzeep
+=======
+
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
 [![github CI](https://github.com/mhekkel/libzeep/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
 [![github CI](https://github.com/mhekkel/libzeep/actions/workflows/build-documentation.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
-
-libzeep
-=======
 
 TL;DR
 -----
