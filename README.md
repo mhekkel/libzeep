@@ -72,7 +72,8 @@ Building libzeep
 
 To build libzeep you have to have [cmake](https://cmake.org/) installed.
 
-You also need to have installed [Howard Hinnants date library](https://github.com/HowardHinnant/date).
+You also need to have installed [Howard Hinnants date library](https://github.com/HowardHinnant/date)
+as well as [libmcfp](https://github.com/mhekkel/libmcf).
 
 And, unless you are using macOS, it is recommended to install
 [mrc](https://github.com/mhekkel/mrc) in order to have resources support in libzeep.

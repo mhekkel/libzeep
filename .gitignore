@@ -1,4 +1,4 @@
-lib-xml/test/XML-Test-Suite/
+test/xml/XML-Test-Suite/
 tests/
 .vs/
 .vscode
@@ -9,8 +9,6 @@ include/zeep/config.hpp
 **/.gdb_history
 include/zeep/http/asio.hpp
 lib-xml/src/revision.hpp
-debug/
-release/
 docs/api
 docs/conf.py
 src/revision.hpp

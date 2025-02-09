@@ -1,3 +1,6 @@
+Version 6.1.1
+- Fixed copyright on named characters files
+
 Version 6.1.0
 - Better login handling
 - Do not specify BOOST_ASIO_STANDALONE by default

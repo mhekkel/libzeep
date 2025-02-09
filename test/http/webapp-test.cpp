@@ -13,7 +13,7 @@
 #include <zeep/http/server.hpp>
 #include <zeep/streambuf.hpp>
 
-#include "../src/signals.hpp"
+#include "signals.hpp"
 #include "client-test-code.hpp"
 
 using namespace std;
