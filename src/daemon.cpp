@@ -5,12 +5,12 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // Source code specifically for Unix/Linux
-// Utilitie routines to build daemon processes
+// Utility routines to build daemon processes
 
 #ifndef _WIN32
-#include <grp.h>
-#include <pwd.h>
-#include <sys/wait.h>
+# include <grp.h>
+# include <pwd.h>
+# include <sys/wait.h>
 #endif
 
 #include <filesystem>
@@ -63,8 +63,11 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	else
 	{
 		asio_ns::ip::tcp::resolver resolver(io_context);
-		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-		endpoint = *resolver.resolve(query);
+		for (auto &ep : resolver.resolve(address, std::to_string(port)))
+		{
+			endpoint = ep;
+			break;
+		}
 	}
 
 	asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -96,40 +99,7 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 	return 0;
 }
 
-#if _WIN32
-
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
-{
-	assert(false);
-	return -1;
-}
-
-int daemon::stop()
-{
-	return -1;
-}
-
-int daemon::status()
-{
-	return -1;
-}
-
-int daemon::reload()
-{
-	return -1;
-}
-
-bool daemon::pid_is_for_executable()
-{
-	return false;
-}
-
-void daemon::daemonize()
-{
-	assert(false);
-}
-
-#else
+#if HTTP_HAS_UNIX_DAEMON
 
 int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
 {
@@ -150,7 +120,7 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 		fs::path pidDir = fs::path(m_pid_file).parent_path();
 		if (not fs::is_directory(pidDir, ec))
 			fs::create_directories(pidDir, ec);
-		
+
 		if (ec)
 			std::clog << "Creating directory for pid file failed: " << ec.message() << '\n';
 
@@ -180,8 +150,11 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			catch (const std::exception &e)
 			{
 				asio_ns::ip::tcp::resolver resolver(io_context);
-				asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-				endpoint = *resolver.resolve(query);
+				for (auto &ep : resolver.resolve(address, std::to_string(port)))
+				{
+					endpoint = ep;
+					break;
+				}
 			}
 
 			asio_ns::ip::tcp::acceptor acceptor(io_context);
@@ -197,8 +170,10 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 			throw std::runtime_error(std::string("Is server running already? ") + e.what());
 		}
 
-		daemonize();
-		
+		int pid = daemonize();
+		if (pid != 0) // parent process, we can simply exit now
+			_exit(0);
+
 		for (;;)
 		{
 			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
@@ -207,16 +182,182 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 				std::clog << "Server was interrupted, will attempt to resume\n";
 				continue;
 			}
-			
+
 			break;
 		}
 
+		if (fs::exists(m_pid_file, ec))
+			fs::remove(m_pid_file, ec);
+
+		if (ec)
+			std::clog << "Removing pid file failed: " << ec.message() << '\n';
+	}
+
+	return result;
+}
+
+int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
+{
+	int result = 0;
+
+	if (pid_is_for_executable())
+	{
+		std::clog << "Server is already running.\n";
+		result = 1;
+	}
+	else
+	{
+		std::error_code ec;
 
 		if (fs::exists(m_pid_file, ec))
 			fs::remove(m_pid_file, ec);
-		
+
+		fs::path pidDir = fs::path(m_pid_file).parent_path();
+		if (not fs::is_directory(pidDir, ec))
+			fs::create_directories(pidDir, ec);
+
 		if (ec)
-			std::clog << "Removing pid file failed: " << ec.message() << '\n';
+			std::clog << "Creating directory for pid file failed: " << ec.message() << '\n';
+
+		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
+		if (not fs::is_directory(outLogDir, ec))
+			fs::create_directories(outLogDir, ec);
+
+		if (ec)
+			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
+
+		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
+		if (not fs::is_directory(errLogDir, ec))
+			fs::create_directories(errLogDir, ec);
+
+		if (ec)
+			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
+
+		try
+		{
+			asio_ns::io_context io_context;
+
+			asio_ns::ip::tcp::endpoint endpoint;
+			try
+			{
+				endpoint = asio_ns::ip::tcp::endpoint(asio_ns::ip::make_address(address), port);
+			}
+			catch (const std::exception &e)
+			{
+				asio_ns::ip::tcp::resolver resolver(io_context);
+				for (auto &ep : resolver.resolve(address, std::to_string(port)))
+				{
+					endpoint = ep;
+					break;
+				}
+			}
+
+			asio_ns::ip::tcp::acceptor acceptor(io_context);
+			acceptor.open(endpoint.protocol());
+			acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
+			acceptor.bind(endpoint);
+			acceptor.listen();
+
+			acceptor.close();
+		}
+		catch (exception &e)
+		{
+			throw std::runtime_error(std::string("Is server running already? ") + e.what());
+		}
+
+		int pid = daemonize();
+		if (pid == 0) // Child process
+		{
+			// Start listening now that we still have the rights
+
+			open_log_file();
+
+			std::clog << "starting server\n"
+					  << "Listening to " << address << ':' << port << '\n';
+
+			signal_catcher sc;
+			sc.block();
+
+			// Drop privileges
+			if (not run_as_user.empty())
+			{
+				struct passwd *pw = getpwnam(run_as_user.c_str());
+				if (pw == NULL)
+				{
+					std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
+					exit(1);
+				}
+
+				int ngroups = 0;
+				if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
+				{
+					std::vector<gid_t> groups(ngroups);
+					if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
+						setgroups(ngroups, groups.data()) == -1)
+					{
+						std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
+						exit(1);
+					}
+				}
+
+				if (setgid(pw->pw_gid) < 0)
+				{
+					std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
+					exit(1);
+				}
+
+				if (setuid(pw->pw_uid) < 0)
+				{
+					std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
+					exit(1);
+				}
+			}
+
+			for (;;)
+			{
+				sc.block();
+
+				std::unique_ptr<basic_server> server;
+				try
+				{
+					server.reset(m_factory());
+					server->bind(address, port);
+				}
+				catch (const exception &e)
+				{
+					std::clog << "Failed to launch server: " << e.what() << '\n';
+					exit(1);
+				}
+
+				std::thread t([nr_of_threads, &server]()
+					{ server->run(nr_of_threads); });
+
+				sc.unblock();
+				int sig = sc.wait();
+
+				server->stop();
+
+				if (t.joinable())
+					t.join();
+				
+				if (sig == SIGHUP)
+				{
+					std::this_thread::sleep_for(100ms);
+					continue;
+				}
+				
+				break;
+			}
+
+			if (fs::exists(m_pid_file, ec))
+				fs::remove(m_pid_file, ec);
+
+			if (ec)
+				std::clog << "Removing pid file failed: " << ec.message() << '\n';
+			
+			// We're done. Exit
+			_exit(0);
+		}
 	}
 
 	return result;
@@ -296,7 +437,7 @@ int daemon::reload()
 	return result;
 }
 
-void daemon::daemonize()
+int daemon::daemonize()
 {
 	int pid = fork();
 
@@ -308,7 +449,7 @@ void daemon::daemonize()
 
 	// exit the parent (=calling) process
 	if (pid != 0)
-		_exit(0);
+		return pid;
 
 	if (setsid() < 0)
 	{
@@ -348,6 +489,8 @@ void daemon::daemonize()
 	// close stdin
 	close(STDIN_FILENO);
 	open("/dev/null", O_RDONLY);
+
+	return 0;
 }
 
 void daemon::open_log_file()
@@ -407,7 +550,7 @@ bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_
 		sigfillset(&new_mask);
 		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-		preforked_server server([=,this]()
+		preforked_server server([=, this]()
 			{
 			try
 			{
@@ -544,8 +687,8 @@ bool daemon::pid_is_for_executable()
 			result = strcmp(exe, path) == 0 or
 			         (ends_with(path, " (deleted)") and starts_with(path, exe));
 		}
-		else if (errno == ENOENT) // link file doesn't exist
-			result = false;
+		else if (errno == ENOENT) // link file doesn't exist (can happen on e.g. macOS)
+			result = kill(pid, 0) == 0;	// simply test using kill with signal 0. 
 		else
 			throw std::runtime_error("Failed to read executable link : "s + strerror(errno));
 	}

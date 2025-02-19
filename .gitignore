@@ -14,4 +14,3 @@ release/
 docs/api
 docs/conf.py
 src/revision.hpp
-lib-http/src/revision.hpp

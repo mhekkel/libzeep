@@ -568,7 +568,7 @@ std::string request::get_cookie(const char *name) const
 {
 	for (const header &h : m_headers)
 	{
-		if (h.name != "Cookie")
+		if (not iequals(h.name, "Cookie"))
 			continue;
 
 		std::vector<std::string> rawCookies;

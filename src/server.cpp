@@ -78,8 +78,11 @@ void basic_server::bind(const std::string &address, unsigned short port)
 	else
 	{
 		asio_ns::ip::tcp::resolver resolver(get_io_context());
-		asio_ns::ip::tcp::resolver::query query(address, std::to_string(port));
-		endpoint = *resolver.resolve(query);
+		for (auto &ep : resolver.resolve(address, std::to_string(port)))
+		{
+			endpoint = ep;
+			break;
+		}
 	}
 
 	m_acceptor->open(endpoint.protocol());

@@ -169,6 +169,58 @@ TEST_CASE("webapp_7")
 	t.join();
 }
 
+// Single process variant
+
+#if HTTP_HAS_UNIX_DAEMON
+
+BOOST_AUTO_TEST_CASE(webapp_8)
+{
+	// start up a http server and stop it again
+
+	zh::daemon d([]() {
+		auto s = new zh::server;
+		s->add_controller(new my_controller());
+		return s;
+	}, "/tmp/libzeep-tests/zeep-http-test.pid",
+		"/tmp/libzeep-tests/zeep-http-test-access.log",
+		"/tmp/libzeep-tests/zeep-http-test-error.log");
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	d.start("::", port, 1, "");
+
+	std::clog << "started daemon for test_8 at port " << port << '\n';
+
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
+
+	try
+	{
+		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
+
+		reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::bad_request);
+
+		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::ok);
+
+		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
+		BOOST_TEST(reply.get_status() == zh::not_found);
+	}
+	catch (const std::exception& e)
+	{
+		std::clog << e.what() << '\n';
+		BOOST_TEST_FAIL("Failed with exception");
+		throw;
+	}
+
+	d.stop();
+}
+
+#endif
+
 // authentication test
 TEST_CASE("server_with_security_1")
 {

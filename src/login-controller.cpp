@@ -219,7 +219,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	{
 		get_server()->get_security_context().verify_username_password(username, password, rep);
 	}
-	catch (const invalid_password_exception &e)
+	catch (const authentication_exception &e)
 	{
 		auto doc = load_login_form(req);
 		for (auto csrf_attr : doc.find("//input[@name='_csrf']"))

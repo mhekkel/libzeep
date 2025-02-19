@@ -62,7 +62,9 @@ class daemon
 		m_restart_time_window = within_nr_of_seconds;
 	}
 
-	/// \brief Start the daemon, forking off in the background
+#if HTTP_HAS_UNIX_DAEMON
+
+	/// \brief Start the daemon, forking off in the background with multiple preforked servers
 	///
 	/// \param address				The address to bind to
 	/// \param port					The port number to bind to
@@ -74,6 +76,17 @@ class daemon
 	int start(const std::string& address, uint16_t port, size_t nr_of_procs,
 		size_t nr_of_threads, const std::string& run_as_user);
 
+	/// \brief Start the daemon, forking off in the background with single process
+	///
+	/// \param address				The address to bind to
+	/// \param port					The port number to bind to
+	/// \param nr_of_threads		The number of threads to pass to the server class
+	/// \param run_as_user			The user to run the forked process. Daemons are usually
+	///								started as root and should drop their privileges as soon
+	///								as possible.
+	int start(const std::string& address, uint16_t port, size_t nr_of_threads,
+		const std::string& run_as_user);
+
 	/// \brief Stop a running daemon process. Returns 0 in case of successfully stopping a process.
 	int stop();
 
@@ -82,6 +95,8 @@ class daemon
 
 	/// \brief Force the running daemon to restart
 	int reload();
+
+#endif
 
 	/// \brief Run the server without forking to the background
 	///
@@ -92,12 +107,16 @@ class daemon
 
   private:
 
-	void daemonize();
+#if HTTP_HAS_UNIX_DAEMON
+
+	int daemonize();
 	void open_log_file();
+
 	bool run_main_loop(const std::string& address, uint16_t port, size_t nr_of_procs,
 		size_t nr_of_threads, const std::string& run_as_user);
 
 	bool pid_is_for_executable();
+#endif
 
   private:
 	server_factory_type m_factory;
