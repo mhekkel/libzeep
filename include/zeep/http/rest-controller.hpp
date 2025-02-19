@@ -403,12 +403,14 @@ class rest_controller : public controller
 				{
 					using U = std::remove_cvref_t<T>;
 
-					if constexpr (nlohmann::detail::is_compatible_type<nlohmann::json, U>::value)
+					if constexpr (has_value_serializer_v<U>)
+						result = value_serializer<U>::from_string(p);
+					else if constexpr (nlohmann::detail::is_compatible_type<nlohmann::json, U>::value)
 					{
 						auto j = nlohmann::json::parse(p);
 						result = j.get<U>();
 					}
-					else
+					else	// TODO: remove? Check?
 						result = value_serializer<T>::from_string(p);
 				}
 			}

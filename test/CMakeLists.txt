@@ -6,11 +6,9 @@ if(NOT Catch2_FOUND)
 	FetchContent_Declare(
 		Catch2
 		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG v2.13.9)
+		GIT_TAG v3.8.0)
 
 	FetchContent_MakeAvailable(Catch2)
-
-	set(Catch2_VERSION "2.13.9")
 endif()
 
 find_package(libmcfp QUIET)
@@ -69,12 +67,6 @@ foreach(TEST IN LISTS zeep_tests)
 
 	if("${ZEEP_TEST}" STREQUAL "processor")
 		target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
-	endif()
-
-	if(${Catch2_VERSION} VERSION_GREATER_EQUAL 3.0.0)
-		target_compile_definitions(${ZEEP_TEST} PUBLIC CATCH22=0)
-	else()
-		target_compile_definitions(${ZEEP_TEST} PUBLIC CATCH22=1)
 	endif()
 
 	if(USE_RSRC AND("${TEST}" STREQUAL "processor" OR "${TEST}" STREQUAL "rsrc_webapp"))

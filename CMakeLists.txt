@@ -17,6 +17,7 @@ include(FetchContent)
 include(VersionString)
 include(CTest)
 include(CMakeDependentOption)
+include(CMakePackageConfigHelpers)
 
 option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
@@ -29,8 +30,17 @@ if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
 	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
 endif()
 
+# New policy for Boost, set it here
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+	cmake_policy(SET CMP0167 NEW)
+endif()
+
+set(CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -60,6 +70,12 @@ endif()
 if(MSVC)
 	# make msvc standards compliant...
 	add_compile_options(/permissive-)
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+elseif(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
 # Optionally use mrc to create resources
@@ -111,13 +127,12 @@ if(NOT date_FOUND)
 	endif()
 endif()
 
-# find_package(mxml REQUIRED)
+find_package(mxml 1.0.3 REQUIRED)
 
 # FetchContent_Declare(mxml GIT_REPOSITORY s4.hekkelman.net:git-repo/mxml.git GIT_TAG no-module)
 # FetchContent_MakeAvailable(mxml)
 
-add_subdirectory(mxml EXCLUDE_FROM_ALL)
-
+# add_subdirectory(mxml EXCLUDE_FROM_ALL)
 find_package(nlohmann_json REQUIRED NAMES json nlohmann_json)
 
 if(UNIX)
@@ -142,6 +157,7 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/value-serializer.hpp
 	include/zeep/config.hpp
 	include/zeep/type-traits.hpp
+
 	# include/zeep/json/to_element.hpp
 	# include/zeep/json/element.hpp
 	# include/zeep/json/factory.hpp
@@ -151,9 +167,11 @@ list(APPEND ZEEP_HEADERS
 	# include/zeep/json/from_element.hpp
 	# include/zeep/json/element_fwd.hpp
 	# include/zeep/json/iterator.hpp
+	include/zeep/json-serializer.hpp
 	include/zeep/http/asio.hpp
 	include/zeep/http/access-control.hpp
 	include/zeep/http/controller.hpp
+	include/zeep/http/el-object.hpp
 	include/zeep/http/message-parser.hpp
 	include/zeep/http/tag-processor.hpp
 	include/zeep/http/connection.hpp
@@ -165,6 +183,7 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/header.hpp
 	include/zeep/http/request.hpp
 	include/zeep/http/rest-controller.hpp
+
 	# include/zeep/http/soap-controller.hpp
 	include/zeep/http/html-controller.hpp
 	include/zeep/http/security.hpp
@@ -196,6 +215,7 @@ list(APPEND ZEEP_SRC
 	src/security.cpp
 	src/server.cpp
 	src/uri.cpp
+
 	# src/soap-controller.cpp
 	src/tag-processor-v2.cpp
 	src/tag-processor.cpp
@@ -257,41 +277,45 @@ install(EXPORT zeep-targets
 	DESTINATION lib/cmake/zeep
 )
 
-# configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
-# 	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
-# 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-# )
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+)
 
-# write_basic_package_version_file(
-# 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-# 	COMPATIBILITY AnyNewerVersion
-# )
+write_basic_package_version_file(
+	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
+	COMPATIBILITY AnyNewerVersion
+)
 
 # file(GLOB OLD_CONFIG_FILES
-# 	${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepConfig*.cmake
-# 	${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepTargets*.cmake)
+# ${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepConfig*.cmake
+# ${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepTargets*.cmake)
 
 # if(OLD_CONFIG_FILES)
-# 	message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
-# 	install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
+# message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
+# install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
 # endif()
+install(FILES
+	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	COMPONENT Devel
+)
 
-# install(FILES
-# 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
-# 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-# 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
-# 	COMPONENT Devel
-# )
-
-# set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
-# set_target_properties(zeep PROPERTIES
-# 	VERSION ${PROJECT_VERSION}
-# 	SOVERSION ${PROJECT_VERSION_MAJOR}
-# 	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-# 	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
-# )
+set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(zeep PROPERTIES
+	VERSION ${PROJECT_VERSION}
+	SOVERSION ${PROJECT_VERSION_MAJOR}
+	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
+)
 
 # Config file
+if(UNIX)
+	set(HTTP_SERVER_HAS_PREFORK 1)
+	set(HTTP_HAS_UNIX_DAEMON 1)
+endif()
+
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})

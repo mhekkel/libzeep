@@ -7,9 +7,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <zeep/http/el-object.hpp>
 #include <zeep/http/template-processor.hpp>
-
-
 
 namespace fs = std::filesystem;
 
@@ -19,15 +18,16 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
-file_loader::file_loader(const std::filesystem::path& docroot)
-	: resource_loader(), m_docroot(docroot)
+file_loader::file_loader(const std::filesystem::path &docroot)
+	: resource_loader()
+	, m_docroot(docroot)
 {
 	if (not docroot.empty() and not std::filesystem::exists(m_docroot))
 		throw std::runtime_error("Docroot '" + m_docroot.string() + "' does not seem to exist");
 }
 
 /// return last_write_time of \a file
-std::filesystem::file_time_type file_loader::file_time(const std::string& file, std::error_code& ec) noexcept
+std::filesystem::file_time_type file_loader::file_time(const std::string &file, std::error_code &ec) noexcept
 {
 	fs::path p(file);
 	if (p.has_root_path())
@@ -37,13 +37,13 @@ std::filesystem::file_time_type file_loader::file_time(const std::string& file, 
 }
 
 /// return last_write_time of \a file
-std::istream* file_loader::load_file(const std::string& file, std::error_code& ec) noexcept
+std::istream *file_loader::load_file(const std::string &file, std::error_code &ec) noexcept
 {
 	fs::path p(file);
 	if (p.has_root_path())
 		p = fs::relative(p, p.root_path());
 
-	std::ifstream* result = nullptr;
+	std::ifstream *result = nullptr;
 
 	if (not fs::is_regular_file(m_docroot / p))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
@@ -57,14 +57,14 @@ std::istream* file_loader::load_file(const std::string& file, std::error_code& e
 			ec = std::make_error_code(std::errc::no_such_file_or_directory);
 		}
 	}
-	
-	return result;	
+
+	return result;
 }
 
 // --------------------------------------------------------------------
 //
 
-void basic_template_processor::handle_file(const http::request& request, const scope& scope, http::reply& reply)
+void basic_template_processor::handle_file(const http::request &request, const scope &scope, http::reply &reply)
 {
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].as<std::string>(), ec);
@@ -76,14 +76,14 @@ void basic_template_processor::handle_file(const http::request& request, const s
 	}
 
 	using namespace std::chrono;
-    auto fileDate = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+	auto fileDate = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
 	std::string ifModifiedSince;
-	for (const http::header& h : request.get_headers())
+	for (const http::header &h : request.get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
 		{
-			std::istringstream ss { h.value };
+			std::istringstream ss{ h.value };
 			std::tm tm;
 			ss >> std::get_time(&tm, "%a, %d %b %Y %H:%M:%S GMT");
 
@@ -144,17 +144,17 @@ void basic_template_processor::handle_file(const http::request& request, const s
 	reply.set_header("Last-Modified", s.str());
 }
 
-void basic_template_processor::set_docroot(const fs::path& path)
+void basic_template_processor::set_docroot(const fs::path &path)
 {
 	m_docroot = path;
 }
 
-std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_file(const std::string& file)
+std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_file(const std::string &file)
 {
 	bool found = false;
 	fs::path template_file;
 
-	for (const char* ext: { "", ".xhtml", ".html", ".xml" })
+	for (const char *ext : { "", ".xhtml", ".html", ".xml" })
 	{
 		std::error_code ec;
 
@@ -169,15 +169,15 @@ std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_fi
 
 		break;
 	}
-	
+
 	return { found, template_file };
 }
 
-void basic_template_processor::load_template(const std::string& file, mxml::document& doc)
+void basic_template_processor::load_template(const std::string &file, mxml::document &doc)
 {
 	std::string templateSelector;
 
-	nlohmann::json spec;
+	object spec;
 	std::unique_ptr<std::istream> data;
 	std::error_code ec;
 
@@ -192,7 +192,7 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 	{
 		auto espec = evaluate_el_link({}, file);
 
-		if (espec.is_object())	// reset the content, saves having to add another method
+		if (espec.is_object()) // reset the content, saves having to add another method
 		{
 			std::tie(regularTemplate, templateFile) = is_template_file(espec["template"].as<std::string>());
 
@@ -213,7 +213,7 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 		{
 			char *lpMsgBuf = nullptr;
 			int m = ::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-										NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
+				NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
 
 			if (lpMsgBuf != nullptr)
 			{
@@ -239,7 +239,7 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 	{
 		*data >> doc;
 	}
-	catch (const std::exception& ex)
+	catch (const std::exception &ex)
 	{
 		std::clog << "Error parsing template: " << ex.what() << '\n';
 		throw;
@@ -255,10 +255,10 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 		// TODO fix this
 		std::string ns;
 
-		for (auto& tp: m_tag_processor_creators)
+		for (auto &tp : m_tag_processor_creators)
 		{
 			std::unique_ptr<tag_processor> ptp(tp.second(tp.first));
-			if (dynamic_cast<tag_processor_v2*>(ptp.get()) == nullptr)
+			if (dynamic_cast<tag_processor_v2 *>(ptp.get()) == nullptr)
 				continue;
 
 			ns = tp.first;
@@ -269,15 +269,15 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 
 		std::vector<std::unique_ptr<mxml::node>> result;
 
-		for (auto n: xp.evaluate<mxml::node>(doc, ctx))
+		for (auto n : xp.evaluate<mxml::node>(doc, ctx))
 		{
-			auto e = dynamic_cast<mxml::element*>(n);
+			auto e = dynamic_cast<mxml::element *>(n);
 			if (e == nullptr)
 				continue;
 
 			mxml::document dest;
 
-			auto& attr = e->attributes();
+			auto &attr = e->attributes();
 
 			if (spec["selector"]["by-id"])
 				attr.erase("id");
@@ -297,7 +297,7 @@ void basic_template_processor::load_template(const std::string& file, mxml::docu
 	}
 }
 
-void basic_template_processor::create_reply_from_template(const std::string& file, const scope& scope, http::reply& reply)
+void basic_template_processor::create_reply_from_template(const std::string &file, const scope &scope, http::reply &reply)
 {
 	mxml::document doc;
 	doc.set_preserve_cdata(true);
@@ -309,22 +309,22 @@ void basic_template_processor::create_reply_from_template(const std::string& fil
 	reply.set_content(doc);
 }
 
-void basic_template_processor::init_scope(scope& /*scope*/)
+void basic_template_processor::init_scope(scope & /*scope*/)
 {
 }
 
-void basic_template_processor::process_tags(mxml::node* node, const scope& scope)
+void basic_template_processor::process_tags(mxml::node *node, const scope &scope)
 {
 	// only process elements
-	if (dynamic_cast<mxml::element*>(node) == nullptr)
+	if (dynamic_cast<mxml::element *>(node) == nullptr)
 		return;
 
 	std::set<std::string> registeredNamespaces;
-	for (auto& tpc: m_tag_processor_creators)
+	for (auto &tpc : m_tag_processor_creators)
 		registeredNamespaces.insert(tpc.first);
 
 	if (not registeredNamespaces.empty())
-		process_tags(static_cast<mxml::element*>(node), scope, registeredNamespaces);
+		process_tags(static_cast<mxml::element *>(node), scope, registeredNamespaces);
 
 	// decorate all forms with a hidden input with name _csrf
 
@@ -333,20 +333,18 @@ void basic_template_processor::process_tags(mxml::node* node, const scope& scope
 	{
 		auto forms = mxml::xpath(R"(//form[not(input[@name='_csrf'])])");
 		mxml::context ctx;
-		for (auto& form: forms.evaluate<mxml::element>(*node, ctx))
-			form->emplace_back(mxml::element("input", {
-				{ "name", "_csrf" },
-				{ "value", csrf },
-				{ "type", "hidden" }
-			}));
+		for (auto &form : forms.evaluate<mxml::element>(*node, ctx))
+			form->emplace_back(mxml::element("input", { { "name", "_csrf" },
+														  { "value", csrf },
+														  { "type", "hidden" } }));
 	}
 }
 
-void basic_template_processor::process_tags(mxml::element* node, const scope& scope, std::set<std::string> registeredNamespaces)
+void basic_template_processor::process_tags(mxml::element *node, const scope &scope, std::set<std::string> registeredNamespaces)
 {
 	std::set<std::string> nss;
 
-	for (auto& ns: node->attributes())
+	for (auto &ns : node->attributes())
 	{
 		if (not ns.is_namespace())
 			continue;
@@ -355,7 +353,7 @@ void basic_template_processor::process_tags(mxml::element* node, const scope& sc
 			nss.insert(ns.value());
 	}
 
-	for (auto& ns: nss)
+	for (auto &ns : nss)
 	{
 		std::unique_ptr<tag_processor> processor(create_tag_processor(ns));
 		processor->process_xml(node, scope, "", *this);
@@ -365,9 +363,9 @@ void basic_template_processor::process_tags(mxml::element* node, const scope& sc
 
 	if (not registeredNamespaces.empty())
 	{
-		for (auto& e: *node)
+		for (auto &e : *node)
 			process_tags(&e, scope, registeredNamespaces);
 	}
 }
 
-} // namespace http::zeep
+} // namespace zeep::http

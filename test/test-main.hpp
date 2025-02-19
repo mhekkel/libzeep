@@ -26,11 +26,7 @@
 
 #pragma once
 
-#if CATCH22
-# include <catch2/catch.hpp>
-#else
-# include <catch2/catch_all.hpp>
-#endif
+#include <catch2/catch_all.hpp>
 
 #include <filesystem>
 
