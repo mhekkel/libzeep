@@ -58,7 +58,7 @@ TEST_CASE("uri_2")
 
 	CHECK(url.get_scheme() == "http");
 	CHECK(url.get_host() == "[::1]");
-	CHECK(url.get_path().string() == "segment/index.html");
+	CHECK(url.get_path().string() == "/segment/index.html");
 	CHECK(url.get_query(false) == "query");
 	CHECK(url.get_fragment(false) == "frag");
 }
@@ -67,14 +67,14 @@ TEST_CASE("uri_3")
 {
 	zeep::http::uri url("http://www.example.com/~maarten");
 
-	CHECK(url.get_path().string() == "~maarten");
+	CHECK(url.get_path().string() == "/~maarten");
 }
 
 TEST_CASE("uri_4")
 {
 	zeep::http::uri url("http://www.example.com/%7Emaarten");
 
-	CHECK(url.get_path().string() == "~maarten");
+	CHECK(url.get_path().string() == "/~maarten");
 }
 
 TEST_CASE("uri_5")
@@ -96,9 +96,18 @@ TEST_CASE("uri_6a")
 TEST_CASE("uri_6b")
 {
 	zeep::http::uri uri("file://a/b");
-	CHECK(not uri.is_absolute());
-	CHECK(uri.get_path().string() == "b");
+	CHECK(uri.is_absolute());
+	CHECK(uri.get_host() == "a");
+	CHECK(uri.get_path().string() == "/b");
 }
+
+TEST_CASE("uri_6c")
+{
+	CHECK_THROWS_AS(zeep::http::uri("file://a"), zeep::http::uri_parse_error);
+	CHECK_THROWS_AS(zeep::http::uri("file://a?b"), zeep::http::uri_parse_error);
+	CHECK_THROWS_AS(zeep::http::uri("file://a#c"), zeep::http::uri_parse_error);
+}
+
 
 TEST_CASE("normalize_1")
 {
