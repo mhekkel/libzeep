@@ -11,16 +11,14 @@ if(NOT Catch2_FOUND)
 	FetchContent_MakeAvailable(Catch2)
 endif()
 
-find_package(libmcfp QUIET)
+find_package(mcfp QUIET)
 
-if(NOT libmcfp_FOUND)
+if(NOT mcfp_FOUND)
 	if(ZEEP_ALLOW_FETCH_CONTENT)
 		include(FetchContent)
 
-		FetchContent_Declare(libmcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
-		FetchContent_MakeAvailable(libmcfp)
-	elseif(EXISTS libmcfp/CMakeLists.txt)
-		add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+		FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
+		FetchContent_MakeAvailable(mcfp)
 	else()
 		message(FATAL_ERROR "The libmcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")
 	endif()
@@ -73,7 +71,7 @@ foreach(TEST IN LISTS zeep_tests)
 		mrc_target_resources(${ZEEP_TEST} ${CMAKE_CURRENT_SOURCE_DIR}/fragment-file.xhtml)
 	endif()
 
-	target_link_libraries(${ZEEP_TEST} PRIVATE zeep libmcfp::libmcfp Catch2::Catch2)
+	target_link_libraries(${ZEEP_TEST} PRIVATE zeep mcfp::mcfp Catch2::Catch2)
 
 	if(MSVC)
 		# Specify unwind semantics so that MSVC knowns how to handle exceptions

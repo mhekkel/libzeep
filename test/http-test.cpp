@@ -173,7 +173,7 @@ TEST_CASE("webapp_7")
 
 #if HTTP_HAS_UNIX_DAEMON
 
-BOOST_AUTO_TEST_CASE(webapp_8)
+TEST_CASE("webapp_8")
 {
 	// start up a http server and stop it again
 
@@ -198,21 +198,20 @@ BOOST_AUTO_TEST_CASE(webapp_8)
 	try
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
-		BOOST_TEST(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
-		BOOST_TEST(reply.get_status() == zh::bad_request);
+		CHECK(reply.get_status() == zh::bad_request);
 
 		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
-		BOOST_TEST(reply.get_status() == zh::ok);
+		CHECK(reply.get_status() == zh::ok);
 
 		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
-		BOOST_TEST(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 	}
 	catch (const std::exception& e)
 	{
 		std::clog << e.what() << '\n';
-		BOOST_TEST_FAIL("Failed with exception");
 		throw;
 	}
 

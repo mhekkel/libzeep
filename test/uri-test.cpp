@@ -244,7 +244,7 @@ TEST_CASE("encoding_1")
 	// http://a/höken/Ðuh?¤
 	zeep::http::uri u("http://a/h%C3%B6ken/%C3%90uh?%C2%A4");
 
-	CHECK(zeep::http::decode_url(u.get_path().string()) == "höken/Ðuh");
+	CHECK(zeep::http::decode_url(u.get_path().string()) == "/höken/Ðuh");
 	CHECK(zeep::http::decode_url(u.get_query(false)) == "¤");
 	CHECK(u.get_query(true) == "¤");
 }
