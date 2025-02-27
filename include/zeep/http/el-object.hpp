@@ -50,7 +50,7 @@ template <typename T>
 concept ObjectType = std::is_same_v<object, std::remove_cvref_t<T>>;
 
 template <typename T>
-concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_floating_point_v<std::remove_cvref_t<T>>)and not std::is_same_v<std::remove_cvref_t<T>, bool>);
+concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_floating_point_v<std::remove_cvref_t<T>>) and not std::is_same_v<std::remove_cvref_t<T>, bool>);
 
 template <typename T>
 concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integral_v<T> and not std::is_floating_point_v<T>);
@@ -457,7 +457,50 @@ class object
 	object(const nlohmann::json &j)
 	{
 		// to be implemented
-		assert(false);
+		switch (j.type())
+		{
+			case nlohmann::json::value_t::null:
+				m_type = value_type::null;
+				break;
+
+			case nlohmann::json::value_t::object:
+				for (auto i = j.begin(); i != j.end(); ++i)
+					operator[](i.key()) = i.value();
+				break;
+
+			case nlohmann::json::value_t::array:
+				for (auto &e : j)
+					push_back(e);
+				break;
+
+			case nlohmann::json::value_t::string:
+				operator=(j.template get<std::string>());
+				break;
+
+			case nlohmann::json::value_t::boolean:
+				operator=(j.template get<bool>());
+				break;
+
+			case nlohmann::json::value_t::number_integer:
+				operator=(j.template get<int64_t>());
+				break;
+
+			case nlohmann::json::value_t::number_unsigned:
+				operator=(j.template get<uint64_t>());
+				break;
+
+			case nlohmann::json::value_t::number_float:
+				operator=(j.template get<double>());
+				break;
+
+			case nlohmann::json::value_t::binary:
+				assert(false);
+				break;
+
+			case nlohmann::json::value_t::discarded:
+				assert(false);
+				break;
+		}
 	}
 
 	object(object &&rhs) noexcept
@@ -502,7 +545,7 @@ class object
 	}
 
 	// --------------------------------------------------------------------
-	
+
 	template <StringType T>
 	inline std::string as() const
 	{
@@ -696,7 +739,6 @@ class object
 
 	void push_back(object &&val);
 	void push_back(const object &val);
-
 
 	template <typename... Args>
 	std::pair<iterator, bool> emplace(Args &&...args)
