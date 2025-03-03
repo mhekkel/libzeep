@@ -373,7 +373,7 @@ class object
 	{
 	}
 
-	object(value_type t)
+	object(value_type t) noexcept
 		: m_type(t)
 	{
 	}
@@ -892,8 +892,23 @@ class object
 
 	// I/O
 
-	friend std::ostream &operator<<(std::ostream &os, const object &o);
-	friend void serialize(std::ostream &os, const object &v);
+	// Write out object in JSON format
+	friend std::ostream &operator<<(std::ostream &os, const object &v)
+	{
+		serialize(os, v);
+		return os;
+	}
+	
+	friend void serialize(std::ostream &os, const object &o);
+
+	// Parse input as JSON format
+	friend std::istream &operator>>(std::istream &is, object &o)
+	{
+		deserialize(is, o);
+		return is;
+	}
+
+	friend void deserialize(std::istream &is, object &o);
 
   private:
 	value_type m_type = value_type::null;
@@ -906,7 +921,11 @@ class object
 		double m_float;
 		bool m_boolean;
 
-		object_data() = default;
+		object_data() noexcept
+			: m_object(nullptr)
+		{
+		}
+
 		object_data(bool v) noexcept
 			: m_boolean(v)
 		{
