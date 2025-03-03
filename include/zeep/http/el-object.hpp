@@ -474,23 +474,28 @@ class object
 				break;
 
 			case nlohmann::json::value_t::string:
-				operator=(j.template get<std::string>());
+				m_type = value_type::string;
+				m_data = j.template get<std::string>();
 				break;
 
 			case nlohmann::json::value_t::boolean:
-				operator=(j.template get<bool>());
+				m_type = value_type::boolean;
+				m_data = j.template get<bool>();
 				break;
 
 			case nlohmann::json::value_t::number_integer:
-				operator=(j.template get<int64_t>());
+				m_type = value_type::number_int;
+				m_data = j.template get<int64_t>();
 				break;
 
 			case nlohmann::json::value_t::number_unsigned:
-				operator=(j.template get<uint64_t>());
+				m_type = value_type::number_int;
+				m_data = static_cast<int64_t>(j.template get<uint64_t>());
 				break;
 
 			case nlohmann::json::value_t::number_float:
-				operator=(j.template get<double>());
+				m_type = value_type::number_float;
+				m_data = j.template get<double>();
 				break;
 
 			case nlohmann::json::value_t::binary:
