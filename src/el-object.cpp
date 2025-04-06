@@ -68,15 +68,15 @@ object operator+(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_float + rhs.as<double>();
+		result = lhs.m_data.m_float + rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_int + rhs.as<int64_t>();
+		result = lhs.m_data.m_int + rhs.get<int64_t>();
 	else if (lhs_type == value_type::null)
 		result = rhs;
 	else if (rhs_type == value_type::null)
 		result = lhs;
 	else if (lhs_type == value_type::string or rhs_type == value_type::string)
-		result = lhs.as<std::string>() + rhs.as<std::string>();
+		result = lhs.get<std::string>() + rhs.get<std::string>();
 	else
 		throw std::runtime_error("Invalid types for operator +");
 
@@ -110,9 +110,9 @@ object operator-(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_float - rhs.as<double>();
+		result = lhs.m_data.m_float - rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_int - rhs.as<int64_t>();
+		result = lhs.m_data.m_int - rhs.get<int64_t>();
 	else
 		throw std::runtime_error("Invalid types for operator -");
 
@@ -146,9 +146,9 @@ object operator*(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_float * rhs.as<double>();
+		result = lhs.m_data.m_float * rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_int * rhs.as<int64_t>();
+		result = lhs.m_data.m_int * rhs.get<int64_t>();
 	else
 		throw std::runtime_error("Invalid types for operator *");
 
@@ -182,9 +182,9 @@ object operator/(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_float / rhs.as<double>();
+		result = lhs.m_data.m_float / rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_int / rhs.as<int64_t>();
+		result = lhs.m_data.m_int / rhs.get<int64_t>();
 	else
 		throw std::runtime_error("Invalid types for operator /");
 
@@ -214,7 +214,7 @@ object operator%(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_int % rhs.as<int64_t>();
+		result = lhs.m_data.m_int % rhs.get<int64_t>();
 	else
 		throw std::runtime_error("Invalid types for operator %");
 
@@ -361,7 +361,7 @@ bool object::contains(object test) const
 {
 	bool result = false;
 	if (is_object())
-		result = m_data.m_object->count(test.as<std::string>()) > 0;
+		result = m_data.m_object->count(test.get<std::string>()) > 0;
 	else if (is_array())
 		result = std::find(m_data.m_array->begin(), m_data.m_array->end(), test) != m_data.m_array->end();
 

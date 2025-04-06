@@ -10,8 +10,6 @@
 #include <zeep/http/security.hpp>
 #include <zeep/http/uri.hpp>
 
-#include <nlohmann/json.hpp>
-
 #include <iostream>
 
 namespace zeep::http
@@ -25,7 +23,7 @@ namespace
 
 // --------------------------------------------------------------------
 
-bool user_service::user_is_valid(const nlohmann::json &credentials) const
+bool user_service::user_is_valid(const object &credentials) const
 {
 	return user_is_valid(credentials["username"].get<std::string>());
 }
@@ -77,9 +75,9 @@ void security_context::validate_request(request &req) const
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
 
-			auto JOSEHeader = nlohmann::json::parse(decode_base64url(m[1].str()));
+			auto JOSEHeader = object::parse_JSON(decode_base64url(m[1].str()));
 
-			const nlohmann::json kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
+			const object kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
 
 			if (JOSEHeader != kJOSEHeader)
 				break;
@@ -89,7 +87,7 @@ void security_context::validate_request(request &req) const
 			if (sig != m[3].str())
 				break;
 
-			auto credentials = nlohmann::json::parse(decode_base64url(m[2].str()));
+			auto credentials = object::parse_JSON(decode_base64url(m[2].str()));
 
 			// check exp
 			using namespace std::chrono;
@@ -162,14 +160,14 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	using namespace date;
 	using namespace std::chrono;
 
-	auto JOSEHeader = R"({
-		"typ": "JWT",
-		"alg": "HS256"
-	})"_json;
+	object JOSEHeader{
+		{ "typ", "JWT" },
+		{ "alg", "HS256" }
+	};
 
 	auto exp_t = duration_cast<seconds>(system_clock::now() + exp - system_clock::time_point()).count();
 
-	nlohmann::json credentials{
+	object credentials{
 		{ "username", user.username },
 		{ "exp", exp_t }
 	};
@@ -177,8 +175,8 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	for (auto &role : user.roles)
 		credentials["role"].push_back(role);
 
-	auto h1 = encode_base64url(JOSEHeader.dump());
-	auto h2 = encode_base64url(credentials.dump());
+	auto h1 = encode_base64url(JOSEHeader.get_JSON());
+	auto h2 = encode_base64url(credentials.get_JSON());
 	auto h3 = encode_base64url(hmac_sha256(h1 + '.' + h2, m_secret));
 
 	std::stringstream s;

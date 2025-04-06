@@ -67,7 +67,7 @@ std::istream *file_loader::load_file(const std::string &file, std::error_code &e
 void basic_template_processor::handle_file(const http::request &request, const scope &scope, http::reply &reply)
 {
 	std::error_code ec;
-	auto ft = file_time(scope["baseuri"].as<std::string>(), ec);
+	auto ft = file_time(scope["baseuri"].get<std::string>(), ec);
 
 	if (ec)
 	{
@@ -99,7 +99,7 @@ void basic_template_processor::handle_file(const http::request &request, const s
 		}
 	}
 
-	fs::path file = scope["baseuri"].as<std::string>();
+	fs::path file = scope["baseuri"].get<std::string>();
 
 	std::unique_ptr<std::istream> in(load_file(file.string(), ec));
 	if (ec)
@@ -194,12 +194,12 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 
 		if (espec.is_object()) // reset the content, saves having to add another method
 		{
-			std::tie(regularTemplate, templateFile) = is_template_file(espec["template"].as<std::string>());
+			std::tie(regularTemplate, templateFile) = is_template_file(espec["template"].get<std::string>());
 
 			if (regularTemplate)
 				data.reset(load_file(templateFile.string(), ec));
 
-			templateSelector = espec["selector"]["xpath"].as<std::string>();
+			templateSelector = espec["selector"]["xpath"].get<std::string>();
 		}
 	}
 

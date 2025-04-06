@@ -241,7 +241,7 @@ class scope
 	std::string get_context_name() const;
 
 	/// \brief return the credentials of the current user
-	nlohmann::json get_credentials() const;
+	object get_credentials() const;
 
 	/// \brief select object \a o , used in z2:object constructs
 	void select_object(const object &o);

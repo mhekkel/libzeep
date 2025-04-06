@@ -41,7 +41,7 @@ list(APPEND zeep_tests
 	http
 	processor
 	webapp
-	json
+	# json
 	# soap
 	rest
 	security

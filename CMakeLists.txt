@@ -172,6 +172,7 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/access-control.hpp
 	include/zeep/http/controller.hpp
 	include/zeep/http/el-object.hpp
+	include/zeep/http/el-serializer.hpp
 	include/zeep/http/message-parser.hpp
 	include/zeep/http/tag-processor.hpp
 	include/zeep/http/connection.hpp

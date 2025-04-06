@@ -14,7 +14,6 @@
 #include <iostream>
 #include <random>
 
-using json = nlohmann::json;
 using namespace mxml::literals;
 
 TEST_CASE("test_22")

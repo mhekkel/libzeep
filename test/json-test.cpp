@@ -6,8 +6,6 @@
 #include <zeep/json-serializer.hpp>
 #include <zeep/nvp.hpp>
 
-using json = nlohmann::json;
-
 // -----------------------------------------------------------------------
 
 struct MyPOD2

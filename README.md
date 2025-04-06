@@ -106,7 +106,7 @@ Create a template in xhtml first, store this as `hello.xhtml` in a directory cal
 
 Then create a source file called `http-server.cpp` with the following content:
 
-```c++
+```cpp
 #define WEBAPP_USES_RESOURCES 0
 
 #include <zeep/http/server.hpp>

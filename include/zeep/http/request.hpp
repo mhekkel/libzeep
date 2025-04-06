@@ -11,12 +11,11 @@
 
 #include <zeep/config.hpp>
 
-#include "zeep/http/asio.hpp"
+#include <zeep/http/asio.hpp>
+#include <zeep/http/el-object.hpp>
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
 #include <zeep/type-traits.hpp>
-
-#include <nlohmann/json.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -144,10 +143,10 @@ class request
 	void remove_header(const char *name);
 
 	/// \brief Get the credentials. This is filled in if the request was validated
-	nlohmann::json get_credentials() const { return m_credentials; }
+	object get_credentials() const { return m_credentials; }
 
 	/// \brief Set the credentials for the request
-	void set_credentials(nlohmann::json &&credentials) { m_credentials = std::move(credentials); }
+	void set_credentials(object &&credentials) { m_credentials = std::move(credentials); }
 
 	/// \brief Return the named parameter
 	///
@@ -264,7 +263,7 @@ class request
 	bool m_close = false;               ///< Whether 'Connection: close' was specified
 
 	std::chrono::system_clock::time_point m_timestamp = std::chrono::system_clock::now();
-	nlohmann::json m_credentials; ///< The credentials as found in the validated access-token
+	object m_credentials; ///< The credentials as found in the validated access-token
 
 	std::string m_remote_address; ///< Address of connecting client
 

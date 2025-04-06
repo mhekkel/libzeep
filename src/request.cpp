@@ -8,8 +8,7 @@
 
 #include <zeep/crypto.hpp>
 #include <zeep/http/server.hpp>
-
-#include <nlohmann/json.hpp>
+#include <zeep/streambuf.hpp>
 
 namespace fs = std::filesystem;
 
@@ -259,7 +258,11 @@ std::tuple<std::string, bool> request::get_parameter_ex(const char *name) const
 	{
 		try
 		{
-			nlohmann::json e = nlohmann::json::parse(m_payload);
+			char_streambuf buf(m_payload.data(), m_payload.length());
+			std::istream is(&buf);
+			object e;
+			deserialize(is, e);
+
 			if (e.is_object() and e.contains(name))
 			{
 				result = e.at(name).get<std::string>();

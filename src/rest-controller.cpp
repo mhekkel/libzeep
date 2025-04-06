@@ -60,7 +60,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 		{
 			rep = http::reply::stock_reply(s);
 			
-			nlohmann::json error({ { "error", get_status_description(s) }});
+			object error({ { "error", get_status_description(s) }});
 			rep.set_content(error);
 			rep.set_status(s);
 		}
@@ -68,7 +68,7 @@ bool rest_controller::handle_request(http::request& req, http::reply& rep)
 		{
 			rep = http::reply::stock_reply(http::internal_server_error);
 			
-			nlohmann::json error({ { "error", e.what() }});
+			object error({ { "error", e.what() }});
 			rep.set_content(error);
 			rep.set_status(http::internal_server_error);
 		}

@@ -15,9 +15,9 @@
 
 #include <zeep/http/controller.hpp>
 #include <zeep/http/el-processing.hpp>
+#include <zeep/streambuf.hpp>
 
 #include <list>
-#include <nlohmann/json.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -386,11 +386,15 @@ class html_controller : public controller
 			return result;
 		}
 
-		nlohmann::json get_parameter(const parameter_pack &params, const char *name, nlohmann::json result)
+		object get_parameter(const parameter_pack &params, const char *name, object result)
 		{
 			try
 			{
-				result = nlohmann::json::parse(params.get_parameter(name));
+				auto param = params.get_parameter(name);
+				char_streambuf buf(param.data(), param.length());
+				std::istream is(&buf);
+
+				deserialize(is, result);
 			}
 			catch (const std::exception &e)
 			{
@@ -437,8 +441,8 @@ class html_controller : public controller
 		}
 
 		// template <typename T, std::enable_if_t<not(
-		// 										   zeep::has_serialize_v<T, zeep::json::deserializer<nlohmann::json>> or std::is_enum_v<T> or
-		// 										   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<nlohmann::json>>),
+		// 										   zeep::has_serialize_v<T, zeep::json::deserializer<object>> or std::is_enum_v<T> or
+		// 										   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<object>>),
 		// 						  int> = 0>
 		// T get_parameter(const parameter_pack &params, const char *name, T result)
 		// {
@@ -460,18 +464,18 @@ class html_controller : public controller
 		// template <typename T, std::enable_if_t<zeep::json::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
 		// T get_parameter(const parameter_pack &params, const char *name, T result)
 		// {
-		// 	nlohmann::json v = params.get_parameter(name);
+		// 	object v = params.get_parameter(name);
 
 		// 	from_element(v, result);
 		// 	return result;
 		// }
 
-		// template <typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<nlohmann::json>> or
-		// 										   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<nlohmann::json>>,
+		// template <typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<object>> or
+		// 										   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<object>>,
 		// 						  int> = 0>
 		// T get_parameter(const parameter_pack &params, const char *name, T result)
 		// {
-		// 	nlohmann::json v;
+		// 	object v;
 
 		// 	if (params.m_req.get_header("content-type") == "application/json")
 		// 		zeep::json::parse_json(params.m_req.get_payload(), v);

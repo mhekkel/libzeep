@@ -210,12 +210,12 @@ mxml::element tag_processor_v2::resolve_fragment_spec(
 	mxml::element *node, fs::path dir, basic_template_processor &loader, const object &spec, const scope &scope)
 {
 	if (spec.contains("is-node-set") and spec["is-node-set"])
-		return scope.get_nodeset(spec["node-set-name"].as<std::string>());
+		return scope.get_nodeset(spec["node-set-name"].get<std::string>());
 
 	if (spec.is_object() and spec["template"].is_string() and spec["selector"].is_object() and spec["selector"]["xpath"].is_string())
 	{
-		auto file = spec["template"].as<std::string>();
-		auto selector = spec["selector"]["xpath"].as<std::string>();
+		auto file = spec["template"].get<std::string>();
+		auto selector = spec["selector"]["xpath"].get<std::string>();
 
 		if (not(spec.is_null() or selector.empty()))
 			return resolve_fragment_spec(node, dir, loader, file, selector, true);
@@ -226,7 +226,7 @@ mxml::element tag_processor_v2::resolve_fragment_spec(
 
 		std::smatch m;
 
-		std::string s = spec.as<std::string>();
+		std::string s = spec.get<std::string>();
 		if (not std::regex_match(s, m, kTemplateRx))
 			throw std::runtime_error("Invalid attribute value for :include/insert/replace");
 
@@ -459,11 +459,11 @@ auto tag_processor_v2::process_attr_text(mxml::element *element, mxml::attribute
 
 		if (obj.is_object() and obj.contains("is-node-set") and obj["is-node-set"])
 		{
-			auto s = scope.get_nodeset(obj["node-set-name"].as<std::string>());
+			auto s = scope.get_nodeset(obj["node-set-name"].get<std::string>());
 			text = s.str();
 		}
 		else
-			text = obj.as<std::string>();
+			text = obj.get<std::string>();
 
 		if (escaped)
 			element->set_text(text);
@@ -488,7 +488,7 @@ auto tag_processor_v2::process_attr_switch(mxml::element *element, mxml::attribu
 	auto vo = evaluate_el(scope, attr.value());
 	std::string v;
 	if (not vo.is_null())
-		v = vo.as<std::string>();
+		v = vo.get<std::string>();
 
 	mxml::element e2(*element);
 	element->nodes().clear();

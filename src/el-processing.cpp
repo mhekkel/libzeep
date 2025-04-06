@@ -228,7 +228,7 @@ std::vector<std::pair<std::string, std::string>> interpreter::evaluate_attr_expr
 
 		auto value = parse_expr();
 
-		result.emplace_back(var, value.as<std::string>());
+		result.emplace_back(var, value.get<std::string>());
 
 		if (m_lookahead != token_type::comma)
 			break;
@@ -356,7 +356,7 @@ bool interpreter::process(std::string &s)
 		if (obj.is_null())
 			s.clear();
 		else
-			s = obj.as<std::string>();
+			s = obj.get<std::string>();
 
 		result = true;
 	}
@@ -805,8 +805,8 @@ object interpreter::parse_or_expr()
 	while (m_lookahead == token_type::or_)
 	{
 		match(m_lookahead);
-		bool b1 = result.as<bool>();
-		bool b2 = parse_and_expr().as<bool>();
+		bool b1 = result.get<bool>();
+		bool b2 = parse_and_expr().get<bool>();
 		result = b1 or b2;
 	}
 	return result;
@@ -818,8 +818,8 @@ object interpreter::parse_and_expr()
 	while (m_lookahead == token_type::and_)
 	{
 		match(m_lookahead);
-		bool b1 = result.as<bool>();
-		bool b2 = parse_equality_expr().as<bool>();
+		bool b1 = result.get<bool>();
+		bool b2 = parse_equality_expr().get<bool>();
 		result = b1 and b2;
 	}
 	return result;
@@ -940,7 +940,7 @@ object interpreter::parse_unary_expr()
 	else if (m_lookahead == token_type::not_)
 	{
 		match(m_lookahead);
-		result = not parse_primary_expr().as<bool>();
+		result = not parse_primary_expr().get<bool>();
 	}
 	else
 		result = parse_primary_expr();
@@ -1003,9 +1003,9 @@ object interpreter::parse_template_expr()
 						if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
 							result = object();
 						else if (result.type() == object::value_type::array)
-							result = result[index.as<int>()];
+							result = result[index.get<int>()];
 						else if (result.type() == object::value_type::object)
-							result = result[index.as<std::string>()];
+							result = result[index.get<std::string>()];
 						else
 							result = object::value_type::null;
 						continue;
@@ -1124,9 +1124,9 @@ object interpreter::parse_primary_expr()
 					if (not result.is_null())
 					{
 						if (result.type() == object::value_type::array and not(result.empty() or index.empty()))
-							result = result[index.as<int>()];
+							result = result[index.get<int>()];
 						else if (result.type() == object::value_type::object and not(result.empty() or index.empty()))
-							result = result[index.as<std::string>()];
+							result = result[index.get<std::string>()];
 						else
 							result = object::value_type::null;
 					}
@@ -1168,7 +1168,7 @@ object interpreter::parse_literal_substitution()
 			case token_type::variable_template:
 			case token_type::selection_template:
 			case token_type::message_template:
-				result += parse_template_expr().as<std::string>();
+				result += parse_template_expr().get<std::string>();
 				break;
 
 			default:
@@ -1217,13 +1217,13 @@ object interpreter::parse_link_template_expr()
 		{
 			case token_type::bar:
 				match(m_lookahead);
-				path += parse_literal_substitution().as<std::string>();
+				path += parse_literal_substitution().get<std::string>();
 				match(token_type::bar);
 				break;
 
 			case token_type::variable_template:
 			case token_type::selection_template:
-				path += parse_template_expr().as<std::string>();
+				path += parse_template_expr().get<std::string>();
 				break;
 
 			case token_type::lbrace:
@@ -1255,7 +1255,7 @@ object interpreter::parse_link_template_expr()
 			if (m_lookahead == token_type::assign)
 			{
 				match(token_type::assign);
-				std::string value = parse_primary_expr().as<std::string>();
+				std::string value = parse_primary_expr().get<std::string>();
 
 				// put into path directly, if found
 				std::string::size_type p = path.find('{' + name + '}');
@@ -1523,8 +1523,8 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 		{
 			if (params.size() == 2 and params[0].is_string())
 			{
-				auto t = params[0].as<std::string>();
-				auto f = params[1].as<std::string>();
+				auto t = params[0].get<std::string>();
+				auto f = params[1].get<std::string>();
 
 				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(t);
 
@@ -1559,17 +1559,17 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 			{
 				int intDigits = 1;
 				if (params.size() >= 2 and params[1].is_number_int())
-					intDigits = params[1].as<int>();
+					intDigits = params[1].get<int>();
 
 				int decimals = 0;
 				if (params.size() >= 3 and params[2].is_number_int())
-					decimals = params[2].as<int>();
+					decimals = params[2].get<int>();
 
 				double d;
 				if (params[0].is_number_int())
-					d = static_cast<double>(params[0].as<int64_t>());
+					d = static_cast<double>(params[0].get<int64_t>());
 				else
-					d = params[0].as<double>();
+					d = params[0].get<double>();
 
 				return FormatDecimal(d, intDigits, decimals, scope.get_request().get_locale());
 			}
@@ -1578,7 +1578,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 		{
 			if (params.size() >= 1 and params[0].is_number())
 			{
-				double nr = params[0].as<double>();
+				double nr = params[0].get<double>();
 
 				const char kBase[] = { 'B', 'K', 'M', 'G', 'T', 'P', 'E' }; // whatever
 
@@ -1592,7 +1592,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 
 				int decimals = 0;
 				if (params.size() >= 2 and params[1].is_number_int())
-					decimals = params[1].as<int>();
+					decimals = params[1].get<int>();
 
 				return FormatDecimal(nr, 1, decimals, scope.get_request().get_locale()) + ' ' + kBase[base];
 			}
@@ -1617,7 +1617,7 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 		else if (method == "getRequestURL")
 			result = scope.get_request().get_uri().string();
 		else if ((method == "getParameter") and params.size() == 1)
-			result = scope.get_request().get_parameter(params[0].as<std::string>().c_str());
+			result = scope.get_request().get_parameter(params[0].get<std::string>().c_str());
 
 		return result;
 	}
@@ -1637,7 +1637,7 @@ class security_expr_util_object : public expression_utility_object<security_expr
 		{
 			if (params.size() == 1 and params[0].is_string())
 			{
-				auto role = params[0].as<std::string>();
+				auto role = params[0].get<std::string>();
 				auto roles = scope.get_credentials()["role"];
 				result = roles.is_array() and roles.contains(role);
 			}
@@ -1815,7 +1815,7 @@ std::string scope::get_context_name() const
 	return m_server ? m_server->get_context_name() : "";
 }
 
-nlohmann::json scope::get_credentials() const
+object scope::get_credentials() const
 {
 	if (m_req == nullptr or m_server == nullptr)
 		throw zeep::exception("Invalid scope, no request, no server");

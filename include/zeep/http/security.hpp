@@ -14,8 +14,6 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/server.hpp>
 
-#include <nlohmann/json.hpp>
-
 #include <cassert>
 #include <set>
 
@@ -164,7 +162,7 @@ class user_service
 	virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
-	virtual bool user_is_valid(const nlohmann::json &credentials) const;
+	virtual bool user_is_valid(const object &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
 	virtual bool user_is_valid(const std::string &username) const;

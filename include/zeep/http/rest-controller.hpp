@@ -14,8 +14,7 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
-
-#include <nlohmann/json.hpp>
+#include <zeep/streambuf.hpp>
 
 #include <cassert>
 #include <filesystem>
@@ -223,7 +222,7 @@ class rest_controller : public controller
 		{
 			try
 			{
-				nlohmann::json message("ok");
+				object message("ok");
 				rep.set_content(message);
 				rep.set_status(ok);
 
@@ -232,7 +231,7 @@ class rest_controller : public controller
 			}
 			catch (const std::exception &e)
 			{
-				nlohmann::json message;
+				object message;
 				message["error"] = e.what();
 
 				rep.set_content(message);
@@ -263,7 +262,7 @@ class rest_controller : public controller
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
 		}
 
-		void set_reply(reply &rep, nlohmann::json &&v)
+		void set_reply(reply &rep, object &&v)
 		{
 			rep.set_content(std::move(v));
 		}
@@ -271,7 +270,7 @@ class rest_controller : public controller
 		template <typename T>
 		void set_reply(reply &rep, T &&v)
 		{
-			nlohmann::json e = v;
+			object e = v;
 			rep.set_content(e);
 		}
 
@@ -343,11 +342,11 @@ class rest_controller : public controller
 			return result;
 		}
 
-		nlohmann::json get_parameter(const parameter_pack &params, const char *name, nlohmann::json result)
+		object get_parameter(const parameter_pack &params, const char *name, object result)
 		{
 			try
 			{
-				result = nlohmann::json::parse(params.get_parameter(name));
+				result = object::parse_JSON(params.get_parameter(name));
 			}
 			catch (const std::exception &e)
 			{
@@ -394,6 +393,7 @@ class rest_controller : public controller
 		}
 
 		template <typename T>
+		// requires has_value_serializer_v<T>
 		T get_parameter(const parameter_pack &params, const char *name, T result)
 		{
 			try
@@ -405,11 +405,11 @@ class rest_controller : public controller
 
 					if constexpr (has_value_serializer_v<U>)
 						result = value_serializer<U>::from_string(p);
-					else if constexpr (nlohmann::detail::is_compatible_type<nlohmann::json, U>::value)
-					{
-						auto j = nlohmann::json::parse(p);
-						result = j.get<U>();
-					}
+					// else if constexpr (nlohmann::detail::is_compatible_type<object, U>::value)
+					// {
+					// 	auto j = object::parse(p);
+					// 	result = j.as<U>();
+					// }
 					else	// TODO: remove? Check?
 						result = value_serializer<T>::from_string(p);
 				}

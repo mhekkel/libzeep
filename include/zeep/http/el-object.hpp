@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <zeep/streambuf.hpp>
+
 #include <nlohmann/json.hpp>
 
 #include <array>
@@ -552,16 +554,16 @@ class object
 	// --------------------------------------------------------------------
 
 	template <StringType T>
-	inline std::string as() const
+	inline std::string get() const
 	{
 		if (m_type == value_type::string)
 			return *m_data.m_string;
 
-		return (std::ostringstream() << *this).str();
+		return get_JSON();
 	}
 
 	template <BooleanType T>
-	inline bool as() const
+	inline bool get() const
 	{
 		switch (m_type)
 		{
@@ -577,7 +579,7 @@ class object
 	}
 
 	template <NumberType T>
-	std::remove_cvref_t<T> as() const
+	std::remove_cvref_t<T> get() const
 	{
 		switch (m_type)
 		{
@@ -892,23 +894,38 @@ class object
 
 	// I/O
 
-	// Write out object in JSON format
-	friend std::ostream &operator<<(std::ostream &os, const object &v)
+	friend void serialize(std::ostream &os, const object &o);
+	friend void deserialize(std::istream &is, object &o);
+
+	// And some more alternatives
+	static object parse_JSON(std::istream &is)
 	{
-		serialize(os, v);
+		object result;
+		deserialize(is, result);
+		return result;
+	}
+
+	static object parse_JSON(std::string_view s)
+	{
+		char_streambuf b(s.data(), s.length());
+		std::istream is(&b);
+		return parse_JSON(is);
+	}
+
+	// And get the object as a JSON string
+	std::string get_JSON() const
+	{
+		std::ostringstream os;
+		serialize(os, *this);
+		return os.str();
+	}
+
+	// convenience
+	friend std::ostream &operator<<(std::ostream &os, const object &o)
+	{
+		serialize(os, o);
 		return os;
 	}
-	
-	friend void serialize(std::ostream &os, const object &o);
-
-	// Parse input as JSON format
-	friend std::istream &operator>>(std::istream &is, object &o)
-	{
-		deserialize(is, o);
-		return is;
-	}
-
-	friend void deserialize(std::istream &is, object &o);
 
   private:
 	value_type m_type = value_type::null;
