@@ -12,7 +12,7 @@
 #include <zeep/config.hpp>
 
 #include "zeep/http/asio.hpp"
-#include <zeep/http/el-object.hpp>
+#include <zeep/http/el/object.hpp>
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
 
@@ -130,7 +130,7 @@ class reply
 	void set_content(const mxml::element &data);
 
 	/// Set the content and the content-type header based on JSON data
-	void set_content(const object &data);
+	void set_content(const el::object &data);
 
 	/// Set the content and the content-type header based on JSON data
 	void set_content(const nlohmann::json &json);

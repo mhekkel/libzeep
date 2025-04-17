@@ -14,7 +14,8 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
-#include <zeep/http/el-processing.hpp>
+// #include <zeep/http/el-processing.hpp>
+#include <zeep/http/el/object.hpp>
 #include <zeep/streambuf.hpp>
 
 #include <list>
@@ -76,7 +77,7 @@ class html_controller : public controller
 	/// void session_server::page_handler(const request& request, const scope& scope, reply& reply);
 	/// \endcode
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
-	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
+	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional objects are allowed
 	/// as well as semi-colons that define separate paths.
 	/// Also, patterns ending in / are interpreted as ending in /\*\*
 	///
@@ -386,7 +387,7 @@ class html_controller : public controller
 			return result;
 		}
 
-		object get_parameter(const parameter_pack &params, const char *name, object result)
+		el::object get_parameter(const parameter_pack &params, const char *name, el::object result)
 		{
 			try
 			{
@@ -440,9 +441,10 @@ class html_controller : public controller
 			return result;
 		}
 
+
 		// template <typename T, std::enable_if_t<not(
-		// 										   zeep::has_serialize_v<T, zeep::json::deserializer<object>> or std::is_enum_v<T> or
-		// 										   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<object>>),
+		// 										   zeep::has_serialize_v<T, el::deserializer<el::object>> or std::is_enum_v<T> or
+		// 										   zeep::is_serializable_array_type_v<T, el::deserializer<el::object>>),
 		// 						  int> = 0>
 		// T get_parameter(const parameter_pack &params, const char *name, T result)
 		// {
@@ -461,28 +463,28 @@ class html_controller : public controller
 		// 	return result;
 		// }
 
-		// template <typename T, std::enable_if_t<zeep::json::detail::has_from_element_v<T> and std::is_enum_v<T>, int> = 0>
+		// template <typename T, std::enable_if_t<el::detail::has_from_object_v<T> and std::is_enum_v<T>, int> = 0>
 		// T get_parameter(const parameter_pack &params, const char *name, T result)
 		// {
-		// 	object v = params.get_parameter(name);
+		// 	el::object v = params.get_parameter(name);
 
-		// 	from_element(v, result);
+		// 	from_object(v, result);
 		// 	return result;
 		// }
 
-		// template <typename T, std::enable_if_t<zeep::has_serialize_v<T, zeep::json::deserializer<object>> or
-		// 										   zeep::is_serializable_array_type_v<T, zeep::json::deserializer<object>>,
+		// template <typename T, std::enable_if_t<zeep::has_serialize_v<T, el::deserializer<el::object>> or
+		// 										   zeep::is_serializable_array_type_v<T, el::deserializer<el::object>>,
 		// 						  int> = 0>
 		// T get_parameter(const parameter_pack &params, const char *name, T result)
 		// {
-		// 	object v;
+		// 	el::object v;
 
 		// 	if (params.m_req.get_header("content-type") == "application/json")
-		// 		zeep::json::parse_json(params.m_req.get_payload(), v);
+		// 		el::object::parse_json(params.m_req.get_payload(), v);
 		// 	else
-		// 		zeep::json::parse_json(params.get_parameter(name), v);
+		// 		el::object::parse_json(params.get_parameter(name), v);
 
-		// 	from_element(v, result);
+		// 	from_object(v, result);
 
 		// 	return result;
 		// }
@@ -503,7 +505,7 @@ class html_controller : public controller
 	/// zeep::http::reply my_controller::page_handler(const scope& scope, std::optional<int> param);
 	/// \endcode
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
-	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional elements are allowed
+	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional objects are allowed
 	/// as well as semi-colons that define separate paths.
 	/// Also, patterns ending in / are interpreted as ending in /\*\*
 	///

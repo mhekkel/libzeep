@@ -95,9 +95,9 @@ uri controller::get_prefixless_path(const request &req) const
 	return { bb, be };
 }
 
-object controller::get_credentials() const
+el::object controller::get_credentials() const
 {
-	object credentials;
+	el::object credentials;
 	if (s_request != nullptr)
 		credentials = s_request->get_credentials();
 	return credentials;

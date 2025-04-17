@@ -18,7 +18,7 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
-#include <zeep/http/el-object.hpp>
+#include <zeep/http/el/object.hpp>
 
 #include <mxml.hpp>
 
@@ -27,6 +27,8 @@ namespace zeep::http
 
 class scope;
 class basic_server;
+
+using object = el::object;
 
 /// \brief Process the text in \a text and return `true` if the result is
 ///        not empty, zero or false.

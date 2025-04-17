@@ -14,6 +14,8 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
+#include <zeep/http/el/from_object.hpp>
+#include <zeep/http/el/serializer.hpp>
 #include <zeep/streambuf.hpp>
 
 #include <cassert>
@@ -270,7 +272,8 @@ class rest_controller : public controller
 		template <typename T>
 		void set_reply(reply &rep, T &&v)
 		{
-			object e = v;
+			object e;
+			to_object(e, v);
 			rep.set_content(e);
 		}
 
@@ -393,7 +396,7 @@ class rest_controller : public controller
 		}
 
 		template <typename T>
-		// requires has_value_serializer_v<T>
+			requires has_value_serializer_v<T>
 		T get_parameter(const parameter_pack &params, const char *name, T result)
 		{
 			try
@@ -405,12 +408,7 @@ class rest_controller : public controller
 
 					if constexpr (has_value_serializer_v<U>)
 						result = value_serializer<U>::from_string(p);
-					// else if constexpr (nlohmann::detail::is_compatible_type<object, U>::value)
-					// {
-					// 	auto j = object::parse(p);
-					// 	result = j.as<U>();
-					// }
-					else	// TODO: remove? Check?
+					else // TODO: remove? Check?
 						result = value_serializer<T>::from_string(p);
 				}
 			}
@@ -419,6 +417,20 @@ class rest_controller : public controller
 				using namespace std::literals::string_literals;
 				throw std::runtime_error("Invalid value passed for parameter "s + name);
 			}
+
+			return result;
+		}
+
+		template <typename T>
+			requires zeep::has_serialize_v<T, el::deserializer<object>> or
+		             zeep::is_serializable_array_type_v<T, el::deserializer<object>>
+		T get_parameter(const parameter_pack &params, const char *name, T result)
+		{
+			object v = params.m_req.get_header("content-type") == "application/json"
+				? object::parse_JSON(params.m_req.get_payload())
+				: object::parse_JSON(params.get_parameter(name));
+
+			from_object(v, result);
 
 			return result;
 		}

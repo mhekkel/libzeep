@@ -6,16 +6,18 @@
 #pragma once
 
 /// \file
-/// definition of the serializer classes that help serialize data into and out of zeep::http::object (JSON) objects
+/// definition of the serializer classes that help serialize data into and out of zeep::http::el::object (JSON-like) objects
 
 #include <zeep/config.hpp>
 
-#include <zeep/http/el-object.hpp>
+#include <zeep/http/el/object.hpp>
+#include <zeep/http/el/type_traits.hpp>
 #include <zeep/nvp.hpp>
 #include <zeep/value-serializer.hpp>
 
-namespace zeep::http
+namespace zeep::http::el
 {
+
 
 template<typename E>
 struct serializer
@@ -43,7 +45,7 @@ struct serializer
 		{
 			serializer sr;
 			const_cast<T&>(data).serialize(sr, 0);
-			e.swap(sr.m_elem);
+			std::swap(e, sr.m_elem);
 		}
 	};
 
@@ -51,7 +53,7 @@ struct serializer
 	struct serializer_impl<T, std::enable_if_t<
 		detail::is_compatible_type_v<T> and
 		not is_serializable_array_type_v<T,serializer> and
-		not json::detail::is_serializable_map_type_v<T,serializer>>>
+		not detail::is_serializable_map_type_v<T,serializer>>>
 	{
 		static void serialize(const T& data, object_type& e)
 		{
@@ -153,7 +155,7 @@ struct deserializer
 
 		static void deserialize(T& data, const object_type& e)
 		{
-			data = value_serializer::from_string(e.template as<std::string>());
+			data = value_serializer::from_string(e.template get<std::string>());
 		}
 	};
 
@@ -175,7 +177,7 @@ struct deserializer
 	{
 		static void deserialize(T& data, const object_type& e)
 		{
-			data = e.template as<T>();
+			data = e.template get<T>();
 		}
 	};
 
@@ -294,7 +296,7 @@ struct to_object_fn
 
 namespace
 {
-	constexpr const auto& to_object = typename ::zeep::http::detail::to_object_fn{};
+	constexpr const auto& to_object = typename ::zeep::http::el::detail::to_object_fn{};
 }
 
 }
@@ -304,18 +306,18 @@ struct object_serializer
 {
 	template<typename T>
 	static auto to_object(object& j, T&& v)
-		noexcept(noexcept(::zeep::http::detail::to_object(j, std::forward<T>(v))))
-		-> decltype(::zeep::http::detail::to_object(j, std::forward<T>(v)))
+		noexcept(noexcept(::zeep::http::el::detail::to_object(j, std::forward<T>(v))))
+		-> decltype(::zeep::http::el::detail::to_object(j, std::forward<T>(v)))
 	{
-		::zeep::http::detail::to_object(j, std::forward<T>(v));
+		::zeep::http::el::detail::to_object(j, std::forward<T>(v));
 	}
 
 	template<typename T>
 	static auto from_object(const object& j, T& v)
-		noexcept(noexcept(::zeep::http::detail::from_object(j, v)))
-		-> decltype(::zeep::http::detail::from_object(j, v))
+		noexcept(noexcept(::zeep::http::el::detail::from_object(j, v)))
+		-> decltype(::zeep::http::el::detail::from_object(j, v))
 	{
-		::zeep::http::detail::from_object(j, v);
+		::zeep::http::el::detail::from_object(j, v);
 	}
 };
 
@@ -330,7 +332,7 @@ struct object_serializer
 // 	template<typename J>
 // 	static void from_object(const J& j, T& v)
 // 	{
-// 		v = zeep::value_serializer<T>::instance().from_string(j.template as<std::string>());
+// 		v = zeep::value_serializer<T>::instance().from_string(j.template get<std::string>());
 // 	}
 // };
 

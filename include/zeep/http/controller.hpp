@@ -9,7 +9,7 @@
 /// definition of the base class zeep::http::controller, used by e.g. rest_controller and soap_controller
 
 #include <zeep/config.hpp>
-#include <zeep/http/el-object.hpp>
+#include <zeep/http/el/object.hpp>
 #include <zeep/http/server.hpp>
 
 namespace zeep::http
@@ -67,7 +67,7 @@ class controller
 	}
 
 	/// \brief get the credentials for the current request
-	object get_credentials() const;
+	el::object get_credentials() const;
 
 	/// \brief get the remote client address for the current request
 	std::string get_remote_address() const;

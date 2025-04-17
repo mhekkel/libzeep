@@ -344,7 +344,7 @@ std::string reply::get_cookie(const char *name) const
 	return result;
 }
 
-void reply::set_content(const object &json)
+void reply::set_content(const el::object &json)
 {
 	std::ostringstream s;
 	s << json;

@@ -26,12 +26,12 @@
 
 #include "zeep/crypto.hpp"
 #include "zeep/exception.hpp"
-#include "zeep/http/el-object.hpp"
+#include "zeep/http/el/object.hpp"
 #include "zeep/unicode-support.hpp"
 
 #include <charconv>
 
-namespace zeep::http
+namespace zeep::http::el
 {
 
 object operator+(const object &lhs, const object &rhs)
