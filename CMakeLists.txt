@@ -268,7 +268,7 @@ install(EXPORT zeep-targets
 
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
-	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	INSTALL_DESTINATION lib/cmake/zeep
 )
 
 write_basic_package_version_file(
@@ -287,7 +287,7 @@ write_basic_package_version_file(
 install(FILES
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zeep
+	DESTINATION lib/cmake/zeep
 	COMPONENT Devel
 )
 
