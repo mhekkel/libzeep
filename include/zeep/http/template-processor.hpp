@@ -14,7 +14,7 @@
 #include <set>
 #include <filesystem>
 
-#include <zeep/http/el/object.hpp>
+#include <zeep/el/object.hpp>
 #include <zeep/http/reply.hpp>
 #include <zeep/http/tag-processor.hpp>
 

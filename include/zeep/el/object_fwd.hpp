@@ -13,7 +13,7 @@
 #include <array>
 #include <cstdint>
 
-namespace zeep::http::el
+namespace zeep::el
 {
 
 class object;
@@ -53,7 +53,7 @@ namespace detail
 
 } // namespace detail
 
-template <typename, typename>
-struct object_serializer;
+// template <typename, typename>
+// struct object_serializer;
 
-} // namespace zeep::http::el
+} // namespace zeep::el

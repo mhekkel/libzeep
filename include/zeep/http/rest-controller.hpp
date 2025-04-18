@@ -13,9 +13,9 @@
 
 #include <zeep/config.hpp>
 
+#include <zeep/el/from_object.hpp>
+#include <zeep/el/serializer.hpp>
 #include <zeep/http/controller.hpp>
-#include <zeep/http/el/from_object.hpp>
-#include <zeep/http/el/serializer.hpp>
 #include <zeep/streambuf.hpp>
 
 #include <cassert>
@@ -272,9 +272,7 @@ class rest_controller : public controller
 		template <typename T>
 		void set_reply(reply &rep, T &&v)
 		{
-			object e;
-			to_object(e, v);
-			rep.set_content(e);
+			rep.set_content(el::serializer<T>::serialize(std::forward<T>(v)));
 		}
 
 		template <std::size_t... I>
@@ -427,12 +425,10 @@ class rest_controller : public controller
 		T get_parameter(const parameter_pack &params, const char *name, T result)
 		{
 			object v = params.m_req.get_header("content-type") == "application/json"
-				? object::parse_JSON(params.m_req.get_payload())
-				: object::parse_JSON(params.get_parameter(name));
+			               ? object::parse_JSON(params.m_req.get_payload())
+			               : object::parse_JSON(params.get_parameter(name));
 
-			from_object(v, result);
-
-			return result;
+			return el::serializer<T>::deserialize(v);
 		}
 
 		Callback m_callback;

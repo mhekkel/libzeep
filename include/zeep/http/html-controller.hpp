@@ -15,7 +15,7 @@
 
 #include <zeep/http/controller.hpp>
 // #include <zeep/http/el-processing.hpp>
-#include <zeep/http/el/object.hpp>
+#include <zeep/el/object.hpp>
 #include <zeep/streambuf.hpp>
 
 #include <list>

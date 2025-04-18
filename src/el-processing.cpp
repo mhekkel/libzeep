@@ -14,7 +14,7 @@
 #include <locale>
 
 #include <zeep/crypto.hpp>
-#include <zeep/http/el/processing.hpp>
+#include <zeep/el/processing.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/unicode-support.hpp>
 

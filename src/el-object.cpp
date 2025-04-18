@@ -24,14 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "zeep/crypto.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/el/object.hpp"
-#include "zeep/unicode-support.hpp"
+#include <zeep/crypto.hpp>
+#include <zeep/exception.hpp>
+#include <zeep/el/object.hpp>
+#include <zeep/unicode-support.hpp>
 
 #include <charconv>
 
-namespace zeep::http::el
+namespace zeep::el
 {
 
 object operator+(const object &lhs, const object &rhs)

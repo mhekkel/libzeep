@@ -18,7 +18,7 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
-#include <zeep/http/el/object.hpp>
+#include <zeep/el/object.hpp>
 
 #include <mxml.hpp>
 

@@ -28,7 +28,7 @@
 
 #include <zeep/streambuf.hpp>
 
-#include <zeep/http/el/object_fwd.hpp>
+#include <zeep/el/object_fwd.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -40,7 +40,7 @@
 #include <string>
 #include <vector>
 
-namespace zeep::http::el
+namespace zeep::el
 {
 
 // concepts
@@ -430,7 +430,7 @@ class object
 	{
 	}
 
-	object(const nlohmann::json &j)
+	explicit object(const nlohmann::json &j)
 	{
 		// to be implemented
 		switch (j.type())
@@ -441,12 +441,12 @@ class object
 
 			case nlohmann::json::value_t::object:
 				for (auto i = j.begin(); i != j.end(); ++i)
-					operator[](i.key()) = i.value();
+					operator[](i.key()) = object( i.value() );
 				break;
 
 			case nlohmann::json::value_t::array:
 				for (auto &e : j)
-					push_back(e);
+					push_back(object{ e });
 				break;
 
 			case nlohmann::json::value_t::string:

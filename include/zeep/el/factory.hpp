@@ -14,9 +14,9 @@
 #include <codecvt>
 #include <locale>
 
-#include <zeep/http/el/object_fwd.hpp>
+#include <zeep/el/object_fwd.hpp>
 
-namespace zeep::http::el::detail
+namespace zeep::el::detail
 {
 
 // Factory class to construct objects 

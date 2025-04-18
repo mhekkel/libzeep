@@ -158,21 +158,18 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/config.hpp
 	include/zeep/type-traits.hpp
 
-	# include/zeep/json/to_element.hpp
-	# include/zeep/json/element.hpp
-	# include/zeep/json/factory.hpp
-	# include/zeep/json/serializer.hpp
-	# include/zeep/json/parser.hpp
-	# include/zeep/json/type_traits.hpp
-	# include/zeep/json/from_element.hpp
-	# include/zeep/json/element_fwd.hpp
-	# include/zeep/json/iterator.hpp
-	include/zeep/json-serializer.hpp
+	include/zeep/el/to_object.hpp
+	include/zeep/el/object.hpp
+	include/zeep/el/factory.hpp
+	include/zeep/el/serializer.hpp
+	include/zeep/el/type_traits.hpp
+	include/zeep/el/from_object.hpp
+	include/zeep/el/object_fwd.hpp
+	include/zeep/el/processing.hpp
+
 	include/zeep/http/asio.hpp
 	include/zeep/http/access-control.hpp
 	include/zeep/http/controller.hpp
-	include/zeep/http/el-object.hpp
-	include/zeep/http/el-serializer.hpp
 	include/zeep/http/message-parser.hpp
 	include/zeep/http/tag-processor.hpp
 	include/zeep/http/connection.hpp
@@ -189,7 +186,6 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/html-controller.hpp
 	include/zeep/http/security.hpp
 	include/zeep/http/uri.hpp
-	include/zeep/http/el-processing.hpp
 	include/zeep/http/login-controller.hpp
 	include/zeep/unicode-support.hpp
 	include/zeep/nvp.hpp

@@ -12,7 +12,7 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/asio.hpp>
-#include <zeep/http/el/object.hpp>
+#include <zeep/el/object.hpp>
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
 #include <zeep/type-traits.hpp>
