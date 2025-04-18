@@ -1,7 +1,6 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/rest-controller.hpp>
-// #include <zeep/json-serializer.hpp>
 #include <zeep/nvp.hpp>
 
 #include "../src/signals.hpp"
@@ -35,22 +34,15 @@ struct Opname
 	auto operator<=>(const Opname &) const = default;
 };
 
-using a_map_type = map<string, float>;
-
-static_assert(std::experimental::is_detected_v<z::mapped_type_t, a_map_type>, "");
-static_assert(std::experimental::is_detected_v<z::key_type_t, a_map_type>, "");
-static_assert(std::experimental::is_detected_v<z::iterator_t, a_map_type>, "");
-static_assert(not e::is_compatible_string_type_v<e::object, a_map_type>, "");
-static_assert(e::is_serializable_map_type_v<a_map_type>, "");
-
 static_assert(not std::is_constructible_v<e::object, Opname>, "");
+
+using a_map_type = map<string, float>;
+static_assert(e::is_serializable_map_type_v<a_map_type>, "");
 
 TEST_CASE("foo")
 {
-	Opname opn{ "1", {
-		{ "een", 0.1f },
-		{ "twee", 0.2f }
-	}};
+	Opname opn{ "1", { { "een", 0.1f },
+						 { "twee", 0.2f } } };
 
 	e::object o = e::serializer<Opname>::serialize(opn);
 
@@ -59,256 +51,220 @@ TEST_CASE("foo")
 	Opname opn2 = e::serializer<Opname>::deserialize(o);
 
 	CHECK(opn == opn2);
-
 }
 
-// static_assert(zeep::has_serialize_v<e::serializer<Opname>, Opname>, "");
-// static_assert(zeep::el::is_compatible_type_v<Opname>, "");
+TEST_CASE("bar")
+{
+	std::vector<Opname> opnames{
+		{ "1", { { "een", 0.1f },
+				   { "twee", 0.2f } } },
+		{ "2", { { "drie", 0.3f },
+				   { "vier", 0.4f } } },
+	};
 
+	e::object o = e::serializer<std::vector<Opname>>::serialize(opnames);
 
-// enum class aggregatie_type
-// {
-// 	dag,
-// 	week,
-// 	maand,
-// 	jaar
-// };
+	std::cout << o << "\n";
 
-// void to_json(nlohmann::json &e, aggregatie_type aggregatie)
-// {
-// 	switch (aggregatie)
-// 	{
-// 		case aggregatie_type::dag: e = "dag"; break;
-// 		case aggregatie_type::week: e = "week"; break;
-// 		case aggregatie_type::maand: e = "maand"; break;
-// 		case aggregatie_type::jaar: e = "jaar"; break;
-// 	}
-// }
+	auto opn2 = e::serializer<std::vector<Opname>>::deserialize(o);
 
-// void from_json(const nlohmann::json &e, aggregatie_type &aggregatie)
-// {
-// 	if (e == "dag")
-// 		aggregatie = aggregatie_type::dag;
-// 	else if (e == "week")
-// 		aggregatie = aggregatie_type::week;
-// 	else if (e == "maand")
-// 		aggregatie = aggregatie_type::maand;
-// 	else if (e == "jaar")
-// 		aggregatie = aggregatie_type::jaar;
-// 	else
-// 		throw runtime_error("Ongeldige aggregatie");
-// }
+	CHECK(opnames == opn2);
+}
 
-// enum class grafiek_type
-// {
-// 	warmte,
-// 	electriciteit,
-// 	electriciteit_hoog,
-// 	electriciteit_laag,
-// 	electriciteit_verbruik,
-// 	electriciteit_levering,
-// 	electriciteit_verbruik_hoog,
-// 	electriciteit_verbruik_laag,
-// 	electriciteit_levering_hoog,
-// 	electriciteit_levering_laag
-// };
+enum class aggregatie_type
+{
+	dag,
+	week,
+	maand,
+	jaar
+};
 
-// void to_json(nlohmann::json &e, grafiek_type type)
-// {
-// 	switch (type)
-// 	{
-// 		case grafiek_type::warmte: e = "warmte"; break;
-// 		case grafiek_type::electriciteit: e = "electriciteit"; break;
-// 		case grafiek_type::electriciteit_hoog: e = "electriciteit-hoog"; break;
-// 		case grafiek_type::electriciteit_laag: e = "electriciteit-laag"; break;
-// 		case grafiek_type::electriciteit_verbruik: e = "electriciteit-verbruik"; break;
-// 		case grafiek_type::electriciteit_levering: e = "electriciteit-levering"; break;
-// 		case grafiek_type::electriciteit_verbruik_hoog: e = "electriciteit-verbruik-hoog"; break;
-// 		case grafiek_type::electriciteit_verbruik_laag: e = "electriciteit-verbruik-laag"; break;
-// 		case grafiek_type::electriciteit_levering_hoog: e = "electriciteit-levering-hoog"; break;
-// 		case grafiek_type::electriciteit_levering_laag: e = "electriciteit-levering-laag"; break;
-// 	}
-// }
+enum class grafiek_type
+{
+	warmte,
+	electriciteit,
+	electriciteit_hoog,
+	electriciteit_laag,
+	electriciteit_verbruik,
+	electriciteit_levering,
+	electriciteit_verbruik_hoog,
+	electriciteit_verbruik_laag,
+	electriciteit_levering_hoog,
+	electriciteit_levering_laag
+};
 
-// void from_json(const nlohmann::json &e, grafiek_type &type)
-// {
-// 	if (e == "warmte")
-// 		type = grafiek_type::warmte;
-// 	else if (e == "electriciteit")
-// 		type = grafiek_type::electriciteit;
-// 	else if (e == "electriciteit-hoog")
-// 		type = grafiek_type::electriciteit_hoog;
-// 	else if (e == "electriciteit-laag")
-// 		type = grafiek_type::electriciteit_laag;
-// 	else if (e == "electriciteit-verbruik")
-// 		type = grafiek_type::electriciteit_verbruik;
-// 	else if (e == "electriciteit-levering")
-// 		type = grafiek_type::electriciteit_levering;
-// 	else if (e == "electriciteit-verbruik-hoog")
-// 		type = grafiek_type::electriciteit_verbruik_hoog;
-// 	else if (e == "electriciteit-verbruik-laag")
-// 		type = grafiek_type::electriciteit_verbruik_laag;
-// 	else if (e == "electriciteit-levering-hoog")
-// 		type = grafiek_type::electriciteit_levering_hoog;
-// 	else if (e == "electriciteit-levering-laag")
-// 		type = grafiek_type::electriciteit_levering_laag;
-// 	else
-// 		throw runtime_error("Ongeldige grafiek type");
-// }
+struct GrafiekData
+{
+	string type;
+	map<string, float> punten;
+	map<string, float> vsGem;
 
-// struct GrafiekData
-// {
-// 	string type;
-// 	map<string, float> punten;
-// 	map<string, float> vsGem;
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long)
+	{
+		// clang-format off
+		ar & zeep::make_nvp("type", type)
+		   & zeep::make_nvp("punten", punten)
+		   & zeep::make_nvp("vsgem", vsGem);
+		// clang-format on
+	}
+};
 
-// 	template <typename Archive>
-// 	void serialize(Archive &ar, unsigned long)
-// 	{
-// 		// clang-format off
-// 		ar & zeep::make_nvp("type", type)
-// 		   & zeep::make_nvp("punten", punten)
-// 		   & zeep::make_nvp("vsgem", vsGem);
-// 		// clang-format on
-// 	}
-// };
+using Opnames = std::vector<Opname>;
 
-// using Opnames = std::vector<Opname>;
+class e_rest_controller : public zeep::http::rest_controller
+{
+  public:
+	e_rest_controller()
+		: zeep::http::rest_controller("ajax")
+	{
+		map_post_request("opname", &e_rest_controller::post_opname, "opname");
+		map_put_request("opname/{id}", &e_rest_controller::put_opname, "id", "opname");
+		map_get_request("opname/{id}", &e_rest_controller::get_opname, "id");
+		map_get_request("opname", &e_rest_controller::get_all_opnames);
+		map_delete_request("opname/{id}", &e_rest_controller::delete_opname, "id");
 
-// class e_rest_controller : public zeep::http::rest_controller
-// {
-//   public:
-// 	e_rest_controller()
-// 		: zeep::http::rest_controller("ajax")
-// 	{
-// 		map_post_request("opname", &e_rest_controller::post_opname, "opname");
-// 		map_put_request("opname/{id}", &e_rest_controller::put_opname, "id", "opname");
-// 		map_get_request("opname/{id}", &e_rest_controller::get_opname, "id");
-// 		map_get_request("opname", &e_rest_controller::get_all_opnames);
-// 		map_delete_request("opname/{id}", &e_rest_controller::delete_opname, "id");
+		map_get_request("data/{type}/{aggr}", &e_rest_controller::get_grafiek, "type", "aggr");
 
-// 		map_get_request("data/{type}/{aggr}", &e_rest_controller::get_grafiek, "type", "aggr");
+		map_get_request("opname", &e_rest_controller::get_opnames);
 
-// 		map_get_request("opname", &e_rest_controller::get_opnames);
+		map_put_request("opnames", &e_rest_controller::set_opnames, "opnames");
 
-// 		map_put_request("opnames", &e_rest_controller::set_opnames, "opnames");
+		map_get_request("all_data", &e_rest_controller::get_all_data);
+	}
 
-// 		map_get_request("all_data", &e_rest_controller::get_all_data);
-// 	}
+	// CRUD routines
+	string post_opname(Opname /*opname*/)
+	{
+		return {};
+	}
 
-// 	// CRUD routines
-// 	string post_opname(Opname /*opname*/)
-// 	{
-// 		return {};
-// 	}
+	void put_opname(string /*opnameId*/, string /*opnameId*/)
+	{
+		{};
+	}
 
-// 	void put_opname(string /*opnameId*/, string /*opnameId*/)
-// 	{
-// 		{};
-// 	}
+	Opnames get_opnames()
+	{
+		return { {}, {} };
+	}
 
-// 	Opnames get_opnames()
-// 	{
-// 		return { {}, {} };
-// 	}
+	void set_opnames(Opnames /*opnames*/)
+	{
+	}
 
-// 	void set_opnames(Opnames /*opnames*/)
-// 	{
-// 	}
+	Opname get_opname(string id)
+	{
+		if (id == "xxx")
+			throw zeep::http::not_found;
 
-// 	Opname get_opname(string id)
-// 	{
-// 		if (id == "xxx")
-// 			throw zeep::http::not_found;
+		return {};
+	}
 
-// 		return {};
-// 	}
+	Opname get_last_opname()
+	{
+		return {};
+	}
 
-// 	Opname get_last_opname()
-// 	{
-// 		return {};
-// 	}
+	vector<Opname> get_all_opnames()
+	{
+		return {};
+	}
 
-// 	vector<Opname> get_all_opnames()
-// 	{
-// 		return {};
-// 	}
+	void delete_opname(string /*id*/)
+	{
+	}
 
-// 	void delete_opname(string /*id*/)
-// 	{
-// 	}
+	GrafiekData get_grafiek(grafiek_type /*type*/, grafiek_type /*type*/)
+	{
+		return {};
+	}
 
-// 	GrafiekData get_grafiek(grafiek_type /*type*/, grafiek_type /*type*/)
-// 	{
-// 		return {};
-// 	}
+	zeep::http::reply get_all_data()
+	{
+		return { zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
+	}
+};
 
-// 	zeep::http::reply get_all_data()
-// 	{
-// 		return { zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
-// 	}
-// };
+TEST_CASE("rest_1")
+{
+	zeep::value_serializer<aggregatie_type>::init({ //
+		{ aggregatie_type::dag, "dag" },
+		{ aggregatie_type::week, "week" },
+		{ aggregatie_type::maand, "maand" },
+		{ aggregatie_type::jaar, "jaar"	 }
+	});
 
-// TEST_CASE("rest_1")
-// {
-// 	// simply see if the above compiles
+	zeep::value_serializer<grafiek_type>::init({ //
+		{ grafiek_type::warmte, "warmte" },
+		{ grafiek_type::electriciteit, "electriciteit" },
+		{ grafiek_type::electriciteit_hoog, "electriciteit-hoog" },
+		{ grafiek_type::electriciteit_laag, "electriciteit-laag" },
+		{ grafiek_type::electriciteit_verbruik, "electriciteit-verbruik" },
+		{ grafiek_type::electriciteit_levering, "electriciteit-levering" },
+		{ grafiek_type::electriciteit_verbruik_hoog, "electriciteit-verbruik-hoog" },
+		{ grafiek_type::electriciteit_verbruik_laag, "electriciteit-verbruik-laag" },
+		{ grafiek_type::electriciteit_levering_hoog, "electriciteit-levering-hoog" },
+		{ grafiek_type::electriciteit_levering_laag, "electriciteit-levering-laag" }});
 
-// 	e_rest_controller rc;
+	// simply see if the above compiles
 
-// 	zeep::http::reply rep;
+	e_rest_controller rc;
 
-// 	asio_ns::io_context io_context;
-// 	asio_ns::ip::tcp::socket s(io_context);
+	zeep::http::reply rep;
 
-// 	zeep::http::request req{ "GET", "/ajax/all_data" };
+	asio_ns::io_context io_context;
+	asio_ns::ip::tcp::socket s(io_context);
 
-// 	CHECK(rc.dispatch_request(s, req, rep));
+	zeep::http::request req{ "GET", "/ajax/all_data" };
 
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content_type() == "text/plain");
-// }
+	CHECK(rc.dispatch_request(s, req, rep));
 
-// TEST_CASE("rest_2")
-// {
-// 	// start up a http server and stop it again
+	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_content_type() == "text/plain");
+}
 
-// 	zh::daemon d([]()
-// 		{
-// 		auto s = new zh::server;
-// 		s->add_controller(new e_rest_controller());
-// 		return s; },
-// 		"zeep-http-test");
+TEST_CASE("rest_2")
+{
+	// start up a http server and stop it again
 
-// 	std::random_device rng;
-// 	uint16_t port = 1024 + (rng() % 10240);
+	zh::daemon d([]()
+		{
+		auto s = new zh::server;
+		s->add_controller(new e_rest_controller());
+		return s; },
+		"zeep-http-test");
 
-// 	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
 
-// 	std::clog << "started daemon at port " << port << '\n';
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
 
-// 	using namespace std::chrono_literals;
-// 	std::this_thread::sleep_for(1s);
+	std::clog << "started daemon at port " << port << '\n';
 
-// 	try
-// 	{
-// 		auto rep = simple_request(port, "GET /ajax/all_data HTTP/1.0\r\n\r\n");
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
 
-// 		CHECK(rep.get_status() == zeep::http::ok);
-// 		CHECK(rep.get_content_type() == "text/plain");
+	try
+	{
+		auto rep = simple_request(port, "GET /ajax/all_data HTTP/1.0\r\n\r\n");
 
-// 		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
-// 		CHECK(reply.get_status() == zh::not_found);
+		CHECK(rep.get_status() == zeep::http::ok);
+		CHECK(rep.get_content_type() == "text/plain");
 
-// 		reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
-// 		CHECK(reply.get_status() == zh::not_found);
-// 		CHECK(reply.get_content_type() == "application/json");
-// 	}
-// 	catch (const std::exception &e)
-// 	{
-// 		std::clog << e.what() << '\n';
-// 	}
+		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
+		CHECK(reply.get_status() == zh::not_found);
 
-// 	zeep::signal_catcher::signal_hangup(t);
+		reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
+		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_content_type() == "application/json");
+	}
+	catch (const std::exception &e)
+	{
+		std::clog << e.what() << '\n';
+	}
 
-// 	t.join();
-// }
+	zeep::signal_catcher::signal_hangup(t);
+
+	t.join();
+}
