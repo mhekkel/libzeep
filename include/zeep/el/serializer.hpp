@@ -116,6 +116,32 @@ inline constexpr bool is_serializable_map_type_v = is_serializable_map_type<T>::
 
 // --------------------------------------------------------------------
 
+template<typename T>
+using has_value_or_result_t = decltype(std::declval<T>().value_or(std::declval<typename T::value_type&&>()));
+
+template <typename T, typename = void>
+struct is_serializable_optional_type : std::false_type
+{
+};
+
+template <typename T>
+struct is_serializable_optional_type<T,
+	std::enable_if_t<
+		std::experimental::is_detected_v<value_type_t, T> and
+		std::is_same_v<has_value_or_result_t<T>, typename T::value_type> and
+		not is_compatible_string_type_v<object, T>>>
+{
+	static constexpr bool value =
+		std::is_constructible_v<object, typename T::value_type> or
+		has_serialize_v<typename T::value_type, object_serializer> or
+		has_value_serializer_v<typename T::value_type>;
+};
+
+template <typename T>
+inline constexpr bool is_serializable_optional_type_v = is_serializable_optional_type<T>::value;
+
+// --------------------------------------------------------------------
+
 struct object_serializer
 {
 	object_serializer() {}
@@ -287,6 +313,31 @@ struct serializer<T>
 		for (auto &i : o)
 			result.emplace_back(value_deserializer_impl::deserialize(i));
 
+		return result;
+	}
+};
+
+template <typename T>
+	requires is_serializable_optional_type_v<T>
+struct serializer<T>
+{
+	static object serialize(const T &v)
+	{
+		using value_serializer_impl = serializer<typename T::value_type>;
+
+		object result;
+		if (v)
+			result = value_serializer_impl::serialize(*v);
+		return result;
+	}
+
+	static T deserialize(const object &o)
+	{
+		using value_serializer_impl = serializer<typename T::value_type>;
+
+		T result{};
+		if (not o.is_null())
+			result = value_serializer_impl::deserialize(o);
 		return result;
 	}
 };

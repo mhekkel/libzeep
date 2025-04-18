@@ -28,8 +28,6 @@
 
 #include <zeep/streambuf.hpp>
 
-#include <zeep/el/object_fwd.hpp>
-
 #include <nlohmann/json.hpp>
 
 #include <array>
@@ -42,6 +40,8 @@
 
 namespace zeep::el
 {
+
+class object;
 
 // concepts
 
@@ -62,7 +62,34 @@ concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integ
 class object
 {
   public:
-	using value_type = detail::value_type;
+
+	enum class value_type
+	{
+		null,
+		object,
+		array,
+		string,
+		number_int,
+		number_float,
+		boolean
+	};
+
+	inline constexpr friend bool operator<(value_type lhs, value_type rhs) noexcept
+	{
+		const uint8_t order[] = {
+			0, // null
+			3, // object
+			4, // array
+			5, // string
+			2, // number_int
+			2, // number_float
+			1  // boolean
+		};
+
+		const auto lix = static_cast<std::size_t>(lhs);
+		const auto rix = static_cast<std::size_t>(rhs);
+		return lix < sizeof(order) and rix < sizeof(order) and order[lix] < order[rix];
+	}
 
 	using nullptr_type = std::nullptr_t;
 	using object_type = std::map<std::string, object>;

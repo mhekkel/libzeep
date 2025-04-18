@@ -38,6 +38,7 @@ endif()
 # unit parser serializer xpath json crypto http processor webapp soap rest security uri
 list(APPEND zeep_tests
 	crypto
+	el
 	http
 	processor
 	webapp

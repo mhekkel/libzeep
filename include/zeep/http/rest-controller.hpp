@@ -13,7 +13,6 @@
 
 #include <zeep/config.hpp>
 
-#include <zeep/el/from_object.hpp>
 #include <zeep/el/serializer.hpp>
 #include <zeep/http/controller.hpp>
 #include <zeep/streambuf.hpp>

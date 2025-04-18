@@ -158,13 +158,8 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/config.hpp
 	include/zeep/type-traits.hpp
 
-	include/zeep/el/to_object.hpp
 	include/zeep/el/object.hpp
-	include/zeep/el/factory.hpp
 	include/zeep/el/serializer.hpp
-	include/zeep/el/type_traits.hpp
-	include/zeep/el/from_object.hpp
-	include/zeep/el/object_fwd.hpp
 	include/zeep/el/processing.hpp
 
 	include/zeep/http/asio.hpp
