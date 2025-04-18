@@ -77,11 +77,14 @@ struct is_serializable_array_type : std::false_type
 template <typename T>
 struct is_serializable_array_type<T,
 	std::enable_if_t<
+		not std::experimental::is_detected_v<mapped_type_t, T> and
+		not std::experimental::is_detected_v<key_type_t, T> and
 		std::experimental::is_detected_v<value_type_t, T> and
 		std::experimental::is_detected_v<iterator_t, T> and
 		not std::experimental::is_detected_v<std_string_npos_t, T>>>
 {
-	static constexpr bool value = is_serializable_type_v<typename T::value_type>;
+	static constexpr bool value = std::is_constructible_v<object, typename T::mapped_type> or
+	                              has_serialize_v<typename T::mapped_type, object_serializer>;
 };
 
 template <typename T>
@@ -271,7 +274,7 @@ struct serializer<T>
 
 		object o = object::value_type::array;
 
-		for (auto& i: v)
+		for (auto &i : v)
 			o.push_back(value_serializer_impl::serialize(v));
 
 		return o;
@@ -283,7 +286,7 @@ struct serializer<T>
 
 		T result{};
 
-		for (auto& i: o)
+		for (auto &i : o)
 			result.emplace_back(value_deserializer_impl::deserialize(i));
 
 		return result;

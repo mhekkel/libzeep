@@ -351,6 +351,7 @@ class object
 
 	object(value_type t) noexcept
 		: m_type(t)
+		, m_data(t)
 	{
 	}
 
