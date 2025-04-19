@@ -187,7 +187,7 @@ class basic_template_processor
 	}
 
 	/// \brief Initialize the scope object
-	virtual void init_scope(scope& scope);
+	virtual void init_scope(request &req, scope& scope);
 
   protected:
 

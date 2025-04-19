@@ -145,100 +145,6 @@ class html_controller : public controller
 
 	// --------------------------------------------------------------------
   public:
-	using param = header;
-
-	/// @cond
-	struct parameter_pack
-	{
-		parameter_pack(const request &req)
-			: m_req(req)
-		{
-		}
-
-		bool has_parameter(const char *name) const
-		{
-			return std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-					   [name](auto &pp)
-					   { return pp.name == name; }) != m_path_parameters.end();
-		}
-
-		std::string get_parameter(const char *name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return p->value;
-			else
-				return m_req.get_parameter(name);
-		}
-
-		std::tuple<std::string, bool> get_parameter_ex(const char *name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return { p->value, not p->value.empty() };
-			else
-				return m_req.get_parameter_ex(name);
-		}
-
-		std::vector<std::string> get_parameters(const char *name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return { p->value };
-			else
-			{
-				std::vector<std::string> result;
-
-				for (const auto &[p_name, p_value] : m_req.get_parameters())
-				{
-					if (p_name != name)
-						continue;
-
-					result.push_back(p_value);
-				}
-
-				return result;
-			}
-		}
-
-		file_param get_file_parameter(const char *name) const
-		{
-			return m_req.get_file_parameter(name);
-		}
-
-		std::vector<file_param> get_file_parameters(const char *name) const
-		{
-			return m_req.get_file_parameters(name);
-		}
-
-		const request &m_req;
-		std::vector<param> m_path_parameters;
-	};
-
-	struct mount_point_v2_base
-	{
-		mount_point_v2_base(const char *path, const std::string &method)
-			: m_path(path)
-			, m_method(method)
-		{
-		}
-
-		virtual ~mount_point_v2_base() {}
-
-		virtual void call(const scope &scope_, const parameter_pack &params, reply &rep) = 0;
-
-		std::string m_path;
-		std::string m_method;
-		std::regex m_rx;
-		std::vector<std::string> m_path_params;
-	};
-
 	template <typename Callback, typename...>
 	struct mount_point_v2
 	{
@@ -246,7 +152,7 @@ class html_controller : public controller
 
 	/// \brief templated base class for mount points
 	template <typename ControllerType, typename... Args>
-	struct mount_point_v2<reply (ControllerType::*)(const scope &scope_, Args...)> : mount_point_v2_base
+	struct mount_point_v2<reply (ControllerType::*)(const scope &scope_, Args...)> : mount_point_base
 	{
 		using Sig = reply (ControllerType::*)(const scope &, Args...);
 		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
@@ -256,7 +162,7 @@ class html_controller : public controller
 
 		template <typename... Names>
 		mount_point_v2(const char *path, const std::string &method, html_controller *owner, Sig sig, Names... names)
-			: mount_point_v2_base(path, method)
+			: mount_point_base(path, method)
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
@@ -269,228 +175,22 @@ class html_controller : public controller
 				return (controller->*sig)(scope_, args...);
 			};
 
-			if constexpr (sizeof...(Names) > 0)
-			{
-
-				// for (auto name: {...names })
-				size_t ix = 0;
-				for (auto name : { names... })
-					m_names[ix++] = name;
-
-				// construct a regex for matching paths
-				namespace fs = std::filesystem;
-
-				fs::path p = path;
-				std::string ps;
-
-				for (auto pp : p)
-				{
-					if (pp.empty())
-						continue;
-
-					if (not ps.empty())
-						ps += '/';
-
-					if (pp.string().front() == '{' and pp.string().back() == '}')
-					{
-						auto param = pp.string().substr(1, pp.string().length() - 2);
-
-						auto i = std::find(m_names.begin(), m_names.end(), param);
-						if (i == m_names.end())
-						{
-							assert(false);
-							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
-						}
-
-						size_t ni = i - m_names.begin();
-						m_path_params.emplace_back(m_names[ni]);
-						ps += "([^/]*)";
-					}
-					else
-						ps += pp.string();
-				}
-
-				m_rx.assign(ps);
-			}
+			set_names(path, names...);
 		}
 
-		virtual void call(const scope &scope_, const parameter_pack &params, reply &rep)
+		virtual void call(const parameter_pack &params, reply &rep)
 		{
-			auto args = collect_arguments(scope_, params, std::make_index_sequence<N>());
+			auto args = collect_arguments(params.get_scope(), params, std::make_index_sequence<N>());
 			rep = std::apply(m_callback, std::move(args));
 		}
 
 		template <std::size_t... I>
 		auto collect_arguments(const scope &scope_, const parameter_pack &params, std::index_sequence<I...>)
 		{
-			return std::make_tuple(scope_, get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
+			return std::make_tuple(scope_, get_parameter(params, m_names[I].c_str(), typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
-
-		bool get_parameter(const parameter_pack &params, const char *name, bool result)
-		{
-			try
-			{
-				auto v = params.get_parameter(name);
-				result = v == "true" or v == "1" or v == "on";
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-		std::string get_parameter(const parameter_pack &params, const char *name, std::string result)
-		{
-			try
-			{
-				result = params.get_parameter(name);
-			}
-			catch (const std::exception &)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-		file_param get_parameter(const parameter_pack &params, const char *name, file_param result)
-		{
-			try
-			{
-				result = params.get_file_parameter(name);
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-		std::vector<file_param> get_parameter(const parameter_pack &params, const char *name, std::vector<file_param> result)
-		{
-			try
-			{
-				result = params.get_file_parameters(name);
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-		el::object get_parameter(const parameter_pack &params, const char *name, el::object result)
-		{
-			try
-			{
-				auto param = params.get_parameter(name);
-				char_streambuf buf(param.data(), param.length());
-				std::istream is(&buf);
-
-				deserialize(is, result);
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-		template <typename T>
-		std::optional<T> get_parameter(const parameter_pack &params, const char *name, std::optional<T> result)
-		{
-			try
-			{
-				const auto &[s, available] = params.get_parameter_ex(name);
-				if (available)
-					result = value_serializer<T>::from_string(s);
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-		std::optional<std::string> get_parameter(const parameter_pack &params, const char *name, std::optional<std::string> result)
-		{
-			try
-			{
-				const auto &[s, available] = params.get_parameter_ex(name);
-				if (available)
-					result = s;
-			}
-			catch (const std::exception &e)
-			{
-				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
-			}
-
-			return result;
-		}
-
-
-		// template <typename T, std::enable_if_t<not(
-		// 										   zeep::has_serialize_v<T, el::deserializer<el::object>> or std::is_enum_v<T> or
-		// 										   zeep::is_serializable_array_type_v<T, el::deserializer<el::object>>),
-		// 						  int> = 0>
-		// T get_parameter(const parameter_pack &params, const char *name, T result)
-		// {
-		// 	try
-		// 	{
-		// 		auto p = params.get_parameter(name);
-		// 		if (not p.empty())
-		// 			result = value_serializer<T>::from_string(p);
-		// 	}
-		// 	catch (const std::exception &e)
-		// 	{
-		// 		using namespace std::literals::string_literals;
-		// 		throw std::runtime_error("Invalid value passed for parameter "s + name);
-		// 	}
-
-		// 	return result;
-		// }
-
-		// template <typename T, std::enable_if_t<el::detail::has_from_object_v<T> and std::is_enum_v<T>, int> = 0>
-		// T get_parameter(const parameter_pack &params, const char *name, T result)
-		// {
-		// 	el::object v = params.get_parameter(name);
-
-		// 	from_object(v, result);
-		// 	return result;
-		// }
-
-		// template <typename T, std::enable_if_t<zeep::has_serialize_v<T, el::deserializer<el::object>> or
-		// 										   zeep::is_serializable_array_type_v<T, el::deserializer<el::object>>,
-		// 						  int> = 0>
-		// T get_parameter(const parameter_pack &params, const char *name, T result)
-		// {
-		// 	el::object v;
-
-		// 	if (params.m_req.get_header("content-type") == "application/json")
-		// 		el::object::parse_json(params.m_req.get_payload(), v);
-		// 	else
-		// 		el::object::parse_json(params.get_parameter(name), v);
-
-		// 	from_object(v, result);
-
-		// 	return result;
-		// }
 
 		Callback m_callback;
-		std::array<const char *, N> m_names;
 	};
 
 	/// @endcond
@@ -589,16 +289,16 @@ class html_controller : public controller
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules. Similar to the previous map calls.
 
 	/// @cond
-	struct mount_point_v2_simple : public mount_point_v2_base
+	struct mount_point_v2_simple : public mount_point_base
 	{
 		mount_point_v2_simple(const char *path, const std::string &method, const char *templateName, html_controller &controller)
-			: mount_point_v2_base(path, method)
+			: mount_point_base(path, method)
 			, m_template(templateName)
 			, m_controller(controller)
 		{
 		}
 
-		virtual void call(const scope &scope_, const parameter_pack &params, reply &rep);
+		virtual void call(const parameter_pack &params, reply &rep);
 
 		std::string m_template;
 		html_controller &m_controller;
@@ -626,15 +326,14 @@ class html_controller : public controller
 
 	/// \brief Initialize the scope object
 	///
-	/// The default implementation does nothing, derived implementations may
-	/// want to add some default data to the scope.
-	virtual void init_scope(scope & /*scope*/) {}
+	/// Initialize scope, derived classes should call this first
+	virtual void init_scope(request &req, scope & /*scope*/);
 
   private:
 	/// @cond
-	struct mount_point
+	struct mount_point_v1
 	{
-		mount_point(const std::string &path, const std::string &method, handler_type handler)
+		mount_point_v1(const std::string &path, const std::string &method, handler_type handler)
 			: path(path)
 			, method(method)
 			, handler(handler)
@@ -646,10 +345,9 @@ class html_controller : public controller
 		handler_type handler;
 	};
 
-	using mount_point_list = std::vector<mount_point>;
+	using mount_point_list = std::vector<mount_point_v1>;
 
 	mount_point_list m_dispatch_table;
-	std::list<mount_point_v2_base *> m_mountpoints;
 	/// @endcond
 };
 

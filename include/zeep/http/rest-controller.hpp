@@ -48,100 +48,7 @@ class rest_controller : public controller
 
 	~rest_controller();
 
-	/// \brief will do the hard work
-	virtual bool handle_request(request &req, reply &rep);
-
   protected:
-	/// @cond
-
-	using param = header;
-
-	/// \brief helper class for pulling parameter values out of the request
-	struct parameter_pack
-	{
-		parameter_pack(const request &req)
-			: m_req(req)
-		{
-		}
-
-		std::string get_parameter(const char *name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return p->value;
-			else
-				return m_req.get_parameter(name);
-		}
-
-		std::tuple<std::string, bool> get_parameter_ex(const char *name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return { p->value, not p->value.empty() };
-			else
-				return m_req.get_parameter_ex(name);
-		}
-
-		std::vector<std::string> get_parameters(const char *name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return { p->value };
-			else
-			{
-				std::vector<std::string> result;
-
-				for (const auto &[p_name, p_value] : m_req.get_parameters())
-				{
-					if (p_name != name)
-						continue;
-
-					result.push_back(p_value);
-				}
-
-				return result;
-			}
-		}
-
-		file_param get_file_parameter(const char *name) const
-		{
-			return m_req.get_file_parameter(name);
-		}
-
-		std::vector<file_param> get_file_parameters(const char *name) const
-		{
-			return m_req.get_file_parameters(name);
-		}
-
-		const request &m_req;
-		std::vector<param> m_path_parameters;
-	};
-
-	/// \brief abstract base class for mount points, derived classes should
-	/// derive from mount_point instead of this class
-	struct mount_point_base
-	{
-		mount_point_base(const char *path, const std::string &method)
-			: m_path(path)
-			, m_method(method)
-		{
-		}
-
-		virtual ~mount_point_base() {}
-
-		virtual void call(const parameter_pack &params, reply &reply_) = 0;
-
-		std::string m_path;
-		std::string m_method;
-		std::regex m_rx;
-		std::vector<std::string> m_path_params;
-	};
 
 	template <typename Callback, typename...>
 	struct mount_point
@@ -174,70 +81,13 @@ class rest_controller : public controller
 				return (controller->*sig)(args...);
 			};
 
-			if constexpr (sizeof...(Names) > 0)
-			{
-
-				// for (auto name: {...names })
-				size_t ix = 0;
-				for (auto name : { names... })
-					m_names[ix++] = name;
-
-				// construct a regex for matching paths
-				namespace fs = std::filesystem;
-
-				fs::path p = path;
-				std::string ps;
-
-				for (auto pp : p)
-				{
-					if (pp.empty())
-						continue;
-
-					if (not ps.empty())
-						ps += '/';
-
-					if (pp.string().front() == '{' and pp.string().back() == '}')
-					{
-						auto param = pp.string().substr(1, pp.string().length() - 2);
-
-						auto i = std::find(m_names.begin(), m_names.end(), param);
-						if (i == m_names.end())
-						{
-							assert(false);
-							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
-						}
-
-						size_t ni = i - m_names.begin();
-						m_path_params.emplace_back(m_names[ni]);
-						ps += "([^/]*)";
-					}
-					else
-						ps += pp.string();
-				}
-
-				m_rx.assign(ps);
-			}
+			set_names(path, names...);
 		}
 
 		virtual void call(const parameter_pack &params, reply &rep)
 		{
-			try
-			{
-				object message("ok");
-				rep.set_content(message);
-				rep.set_status(ok);
-
-				ArgsTuple args = collect_arguments(params, std::make_index_sequence<N>());
-				invoke<Result>(std::move(args), rep);
-			}
-			catch (const std::exception &e)
-			{
-				object message;
-				message["error"] = e.what();
-
-				rep.set_content(message);
-				rep.set_status(internal_server_error);
-			}
+			ArgsTuple args = collect_arguments(params, std::make_index_sequence<N>());
+			invoke<Result>(std::move(args), rep);
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
@@ -278,7 +128,7 @@ class rest_controller : public controller
 		ArgsTuple collect_arguments(const parameter_pack &params, std::index_sequence<I...>)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
-			return std::make_tuple(get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
+			return std::make_tuple(get_parameter(params, m_names[I].c_str(), typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
 		bool get_parameter(const parameter_pack &params, const char *name, bool result)
@@ -431,7 +281,6 @@ class rest_controller : public controller
 		}
 
 		Callback m_callback;
-		std::array<const char *, N> m_names;
 	};
 
 	/// @endcond
@@ -494,9 +343,6 @@ class rest_controller : public controller
 	{
 		map_request(mountPoint, "DELETE", callback, names...);
 	}
-
-  private:
-	std::list<mount_point_base *> m_mountpoints;
 };
 
 } // namespace zeep::http
