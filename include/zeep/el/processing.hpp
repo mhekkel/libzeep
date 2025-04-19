@@ -19,6 +19,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/request.hpp>
 #include <zeep/el/object.hpp>
+#include <zeep/el/serializer.hpp>
 
 #include <mxml.hpp>
 
@@ -208,7 +209,7 @@ class scope
 	template <typename T>
 	void put(const std::string &name, T &&value)
 	{
-		m_data[name] = std::forward<T &&>(value);
+		m_data[name] = el::serializer<T>::serialize(std::forward<T &&>(value));
 	}
 
 	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
