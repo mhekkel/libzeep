@@ -206,7 +206,19 @@ class scope
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
-	template <typename T>
+	void put(const std::string &name, object &&value)
+	{
+		m_data[name] = std::move(value);
+	}
+
+	/// \brief put variable in the scope with \a name and \a value
+	void put(const std::string &name, const object &value)
+	{
+		m_data[name] = value;
+	}
+
+	/// \brief put variable in the scope with \a name and \a value
+	template <typename T, std::enable_if_t<el::is_serializable_to_object_v<T>, int> = 0>
 	void put(const std::string &name, T &&value)
 	{
 		m_data[name] = el::serializer<T>::serialize(std::forward<T &&>(value));

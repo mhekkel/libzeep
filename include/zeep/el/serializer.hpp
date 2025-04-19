@@ -209,6 +209,28 @@ struct object_deserializer
 
 template <typename T>
 	requires(
+		not std::is_constructible_v<object, T> and
+		has_value_serializer_v<T>)
+struct serializer<T>
+{
+	static object serialize(const T &v)
+	{
+		return object(value_serializer<T>::to_string(v));
+	}
+
+	static object serialize(T &&v)
+	{
+		return object(value_serializer<T>::to_string(std::forward<T>(v)));
+	}
+
+	static T deserialize(const object &o)
+	{
+		return value_serializer<T>::from_string(o.get<std::string>());
+	}
+};
+
+template <typename T>
+	requires(
 		std::is_constructible_v<object, T> and
 		not std::is_same_v<T, std::initializer_list<object>> and
 		not std::is_same_v<T, object> and
@@ -219,11 +241,6 @@ struct serializer<T>
 	static object serialize(const T &v)
 	{
 		return object(v);
-	}
-
-	static object serialize(T &&v)
-	{
-		return object{ std::forward<T>(v) };
 	}
 
 	static T deserialize(const object &o)
@@ -237,13 +254,6 @@ template <typename T>
 struct serializer<T>
 {
 	static object serialize(const T &v)
-	{
-		object_serializer s;
-		const_cast<T &>(v).serialize(s, 0);
-		return s.m_elem;
-	}
-
-	static object serialize(T &&v)
 	{
 		object_serializer s;
 		const_cast<T &>(v).serialize(s, 0);
@@ -341,5 +351,20 @@ struct serializer<T>
 		return result;
 	}
 };
+
+// --------------------------------------------------------------------
+
+template<typename T>
+using serialize_to_object_function = decltype(zeep::el::serializer<T>::serialize(std::declval<const typename T::value_type&>()));
+
+template <typename T>
+struct is_serializable_to_object
+{
+	static constexpr bool value =
+		std::experimental::is_detected_v<serialize_to_object_function, T>;
+};
+
+template <typename T>
+inline constexpr bool is_serializable_to_object_v = is_serializable_to_object<T>::value;
 
 } // namespace zeep::el

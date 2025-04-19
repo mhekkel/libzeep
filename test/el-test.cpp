@@ -100,3 +100,12 @@ TEST_CASE("test-3")
 
 	CHECK_FALSE(opn2.has_value());
 }
+
+TEST_CASE("test-4")
+{
+	auto now = std::chrono::system_clock::now();
+	auto o = e::serializer<decltype(now)>::serialize(now);
+	std::cout << o << '\n';
+	auto n = e::serializer<decltype(now)>::deserialize(o);
+	CHECK(n == now);
+}
