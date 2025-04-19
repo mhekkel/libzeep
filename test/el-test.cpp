@@ -75,7 +75,7 @@ TEST_CASE("test-3")
 {
 	Opname opn{ "1", { { "een", 0.1f },
 						 { "twee", 0.2f } } };
-						
+
 	auto o_opn = std::make_optional<Opname>(opn);
 
 	static_assert(zeep::el::is_serializable_optional_type_v<std::optional<Opname>>, "");
@@ -108,4 +108,21 @@ TEST_CASE("test-4")
 	std::cout << o << '\n';
 	auto n = e::serializer<decltype(now)>::deserialize(o);
 	CHECK(n == now);
+}
+
+TEST_CASE("test-5")
+{
+	zh::scope scope;
+
+	Opname opn{ "1", { { "een", 0.1f },
+						 { "twee", 0.2f } } };
+
+	static_assert(std::experimental::is_detected_v<e::serialize_to_object_function, Opname>, "");
+	static_assert(e::is_serializable_to_object_v<Opname>, "");
+
+	scope.put("o1", e::to_object(opn));
+
+	std::vector<Opname> opn_v{ opn, opn };
+
+	scope.put("o2", e::to_object(opn_v));
 }

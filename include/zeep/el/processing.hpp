@@ -199,7 +199,7 @@ class scope
 	explicit scope(const scope &next);
 
 	/// \brief put variable in the scope with \a name and \a value
-	template <typename T>
+	template <typename T, std::enable_if_t<std::is_assignable_v<el::object, T>, int> = 0>
 	void put(const std::string &name, const T &value)
 	{
 		m_data[name] = value;
@@ -215,13 +215,6 @@ class scope
 	void put(const std::string &name, const object &value)
 	{
 		m_data[name] = value;
-	}
-
-	/// \brief put variable in the scope with \a name and \a value
-	template <typename T, std::enable_if_t<el::is_serializable_to_object_v<T>, int> = 0>
-	void put(const std::string &name, T &&value)
-	{
-		m_data[name] = el::serializer<T>::serialize(std::forward<T &&>(value));
 	}
 
 	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end

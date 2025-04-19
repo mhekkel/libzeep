@@ -116,8 +116,8 @@ inline constexpr bool is_serializable_map_type_v = is_serializable_map_type<T>::
 
 // --------------------------------------------------------------------
 
-template<typename T>
-using has_value_or_result_t = decltype(std::declval<T>().value_or(std::declval<typename T::value_type&&>()));
+template <typename T>
+using has_value_or_result_t = decltype(std::declval<T>().value_or(std::declval<typename T::value_type &&>()));
 
 template <typename T, typename = void>
 struct is_serializable_optional_type : std::false_type
@@ -354,8 +354,8 @@ struct serializer<T>
 
 // --------------------------------------------------------------------
 
-template<typename T>
-using serialize_to_object_function = decltype(zeep::el::serializer<T>::serialize(std::declval<const typename T::value_type&>()));
+template <typename T>
+using serialize_to_object_function = decltype(zeep::el::serializer<T>::serialize(std::declval<T &>()));
 
 template <typename T>
 struct is_serializable_to_object
@@ -366,5 +366,14 @@ struct is_serializable_to_object
 
 template <typename T>
 inline constexpr bool is_serializable_to_object_v = is_serializable_to_object<T>::value;
+
+// --------------------------------------------------------------------
+
+template <typename T, std::enable_if_t<is_serializable_to_object_v<T>, int> = 0>
+object to_object(const T &v)
+{
+	using value_serializer_impl = serializer<T>;
+	return value_serializer_impl::serialize(v);
+}
 
 } // namespace zeep::el
