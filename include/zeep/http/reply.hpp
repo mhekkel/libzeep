@@ -94,22 +94,22 @@ class reply
 	}
 
 	/// Add a header with name \a name and value \a value
-	void set_header(const std::string &name, const std::string &value);
+	void set_header(std::string name, std::string value);
 
 	/// Return the value of the header with name \a name
-	std::string get_header(const std::string &name) const;
+	std::string get_header(std::string_view name) const;
 
 	/// Remove the header with name \a name from the list of headers
-	void remove_header(const std::string &name);
+	void remove_header(std::string_view name);
 
 	/// Set a cookie
-	void set_cookie(const char *name, const std::string &value, std::initializer_list<cookie_directive> directives = {});
+	void set_cookie(std::string_view name, std::string value, std::initializer_list<cookie_directive> directives = {});
 
 	/// Set a header to delete the \a name cookie
-	void set_delete_cookie(const char *name);
+	void set_delete_cookie(std::string_view name);
 
 	/// Get a cookie
-	std::string get_cookie(const char *name) const;
+	std::string get_cookie(std::string_view name) const;
 
 	/// Return the value of the header named content-type
 	std::string get_content_type() const
@@ -118,9 +118,9 @@ class reply
 	}
 
 	/// Set the Content-Type header to \a type
-	void set_content_type(const std::string &type)
+	void set_content_type(std::string type)
 	{
-		set_header("Content-Type", type);
+		set_header("Content-Type", std::move(type));
 	}
 
 	/// Set the content and the content-type header depending on the content of doc (might be xhtml)
@@ -136,14 +136,14 @@ class reply
 	void set_content(const nlohmann::json &json);
 
 	/// Set the content and the content-type header
-	void set_content(const std::string &data, const std::string &contentType);
+	void set_content(std::string data, std::string contentType);
 
 	/// Set the content by copying \a data and the content-type header
-	void set_content(const char *data, size_t size, const std::string &contentType);
+	void set_content(const char *data, size_t size, std::string contentType);
 
 	/// To send a stream of data, with unknown size (using chunked transfer).
 	/// reply takes ownership of \a data and deletes it when done.
-	void set_content(std::istream *data, const std::string &contentType);
+	void set_content(std::istream *data, std::string contentType);
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data.
@@ -160,7 +160,7 @@ class reply
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
-	static reply stock_reply(status_type inStatus, const std::string &info);
+	static reply stock_reply(status_type inStatus, std::string info);
 
 	/// Create a standard redirect reply with the specified \a location
 	static reply redirect(const uri &location);

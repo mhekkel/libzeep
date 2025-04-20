@@ -245,8 +245,8 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 	typedef typename traits_type::off_type off_type;
 
 	/// \brief constructor taking a \a path to the resource in memory
-	basic_streambuf(const std::string &path)
-		: m_rsrc(path)
+	basic_streambuf(std::string path)
+		: m_rsrc(std::move(path))
 	{
 		init();
 	}
@@ -398,8 +398,8 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 	__streambuf_type m_buffer;
 
   public:
-	basic_istream(const std::string &path)
-		: basic_istream(rsrc(path))
+	basic_istream(std::string path)
+		: basic_istream(rsrc(std::move(path)))
 	{
 	}
 
@@ -482,12 +482,12 @@ rsrc_loader::rsrc_loader(const std::string &)
 }
 
 /// return last_write_time of \a file
-fs::file_time_type rsrc_loader::file_time(const std::string &file, std::error_code &ec) noexcept
+fs::file_time_type rsrc_loader::file_time(std::string file, std::error_code &ec) noexcept
 {
 	fs::file_time_type result = {};
 
 	ec = {};
-	mrsrc::rsrc rsrc(file);
+	mrsrc::rsrc rsrc(std::move(file));
 
 	if (rsrc)
 		result = mRsrcWriteTime;
@@ -498,9 +498,9 @@ fs::file_time_type rsrc_loader::file_time(const std::string &file, std::error_co
 }
 
 // basic loader, returns error in ec if file was not found
-std::istream *rsrc_loader::load_file(const std::string &file, std::error_code &ec) noexcept
+std::istream *rsrc_loader::load_file(std::string file, std::error_code &ec) noexcept
 {
-	mrsrc::rsrc resource(file);
+	mrsrc::rsrc resource(std::move(file));
 
 	std::istream *result = nullptr;
 	ec = {};

@@ -60,8 +60,8 @@ class login_error_handler : public error_handler
 	login_controller *m_login_controller;
 };
 
-login_controller::login_controller(const std::string &prefix_path)
-	: html_controller(prefix_path)
+login_controller::login_controller(std::string prefix_path)
+	: html_controller(std::move(prefix_path))
 {
 	map_get("login", &login_controller::handle_get_login);
 	map_post("login", &login_controller::handle_post_login, "username", "password");
@@ -205,7 +205,7 @@ reply login_controller::handle_get_login(const scope &scope)
 	return rep;
 }
 
-reply login_controller::handle_post_login(const scope &scope, const std::string &username, const std::string &password)
+reply login_controller::handle_post_login(const scope &scope, std::string_view username, std::string_view password)
 {
 	auto &req = scope.get_request();
 	auto csrf = req.get_parameter("_csrf");

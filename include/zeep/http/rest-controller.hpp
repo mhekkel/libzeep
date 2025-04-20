@@ -41,8 +41,8 @@ class rest_controller : public controller
 	/// \brief constructor
 	///
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
-	rest_controller(const std::string &prefix_path)
-		: controller(prefix_path)
+	rest_controller(std::string prefix_path)
+		: controller(std::move(prefix_path))
 	{
 	}
 
@@ -67,8 +67,8 @@ class rest_controller : public controller
 		static constexpr size_t N = sizeof...(Args);
 
 		template <typename... Names>
-		mount_point(const char *path, const std::string &method, rest_controller *owner, Sig sig, Names... names)
-			: mount_point_base(path, method)
+		mount_point(std::string path, std::string method, rest_controller *owner, Sig sig, Names... names)
+			: mount_point_base(std::move(path), std::move(method))
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
@@ -81,7 +81,7 @@ class rest_controller : public controller
 				return (controller->*sig)(args...);
 			};
 
-			set_names(path, names...);
+			set_names(names...);
 		}
 
 		virtual void call(const parameter_pack &params, reply &rep)
@@ -162,37 +162,37 @@ class rest_controller : public controller
 
 	/// \brief map \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Callback, typename... ArgNames>
-	void map_request(const char *mountPoint, const std::string &method, Callback callback, ArgNames... names)
+	void map_request(std::string mountPoint, std::string method, Callback callback, ArgNames... names)
 	{
-		m_mountpoints.emplace_back(new mount_point<Callback>(mountPoint, method, this, callback, names...));
+		m_mountpoints.emplace_back(new mount_point<Callback>(std::move(mountPoint), std::move(method), this, callback, names...));
 	}
 
 	/// \brief map a POST to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Callback, typename... ArgNames>
-	void map_post_request(const char *mountPoint, Callback callback, ArgNames... names)
+	void map_post_request(std::string mountPoint, Callback callback, ArgNames... names)
 	{
-		map_request(mountPoint, "POST", callback, names...);
+		map_request(std::move(mountPoint), "POST", callback, names...);
 	}
 
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
-	void map_put_request(const char *mountPoint, Sig callback, ArgNames... names)
+	void map_put_request(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, "PUT", callback, names...);
+		map_request(std::move(mountPoint), "PUT", callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
-	void map_get_request(const char *mountPoint, Sig callback, ArgNames... names)
+	void map_get_request(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, "GET", callback, names...);
+		map_request(std::move(mountPoint), "GET", callback, names...);
 	}
 
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
-	void map_delete_request(const char *mountPoint, Sig callback, ArgNames... names)
+	void map_delete_request(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPoint, "DELETE", callback, names...);
+		map_request(std::move(mountPoint), "DELETE", callback, names...);
 	}
 };
 

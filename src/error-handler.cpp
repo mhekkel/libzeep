@@ -14,8 +14,8 @@
 namespace zeep::http
 {
 
-error_handler::error_handler(const std::string &error_template)
-	: m_error_template(error_template)
+error_handler::error_handler(std::string error_template)
+	: m_error_template(std::move(error_template))
 {
 }
 
@@ -38,7 +38,7 @@ bool error_handler::create_error_reply(const request &req, status_type status, r
 	return create_error_reply(req, status, get_status_description(status), rep);
 }
 
-bool error_handler::create_error_reply(const request &req, status_type status, const std::string &message, reply &rep)
+bool error_handler::create_error_reply(const request &req, status_type status, std::string message, reply &rep)
 {
 	bool handled = false;
 
@@ -138,7 +138,7 @@ body, html {
 
 	if (not handled)
 	{
-		rep = reply::stock_reply(status, message);
+		rep = reply::stock_reply(status, std::move(message));
 		handled = true;
 	}
 	else

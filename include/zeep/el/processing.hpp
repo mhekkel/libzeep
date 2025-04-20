@@ -49,7 +49,7 @@ bool process_el(const scope &scope_, std::string &text);
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       The result of the script
-std::string process_el_2(const scope &scope_, const std::string &text);
+std::string process_el_2(const scope &scope_, std::string_view text);
 
 /// \brief Process the text in \a text. The result is put in \a result
 ///
@@ -58,7 +58,7 @@ std::string process_el_2(const scope &scope_, const std::string &text);
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \result		  The result of the script
-object evaluate_el(const scope &scope_, const std::string &text);
+object evaluate_el(const scope &scope_, std::string_view text);
 
 /// \brief Process the text in \a text and return a list of name/value pairs
 ///
@@ -68,7 +68,7 @@ object evaluate_el(const scope &scope_, const std::string &text);
 /// \param scope_ The scope for the el scripts
 /// \param text   The text optionally containing el scripts.
 /// \return       list of name/value pairs
-std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope_, const std::string &text);
+std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope_, std::string_view text);
 
 /// \brief Process the text in \a text. This should be a comma separated list
 /// of expressions that each should evaluate to true.
@@ -80,7 +80,7 @@ std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &s
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       True in case all the expressions evaluate to true
-bool evaluate_el_assert(const scope &scope_, const std::string &text);
+bool evaluate_el_assert(const scope &scope_, std::string_view text);
 
 /// \brief Process the text in \a text and put the resulting z:with expressions in the scope
 ///
@@ -89,7 +89,7 @@ bool evaluate_el_assert(const scope &scope_, const std::string &text);
 /// processing a m2:attr attribute.
 /// \param scope_ The scope for the el scripts
 /// \param text   The text containing el scripts in the form var=val(,var=val)*.
-void evaluate_el_with(scope &scope_, const std::string &text);
+void evaluate_el_with(scope &scope_, std::string_view text);
 
 /// \brief Evaluate the text in \a text as a potential link template
 ///
@@ -100,7 +100,7 @@ void evaluate_el_with(scope &scope_, const std::string &text);
 /// \param scope_ The scope for the el scripts
 /// \param text   The text containing the link specification
 /// \result		  The resulting link
-object evaluate_el_link(const scope &scope_, const std::string &text);
+object evaluate_el_link(const scope &scope_, std::string_view text);
 
 // --------------------------------------------------------------------
 
@@ -113,7 +113,7 @@ class expression_utility_object_base
 	virtual ~expression_utility_object_base() = default;
 
 	static object evaluate(const scope &scope_,
-		const std::string &className, const std::string &methodName,
+		std::string_view className, std::string_view methodName,
 		const std::vector<object> &parameters)
 	{
 		for (auto inst = s_head; inst != nullptr; inst = inst->m_next)
@@ -126,7 +126,7 @@ class expression_utility_object_base
 	}
 
   protected:
-	virtual object evaluate(const scope &scope_, const std::string &methodName,
+	virtual object evaluate(const scope &scope_, std::string_view methodName,
 		const std::vector<object> &parameters) const = 0;
 
 	/// Struct used to store the instances of the derived classes along with
@@ -200,26 +200,26 @@ class scope
 
 	/// \brief put variable in the scope with \a name and \a value
 	template <typename T, std::enable_if_t<std::is_assignable_v<el::object, T>, int> = 0>
-	void put(const std::string &name, const T &value)
+	void put(std::string_view name, const T &value)
 	{
 		m_data[name] = value;
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
-	void put(const std::string &name, object &&value)
+	void put(std::string_view name, object &&value)
 	{
 		m_data[name] = std::move(value);
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
-	void put(const std::string &name, const object &value)
+	void put(std::string_view name, const object &value)
 	{
 		m_data[name] = value;
 	}
 
 	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
 	template <typename ForwardIterator>
-	void put(const std::string &name, ForwardIterator begin, ForwardIterator end);
+	void put(std::string_view name, ForwardIterator begin, ForwardIterator end);
 
 	/// \brief return variable with \a name
 	///
@@ -228,19 +228,19 @@ class scope
 	///							in the current scope, the selected objects will be searched for members
 	///							with \a name This is used by the tag processing lib v2 in _z2:object_
 	/// \return					The value found or null if there was no such variable.
-	const object &lookup(const std::string &name, bool includeSelected = false) const;
+	const object &lookup(std::string_view name, bool includeSelected = false) const;
 
 	/// \brief return variable with \a name
-	const object &operator[](const std::string &name) const;
+	const object &operator[](std::string_view name) const;
 
 	/// \brief return variable with \a name
 	///
 	/// \param name				The name of the variable to return
 	/// \return					The value found or null if there was no such variable.
-	object &lookup(const std::string &name);
+	object &lookup(std::string_view name);
 
 	/// \brief return variable with \a name
-	object &operator[](const std::string &name);
+	object &operator[](std::string_view name);
 
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
 	const request &get_request() const;
@@ -261,13 +261,13 @@ class scope
 	using node_set_type = mxml::element;
 
 	/// \brief return the node_set_type with name \a name
-	node_set_type get_nodeset(const std::string &name) const;
+	node_set_type get_nodeset(std::string_view name) const;
 
 	/// \brief store node_set_type \a nodes with name \a name
-	void set_nodeset(const std::string &name, node_set_type &&nodes);
+	void set_nodeset(std::string_view name, node_set_type &&nodes);
 
 	/// \brief return whether a node_set with name \a name is stored
-	bool has_nodeset(const std::string &name) const
+	bool has_nodeset(std::string_view name) const
 	{
 		return m_nodesets.count(name) or (m_next != nullptr and m_next->has_nodeset(name));
 	}
@@ -296,7 +296,7 @@ class scope
 };
 
 template <typename ForwardIterator>
-inline void scope::put(const std::string &name, ForwardIterator begin, ForwardIterator end)
+inline void scope::put(std::string_view name, ForwardIterator begin, ForwardIterator end)
 {
 	std::vector<object> elements;
 	while (begin != end)

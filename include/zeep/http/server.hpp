@@ -45,20 +45,20 @@ class basic_server
 	basic_server();
 
 	/// \brief Simple server, no security, create default template processor with \a docroot
-	basic_server(const std::string &docroot)
+	basic_server(std::string docroot)
 		: basic_server()
 	{
-		set_template_processor(new template_processor(docroot));
+		set_template_processor(new template_processor(std::move(docroot)));
 	}
 
 	/// \brief server with a security context for limited access
 	basic_server(security_context *s_ctxt);
 
 	/// \brief server with a security context for limited access, create default template processor with \a docroot
-	basic_server(security_context *s_ctxt, const std::string &docroot)
+	basic_server(security_context *s_ctxt, std::string docroot)
 		: basic_server(s_ctxt)
 	{
-		set_template_processor(new template_processor(docroot));
+		set_template_processor(new template_processor(std::move(docroot)));
 	}
 
 	basic_server(const basic_server &) = delete;
@@ -99,7 +99,7 @@ class basic_server
 	/// \brief Set the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	void set_context_name(const std::string &context_name) { m_context_name = context_name; }
+	void set_context_name(std::string context_name) { m_context_name = context_name; }
 
 	/// \brief Get the context_name
 	///
@@ -156,7 +156,7 @@ class basic_server
 	}
 
 	/// \brief Bind the server to address \a address and port \a port
-	virtual void bind(const std::string &address, unsigned short port);
+	virtual void bind(std::string_view address, unsigned short port);
 
 	/// \brief Run as many as \a nr_of_threads threads simultaneously
 	virtual void run(int nr_of_threads);
@@ -184,11 +184,11 @@ class basic_server
 
   protected:
 	/// \brief the default entry logger
-	virtual void log_request(const std::string &client,
+	virtual void log_request(std::string_view client,
 		const request &req, const reply &rep,
-		const std::chrono::system_clock::time_point &start,
-		const std::string &referer, const std::string &userAgent,
-		const std::string &entry) noexcept;
+		std::chrono::system_clock::time_point start,
+		std::string_view referer, std::string_view userAgent,
+		std::string_view entry) noexcept;
 
   private:
 	friend class preforked_server_base;
@@ -224,8 +224,8 @@ class server : public basic_server
 	server() {}
 
 	/// \brief Simple server, no security, create default template processor with \a docroot
-	server(const std::string &docroot)
-		: basic_server(docroot)
+	server(std::string docroot)
+		: basic_server(std::move(docroot))
 	{
 	}
 
@@ -236,8 +236,8 @@ class server : public basic_server
 	}
 
 	/// \brief server with a security context for limited access, create default template processor with \a docroot
-	server(security_context *s_ctxt, const std::string &docroot)
-		: basic_server(s_ctxt, docroot)
+	server(security_context *s_ctxt, std::string docroot)
+		: basic_server(s_ctxt, std::move(docroot))
 	{
 	}
 

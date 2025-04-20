@@ -119,7 +119,7 @@ class parser
 
 	parse_result post_process_headers();
 
-	bool find_last_token(const header& h, const std::string& t) const;
+	bool find_last_token(const header &h, std::string_view t) const;
 
 	state_parser m_parser;
 	int m_state;

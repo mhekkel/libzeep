@@ -733,11 +733,11 @@ class object
 	size_t size() const noexcept;
 	size_t max_size() const noexcept;
 
-	reference at(const std::string &key);
-	const_reference at(const std::string &key) const;
+	reference at(std::string_view key);
+	const_reference at(std::string_view key) const;
 
-	reference operator[](const std::string &key);
-	const_reference operator[](const std::string &key) const;
+	reference operator[](std::string_view key);
+	const_reference operator[](std::string_view key) const;
 
 	// access to array objects
 	reference at(size_t index);
@@ -864,7 +864,7 @@ class object
 		return result;
 	}
 
-	size_type erase(const std::string &key)
+	size_type erase(std::string_view key)
 	{
 		if (is_object())
 			return m_data.m_object->erase(key);

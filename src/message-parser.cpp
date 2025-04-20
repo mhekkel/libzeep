@@ -157,7 +157,7 @@ parse_result parser::parse_header_lines(char ch)
 	return result;
 }
 
-bool parser::find_last_token(const header &h, const std::string &t) const
+bool parser::find_last_token(const header &h, std::string_view t) const
 {
 	bool result = false;
 	if (h.value.length() >= t.length())

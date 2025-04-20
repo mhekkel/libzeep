@@ -61,7 +61,7 @@ mxml::element make_envelope(mxml::element &&data);
 ///
 /// \param    message The string object containing a descriptive error message.
 /// \return   A new mxml::element object containing the fault envelope.
-mxml::element make_fault(const std::string &message);
+mxml::element make_fault(std::string message);
 /// Create a standard SOAP Fault message for the exception object
 ///
 /// \param    ex The exception object that was catched.
@@ -88,10 +88,10 @@ class soap_controller : public controller
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
 	/// \param service      The name of the service
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	soap_controller(const std::string &prefix_path, const std::string &service, const std::string &ns)
-		: controller(prefix_path)
-		, m_ns(ns)
-		, m_service(service)
+	soap_controller(std::string prefix_path, std::string service, std::string ns)
+		: controller(std::move(prefix_path))
+		, m_ns(std::move(ns))
+		, m_service(std::move(service))
 	{
 		// while (m_prefix_path.front() == '/')
 		// 	m_prefix_path.erase(0, 1);
@@ -105,15 +105,15 @@ class soap_controller : public controller
 	}
 
 	/// \brief Set the external address at which this service is visible
-	void set_location(const std::string &location)
+	void set_location(std::string location)
 	{
-		m_location = location;
+		m_location = std::move(location);
 	}
 
 	/// \brief Set the service name
-	void set_service(const std::string &service)
+	void set_service(std::string service)
 	{
-		m_service = service;
+		m_service = std::move(service);
 	}
 
 	/// \brief map a SOAP action to \a callback using \a names for mapping the arguments
@@ -147,7 +147,7 @@ class soap_controller : public controller
 
 		virtual ~mount_point_base() {}
 
-		virtual void call(const mxml::element &request, reply &reply_, const std::string &ns) = 0;
+		virtual void call(const mxml::element &request, reply &reply_, std::string_view ns) = 0;
 		virtual void describe(type_map &types, message_map &messages, mxml::element &portType, mxml::element &binding) = 0;
 
 		std::string m_action;
@@ -193,7 +193,7 @@ class soap_controller : public controller
 				m_names[i++] = name;
 		}
 
-		virtual void call(const mxml::element &request, reply &rep, const std::string &ns)
+		virtual void call(const mxml::element &request, reply &rep, std::string_view ns)
 		{
 			rep.set_status(ok);
 
@@ -202,7 +202,7 @@ class soap_controller : public controller
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &rep, const std::string &ns)
+		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -212,7 +212,7 @@ class soap_controller : public controller
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &rep, const std::string &ns)
+		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -244,20 +244,20 @@ class soap_controller : public controller
 			return v;
 		}
 
-		virtual void collect_types(mxml::type_map &types, mxml::element &seq, const std::string &ns)
+		virtual void collect_types(mxml::type_map &types, mxml::element &seq, std::string_view ns)
 		{
 			if constexpr (sizeof...(Args) > 0)
 				collect_types(types, seq, ns, std::make_index_sequence<N>());
 		}
 
 		template <std::size_t... I>
-		void collect_types(mxml::type_map &types, mxml::element &seq, const std::string &ns, std::index_sequence<I...> /*ix*/)
+		void collect_types(mxml::type_map &types, mxml::element &seq, std::string_view ns, std::index_sequence<I...> /*ix*/)
 		{
 			(collect_type<I>(types, seq, ns), ...);
 		}
 
 		template <std::size_t I>
-		void collect_type(mxml::type_map &types, mxml::element &seq, const std::string &/*ns*/)
+		void collect_type(mxml::type_map &types, mxml::element &seq, std::string_view /*ns*/)
 		{
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
 

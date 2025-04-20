@@ -11,8 +11,6 @@
 #include <zeep/http/reply.hpp>
 #include <zeep/http/uri.hpp>
 
-
-
 namespace zeep::http
 {
 
@@ -22,7 +20,7 @@ namespace detail
 	struct status_string
 	{
 		status_type code;
-		const char *text;
+		std::string_view text;
 	} kStatusStrings[] = {
 		{ cont, "Continue" },
 		{ ok, "OK" },
@@ -46,22 +44,7 @@ namespace detail
 		{ bad_gateway, "Bad Gateway" },
 		{ service_unavailable, "Service Unavailable" }
 	},
-	kStatusDescriptions[] = {
-		{ moved_permanently, "The document requested was moved permanently to a new location" },
-		{ moved_temporarily, "The document requested was moved temporarily to a new location" },
-		{ see_other, "The document can be found at another location" },
-		{ not_modified, "The requested document was not modified" },
-		{ bad_request, "There was an error in the request, e.g. an incorrect method or a malformed URI" },
-		{ unauthorized, "You are not authorized to access this location" },
-		{ proxy_authentication_required, "You are not authorized to use this proxy" },
-		{ forbidden, "Access to this location is forbidden" },
-		{ not_found, "The requested web page was not found on this server." },
-		{ unprocessable_entity, "Your request could not be handled since a parameter contained an invalid value" },
-		{ internal_server_error, "An internal error prevented the server from processing your request" },
-		{ not_implemented, "Your request could not be handled since the required code is not implemented" },
-		{ bad_gateway, "The server, while acting as a gateway or proxy, received an invalid response from the upstream server it accessed in attempting to fulfill the request. " },
-		{ service_unavailable, "The service is unavailable at this moment, try again later"}
-	};
+	  kStatusDescriptions[] = { { moved_permanently, "The document requested was moved permanently to a new location" }, { moved_temporarily, "The document requested was moved temporarily to a new location" }, { see_other, "The document can be found at another location" }, { not_modified, "The requested document was not modified" }, { bad_request, "There was an error in the request, e.g. an incorrect method or a malformed URI" }, { unauthorized, "You are not authorized to access this location" }, { proxy_authentication_required, "You are not authorized to use this proxy" }, { forbidden, "Access to this location is forbidden" }, { not_found, "The requested web page was not found on this server." }, { unprocessable_entity, "Your request could not be handled since a parameter contained an invalid value" }, { internal_server_error, "An internal error prevented the server from processing your request" }, { not_implemented, "Your request could not be handled since the required code is not implemented" }, { bad_gateway, "The server, while acting as a gateway or proxy, received an invalid response from the upstream server it accessed in attempting to fulfill the request. " }, { service_unavailable, "The service is unavailable at this moment, try again later" } };
 
 	const int
 		kStatusStringCount = sizeof(kStatusStrings) / sizeof(status_string);
@@ -108,9 +91,9 @@ std::string get_status_description(status_type status)
 namespace
 {
 	const std::string
-		kNameValueSeparator{':', ' '},
-		kCRLF{'\r', '\n'},
-		kZERO{'0'};
+		kNameValueSeparator{ ':', ' ' },
+		kCRLF{ '\r', '\n' },
+		kZERO{ '0' };
 }
 
 reply::reply(status_type status, std::tuple<int, int> version)
@@ -253,7 +236,7 @@ void reply::set_version(int version_major, int version_minor)
 	}
 }
 
-void reply::set_header(const std::string &name, const std::string &value)
+void reply::set_header(std::string name, std::string value)
 {
 	bool updated = false;
 	for (header &h : m_headers)
@@ -268,12 +251,12 @@ void reply::set_header(const std::string &name, const std::string &value)
 
 	if (not updated)
 	{
-		header nh = {name, value};
+		header nh = { std::move(name), std::move(value) };
 		m_headers.push_back(nh);
 	}
 }
 
-std::string reply::get_header(const std::string &name) const
+std::string reply::get_header(std::string_view name) const
 {
 	std::string result;
 
@@ -289,35 +272,36 @@ std::string reply::get_header(const std::string &name) const
 	return result;
 }
 
-void reply::remove_header(const std::string &name)
+void reply::remove_header(std::string_view name)
 {
 	m_headers.erase(
-		std::remove_if(m_headers.begin(), m_headers.end(), [name](header &h) { return iequals(h.name, name); }),
+		std::remove_if(m_headers.begin(), m_headers.end(), [name](header &h)
+			{ return iequals(h.name, name); }),
 		m_headers.end());
 }
 
-void reply::set_cookie(const char *name, const std::string &value, std::initializer_list<cookie_directive> directives)
+void reply::set_cookie(std::string_view name, std::string value, std::initializer_list<cookie_directive> directives)
 {
 	std::ostringstream vs;
 	vs << name << '=' << value;
 	for (auto &directive : directives)
 		vs << "; " << directive.name << (directive.value.empty() ? "" : "=" + directive.value);
 
-	m_headers.push_back({"Set-Cookie", vs.str()});
+	m_headers.push_back({ "Set-Cookie", vs.str() });
 }
 
-void reply::set_delete_cookie(const char *name)
+void reply::set_delete_cookie(std::string_view name)
 {
-    using namespace std::literals;
+	using namespace std::literals;
 
 	std::stringstream s;
 	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() - 24h);
 	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
 
-	set_cookie(name, "", {{"Expires", '"' + s.str() + '"'}});
+	set_cookie(name, "", { { "Expires", '"' + s.str() + '"' } });
 }
 
-std::string reply::get_cookie(const char *name) const
+std::string reply::get_cookie(std::string_view name) const
 {
 	std::string result;
 
@@ -392,9 +376,9 @@ void reply::set_content(mxml::document &doc)
 	set_content(s.str(), contentType);
 }
 
-void reply::set_content(const std::string &data, const std::string &contentType)
+void reply::set_content(std::string data, std::string contentType)
 {
-	m_content = data;
+	m_content = std::move(data);
 	m_status = ok;
 
 	delete m_data;
@@ -403,10 +387,10 @@ void reply::set_content(const std::string &data, const std::string &contentType)
 
 	set_header("Content-Length", std::to_string(m_content.length()));
 	remove_header("Transfer-Encoding");
-	set_header("Content-Type", contentType);
+	set_header("Content-Type", std::move(contentType));
 }
 
-void reply::set_content(const char *data, size_t size, const std::string &contentType)
+void reply::set_content(const char *data, size_t size, std::string contentType)
 {
 	m_content = std::string(data, size);
 	m_status = ok;
@@ -417,10 +401,10 @@ void reply::set_content(const char *data, size_t size, const std::string &conten
 
 	set_header("Content-Length", std::to_string(m_content.length()));
 	remove_header("Transfer-Encoding");
-	set_header("Content-Type", contentType);
+	set_header("Content-Type", std::move(contentType));
 }
 
-void reply::set_content(std::istream *idata, const std::string &contentType)
+void reply::set_content(std::istream *idata, std::string contentType)
 {
 	delete m_data;
 	m_data = idata;
@@ -429,7 +413,7 @@ void reply::set_content(std::istream *idata, const std::string &contentType)
 	m_status = ok;
 	m_chunked = true;
 
-	set_header("Content-Type", contentType);
+	set_header("Content-Type", std::move(contentType));
 	set_header("Transfer-Encoding", "chunked");
 	remove_header("Content-Length");
 }
@@ -521,7 +505,7 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 	return result;
 }
 
-reply reply::stock_reply(status_type status, const std::string &info)
+reply reply::stock_reply(status_type status, std::string info)
 {
 	reply result;
 
@@ -581,7 +565,7 @@ reply reply::redirect(const uri &location, status_type status)
 	std::string text = get_status_text(status);
 	result.m_content =
 		"<html><head><title>" + text + "</title></head><body><h1>" +
- 		std::to_string(status) + ' ' + text + "</h1></body></html>";
+		std::to_string(status) + ' ' + text + "</h1></body></html>";
 
 	result.set_header("Location", location.string());
 	result.set_header("Content-Length", std::to_string(result.m_content.length()));
@@ -598,13 +582,14 @@ reply reply::redirect(const uri &location)
 size_t reply::size() const
 {
 	auto buffers = to_buffers();
-	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto &buffer) { return m + asio_ns::buffer_size(buffer); });
+	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto &buffer)
+		{ return m + asio_ns::buffer_size(buffer); });
 }
 
 std::ostream &operator<<(std::ostream &lhs, const reply &rhs)
 {
 	for (auto &b : rhs.to_buffers())
-		lhs.write(static_cast<const char *>(b.data()), b.size());
+		lhs.write(static_cast<std::string_view >(b.data()), b.size());
 
 	return lhs;
 }

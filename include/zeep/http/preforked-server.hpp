@@ -51,7 +51,7 @@ namespace zeep::http
 ///		std::thread t(std::bind(&zeep::http::preforked_server::run, &server, "0.0.0.0", 10333, 2));
 ///
 ///		... // wait for signal to stop
-///     
+///
 ///		server.stop();
 ///		t.join();
 /// \endcode
@@ -61,28 +61,27 @@ class child_process;
 class preforked_server
 {
   public:
-    preforked_server(const preforked_server&) = delete;
-    preforked_server& operator=(const preforked_server&) = delete;
+	preforked_server(const preforked_server &) = delete;
+	preforked_server &operator=(const preforked_server &) = delete;
 
-    /// \brief constructor
-    ///
-    /// The constructor takes one argument, a function object that creates 
-    /// a server class instance.
-    preforked_server(std::function<basic_server*(void)> server_factory);
-    virtual ~preforked_server();
+	/// \brief constructor
+	///
+	/// The constructor takes one argument, a function object that creates
+	/// a server class instance.
+	preforked_server(std::function<basic_server *(void)> server_factory);
+	virtual ~preforked_server();
 
-    /// \brief forks \a nr_of_child_processes children and starts listening, should be a separate thread
-    virtual void run(const std::string& address, short port, int nr_of_child_processes, int nr_of_threads);
-    virtual void start();			///< signal the thread it can start listening:
-    virtual void stop();			///< stop the running thread
+	/// \brief forks \a nr_of_child_processes children and starts listening, should be a separate thread
+	virtual void run(std::string_view address, short port, int nr_of_child_processes, int nr_of_threads);
+	virtual void start(); ///< signal the thread it can start listening:
+	virtual void stop();  ///< stop the running thread
 
   private:
-
-    std::function<basic_server*(void)>	m_constructor;
-    std::mutex						m_lock;
-	asio_ns::io_context			m_io_context;
+	std::function<basic_server *(void)> m_constructor;
+	std::mutex m_lock;
+	asio_ns::io_context m_io_context;
 };
 
-}
+} // namespace zeep::http
 
 #endif

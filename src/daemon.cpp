@@ -36,12 +36,12 @@ int getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
 }
 #endif
 
-daemon::daemon(server_factory_type &&factory, const std::string &pid_file,
-	const std::string &stdout_log_file, const std::string &stderr_log_file)
+daemon::daemon(server_factory_type &&factory, std::string pid_file,
+	std::string stdout_log_file, std::string stderr_log_file)
 	: m_factory(std::move(factory))
-	, m_pid_file(pid_file)
-	, m_stdout_log_file(stdout_log_file)
-	, m_stderr_log_file(stderr_log_file)
+	, m_pid_file(std::move(pid_file))
+	, m_stdout_log_file(std::move(stdout_log_file))
+	, m_stderr_log_file(std::move(stderr_log_file))
 {
 }
 
@@ -51,7 +51,7 @@ daemon::daemon(server_factory_type &&factory, const char *name)
 {
 }
 
-int daemon::run_foreground(const std::string &address, uint16_t port)
+int daemon::run_foreground(std::string_view address, uint16_t port)
 {
 	asio_ns::io_context io_context;
 	asio_ns::ip::tcp::endpoint endpoint;
@@ -101,7 +101,7 @@ int daemon::run_foreground(const std::string &address, uint16_t port)
 
 #if HTTP_HAS_UNIX_DAEMON
 
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
+int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, std::string run_as_user)
 {
 	int result = 0;
 
@@ -176,7 +176,7 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 
 		for (;;)
 		{
-			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
+			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, std::move(run_as_user));
 			if (hupped)
 			{
 				std::clog << "Server was interrupted, will attempt to resume\n";
@@ -196,7 +196,7 @@ int daemon::start(const std::string &address, uint16_t port, size_t nr_of_procs,
 	return result;
 }
 
-int daemon::start(const std::string &address, uint16_t port, size_t nr_of_threads, const std::string &run_as_user)
+int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads, std::string run_as_user)
 {
 	int result = 0;
 
@@ -527,7 +527,7 @@ void daemon::open_log_file()
 		close(fd_err);
 }
 
-bool daemon::run_main_loop(const std::string &address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, const std::string &run_as_user)
+bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, std::string run_as_user)
 {
 	int sig = 0;
 

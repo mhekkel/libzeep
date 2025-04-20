@@ -15,10 +15,10 @@ namespace fs = std::filesystem;
 namespace zeep::http
 {
 
-request::request(const std::string &method, const uri &uri, std::tuple<int, int> version,
+request::request(std::string method, uri uri, std::tuple<int, int> version,
 	std::vector<header> &&headers, std::string &&payload)
-	: m_method(method)
-	, m_uri(uri)
+	: m_method(std::move(method))
+	, m_uri(std::move(uri))
 	, m_headers(std::move(headers))
 	, m_payload(std::move(payload))
 {
@@ -39,31 +39,28 @@ request::request(const request &req)
 	, m_credentials(req.m_credentials)
 	, m_remote_address(req.m_remote_address)
 {
-	char *d = &m_version[0];
-	for (auto c : req.m_version)
+	for (char *d = &m_version[0]; auto c : req.m_version)
 		*d++ = c;
 }
 
-request &request::operator=(const request &req)
+void request::swap(request &req) noexcept
 {
 	if (this != &req)
 	{
-		m_local_address = req.m_local_address;
-		m_local_port = req.m_local_port;
-		m_method = req.m_method;
-		m_uri = req.m_uri;
-		m_version[0] = req.m_version[0];
-		m_version[1] = req.m_version[1];
-		m_version[2] = req.m_version[2];
-		m_headers = req.m_headers;
-		m_payload = req.m_payload;
-		m_close = req.m_close;
-		m_timestamp = req.m_timestamp;
-		m_credentials = req.m_credentials;
-		m_remote_address = req.m_remote_address;
+		std::swap(m_local_address, req.m_local_address);
+		std::swap(m_local_port, req.m_local_port);
+		std::swap(m_method, req.m_method);
+		std::swap(m_uri, req.m_uri);
+		std::swap(m_version[0], req.m_version[0]);
+		std::swap(m_version[1], req.m_version[1]);
+		std::swap(m_version[2], req.m_version[2]);
+		std::swap(m_headers, req.m_headers);
+		std::swap(m_payload, req.m_payload);
+		std::swap(m_close, req.m_close);
+		std::swap(m_timestamp, req.m_timestamp);
+		std::swap(m_credentials, req.m_credentials);
+		std::swap(m_remote_address, req.m_remote_address);
 	}
-
-	return *this;
 }
 
 void request::set_local_endpoint(asio_ns::ip::tcp::socket &socket)
@@ -72,7 +69,7 @@ void request::set_local_endpoint(asio_ns::ip::tcp::socket &socket)
 	m_local_port = socket.local_endpoint().port();
 }
 
-float request::get_accept(const char *type) const
+float request::get_accept(std::string_view type) const
 {
 	float result = 1.0f;
 
@@ -156,7 +153,7 @@ bool request::keep_alive() const
 	       iequals(get_header("Connection"), "keep-alive");
 }
 
-void request::set_header(const char *name, const std::string &value)
+void request::set_header(std::string name, std::string value)
 {
 	bool replaced = false;
 
@@ -171,10 +168,10 @@ void request::set_header(const char *name, const std::string &value)
 	}
 
 	if (not replaced)
-		m_headers.push_back({ name, value });
+		m_headers.push_back({ std::move(name), std::move(value) });
 }
 
-std::string request::get_header(const char *name) const
+std::string request::get_header(std::string_view name) const
 {
 	std::string result;
 
@@ -190,7 +187,7 @@ std::string request::get_header(const char *name) const
 	return result;
 }
 
-void request::remove_header(const char *name)
+void request::remove_header(std::string_view name)
 {
 	m_headers.erase(
 		remove_if(m_headers.begin(), m_headers.end(),
@@ -199,19 +196,19 @@ void request::remove_header(const char *name)
 		m_headers.end());
 }
 
-std::pair<std::string, bool> get_urldecoded_parameter(const std::string &s, const char *name)
+std::pair<std::string, bool> get_urldecoded_parameter(std::string_view s, std::string_view name)
 {
 	std::string::size_type b = 0;
 	std::string result;
 	bool found = false;
-	size_t nlen = strlen(name);
+	size_t nlen = name.length();
 
 	while (b != std::string::npos)
 	{
 		std::string::size_type e = s.find_first_of("&;", b);
 		std::string::size_type n = (e == std::string::npos) ? s.length() - b : e - b;
 
-		if ((n == nlen or (n > nlen + 1 and s[b + nlen] == '=')) and strncmp(name, s.c_str() + b, nlen) == 0)
+		if ((n == nlen or (n > nlen + 1 and s[b + nlen] == '=')) and name == s.substr(b, nlen))
 		{
 			found = true;
 
@@ -233,7 +230,7 @@ std::pair<std::string, bool> get_urldecoded_parameter(const std::string &s, cons
 	return std::make_pair(result, found);
 }
 
-std::tuple<std::string, bool> request::get_parameter_ex(const char *name) const
+std::tuple<std::string, bool> request::get_parameter_ex(std::string_view name) const
 {
 	std::string result, contentType = get_header("Content-Type");
 	bool found = false;
@@ -403,7 +400,7 @@ std::multimap<std::string, std::string> request::get_parameters() const
 
 struct file_param_parser
 {
-	file_param_parser(const request &req, const std::string &payload, const char *name);
+	file_param_parser(const request &req, const std::string &payload, std::string name);
 
 	file_param next();
 
@@ -425,9 +422,9 @@ struct file_param_parser
 const std::regex file_param_parser::k_rx_disp(R"x(content-disposition:\s*form-data(;.+))x", std::regex::icase);
 const std::regex file_param_parser::k_rx_cont(R"x(content-type:\s*(\S+/[^;]+)(;.*)?)x", std::regex::icase);
 
-file_param_parser::file_param_parser(const request &req, const std::string &payload, const char *name)
+file_param_parser::file_param_parser(const request &req, const std::string &payload, std::string name)
 	: m_req(req)
-	, m_name(name)
+	, m_name(std::move(name))
 	, m_payload(payload)
 {
 	std::string contentType = m_req.get_header("Content-Type");
@@ -545,13 +542,13 @@ file_param file_param_parser::next()
 	return result;
 }
 
-file_param request::get_file_parameter(const char *name) const
+file_param request::get_file_parameter(std::string_view name) const
 {
 	file_param_parser fpp(*this, m_payload, name);
 	return fpp.next();
 }
 
-std::vector<file_param> request::get_file_parameters(const char *name) const
+std::vector<file_param> request::get_file_parameters(std::string_view name) const
 {
 	file_param_parser fpp(*this, m_payload, name);
 
@@ -567,7 +564,7 @@ std::vector<file_param> request::get_file_parameters(const char *name) const
 	return result;
 }
 
-std::string request::get_cookie(const char *name) const
+std::string request::get_cookie(std::string_view name) const
 {
 	for (const header &h : m_headers)
 	{
@@ -593,7 +590,7 @@ std::string request::get_cookie(const char *name) const
 	return "";
 }
 
-void request::set_cookie(const char *name, const std::string &value)
+void request::set_cookie(std::string name, std::string value)
 {
 	std::map<std::string, std::string> cookies;
 	for (auto &h : m_headers)
@@ -621,7 +618,7 @@ void request::set_cookie(const char *name, const std::string &value)
 			{ return iequals(h.name, "Cookie"); }),
 		m_headers.end());
 
-	cookies[name] = value;
+	cookies[name] = std::move(value);
 
 	std::ostringstream cs;
 	bool first = true;
@@ -707,14 +704,14 @@ std::locale &request::get_locale() const
 
 		std::regex r(R"(([[:alpha:]]{1,8})(?:-([[:alnum:]]{1,8}))?(?:;q=([01](?:\.\d{1,3})))?)");
 
-		auto tryLangRegion = [&scores](const std::string &lang, const std::string &region, float score)
+		auto tryLangRegion = [&scores](std::string lang, std::string region, float score)
 		{
 			try
 			{
 				auto name = lang + '_' + region + ".UTF-8";
 				std::locale loc(name);
 				if (iequals(loc.name(), name))
-					scores.push_back({ lang, region, score, loc });
+					scores.push_back({ std::move(lang), std::move(region), score, loc });
 			}
 			catch (const std::exception &)
 			{
@@ -754,7 +751,7 @@ std::locale &request::get_locale() const
 	return *m_locale;
 }
 
-void request::set_header(const std::string &name, const std::string &value)
+void request::set_header(std::string name, std::string value)
 {
 	bool set = false;
 	for (auto &h : m_headers)
@@ -768,7 +765,7 @@ void request::set_header(const std::string &name, const std::string &value)
 	}
 
 	if (not set)
-		m_headers.push_back({ name, value });
+		m_headers.push_back({ std::move(name), std::move(value) });
 }
 
 namespace

@@ -83,21 +83,15 @@ const char kHex[] = "0123456789ABCDEF";
 
 // --------------------------------------------------------------------
 
-uri::uri(const std::string &url)
-{
-	parse(url.c_str());
-	remove_dot_segments();
-}
-
-uri::uri(const char *url)
+uri::uri(std::string_view url)
 {
 	parse(url);
 	remove_dot_segments();
 }
 
-uri::uri(const std::string &url, const uri &base)
+uri::uri(std::string_view url, const uri &base)
 {
-	parse(url.c_str());
+	parse(url);
 	transform(base);
 	remove_dot_segments();
 }
@@ -136,7 +130,7 @@ uri uri::get_path() const
 	return result;
 }
 
-void uri::set_path(const std::string &path)
+void uri::set_path(std::string_view path)
 {
 	m_path.clear();
 	m_absolutePath = false;

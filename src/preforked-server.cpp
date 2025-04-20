@@ -329,7 +329,7 @@ preforked_server::~preforked_server()
 {
 }
 
-void preforked_server::run(const std::string &address, short port, int nr_of_processes, int nr_of_threads)
+void preforked_server::run(std::string_view address, short port, int nr_of_processes, int nr_of_threads)
 {
 	// first wait until we are allowed to start listening
 	std::unique_lock<std::mutex> lock(m_lock);

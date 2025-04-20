@@ -60,7 +60,7 @@ void basic_server::set_template_processor(basic_template_processor *template_pro
 	m_template_processor.reset(template_processor);
 }
 
-void basic_server::bind(const std::string &address, unsigned short port)
+void basic_server::bind(std::string_view address, unsigned short port)
 {
 	m_address = address;
 	m_port = port;
@@ -295,11 +295,11 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
 }
 
-void basic_server::log_request(const std::string &client,
+void basic_server::log_request(std::string_view client,
 	const request &req, const reply &rep,
-	const std::chrono::system_clock::time_point &start,
-	const std::string &referer, const std::string &userAgent,
-	const std::string &entry) noexcept
+	std::chrono::system_clock::time_point start,
+	std::string_view referer, std::string_view userAgent,
+	std::string_view entry) noexcept
 {
 	try
 	{

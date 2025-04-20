@@ -91,7 +91,7 @@ namespace
 		}
 	}
 
-	void expand_group(const std::string &pattern, std::vector<std::string> &expanded)
+	void expand_group(std::string pattern, std::vector<std::string> &expanded)
 	{
 		static std::regex rx(R"(\{([^{},]*,[^{}]*)\})");
 
@@ -107,7 +107,7 @@ namespace
 				expand_group(m.prefix().str() + option + m.suffix().str(), expanded);
 		}
 		else
-			expanded.push_back(pattern);
+			expanded.push_back(std::move(pattern));
 	}
 
 } // namespace

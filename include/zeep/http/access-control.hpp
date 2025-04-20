@@ -28,17 +28,17 @@ class access_control
 
 	/// Constructor with a default \a allow_origin string and a flag \a allow_credentials
 	/// that will trigger addition of a "Access-Control-Allow-Credentials" header
-	access_control(const std::string &allow_origin, bool allow_credentials)
-		: m_allow_origin(allow_origin)
+	access_control(std::string allow_origin, bool allow_credentials)
+		: m_allow_origin(std::move(allow_origin))
 		, m_allowed_headers({ "Keep-Alive", "User-Agent", "If-Modified-Since", "Cache-Control", "Content-Type" })
 		, m_allow_credentials(allow_credentials)
 	{
 	}
 
 	/// Set the "Access-Control-Allow-Origin" header to \a allow_origin
-	void set_allow_origin(const std::string &allow_origin)
+	void set_allow_origin(std::string allow_origin)
 	{
-		m_allow_origin = allow_origin;
+		m_allow_origin = std::move(allow_origin);
 	}
 
 	/// Set the "Access-Control-Allow-Credentials" header corresponding to \a allow_credentials
@@ -48,15 +48,15 @@ class access_control
 	}
 
 	/// Set the "Access-Control-Allow-Headers" header to \a allowed_headers
-	void set_allowed_headers(const std::string &allowed_headers)
+	void set_allowed_headers(std::string_view allowed_headers)
 	{
 		split(m_allowed_headers, allowed_headers, ",");
 	}
 
 	/// Add \a allowed_headers to the list in the header "Access-Control-Allow-Headers"
-	void add_allowed_header(const std::string &allowed_header)
+	void add_allowed_header(std::string allowed_header)
 	{
-		m_allowed_headers.emplace_back(allowed_header);
+		m_allowed_headers.emplace_back(std::move(allowed_header));
 	}
 
 	/// Add the specified headers to @ref reply \a rep

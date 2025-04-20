@@ -81,7 +81,7 @@ class tag_processor_v1 : public tag_processor
 	virtual void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
 
   protected:
-	virtual void process_tag(const std::string &tag, mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
+	virtual void process_tag(std::string_view tag, mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
 
   private:
 	/// handler for mrs:include tags
@@ -137,9 +137,9 @@ class tag_processor_v2 : public tag_processor
 	void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader) override;
 
 	/// \brief It is possible to extend this processor with custom handlers
-	void register_attr_handler(const std::string &attr, attr_handler &&handler)
+	void register_attr_handler(std::string attr, attr_handler &&handler)
 	{
-		m_attr_handlers.emplace(attr, std::move(handler));
+		m_attr_handlers.emplace(std::move(attr), std::move(handler));
 	}
 
   protected:
@@ -149,7 +149,7 @@ class tag_processor_v2 : public tag_processor
 
 	// mxml::element resolve_fragment_spec(mxml::element* node, std::filesystem::path dir, basic_html_controller& controller, const std::string& spec, const scope& scope);
 	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const object &spec, const scope &scope);
-	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, const std::string &file, const std::string &selector, bool byID);
+	mxml::element resolve_fragment_spec(mxml::element *node, std::filesystem::path dir, basic_template_processor &loader, std::string_view file, std::string_view selector, bool byID);
 
 	// virtual void process_node_attr(mxml::node* node, const scope& scope, std::filesystem::path dir);
 	AttributeAction process_attr_if(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader, bool unless);

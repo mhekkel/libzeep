@@ -39,8 +39,8 @@ class basic_template_processor;
 class html_controller : public controller
 {
   public:
-	html_controller(const std::string &prefix_path = "/")
-		: controller(prefix_path)
+	html_controller(std::string prefix_path = "/")
+		: controller(std::move(prefix_path))
 	{
 	}
 
@@ -70,7 +70,7 @@ class html_controller : public controller
 	/// assign a handler function to a path in the server's namespace
 	/// Usually called like this:
 	/// \code{.cpp}
-	///   mount("page", std::bind(&page_handler, this, _1, _2, _3));
+	///   mount(std::move(")page", std::bind(&page_handler, this, _1, _2, _3));
 	/// \endcode
 	/// Where page_handler is defined as:
 	/// \code{.cpp}
@@ -89,51 +89,51 @@ class html_controller : public controller
 
 	/// \brief mount a callback on URI path \a path for any HTTP method
 	template <class Class>
-	void mount(const std::string &path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	void mount(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, "UNDEFINED", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+		mount(std::move(path), "UNDEFINED", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
 			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP GET method
 	template <class Class>
-	void mount_get(const std::string &path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	void mount_get(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, "GET", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+		mount(std::move(path), "GET", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
 			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP POST method
 	template <class Class>
-	void mount_post(const std::string &path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	void mount_post(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, "POST", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+		mount(std::move(path), "POST", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
 			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a callback on URI path \a path for HTTP method \a method
 	template <class Class>
-	void mount(const std::string &path, const std::string &method, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	void mount(std::string path, std::string method, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
 	{
 		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(path, method, [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+		mount(std::move(path), std::move(method), [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
 			{ (server->*callback)(req, sc, rep); });
 	}
 
 	/// \brief mount a handler on URI path \a path for HTTP method \a method
-	void mount(const std::string &path, const std::string &method, handler_type handler)
+	void mount(std::string path, std::string method, handler_type handler)
 	{
 		auto mpi = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
-			[path, method](auto &mp)
+			[&path, &method](auto &mp)
 			{
 				return mp.path == path and (mp.method == method or mp.method == "UNDEFINED" or method == "UNDEFINED");
 			});
 
 		if (mpi == m_dispatch_table.end())
-			m_dispatch_table.emplace_back(path, method, handler);
+			m_dispatch_table.emplace_back(std::move(path), std::move(method), handler);
 		else
 		{
 			if (mpi->method != method)
@@ -161,8 +161,8 @@ class html_controller : public controller
 		static constexpr size_t N = sizeof...(Args);
 
 		template <typename... Names>
-		mount_point_v2(const char *path, const std::string &method, html_controller *owner, Sig sig, Names... names)
-			: mount_point_base(path, method)
+		mount_point_v2(std::string path, std::string method, html_controller *owner, Sig sig, Names... names)
+			: mount_point_base(std::move(path), std::move(method))
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
@@ -175,7 +175,7 @@ class html_controller : public controller
 				return (controller->*sig)(scope_, args...);
 			};
 
-			set_names(path, names...);
+			set_names(names...);
 		}
 
 		virtual void call(const parameter_pack &params, reply &rep)
@@ -241,37 +241,37 @@ class html_controller : public controller
 
 	/// \brief map \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Callback, typename... ArgNames>
-	void map(const char *mountPoint, const std::string &method, Callback callback, ArgNames... names)
+	void map(std::string mountPoint, std::string method, Callback callback, ArgNames... names)
 	{
-		m_mountpoints.emplace_back(new mount_point_v2<Callback>(mountPoint, method, this, callback, names...));
+		m_mountpoints.emplace_back(new mount_point_v2<Callback>(std::move(mountPoint), std::move(method), this, callback, names...));
 	}
 
 	/// \brief map a POST to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Callback, typename... ArgNames>
-	void map_post(const char *mountPoint, Callback callback, ArgNames... names)
+	void map_post(std::string mountPoint, Callback callback, ArgNames... names)
 	{
-		map(mountPoint, "POST", callback, names...);
+		map(std::move(mountPoint), "POST", callback, names...);
 	}
 
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
-	void map_put(const char *mountPoint, Sig callback, ArgNames... names)
+	void map_put(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map(mountPoint, "PUT", callback, names...);
+		map(std::move(mountPoint), "PUT", callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
-	void map_get(const char *mountPoint, Sig callback, ArgNames... names)
+	void map_get(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map(mountPoint, "GET", callback, names...);
+		map(std::move(mountPoint), "GET", callback, names...);
 	}
 
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
-	void map_delete(const char *mountPoint, Sig callback, ArgNames... names)
+	void map_delete(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map(mountPoint, "DELETE", callback, names...);
+		map(std::move(mountPoint), "DELETE", callback, names...);
 	}
 
 	// --------------------------------------------------------------------
@@ -291,9 +291,9 @@ class html_controller : public controller
 	/// @cond
 	struct mount_point_v2_simple : public mount_point_base
 	{
-		mount_point_v2_simple(const char *path, const std::string &method, const char *templateName, html_controller &controller)
-			: mount_point_base(path, method)
-			, m_template(templateName)
+		mount_point_v2_simple(std::string path, std::string method, std::string templateName, html_controller &controller)
+			: mount_point_base(std::move(path), std::move(method))
+			, m_template(std::move(templateName))
 			, m_controller(controller)
 		{
 		}
@@ -306,20 +306,20 @@ class html_controller : public controller
 	/// @endcond
 
 	/// \brief map a simple page to a URI.
-	void map_get(const char *mountPoint, const char *templateName)
+	void map_get(std::string mountPoint, const char *templateName)
 	{
-		m_mountpoints.emplace_back(new mount_point_v2_simple(mountPoint, "GET", templateName, *this));
+		m_mountpoints.emplace_back(new mount_point_v2_simple(std::move(mountPoint), "GET", templateName, *this));
 	}
 
-	void map_post(const char *mountPoint, const char *templateName)
+	void map_post(std::string mountPoint, const char *templateName)
 	{
-		m_mountpoints.emplace_back(new mount_point_v2_simple(mountPoint, "POST", templateName, *this));
+		m_mountpoints.emplace_back(new mount_point_v2_simple(std::move(mountPoint), "POST", templateName, *this));
 	}
 
-	void map(const char *mountPoint, const char *templateName)
+	void map(std::string mountPoint, const char *templateName)
 	{
-		map_get(mountPoint, templateName);
-		map_post(mountPoint, templateName);
+		map_get(std::move(mountPoint), templateName);
+		map_post(std::move(mountPoint), templateName);
 	}
 
 	// --------------------------------------------------------------------
@@ -333,9 +333,9 @@ class html_controller : public controller
 	/// @cond
 	struct mount_point_v1
 	{
-		mount_point_v1(const std::string &path, const std::string &method, handler_type handler)
-			: path(path)
-			, method(method)
+		mount_point_v1(std::string path, std::string method, handler_type handler)
+			: path(std::move(path))
+			, method(std::move(method))
 			, handler(handler)
 		{
 		}
