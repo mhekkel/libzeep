@@ -154,9 +154,7 @@ add_library(zeep::zeep ALIAS zeep)
 list(APPEND ZEEP_HEADERS
 	include/zeep/crypto.hpp
 	include/zeep/streambuf.hpp
-	include/zeep/value-serializer.hpp
 	include/zeep/config.hpp
-	include/zeep/type-traits.hpp
 
 	include/zeep/el/object.hpp
 	include/zeep/el/serializer.hpp
@@ -183,7 +181,6 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/uri.hpp
 	include/zeep/http/login-controller.hpp
 	include/zeep/unicode-support.hpp
-	include/zeep/nvp.hpp
 	include/zeep/exception.hpp
 )
 

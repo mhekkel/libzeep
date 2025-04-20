@@ -27,7 +27,6 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/rest-controller.hpp>
-#include <zeep/nvp.hpp>
 
 #include "../src/signals.hpp"
 
@@ -52,8 +51,8 @@ struct Opname
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("standen", standen);
+		ar & zeep::name_value_pair("id", id)
+		   & zeep::name_value_pair("standen", standen);
 		// clang-format on
 	}
 
@@ -129,9 +128,9 @@ struct GrafiekData
 	void serialize(Archive &ar, unsigned long)
 	{
 		// clang-format off
-		ar & zeep::make_nvp("type", type)
-		   & zeep::make_nvp("punten", punten)
-		   & zeep::make_nvp("vsgem", vsGem);
+		ar & zeep::name_value_pair("type", type)
+		   & zeep::name_value_pair("punten", punten)
+		   & zeep::name_value_pair("vsgem", vsGem);
 		// clang-format on
 	}
 };
@@ -214,14 +213,14 @@ class e_rest_controller : public zeep::http::rest_controller
 
 TEST_CASE("rest_1")
 {
-	zeep::value_serializer<aggregatie_type>::init({ //
+	mxml::value_serializer<aggregatie_type>::init({ //
 		{ aggregatie_type::dag, "dag" },
 		{ aggregatie_type::week, "week" },
 		{ aggregatie_type::maand, "maand" },
 		{ aggregatie_type::jaar, "jaar"	 }
 	});
 
-	zeep::value_serializer<grafiek_type>::init({ //
+	mxml::value_serializer<grafiek_type>::init({ //
 		{ grafiek_type::warmte, "warmte" },
 		{ grafiek_type::electriciteit, "electriciteit" },
 		{ grafiek_type::electriciteit_hoog, "electriciteit-hoog" },

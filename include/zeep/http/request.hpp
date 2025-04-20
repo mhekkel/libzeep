@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -15,7 +15,8 @@
 #include <zeep/el/object.hpp>
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
-#include <zeep/type-traits.hpp>
+
+#include <mxml/serialize.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -55,9 +56,9 @@ struct is_file_param_array_type : std::false_type
 template <typename T>
 struct is_file_param_array_type<T,
 	std::enable_if_t<
-		std::experimental::is_detected_v<value_type_t, T> and
-		std::experimental::is_detected_v<iterator_t, T> and
-		not std::experimental::is_detected_v<std_string_npos_t, T>>>
+		mxml::is_detected_v<mxml::value_type_t, T> and
+		mxml::is_detected_v<mxml::iterator_t, T> and
+		not mxml::is_detected_v<mxml::std_string_npos_t, T>>>
 {
 	static constexpr bool value = std::is_same_v<typename T::value_type, file_param>;
 };

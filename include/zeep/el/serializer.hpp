@@ -11,9 +11,18 @@
 #include <zeep/config.hpp>
 
 #include <zeep/el/object.hpp>
-#include <zeep/nvp.hpp>
-#include <zeep/type-traits.hpp>
-#include <zeep/value-serializer.hpp>
+
+#include <mxml/serialize.hpp>
+
+// --------------------------------------------------------------------
+
+namespace zeep
+{
+
+template <typename T>
+using name_value_pair = mxml::name_value_pair<T>;
+
+}
 
 // --------------------------------------------------------------------
 
@@ -30,23 +39,27 @@ struct object_serializer;
 struct object_deserializer;
 
 // --------------------------------------------------------------------
+/// Struct used to detect if there is a value_serializer for type \a T
 
-template <typename T, typename Archive>
-using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<unsigned long>()));
+template<typename T>
+using vs_to_string_function = decltype(mxml::value_serializer<T>::to_string(std::declval<T&>()));
 
-template <typename T, typename Archive, typename = void>
-struct has_serialize : std::false_type
+template<typename T>
+using vs_from_string_function = decltype(mxml::value_serializer<T>::from_string(std::declval<const std::string&>()));
+
+template<typename T, typename = void>
+struct has_value_serializer : std::false_type {};
+
+template<typename T>
+struct has_value_serializer<T>
 {
+	static constexpr bool value =
+		mxml::is_detected_v<vs_to_string_function,T> and
+		mxml::is_detected_v<vs_from_string_function,T>;
 };
 
-template <typename T, typename Archive>
-struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
-{
-	static constexpr bool value = std::experimental::is_detected_v<serialize_function, T, Archive>;
-};
-
-template <typename T, typename S>
-inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
+template<typename T>
+inline constexpr bool has_value_serializer_v = has_value_serializer<T>::value;
 
 // --------------------------------------------------------------------
 
@@ -58,7 +71,7 @@ struct is_compatible_string_type : std::false_type
 template <typename E, typename T>
 struct is_compatible_string_type<E, T,
 	std::enable_if_t<
-		std::experimental::is_detected_exact_v<typename E::string_type::value_type, value_type_t, T>>>
+		mxml::is_detected_exact_v<typename E::string_type::value_type, mxml::value_type_t, T>>>
 {
 	static constexpr bool value =
 		std::is_constructible_v<typename E::string_type, T>;
@@ -69,28 +82,28 @@ inline constexpr bool is_compatible_string_type_v = is_compatible_string_type<E,
 
 // --------------------------------------------------------------------
 
-template <typename T, typename = void>
-struct is_serializable_array_type : std::false_type
+template<typename T, typename Archive>
+using serialize_function = decltype(std::declval<T&>().serialize(std::declval<Archive&>(), std::declval<unsigned long>()));
+
+template<typename T, typename Archive, typename = void>
+struct has_serialize : std::false_type {};
+
+template<typename T, typename Archive>
+struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
+	static constexpr bool value = mxml::is_detected_v<serialize_function,T,Archive>;
 };
 
-template <typename T>
-struct is_serializable_array_type<T,
-	std::enable_if_t<
-		not std::experimental::is_detected_v<mapped_type_t, T> and
-		not std::experimental::is_detected_v<key_type_t, T> and
-		std::experimental::is_detected_v<value_type_t, T> and
-		std::experimental::is_detected_v<iterator_t, T> and
-		not std::experimental::is_detected_v<std_string_npos_t, T>>>
-{
-	static constexpr bool value = std::is_constructible_v<object, typename T::value_type> or
-	                              has_serialize_v<typename T::value_type, object_serializer>;
-};
-
-template <typename T>
-inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T>::value;
+template<typename T, typename S>
+inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
 // --------------------------------------------------------------------
+
+template <typename T>
+using mapped_type_t = typename T::mapped_type;
+
+template <typename T>
+using key_type_t = typename T::key_type;
 
 template <typename T, typename = void>
 struct is_serializable_map_type : std::false_type
@@ -100,9 +113,9 @@ struct is_serializable_map_type : std::false_type
 template <typename T>
 struct is_serializable_map_type<T,
 	std::enable_if_t<
-		std::experimental::is_detected_v<mapped_type_t, T> and
-		std::experimental::is_detected_v<key_type_t, T> and
-		std::experimental::is_detected_v<iterator_t, T> and
+		mxml::is_detected_v<mapped_type_t, T> and
+		mxml::is_detected_v<key_type_t, T> and
+		mxml::is_detected_v<mxml::iterator_t, T> and
 		not is_compatible_string_type_v<object, T>>>
 {
 	static constexpr bool value =
@@ -116,29 +129,26 @@ inline constexpr bool is_serializable_map_type_v = is_serializable_map_type<T>::
 
 // --------------------------------------------------------------------
 
-template <typename T>
-using has_value_or_result_t = decltype(std::declval<T>().value_or(std::declval<typename T::value_type &&>()));
-
 template <typename T, typename = void>
-struct is_serializable_optional_type : std::false_type
+struct is_serializable_array_type : std::false_type
 {
 };
 
 template <typename T>
-struct is_serializable_optional_type<T,
+struct is_serializable_array_type<T,
 	std::enable_if_t<
-		std::experimental::is_detected_v<value_type_t, T> and
-		std::is_same_v<has_value_or_result_t<T>, typename T::value_type> and
-		not is_compatible_string_type_v<object, T>>>
+		not mxml::is_detected_v<mapped_type_t, T> and
+		not mxml::is_detected_v<key_type_t, T> and
+		mxml::is_detected_v<mxml::value_type_t, T> and
+		mxml::is_detected_v<mxml::iterator_t, T> and
+		not mxml::is_detected_v<mxml::std_string_npos_t, T>>>
 {
-	static constexpr bool value =
-		std::is_constructible_v<object, typename T::value_type> or
-		has_serialize_v<typename T::value_type, object_serializer> or
-		has_value_serializer_v<typename T::value_type>;
+	static constexpr bool value = std::is_constructible_v<object, typename T::value_type> or
+	                              has_serialize_v<typename T::value_type, object_serializer>;
 };
 
 template <typename T>
-inline constexpr bool is_serializable_optional_type_v = is_serializable_optional_type<T>::value;
+inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T>::value;
 
 // --------------------------------------------------------------------
 
@@ -154,7 +164,7 @@ struct object_serializer
 	}
 
 	template <typename T>
-	void serialize(const char *name, const T &data)
+	void serialize(std::string name, const T &data)
 	{
 		using serializer_impl = serializer<T>;
 
@@ -187,7 +197,7 @@ struct object_deserializer
 	}
 
 	template <typename T>
-	void deserialize(const char *name, T &data)
+	void deserialize(std::string name, T &data)
 	{
 		if (not m_elem.is_object() or m_elem.empty())
 			return;
@@ -215,17 +225,17 @@ struct serializer<T>
 {
 	static object serialize(const T &v)
 	{
-		return object(value_serializer<T>::to_string(v));
+		return object(mxml::value_serializer<T>::to_string(v));
 	}
 
 	static object serialize(T &&v)
 	{
-		return object(value_serializer<T>::to_string(std::forward<T>(v)));
+		return object(mxml::value_serializer<T>::to_string(std::forward<T>(v)));
 	}
 
 	static T deserialize(const object &o)
 	{
-		return value_serializer<T>::from_string(o.get<std::string>());
+		return mxml::value_serializer<T>::from_string(o.get<std::string>());
 	}
 };
 
@@ -250,7 +260,7 @@ struct serializer<T>
 };
 
 template <typename T>
-	requires has_serialize_v<T, object_serializer>
+	requires mxml::has_serialize_v<T, object_serializer>
 struct serializer<T>
 {
 	static object serialize(const T &v)
@@ -328,12 +338,11 @@ struct serializer<T>
 };
 
 template <typename T>
-	requires is_serializable_optional_type_v<T>
-struct serializer<T>
+struct serializer<std::optional<T>>
 {
-	static object serialize(const T &v)
+	static object serialize(const std::optional<T> &v)
 	{
-		using value_serializer_impl = serializer<typename T::value_type>;
+		using value_serializer_impl = serializer<T>;
 
 		object result;
 		if (v)
@@ -341,11 +350,11 @@ struct serializer<T>
 		return result;
 	}
 
-	static T deserialize(const object &o)
+	static std::optional<T> deserialize(const object &o)
 	{
-		using value_serializer_impl = serializer<typename T::value_type>;
+		using value_serializer_impl = serializer<T>;
 
-		T result{};
+		std::optional<T> result;
 		if (not o.is_null())
 			result = value_serializer_impl::deserialize(o);
 		return result;
@@ -361,7 +370,7 @@ template <typename T>
 struct is_serializable_to_object
 {
 	static constexpr bool value =
-		std::experimental::is_detected_v<serialize_to_object_function, T>;
+		mxml::is_detected_v<serialize_to_object_function, T>;
 };
 
 template <typename T>

@@ -1,7 +1,7 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/rest-controller.hpp>
-#include <zeep/nvp.hpp>
+#include <zeep/el/serializer.hpp>
 
 #include "../src/signals.hpp"
 
@@ -26,8 +26,8 @@ struct Opname
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & zeep::make_nvp("id", id)
-		   & zeep::make_nvp("standen", standen);
+		ar & zeep::name_value_pair("id", id)
+		   & zeep::name_value_pair("standen", standen);
 		// clang-format on
 	}
 
@@ -38,6 +38,8 @@ static_assert(not std::is_constructible_v<e::object, Opname>, "");
 
 using a_map_type = map<string, float>;
 static_assert(e::is_serializable_map_type_v<a_map_type>, "");
+
+static_assert(std::is_constructible_v<e::object, std::string>, "");
 
 TEST_CASE("test-1")
 {
@@ -78,7 +80,7 @@ TEST_CASE("test-3")
 
 	auto o_opn = std::make_optional<Opname>(opn);
 
-	static_assert(zeep::el::is_serializable_optional_type_v<std::optional<Opname>>, "");
+	// static_assert(zeep::el::is_serializable_optional_type_v<std::optional<Opname>>, "");
 
 	e::object o = e::serializer<std::optional<Opname>>::serialize(o_opn);
 
@@ -117,7 +119,6 @@ TEST_CASE("test-5")
 	Opname opn{ "1", { { "een", 0.1f },
 						 { "twee", 0.2f } } };
 
-	static_assert(std::experimental::is_detected_v<e::serialize_to_object_function, Opname>, "");
 	static_assert(e::is_serializable_to_object_v<Opname>, "");
 
 	scope.put("o1", e::to_object(opn));

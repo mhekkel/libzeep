@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -1526,7 +1526,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto t = params[0].get<std::string>();
 				auto f = params[1].get<std::string>();
 
-				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(t);
+				auto st = mxml::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
 
 				std::wostringstream os;
 				os.imbue(scope.get_request().get_locale());

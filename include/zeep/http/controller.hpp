@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -308,7 +308,7 @@ class controller
 			{
 				const auto &[s, available] = params.get_parameter_ex(name);
 				if (available)
-					result = value_serializer<T>::from_string(s);
+					result = mxml::value_serializer<T>::from_string(s);
 			}
 			catch (const std::exception &e)
 			{
@@ -337,21 +337,14 @@ class controller
 		}
 
 		template <typename T>
-			requires has_value_serializer_v<T>
+			requires el::has_value_serializer_v<T>
 		T get_parameter(const parameter_pack &params, const char *name, T result)
 		{
 			try
 			{
 				auto p = params.get_parameter(name);
 				if (not p.empty())
-				{
-					using U = std::remove_cvref_t<T>;
-
-					if constexpr (has_value_serializer_v<U>)
-						result = value_serializer<U>::from_string(p);
-					else // TODO: remove? Check?
-						result = value_serializer<T>::from_string(p);
-				}
+					result = mxml::value_serializer<T>::from_string(p);
 			}
 			catch (const std::exception &e)
 			{
@@ -363,8 +356,8 @@ class controller
 		}
 
 		template <typename T>
-			requires zeep::has_serialize_v<T, el::deserializer<object>> or
-		             zeep::is_serializable_array_type_v<T, el::deserializer<object>>
+			requires mxml::has_serialize_v<T, el::deserializer<object>> or
+		             mxml::is_serializable_array_type_v<T, el::deserializer<object>>
 		T get_parameter(const parameter_pack &params, const char *name, T result)
 		{
 			object v = params.m_req.get_header("content-type") == "application/json"

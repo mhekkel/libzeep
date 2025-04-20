@@ -4,7 +4,6 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/json-serializer.hpp>
-#include <zeep/nvp.hpp>
 
 // -----------------------------------------------------------------------
 
