@@ -48,7 +48,7 @@ class daemon
 	///
 	/// \param factory			The function object that creates server instances
 	/// \param name				The _process name_ to use, will be used to form default file locations
-	daemon(server_factory_type &&factory, const char *name);
+	daemon(server_factory_type &&factory, const std::string &name);
 
 	/// \brief Avoid excessive automatic restart due to failing to start up
 	///

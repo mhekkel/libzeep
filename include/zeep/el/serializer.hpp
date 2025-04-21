@@ -22,6 +22,9 @@ namespace zeep
 template <typename T>
 using name_value_pair = mxml::name_value_pair<T>;
 
+template<typename T>
+using value_serializer = mxml::value_serializer<T>;
+
 }
 
 // --------------------------------------------------------------------
@@ -42,10 +45,10 @@ struct object_deserializer;
 /// Struct used to detect if there is a value_serializer for type \a T
 
 template<typename T>
-using vs_to_string_function = decltype(mxml::value_serializer<T>::to_string(std::declval<T&>()));
+using vs_to_string_function = decltype(value_serializer<T>::to_string(std::declval<T&>()));
 
 template<typename T>
-using vs_from_string_function = decltype(mxml::value_serializer<T>::from_string(std::declval<const std::string&>()));
+using vs_from_string_function = decltype(value_serializer<T>::from_string(std::declval<const std::string&>()));
 
 template<typename T, typename = void>
 struct has_value_serializer : std::false_type {};
@@ -225,17 +228,17 @@ struct serializer<T>
 {
 	static object serialize(const T &v)
 	{
-		return object(mxml::value_serializer<T>::to_string(v));
+		return object(value_serializer<T>::to_string(v));
 	}
 
 	static object serialize(T &&v)
 	{
-		return object(mxml::value_serializer<T>::to_string(std::forward<T>(v)));
+		return object(value_serializer<T>::to_string(std::forward<T>(v)));
 	}
 
 	static T deserialize(const object &o)
 	{
-		return mxml::value_serializer<T>::from_string(o.get<std::string>());
+		return value_serializer<T>::from_string(o.get<std::string>());
 	}
 };
 

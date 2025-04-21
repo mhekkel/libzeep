@@ -306,7 +306,7 @@ class controller
 			{
 				auto v = params.get_parameter(name);
 				if (v.has_value())
-					result = mxml::value_serializer<T>::from_string(*v);
+					result = value_serializer<T>::from_string(*v);
 			}
 			catch (const std::exception &e)
 			{
@@ -340,7 +340,7 @@ class controller
 			{
 				auto p = params.get_parameter(name);
 				if (p.has_value())
-					result = mxml::value_serializer<T>::from_string(*p);
+					result = value_serializer<T>::from_string(*p);
 			}
 			catch (const std::exception &e)
 			{

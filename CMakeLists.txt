@@ -173,7 +173,6 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/template-processor.hpp
 	include/zeep/http/header.hpp
 	include/zeep/http/request.hpp
-	include/zeep/http/rest-controller.hpp
 
 	# include/zeep/http/soap-controller.hpp
 	include/zeep/http/html-controller.hpp
@@ -200,7 +199,6 @@ list(APPEND ZEEP_SRC
 	src/message-parser.cpp
 	src/reply.cpp
 	src/request.cpp
-	src/rest-controller.cpp
 	src/security.cpp
 	src/server.cpp
 	src/uri.cpp

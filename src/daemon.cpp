@@ -24,8 +24,6 @@
 
 namespace fs = std::filesystem;
 
-using namespace std::literals;
-
 namespace zeep::http
 {
 
@@ -45,9 +43,9 @@ daemon::daemon(server_factory_type &&factory, std::string pid_file,
 {
 }
 
-daemon::daemon(server_factory_type &&factory, const char *name)
-	: daemon(std::move(factory), "/var/run/"s + name,
-		  "/var/log/"s + name + "/access.log", "/var/log/"s + name + "/error.log")
+daemon::daemon(server_factory_type &&factory, const std::string &name)
+	: daemon(std::move(factory), "/var/run/" + name,
+		  "/var/log/" + name + "/access.log", "/var/log/" + name + "/error.log")
 {
 }
 
@@ -198,6 +196,8 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, s
 
 int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads, std::string run_as_user)
 {
+	using namespace std::literals;
+
 	int result = 0;
 
 	if (pid_is_for_executable())

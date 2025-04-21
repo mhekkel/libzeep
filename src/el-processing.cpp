@@ -1526,7 +1526,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto t = params[0].get<std::string>();
 				auto f = params[1].get<std::string>();
 
-				auto st = mxml::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
+				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(t);
 
 				std::wostringstream os;
 				os.imbue(scope.get_request().get_locale());

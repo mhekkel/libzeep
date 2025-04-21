@@ -1,6 +1,6 @@
 #include <zeep/exception.hpp>
 #include <zeep/http/daemon.hpp>
-#include <zeep/http/rest-controller.hpp>
+#include <zeep/http/controller.hpp>
 #include <zeep/el/serializer.hpp>
 
 #include "../src/signals.hpp"

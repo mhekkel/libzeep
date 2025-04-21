@@ -40,11 +40,11 @@ struct Cart
 //]
 
 //[ shop_rest_controller_2
-class shop_rest_controller : public zeep::http::rest_controller
+class shop_rest_controller : public zeep::http::controller
 {
   public:
     shop_rest_controller()
-        : zeep::http::rest_controller("/cart")
+        : zeep::http::controller("/cart")
     {
         // CRUD example interface
 

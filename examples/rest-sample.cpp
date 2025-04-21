@@ -40,11 +40,11 @@ struct Cart
 //]
 
 //[ shop_rest_controller
-class shop_rest_controller : public zeep::http::rest_controller
+class shop_rest_controller : public zeep::http::controller
 {
   public:
     shop_rest_controller()
-        : zeep::http::rest_controller("/cart")
+        : zeep::http::controller("/cart")
     {
         map_post_request("", &shop_rest_controller::create_cart, "client");
         map_get_request("{id}", &shop_rest_controller::get_cart, "id");

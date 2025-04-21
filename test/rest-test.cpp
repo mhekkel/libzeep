@@ -26,7 +26,7 @@
 
 #include <zeep/exception.hpp>
 #include <zeep/http/daemon.hpp>
-#include <zeep/http/rest-controller.hpp>
+#include <zeep/http/controller.hpp>
 
 #include "../src/signals.hpp"
 
@@ -137,11 +137,11 @@ struct GrafiekData
 
 using Opnames = std::vector<Opname>;
 
-class e_rest_controller : public zeep::http::rest_controller
+class e_rest_controller : public zeep::http::controller
 {
   public:
 	e_rest_controller()
-		: zeep::http::rest_controller("ajax")
+		: zeep::http::controller("ajax")
 	{
 		map_post_request("opname", &e_rest_controller::post_opname, "opname");
 		map_put_request("opname/{id}", &e_rest_controller::put_opname, "id", "opname");
@@ -213,14 +213,14 @@ class e_rest_controller : public zeep::http::rest_controller
 
 TEST_CASE("rest_1")
 {
-	mxml::value_serializer<aggregatie_type>::init({ //
+	zeep::value_serializer<aggregatie_type>::init({ //
 		{ aggregatie_type::dag, "dag" },
 		{ aggregatie_type::week, "week" },
 		{ aggregatie_type::maand, "maand" },
 		{ aggregatie_type::jaar, "jaar"	 }
 	});
 
-	mxml::value_serializer<grafiek_type>::init({ //
+	zeep::value_serializer<grafiek_type>::init({ //
 		{ grafiek_type::warmte, "warmte" },
 		{ grafiek_type::electriciteit, "electriciteit" },
 		{ grafiek_type::electriciteit_hoog, "electriciteit-hoog" },
