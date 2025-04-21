@@ -218,10 +218,12 @@ class html_controller : public controller
 	void map_get(std::string mountPoint, const char *templateName)
 	{
 		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", templateName, *this));
 	}
 
 	void map_post(std::string mountPoint, const char *templateName)
 	{
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", templateName, *this));
 		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", templateName, *this));
 	}
 
@@ -334,7 +336,7 @@ class html_controller_v1 : public html_controller
 		}
 	}
 
-  private:
+	private:
 	/// @cond
 	struct mount_point_v1
 	{
