@@ -164,40 +164,12 @@ class request
 	///
 	/// Fetch parameters from a request, either from the URL or from the payload in case
 	/// the request contains a url-encoded or multi-part content-type header
-	std::string get_parameter(std::string_view name) const
-	{
-		return get_parameter_ex(name).value_or("");
-	}
+	std::optional<std::string> get_parameter(std::string_view name) const;
 
 	/// \brief Return the value of the parameter named \a name or the \a defaultValue if this parameter was not found
 	std::string get_parameter(std::string_view name, std::string defaultValue) const
 	{
-		std::string result = get_parameter(name);
-		if (result.empty())
-			result = std::move(defaultValue);
-		return result;
-	}
-
-	/// \brief Return the value of the parameter named \a name or the \a defaultValue if this parameter was not found
-	template <typename T, typename std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
-	T get_parameter(std::string_view name, const T &defaultValue) const
-	{
-		return static_cast<T>(std::stod(get_parameter(name, std::to_string(defaultValue))));
-	}
-
-	/// \brief Return the value of the parameter named \a name or the \a defaultValue if this parameter was not found
-	template <typename T, typename std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T, bool>, int> = 0>
-	T get_parameter(std::string_view name, const T &defaultValue) const
-	{
-		return static_cast<T>(std::stol(get_parameter(name, std::to_string(defaultValue))));
-	}
-
-	/// \brief Return the value of the parameter named \a name or the \a defaultValue if this parameter was not found
-	template <typename T, typename std::enable_if_t<std::is_same_v<T, bool>, int> = 0>
-	T get_parameter(std::string_view name, const T &defaultValue) const
-	{
-		auto v = get_parameter(name, std::to_string(defaultValue));
-		return v == "true" or v == "1";
+		return get_parameter(name).value_or(defaultValue);
 	}
 
 	/// \brief Return a std::multimap of name/value pairs for all parameters
@@ -210,12 +182,6 @@ class request
 	/// \brief Return the info for all file parameters with name \a name
 	///
 	std::vector<file_param> get_file_parameters(std::string name) const;
-
-	/// \brief Return whether the named parameter is present in the request
-	bool has_parameter(std::string_view name) const
-	{
-		return get_parameter_ex(name).has_value();
-	}
 
 	/// \brief Return the value of HTTP Cookie with name \a name
 	std::string get_cookie(std::string_view name) const;
@@ -241,9 +207,6 @@ class request
 		set_header("content-length", std::to_string(text.length()));
 		m_payload = std::move(text);
 	}
-
-	/// \brief Return value and flag indicating the existence of a parameter named \a name
-	std::optional<std::string> get_parameter_ex(std::string_view name) const;
 
   private:
 	void set_remote_address(std::string address)
