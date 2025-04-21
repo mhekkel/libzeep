@@ -14,8 +14,6 @@
 #include <zeep/http/security.hpp>
 #include <zeep/http/uri.hpp>
 
-
-
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -175,8 +173,12 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 	for (auto uri : doc.find("//input[@name='uri']"))
 	{
 		auto req_uri = req.get_uri().string();
-		if (req_uri == "/login" and req.has_parameter("uri"))
-			req_uri = req.get_parameter("uri");
+		if (req_uri == "/login")
+		{
+			auto p = req.get_parameter("uri");
+			if (p.has_value())
+				req_uri = *p;
+		}
 		uri->set_attribute("value", req_uri);
 	}
 
@@ -208,11 +210,11 @@ reply login_controller::handle_get_login(const scope &scope)
 reply login_controller::handle_post_login(const scope &scope, const std::string &username, const std::string &password)
 {
 	auto &req = scope.get_request();
-	auto csrf = req.get_parameter("_csrf");
+	auto csrf = req.get_parameter("_csrf").value_or("");
 	if (csrf != req.get_cookie("csrf-token"))
 		throw status_type::forbidden;
 
-	uri uri(req.get_parameter("uri"));
+	uri uri(req.get_parameter("uri").value_or(""));
 	auto rep = create_redirect_for_request(req);
 
 	try
@@ -256,9 +258,9 @@ reply login_controller::create_redirect_for_request(const request &req)
 {
 	uri url = get_context_name();
 
-	if (req.has_parameter("uri"))
+	if (auto p = req.get_parameter("uri"); p.has_value())
 	{
-		uri requested_uri(req.get_parameter("uri"));
+		uri requested_uri(*p);
 		if (not requested_uri.has_authority())
 			url /= requested_uri;
 	}

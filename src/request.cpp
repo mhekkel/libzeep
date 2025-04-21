@@ -229,7 +229,7 @@ std::pair<std::string, bool> get_urldecoded_parameter(std::string_view s, std::s
 	return std::make_pair(result, found);
 }
 
-std::optional<std::string> request::get_parameter_ex(std::string_view name) const
+std::optional<std::string> request::get_parameter(std::string_view name) const
 {
 	std::string result, contentType = get_header("Content-Type");
 	bool found = false;

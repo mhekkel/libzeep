@@ -104,18 +104,7 @@ class controller
 		{
 		}
 
-		std::string get_parameter(std::string_view name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return p->value;
-			else
-				return m_req.get_parameter(name);
-		}
-
-		std::optional<std::string> get_parameter_ex(std::string_view name) const
+		std::optional<std::string> get_parameter(std::string_view name) const
 		{
 			std::optional<std::string> result;
 
@@ -124,7 +113,7 @@ class controller
 				{ return pp.name == name; });
 
 			if (p == m_path_parameters.end())
-				result = m_req.get_parameter_ex(name);
+				result = m_req.get_parameter(name);
 			else if (not p->value.empty())
 				result = p->value;
 			
@@ -236,7 +225,7 @@ class controller
 		{
 			try
 			{
-				auto v = params.get_parameter(name);
+				auto v = params.get_parameter(name).value_or("false");
 				result = v == "true" or v == "1" or v == "on";
 			}
 			catch (const std::exception &e)
@@ -252,7 +241,7 @@ class controller
 		{
 			try
 			{
-				result = params.get_parameter(name);
+				result = params.get_parameter(name).value_or("");
 			}
 			catch (const std::exception &)
 			{
@@ -297,7 +286,9 @@ class controller
 		{
 			try
 			{
-				result = object::parse_JSON(params.get_parameter(name));
+				auto p = params.get_parameter(name);
+				if (p.has_value())
+					result = object::parse_JSON(*p);
 			}
 			catch (const std::exception &e)
 			{
@@ -313,7 +304,7 @@ class controller
 		{
 			try
 			{
-				auto v = params.get_parameter_ex(name);
+				auto v = params.get_parameter(name);
 				if (v.has_value())
 					result = mxml::value_serializer<T>::from_string(*v);
 			}
@@ -330,7 +321,7 @@ class controller
 		{
 			try
 			{
-				result = params.get_parameter_ex(name);
+				result = params.get_parameter(name);
 			}
 			catch (const std::exception &e)
 			{
@@ -348,8 +339,8 @@ class controller
 			try
 			{
 				auto p = params.get_parameter(name);
-				if (not p.empty())
-					result = mxml::value_serializer<T>::from_string(p);
+				if (p.has_value())
+					result = mxml::value_serializer<T>::from_string(*p);
 			}
 			catch (const std::exception &e)
 			{
@@ -365,9 +356,16 @@ class controller
 		             mxml::is_serializable_array_type_v<T, el::deserializer<object>>
 		T get_parameter(const parameter_pack &params, const std::string &name, T result)
 		{
-			object v = params.m_req.get_header("content-type") == "application/json"
-			               ? object::parse_JSON(params.m_req.get_payload())
-			               : object::parse_JSON(params.get_parameter(name));
+			object v;
+
+			if (params.m_req.get_header("content-type") == "application/json")
+				v = object::parse_JSON(params.m_req.get_payload());
+			else
+			{
+				auto p = params.get_parameter(name);
+				if (p.has_value())
+					v = object::parse_JSON(*p);
+			}
 
 			return el::serializer<T>::deserialize(v);
 		}

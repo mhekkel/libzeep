@@ -1617,7 +1617,11 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 		else if (method == "getRequestURL")
 			result = scope.get_request().get_uri().string();
 		else if ((method == "getParameter") and params.size() == 1)
-			result = scope.get_request().get_parameter(params[0].get<std::string>().c_str());
+		{
+			auto p = scope.get_request().get_parameter(params[0].get<std::string>());
+			if (p.has_value())
+				result = *p;
+		}
 
 		return result;
 	}
