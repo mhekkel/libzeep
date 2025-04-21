@@ -150,9 +150,9 @@ class uri
 	}
 
 	/// \brief Set the scheme to \a scheme
-	void set_scheme(const std::string &scheme)
+	void set_scheme(std::string scheme)
 	{
-		m_scheme = scheme;
+		m_scheme = std::move(scheme);
 		zeep::to_lower(m_scheme);
 	}
 
@@ -163,9 +163,9 @@ class uri
 	}
 
 	/// \brief Set the userinfo to \a userinfo
-	void set_userinfo(const std::string &userinfo)
+	void set_userinfo(std::string userinfo)
 	{
-		m_userinfo = userinfo;
+		m_userinfo = std::move(userinfo);
 	}
 
 	/// \brief Return the host
@@ -175,9 +175,9 @@ class uri
 	}
 
 	/// \brief Set the host to \a host
-	void set_host(const std::string &host)
+	void set_host(std::string host)
 	{
-		m_host = host;
+		m_host = std::move(host);
 		zeep::to_lower(m_host);
 	}
 
@@ -212,7 +212,7 @@ class uri
 	}
 
 	/// \brief Set the query to \a query and optionally encode it based on \a encode
-	void set_query(const std::string &query, bool encode);
+	void set_query(std::string query, bool encode);
 
 	/// \brief Return the fragment
 	std::string get_fragment(bool decoded) const
@@ -221,7 +221,7 @@ class uri
 	}
 
 	/// \brief Set the fragment to \a fragment and optionally encode it based on \a encode
-	void set_fragment(const std::string &fragment, bool encode);
+	void set_fragment(std::string fragment, bool encode);
 
 	/// \brief Return the uri as a string
 	std::string string() const;

@@ -187,7 +187,7 @@ void uri::set_path(const std::string &path)
 	remove_dot_segments();
 }
 
-void uri::set_query(const std::string &query, bool encode)
+void uri::set_query(std::string query, bool encode)
 {
 	if (encode)
 	{
@@ -204,10 +204,10 @@ void uri::set_query(const std::string &query, bool encode)
 		m_query = os.str();
 	}
 	else
-		m_query = query;
+		m_query = std::move(query);
 }
 
-void uri::set_fragment(const std::string &fragment, bool encode)
+void uri::set_fragment(std::string fragment, bool encode)
 {
 	if (encode)
 	{
@@ -224,7 +224,7 @@ void uri::set_fragment(const std::string &fragment, bool encode)
 		m_fragment = os.str();
 	}
 	else
-		m_fragment = fragment;
+		m_fragment = std::move(fragment);
 }
 
 uri &uri::operator/=(const uri &rhs)
