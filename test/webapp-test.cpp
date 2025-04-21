@@ -18,7 +18,7 @@
 
 namespace z = zeep;
 
-using webapp = zeep::http::html_controller;
+using webapp = zeep::http::html_controller_v1;
 
 void compare(mxml::document &a, mxml::document &b)
 {
@@ -222,11 +222,11 @@ TEST_CASE("webapp_5")
 	CHECK(rep.get_content() == "f");
 }
 
-class hello_controller : public zeep::http::html_controller
+class hello_controller : public zeep::http::html_controller_v1
 {
   public:
 	hello_controller()
-		: zeep::http::html_controller("/")
+		: zeep::http::html_controller_v1("/")
 	{
 		mount("", &hello_controller::handle_index);
 	}

@@ -14,11 +14,6 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/controller.hpp>
-// #include <zeep/http/el-processing.hpp>
-#include <zeep/el/object.hpp>
-#include <zeep/streambuf.hpp>
-
-#include <list>
 
 // --------------------------------------------------------------------
 //
@@ -50,9 +45,6 @@ class html_controller : public controller
 	/// \brief return the basic_template_processor of the server
 	const basic_template_processor &get_template_processor() const;
 
-	/// \brief Dispatch and handle the request
-	virtual bool handle_request(request &req, reply &reply_);
-
 	/// \brief default file handling
 	///
 	/// This method will ask the server for the default template processor
@@ -61,98 +53,15 @@ class html_controller : public controller
 	virtual void handle_file(const request &request_, const scope &scope_, reply &reply_);
 
 	// --------------------------------------------------------------------
-
-  public:
-	/// \brief html_controller works with 'handlers' that are methods 'mounted' on a path in the requested URI
-
-	using handler_type = std::function<void(const request &request_, const scope &scope_, reply &reply_)>;
-
-	/// assign a handler function to a path in the server's namespace
-	/// Usually called like this:
-	/// \code{.cpp}
-	///   mount(std::move(")page", std::bind(&page_handler, this, _1, _2, _3));
-	/// \endcode
-	/// Where page_handler is defined as:
-	/// \code{.cpp}
-	/// void session_server::page_handler(const request& request, const scope& scope, reply& reply);
-	/// \endcode
-	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
-	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional objects are allowed
-	/// as well as semi-colons that define separate paths.
-	/// Also, patterns ending in / are interpreted as ending in /\*\*
-	///
-	/// path             | matches
-	/// ---------------- | --------------------------------------------
-	/// **/*.js          | matches x.js, a/b/c.js, etc
-	/// {css,scripts}/   | matches e.g. css/1/first.css and scripts/index.js
-	/// a;b;c            | matches either a, b or c
-
-	/// \brief mount a callback on URI path \a path for any HTTP method
-	template <class Class>
-	void mount(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
-	{
-		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(std::move(path), "UNDEFINED", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
-			{ (server->*callback)(req, sc, rep); });
-	}
-
-	/// \brief mount a callback on URI path \a path for HTTP GET method
-	template <class Class>
-	void mount_get(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
-	{
-		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(std::move(path), "GET", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
-			{ (server->*callback)(req, sc, rep); });
-	}
-
-	/// \brief mount a callback on URI path \a path for HTTP POST method
-	template <class Class>
-	void mount_post(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
-	{
-		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(std::move(path), "POST", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
-			{ (server->*callback)(req, sc, rep); });
-	}
-
-	/// \brief mount a callback on URI path \a path for HTTP method \a method
-	template <class Class>
-	void mount(std::string path, std::string method, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
-	{
-		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
-		mount(std::move(path), std::move(method), [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
-			{ (server->*callback)(req, sc, rep); });
-	}
-
-	/// \brief mount a handler on URI path \a path for HTTP method \a method
-	void mount(std::string path, std::string method, handler_type handler)
-	{
-		auto mpi = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
-			[&path, &method](auto &mp)
-			{
-				return mp.path == path and (mp.method == method or mp.method == "UNDEFINED" or method == "UNDEFINED");
-			});
-
-		if (mpi == m_dispatch_table.end())
-			m_dispatch_table.emplace_back(std::move(path), std::move(method), handler);
-		else
-		{
-			if (mpi->method != method)
-				throw std::logic_error("cannot mix method UNDEFINED with something else");
-
-			mpi->handler = handler;
-		}
-	}
-
-	// --------------------------------------------------------------------
   public:
 	template <typename Callback, typename...>
-	struct mount_point_v2
+	struct html_mount_point
 	{
 	};
 
 	/// \brief templated base class for mount points
 	template <typename ControllerType, typename... Args>
-	struct mount_point_v2<reply (ControllerType::*)(const scope &scope_, Args...)> : mount_point_base
+	struct html_mount_point<reply (ControllerType::*)(const scope &scope_, Args...)> : mount_point_base
 	{
 		using Sig = reply (ControllerType::*)(const scope &, Args...);
 		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
@@ -161,7 +70,7 @@ class html_controller : public controller
 		static constexpr size_t N = sizeof...(Args);
 
 		template <typename... Names>
-		mount_point_v2(std::string path, std::string method, html_controller *owner, Sig sig, Names... names)
+		html_mount_point(std::string path, std::string method, html_controller *owner, Sig sig, Names... names)
 			: mount_point_base(std::move(path), std::move(method))
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
@@ -243,7 +152,7 @@ class html_controller : public controller
 	template <typename Callback, typename... ArgNames>
 	void map(std::string mountPoint, std::string method, Callback callback, ArgNames... names)
 	{
-		m_mountpoints.emplace_back(new mount_point_v2<Callback>(std::move(mountPoint), std::move(method), this, callback, names...));
+		m_mountpoints.emplace_back(new html_mount_point<Callback>(std::move(mountPoint), std::move(method), this, callback, names...));
 	}
 
 	/// \brief map a POST to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
@@ -289,9 +198,9 @@ class html_controller : public controller
 	/// Note, the first parameter is a glob pattern, similar to Ant matching rules. Similar to the previous map calls.
 
 	/// @cond
-	struct mount_point_v2_simple : public mount_point_base
+	struct html_mount_point_simple : public mount_point_base
 	{
-		mount_point_v2_simple(std::string path, std::string method, std::string templateName, html_controller &controller)
+		html_mount_point_simple(std::string path, std::string method, std::string templateName, html_controller &controller)
 			: mount_point_base(std::move(path), std::move(method))
 			, m_template(std::move(templateName))
 			, m_controller(controller)
@@ -308,12 +217,12 @@ class html_controller : public controller
 	/// \brief map a simple page to a URI.
 	void map_get(std::string mountPoint, const char *templateName)
 	{
-		m_mountpoints.emplace_back(new mount_point_v2_simple(std::move(mountPoint), "GET", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", templateName, *this));
 	}
 
 	void map_post(std::string mountPoint, const char *templateName)
 	{
-		m_mountpoints.emplace_back(new mount_point_v2_simple(std::move(mountPoint), "POST", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", templateName, *this));
 	}
 
 	void map(std::string mountPoint, const char *templateName)
@@ -328,6 +237,102 @@ class html_controller : public controller
 	///
 	/// Initialize scope, derived classes should call this first
 	virtual void init_scope(request &req, scope & /*scope*/);
+};
+
+// --------------------------------------------------------------------
+// legacy html_controller support
+
+class html_controller_v1 : public html_controller
+{
+  public:
+	html_controller_v1(std::string prefix_path = "/")
+		: html_controller(std::move(prefix_path))
+	{
+	}
+
+	/// \brief Dispatch and handle the request
+	virtual bool handle_request(request &req, reply &reply_);
+
+  public:
+	/// \brief html_controller works with 'handlers' that are methods 'mounted' on a path in the requested URI
+
+	using handler_type = std::function<void(const request &request_, const scope &scope_, reply &reply_)>;
+
+	/// assign a handler function to a path in the server's namespace
+	/// Usually called like this:
+	/// \code{.cpp}
+	///   mount(std::move(")page", std::bind(&page_handler, this, _1, _2, _3));
+	/// \endcode
+	/// Where page_handler is defined as:
+	/// \code{.cpp}
+	/// void session_server::page_handler(const request& request, const scope& scope, reply& reply);
+	/// \endcode
+	/// Note, the first parameter is a glob pattern, similar to Ant matching rules.
+	/// Supported operators are \*, \*\* and ?. As an addition curly bracketed optional objects are allowed
+	/// as well as semi-colons that define separate paths.
+	/// Also, patterns ending in / are interpreted as ending in /\*\*
+	///
+	/// path             | matches
+	/// ---------------- | --------------------------------------------
+	/// **/*.js          | matches x.js, a/b/c.js, etc
+	/// {css,scripts}/   | matches e.g. css/1/first.css and scripts/index.js
+	/// a;b;c            | matches either a, b or c
+
+	/// \brief mount a callback on URI path \a path for any HTTP method
+	template <class Class>
+	void mount(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	{
+		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
+		mount(std::move(path), "UNDEFINED", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
+	}
+
+	/// \brief mount a callback on URI path \a path for HTTP GET method
+	template <class Class>
+	void mount_get(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	{
+		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
+		mount(std::move(path), "GET", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
+	}
+
+	/// \brief mount a callback on URI path \a path for HTTP POST method
+	template <class Class>
+	void mount_post(std::string path, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	{
+		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
+		mount(std::move(path), "POST", [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
+	}
+
+	/// \brief mount a callback on URI path \a path for HTTP method \a method
+	template <class Class>
+	void mount(std::string path, std::string method, void (Class::*callback)(const request &req, const scope &sc, reply &rep))
+	{
+		static_assert(std::is_base_of_v<html_controller, Class>, "This call can only be used for methods in classes derived from html_controller");
+		mount(std::move(path), std::move(method), [server = static_cast<Class *>(this), callback](const request &req, const scope &sc, reply &rep)
+			{ (server->*callback)(req, sc, rep); });
+	}
+
+	/// \brief mount a handler on URI path \a path for HTTP method \a method
+	void mount(std::string path, std::string method, handler_type handler)
+	{
+		auto mpi = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
+			[&path, &method](auto &mp)
+			{
+				return mp.path == path and (mp.method == method or mp.method == "UNDEFINED" or method == "UNDEFINED");
+			});
+
+		if (mpi == m_dispatch_table.end())
+			m_dispatch_table.emplace_back(std::move(path), std::move(method), handler);
+		else
+		{
+			if (mpi->method != method)
+				throw std::logic_error("cannot mix method UNDEFINED with something else");
+
+			mpi->handler = handler;
+		}
+	}
 
   private:
 	/// @cond

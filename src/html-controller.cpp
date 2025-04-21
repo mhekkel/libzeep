@@ -29,7 +29,7 @@ const basic_template_processor &html_controller::get_template_processor() const
 
 // // --------------------------------------------------------------------
 
-// void html_controller::mount_point_v2_simple::call(const scope &scope, const parameter_pack &, reply &rep)
+// void html_controller::html_mount_point_simple::call(const scope &scope, const parameter_pack &, reply &rep)
 // {
 // 	rep = m_controller.get_template_processor().create_reply_from_template(m_template, scope);
 // }
@@ -53,7 +53,7 @@ void html_controller::init_scope(request &req, scope &scope)
 // --------------------------------------------------------------------
 //
 
-bool html_controller::handle_request(request& req, reply& rep)
+bool html_controller_v1::handle_request(request& req, reply& rep)
 {
 	bool result = controller::handle_request(req, rep);
 
