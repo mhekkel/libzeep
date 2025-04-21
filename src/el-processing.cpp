@@ -129,13 +129,13 @@ struct interpreter
 	// template <class OutputIterator, class Match>
 	// OutputIterator operator()(Match &m, OutputIterator out, std::regex::match_flag_type);
 
-	object evaluate(std::string_view s);
+	object evaluate(const std::string &s);
 
-	std::vector<std::pair<std::string, std::string>> evaluate_attr_expr(std::string_view s);
+	std::vector<std::pair<std::string, std::string>> evaluate_attr_expr(const std::string &s);
 
-	bool evaluate_assert(std::string_view s);
-	void evaluate_with(scope &scope, std::string_view s);
-	object evaluate_link(std::string_view s);
+	bool evaluate_assert(const std::string &s);
+	void evaluate_with(scope &scope, const std::string &s);
+	object evaluate_link(const std::string &s);
 
 	bool process(std::string &s);
 
@@ -164,14 +164,14 @@ struct interpreter
 
 	object parse_utility_expr();
 
-	object call_method(std::string_view className, std::string_view method, std::vector<object> &params);
+	object call_method(const std::string &className, const std::string &method, std::vector<object> &params);
 
 	const scope &m_scope;
 	token_type m_lookahead;
 	std::string m_token_string;
 	int64_t m_token_number_int;
 	double m_token_number_float;
-	std::string_view::const_iterator m_ptr, m_end;
+	std::string::const_iterator m_ptr, m_end;
 	bool m_return_whitespace = false;
 	bool m_expect_fragment_spec = false;
 };
@@ -188,7 +188,7 @@ struct interpreter
 // 	return out;
 // }
 
-object interpreter::evaluate(std::string_view s)
+object interpreter::evaluate(const std::string &s)
 {
 	object result;
 
@@ -211,7 +211,7 @@ object interpreter::evaluate(std::string_view s)
 	return result;
 }
 
-std::vector<std::pair<std::string, std::string>> interpreter::evaluate_attr_expr(std::string_view s)
+std::vector<std::pair<std::string, std::string>> interpreter::evaluate_attr_expr(const std::string &s)
 {
 	std::vector<std::pair<std::string, std::string>> result;
 
@@ -241,7 +241,7 @@ std::vector<std::pair<std::string, std::string>> interpreter::evaluate_attr_expr
 	return result;
 }
 
-bool interpreter::evaluate_assert(std::string_view s)
+bool interpreter::evaluate_assert(const std::string &s)
 {
 	bool result = true;
 
@@ -270,7 +270,7 @@ bool interpreter::evaluate_assert(std::string_view s)
 	return result;
 }
 
-void interpreter::evaluate_with(scope &scope, std::string_view s)
+void interpreter::evaluate_with(scope &scope, const std::string &s)
 {
 	m_ptr = s.begin();
 	m_end = s.end();
@@ -296,7 +296,7 @@ void interpreter::evaluate_with(scope &scope, std::string_view s)
 	match(token_type::eof);
 }
 
-object interpreter::evaluate_link(std::string_view s)
+object interpreter::evaluate_link(const std::string &s)
 {
 	object result;
 
@@ -1491,7 +1491,7 @@ object interpreter::parse_utility_expr()
 	return call_method(className, method, params);
 }
 
-object interpreter::call_method(std::string_view className, std::string_view method, std::vector<object> &params)
+object interpreter::call_method(const std::string &className, const std::string &method, std::vector<object> &params)
 {
 	object result;
 
@@ -1514,7 +1514,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
   public:
 	static constexpr const char *name() { return "dates"; }
 
-	virtual object evaluate(const scope &scope, std::string_view method,
+	virtual object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const
 	{
 		object result;
@@ -1548,7 +1548,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
   public:
 	static constexpr const char *name() { return "numbers"; }
 
-	virtual object evaluate(const scope &scope, std::string_view method,
+	virtual object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const
 	{
 		object result;
@@ -1607,7 +1607,7 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
   public:
 	static constexpr const char *name() { return "request"; }
 
-	virtual object evaluate(const scope &scope, std::string_view method,
+	virtual object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const
 	{
 		object result;
@@ -1628,7 +1628,7 @@ class security_expr_util_object : public expression_utility_object<security_expr
   public:
 	static constexpr const char *name() { return "security"; }
 
-	virtual object evaluate(const scope &scope, std::string_view method,
+	virtual object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const
 	{
 		object result;
@@ -1664,7 +1664,7 @@ bool process_el(const scope &scope, std::string &text)
 	return interpreter.process(text);
 }
 
-std::string process_el_2(const scope &scope, std::string_view text)
+std::string process_el_2(const scope &scope, const std::string &text)
 {
 	std::string s = text;
 
@@ -1672,31 +1672,31 @@ std::string process_el_2(const scope &scope, std::string_view text)
 	return interpreter.process(s) ? s : text;
 }
 
-object evaluate_el(const scope &scope, std::string_view text)
+object evaluate_el(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate(text);
 }
 
-std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope, std::string_view text)
+std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_attr_expr(text);
 }
 
-bool evaluate_el_assert(const scope &scope, std::string_view text)
+bool evaluate_el_assert(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_assert(text);
 }
 
-void evaluate_el_with(scope &scope, std::string_view text)
+void evaluate_el_with(scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	interpreter.evaluate_with(scope, text);
 }
 
-object evaluate_el_link(const scope &scope, std::string_view text)
+object evaluate_el_link(const scope &scope, const std::string &text)
 {
 	interpreter interpreter(scope);
 	return interpreter.evaluate_link(text);
@@ -1751,12 +1751,12 @@ scope::scope(const basic_server *server, const request &req)
 {
 }
 
-object &scope::operator[](std::string_view name)
+object &scope::operator[](const std::string &name)
 {
 	return lookup(name);
 }
 
-const object &scope::lookup(std::string_view name, bool includeSelected) const
+const object &scope::lookup(const std::string &name, bool includeSelected) const
 {
 	const object *result = nullptr;
 
@@ -1777,12 +1777,12 @@ const object &scope::lookup(std::string_view name, bool includeSelected) const
 	return *result;
 }
 
-const object &scope::operator[](std::string_view name) const
+const object &scope::operator[](const std::string &name) const
 {
 	return lookup(name);
 }
 
-object &scope::lookup(std::string_view name)
+object &scope::lookup(const std::string &name)
 {
 	object *result = nullptr;
 
@@ -1827,7 +1827,7 @@ void scope::select_object(const object &o)
 	m_selected = o;
 }
 
-auto scope::get_nodeset(std::string_view name) const -> node_set_type
+auto scope::get_nodeset(const std::string &name) const -> node_set_type
 {
 	auto i = m_nodesets.find(name);
 	if (i != m_nodesets.end())
@@ -1839,7 +1839,7 @@ auto scope::get_nodeset(std::string_view name) const -> node_set_type
 	return m_next->get_nodeset(name);
 }
 
-void scope::set_nodeset(std::string_view name, node_set_type &&nodes)
+void scope::set_nodeset(const std::string &name, node_set_type &&nodes)
 {
 	m_nodesets.emplace(std::make_pair(name, std::move(nodes)));
 }

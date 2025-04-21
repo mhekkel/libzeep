@@ -18,38 +18,37 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
-file_loader::file_loader(const std::filesystem::path &docroot)
+file_loader::file_loader(std::filesystem::path docroot)
 	: resource_loader()
-	, m_docroot(docroot)
+	, m_docroot(std::move(docroot))
 {
-	if (not docroot.empty() and not std::filesystem::exists(m_docroot))
+	if (not m_docroot.empty() and not std::filesystem::exists(m_docroot))
 		throw std::runtime_error("Docroot '" + m_docroot.string() + "' does not seem to exist");
 }
 
 /// return last_write_time of \a file
-std::filesystem::file_time_type file_loader::file_time(const std::string &file, std::error_code &ec) noexcept
+std::filesystem::file_time_type file_loader::file_time(std::filesystem::path file, std::error_code &ec) noexcept
 {
-	fs::path p(file);
-	if (p.has_root_path())
-		p = fs::relative(p, p.root_path());
+	if (file.has_root_path())
+		file = fs::relative(file, file.root_path());
 
-	return fs::last_write_time(m_docroot / p, ec);
+	return fs::last_write_time(m_docroot / file, ec);
 }
 
 /// return last_write_time of \a file
-std::istream *file_loader::load_file(const std::string &file, std::error_code &ec) noexcept
+std::istream *file_loader::load_file(std::string file, std::error_code &ec) noexcept
 {
-	fs::path p(file);
-	if (p.has_root_path())
-		p = fs::relative(p, p.root_path());
+	fs::path path(file);
+	if (path.has_root_path())
+		path = fs::relative(path, path.root_path());
 
 	std::ifstream *result = nullptr;
 
-	if (not fs::is_regular_file(m_docroot / p))
+	if (not fs::is_regular_file(m_docroot / path))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
 	else
 	{
-		result = new std::ifstream(m_docroot / p, std::ios::binary);
+		result = new std::ifstream(m_docroot / path, std::ios::binary);
 		if (not result->is_open())
 		{
 			delete result;
@@ -144,9 +143,9 @@ void basic_template_processor::handle_file(const http::request &request, const s
 	reply.set_header("Last-Modified", s.str());
 }
 
-void basic_template_processor::set_docroot(const fs::path &path)
+void basic_template_processor::set_docroot(fs::path path)
 {
-	m_docroot = path;
+	m_docroot = std::move(path);
 }
 
 std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_file(const std::string &file)

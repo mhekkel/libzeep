@@ -589,7 +589,7 @@ size_t reply::size() const
 std::ostream &operator<<(std::ostream &lhs, const reply &rhs)
 {
 	for (auto &b : rhs.to_buffers())
-		lhs.write(static_cast<std::string_view >(b.data()), b.size());
+		lhs.write(static_cast<const char *>(b.data()), b.size());
 
 	return lhs;
 }

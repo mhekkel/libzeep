@@ -79,8 +79,7 @@ float request::get_accept(std::string_view type) const
 
 	static std::regex rx(MEDIARANGE);
 
-	assert(type);
-	if (type == nullptr)
+	if (type.empty())
 		return 1.0;
 
 	std::string t1(type), t2;
@@ -230,7 +229,7 @@ std::pair<std::string, bool> get_urldecoded_parameter(std::string_view s, std::s
 	return std::make_pair(result, found);
 }
 
-std::tuple<std::string, bool> request::get_parameter_ex(std::string_view name) const
+std::optional<std::string> request::get_parameter_ex(std::string_view name) const
 {
 	std::string result, contentType = get_header("Content-Type");
 	bool found = false;
@@ -239,7 +238,7 @@ std::tuple<std::string, bool> request::get_parameter_ex(std::string_view name) c
 	{
 		tie(result, found) = get_urldecoded_parameter(m_payload, name);
 		if (found)
-			return std::make_tuple(result, true);
+			return result;
 	}
 
 	auto query = m_uri.get_query(false);
@@ -248,7 +247,7 @@ std::tuple<std::string, bool> request::get_parameter_ex(std::string_view name) c
 	{
 		tie(result, found) = get_urldecoded_parameter(query, name);
 		if (found)
-			return std::make_tuple(result, true);
+			return result;
 	}
 
 	if (starts_with(contentType, "application/json"))
@@ -262,7 +261,7 @@ std::tuple<std::string, bool> request::get_parameter_ex(std::string_view name) c
 
 			if (e.is_object() and e.contains(name))
 			{
-				result = e.at(name).get<std::string>();
+				result = e.at(std::string{ name }).get<std::string>();
 				found = true;
 			}
 		}
@@ -348,7 +347,10 @@ std::tuple<std::string, bool> request::get_parameter_ex(std::string_view name) c
 		}
 	}
 
-	return make_tuple(result, found);
+	if (found)
+		return result;
+
+	return {};
 }
 
 std::multimap<std::string, std::string> request::get_parameters() const
@@ -542,15 +544,15 @@ file_param file_param_parser::next()
 	return result;
 }
 
-file_param request::get_file_parameter(std::string_view name) const
+file_param request::get_file_parameter(std::string name) const
 {
-	file_param_parser fpp(*this, m_payload, name);
+	file_param_parser fpp(*this, m_payload, std::move(name));
 	return fpp.next();
 }
 
-std::vector<file_param> request::get_file_parameters(std::string_view name) const
+std::vector<file_param> request::get_file_parameters(std::string name) const
 {
-	file_param_parser fpp(*this, m_payload, name);
+	file_param_parser fpp(*this, m_payload, std::move(name));
 
 	std::vector<file_param> result;
 	for (;;)
@@ -749,23 +751,6 @@ std::locale &request::get_locale() const
 	}
 
 	return *m_locale;
-}
-
-void request::set_header(std::string name, std::string value)
-{
-	bool set = false;
-	for (auto &h : m_headers)
-	{
-		if (iequals(h.name, name))
-		{
-			h.value = value;
-			set = true;
-			break;
-		}
-	}
-
-	if (not set)
-		m_headers.push_back({ std::move(name), std::move(value) });
 }
 
 namespace

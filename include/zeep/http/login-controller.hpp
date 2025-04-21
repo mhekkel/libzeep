@@ -60,7 +60,7 @@ class login_controller : public html_controller
 	reply handle_get_login(const scope &scope_);
 
 	/// \brief Handle a POST on /login
-	reply handle_post_login(const scope &scope_, std::string_view username, std::string_view password);
+	reply handle_post_login(const scope &scope_, const std::string &username, const std::string &password);
 
 	/// \brief Handle a GET or POST on /logout
 	reply handle_logout(const scope &scope_);

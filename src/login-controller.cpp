@@ -205,7 +205,7 @@ reply login_controller::handle_get_login(const scope &scope)
 	return rep;
 }
 
-reply login_controller::handle_post_login(const scope &scope, std::string_view username, std::string_view password)
+reply login_controller::handle_post_login(const scope &scope, const std::string &username, const std::string &password)
 {
 	auto &req = scope.get_request();
 	auto csrf = req.get_parameter("_csrf");

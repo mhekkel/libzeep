@@ -482,7 +482,7 @@ rsrc_loader::rsrc_loader(const std::string &)
 }
 
 /// return last_write_time of \a file
-fs::file_time_type rsrc_loader::file_time(std::string file, std::error_code &ec) noexcept
+fs::file_time_type rsrc_loader::file_time(std::filesystem::path file, std::error_code &ec) noexcept
 {
 	fs::file_time_type result = {};
 

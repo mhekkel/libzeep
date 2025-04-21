@@ -17,7 +17,7 @@ namespace zeep::http
 
 namespace
 {
-const char kHex[] = "0123456789ABCDEF";
+	const char kHex[] = "0123456789ABCDEF";
 }
 
 // ah, the beauty of regular expressions!
@@ -26,56 +26,83 @@ const char kHex[] = "0123456789ABCDEF";
 // libraries is sub-optimal. And thus we don't use this magic
 // anymore, apart from matching the IP_LITERAL part for a host.
 
-#define GEN_DELIMS		R"([][]:/?#@])"
-#define SUB_DELIMS		R"([!$&'()*+,;=])"
-#define RESERVED		GEN_DELIMS | SUB_DELIMS
-#define UNRESERVED		R"([-._~A-Za-z0-9])"
-#define SCHEME			R"([a-zA-Z][-+.a-zA-Z0-9]*)"
-#define PCT_ENCODED		"%[[:xdigit:]]{2}"
-#define USERINFO		"(?:" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "|" ":" ")*"
-#define REG_NAME		"(?:" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS ")*"
-#define PORT			"[[:digit:]]*"
+#define GEN_DELIMS R"([][]:/?#@])"
+#define SUB_DELIMS R"([!$&'()*+,;=])"
+#define RESERVED GEN_DELIMS | SUB_DELIMS
+#define UNRESERVED R"([-._~A-Za-z0-9])"
+#define SCHEME R"([a-zA-Z][-+.a-zA-Z0-9]*)"
+#define PCT_ENCODED "%[[:xdigit:]]{2}"
+#define USERINFO "(?:" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "|" \
+				 ":"                                                 \
+				 ")*"
+#define REG_NAME "(?:" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS ")*"
+#define PORT "[[:digit:]]*"
 
-#define DEC_OCTET		"(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
-#define IPv4_ADDRESS	DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET
-#define h16				"[[:xdigit:]]{1,4}"
-#define ls32			"(?:" h16 ":" h16 ")|" IPv4_ADDRESS
-#define IPv6_ADDRESS	"(?:"	\
-																		"(?:" h16 ":){6}"	ls32	"|" \
-																"::"	"(?:" h16 ":){5}"	ls32	"|"	\
-							"(?:"					h16 ")?"	"::"	"(?:" h16 ":){4}"	ls32	"|" \
-							"(?:(?:" h16 ":){1}"	h16 ")?"	"::"	"(?:" h16 ":){3}"	ls32	"|" \
-							"(?:(?:" h16 ":){2}"	h16 ")?"	"::"	"(?:" h16 ":){2}"	ls32	"|" \
-							"(?:(?:" h16 ":){3}"	h16 ")?"	"::"	"(?:" h16 ":){1}"	ls32	"|" \
-							"(?:(?:" h16 ":){4}"	h16 ")?"	"::"						ls32	"|" \
-							"(?:(?:" h16 ":){5}"	h16 ")?"	"::"						h16		"|" \
-							"(?:(?:" h16 ":){6}"	h16 ")?"	"::"								"|" \
-						")"
-#define IPvFUTURE		R"(v[[:xdigit:]]\.(?:)" UNRESERVED "|" SUB_DELIMS "|" ":" ")+"
-#define IP_LITERAL		R"(\[(?:)" IPv6_ADDRESS "|" IPvFUTURE R"()\])"
-#define HOST			IP_LITERAL "|" IPv4_ADDRESS "|" REG_NAME
+#define DEC_OCTET "(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+#define IPv4_ADDRESS DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET R"(\.)" DEC_OCTET
+#define h16 "[[:xdigit:]]{1,4}"
+#define ls32 "(?:" h16 ":" h16 ")|" IPv4_ADDRESS
+#define IPv6_ADDRESS "(?:"                         \
+					 "(?:" h16 ":){6}" ls32 "|"    \
+					 "::"                          \
+					 "(?:" h16 ":){5}" ls32 "|"    \
+					 "(?:" h16 ")?"                \
+					 "::"                          \
+					 "(?:" h16 ":){4}" ls32 "|"    \
+					 "(?:(?:" h16 ":){1}" h16 ")?" \
+					 "::"                          \
+					 "(?:" h16 ":){3}" ls32 "|"    \
+					 "(?:(?:" h16 ":){2}" h16 ")?" \
+					 "::"                          \
+					 "(?:" h16 ":){2}" ls32 "|"    \
+					 "(?:(?:" h16 ":){3}" h16 ")?" \
+					 "::"                          \
+					 "(?:" h16 ":){1}" ls32 "|"    \
+					 "(?:(?:" h16 ":){4}" h16 ")?" \
+					 "::" ls32 "|"                 \
+					 "(?:(?:" h16 ":){5}" h16 ")?" \
+					 "::" h16 "|"                  \
+					 "(?:(?:" h16 ":){6}" h16 ")?" \
+					 "::"                          \
+					 "|"                           \
+					 ")"
+#define IPvFUTURE R"(v[[:xdigit:]]\.(?:)" UNRESERVED "|" SUB_DELIMS "|" \
+				  ":"                                                   \
+				  ")+"
+#define IP_LITERAL R"(\[(?:)" IPv6_ADDRESS "|" IPvFUTURE R"()\])"
+#define HOST IP_LITERAL "|" IPv4_ADDRESS "|" REG_NAME
 
-#define AUTHORITY		"(" USERINFO "\\@" ")?(" HOST ")(:" PORT ")?"
+#define AUTHORITY "(" USERINFO "\\@" \
+				  ")?(" HOST ")(:" PORT ")?"
 
-#define PCHAR			UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "|" ":" "|" "@"
-#define	SEGMENT			"(?:" PCHAR ")*"
-#define SEGMENT_NZ		"(?:" PCHAR "){1,}"
-#define SEGMENT_NZ_NC	"(?:" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "){1,}"
+#define PCHAR UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "|" \
+						 ":"                                \
+						 "|"                                \
+						 "@"
+#define SEGMENT "(?:" PCHAR ")*"
+#define SEGMENT_NZ "(?:" PCHAR "){1,}"
+#define SEGMENT_NZ_NC "(?:" UNRESERVED "|" PCT_ENCODED "|" SUB_DELIMS "){1,}"
 
-#define PATH_ABEMPTY	"(?:" "/" "(" SEGMENT "(?:/" SEGMENT ")*" "))?"
-#define PATH_ABSOLUTE	"/" "(?:" SEGMENT_NZ "(?:" "/" SEGMENT ")*" ")?"
-#define PATH_ROOTLESS	SEGMENT_NZ "(?:" "/" SEGMENT ")*"
-#define PATH_EMPTY		""
+#define PATH_ABEMPTY "(?:"                           \
+					 "/"                             \
+					 "(" SEGMENT "(?:/" SEGMENT ")*" \
+					 "))?"
+#define PATH_ABSOLUTE "/"                    \
+					  "(?:" SEGMENT_NZ "(?:" \
+					  "/" SEGMENT ")*"       \
+					  ")?"
+#define PATH_ROOTLESS SEGMENT_NZ "(?:" \
+								 "/" SEGMENT ")*"
+#define PATH_EMPTY ""
 
-#define HIER_PART		"//" AUTHORITY PATH_ABEMPTY "|" \
-						"(" PATH_ABSOLUTE ")|" \
-						"(" PATH_ROOTLESS ")|" \
-						PATH_EMPTY
+#define HIER_PART "//" AUTHORITY PATH_ABEMPTY "|" \
+				  "(" PATH_ABSOLUTE ")|"          \
+				  "(" PATH_ROOTLESS ")|" PATH_EMPTY
 
-#define QUERY			"(?:\\?|/|" PCHAR ")*"
-#define FRAGMENT		"(?:\\?|/|" PCHAR ")*"
+#define QUERY "(?:\\?|/|" PCHAR ")*"
+#define FRAGMENT "(?:\\?|/|" PCHAR ")*"
 
-#define URI				"^(?:(" SCHEME "):)?(?:" HIER_PART ")(?:\\?(" QUERY "))?(?:#(" FRAGMENT "))?$"
+#define URI "^(?:(" SCHEME "):)?(?:" HIER_PART ")(?:\\?(" QUERY "))?(?:#(" FRAGMENT "))?$"
 
 // --------------------------------------------------------------------
 
@@ -83,15 +110,21 @@ const char kHex[] = "0123456789ABCDEF";
 
 // --------------------------------------------------------------------
 
-uri::uri(std::string_view url)
+uri::uri(const std::string &url)
+{
+	parse(url.c_str());
+	remove_dot_segments();
+}
+
+uri::uri(const char *url)
 {
 	parse(url);
 	remove_dot_segments();
 }
 
-uri::uri(std::string_view url, const uri &base)
+uri::uri(const std::string &url, const uri &base)
 {
-	parse(url);
+	parse(url.c_str());
 	transform(base);
 	remove_dot_segments();
 }
@@ -130,7 +163,7 @@ uri uri::get_path() const
 	return result;
 }
 
-void uri::set_path(std::string_view path)
+void uri::set_path(const std::string &path)
 {
 	m_path.clear();
 	m_absolutePath = false;
@@ -205,7 +238,7 @@ uri &uri::operator/=(const uri &rhs)
 	{
 		if (m_path.back().empty())
 			m_path.pop_back();
-		
+
 		m_path.insert(m_path.end(), rhs.m_path.begin(), rhs.m_path.end());
 	}
 
@@ -258,14 +291,14 @@ uri uri::relative(const uri &base) const
 
 		if (m_query != base.m_query)
 			result.m_query = m_query;
-		
+
 		result.m_fragment = m_fragment;
 	}
 	else
 	{
 		if (m_scheme != base.m_scheme)
 			result.m_scheme = m_scheme;
-		
+
 		if (m_userinfo != base.m_userinfo or m_host != base.m_host or m_port != base.m_port)
 		{
 			result.m_userinfo = m_userinfo;
@@ -427,7 +460,7 @@ const char *uri::parse_segment(const char *cp)
 	while (is_pchar(cp))
 		++cp;
 
-	m_path.emplace_back(decode_url({b, static_cast<std::string::size_type>(cp - b)}));
+	m_path.emplace_back(decode_url({ b, static_cast<std::string::size_type>(cp - b) }));
 
 	return cp;
 }
@@ -446,13 +479,13 @@ const char *uri::parse_segment_nz_nc(const char *cp)
 {
 	auto b = cp;
 
-	if (not (is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp)))
+	if (not(is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp)))
 		throw uri_parse_error();
 
 	while (is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp))
 		++cp;
 
-	m_path.emplace_back(decode_url({b, static_cast<std::string::size_type>(cp - b)}));
+	m_path.emplace_back(decode_url({ b, static_cast<std::string::size_type>(cp - b) }));
 
 	return cp;
 }
@@ -470,7 +503,7 @@ void uri::parse(const char *s)
 
 	auto cp = parse_scheme(s);
 	cp = parse_hierpart(cp);
-	
+
 	if (*cp == '?')
 	{
 		++cp;
@@ -478,7 +511,7 @@ void uri::parse(const char *s)
 
 		while (*cp == '?' or *cp == '/' or is_pchar(cp))
 			++cp;
-		
+
 		m_query.assign(b, cp);
 	}
 
@@ -489,7 +522,7 @@ void uri::parse(const char *s)
 
 		while (*cp == '?' or *cp == '/' or is_pchar(cp))
 			++cp;
-		
+
 		m_fragment.assign(b, cp);
 	}
 
@@ -509,7 +542,7 @@ void uri::remove_dot_segments()
 		if (*in == ".")
 		{
 			++in;
-			
+
 			if (in == m_path.end())
 			{
 				out.push_back({});
@@ -548,7 +581,7 @@ void uri::transform(const uri &base)
 	if (m_scheme.empty())
 	{
 		m_scheme = base.m_scheme;
-		
+
 		if (not has_authority())
 		{
 			if (m_path.empty())
@@ -588,14 +621,14 @@ void uri::write(std::ostream &os, bool encoded) const
 
 		if (not m_userinfo.empty())
 			os << m_userinfo << '@';
-		
+
 		os << m_host;
 		if (m_port != 0)
 			os << ':' << m_port;
-		
+
 		write_slash = true;
 	}
-	
+
 	for (auto segment : m_path)
 	{
 		if (write_slash)
@@ -613,7 +646,7 @@ void uri::write(std::ostream &os, bool encoded) const
 
 	if (not m_query.empty())
 		os << '?' << m_query;
-	
+
 	if (not m_fragment.empty())
 		os << '#' << m_fragment;
 }
@@ -624,7 +657,7 @@ void uri::write(std::ostream &os, bool encoded) const
 std::string decode_url(std::string_view s)
 {
 	std::string result;
-	
+
 	for (auto c = s.begin(); c != s.end(); ++c)
 	{
 		if (*c == '%')
@@ -655,7 +688,7 @@ std::string decode_url(std::string_view s)
 std::string encode_url(std::string_view s)
 {
 	std::string result;
-	
+
 	for (auto c = s.begin(); c != s.end(); ++c)
 	{
 		unsigned char a = (unsigned char)*c;
@@ -674,7 +707,7 @@ std::string encode_url(std::string_view s)
 
 // --------------------------------------------------------------------
 
-bool is_valid_uri(const std::string& s)
+bool is_valid_uri(const std::string &s)
 {
 	bool result = true;
 	try
@@ -688,13 +721,13 @@ bool is_valid_uri(const std::string& s)
 	return result;
 }
 
-bool is_fully_qualified_uri(const std::string& s)
+bool is_fully_qualified_uri(const std::string &s)
 {
 	bool result = true;
 	try
 	{
 		uri u(s);
-		result = not (u.get_scheme().empty() or u.get_path().empty());
+		result = not(u.get_scheme().empty() or u.get_path().empty());
 	}
 	catch (...)
 	{
@@ -703,12 +736,11 @@ bool is_fully_qualified_uri(const std::string& s)
 	return result;
 }
 
-bool is_valid_connect_host(const std::string &host)
+bool is_valid_connect_host(std::string_view host)
 {
 	std::regex rx(HOST ":" PORT);
 
-	return std::regex_match(host, rx);
+	return std::regex_match(host.data(), host.data() + host.length(), rx);
 }
-
 
 } // namespace zeep::http

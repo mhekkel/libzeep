@@ -115,15 +115,20 @@ class controller
 				return m_req.get_parameter(name);
 		}
 
-		std::tuple<std::string, bool> get_parameter_ex(std::string_view name) const
+		std::optional<std::string> get_parameter_ex(std::string_view name) const
 		{
+			std::optional<std::string> result;
+
 			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
 				[name](auto &pp)
 				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return { p->value, not p->value.empty() };
-			else
-				return m_req.get_parameter_ex(name);
+
+			if (p == m_path_parameters.end())
+				result = m_req.get_parameter_ex(name);
+			else if (not p->value.empty())
+				result = p->value;
+			
+			return result;
 		}
 
 		std::vector<std::string> get_parameters(std::string_view name) const
@@ -149,14 +154,14 @@ class controller
 			}
 		}
 
-		file_param get_file_parameter(std::string_view name) const
+		file_param get_file_parameter(std::string name) const
 		{
-			return m_req.get_file_parameter(name);
+			return m_req.get_file_parameter(std::move(name));
 		}
 
-		std::vector<file_param> get_file_parameters(std::string_view name) const
+		std::vector<file_param> get_file_parameters(std::string name) const
 		{
-			return m_req.get_file_parameters(name);
+			return m_req.get_file_parameters(std::move(name));
 		}
 
 		scope &get_scope() const
@@ -227,7 +232,7 @@ class controller
 			}
 		}
 
-		bool get_parameter(const parameter_pack &params, std::string_view name, bool result)
+		bool get_parameter(const parameter_pack &params, const std::string &name, bool result)
 		{
 			try
 			{
@@ -243,7 +248,7 @@ class controller
 			return result;
 		}
 
-		std::string get_parameter(const parameter_pack &params, std::string_view name, std::string result)
+		std::string get_parameter(const parameter_pack &params, const std::string &name, std::string result)
 		{
 			try
 			{
@@ -258,7 +263,7 @@ class controller
 			return result;
 		}
 
-		file_param get_parameter(const parameter_pack &params, std::string_view name, file_param result)
+		file_param get_parameter(const parameter_pack &params, const std::string &name, file_param result)
 		{
 			try
 			{
@@ -273,7 +278,7 @@ class controller
 			return result;
 		}
 
-		std::vector<file_param> get_parameter(const parameter_pack &params, std::string_view name, std::vector<file_param> result)
+		std::vector<file_param> get_parameter(const parameter_pack &params, const std::string &name, std::vector<file_param> result)
 		{
 			try
 			{
@@ -288,7 +293,7 @@ class controller
 			return result;
 		}
 
-		object get_parameter(const parameter_pack &params, std::string_view name, object result)
+		object get_parameter(const parameter_pack &params, const std::string &name, object result)
 		{
 			try
 			{
@@ -304,13 +309,13 @@ class controller
 		}
 
 		template <typename T>
-		std::optional<T> get_parameter(const parameter_pack &params, std::string_view name, std::optional<T> result)
+		std::optional<T> get_parameter(const parameter_pack &params, const std::string &name, std::optional<T> result)
 		{
 			try
 			{
-				const auto &[s, available] = params.get_parameter_ex(name);
-				if (available)
-					result = mxml::value_serializer<T>::from_string(s);
+				auto v = params.get_parameter_ex(name);
+				if (v.has_value())
+					result = mxml::value_serializer<T>::from_string(*v);
 			}
 			catch (const std::exception &e)
 			{
@@ -321,13 +326,11 @@ class controller
 			return result;
 		}
 
-		std::optional<std::string> get_parameter(const parameter_pack &params, std::string_view name, std::optional<std::string> result)
+		std::optional<std::string> get_parameter(const parameter_pack &params, const std::string &name, std::optional<std::string> result)
 		{
 			try
 			{
-				const auto &[s, available] = params.get_parameter_ex(name);
-				if (available)
-					result = s;
+				result = params.get_parameter_ex(name);
 			}
 			catch (const std::exception &e)
 			{
@@ -340,7 +343,7 @@ class controller
 
 		template <typename T>
 			requires el::has_value_serializer_v<T>
-		T get_parameter(const parameter_pack &params, std::string_view name, T result)
+		T get_parameter(const parameter_pack &params, const std::string &name, T result)
 		{
 			try
 			{
@@ -360,7 +363,7 @@ class controller
 		template <typename T>
 			requires mxml::has_serialize_v<T, el::deserializer<object>> or
 		             mxml::is_serializable_array_type_v<T, el::deserializer<object>>
-		T get_parameter(const parameter_pack &params, std::string_view name, T result)
+		T get_parameter(const parameter_pack &params, const std::string &name, T result)
 		{
 			object v = params.m_req.get_header("content-type") == "application/json"
 			               ? object::parse_JSON(params.m_req.get_payload())
@@ -368,7 +371,6 @@ class controller
 
 			return el::serializer<T>::deserialize(v);
 		}
-
 
 		std::string m_path;
 		std::string m_method;
@@ -395,7 +397,7 @@ class controller
 
 		template <typename... Names>
 		mount_point(std::string path, std::string method, controller *owner, Sig sig, Names... names)
-			: mount_point_base(std::move(path) ,std::move(method))
+			: mount_point_base(std::move(path), std::move(method))
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
@@ -498,28 +500,28 @@ class controller
 	template <typename Callback, typename... ArgNames>
 	void map_post_request(std::string mountPoint, Callback callback, ArgNames... names)
 	{
-		map_request(mountPointstd::move(,) "POST", callback, names...);
+		map_request(std::move(mountPoint), "POST", callback, names...);
 	}
 
 	/// \brief map a PUT to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
 	void map_put_request(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPointstd::move(,) "PUT", callback, names...);
+		map_request(std::move(mountPoint), "PUT", callback, names...);
 	}
 
 	/// \brief map a GET to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
 	void map_get_request(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPointstd::move(,) "GET", callback, names...);
+		map_request(std::move(mountPoint), "GET", callback, names...);
 	}
 
 	/// \brief map a DELETE to \a mountPoint in URI space to \a callback and map the arguments in this callback to parameters passed with \a names
 	template <typename Sig, typename... ArgNames>
 	void map_delete_request(std::string mountPoint, Sig callback, ArgNames... names)
 	{
-		map_request(mountPointstd::move(,) "DELETE", callback, names...);
+		map_request(std::move(mountPoint), "DELETE", callback, names...);
 	}
 
 	// --------------------------------------------------------------------

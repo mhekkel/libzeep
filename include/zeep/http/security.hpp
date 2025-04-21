@@ -44,8 +44,8 @@ class password_encoder
   public:
 	virtual ~password_encoder() {}
 
-	virtual std::string encode(std::string_view password) const = 0;
-	virtual bool matches(std::string_view raw_password, std::string_view stored_password) const = 0;
+	virtual std::string encode(const std::string &password) const = 0;
+	virtual bool matches(const std::string &raw_password, const std::string &stored_password) const = 0;
 };
 
 // --------------------------------------------------------------------
@@ -63,7 +63,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 	{
 	}
 
-	virtual std::string encode(std::string_view password) const
+	virtual std::string encode(const std::string &password) const
 	{
 		using namespace std::literals;
 
@@ -72,7 +72,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
 	}
 
-	virtual bool matches(std::string_view raw_password, std::string_view stored_password) const
+	virtual bool matches(const std::string &raw_password, const std::string &stored_password) const
 	{
 		using namespace std::literals;
 
@@ -109,10 +109,10 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 struct user_details
 {
 	user_details() {}
-	user_details(std::string_view username, std::string_view password, const std::set<std::string> &roles)
-		: username(username)
-		, password(password)
-		, roles(roles)
+	user_details(std::string username, std::string password, std::set<std::string> roles)
+		: username(std::move(username))
+		, password(std::move(password))
+		, roles(std::move(roles))
 	{
 	}
 
@@ -126,8 +126,8 @@ struct user_details
 class authentication_exception : public zeep::exception
 {
   public:
-	authentication_exception(const char *msg)
-		: zeep::exception(msg) {}
+	authentication_exception(std::string msg)
+		: zeep::exception(std::move(msg)) {}
 };
 
 /// \brief exception thrown by user_service when trying to load user_details for an unknown user
@@ -159,13 +159,13 @@ class user_service
 	virtual ~user_service() {}
 
 	/// \brief return the user_details for a user named \a username
-	virtual user_details load_user(std::string_view username) const = 0;
+	virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
 	virtual bool user_is_valid(const object &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
-	virtual bool user_is_valid(std::string_view username) const;
+	virtual bool user_is_valid(const std::string &username) const;
 };
 
 // --------------------------------------------------------------------
@@ -185,7 +185,7 @@ class simple_user_service : public user_service
 	}
 
 	/// \brief return the user_details for a user named \a username
-	virtual user_details load_user(std::string_view username) const
+	virtual user_details load_user(const std::string &username) const
 	{
 		user_details result = {};
 		auto ui = std::find_if(m_users.begin(), m_users.end(), [username](const user_details &u)
@@ -241,7 +241,7 @@ class security_context
 	/// \a glob_pattern should start with a slash
 	void add_rule(std::string glob_pattern, std::string role)
 	{
-		add_rule(glob_pattern, { role });
+		add_rule(std::move(glob_pattern), { role });
 	}
 
 	/// \brief Add a new rule for access
@@ -255,7 +255,7 @@ class security_context
 	void add_rule(std::string glob_pattern, std::initializer_list<std::string> roles)
 	{
 		assert(glob_pattern.front() == '/');
-		m_rules.emplace_back(rule{ glob_pattern, roles });
+		m_rules.emplace_back(rule{ std::move(glob_pattern), roles });
 	}
 
 	/// \brief Validate the request \a req against the stored rules
@@ -293,14 +293,14 @@ class security_context
 	/// \param username		The name for the user
 	/// \param password		The password for the user
 	/// \param rep			Then zeep::http::reply object that will be send back to the browser
-	void verify_username_password(std::string_view username, std::string_view password, reply &rep);
+	void verify_username_password(const std::string &username, const std::string &password, reply &rep);
 
 	/// \brief verify the username/password combination and return true if valid
 	///
 	/// \param username		The name for the user
 	/// \param password		The password for the user
 	/// \result             True in case of valid combination
-	bool verify_username_password(std::string_view username, std::string_view password);
+	bool verify_username_password(const std::string &username, const std::string &password);
 
 	/// \brief return reference to the user_service object
 	user_service &get_user_service() const { return m_users; }

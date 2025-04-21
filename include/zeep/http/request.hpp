@@ -166,9 +166,7 @@ class request
 	/// the request contains a url-encoded or multi-part content-type header
 	std::string get_parameter(std::string_view name) const
 	{
-		std::string result;
-		std::tie(result, std::ignore) = get_parameter_ex(name);
-		return result;
+		return get_parameter_ex(name).value_or("");
 	}
 
 	/// \brief Return the value of the parameter named \a name or the \a defaultValue if this parameter was not found
@@ -207,18 +205,16 @@ class request
 
 	/// \brief Return the info for a file parameter with name \a name
 	///
-	file_param get_file_parameter(std::string_view name) const;
+	file_param get_file_parameter(std::string name) const;
 
 	/// \brief Return the info for all file parameters with name \a name
 	///
-	std::vector<file_param> get_file_parameters(std::string_view name) const;
+	std::vector<file_param> get_file_parameters(std::string name) const;
 
 	/// \brief Return whether the named parameter is present in the request
 	bool has_parameter(std::string_view name) const
 	{
-		bool result;
-		tie(std::ignore, result) = get_parameter_ex(name);
-		return result;
+		return get_parameter_ex(name).has_value();
 	}
 
 	/// \brief Return the value of HTTP Cookie with name \a name
@@ -246,11 +242,8 @@ class request
 		m_payload = std::move(text);
 	}
 
-	/// \brief set a header
-	void set_header(std::string_view name, std::string value);
-
 	/// \brief Return value and flag indicating the existence of a parameter named \a name
-	std::tuple<std::string, bool> get_parameter_ex(std::string_view name) const;
+	std::optional<std::string> get_parameter_ex(std::string_view name) const;
 
   private:
 	void set_remote_address(std::string address)

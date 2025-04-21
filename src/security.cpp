@@ -28,7 +28,7 @@ bool user_service::user_is_valid(const object &credentials) const
 	return user_is_valid(credentials["username"].get<std::string>());
 }
 
-bool user_service::user_is_valid(std::string_view username) const
+bool user_service::user_is_valid(const std::string &username) const
 {
 	bool result = false;
 
@@ -204,7 +204,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 
 // --------------------------------------------------------------------
 
-bool security_context::verify_username_password(std::string_view username, std::string_view raw_password)
+bool security_context::verify_username_password(const std::string &username, const std::string &raw_password)
 {
 	bool result = false;
 
@@ -222,7 +222,7 @@ bool security_context::verify_username_password(std::string_view username, std::
 	return result;
 }
 
-void security_context::verify_username_password(std::string_view username, std::string_view raw_password, reply &rep)
+void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)
 {
 	if (not verify_username_password(username, raw_password))
 		throw invalid_password_exception();

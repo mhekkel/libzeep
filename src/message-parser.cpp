@@ -174,10 +174,12 @@ bool parser::find_last_token(const header &h, std::string_view t) const
 
 parse_result parser::post_process_headers()
 {
+	using namespace std::literals;
+
 	parse_result result = true;
 
 	auto i = find_if(m_headers.begin(), m_headers.end(), [](const header &h)
-		{ return iequals(h.name, "transfer-encoding"); });
+		{ return iequals(h.name, "transfer-encoding"sv); });
 	if (i != m_headers.end())
 	{
 		if (find_last_token(*i, "chunked"))
@@ -192,7 +194,7 @@ parse_result parser::post_process_headers()
 	else
 	{
 		i = find_if(m_headers.begin(), m_headers.end(), [](const header &h)
-			{ return iequals(h.name, "content-length"); });
+			{ return iequals(h.name, "content-length"sv); });
 		if (i != m_headers.end())
 		{
 			auto r = std::from_chars(i->value.data(), i->value.data() + i->value.length(), m_chunk_size);

@@ -20,7 +20,7 @@ namespace zeep::http
 
 /// \brief Simply check the URI in \a uri, returns true if the uri is valid
 /// \param uri		The URI to check
-bool is_valid_uri(std::string_view uri);
+bool is_valid_uri(const std::string &uri);
 
 /// \brief Check the URI in \a uri, returns true if the uri is fully qualified (has a scheme and path)
 /// \param uri		The URI to check
@@ -50,9 +50,9 @@ class uri_parse_error : public zeep::exception
 {
   public:
 	uri_parse_error()
-		: exception("invalid uri"){};
+		: exception("invalid uri") {};
 	uri_parse_error(std::string u)
-		: exception("invalid uri: " + u){};
+		: exception("invalid uri: " + u) {};
 };
 
 // --------------------------------------------------------------------
@@ -69,10 +69,13 @@ class uri
 	uri() = default;
 
 	/// \brief constructor that parses the URI in \a s, throws exception if not valid
-	uri(std::string_view s);
+	uri(const std::string &s);
+
+	/// \brief constructor that parses the URI in \a s, throws exception if not valid
+	uri(const char *s);
 
 	/// \brief constructor that parses the URI in \a s relative to the baseuri in \a base, throws exception if not valid
-	uri(std::string_view s, const uri &base);
+	uri(const std::string &s, const uri &base);
 
 	/// \brief constructor taking two iterators into path segments, for a relative path
 	template <typename InputIterator, std::enable_if_t<std::is_constructible_v<std::string, typename InputIterator::value_type>, int> = 0>
@@ -147,9 +150,9 @@ class uri
 	}
 
 	/// \brief Set the scheme to \a scheme
-	void set_scheme(std::string scheme)
+	void set_scheme(const std::string &scheme)
 	{
-		m_scheme = std::move(scheme);
+		m_scheme = scheme;
 		zeep::to_lower(m_scheme);
 	}
 
@@ -160,9 +163,9 @@ class uri
 	}
 
 	/// \brief Set the userinfo to \a userinfo
-	void set_userinfo(std::string userinfo)
+	void set_userinfo(const std::string &userinfo)
 	{
-		m_userinfo = std::move(userinfo);
+		m_userinfo = userinfo;
 	}
 
 	/// \brief Return the host
@@ -172,9 +175,9 @@ class uri
 	}
 
 	/// \brief Set the host to \a host
-	void set_host(std::string host)
+	void set_host(const std::string &host)
 	{
-		m_host = std::move(host);
+		m_host = host;
 		zeep::to_lower(m_host);
 	}
 
@@ -200,7 +203,7 @@ class uri
 	}
 
 	/// \brief Set the path to \a path
-	void set_path(std::string path);
+	void set_path(const std::string &path);
 
 	/// \brief Return the query
 	std::string get_query(bool decoded) const
@@ -209,7 +212,7 @@ class uri
 	}
 
 	/// \brief Set the query to \a query and optionally encode it based on \a encode
-	void set_query(std::string query, bool encode);
+	void set_query(const std::string &query, bool encode);
 
 	/// \brief Return the fragment
 	std::string get_fragment(bool decoded) const
@@ -218,7 +221,7 @@ class uri
 	}
 
 	/// \brief Set the fragment to \a fragment and optionally encode it based on \a encode
-	void set_fragment(std::string fragment, bool encode);
+	void set_fragment(const std::string &fragment, bool encode);
 
 	/// \brief Return the uri as a string
 	std::string string() const;
@@ -275,6 +278,7 @@ class uri
 	};
 
 	static constexpr uint8_t kCharClassTable[] = {
+		// clang-format off
 		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
 		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
 		 0,  2,  0,  1,  2,  0,  2,  2,  2,  2,  2, 10,  2, 12, 12,  1, 
@@ -282,11 +286,11 @@ class uri
 		 1, 60, 60, 60, 60, 60, 60, 44, 44, 44, 44, 44, 44, 44, 44, 44, 
 		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  1,  0,  1,  0,  4, 
 		 0, 60, 60, 60, 60, 60, 60, 44, 44, 44, 44, 44, 44, 44, 44, 44, 
-		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  0,  0,  0,  4,  0, 
+		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  0,  0,  0,  4,  0,
+		// clang-format on
 	};
 
   public:
-
 	static inline constexpr bool is_char_class(int ch, char_class mask)
 	{
 		return ch > 0 and ch < 128 and (kCharClassTable[static_cast<uint8_t>(ch)] bitand static_cast<char>(mask)) != 0;
@@ -330,7 +334,6 @@ class uri
 	friend std::string encode_url(std::string_view s);
 
   private:
-
 	// --------------------------------------------------------------------
 
 	bool is_pct_encoded(const char *&cp)

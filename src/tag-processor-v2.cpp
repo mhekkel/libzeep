@@ -250,7 +250,7 @@ mxml::element tag_processor_v2::resolve_fragment_spec(
 }
 
 mxml::element tag_processor_v2::resolve_fragment_spec(
-	mxml::element *node, fs::path dir, basic_template_processor &loader, std::string_view file, std::string_view selector, bool byID)
+	mxml::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, std::string_view selector, bool byID)
 {
 	mxml::context ctx;
 	ctx.set("ns", ns());
@@ -269,7 +269,7 @@ mxml::element tag_processor_v2::resolve_fragment_spec(
 
 		bool loaded = false;
 
-		for (const char *ext : { "", ".xhtml", ".html", ".xml" })
+		for (std::string ext : { "", ".xhtml", ".html", ".xml" })
 		{
 			std::error_code ec;
 
