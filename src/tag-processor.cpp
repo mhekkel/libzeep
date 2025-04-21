@@ -72,7 +72,6 @@ tag_processor::tag_processor(const char *ns)
 	register_attr_handler("unless", std::bind(&tag_processor::process_attr_if, this, _1, _2, _3, _4, _5, true));
 	register_attr_handler("utext", std::bind(&tag_processor::process_attr_text, this, _1, _2, _3, _4, _5, false));
 	register_attr_handler("with", std::bind(&tag_processor::process_attr_with, this, _1, _2, _3, _4, _5));
-	// register_attr_handler("remove",  std::bind(&tag_processor_v2::process_attr_remove,	this, _1, _2, _3, _4, _5));
 }
 
 void tag_processor::process_xml(mxml::node *node, const scope &parentScope, fs::path dir, basic_template_processor &loader)

@@ -172,7 +172,7 @@ class basic_template_processor
 	virtual void load_template(const std::string &file, mxml::document &doc);
 
 	/// \brief Check if the argument \a file contains a valid reference to an XHTML template file and return the path, if any.
-	virtual std::tuple<bool, std::filesystem::path> is_template_file(const std::string &file);
+	virtual std::optional<std::filesystem::path> get_template_file(const std::string &file);
 
 	/// \brief create a reply based on a template
 	virtual void create_reply_from_template(const std::string &file, const scope &scope, reply &reply);
@@ -205,12 +205,7 @@ class html_template_processor : public basic_template_processor
 		, m_loader(docroot)
 	{
 		if (addDefaultTagProcessors)
-		{
-#if ZEEP_SUPPORT_TAG_PROCESSOR_V1
-			register_tag_processor<tag_processor_v1>();
-#endif
 			register_tag_processor<tag_processor>();
-		}
 	}
 
 	virtual ~html_template_processor() {}

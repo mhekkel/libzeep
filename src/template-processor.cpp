@@ -148,28 +148,26 @@ void basic_template_processor::set_docroot(fs::path path)
 	m_docroot = std::move(path);
 }
 
-std::tuple<bool, std::filesystem::path> basic_template_processor::is_template_file(const std::string &file)
+std::optional<std::filesystem::path> basic_template_processor::get_template_file(const std::string &file)
 {
-	bool found = false;
-	fs::path template_file;
+	std::optional<fs::path> result;
 
 	for (const char *ext : { "", ".xhtml", ".html", ".xml" })
 	{
 		std::error_code ec;
 
-		template_file = file + ext;
+		fs::path p = file + ext;
 
-		(void)file_time(template_file.string(), ec);
+		(void)file_time(p.string(), ec);
 
 		if (ec)
 			continue;
 
-		found = true;
-
+		result = p;
 		break;
 	}
 
-	return { found, template_file };
+	return result;
 }
 
 void basic_template_processor::load_template(const std::string &file, mxml::document &doc)
@@ -180,23 +178,20 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 	std::unique_ptr<std::istream> data;
 	std::error_code ec;
 
-	bool regularTemplate;
-	fs::path templateFile;
+	auto templateFile = get_template_file(file);
 
-	std::tie(regularTemplate, templateFile) = is_template_file(file);
-
-	if (regularTemplate)
-		data.reset(load_file(templateFile.string(), ec));
+	if (templateFile.has_value())
+		data.reset(load_file(templateFile->string(), ec));
 	else
 	{
 		auto espec = evaluate_el_link({}, file);
 
 		if (espec.is_object()) // reset the content, saves having to add another method
 		{
-			std::tie(regularTemplate, templateFile) = is_template_file(espec["template"].get<std::string>());
+			templateFile = get_template_file(espec["template"].get<std::string>());
 
-			if (regularTemplate)
-				data.reset(load_file(templateFile.string(), ec));
+			if (templateFile.has_value())
+				data.reset(load_file(templateFile->string(), ec));
 
 			templateSelector = espec["selector"]["xpath"].get<std::string>();
 		}
