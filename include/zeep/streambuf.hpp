@@ -27,25 +27,27 @@ namespace zeep
 class char_streambuf : public std::streambuf
 {
   public:
-
 	/// \brief constructor taking a \a buffer and a \a length
-	char_streambuf(const char* buffer, size_t length)
-		: m_begin(buffer), m_end(buffer + length), m_current(buffer)
+	char_streambuf(const char *buffer, size_t length)
+		: m_begin(buffer)
+		, m_end(buffer + length)
+		, m_current(buffer)
 	{
-		assert(std::less_equal<const char*>()(m_begin, m_end));
+		assert(std::less_equal<const char *>()(m_begin, m_end));
 	}
 
 	/// \brief constructor taking a \a buffer using the standard strlen to determine the length
-	char_streambuf(const char* buffer)
-		: m_begin(buffer), m_end(buffer + strlen(buffer)), m_current(buffer)
+	char_streambuf(const char *buffer)
+		: m_begin(buffer)
+		, m_end(buffer + strlen(buffer))
+		, m_current(buffer)
 	{
 	}
 
-	char_streambuf(const char_streambuf&) = delete;
-	char_streambuf &operator=(const char_streambuf&) = delete;
+	char_streambuf(const char_streambuf &) = delete;
+	char_streambuf &operator=(const char_streambuf &) = delete;
 
   private:
-
 	int_type underflow()
 	{
 		if (m_current == m_end)
@@ -72,7 +74,7 @@ class char_streambuf : public std::streambuf
 
 	std::streamsize showmanyc()
 	{
-		assert(std::less_equal<const char*>()(m_current, m_end));
+		assert(std::less_equal<const char *>()(m_current, m_end));
 		return m_end - m_current;
 	}
 
@@ -91,14 +93,14 @@ class char_streambuf : public std::streambuf
 			case std::ios_base::cur:
 				m_current += off;
 				break;
-			
+
 			default:
 				break;
 		}
 
 		if (m_current < m_begin)
 			m_current = m_begin;
-		
+
 		if (m_current > m_end)
 			m_current = m_end;
 
@@ -111,7 +113,7 @@ class char_streambuf : public std::streambuf
 
 		if (m_current < m_begin)
 			m_current = m_begin;
-		
+
 		if (m_current > m_end)
 			m_current = m_end;
 
@@ -119,9 +121,9 @@ class char_streambuf : public std::streambuf
 	}
 
   private:
-	const char* const m_begin;
-	const char* const m_end;
-	const char* m_current;
+	const char *const m_begin;
+	const char *const m_end;
+	const char *m_current;
 };
-	
+
 } // namespace zeep

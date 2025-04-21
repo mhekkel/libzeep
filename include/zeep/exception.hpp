@@ -22,8 +22,8 @@ class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
-	exception(const std::string& message)
-		: m_message(message) {}
+	exception(std::string message)
+		: m_message(std::move(message)) {}
 
 	virtual ~exception() throw() {}
 
