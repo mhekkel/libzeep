@@ -40,7 +40,7 @@ using namespace mxml::literals;
 void process_and_compare(mxml::document &a, mxml::document &b, const zeep::http::scope &scope = {})
 {
 	zeep::http::template_processor p(gDocrootDir);
-	zeep::http::tag_processor_v2 tp;
+	zeep::http::tag_processor tp;
 	tp.process_xml(a.child(), scope, "", p);
 
 	CHECK(a == b);
@@ -396,7 +396,7 @@ TEST_CASE("test_14")
 	)"_xml;
 
 		zeep::http::template_processor p(gDocrootDir);
-		zeep::http::tag_processor_v2 tp;
+		zeep::http::tag_processor tp;
 
 		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "nl, en-US;q=0.7, en;q=0.3" } }, "");
 
@@ -440,7 +440,7 @@ TEST_CASE("test_15")
 #endif
 
 		zeep::http::template_processor p(gDocrootDir);
-		zeep::http::tag_processor_v2 tp;
+		zeep::http::tag_processor tp;
 
 		zeep::http::request req("GET", "/", { 1, 0 }, { { "Accept-Language", "da, en-US;q=0.7, en;q=0.3" } }, "");
 

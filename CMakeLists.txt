@@ -204,7 +204,6 @@ list(APPEND ZEEP_SRC
 	src/uri.cpp
 
 	# src/soap-controller.cpp
-	src/tag-processor-v2.cpp
 	src/tag-processor.cpp
 	src/template-processor.cpp
 	src/signals.cpp

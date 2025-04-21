@@ -28,13 +28,13 @@ class basic_template_processor;
 ///
 /// Note that this class should be light in construction, we create it every time a page is rendered.
 
-class tag_processor
+class tag_processor_base
 {
   public:
-	tag_processor(const tag_processor &) = delete;
-	tag_processor &operator=(const tag_processor &) = delete;
+	tag_processor_base(const tag_processor_base &) = delete;
+	tag_processor_base &operator=(const tag_processor_base &) = delete;
 
-	virtual ~tag_processor() = default;
+	virtual ~tag_processor_base() = default;
 
 	/// \brief process xml parses the XHTML and fills in the special tags and evaluates the el constructs
 	///
@@ -50,57 +50,13 @@ class tag_processor
 	/// \brief constructor
 	///
 	/// \param ns	Then XML namespace for the tags and attributes that are processed by this tag_processor
-	tag_processor(const char *ns)
-		: m_ns(ns)
+	tag_processor_base(std::string ns)
+		: m_ns(std::move(ns))
 	{
 	}
 
 	std::string m_ns;
 };
-
-// --------------------------------------------------------------------
-
-#if ZEEP_SUPPORT_TAG_PROCESSOR_V1
-
-/// \brief A tag_processor compatible with the old version of libzeep. Works
-/// on tags only, not on attributes. Also parses any occurrence of ${}.
-/// For newer code, please consider using the v2 version only.
-
-class tag_processor_v1 : public tag_processor
-{
-  public:
-	/// \brief default namespace for this processor
-	static constexpr const char *ns() { return "http://www.hekkelman.com/libzeep/m1"; }
-
-	/// \brief constructor
-	///
-	/// By default the namespace for the v1 processor is the one in ns()
-	tag_processor_v1(const char *ns = tag_processor_v1::ns());
-
-	/// \brief actual implementation of the tag processing.
-	virtual void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-
-  protected:
-	virtual void process_tag(std::string_view tag, mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-
-  private:
-	/// handler for mrs:include tags
-	void process_include(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_if(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_iterate(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_for(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_number(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_options(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_option(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_checkbox(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	// void process_url(mxml::element* node, const scope& scope, std::filesystem::path dir, basic_template_processor& loader);
-	void process_param(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-	void process_embed(mxml::element *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader);
-
-	bool process_el(const scope &scope, std::string &s);
-};
-
-#endif
 
 // --------------------------------------------------------------------
 
@@ -114,7 +70,7 @@ class tag_processor_v1 : public tag_processor
 /// The documentention contains a section describing all the
 /// xml tags and attributes this processor handles.
 
-class tag_processor_v2 : public tag_processor
+class tag_processor : public tag_processor_base
 {
   public:
 	/// \brief default namespace for this processor
@@ -131,7 +87,7 @@ class tag_processor_v2 : public tag_processor
 	using attr_handler = std::function<AttributeAction(mxml::element *, mxml::attribute &, scope &, std::filesystem::path, basic_template_processor &loader)>;
 
 	/// \brief constructor with default namespace
-	tag_processor_v2(const char *ns = tag_processor_v2::ns());
+	tag_processor(const char *ns = tag_processor::ns());
 
 	/// \brief process xml parses the XHTML and fills in the special tags and evaluates the el constructs
 	void process_xml(mxml::node *node, const scope &scope, std::filesystem::path dir, basic_template_processor &loader) override;

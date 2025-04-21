@@ -53,7 +53,7 @@ TEST_CASE("test_22")
 </data>
     )"_xml;
 
-	zeep::http::tag_processor_v2 tp;
+	zeep::http::tag_processor tp;
 	zeep::http::rsrc_based_html_template_processor p;
 	zeep::http::scope scope;
 

@@ -135,7 +135,7 @@ class basic_template_processor
 	virtual void process_tags(mxml::node *node, const scope &scope);
 
   protected:
-	std::map<std::string, std::function<tag_processor *(const std::string &)>> m_tag_processor_creators;
+	std::map<std::string, std::function<tag_processor_base *(const std::string &)>> m_tag_processor_creators;
 
 	/// \brief process only the tags with the specified namespace prefixes
 	virtual void process_tags(mxml::element *node, const scope &scope, std::set<std::string> registeredNamespaces);
@@ -150,7 +150,7 @@ class basic_template_processor
 	}
 
 	/// \brief Create a tag_processor
-	tag_processor *create_tag_processor(const std::string &ns) const
+	tag_processor_base *create_tag_processor(const std::string &ns) const
 	{
 		return m_tag_processor_creators.at(ns)(ns);
 	}
@@ -209,7 +209,7 @@ class html_template_processor : public basic_template_processor
 #if ZEEP_SUPPORT_TAG_PROCESSOR_V1
 			register_tag_processor<tag_processor_v1>();
 #endif
-			register_tag_processor<tag_processor_v2>();
+			register_tag_processor<tag_processor>();
 		}
 	}
 

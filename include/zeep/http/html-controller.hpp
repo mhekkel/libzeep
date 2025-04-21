@@ -54,6 +54,8 @@ class html_controller : public controller
 
 	// --------------------------------------------------------------------
   public:
+	/// @cond
+
 	template <typename Callback, typename...>
 	struct html_mount_point
 	{
@@ -215,22 +217,22 @@ class html_controller : public controller
 	/// @endcond
 
 	/// \brief map a simple page to a URI.
-	void map_get(std::string mountPoint, const char *templateName)
+	void map_get(std::string mountPoint, std::string templateName)
 	{
-		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", templateName, *this));
-		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", std::move(templateName), *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", std::move(templateName), *this));
 	}
 
-	void map_post(std::string mountPoint, const char *templateName)
+	void map_post(std::string mountPoint, std::string templateName)
 	{
-		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", templateName, *this));
-		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", std::move(templateName), *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", std::move(templateName), *this));
 	}
 
-	void map(std::string mountPoint, const char *templateName)
+	void map(std::string mountPoint, std::string templateName)
 	{
-		map_get(std::move(mountPoint), templateName);
-		map_post(std::move(mountPoint), templateName);
+		map_get(std::move(mountPoint), std::move(templateName));
+		map_post(std::move(mountPoint), std::move(templateName));
 	}
 
 	// --------------------------------------------------------------------

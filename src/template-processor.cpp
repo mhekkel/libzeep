@@ -256,8 +256,8 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 
 		for (auto &tp : m_tag_processor_creators)
 		{
-			std::unique_ptr<tag_processor> ptp(tp.second(tp.first));
-			if (dynamic_cast<tag_processor_v2 *>(ptp.get()) == nullptr)
+			std::unique_ptr<tag_processor_base> ptp(tp.second(tp.first));
+			if (dynamic_cast<tag_processor *>(ptp.get()) == nullptr)
 				continue;
 
 			ns = tp.first;
@@ -354,7 +354,7 @@ void basic_template_processor::process_tags(mxml::element *node, const scope &sc
 
 	for (auto &ns : nss)
 	{
-		std::unique_ptr<tag_processor> processor(create_tag_processor(ns));
+		std::unique_ptr<tag_processor_base> processor(create_tag_processor(ns));
 		processor->process_xml(node, scope, "", *this);
 
 		registeredNamespaces.erase(ns);
