@@ -45,18 +45,18 @@ TEST_CASE("webapp_1")
 			mount_post("test", &my_webapp::handle_post_test);
 		}
 
-		virtual void handle_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 		}
 
-		virtual void handle_get_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_get_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("get", "text/plain");
 		}
 
-		virtual void handle_post_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_post_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("post", "text/plain");
@@ -141,37 +141,37 @@ TEST_CASE("webapp_5")
 			mount("{css,scripts}/", &my_webapp::handle_testf);
 		}
 
-		virtual void handle_test1(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_test1(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("1", "text/plain");
 		}
 
-		virtual void handle_test2(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_test2(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2", "text/plain");
 		}
 
-		virtual void handle_test2b(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_test2b(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("2b", "text/plain");
 		}
 
-		virtual void handle_test3(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_test3(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("3", "text/plain");
 		}
 
-		virtual void handle_test4(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_test4(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("4", "text/plain");
 		}
 
-		virtual void handle_testf(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
+		void handle_testf(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
 			reply.set_content("f", "text/plain");

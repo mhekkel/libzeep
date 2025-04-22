@@ -36,7 +36,7 @@ class login_controller : public html_controller
 	///
 	/// Makes sure the server has a security context and adds rules
 	/// to this security context to allow access to the /login page
-	virtual void set_server(basic_server *server);
+	void set_server(basic_server *server) override;
 
 	/// \brief return the XHTML login form, subclasses can override this to provide custom login forms
 	///

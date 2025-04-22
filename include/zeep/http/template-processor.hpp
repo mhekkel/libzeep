@@ -70,10 +70,10 @@ class file_loader : public resource_loader
 	file_loader(std::filesystem::path docroot = ".");
 
 	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
+	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
+	std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
 	std::filesystem::path m_docroot;
@@ -94,10 +94,10 @@ class rsrc_loader : public resource_loader
 	rsrc_loader(const std::string &);
 
 	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
+	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
+	std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
 	std::filesystem::file_time_type mRsrcWriteTime = {};
@@ -211,13 +211,13 @@ class html_template_processor : public basic_template_processor
 	virtual ~html_template_processor() {}
 
 	/// return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept
+	std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.file_time(file, ec);
 	}
 
 	// basic loader, returns error in ec if file was not found
-	virtual std::istream *load_file(const std::string &file, std::error_code &ec) noexcept
+	std::istream *load_file(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.load_file(file, ec);
 	}

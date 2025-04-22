@@ -835,13 +835,13 @@ struct md5_hash_impl : public hash_impl
 		m_h[3] = 0x10325476;
 	}
 
-	virtual void write_bit_length(uint64_t l, uint8_t* p)
+	void write_bit_length(uint64_t l, uint8_t* p) override
 	{
 		for (int i = 0; i < 8; ++i)
 			*p++ = static_cast<uint8_t>((l >> (i * 8)));
 	}
 
-	virtual void transform(const uint8_t* data)
+	void transform(const uint8_t* data) override
 	{
 		uint32_t a = m_h[0], b = m_h[1], c = m_h[2], d = m_h[3];
 		uint32_t in[16];
@@ -929,7 +929,7 @@ struct md5_hash_impl : public hash_impl
 		m_h[3] += d;		
 	}
 
-	virtual std::string final()
+	std::string final() override
 	{
 		std::string result;
 		result.reserve(digest_size);
@@ -967,7 +967,7 @@ struct sha1_hash_impl : public hash_impl
 		m_h[4] = 0xC3D2E1F0;
 	}
 
-	virtual void write_bit_length(uint64_t l, uint8_t* b)
+	void write_bit_length(uint64_t l, uint8_t* b) override
 	{
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
@@ -983,7 +983,7 @@ struct sha1_hash_impl : public hash_impl
 #endif
 	}
 
-	virtual void transform(const uint8_t* data)
+	void transform(const uint8_t* data) override
 	{
 		union {
 			uint8_t s[64];
@@ -1048,7 +1048,7 @@ struct sha1_hash_impl : public hash_impl
 			m_h[i] += wv[i];
 	}
 
-	virtual std::string final()
+	std::string final() override
 	{
 		std::string result(digest_size, '\0');
 
@@ -1092,7 +1092,7 @@ struct sha256_hash_impl : public hash_impl
 		m_h[7] = 0x5be0cd19;
 	}
 
-	virtual void write_bit_length(uint64_t l, uint8_t* b)
+	void write_bit_length(uint64_t l, uint8_t* b) override
 	{
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
@@ -1108,7 +1108,7 @@ struct sha256_hash_impl : public hash_impl
 #endif
 	}
 
-	virtual void transform(const uint8_t* data)
+	void transform(const uint8_t* data) override
 	{
 		static const uint32_t k[] = {
 			0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -1173,7 +1173,7 @@ struct sha256_hash_impl : public hash_impl
 			m_h[i] += wv[i];
 	}
 
-	virtual std::string final()
+	std::string final() override
 	{
 		std::string result(digest_size, '\0');
 
@@ -1210,7 +1210,7 @@ class hash_base : public I
 		init();
 	}
 
-	void init()
+	void init() override
 	{
 		I::init();
 
@@ -1222,7 +1222,7 @@ class hash_base : public I
 	void update(const uint8_t* data, size_t n);
 	
 	using I::transform;
-	std::string final();
+	std::string final() override;
 
   private:
 	uint8_t		m_data[block_size];

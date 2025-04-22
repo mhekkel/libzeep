@@ -1515,8 +1515,8 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
   public:
 	static constexpr const char *name() { return "dates"; }
 
-	virtual object evaluate(const scope &scope, const std::string &method,
-		const std::vector<object> &params) const
+	object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const override
 	{
 		object result;
 
@@ -1549,8 +1549,8 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
   public:
 	static constexpr const char *name() { return "numbers"; }
 
-	virtual object evaluate(const scope &scope, const std::string &method,
-		const std::vector<object> &params) const
+	object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const override
 	{
 		object result;
 
@@ -1608,8 +1608,8 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
   public:
 	static constexpr const char *name() { return "request"; }
 
-	virtual object evaluate(const scope &scope, const std::string &method,
-		const std::vector<object> &params) const
+	object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const override
 	{
 		object result;
 
@@ -1633,8 +1633,8 @@ class security_expr_util_object : public expression_utility_object<security_expr
   public:
 	static constexpr const char *name() { return "security"; }
 
-	virtual object evaluate(const scope &scope, const std::string &method,
-		const std::vector<object> &params) const
+	object evaluate(const scope &scope, const std::string &method,
+		const std::vector<object> &params) const override
 	{
 		object result;
 

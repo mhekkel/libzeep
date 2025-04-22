@@ -246,7 +246,7 @@ class html_controller : public controller
 	/// \brief Initialize the scope object
 	///
 	/// Initialize scope, derived classes should call this first
-	virtual void init_scope(scope & /*scope*/);
+	void init_scope(scope & /*scope*/) override;
 };
 
 // --------------------------------------------------------------------
@@ -261,7 +261,7 @@ class html_controller_v1 : public html_controller
 	}
 
 	/// \brief Dispatch and handle the request
-	virtual bool handle_request(request &req, reply &reply_);
+	bool handle_request(request &req, reply &reply_) override;
 
   public:
 	/// \brief html_controller works with 'handlers' that are methods 'mounted' on a path in the requested URI
