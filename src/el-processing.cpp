@@ -1530,7 +1530,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto st = value_serializer<std::chrono::system_clock::time_point>::from_string(t);
 
 				std::wostringstream os;
-				os.imbue(scope.get_request().get_locale());
+				os.imbue(scope.get_locale());
 
 				auto tt = std::chrono::system_clock::to_time_t(st);
 				auto wf = convert_s2w(f);
@@ -1572,7 +1572,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 				else
 					d = params[0].get<double>();
 
-				return FormatDecimal(d, intDigits, decimals, scope.get_request().get_locale());
+				return FormatDecimal(d, intDigits, decimals, scope.get_locale());
 			}
 		}
 		else if (method == "formatDiskSize")
@@ -1595,7 +1595,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 				if (params.size() >= 2 and params[1].is_number_int())
 					decimals = params[1].get<int>();
 
-				return FormatDecimal(nr, 1, decimals, scope.get_request().get_locale()) + ' ' + kBase[base];
+				return FormatDecimal(nr, 1, decimals, scope.get_locale()) + ' ' + kBase[base];
 			}
 		}
 
@@ -1619,7 +1619,7 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 			result = scope.get_request().get_uri().string();
 		else if ((method == "getParameter") and params.size() == 1)
 		{
-			auto p = scope.get_request().get_parameter(params[0].get<std::string>());
+			auto p = scope.get_parameter(params[0].get<std::string>());
 			if (p.has_value())
 				result = *p;
 		}

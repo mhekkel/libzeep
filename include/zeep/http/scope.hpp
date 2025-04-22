@@ -57,6 +57,18 @@ class scope
 	/// \brief add a path parameter, should only be used by controller::handle_request
 	void add_path_param(std::string name, std::string value);
 
+	/// \brief Return the list of headers
+	auto get_headers() const { return m_req->get_headers(); }
+
+	/// \brief Return the named header
+	std::string get_header(std::string_view name) const { return m_req->get_header(name); }
+
+	/// \brief Return the payload
+	const std::string &get_payload() const { return m_req->get_payload(); }
+
+	/// \brief Return the Accept-Language header value in the request as a std::locale object
+	std::locale &get_locale() const { return m_req->get_locale(); }
+
 	/// \brief get the optional parameter value for @a name
 	std::optional<std::string> get_parameter(std::string_view name) const
 	{

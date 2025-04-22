@@ -288,8 +288,8 @@ class controller
 		{
 			object v;
 
-			if (scope.get_request().get_header("content-type") == "application/json")
-				v = object::parse_JSON(scope.get_request().get_payload());
+			if (scope.get_header("content-type") == "application/json")
+				v = object::parse_JSON(scope.get_payload());
 			else
 			{
 				auto p = scope.get_parameter(name);

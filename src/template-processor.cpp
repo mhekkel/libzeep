@@ -76,7 +76,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 	auto fileDate = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
 	std::string ifModifiedSince;
-	for (const header &h : scope.get_request().get_headers())
+	for (const header &h : scope.get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
 		{
