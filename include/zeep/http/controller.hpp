@@ -95,6 +95,7 @@ class controller
 
 	using param = header;
 
+	// TODO: maybe replaced by improved scope?
 	/// \brief helper class for pulling parameter values out of the request
 	struct parameter_pack
 	{
@@ -177,48 +178,47 @@ class controller
 
 		virtual void call(const parameter_pack &params, reply &reply_) = 0;
 
+		void set_names() {}
+
 		template <typename... Names>
 		void set_names(Names... names)
 		{
-			if constexpr (sizeof...(Names) > 0)
+			std::filesystem::path p = m_path;
+
+			for (auto name : { names... })
+				m_names.emplace_back(name);
+
+			// construct a regex for matching paths
+			std::string ps;
+
+			for (auto pp : p)
 			{
-				std::filesystem::path p = m_path;
+				if (pp.empty())
+					continue;
 
-				for (auto name : { names... })
-					m_names.emplace_back(name);
+				if (not ps.empty())
+					ps += '/';
 
-				// construct a regex for matching paths
-				std::string ps;
-
-				for (auto pp : p)
+				if (pp.string().front() == '{' and pp.string().back() == '}')
 				{
-					if (pp.empty())
-						continue;
+					auto param = pp.string().substr(1, pp.string().length() - 2);
 
-					if (not ps.empty())
-						ps += '/';
-
-					if (pp.string().front() == '{' and pp.string().back() == '}')
+					auto i = std::find(m_names.begin(), m_names.end(), param);
+					if (i == m_names.end())
 					{
-						auto param = pp.string().substr(1, pp.string().length() - 2);
-
-						auto i = std::find(m_names.begin(), m_names.end(), param);
-						if (i == m_names.end())
-						{
-							assert(false);
-							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
-						}
-
-						size_t ni = i - m_names.begin();
-						m_path_params.emplace_back(m_names[ni]);
-						ps += "([^/]*)";
+						assert(false);
+						throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
 					}
-					else
-						ps += pp.string();
-				}
 
-				m_rx.assign(ps);
+					size_t ni = i - m_names.begin();
+					m_path_params.emplace_back(m_names[ni]);
+					ps += "([^/]*)";
+				}
+				else
+					ps += pp.string();
 			}
+
+			m_rx.assign(ps);
 		}
 
 		bool get_parameter(const parameter_pack &params, const std::string &name, bool result)
