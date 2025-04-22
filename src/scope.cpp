@@ -133,6 +133,12 @@ el::object scope::get_credentials() const
 	return m_req->get_credentials();
 }
 
+bool scope::has_role(std::string_view role) const
+{
+	auto credentials = get_credentials();
+	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
+}
+
 void scope::select_object(const el::object &o)
 {
 	m_selected = o;

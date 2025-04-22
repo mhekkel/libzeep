@@ -68,18 +68,6 @@ class controller
 		return m_server ? m_server->get_context_name() : "";
 	}
 
-	/// \brief get the credentials for the current request
-	el::object get_credentials() const;
-
-	/// \brief get the remote client address for the current request
-	std::string get_remote_address() const;
-
-	/// \brief returns whether the current user has role \a role
-	bool has_role(std::string_view role) const;
-
-	/// \brief return a specific header line from the original request
-	std::string get_header(std::string_view name) const;
-
 	/// \brief Fill in the OPTIONS in reply \a rep for a request \a req
 	virtual void get_options(const request &req, reply &rep);
 
@@ -89,7 +77,6 @@ class controller
 
 	uri m_prefix_path;
 	basic_server *m_server = nullptr;
-	static thread_local request *s_request;
 
 	/// @cond
 

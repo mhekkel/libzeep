@@ -175,6 +175,9 @@ class scope
 	/// \brief return the credentials of the current user
 	el::object get_credentials() const;
 
+	/// \brief returns whether the current user has role \a role
+	bool has_role(std::string_view role) const;
+
 	/// \brief select el::object \a o , used in z2:el::object constructs
 	void select_object(const el::object &o);
 

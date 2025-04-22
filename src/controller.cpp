@@ -16,8 +16,6 @@
 namespace zeep::http
 {
 
-thread_local request *controller::s_request = nullptr;
-
 controller::controller(std::string prefix_path)
 	: m_prefix_path(std::move(prefix_path))
 {
@@ -31,21 +29,7 @@ controller::~controller()
 
 bool controller::dispatch_request(asio_ns::ip::tcp::socket & /*socket*/, request &req, reply &rep)
 {
-	bool result = false;
-
-	try
-	{
-		s_request = &req;
-		result = handle_request(req, rep);
-		s_request = nullptr;
-	}
-	catch (...)
-	{
-		s_request = nullptr;
-		throw;
-	}
-
-	return result;
+	return handle_request(req, rep);
 }
 
 bool controller::path_matches_prefix(const uri &path) const
@@ -94,33 +78,6 @@ uri controller::get_prefixless_path(const request &req) const
 	}
 
 	return { bb, be };
-}
-
-el::object controller::get_credentials() const
-{
-	el::object credentials;
-	if (s_request != nullptr)
-		credentials = s_request->get_credentials();
-	return credentials;
-}
-
-std::string controller::get_remote_address() const
-{
-	std::string result;
-	if (s_request != nullptr)
-		result = s_request->get_remote_address();
-	return result;
-}
-
-bool controller::has_role(std::string_view role) const
-{
-	auto credentials = get_credentials();
-	return credentials.is_object() and credentials["role"].is_array() and credentials["role"].contains(role);
-}
-
-std::string controller::get_header(std::string_view name) const
-{
-	return s_request ? s_request->get_header(name) : "";
 }
 
 void controller::get_options(const request &req, reply &rep)
