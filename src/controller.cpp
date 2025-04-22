@@ -6,6 +6,8 @@
 
 #include <zeep/config.hpp>
 
+#include "glob.hpp"
+
 #include <cassert>
 
 #include <zeep/http/controller.hpp>
@@ -129,14 +131,14 @@ void controller::get_options(const request &req, reply &rep)
 
 // --------------------------------------------------------------------
 
-void controller::init_scope(request &req, scope &)
+void controller::init_scope(scope &)
 {
-
 }
 
 bool controller::handle_request(http::request &req, http::reply &rep)
 {
-	auto p = get_prefixless_path(req).string();
+	auto uri = get_prefixless_path(req);
+	auto path = get_prefixless_path(req).string();
 
 	bool result = false;
 	for (auto &mp : m_mountpoints)
@@ -144,34 +146,32 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 		if (req.get_method() != mp->m_method)
 			continue;
 
-		parameter_pack params(*get_server(), req);
-		init_scope(req, params.get_scope());
+		scope scope(get_server(), req);
 
 		if (mp->m_path_params.empty())
 		{
-			if (mp->m_path != p)
+			if (not glob_match(std::filesystem::path(path), mp->m_path))
 				continue;
 		}
 		else
 		{
 			std::smatch m;
-			if (not std::regex_match(p, m, mp->m_rx))
+			if (not std::regex_match(path, m, mp->m_rx))
 				continue;
 
 			for (size_t i = 0; i < mp->m_path_params.size(); ++i)
-			{
-				std::string v = m[i + 1].str();
-				v = decode_url(v);
-				params.m_path_parameters.push_back({ mp->m_path_params[i], v });
-			}
+				scope.add_path_param(mp->m_path_params[i], decode_url(m[i + 1].str()));
 		}
+
+		scope.put("baseuri", path);
+		init_scope(scope);
 
 		try
 		{
 			if (req.get_method() == "OPTIONS")
 				get_options(req, rep);
 			else
-				call_mount_point(mp, params, rep);
+				rep = call_mount_point(mp, scope);
 		}
 		catch (status_type s)
 		{
@@ -197,23 +197,15 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 	return result;
 }
 
-void controller::call_mount_point(mount_point_base *mp, const parameter_pack &params, reply &rep)
+reply controller::call_mount_point(mount_point_base *mp, const scope &scope)
 {
 	try
 	{
-		object message("ok");
-		rep.set_content(message);
-		rep.set_status(ok);
-
-		mp->call(params, rep);
+		return mp->call(scope);
 	}
 	catch (const std::exception &e)
 	{
-		object message;
-		message["error"] = e.what();
-
-		rep.set_content(message);
-		rep.set_status(internal_server_error);
+		return reply::stock_reply(internal_server_error);
 	}
 }
 

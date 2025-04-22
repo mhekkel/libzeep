@@ -36,18 +36,14 @@ const basic_template_processor &html_controller::get_template_processor() const
 
 // --------------------------------------------------------------------
 
-void html_controller::handle_file(const request &request, const scope &scope, reply &reply)
+reply html_controller::handle_file(const scope &scope)
 {
-	get_template_processor().handle_file(request, scope, reply);
+	assert(scope.get_request().get_method() == "GET" or scope.get_request().get_method() == "HEAD");
+	return get_template_processor().create_reply_for_get_file(scope);
 }
 
-void html_controller::init_scope(request &req, scope &scope)
+void html_controller::init_scope(scope &scope)
 {
-	// set up the scope by putting some globals in it
-
-	auto uri = get_prefixless_path(req);
-	auto path = uri.string();
-	scope.put("baseuri", path);
 }
 
 // --------------------------------------------------------------------
@@ -67,7 +63,7 @@ bool html_controller_v1::handle_request(request& req, reply& rep)
 	
 		scope.put("baseuri", path);
 	
-		init_scope(req, scope);
+		init_scope(scope);
 	
 		auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
 			[&uri, method=req.get_method()](const mount_point_v1& m)

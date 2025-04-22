@@ -7,9 +7,8 @@
 #include <zeep/config.hpp>
 
 #include <zeep/http/error-handler.hpp>
+#include <zeep/http/scope.hpp>
 #include <zeep/http/security.hpp>
-
-
 
 namespace zeep::http
 {
@@ -23,7 +22,7 @@ error_handler::~error_handler()
 {
 }
 
-bool error_handler::create_error_reply(const request &/*req*/, std::exception_ptr /*eptr*/, reply &/*reply*/)
+bool error_handler::create_error_reply(const request & /*req*/, std::exception_ptr /*eptr*/, reply & /*reply*/)
 {
 	return false;
 }

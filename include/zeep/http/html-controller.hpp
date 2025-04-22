@@ -50,7 +50,7 @@ class html_controller : public controller
 	/// This method will ask the server for the default template processor
 	/// to load the actual file. If there is no template processor set,
 	/// it will therefore throw an exception.
-	virtual void handle_file(const request &request_, const scope &scope_, reply &reply_);
+	virtual reply handle_file(const scope &scope_);
 
 	// --------------------------------------------------------------------
   public:
@@ -89,16 +89,16 @@ class html_controller : public controller
 			set_names(names...);
 		}
 
-		virtual void call(const parameter_pack &params, reply &rep)
+		reply call(const scope &scope) override
 		{
-			auto args = collect_arguments(params.get_scope(), params, std::make_index_sequence<N>());
-			rep = std::apply(m_callback, std::move(args));
+			auto args = collect_arguments(scope, std::make_index_sequence<N>());
+			return std::apply(m_callback, std::move(args));
 		}
 
 		template <std::size_t... I>
-		auto collect_arguments(const scope &scope_, const parameter_pack &params, std::index_sequence<I...>)
+		auto collect_arguments(const scope &scope, std::index_sequence<I...>)
 		{
-			return std::make_tuple(scope_, get_parameter(params, m_names[I].c_str(), typename std::tuple_element_t<I, ArgsTuple>{})...);
+			return std::make_tuple(scope, get_parameter(scope, m_names[I].c_str(), typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
 		Callback m_callback;
@@ -185,6 +185,12 @@ class html_controller : public controller
 		map(std::move(mountPoint), "DELETE", callback, names...);
 	}
 
+	/// \brief map a GET for files found in docroot
+	void map_get_file(std::string mountPoint)
+	{
+		map(std::move(mountPoint), "GET", &html_controller::handle_file);
+	}
+
 	// --------------------------------------------------------------------
 	/// assign a default handler function to a path in the server's namespace
 	/// Usually called like this:
@@ -209,7 +215,7 @@ class html_controller : public controller
 		{
 		}
 
-		virtual void call(const parameter_pack &params, reply &rep);
+		reply call(const scope &scope) override;
 
 		std::string m_template;
 		html_controller &m_controller;
@@ -240,7 +246,7 @@ class html_controller : public controller
 	/// \brief Initialize the scope object
 	///
 	/// Initialize scope, derived classes should call this first
-	virtual void init_scope(request &req, scope & /*scope*/);
+	virtual void init_scope(scope & /*scope*/);
 };
 
 // --------------------------------------------------------------------

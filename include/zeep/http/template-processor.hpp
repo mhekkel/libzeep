@@ -157,9 +157,6 @@ class basic_template_processor
 
 	// --------------------------------------------------------------------
 
-	/// \brief Default handler for serving files out of our doc root
-	virtual void handle_file(const request &request, const scope &scope, reply &reply);
-
   public:
 	/// \brief return last_write_time of \a file
 	virtual std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept = 0;
@@ -184,6 +181,9 @@ class basic_template_processor
 		create_reply_from_template(file, scope, result);
 		return result;
 	}
+
+	/// \brief Default handler for serving files out of our doc root
+	reply create_reply_for_get_file(const scope &scope);
 
 	/// \brief Initialize the scope object
 	virtual void init_scope(request &req, scope &scope);

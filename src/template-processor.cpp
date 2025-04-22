@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include <zeep/el/object.hpp>
+#include <zeep/http/scope.hpp>
 #include <zeep/http/template-processor.hpp>
 
 namespace fs = std::filesystem;
@@ -63,22 +64,19 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 // --------------------------------------------------------------------
 //
 
-void basic_template_processor::handle_file(const http::request &request, const scope &scope, http::reply &reply)
+reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 {
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].get<std::string>(), ec);
 
 	if (ec)
-	{
-		reply = http::reply::stock_reply(http::not_found);
-		return;
-	}
+		return reply::stock_reply(not_found);
 
 	using namespace std::chrono;
 	auto fileDate = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
 
 	std::string ifModifiedSince;
-	for (const http::header &h : request.get_headers())
+	for (const header &h : scope.get_request().get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
 		{
@@ -89,10 +87,7 @@ void basic_template_processor::handle_file(const http::request &request, const s
 			auto modifiedSince = system_clock::from_time_t(std::mktime(&tm));
 
 			if (fileDate <= modifiedSince)
-			{
-				reply = http::reply::stock_reply(http::not_modified);
-				return;
-			}
+				return reply::stock_reply(not_modified);
 
 			break;
 		}
@@ -102,10 +97,7 @@ void basic_template_processor::handle_file(const http::request &request, const s
 
 	std::unique_ptr<std::istream> in(load_file(file.string(), ec));
 	if (ec)
-	{
-		reply = http::reply::stock_reply(http::not_found);
-		return;
-	}
+		return reply::stock_reply(not_found);
 
 	std::string mimetype = "text/plain";
 
@@ -132,7 +124,9 @@ void basic_template_processor::handle_file(const http::request &request, const s
 	else if (file.extension() == ".gz")
 		mimetype = "application/gzip";
 
-	reply.set_content(in.release(), mimetype);
+
+	reply result(ok);
+	result.set_content(in.release(), mimetype);
 
 	using namespace date;
 	using namespace std::chrono;
@@ -140,7 +134,9 @@ void basic_template_processor::handle_file(const http::request &request, const s
 	std::stringstream s;
 	to_stream(s, "%a, %d %b %Y %H:%M:%S GMT", fileDate);
 
-	reply.set_header("Last-Modified", s.str());
+	result.set_header("Last-Modified", s.str());
+
+	return result;
 }
 
 void basic_template_processor::set_docroot(fs::path path)
@@ -291,7 +287,7 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 	}
 }
 
-void basic_template_processor::create_reply_from_template(const std::string &file, const scope &scope, http::reply &reply)
+void basic_template_processor::create_reply_from_template(const std::string &file, const scope &scope, reply &reply)
 {
 	mxml::document doc;
 	doc.set_preserve_cdata(true);
