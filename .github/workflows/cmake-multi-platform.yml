@@ -4,7 +4,7 @@ name: multi platform test
 
 on:
   push:
-    branches: [ "trunk", "develop" ]
+    branches: [ "trunk", "develop", "develop-v7" ]
   pull_request:
     branches: [ "trunk" ]
 
