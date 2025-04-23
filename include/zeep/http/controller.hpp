@@ -119,16 +119,28 @@ class controller
 				{
 					auto param = pp.string().substr(1, pp.string().length() - 2);
 
-					auto i = std::find(m_names.begin(), m_names.end(), param);
-					if (i == m_names.end())
-					{
-						assert(false);
-						throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
-					}
+					// Be carefull, this param may contain a single parameter name, or a group of allowed fixed strings.
+					// If there is a comma, it must be the latter
 
-					size_t ni = i - m_names.begin();
-					m_path_params.emplace_back(m_names[ni]);
-					ps += "([^/]*)";
+					if (param.find(',') != std::string::npos)
+					{
+						std::vector<std::string> options;
+						split(options, param, ",", false);
+						ps += '(' + join(options, "|") + ')';
+					}
+					else
+					{
+						auto i = std::find(m_names.begin(), m_names.end(), param);
+						if (i == m_names.end())
+						{
+							assert(false);
+							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
+						}
+	
+						size_t ni = i - m_names.begin();
+						m_path_params.emplace_back(m_names[ni]);
+						ps += "([^/]*)";
+					}
 				}
 				else
 					ps += pp.string();
