@@ -127,16 +127,16 @@ if(NOT date_FOUND)
 	endif()
 endif()
 
-if(EXISTS mxml/CMakeLists.txt)
-	add_subdirectory(mxml)
-endif()
+# if(EXISTS mxml/CMakeLists.txt)
+	# add_subdirectory(mxml)
+# endif()
 
-find_package(mxml 1.0.3 REQUIRED)
+# find_package(mxml 1.0.3 REQUIRED)
 
 # FetchContent_Declare(mxml GIT_REPOSITORY s4.hekkelman.net:git-repo/mxml.git GIT_TAG no-module)
 # FetchContent_MakeAvailable(mxml)
 
-# add_subdirectory(mxml EXCLUDE_FROM_ALL)
+add_subdirectory(mxml EXCLUDE_FROM_ALL)
 find_package(nlohmann_json REQUIRED NAMES json nlohmann_json)
 
 if(UNIX)
