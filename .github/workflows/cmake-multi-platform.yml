@@ -28,6 +28,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
 
     - name: Setup Ninja
       uses: ashutoshvarma/setup-ninja@master
