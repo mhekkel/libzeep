@@ -1653,7 +1653,7 @@ class security_expr_util_object : public expression_utility_object<security_expr
 		}
 		else if (method == "username")
 		{
-			result = scope.get_credentials()["username"].get<std::string>();
+			result = scope.get_credentials()["username"];
 		}
 
 		return result;

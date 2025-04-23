@@ -19,23 +19,23 @@ class hello_controller : public zeep::http::html_controller
     hello_controller()
     {
         // Mount the handler `handle_index` on /, /index and /index.html
-        mount("{,index,index.html}", &hello_controller::handle_index);
+        map_get("{,index,index.html}", &hello_controller::handle_index);
 
         // This admin page will only be accessible by authorized users
-        mount("admin", &hello_controller::handle_admin);
+        map_get("admin", &hello_controller::handle_admin);
 
         // scripts & css
-        mount("{css,scripts}/", &hello_controller::handle_file);
+        map_get_file("{css,scripts}/");
     }
 
-    void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
+    zeep::http::reply handle_index(const zeep::http::scope& scope)
     {
-        get_template_processor().create_reply_from_template("security-hello.xhtml", scope, rep);
+        return get_template_processor().create_reply_from_template("security-hello.xhtml", scope);
     }
 
-    void handle_admin(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
+    zeep::http::reply handle_admin(const zeep::http::scope& scope)
     {
-        get_template_processor().create_reply_from_template("security-admin.xhtml", scope, rep);
+        return get_template_processor().create_reply_from_template("security-admin.xhtml", scope);
     }
 };
 //]

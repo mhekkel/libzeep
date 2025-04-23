@@ -17,17 +17,16 @@ class hello_controller : public zeep::http::html_controller
     hello_controller()
     {
         /* Mount the handler `handle_index` on `/`, `/index` and `/index.html` */
-        mount("{,index,index.html}", &hello_controller::handle_index);
+        map_get("{,index,index.html}", &hello_controller::handle_index, "name");
     }
 
-    void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
+    zeep::http::reply handle_index(const zeep::http::scope& scope, std::optional<std::string> name)
     {
         zeep::http::scope sub(scope);
-        auto name = req.get_parameter("name");
-        if (not name.empty())
-            sub.put("name", name);
+        if (name.has_value())
+            sub.put("name", *name);
         
-        get_template_processor().create_reply_from_template("hello.xhtml", sub, rep);
+        return get_template_processor().create_reply_from_template("hello.xhtml", sub);
     }
 };
 
