@@ -112,7 +112,7 @@ class my_controller : public zeep::http::controller
 	public:
 	my_controller() : zeep::http::controller("/test") {}
 
-	virtual bool handle_request(zeep::http::request& req, zeep::http::reply& rep)
+	bool handle_request(zeep::http::request& req, zeep::http::reply& rep) override
 	{
 		bool result = false;
 		if (req.get_uri() == "/test/one" or req.get_uri() == "/test/three")
@@ -225,7 +225,7 @@ TEST_CASE("server_with_security_1")
 {
 	class my_user_service : public zeep::http::user_service
 	{
-		virtual zeep::http::user_details load_user(const std::string& username) const
+		zeep::http::user_details load_user(const std::string& username) const override
 		{
 			if (username != "scott")
 				throw zeep::http::user_unknown_exception();

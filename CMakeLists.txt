@@ -40,7 +40,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
 elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -170,6 +170,7 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/daemon.hpp
 	include/zeep/http/error-handler.hpp
 	include/zeep/http/reply.hpp
+	include/zeep/http/scope.hpp
 	include/zeep/http/template-processor.hpp
 	include/zeep/http/header.hpp
 	include/zeep/http/request.hpp
@@ -199,6 +200,7 @@ list(APPEND ZEEP_SRC
 	src/message-parser.cpp
 	src/reply.cpp
 	src/request.cpp
+	src/scope.cpp
 	src/security.cpp
 	src/server.cpp
 	src/uri.cpp

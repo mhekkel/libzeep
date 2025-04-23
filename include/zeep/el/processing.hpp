@@ -16,10 +16,10 @@
 
 #include <map>
 
-#include <zeep/exception.hpp>
-#include <zeep/http/request.hpp>
 #include <zeep/el/object.hpp>
 #include <zeep/el/serializer.hpp>
+#include <zeep/exception.hpp>
+#include <zeep/http/request.hpp>
 
 #include <mxml.hpp>
 
@@ -158,152 +158,5 @@ class expression_utility_object : public expression_utility_object_base
 		s_head = &s_next;
 	}
 };
-
-// --------------------------------------------------------------------
-
-/// \brief The class that stores variables for the current scope
-///
-/// When processing tags and in expression language constructs we use
-/// variables. These are stored in scope instances.
-
-class scope
-{
-  public:
-	/// \brief simple constructor, used where there's no request available
-	scope();
-
-	/// \brief constructor to be used only in debugging
-	///
-	/// \param req		The incomming HTTP request
-	explicit scope(const request &req);
-
-	/// \brief constructor used in a HTTP request context
-	///
-	/// \param server	The server that handles the incomming request
-	/// \param req		The incomming HTTP request
-	scope(const basic_server &server, const request &req)
-		: scope(&server, req)
-	{
-	}
-
-	/// \brief constructor used in a HTTP request context
-	///
-	/// \param server	The server that handles the incomming request, pointer version
-	/// \param req		The incomming HTTP request
-	scope(const basic_server *server, const request &req);
-
-	/// \brief chaining constructor
-	///
-	/// Scopes can be nested, introducing new namespaces
-	/// \param next	The next scope up the chain.
-	explicit scope(const scope &next);
-
-	/// \brief put variable in the scope with \a name and \a value
-	template <typename T, std::enable_if_t<std::is_assignable_v<el::object, T>, int> = 0>
-	void put(const std::string &name, const T &value)
-	{
-		m_data[name] = value;
-	}
-
-	/// \brief put variable in the scope with \a name and \a value
-	void put(const std::string &name, object &&value)
-	{
-		m_data[name] = std::move(value);
-	}
-
-	/// \brief put variable in the scope with \a name and \a value
-	void put(const std::string &name, const object &value)
-	{
-		m_data[name] = value;
-	}
-
-	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
-	template <typename ForwardIterator>
-	void put(const std::string &name, ForwardIterator begin, ForwardIterator end);
-
-	/// \brief return variable with \a name
-	///
-	/// \param name				The name of the variable to return
-	/// \param includeSelected	If this is true, and the variable was not found as a regular variable
-	///							in the current scope, the selected objects will be searched for members
-	///							with \a name This is used by the tag processing lib v2 in _z2:object_
-	/// \return					The value found or null if there was no such variable.
-	const object &lookup(const std::string &name, bool includeSelected = false) const;
-
-	/// \brief return variable with \a name
-	const object &operator[](const std::string &name) const;
-
-	/// \brief return variable with \a name
-	///
-	/// \param name				The name of the variable to return
-	/// \return					The value found or null if there was no such variable.
-	object &lookup(const std::string &name);
-
-	/// \brief return variable with \a name
-	object &operator[](const std::string &name);
-
-	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
-	const request &get_request() const;
-
-	/// \brief return the context_name of the server
-	std::string get_context_name() const;
-
-	/// \brief return the credentials of the current user
-	object get_credentials() const;
-
-	/// \brief select object \a o , used in z2:object constructs
-	void select_object(const object &o);
-
-	/// \brief a nodeset for a selector, cached to avoid recusive expansion
-	///
-	/// In tag processors it is sometimes needed to take a selection of mxml::nodes
-	/// and reuse these, as a copy when inserting templates e.g.
-	using node_set_type = mxml::element;
-
-	/// \brief return the node_set_type with name \a name
-	node_set_type get_nodeset(const std::string &name) const;
-
-	/// \brief store node_set_type \a nodes with name \a name
-	void set_nodeset(const std::string &name, node_set_type &&nodes);
-
-	/// \brief return whether a node_set with name \a name is stored
-	bool has_nodeset(const std::string &name) const
-	{
-		return m_nodesets.count(name) or (m_next != nullptr and m_next->has_nodeset(name));
-	}
-
-	/// \brief get the CSRF token from the request burried in \a scope
-	std::string get_csrf_token() const;
-
-  private:
-	/// for debugging purposes
-	friend std::ostream &operator<<(std::ostream &lhs, const scope &rhs);
-
-	scope &operator=(const scope &);
-
-	using data_map = std::map<std::string, object>;
-
-	data_map m_data;
-	scope *m_next;
-	unsigned m_depth;
-	const request *m_req;
-	const basic_server *m_server;
-	object m_selected;
-
-	using nodeset_map = std::map<std::string, node_set_type>;
-
-	nodeset_map m_nodesets;
-};
-
-template <typename ForwardIterator>
-inline void scope::put(const std::string &name, ForwardIterator begin, ForwardIterator end)
-{
-	std::vector<object> elements;
-	while (begin != end)
-		elements.push_back(object(*begin++));
-	m_data[name] = std::move(elements);
-}
-
-// --------------------------------------------------------------------
 
 } // namespace zeep::http

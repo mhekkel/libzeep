@@ -297,7 +297,7 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		}
 	}
 
-	int_type underflow()
+	int_type underflow() override
 	{
 		if (m_current == m_end)
 			return traits_type::eof();
@@ -305,7 +305,7 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		return traits_type::to_int_type(*m_current);
 	}
 
-	int_type uflow()
+	int_type uflow() override
 	{
 		if (m_current == m_end)
 			return traits_type::eof();
@@ -313,7 +313,7 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		return traits_type::to_int_type(*m_current++);
 	}
 
-	int_type pbackfail(int_type ch)
+	int_type pbackfail(int_type ch) override
 	{
 		if (m_current == m_begin or (ch != traits_type::eof() and ch != m_current[-1]))
 			return traits_type::eof();
@@ -321,13 +321,13 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		return traits_type::to_int_type(*--m_current);
 	}
 
-	std::streamsize showmanyc()
+	std::streamsize showmanyc() override
 	{
 		assert(std::less_equal<const char *>()(m_current, m_end));
 		return m_end - m_current;
 	}
 
-	pos_type seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode /*which*/)
+	pos_type seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode /*which*/) override
 	{
 		switch (dir)
 		{
@@ -356,7 +356,7 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		return m_current - m_begin;
 	}
 
-	pos_type seekpos(pos_type pos, std::ios_base::openmode /*which*/)
+	pos_type seekpos(pos_type pos, std::ios_base::openmode /*which*/) override
 	{
 		m_current = m_begin + pos;
 

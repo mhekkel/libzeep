@@ -162,7 +162,7 @@ class reply_parser : public parser
 
 	reply get_reply();
 
-	virtual void reset();
+	void reset() override;
 
   private:
 	parse_result parse_initial_line(char ch);

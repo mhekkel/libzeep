@@ -9,8 +9,8 @@
 /// definition of the base class zeep::http::controller, used by e.g. controller and soap_controller
 
 #include <zeep/config.hpp>
-#include <zeep/el/object.hpp>
 #include <zeep/http/server.hpp>
+#include <zeep/http/scope.hpp>
 
 #include <fstream>
 
@@ -68,18 +68,6 @@ class controller
 		return m_server ? m_server->get_context_name() : "";
 	}
 
-	/// \brief get the credentials for the current request
-	el::object get_credentials() const;
-
-	/// \brief get the remote client address for the current request
-	std::string get_remote_address() const;
-
-	/// \brief returns whether the current user has role \a role
-	bool has_role(std::string_view role) const;
-
-	/// \brief return a specific header line from the original request
-	std::string get_header(std::string_view name) const;
-
 	/// \brief Fill in the OPTIONS in reply \a rep for a request \a req
 	virtual void get_options(const request &req, reply &rep);
 
@@ -89,80 +77,8 @@ class controller
 
 	uri m_prefix_path;
 	basic_server *m_server = nullptr;
-	static thread_local request *s_request;
 
 	/// @cond
-
-	using param = header;
-
-	// TODO: maybe replaced by improved scope?
-	/// \brief helper class for pulling parameter values out of the request
-	struct parameter_pack
-	{
-		parameter_pack(const basic_server &server, const request &req)
-			: m_req(req)
-			, m_scope(server, req)
-		{
-		}
-
-		std::optional<std::string> get_parameter(std::string_view name) const
-		{
-			std::optional<std::string> result;
-
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-
-			if (p == m_path_parameters.end())
-				result = m_req.get_parameter(name);
-			else if (not p->value.empty())
-				result = p->value;
-			
-			return result;
-		}
-
-		std::vector<std::string> get_parameters(std::string_view name) const
-		{
-			auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
-				[name](auto &pp)
-				{ return pp.name == name; });
-			if (p != m_path_parameters.end())
-				return { p->value };
-			else
-			{
-				std::vector<std::string> result;
-
-				for (const auto &[p_name, p_value] : m_req.get_parameters())
-				{
-					if (p_name != name)
-						continue;
-
-					result.push_back(p_value);
-				}
-
-				return result;
-			}
-		}
-
-		file_param get_file_parameter(std::string name) const
-		{
-			return m_req.get_file_parameter(std::move(name));
-		}
-
-		std::vector<file_param> get_file_parameters(std::string name) const
-		{
-			return m_req.get_file_parameters(std::move(name));
-		}
-
-		scope &get_scope() const
-		{
-			return const_cast<scope &>(m_scope);
-		}
-
-		const request &m_req;
-		scope m_scope;
-		std::vector<param> m_path_parameters;
-	};
 
 	/// \brief abstract base class for mount points, derived classes should
 	/// derive from mount_point instead of this class
@@ -176,7 +92,7 @@ class controller
 
 		virtual ~mount_point_base() {}
 
-		virtual void call(const parameter_pack &params, reply &reply_) = 0;
+		virtual reply call(const scope &scope) = 0;
 
 		void set_names() {}
 
@@ -221,11 +137,11 @@ class controller
 			m_rx.assign(ps);
 		}
 
-		bool get_parameter(const parameter_pack &params, const std::string &name, bool result)
+		bool get_parameter(const scope &scope, const std::string &name, bool result)
 		{
 			try
 			{
-				auto v = params.get_parameter(name).value_or("false");
+				auto v = scope.get_parameter(name).value_or("false");
 				result = v == "true" or v == "1" or v == "on";
 			}
 			catch (const std::exception &e)
@@ -237,11 +153,11 @@ class controller
 			return result;
 		}
 
-		std::string get_parameter(const parameter_pack &params, const std::string &name, std::string result)
+		std::string get_parameter(const scope &scope, const std::string &name, std::string result)
 		{
 			try
 			{
-				result = params.get_parameter(name).value_or("");
+				result = scope.get_parameter(name).value_or("");
 			}
 			catch (const std::exception &)
 			{
@@ -252,11 +168,11 @@ class controller
 			return result;
 		}
 
-		file_param get_parameter(const parameter_pack &params, const std::string &name, file_param result)
+		file_param get_parameter(const scope &scope, const std::string &name, file_param result)
 		{
 			try
 			{
-				result = params.get_file_parameter(name);
+				result = scope.get_file_parameter(name);
 			}
 			catch (const std::exception &e)
 			{
@@ -267,11 +183,11 @@ class controller
 			return result;
 		}
 
-		std::vector<file_param> get_parameter(const parameter_pack &params, const std::string &name, std::vector<file_param> result)
+		std::vector<file_param> get_parameter(const scope &scope, const std::string &name, std::vector<file_param> result)
 		{
 			try
 			{
-				result = params.get_file_parameters(name);
+				result = scope.get_file_parameters(name);
 			}
 			catch (const std::exception &e)
 			{
@@ -282,11 +198,11 @@ class controller
 			return result;
 		}
 
-		object get_parameter(const parameter_pack &params, const std::string &name, object result)
+		object get_parameter(const scope &scope, const std::string &name, object result)
 		{
 			try
 			{
-				auto p = params.get_parameter(name);
+				auto p = scope.get_parameter(name);
 				if (p.has_value())
 					result = object::parse_JSON(*p);
 			}
@@ -300,11 +216,11 @@ class controller
 		}
 
 		template <typename T>
-		std::optional<T> get_parameter(const parameter_pack &params, const std::string &name, std::optional<T> result)
+		std::optional<T> get_parameter(const scope &scope, const std::string &name, std::optional<T> result)
 		{
 			try
 			{
-				auto v = params.get_parameter(name);
+				auto v = scope.get_parameter(name);
 				if (v.has_value())
 					result = value_serializer<T>::from_string(*v);
 			}
@@ -317,11 +233,11 @@ class controller
 			return result;
 		}
 
-		std::optional<std::string> get_parameter(const parameter_pack &params, const std::string &name, std::optional<std::string> result)
+		std::optional<std::string> get_parameter(const scope &scope, const std::string &name, std::optional<std::string> result)
 		{
 			try
 			{
-				result = params.get_parameter(name);
+				result = scope.get_parameter(name);
 			}
 			catch (const std::exception &e)
 			{
@@ -334,11 +250,11 @@ class controller
 
 		template <typename T>
 			requires el::has_value_serializer_v<T>
-		T get_parameter(const parameter_pack &params, const std::string &name, T result)
+		T get_parameter(const scope &scope, const std::string &name, T result)
 		{
 			try
 			{
-				auto p = params.get_parameter(name);
+				auto p = scope.get_parameter(name);
 				if (p.has_value())
 					result = value_serializer<T>::from_string(*p);
 			}
@@ -354,15 +270,15 @@ class controller
 		template <typename T>
 			requires mxml::has_serialize_v<T, el::deserializer<object>> or
 		             mxml::is_serializable_array_type_v<T, el::deserializer<object>>
-		T get_parameter(const parameter_pack &params, const std::string &name, T result)
+		T get_parameter(const scope &scope, const std::string &name, T result)
 		{
 			object v;
 
-			if (params.m_req.get_header("content-type") == "application/json")
-				v = object::parse_JSON(params.m_req.get_payload());
+			if (scope.get_header("content-type") == "application/json")
+				v = object::parse_JSON(scope.get_payload());
 			else
 			{
-				auto p = params.get_parameter(name);
+				auto p = scope.get_parameter(name);
 				if (p.has_value())
 					v = object::parse_JSON(*p);
 			}
@@ -411,51 +327,58 @@ class controller
 			set_names(names...);
 		}
 
-		virtual void call(const parameter_pack &params, reply &rep)
+		reply call(const scope &scope) override
 		{
-			ArgsTuple args = collect_arguments(params, std::make_index_sequence<N>());
-			invoke<Result>(std::move(args), rep);
+			ArgsTuple args = collect_arguments(scope, std::make_index_sequence<N>());
+			return invoke<Result>(std::move(args));
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply & /*reply*/)
+		reply invoke(ArgsTuple &&args)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
+			return reply::stock_reply(ok);
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<not(std::is_void_v<ResultType> or std::is_same_v<ResultType, reply>), int> = 0>
-		void invoke(ArgsTuple &&args, reply &rep)
+		reply invoke(ArgsTuple &&args)
 		{
-			set_reply(rep, std::apply(m_callback, std::forward<ArgsTuple>(args)));
+			return set_reply(std::apply(m_callback, std::forward<ArgsTuple>(args)));
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_same_v<ResultType, reply>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &rep)
+		reply invoke(ArgsTuple &&args)
 		{
-			rep = std::apply(m_callback, std::forward<ArgsTuple>(args));
+			return std::apply(m_callback, std::forward<ArgsTuple>(args));
 		}
 
-		void set_reply(reply &rep, std::filesystem::path v)
+		reply set_reply(std::filesystem::path v)
 		{
+			reply rep(ok);
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
+			return rep;
 		}
 
-		void set_reply(reply &rep, object &&v)
+		reply set_reply(object &&v)
 		{
+			reply rep(ok);
 			rep.set_content(std::move(v));
+			return rep;
 		}
 
 		template <typename T>
-		void set_reply(reply &rep, T &&v)
+		reply set_reply(T &&v)
 		{
+			reply rep(ok);
 			rep.set_content(el::serializer<T>::serialize(std::forward<T>(v)));
+			return rep;
 		}
 
 		template <std::size_t... I>
-		ArgsTuple collect_arguments(const parameter_pack &params, std::index_sequence<I...>)
+		ArgsTuple collect_arguments(const scope &scope, std::index_sequence<I...>)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
-			return std::make_tuple(get_parameter(params, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
+			return std::make_tuple(get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
 		Callback m_callback;
@@ -524,8 +447,8 @@ class controller
 
 	// --------------------------------------------------------------------
 
-	virtual void call_mount_point(mount_point_base *mp, const parameter_pack &params, reply &reply_);
-	virtual void init_scope(request &req, scope &scope);
+	virtual reply call_mount_point(mount_point_base *mp, const scope &scope);
+	virtual void init_scope(scope &scope);
 
   protected:
 	std::list<mount_point_base *> m_mountpoints;

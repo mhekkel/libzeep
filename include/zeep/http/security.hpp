@@ -63,7 +63,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 	{
 	}
 
-	virtual std::string encode(const std::string &password) const
+	std::string encode(const std::string &password) const override
 	{
 		using namespace std::literals;
 
@@ -72,7 +72,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
 	}
 
-	virtual bool matches(const std::string &raw_password, const std::string &stored_password) const
+	bool matches(const std::string &raw_password, const std::string &stored_password) const override
 	{
 		using namespace std::literals;
 
@@ -185,7 +185,7 @@ class simple_user_service : public user_service
 	}
 
 	/// \brief return the user_details for a user named \a username
-	virtual user_details load_user(const std::string &username) const
+	user_details load_user(const std::string &username) const override
 	{
 		user_details result = {};
 		auto ui = std::find_if(m_users.begin(), m_users.end(), [username](const user_details &u)
