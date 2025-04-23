@@ -127,6 +127,10 @@ if(NOT date_FOUND)
 	endif()
 endif()
 
+if(EXISTS mxml/CMakeLists.txt)
+	add_subdirectory(mxml)
+endif()
+
 find_package(mxml 1.0.3 REQUIRED)
 
 # FetchContent_Declare(mxml GIT_REPOSITORY s4.hekkelman.net:git-repo/mxml.git GIT_TAG no-module)
