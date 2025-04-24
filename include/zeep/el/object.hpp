@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
