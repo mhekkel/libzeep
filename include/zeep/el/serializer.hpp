@@ -67,28 +67,6 @@ inline constexpr bool has_value_serializer_v = has_value_serializer<T>::value;
 
 // --------------------------------------------------------------------
 
-template <typename E, typename T, typename = void>
-struct is_compatible_string_type : std::false_type
-{
-};
-
-template <class Expected, template <class...> class Op, class... Args>
-constexpr inline bool is_detected_exact_v = std::experimental::is_detected_exact<Expected, Op, Args...>::value;
-
-template <typename E, typename T>
-struct is_compatible_string_type<E, T,
-	std::enable_if_t<
-		is_detected_exact_v<typename E::string_type::value_type, mxml::value_type_t, T>>>
-{
-	static constexpr bool value =
-		std::is_constructible_v<typename E::string_type, T>;
-};
-
-template <typename E, typename T>
-inline constexpr bool is_compatible_string_type_v = is_compatible_string_type<E, T>::value;
-
-// --------------------------------------------------------------------
-
 template<typename T, typename Archive>
 using serialize_function = decltype(std::declval<T&>().serialize(std::declval<Archive&>(), std::declval<unsigned long>()));
 
@@ -122,8 +100,7 @@ struct is_serializable_map_type<T,
 	std::enable_if_t<
 		mxml::detail::is_detected_v<mapped_type_t, T> and
 		mxml::detail::is_detected_v<key_type_t, T> and
-		mxml::detail::is_detected_v<mxml::iterator_t, T> and
-		not is_compatible_string_type_v<object, T>>>
+		mxml::detail::is_detected_v<mxml::iterator_t, T>>>
 {
 	static constexpr bool value =
 		std::is_same_v<typename T::key_type, std::string> and
