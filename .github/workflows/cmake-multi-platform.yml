@@ -69,7 +69,7 @@ jobs:
       with:
         build-dir: ${{ steps.strings.outputs.build-output-dir }}
         cxx: ${{ matrix.cpp_compiler }}
-        configure-options: -G Ninja -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        configure-options: -G Ninja
         build-type: Release
 
     - name: Build

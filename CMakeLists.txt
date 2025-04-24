@@ -131,7 +131,8 @@ CPMAddPackage(
 CPMAddPackage(
 	NAME mxml
 	VERSION 2.0.0
-	GITHUB_REPOSITORY mhekkel/mxml)
+	GITHUB_REPOSITORY mhekkel/mxml
+	OPTIONS -DBUILD_TESTING=OFF)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
