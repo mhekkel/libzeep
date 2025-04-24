@@ -17,7 +17,6 @@
 #include <zeep/http/uri.hpp>
 
 #include <mxml.hpp>
-#include <nlohmann/json.hpp>
 
 namespace zeep::http
 {
@@ -131,9 +130,6 @@ class reply
 
 	/// Set the content and the content-type header based on JSON data
 	void set_content(const el::object &data);
-
-	/// Set the content and the content-type header based on JSON data
-	void set_content(const nlohmann::json &json);
 
 	/// Set the content and the content-type header
 	void set_content(std::string data, std::string contentType);

@@ -453,7 +453,7 @@ class object
 
 			case nlohmann::json::value_t::array:
 				for (auto &e : j)
-					push_back(object{ e });
+					push_back(object(e));
 				break;
 
 			case nlohmann::json::value_t::string:
