@@ -31,17 +31,19 @@ if(USE_RSRC)
 	list(APPEND zeep_tests rsrc_webapp)
 endif()
 
+add_library(zeep-test-lib OBJECT
+	${CMAKE_CURRENT_SOURCE_DIR}/test-main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/client-test-code.cpp
+)
+target_link_libraries(zeep-test-lib zeep mcfp::mcfp Catch2::Catch2)
+
 foreach(TEST IN LISTS zeep_tests)
 	set(ZEEP_TEST "${TEST}-test")
 	set(ZEEP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${ZEEP_TEST}.cpp")
 
 	add_executable(${ZEEP_TEST})
-	target_sources(${ZEEP_TEST}
-		PRIVATE
-		${ZEEP_TEST_SOURCE}
-		${CMAKE_CURRENT_SOURCE_DIR}/test-main.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/client-test-code.cpp)
-
+	target_sources(${ZEEP_TEST} PRIVATE ${ZEEP_TEST_SOURCE})
+	
 	if("${ZEEP_TEST}" STREQUAL "processor")
 		target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
 	endif()
@@ -50,7 +52,7 @@ foreach(TEST IN LISTS zeep_tests)
 		mrc_target_resources(${ZEEP_TEST} ${CMAKE_CURRENT_SOURCE_DIR}/fragment-file.xhtml)
 	endif()
 
-	target_link_libraries(${ZEEP_TEST} PRIVATE zeep mcfp::mcfp Catch2::Catch2)
+	target_link_libraries(${ZEEP_TEST} PRIVATE zeep-test-lib)
 
 	if(MSVC)
 		# Specify unwind semantics so that MSVC knowns how to handle exceptions

@@ -46,7 +46,7 @@ jobs:
     - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: >
-        sudo apt-get update && sudo apt-get install libboost-dev mrc ninja-build nlohmann-json3-dev
+        sudo apt-get update && sudo apt-get install libboost-dev mrc ninja-build nlohmann-json3-dev catch2
 
     - name: Install Boost Windows
       if: matrix.os == 'windows-latest'
@@ -60,7 +60,7 @@ jobs:
     - name: Install Boost macOS
       if: matrix.os == 'macos-latest'
       run: >
-        brew install boost ninja nlohmann-json
+        brew install boost ninja nlohmann-json catch2
     
     - name: Configure CMake
       uses: ashutoshvarma/action-cmake-build@master
