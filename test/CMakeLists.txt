@@ -11,7 +11,7 @@ CPMAddPackage(
 CPMAddPackage(
 	NAME mcfp
 	GITHUB_REPOSITORY "mhekkel/libmcfp"
-	VERSION 1.3.5)
+	VERSION 1.4.0)
 
 # unit parser serializer xpath json crypto http processor webapp soap rest security uri
 list(APPEND zeep_tests
