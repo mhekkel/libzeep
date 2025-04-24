@@ -23,6 +23,17 @@ struct header
 {
 	std::string	name;
 	std::string	value;
+
+	header() = default;
+	header(const header &) = default;
+	header &operator=(const header &) = default;
+	header &operator=(header &&) = default;
+
+	header(std::string name, std::string value)
+		: name(name)
+		, value(value)
+	{
+	}
 };
 	
 }

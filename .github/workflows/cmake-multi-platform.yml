@@ -46,7 +46,7 @@ jobs:
     - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: >
-        sudo apt-get update && sudo apt-get install libboost-dev mrc ninja-build nlohmann-json3-dev catch2
+        sudo apt-get update && sudo apt-get install libboost-dev mrc ninja-build nlohmann-json3-dev
 
     - name: Install Boost Windows
       if: matrix.os == 'windows-latest'
