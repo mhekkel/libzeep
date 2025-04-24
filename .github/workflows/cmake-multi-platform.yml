@@ -60,7 +60,7 @@ jobs:
     - name: Install Boost macOS
       if: matrix.os == 'macos-latest'
       run: >
-        brew install boost ninja nlohmann-json catch2
+        brew install boost ninja nlohmann-json
     
     - name: Configure CMake
       uses: ashutoshvarma/action-cmake-build@master
