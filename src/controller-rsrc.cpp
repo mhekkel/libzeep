@@ -458,7 +458,7 @@ namespace zeep::http
 #include <windows.h>
 #endif
 
-rsrc_loader::rsrc_loader(const std::string &)
+rsrc_loader::rsrc_loader(std::filesystem::path)
 {
 #if _WIN32
 	char exePath[MAX_PATH] = {};

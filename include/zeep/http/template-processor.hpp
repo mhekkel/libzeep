@@ -67,7 +67,7 @@ class file_loader : public resource_loader
 	/// \param docroot	Path to the directory where the 'resources' are located
 	///
 	/// Throws a runtime_error if the docroot does not exist
-	file_loader(std::filesystem::path docroot = ".");
+	file_loader(std::filesystem::path docroot);
 
 	/// \brief return last_write_time of \a file
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
@@ -91,7 +91,7 @@ class rsrc_loader : public resource_loader
 	/// \brief constructor
 	///
 	/// The parameter is not used
-	rsrc_loader(const std::string &);
+	rsrc_loader(std::filesystem::path);
 
 	/// \brief return last_write_time of \a file
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
@@ -200,7 +200,7 @@ template <typename Loader>
 class html_template_processor : public basic_template_processor
 {
   public:
-	html_template_processor(const std::string &docroot = "", bool addDefaultTagProcessors = true)
+	html_template_processor(std::filesystem::path docroot = {}, bool addDefaultTagProcessors = true)
 		: basic_template_processor(docroot)
 		, m_loader(docroot)
 	{
