@@ -15,6 +15,8 @@ include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 include(CPM)
 
+set(CPM_USE_LOCAL_PACKAGES ON)
+
 option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
 cmake_dependent_option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON "ZEEP_BUILD_LIBRARY" OFF)
@@ -119,14 +121,17 @@ CPMAddPackage(
 	VERSION 3.9.1
 	GITHUB_REPOSITORY nlohmann/json
 	OPTIONS
-	"JSON_BuildTests OFF"
-)
+	"JSON_BuildTests OFF")
+
+CPMAddPackage(
+	NAME fast_float
+	GITHUB_REPOSITORY "fastfloat/fast_float"
+	GIT_TAG v8.0.2)
 
 CPMAddPackage(
 	NAME mxml
 	VERSION 2.0.0
-	GITHUB_REPOSITORY mhekkel/mxml
-)
+	GITHUB_REPOSITORY mhekkel/mxml)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")

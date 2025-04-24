@@ -26,8 +26,8 @@ struct Opname
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & zeep::name_value_pair("id", id)
-		   & zeep::name_value_pair("standen", standen);
+		ar & mxml::name_value_pair("id", id)
+		   & mxml::name_value_pair("standen", standen);
 		// clang-format on
 	}
 

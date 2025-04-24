@@ -56,9 +56,9 @@ struct is_file_param_array_type : std::false_type
 template <typename T>
 struct is_file_param_array_type<T,
 	std::enable_if_t<
-		mxml::is_detected_v<mxml::value_type_t, T> and
-		mxml::is_detected_v<mxml::iterator_t, T> and
-		not mxml::is_detected_v<mxml::std_string_npos_t, T>>>
+		mxml::detail::is_detected_v<mxml::value_type_t, T> and
+		mxml::detail::is_detected_v<mxml::iterator_t, T> and
+		not mxml::detail::is_detected_v<mxml::std_string_npos_t, T>>>
 {
 	static constexpr bool value = std::is_same_v<typename T::value_type, file_param>;
 };

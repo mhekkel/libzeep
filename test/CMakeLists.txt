@@ -1,7 +1,7 @@
-#          Copyright Maarten L. Hekkelman 2025
+# Copyright Maarten L. Hekkelman 2025
 # Distributed under the Boost Software License, Version 1.0.
-#    (See accompanying file LICENSE_1_0.txt or copy at
-#          http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 CPMAddPackage(
 	NAME Catch2
@@ -20,6 +20,7 @@ list(APPEND zeep_tests
 	http
 	processor
 	webapp
+
 	# soap
 	rest
 	security

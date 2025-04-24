@@ -13,6 +13,7 @@
 #include <zeep/el/object.hpp>
 
 #include <mxml/serialize.hpp>
+#include <mxml/detail/charconv.hpp>
 
 // --------------------------------------------------------------------
 
@@ -57,8 +58,8 @@ template<typename T>
 struct has_value_serializer<T>
 {
 	static constexpr bool value =
-		mxml::is_detected_v<vs_to_string_function,T> and
-		mxml::is_detected_v<vs_from_string_function,T>;
+		mxml::detail::is_detected_v<vs_to_string_function,T> and
+		mxml::detail::is_detected_v<vs_from_string_function,T>;
 };
 
 template<typename T>
@@ -74,7 +75,7 @@ struct is_compatible_string_type : std::false_type
 template <typename E, typename T>
 struct is_compatible_string_type<E, T,
 	std::enable_if_t<
-		mxml::is_detected_exact_v<typename E::string_type::value_type, mxml::value_type_t, T>>>
+		std::experimental::is_detected_exact_v<typename E::string_type::value_type, mxml::value_type_t, T>>>
 {
 	static constexpr bool value =
 		std::is_constructible_v<typename E::string_type, T>;
@@ -94,7 +95,7 @@ struct has_serialize : std::false_type {};
 template<typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
-	static constexpr bool value = mxml::is_detected_v<serialize_function,T,Archive>;
+	static constexpr bool value = mxml::detail::is_detected_v<serialize_function,T,Archive>;
 };
 
 template<typename T, typename S>
@@ -116,9 +117,9 @@ struct is_serializable_map_type : std::false_type
 template <typename T>
 struct is_serializable_map_type<T,
 	std::enable_if_t<
-		mxml::is_detected_v<mapped_type_t, T> and
-		mxml::is_detected_v<key_type_t, T> and
-		mxml::is_detected_v<mxml::iterator_t, T> and
+		mxml::detail::is_detected_v<mapped_type_t, T> and
+		mxml::detail::is_detected_v<key_type_t, T> and
+		mxml::detail::is_detected_v<mxml::iterator_t, T> and
 		not is_compatible_string_type_v<object, T>>>
 {
 	static constexpr bool value =
@@ -140,11 +141,11 @@ struct is_serializable_array_type : std::false_type
 template <typename T>
 struct is_serializable_array_type<T,
 	std::enable_if_t<
-		not mxml::is_detected_v<mapped_type_t, T> and
-		not mxml::is_detected_v<key_type_t, T> and
-		mxml::is_detected_v<mxml::value_type_t, T> and
-		mxml::is_detected_v<mxml::iterator_t, T> and
-		not mxml::is_detected_v<mxml::std_string_npos_t, T>>>
+		not mxml::detail::is_detected_v<mapped_type_t, T> and
+		not mxml::detail::is_detected_v<key_type_t, T> and
+		mxml::detail::is_detected_v<mxml::value_type_t, T> and
+		mxml::detail::is_detected_v<mxml::iterator_t, T> and
+		not mxml::detail::is_detected_v<mxml::std_string_npos_t, T>>>
 {
 	static constexpr bool value = std::is_constructible_v<object, typename T::value_type> or
 	                              has_serialize_v<typename T::value_type, object_serializer>;
@@ -373,7 +374,7 @@ template <typename T>
 struct is_serializable_to_object
 {
 	static constexpr bool value =
-		mxml::is_detected_v<serialize_to_object_function, T>;
+		mxml::detail::is_detected_v<serialize_to_object_function, T>;
 };
 
 template <typename T>
