@@ -7,21 +7,16 @@ cmake_minimum_required(VERSION 3.28)
 
 project(libzeep VERSION 7.0.0 LANGUAGES CXX)
 
-if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
-	message(FATAL_ERROR "This project requires the Ninja generator. Refers to https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html#generator-support")
-endif()
-
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include(FetchContent)
 include(VersionString)
 include(CTest)
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
+include(CPM)
 
 option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
-option(ZEEP_ALLOW_FETCH_CONTENT "Use cmake's FetchContent to retrieve missing packages" ON)
 cmake_dependent_option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON "ZEEP_BUILD_LIBRARY" OFF)
 
 # When building with ninja-multiconfig, build both debug and release by default
@@ -114,30 +109,24 @@ else()
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-find_package(date 3.0.1 QUIET NAMES date libhowardhinnant-date)
+CPMAddPackage(
+	NAME date
+	GITHUB_REPOSITORY "HowardHinnant/date"
+	VERSION 3.0.0)
 
-if(NOT date_FOUND)
-	if(ZEEP_ALLOW_FETCH_CONTENT)
-		include(FetchContent)
+CPMAddPackage(
+	NAME nlohmann_json
+	VERSION 3.9.1
+	GITHUB_REPOSITORY nlohmann/json
+	OPTIONS
+	"JSON_BuildTests OFF"
+)
 
-		FetchContent_Declare(date GIT_REPOSITORY https://github.com/HowardHinnant/date.git GIT_TAG v3.0.1)
-		FetchContent_MakeAvailable(date)
-	else()
-		message(FATAL_ERROR "The date package was not found, please install https://github.com/HowardHinnant/date and try again")
-	endif()
-endif()
-
-# if(EXISTS mxml/CMakeLists.txt)
-	# add_subdirectory(mxml)
-# endif()
-
-# find_package(mxml 1.0.3 REQUIRED)
-
-# FetchContent_Declare(mxml GIT_REPOSITORY s4.hekkelman.net:git-repo/mxml.git GIT_TAG no-module)
-# FetchContent_MakeAvailable(mxml)
-
-add_subdirectory(mxml EXCLUDE_FROM_ALL)
-find_package(nlohmann_json REQUIRED NAMES json nlohmann_json)
+CPMAddPackage(
+	NAME mxml
+	VERSION 2.0.0
+	GITHUB_REPOSITORY mhekkel/mxml
+)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")

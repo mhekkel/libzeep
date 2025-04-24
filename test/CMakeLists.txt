@@ -1,39 +1,17 @@
-find_package(Catch2 QUIET)
+#          Copyright Maarten L. Hekkelman 2025
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
 
-if(NOT Catch2_FOUND)
-	include(FetchContent)
+CPMAddPackage(
+	NAME Catch2
+	GITHUB_REPOSITORY "catchorg/Catch2"
+	VERSION 3.4.0)
 
-	FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG v3.8.0)
-
-	FetchContent_MakeAvailable(Catch2)
-endif()
-
-find_package(mcfp QUIET)
-
-if(NOT mcfp_FOUND)
-	if(ZEEP_ALLOW_FETCH_CONTENT)
-		include(FetchContent)
-
-		FetchContent_Declare(mcfp GIT_REPOSITORY https://github.com/mhekkel/libmcfp GIT_TAG v1.2.4)
-		FetchContent_MakeAvailable(mcfp)
-	else()
-		message(FATAL_ERROR "The libmcfp package was not found, please install https://github.com/mhekkel/libmcfp and try again")
-	endif()
-endif()
-
-# # data files for the parser test
-# add_library(client_test OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/client-test-code.cpp)
-
-# target_include_directories(client_test PRIVATE
-# 	${CMAKE_CURRENT_SOURCE_DIR}/../include
-# )
-
-# if(ZEEP_USE_BOOST_ASIO)
-# 	target_link_libraries(client_test PRIVATE Boost::boost)
-# endif()
+CPMAddPackage(
+	NAME mcfp
+	GITHUB_REPOSITORY "mhekkel/libmcfp"
+	VERSION 1.3.5)
 
 # unit parser serializer xpath json crypto http processor webapp soap rest security uri
 list(APPEND zeep_tests
