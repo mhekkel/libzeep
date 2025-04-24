@@ -72,10 +72,13 @@ struct is_compatible_string_type : std::false_type
 {
 };
 
+template <class Expected, template <class...> class Op, class... Args>
+constexpr inline bool is_detected_exact_v = std::experimental::is_detected_exact<Expected, Op, Args...>::value;
+
 template <typename E, typename T>
 struct is_compatible_string_type<E, T,
 	std::enable_if_t<
-		std::experimental::is_detected_exact_v<typename E::string_type::value_type, mxml::value_type_t, T>>>
+		is_detected_exact_v<typename E::string_type::value_type, mxml::value_type_t, T>>>
 {
 	static constexpr bool value =
 		std::is_constructible_v<typename E::string_type, T>;
