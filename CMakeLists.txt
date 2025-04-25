@@ -79,7 +79,7 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_package(Mrc QUIET)
+	find_package(mrc QUIET)
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
@@ -113,7 +113,7 @@ endif()
 
 set(CPM_USE_LOCAL_PACKAGES ON)
 CPMAddPackage("gh:HowardHinnant/date@3.0.3")
-CPMAddPackage("gh:nlohmann/json@3.9.1")
+CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF")
 CPMAddPackage("https://forge.hekkelman.net/maarten/mxml.git@2.0.0")
 
 if(UNIX)
