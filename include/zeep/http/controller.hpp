@@ -9,8 +9,8 @@
 /// definition of the base class zeep::http::controller, used by e.g. controller and soap_controller
 
 #include <zeep/config.hpp>
-#include <zeep/http/server.hpp>
 #include <zeep/http/scope.hpp>
+#include <zeep/http/server.hpp>
 
 #include <fstream>
 
@@ -20,11 +20,14 @@ namespace zeep::http
 /// \brief A base class for controllers, classes that handle a request
 ///
 /// This concept is inspired by the Spring way of delegating the work to
-/// controller classes. In libzeep there are two major implementations of
-/// controllers: zeep::http::controller and zeep::http::soap_controller
+/// controller classes.
 ///
 /// There can be multiple controllers in a web application, each is connected
 /// to a certain prefix-path. This is the leading part of the request URI.
+/// 
+/// The base class controller can be used as a REST controller. To process
+/// web pages, use the derived class zeep::http::html_controller. For 
+/// processing SOAP requests there is a zeep::http::soap_controller class.
 
 class controller
 {
@@ -74,9 +77,6 @@ class controller
   protected:
 	controller(const controller &) = delete;
 	controller &operator=(const controller &) = delete;
-
-	uri m_prefix_path;
-	basic_server *m_server = nullptr;
 
 	/// @cond
 
@@ -463,6 +463,9 @@ class controller
 	virtual void init_scope(scope &scope);
 
   protected:
+	uri m_prefix_path;
+	basic_server *m_server = nullptr;
+
 	std::list<mount_point_base *> m_mountpoints;
 };
 
