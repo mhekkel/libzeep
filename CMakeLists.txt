@@ -79,7 +79,7 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_package(Mrc QUIET)
+	find_package(mrc QUIET)
 
 	if(MRC_FOUND)
 		option(USE_RSRC "Use mrc to create resources" ON)
@@ -111,28 +111,10 @@ else()
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-CPMAddPackage(
-	NAME date
-	GITHUB_REPOSITORY "HowardHinnant/date"
-	VERSION 3.0.0)
-
-CPMAddPackage(
-	NAME nlohmann_json
-	VERSION 3.9.1
-	GITHUB_REPOSITORY nlohmann/json
-	OPTIONS
-	"JSON_BuildTests OFF")
-
-CPMAddPackage(
-	NAME fast_float
-	GITHUB_REPOSITORY "fastfloat/fast_float"
-	GIT_TAG v8.0.2)
-
-CPMAddPackage(
-	NAME mxml
-	VERSION 2.0.0
-	GITHUB_REPOSITORY mhekkel/mxml
-	OPTIONS -DBUILD_TESTING=OFF)
+set(CPM_USE_LOCAL_PACKAGES ON)
+CPMAddPackage("gh:HowardHinnant/date@3.0.3")
+CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF")
+CPMAddPackage("https://forge.hekkelman.net/maarten/mxml.git@2.0.0")
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
