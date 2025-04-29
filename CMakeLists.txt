@@ -1,4 +1,4 @@
-# Copyright Maarten L. Hekkelman, 2023
+# Copyright Maarten L. Hekkelman, 2023-2025
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -9,17 +9,14 @@ project(libzeep VERSION 7.0.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include(VersionString)
-include(CTest)
-include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 include(CPM)
-
-set(CPM_USE_LOCAL_PACKAGES ON)
+include(CTest)
+include(VersionString)
 
 option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
-cmake_dependent_option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON "ZEEP_BUILD_LIBRARY" OFF)
+option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON)
 
 # When building with ninja-multiconfig, build both debug and release by default
 if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
@@ -32,20 +29,14 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
 	cmake_policy(SET CMP0167 NEW)
 endif()
 
-# set(CXX_EXTENSIONS OFF)
-# set(CMAKE_CXX_STANDARD 20)
-# set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
 elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-# Build shared libraries by default (not my cup of tea, but hey)
-option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
+# Windows specific stuff
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
 if(WIN32)
 	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
 		add_definitions(-D _WIN32_WINNT=0x0A00)
@@ -67,12 +58,6 @@ endif()
 if(MSVC)
 	# make msvc standards compliant...
 	add_compile_options(/permissive-)
-endif()
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
-elseif(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
 # Optionally use mrc to create resources
@@ -114,7 +99,7 @@ endif()
 set(CPM_USE_LOCAL_PACKAGES ON)
 CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF")
-CPMAddPackage("https://forge.hekkelman.net/maarten/mxml.git@2.0.0")
+CPMAddPackage("gh:mhekkel/mxml@2.0.0")
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -122,10 +107,14 @@ if(UNIX)
 	if(HAVE_SYS_WAIT_H)
 		set(HTTP_SERVER_HAS_PREFORK 1)
 	endif()
+
+	find_file(HAVE_UNISTD_H "unistd.h")
+	if(HAVE_UNISTD_H)
+		set(HTTP_HAS_UNIX_DAEMON 1)
+	endif()
 endif()
 
 # Generate the revision.hpp file
-# write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 
 # Library rules
@@ -193,8 +182,7 @@ list(APPEND ZEEP_SRC
 )
 
 if(USE_RSRC)
-	list(APPEND ZEEP_SRC
-		src/controller-rsrc.cpp)
+	list(APPEND ZEEP_SRC src/controller-rsrc.cpp)
 endif()
 
 if(HTTP_SERVER_HAS_PREFORK)
@@ -253,14 +241,6 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-# file(GLOB OLD_CONFIG_FILES
-# ${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepConfig*.cmake
-# ${CMAKE_INSTALL_FULL_LIBDIR}/cmake/zeep/zeepTargets*.cmake)
-
-# if(OLD_CONFIG_FILES)
-# message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
-# install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
-# endif()
 install(FILES
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
@@ -277,10 +257,6 @@ set_target_properties(zeep PROPERTIES
 )
 
 # Config file
-if(UNIX)
-	set(HTTP_SERVER_HAS_PREFORK 1)
-	set(HTTP_HAS_UNIX_DAEMON 1)
-endif()
 
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
@@ -300,9 +276,7 @@ if(ZEEP_BUILD_EXAMPLES)
 endif()
 
 # Test applications, but only if we're not included as a subproject
-get_directory_property(HAS_PARENT PARENT_DIRECTORY)
-
-if(BUILD_TESTING AND NOT HAS_PARENT)
+if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
 	add_subdirectory(test)
 endif()
 
