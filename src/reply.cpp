@@ -4,13 +4,15 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include "revision.hpp"
+
+#include <zeep/http/reply.hpp>
+#include <zeep/http/uri.hpp>
+
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
-
-#include <zeep/http/reply.hpp>
-#include <zeep/http/uri.hpp>
 
 namespace zeep::http
 {
@@ -101,16 +103,16 @@ reply::reply(status_type status, std::tuple<int, int> version)
 	: m_status(status)
 	, m_version_major(std::get<0>(version))
 	, m_version_minor(std::get<1>(version))
-	, m_data(nullptr)
 {
 	using namespace date;
 	using namespace std::chrono;
+	using namespace std::literals;
 
 	std::stringstream s;
 	to_stream(s, "%a, %d %b %Y %H:%M:%S GMT", system_clock::now());
 
 	set_header("Date", s.str());
-	set_header("Server", "libzeep");
+	set_header("Server", "libzeep/"s + klibzeepVersionNumber);
 	set_header("Content-Length", "0");
 }
 
@@ -127,69 +129,25 @@ reply::reply(const reply &rhs)
 	, m_version_major(rhs.m_version_major)
 	, m_version_minor(rhs.m_version_minor)
 	, m_headers(rhs.m_headers)
-	, m_data(nullptr)
-	, m_content(rhs.m_content)
-{
-	assert(rhs.m_data == nullptr);
-}
-
-reply::reply(reply &&rhs)
-	: m_status(rhs.m_status)
-	, m_version_major(rhs.m_version_major)
-	, m_version_minor(rhs.m_version_minor)
-	, m_headers(std::move(rhs.m_headers))
 	, m_data(rhs.m_data)
-	, m_buffer(std::move(rhs.m_buffer))
 	, m_content(rhs.m_content)
-	, m_chunked(rhs.m_chunked)
-	, m_status_line(std::move(rhs.m_status_line))
 {
-	memcpy(m_size_buffer, rhs.m_size_buffer, sizeof(m_size_buffer));
-	rhs.m_data = nullptr;
 }
 
 reply::~reply()
 {
-	delete m_data;
 }
 
-void reply::reset()
+void swap(reply &a, reply &b) noexcept
 {
-	reply tmp;
-	std::swap(tmp, *this);
-}
-
-reply &reply::operator=(const reply &rhs)
-{
-	if (this != &rhs)
-	{
-		m_version_major = rhs.m_version_major;
-		m_version_minor = rhs.m_version_minor;
-		m_status = rhs.m_status;
-		m_headers = rhs.m_headers;
-		m_content = rhs.m_content;
-	}
-
-	return *this;
-}
-
-reply &reply::operator=(reply &&rhs)
-{
-	if (this != &rhs)
-	{
-		m_version_major = rhs.m_version_major;
-		m_version_minor = rhs.m_version_minor;
-		m_status = rhs.m_status;
-		m_data = std::exchange(rhs.m_data, nullptr);
-		m_headers = std::move(rhs.m_headers);
-		m_content = std::move(rhs.m_content);
-		m_chunked = rhs.m_chunked;
-
-		memcpy(m_size_buffer, rhs.m_size_buffer, sizeof(m_size_buffer));
-		m_status_line = std::move(rhs.m_status_line);
-	}
-
-	return *this;
+	std::swap(a.m_status, b.m_status);
+	std::swap(a.m_version_minor, b.m_version_minor);
+	std::swap(a.m_headers, b.m_headers);
+	std::swap(a.m_data, b.m_data);
+	std::swap(a.m_buffer, b.m_buffer);
+	std::swap(a.m_content, b.m_content);
+	std::swap(a.m_chunked, b.m_chunked);
+	std::swap(a.m_size_buffer, b.m_size_buffer);
 }
 
 void reply::set_version(int version_major, int version_minor)
@@ -200,7 +158,7 @@ void reply::set_version(int version_major, int version_minor)
 	m_version_minor = version_minor;
 
 	// for HTTP/1.0 replies we need to calculate the data length
-	if (m_version_major == 1 and m_version_minor == 0 and m_data != nullptr)
+	if (m_version_major == 1 and m_version_minor == 0 and m_data)
 	{
 		m_chunked = false;
 
@@ -222,8 +180,7 @@ void reply::set_version(int version_major, int version_minor)
 				m_content.insert(m_content.end(), buffer, buffer + n);
 			}
 
-			delete m_data;
-			m_data = nullptr;
+			m_data.reset();
 		}
 		else
 		{
@@ -382,8 +339,7 @@ void reply::set_content(std::string data, std::string contentType)
 	m_content = std::move(data);
 	m_status = ok;
 
-	delete m_data;
-	m_data = nullptr;
+	m_data.reset();
 	m_chunked = false;
 
 	set_header("Content-Length", std::to_string(m_content.length()));
@@ -396,8 +352,7 @@ void reply::set_content(const char *data, size_t size, std::string contentType)
 	m_content = std::string(data, size);
 	m_status = ok;
 
-	delete m_data;
-	m_data = nullptr;
+	m_data.reset();
 	m_chunked = false;
 
 	set_header("Content-Length", std::to_string(m_content.length()));
@@ -407,8 +362,7 @@ void reply::set_content(const char *data, size_t size, std::string contentType)
 
 void reply::set_content(std::istream *idata, std::string contentType)
 {
-	delete m_data;
-	m_data = idata;
+	m_data.reset(idata);
 	m_content.clear();
 
 	m_status = ok;
@@ -421,12 +375,15 @@ void reply::set_content(std::istream *idata, std::string contentType)
 
 std::vector<asio_ns::const_buffer> reply::to_buffers() const
 {
+	// A global, thread local storage for the status line text
+	thread_local static std::string s_status_line;
+
 	std::vector<asio_ns::const_buffer> result;
 
-	m_status_line =
+	s_status_line =
 		"HTTP/" + std::to_string(m_version_major) + '.' + std::to_string(m_version_minor) + ' ' + std::to_string(m_status) + ' ' + get_status_text(m_status) + kCRLF;
 
-	result.push_back(asio_ns::buffer(m_status_line));
+	result.push_back(asio_ns::buffer(s_status_line));
 
 	for (const header &h : m_headers)
 	{
@@ -446,7 +403,7 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 {
 	std::vector<asio_ns::const_buffer> result;
 
-	if (m_data != nullptr)
+	if (m_data)
 	{
 		const unsigned int kMaxChunkSize = 10240;
 
@@ -469,13 +426,12 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 				result.push_back(asio_ns::buffer(kZERO));
 				result.push_back(asio_ns::buffer(kCRLF));
 				result.push_back(asio_ns::buffer(kCRLF));
-				delete m_data;
-				m_data = nullptr;
+				m_data.reset();
 			}
 			else
 			{
 				const char kHex[] = "0123456789abcdef";
-				char *e = m_size_buffer + sizeof(m_size_buffer);
+				char *e = m_size_buffer.data() + m_size_buffer.size();
 				char *p = e;
 				auto l = n;
 
@@ -496,10 +452,7 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 			if (n > 0)
 				result.push_back(asio_ns::buffer(&m_buffer[0], n));
 			else
-			{
-				delete m_data;
-				m_data = nullptr;
-			}
+				m_data.reset();
 		}
 	}
 

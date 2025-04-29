@@ -152,7 +152,7 @@ void connection::handle_write(asio_system_ns::error_code ec, size_t /*bytes_tran
 		else if (m_keep_alive)
 		{
 			m_request_parser.reset();
-			m_reply.reset();
+			m_reply = {};
 
 			if (m_buffer.in_avail())
 				handle_read({}, 0); // special case

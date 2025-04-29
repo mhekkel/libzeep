@@ -71,17 +71,25 @@ class reply
 		std::vector<header> &&headers, std::string &&payload);
 
 	reply(const reply &rhs);
-	reply(reply &&rhs);
+	
+	reply(reply &&rhs)
+	{
+		swap(*this, rhs);
+	}
 
 	~reply();
-	reply &operator=(const reply &);
-	reply &operator=(reply &&);
+
+	reply &operator=(reply rhs)
+	{
+		swap(*this, rhs);
+		return *this;
+	}
+
+	/// Swap two replies
+	friend void swap(reply &a, reply &b) noexcept;
 
 	/// Simple way to check if a reply is valid
 	explicit operator bool() const { return m_status == ok; }
-
-	/// Clear contents and reset status and version
-	void reset();
 
 	/// Set the version to \a version_major . \a version_minor
 	void set_version(int version_major, int version_minor);
@@ -180,15 +188,12 @@ class reply
 	status_type m_status;
 	int m_version_major, m_version_minor;
 	std::vector<header> m_headers;
-	std::istream *m_data;
+	std::shared_ptr<std::istream> m_data;
 	std::vector<char> m_buffer;
 	std::string m_content;
 
 	bool m_chunked = false;
-	char m_size_buffer[8]; ///< to store the string with the size for chunked encoding
-
-	// this status line is only here to have a sensible location to store it
-	mutable std::string m_status_line;
+	std::array<char, 8> m_size_buffer; ///< to store the string with the size for chunked encoding
 };
 
 } // namespace zeep::http
