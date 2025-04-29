@@ -6,9 +6,9 @@
 
 #include "glob.hpp"
 
-#include <zeep/crypto.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/uri.hpp>
+#include "zeep/crypto.hpp"
+#include "zeep/http/security.hpp"
+#include "zeep/http/uri.hpp"
 
 #include <iostream>
 

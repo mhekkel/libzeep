@@ -4,10 +4,10 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/http/template-processor.hpp>
-#include <zeep/streambuf.hpp>
+#include "zeep/http/template-processor.hpp"
+#include "zeep/streambuf.hpp"
 
 #include <iostream>
 

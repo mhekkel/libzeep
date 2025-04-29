@@ -11,9 +11,9 @@
 /// Instances of this class take care of mapping member functions to
 /// SOAP calls automatically converting in- and output data
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/http/controller.hpp>
+#include "zeep/http/controller.hpp"
 
 #include <mxml.hpp>
 

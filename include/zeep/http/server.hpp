@@ -9,7 +9,7 @@
 /// \file
 /// definition of the zeep::http::server class
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <chrono>
 #include <mutex>
@@ -17,10 +17,10 @@
 
 #include "zeep/http/asio.hpp"
 
-#include <zeep/http/access-control.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/request.hpp>
-#include <zeep/http/template-processor.hpp>
+#include "zeep/http/access-control.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/template-processor.hpp"
 
 #include <list>
 

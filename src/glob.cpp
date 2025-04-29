@@ -6,7 +6,7 @@
 #include <regex>
 
 #include "glob.hpp"
-#include <zeep/unicode-support.hpp>
+#include "zeep/unicode-support.hpp"
 
 // --------------------------------------------------------------------
 

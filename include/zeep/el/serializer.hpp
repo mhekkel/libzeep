@@ -8,9 +8,9 @@
 /// \file
 /// definition of the serializer classes that help serialize data into and out of our el script objects
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/el/object.hpp>
+#include "zeep/el/object.hpp"
 
 #include <mxml/serialize.hpp>
 #include <mxml/detail/charconv.hpp>

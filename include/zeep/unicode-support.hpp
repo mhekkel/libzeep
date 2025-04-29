@@ -9,8 +9,8 @@
 /// \file
 /// various definitions of data types and routines used to work with Unicode encoded text
 
-#include <zeep/config.hpp>
-#include <zeep/exception.hpp>
+#include "zeep/config.hpp"
+#include "zeep/exception.hpp"
 
 #include <cstdint>
 #include <locale>

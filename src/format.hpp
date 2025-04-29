@@ -8,7 +8,7 @@
 /// \file
 /// This file contains definitions of various utility routines
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <string>
 #include <locale>

@@ -7,9 +7,9 @@
 
 // A simple uri class.
 
-#include <zeep/config.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/unicode-support.hpp>
+#include "zeep/config.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/unicode-support.hpp"
 
 #include <cstdint>
 

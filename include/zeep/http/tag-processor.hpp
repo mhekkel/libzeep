@@ -8,11 +8,11 @@
 /// \file
 /// definition of the zeep::http::tag_processor classes. These classes take care of processing HTML templates
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <filesystem>
 
-#include <zeep/el/processing.hpp>
+#include "zeep/el/processing.hpp"
 #include <mxml.hpp>
 
 namespace zeep::http

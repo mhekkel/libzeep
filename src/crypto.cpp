@@ -3,7 +3,7 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <cassert>
 #include <climits>
@@ -11,7 +11,7 @@
 #include <random>
 #include <sstream>
 
-#include <zeep/crypto.hpp>
+#include "zeep/crypto.hpp"
 
 namespace zeep
 {

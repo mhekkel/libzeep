@@ -9,12 +9,12 @@
 /// \file
 /// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include "zeep/http/asio.hpp"
-#include <zeep/el/object.hpp>
-#include <zeep/http/header.hpp>
-#include <zeep/http/uri.hpp>
+#include "zeep/el/object.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/uri.hpp"
 
 #include <mxml.hpp>
 

@@ -8,7 +8,7 @@
 /// \file
 /// A simple std::streambuf implementation that wraps around const char* data.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <cassert>
 #include <cstring>

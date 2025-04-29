@@ -9,8 +9,8 @@
 #include <sstream>
 #include <utility>
 
-#include <zeep/http/uri.hpp>
-#include <zeep/unicode-support.hpp>
+#include "zeep/http/uri.hpp"
+#include "zeep/unicode-support.hpp"
 
 namespace zeep::http
 {

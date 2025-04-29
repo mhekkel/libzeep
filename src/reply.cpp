@@ -6,8 +6,8 @@
 
 #include "revision.hpp"
 
-#include <zeep/http/reply.hpp>
-#include <zeep/http/uri.hpp>
+#include "zeep/http/reply.hpp"
+#include "zeep/http/uri.hpp"
 
 #include <chrono>
 #include <iomanip>

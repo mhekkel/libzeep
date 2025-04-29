@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <iostream>
 #include <cerrno>
@@ -20,8 +20,8 @@
 #define WCONTINUED 0
 #endif
 
-#include <zeep/http/connection.hpp>
-#include <zeep/http/preforked-server.hpp>
+#include "zeep/http/connection.hpp"
+#include "zeep/http/preforked-server.hpp"
 
 namespace zeep::http
 {
