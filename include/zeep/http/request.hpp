@@ -11,8 +11,8 @@
 
 #include <zeep/config.hpp>
 
-#include <zeep/http/asio.hpp>
 #include <zeep/el/object.hpp>
+#include <zeep/http/asio.hpp>
 #include <zeep/http/header.hpp>
 #include <zeep/http/uri.hpp>
 
@@ -124,7 +124,7 @@ class request
 	/// \brief Get the entire request line (convenience method)
 	std::string get_request_line() const
 	{
-		return m_method + ' ' + m_uri.string() + " HTTP/" + std::string(m_version, m_version + 3);
+		return m_method + ' ' + m_uri.string() + " HTTP/" + std::string(m_version.data(), m_version.data() + m_version.size());
 	}
 
 	/// \brief Return the payload
@@ -195,7 +195,7 @@ class request
 	std::vector<asio_ns::const_buffer> to_buffers() const;
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
-	std::locale &get_locale() const;
+	std::locale get_locale() const;
 
 	/// \brief For debugging purposes
 	friend std::ostream &operator<<(std::ostream &io, const request &req);
@@ -219,7 +219,7 @@ class request
 
 	std::string m_method = "UNDEFINED"; ///< POST, GET, etc.
 	uri m_uri;                          ///< The uri as requested
-	char m_version[3];                  ///< The version string
+	std::array<char, 3> m_version;      ///< The version string
 	std::vector<header> m_headers;      ///< A list with zeep::http::header values
 	std::string m_payload;              ///< For POST requests
 	bool m_close = false;               ///< Whether 'Connection: close' was specified
@@ -228,9 +228,6 @@ class request
 	el::object m_credentials; ///< The credentials as found in the validated access-token
 
 	std::string m_remote_address; ///< Address of connecting client
-
-	mutable std::unique_ptr<std::locale> m_locale;
-	mutable std::string m_request_line;
 };
 
 } // namespace zeep::http

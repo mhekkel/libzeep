@@ -71,7 +71,7 @@ class reply
 		std::vector<header> &&headers, std::string &&payload);
 
 	reply(const reply &rhs);
-	
+
 	reply(reply &&rhs)
 	{
 		swap(*this, rhs);
@@ -86,7 +86,16 @@ class reply
 	}
 
 	/// Swap two replies
-	friend void swap(reply &a, reply &b) noexcept;
+	friend void swap(reply &a, reply &b) noexcept
+	{
+		std::swap(a.m_status, b.m_status);
+		std::swap(a.m_version_minor, b.m_version_minor);
+		std::swap(a.m_headers, b.m_headers);
+		std::swap(a.m_data, b.m_data);
+		std::swap(a.m_buffer, b.m_buffer);
+		std::swap(a.m_content, b.m_content);
+		std::swap(a.m_chunked, b.m_chunked);
+	}
 
 	/// Simple way to check if a reply is valid
 	explicit operator bool() const { return m_status == ok; }
@@ -191,9 +200,7 @@ class reply
 	std::shared_ptr<std::istream> m_data;
 	std::vector<char> m_buffer;
 	std::string m_content;
-
 	bool m_chunked = false;
-	std::array<char, 8> m_size_buffer; ///< to store the string with the size for chunked encoding
 };
 
 } // namespace zeep::http

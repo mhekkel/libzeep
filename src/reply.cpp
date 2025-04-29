@@ -138,18 +138,6 @@ reply::~reply()
 {
 }
 
-void swap(reply &a, reply &b) noexcept
-{
-	std::swap(a.m_status, b.m_status);
-	std::swap(a.m_version_minor, b.m_version_minor);
-	std::swap(a.m_headers, b.m_headers);
-	std::swap(a.m_data, b.m_data);
-	std::swap(a.m_buffer, b.m_buffer);
-	std::swap(a.m_content, b.m_content);
-	std::swap(a.m_chunked, b.m_chunked);
-	std::swap(a.m_size_buffer, b.m_size_buffer);
-}
-
 void reply::set_version(int version_major, int version_minor)
 {
 	const std::streambuf::pos_type kNoPos = -1;
@@ -430,8 +418,10 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 			}
 			else
 			{
+				thread_local static std::array<char, 8> s_size_buffer; ///< to store the string with the size for chunked encoding
+
 				const char kHex[] = "0123456789abcdef";
-				char *e = m_size_buffer.data() + m_size_buffer.size();
+				char *e = s_size_buffer.data() + s_size_buffer.size();
 				char *p = e;
 				auto l = n;
 
