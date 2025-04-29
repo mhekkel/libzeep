@@ -6,9 +6,9 @@
 
 #include <filesystem>
 
-#include <zeep/crypto.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/streambuf.hpp>
+#include "zeep/crypto.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/streambuf.hpp"
 
 namespace fs = std::filesystem;
 
@@ -19,12 +19,10 @@ request::request(std::string method, uri uri, std::tuple<int, int> version,
 	std::vector<header> &&headers, std::string &&payload)
 	: m_method(std::move(method))
 	, m_uri(std::move(uri))
+	, m_version({ static_cast<char>('0' + std::get<0>(version)), '.', static_cast<char>('0' + std::get<1>(version)) })
 	, m_headers(std::move(headers))
 	, m_payload(std::move(payload))
 {
-	m_version[0] = static_cast<char>('0' + std::get<0>(version));
-	m_version[1] = '.';
-	m_version[2] = static_cast<char>('0' + std::get<1>(version));
 }
 
 request::request(const request &req)
@@ -32,6 +30,7 @@ request::request(const request &req)
 	, m_local_port(req.m_local_port)
 	, m_method(req.m_method)
 	, m_uri(req.m_uri)
+	, m_version(req.m_version)
 	, m_headers(req.m_headers)
 	, m_payload(req.m_payload)
 	, m_close(req.m_close)
@@ -39,8 +38,6 @@ request::request(const request &req)
 	, m_credentials(req.m_credentials)
 	, m_remote_address(req.m_remote_address)
 {
-	for (char *d = &m_version[0]; auto c : req.m_version)
-		*d++ = c;
 }
 
 void request::swap(request &req) noexcept
@@ -51,9 +48,7 @@ void request::swap(request &req) noexcept
 		std::swap(m_local_port, req.m_local_port);
 		std::swap(m_method, req.m_method);
 		std::swap(m_uri, req.m_uri);
-		std::swap(m_version[0], req.m_version[0]);
-		std::swap(m_version[1], req.m_version[1]);
-		std::swap(m_version[2], req.m_version[2]);
+		std::swap(m_version, req.m_version);
 		std::swap(m_headers, req.m_headers);
 		std::swap(m_payload, req.m_payload);
 		std::swap(m_close, req.m_close);
@@ -637,8 +632,29 @@ void request::set_cookie(std::string name, std::string value)
 	set_header("Cookie", cs.str());
 }
 
-const std::map<std::string, std::vector<std::string>>
-	kLocalesPerLang = {
+// --------------------------------------------------------------------
+// Locale support
+
+class locale_table
+{
+  public:
+	static locale_table &instance()
+	{
+		static locale_table s_instance;
+		return s_instance;
+	}
+
+	std::locale get(const std::string &accept_language);
+
+  private:
+	locale_table() = default;
+
+	static const std::map<std::string_view, std::vector<std::string_view>> kLocalesPerLang;
+	static const std::regex kAcceptsRX;
+};
+
+const std::map<std::string_view, std::vector<std::string_view>>
+	locale_table::kLocalesPerLang{
 		{ "ar", { "AE", "BH", "DZ", "EG", "IQ", "JO", "KW", "LB", "LY", "MA", "OM", "QA", "SA", "SD", "SY", "TN", "YE" } },
 		{ "be", { "BY" } },
 		{ "bg", { "BG" } },
@@ -681,76 +697,68 @@ const std::map<std::string, std::vector<std::string>>
 		{ "zh", { "CN", "HK", "TW" } }
 	};
 
-std::locale &request::get_locale() const
+const std::regex locale_table::kAcceptsRX(R"(([[:alpha:]]{1,8})(?:-([[:alnum:]]{1,8}))?(?:;q=([01](?:\.\d{1,3})))?)");
+
+std::locale locale_table::get(const std::string &acceptedLanguage)
 {
-	if (not m_locale)
+	std::string preferred;
+	std::vector<std::string> accepted;
+	split(accepted, acceptedLanguage, ",");
+
+	struct lang_score
 	{
-		auto acceptedLanguage = get_header("Accept-Language");
-
-		std::string preferred;
-		std::vector<std::string> accepted;
-		split(accepted, acceptedLanguage, ",");
-
-		struct lang_score
+		std::string lang, region;
+		float score;
+		std::locale loc;
+		bool operator<(const lang_score &rhs) const
 		{
-			std::string lang, region;
-			float score;
-			std::locale loc;
-			bool operator<(const lang_score &rhs) const
-			{
-				return score > rhs.score;
-			}
-		};
-
-		std::vector<lang_score> scores;
-
-		std::regex r(R"(([[:alpha:]]{1,8})(?:-([[:alnum:]]{1,8}))?(?:;q=([01](?:\.\d{1,3})))?)");
-
-		auto tryLangRegion = [&scores](std::string lang, std::string region, float score)
-		{
-			try
-			{
-				auto name = lang + '_' + region + ".UTF-8";
-				std::locale loc(name);
-				if (iequals(loc.name(), name))
-					scores.push_back({ std::move(lang), std::move(region), score, loc });
-			}
-			catch (const std::exception &)
-			{
-			}
-		};
-
-		for (auto &l : accepted)
-		{
-			std::smatch m;
-			if (std::regex_search(l, m, r))
-			{
-				float score = 1;
-				if (m[3].matched)
-					score = std::stof(m.str(3));
-
-				auto lang = m.str(1);
-
-				if (m[2].matched)
-					tryLangRegion(lang, m[2], score);
-				else if (kLocalesPerLang.count(lang))
-				{
-					for (auto region : kLocalesPerLang.at(lang))
-						tryLangRegion(lang, region, score);
-				}
-			}
+			return score > rhs.score;
 		}
+	};
 
-		if (scores.empty())
-			m_locale.reset(new std::locale("C"));
-		else
+	std::vector<lang_score> scores;
+
+	auto tryLangRegion = [&scores](std::string lang, std::string region, float score)
+	{
+		try
 		{
-			std::stable_sort(scores.begin(), scores.end());
-			m_locale.reset(new std::locale(scores.front().loc));
+			auto name = lang + '_' + region + ".UTF-8";
+			std::locale loc(name);
+			if (iequals(loc.name(), name))
+				scores.push_back({ std::move(lang), std::move(region), score, loc });
+		}
+		catch (const std::exception &)
+		{
+		}
+	};
+
+	for (auto &l : accepted)
+	{
+		std::smatch m;
+		if (std::regex_search(l, m, kAcceptsRX))
+		{
+			float score = 1;
+			if (m[3].matched)
+				score = std::stof(m.str(3));
+
+			auto lang = m.str(1);
+
+			if (m[2].matched)
+				tryLangRegion(lang, m[2], score);
+			else if (kLocalesPerLang.count(lang))
+			{
+				for (auto region : kLocalesPerLang.at(lang))
+					tryLangRegion(lang, std::string{ region }, score);
+			}
 		}
 	}
 
-	return *m_locale;
+	return scores.empty() ? std::locale("C") : std::locale(scores.front().loc);
+}
+
+std::locale request::get_locale() const
+{
+	return locale_table::instance().get(get_header("Accept-Language"));
 }
 
 namespace
@@ -764,17 +772,13 @@ namespace
 
 std::vector<asio_ns::const_buffer> request::to_buffers() const
 {
+	thread_local static std::string s_request_line;
+
 	std::vector<asio_ns::const_buffer> result;
 
-	m_request_line = get_request_line();
+	s_request_line = get_request_line();
 
-	// result.push_back(asio_ns::buffer(m_method));
-	// result.push_back(asio_ns::buffer(kSpace));
-	// result.push_back(asio_ns::buffer(m_uri));
-	// result.push_back(asio_ns::buffer(kHTTPSlash));
-	// result.push_back(asio_ns::buffer(m_version));
-
-	result.push_back(asio_ns::buffer(m_request_line));
+	result.push_back(asio_ns::buffer(s_request_line));
 	result.push_back(asio_ns::buffer(kCRLF));
 
 	for (const header &h : m_headers)

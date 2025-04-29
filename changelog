@@ -4,6 +4,7 @@ Version 7.0.0
 - Refactored json code into el::object (el = expression language)
 - Moved legacy html_controller code into a new sub class html_controller_v1
 - Removed rest_controller, code is now in the base class controller.
+- Many small API changes
 
 Version 6.1.0
 - Better login handling

@@ -8,15 +8,15 @@
 // A script language used in the XHTML templates used by the zeep webapp.
 //
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include "format.hpp"
 
-#include <zeep/crypto.hpp>
-#include <zeep/el/processing.hpp>
-#include <zeep/http/scope.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/unicode-support.hpp>
+#include "zeep/crypto.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/http/scope.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/unicode-support.hpp"
 
 #include <codecvt>
 #include <locale>

@@ -11,9 +11,9 @@
 /// care of handling requests that are mapped to call back functions
 /// and provides code to return XHTML formatted replies.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/http/controller.hpp>
+#include "zeep/http/controller.hpp"
 
 // --------------------------------------------------------------------
 //

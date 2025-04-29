@@ -13,7 +13,6 @@ list(APPEND zeep_tests
 	http
 	processor
 	webapp
-
 	# soap
 	rest
 	security

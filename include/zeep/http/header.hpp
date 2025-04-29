@@ -9,7 +9,7 @@
 /// \file
 /// definition of the zeep::http::header class
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <string>
 

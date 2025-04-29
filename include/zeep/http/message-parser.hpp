@@ -9,12 +9,12 @@
 /// \file
 /// definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <tuple>
 
-#include <zeep/http/reply.hpp>
-#include <zeep/http/request.hpp>
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 
 namespace zeep::http
 {

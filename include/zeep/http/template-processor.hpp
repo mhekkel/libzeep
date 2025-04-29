@@ -9,14 +9,14 @@
 /// definition of the zeep::template_processor class. This class
 /// handles the loading and processing of XHTML files.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <filesystem>
 #include <set>
 
-#include <zeep/el/object.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/tag-processor.hpp>
+#include "zeep/el/object.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/tag-processor.hpp"
 
 #include <mxml.hpp>
 

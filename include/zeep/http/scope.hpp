@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <zeep/el/object.hpp>
-#include <zeep/http/request.hpp>
+#include "zeep/el/object.hpp"
+#include "zeep/http/request.hpp"
 
 namespace zeep::http
 {
@@ -67,7 +67,7 @@ class scope
 	const std::string &get_payload() const { return m_req->get_payload(); }
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
-	std::locale &get_locale() const { return m_req->get_locale(); }
+	std::locale get_locale() const { return m_req->get_locale(); }
 
 	/// \brief get the optional parameter value for @a name
 	std::optional<std::string> get_parameter(std::string_view name) const
