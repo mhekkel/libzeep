@@ -1,3 +1,6 @@
+Version 7.0.1
+- Removed double move of string
+
 Version 7.0.0
 - Complete rewrite
 - Removed xml code, now depends on libmxml

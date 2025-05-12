@@ -223,22 +223,20 @@ class html_controller : public controller
 	/// @endcond
 
 	/// \brief map a simple page to a URI.
-	void map_get(std::string mountPoint, std::string templateName)
+	void map_get_simple(std::string mountPoint, std::string templateName)
 	{
-		m_mountpoints.emplace_back(new html_mount_point_simple(mountPoint, "GET", templateName, *this));
-		m_mountpoints.emplace_back(new html_mount_point_simple(mountPoint, "GET", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "GET", std::move(templateName), *this));
 	}
 
-	void map_post(std::string mountPoint, std::string templateName)
+	void map_post_simple(std::string mountPoint, std::string templateName)
 	{
-		m_mountpoints.emplace_back(new html_mount_point_simple(mountPoint, "POST", templateName, *this));
-		m_mountpoints.emplace_back(new html_mount_point_simple(mountPoint, "POST", templateName, *this));
+		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", std::move(templateName), *this));
 	}
 
-	void map(std::string mountPoint, std::string templateName)
+	void map_simple(std::string mountPoint, std::string templateName)
 	{
-		map_get(mountPoint, templateName);
-		map_post(mountPoint, templateName);
+		map_get_simple(mountPoint, templateName);
+		map_post_simple(mountPoint, templateName);
 	}
 
 	// --------------------------------------------------------------------
