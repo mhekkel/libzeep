@@ -51,11 +51,8 @@ using vs_to_string_function = decltype(value_serializer<T>::to_string(std::declv
 template<typename T>
 using vs_from_string_function = decltype(value_serializer<T>::from_string(std::declval<const std::string&>()));
 
-template<typename T, typename = void>
-struct has_value_serializer : std::false_type {};
-
 template<typename T>
-struct has_value_serializer<T>
+struct has_value_serializer
 {
 	static constexpr bool value =
 		mxml::detail::is_detected_v<vs_to_string_function,T> and
