@@ -24,7 +24,7 @@ bool is_valid_uri(const std::string &uri);
 
 /// \brief Check the URI in \a uri, returns true if the uri is fully qualified (has a scheme and path)
 /// \param uri		The URI to check
-bool is_fully_qualified_uri(std::string_view uri);
+bool is_fully_qualified_uri(const std::string &uri);
 
 /// \brief Check the parameter in \a host is of the form HOST:PORT as required by CONNECT
 /// \param host		The host string to check
