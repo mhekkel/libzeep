@@ -83,7 +83,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(ZEEP_USE_BOOST_ASIO)
-	find_package(Boost 1.74 REQUIRED)
+	find_package(Boost 1.74 REQUIRED COMPONENTS headers)
 
 	message(STATUS "Using asio from boost")
 
@@ -209,7 +209,7 @@ target_include_directories(zeep
 target_link_libraries(zeep PUBLIC Threads::Threads date::date mxml::mxml nlohmann_json::nlohmann_json)
 
 if(ZEEP_USE_BOOST_ASIO)
-	target_link_libraries(zeep PUBLIC Boost::boost)
+	target_link_libraries(zeep PUBLIC Boost::headers)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
