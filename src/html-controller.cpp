@@ -27,12 +27,12 @@ const basic_template_processor &html_controller::get_template_processor() const
 	return m_server->get_template_processor();
 }
 
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
 
-// void html_controller::html_mount_point_simple::call(const scope &scope, const parameter_pack &, reply &rep)
-// {
-// 	rep = m_controller.get_template_processor().create_reply_from_template(m_template, scope);
-// }
+reply html_controller::html_mount_point_simple::call(const scope &scope)
+{
+	return m_controller.get_template_processor().create_reply_from_template(m_template, scope);
+}
 
 // --------------------------------------------------------------------
 
