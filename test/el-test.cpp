@@ -127,3 +127,24 @@ TEST_CASE("test-5")
 
 	scope.put("o2", e::to_object(opn_v));
 }
+
+
+TEST_CASE("test-6")
+{
+	enum class Status { RUNNING, STOPPED };
+
+	mxml::value_serializer<Status>::init({
+		{ Status::RUNNING, "running" },
+		{ Status::STOPPED, "stopped" }
+	});
+
+	Status status = Status::RUNNING;
+	
+	e::object o = e::serializer<Status>::serialize(status);
+
+	std::cout << o << "\n";
+
+	auto status2 = e::serializer<Status>::deserialize(o);
+
+	CHECK(status == status2);
+}

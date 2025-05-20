@@ -226,7 +226,8 @@ template <typename T>
 		not std::is_same_v<T, std::initializer_list<object>> and
 		not std::is_same_v<T, object> and
 		not is_serializable_map_type_v<T> and
-		not is_serializable_array_type_v<T>)
+		not is_serializable_array_type_v<T> and
+		not std::is_enum_v<T>)
 struct serializer<T>
 {
 	static object serialize(const T &v)
@@ -339,6 +340,21 @@ struct serializer<std::optional<T>>
 		if (not o.is_null())
 			result = value_serializer_impl::deserialize(o);
 		return result;
+	}
+};
+
+template <typename T>
+	requires(std::is_enum_v<T> and has_value_serializer_v<T>)
+struct serializer<T>
+{
+	static object serialize(T v)
+	{
+		return object(value_serializer<T>::to_string(v));
+	}
+
+	static T deserialize(const object &o)
+	{
+		return value_serializer<T>::from_string(o.get<std::string>());
 	}
 };
 
