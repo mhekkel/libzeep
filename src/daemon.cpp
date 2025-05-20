@@ -169,26 +169,28 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, s
 		}
 
 		int pid = daemonize();
-		if (pid != 0) // parent process, we can simply exit now
-			_exit(0);
-
-		for (;;)
+		if (pid == 0)
 		{
-			bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, std::move(run_as_user));
-			if (hupped)
+			for (;;)
 			{
-				std::clog << "Server was interrupted, will attempt to resume\n";
-				continue;
+				bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, std::move(run_as_user));
+				if (hupped)
+				{
+					std::clog << "Server was interrupted, will attempt to resume\n";
+					continue;
+				}
+
+				break;
 			}
 
-			break;
+			if (fs::exists(m_pid_file, ec))
+				fs::remove(m_pid_file, ec);
+
+			if (ec)
+				std::clog << "Removing pid file failed: " << ec.message() << '\n';
+
+			_exit(0);
 		}
-
-		if (fs::exists(m_pid_file, ec))
-			fs::remove(m_pid_file, ec);
-
-		if (ec)
-			std::clog << "Removing pid file failed: " << ec.message() << '\n';
 	}
 
 	return result;
@@ -268,8 +270,6 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 		int pid = daemonize();
 		if (pid == 0) // Child process
 		{
-			// Start listening now that we still have the rights
-
 			open_log_file();
 
 			std::clog << "starting server\n"
@@ -288,28 +288,31 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 					exit(1);
 				}
 
-				int ngroups = 0;
-				if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
+				if (pw->pw_uid != getuid())
 				{
-					std::vector<gid_t> groups(ngroups);
-					if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
-						setgroups(ngroups, groups.data()) == -1)
+					int ngroups = 0;
+					if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
 					{
-						std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
+						std::vector<gid_t> groups(ngroups);
+						if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
+							setgroups(ngroups, groups.data()) == -1)
+						{
+							std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
+							exit(1);
+						}
+					}
+
+					if (setgid(pw->pw_gid) < 0)
+					{
+						std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
 						exit(1);
 					}
-				}
 
-				if (setgid(pw->pw_gid) < 0)
-				{
-					std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
-					exit(1);
-				}
-
-				if (setuid(pw->pw_uid) < 0)
-				{
-					std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-					exit(1);
+					if (setuid(pw->pw_uid) < 0)
+					{
+						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
+						exit(1);
+					}
 				}
 			}
 
@@ -339,13 +342,20 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 
 				if (t.joinable())
 					t.join();
-				
+
 				if (sig == SIGHUP)
 				{
 					std::this_thread::sleep_for(100ms);
+
+					// re-open log files
+					open_log_file();
+
+					std::clog << "re-starting server\n"
+							<< "Listening to " << address << ':' << port << '\n';
+
 					continue;
 				}
-				
+
 				break;
 			}
 
@@ -354,7 +364,7 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 
 			if (ec)
 				std::clog << "Removing pid file failed: " << ec.message() << '\n';
-			
+
 			// We're done. Exit
 			_exit(0);
 		}
@@ -563,28 +573,31 @@ bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of
 						exit(1);
 					}
 
-					int ngroups = 0;
-					if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
+					if (pw->pw_uid != getuid())
 					{
-						std::vector<gid_t> groups(ngroups);
-						if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
-							setgroups(ngroups, groups.data()) == -1)
+						int ngroups = 0;
+						if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
 						{
-							std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
+							std::vector<gid_t> groups(ngroups);
+							if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
+								setgroups(ngroups, groups.data()) == -1)
+							{
+								std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
+								exit(1);
+							}
+						}
+
+						if (setgid(pw->pw_gid) < 0)
+						{
+							std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
 							exit(1);
 						}
-					}
 
-					if (setgid(pw->pw_gid) < 0)
-					{
-						std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
-					}
-
-					if (setuid(pw->pw_uid) < 0)
-					{
-						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
+						if (setuid(pw->pw_uid) < 0)
+						{
+							std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
+							exit(1);
+						}
 					}
 				}
 				
@@ -687,8 +700,8 @@ bool daemon::pid_is_for_executable()
 			result = strcmp(exe, path) == 0 or
 			         (ends_with(path, " (deleted)") and starts_with(path, exe));
 		}
-		else if (errno == ENOENT) // link file doesn't exist (can happen on e.g. macOS)
-			result = kill(pid, 0) == 0;	// simply test using kill with signal 0. 
+		else if (errno == ENOENT)       // link file doesn't exist (can happen on e.g. macOS)
+			result = kill(pid, 0) == 0; // simply test using kill with signal 0.
 		else
 			throw std::runtime_error("Failed to read executable link : "s + strerror(errno));
 	}
