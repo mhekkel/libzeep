@@ -1,3 +1,7 @@
+Version 7.0.2
+- Fix various deamon and log file related problems
+- Fix serialization of enums
+
 Version 7.0.1
 - Removed double move of string
 
