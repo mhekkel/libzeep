@@ -1,10 +1,10 @@
+libzeep
+=======
+
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
 [![github CI](https://github.com/mhekkel/libzeep/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
 [![github CI](https://github.com/mhekkel/libzeep/actions/workflows/build-documentation.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
-
-libzeep
-=======
 
 TL;DR
 -----
@@ -18,7 +18,7 @@ About
 
 Libzeep was originally developed to make it easy to create SOAP servers. And since
 working with SOAP means working with XML and no decent C++ XML library
-existed on my radar I created a full XML library as well.
+existed on my radar at that time I created a full XML library as well.
 
 Unfortunately (well, considering the work I did), REST proved to be more
 popular than SOAP, and so I added a better JSON implementation to version
@@ -29,50 +29,31 @@ of building interactive web applications and thought I should bring that
 simplicity to the C++ world. After all, my applications need raw speed and
 no, Java is not fast.
 
-The current incarnation of libzeep, version 6.0, is a completely refactored
-set of libraries. One for manipulating XML, one for handling JSON and one for
-building web applications.
+Version 6.0.0 of libzeep was a completely refactored set of libraries. One
+for manipulating XML, one for handling JSON and one for building web applications.
 
-The XML part of libzeep consists of a validating parser, a DOM(-like) node
-implementation, an XPath search engine and a XML writer/formatter. The
-validation works based on DOCTYPE definitions.
+But then I decided it would be better to have the xml code in a separate library
+and so version 7 now comes without an XML library but uses mxml instead.
 
-Please note that libzeep aims to provide a fully compliant XML processor as
-specified by the W3 organisation (see: [www.w3.org/TR/xml](https://www.w3.org/TR/xml) ).
-This means
-it is as strict as the standard requires and it stops processing a file when
-a validation of the well-formedness is encountered, or when a document
-appears to be invalid when it is in validating mode. Error reporting is done
-in this case.
-
-The JSON library in itself is fairly simple. There are much better alternatives
-if you're looking for just JSON. But this implementation is required by the
-web application part.
-
-And then we have a web application library. This one makes it very easy to build
+What remains is a web application library. This one makes it very easy to build
 a HTTP server that serves HTML but also speaks REST and SOAP. The current
 implementation consists of a HTTP server class to which you can add controllers.
 Each controller has a path prefix and handles requests for some entries in this
-uri path. The base class controller is simple and in fact is just a base class.
+uri path. The base class zeep::http::controller can be used as a base class for
+a REST controller.
 
 The HTML controller can be used as a base class so you can add methods that
 will be called for certain URI paths. In combination with the available tag
 processors you can then create and return dynamic XHTML pages.
 
-The REST and SOAP controllers likewise can be used as base classes to export
-methods that take simple or complex named parameters and return JSON and SOAP
-enveloped data structures respectively.
-
 Full documentation can be found at:
 
-[www.hekkelman.com/libzeep-doc/](https://www.hekkelman.com/libzeep-doc/)
+[mhekkel.github.io/libzeep/](https://mhekkel.github.io/libzeep/)
 
 Building libzeep
 ----------------
 
 To build libzeep you have to have [cmake](https://cmake.org/) installed.
-
-You also need to have installed [Howard Hinnants date library](https://github.com/HowardHinnant/date).
 
 And, unless you are using macOS, it is recommended to install
 [mrc](https://github.com/mhekkel/mrc) in order to have resources support in libzeep.
