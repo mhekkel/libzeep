@@ -10,7 +10,7 @@
 #include <zeep/http/server.hpp>
 #include <zeep/streambuf.hpp>
 
-#include "signals.hpp"
+#include "../src/signals.hpp"
 #include "client-test-code.hpp"
 
 #include <iostream>
