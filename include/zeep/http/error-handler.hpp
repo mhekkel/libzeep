@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -9,10 +9,10 @@
 /// definition of the base class zeep::error_handler, the default
 /// creates very simple HTTP replies. Override to do something more fancy.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/http/server.hpp>
-#include <zeep/http/template-processor.hpp>
+#include "zeep/http/server.hpp"
+#include "zeep/http/template-processor.hpp"
 
 namespace zeep::http
 {
@@ -71,7 +71,7 @@ class error_handler
 	/// \param message	The message describing the error
 	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, status_type status, const std::string &message, reply &rep);
+	virtual bool create_error_reply(const request &req, status_type status, std::string message, reply &rep);
 
   protected:
 	/// \brief constructor
@@ -80,7 +80,7 @@ class error_handler
 	/// load this XHTML template using the server's template_processor.
 	/// If that fails or error_template is empty, a simple stock message
 	/// is returned.
-	error_handler(const std::string &error_template = "error");
+	error_handler(std::string error_template = "error");
 
 	error_handler(const error_handler &) = delete;
 	error_handler &operator=(const error_handler &) = delete;
@@ -99,8 +99,8 @@ class error_handler
 class default_error_handler : public error_handler
 {
   public:
-	default_error_handler(const std::string &error_template = "error")
-		: error_handler(error_template)
+	default_error_handler(std::string error_template = "error")
+		: error_handler(std::move(error_template))
 	{
 	}
 

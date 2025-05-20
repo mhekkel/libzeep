@@ -4,7 +4,7 @@ name: multi platform test
 
 on:
   push:
-    branches: [ "trunk", "develop" ]
+    branches: [ "trunk", "develop", "develop-v7" ]
   pull_request:
     branches: [ "trunk" ]
 
@@ -28,6 +28,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
+      with:
+        # ninja version to download. Default: 1.10.0
+        version: 1.10.0
 
     - name: Set reusable strings
       id: strings
@@ -38,7 +46,7 @@ jobs:
     - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: >
-        sudo apt-get update && sudo apt-get install libboost-dev mrc
+        sudo apt-get update && sudo apt-get install libboost-dev mrc ninja-build nlohmann-json3-dev catch2
 
     - name: Install Boost Windows
       if: matrix.os == 'windows-latest'
@@ -52,15 +60,16 @@ jobs:
     - name: Install Boost macOS
       if: matrix.os == 'macos-latest'
       run: >
-        brew install boost
+        brew install boost ninja nlohmann-json catch2
     
     - name: Configure CMake
+      uses: ashutoshvarma/action-cmake-build@master
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -S ${{ github.workspace }}
+      with:
+        build-dir: ${{ steps.strings.outputs.build-output-dir }}
+        cxx: ${{ matrix.cpp_compiler }}
+        build-type: Release
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}

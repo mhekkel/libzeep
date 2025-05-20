@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -6,15 +6,15 @@
 #pragma once
 
 /// \file
-/// 
+///
 /// Source code specifically for Unix/Linux.
 /// Utility routines to build daemon processes
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <cstdint>
-#include <string>
 #include <functional>
+#include <string>
 
 namespace zeep::http
 {
@@ -32,9 +32,8 @@ class basic_server;
 class daemon
 {
   public:
-
 	/// \brief The factory for creating server instances.
-	using server_factory_type = std::function<basic_server*()>;
+	using server_factory_type = std::function<basic_server *()>;
 
 	/// \brief constructor with separately specified files
 	///
@@ -42,14 +41,14 @@ class daemon
 	/// \param pid_file			The file that will contain the process ID, usually in /var/run/{process_name}
 	/// \param stdout_log_file	The file that will contain the stdout log, usually in /var/log/{process_name}/access.log
 	/// \param stderr_log_file	The file that will contain the stderr log, usually in /var/log/{process_name}/error.log
-	daemon(server_factory_type&& factory, const std::string& pid_file,
-		const std::string& stdout_log_file, const std::string& stderr_log_file);
+	daemon(server_factory_type &&factory, std::string pid_file,
+		std::string stdout_log_file, std::string stderr_log_file);
 
 	/// \brief constructor with default files
 	///
 	/// \param factory			The function object that creates server instances
 	/// \param name				The _process name_ to use, will be used to form default file locations
-	daemon(server_factory_type&& factory, const char* name);
+	daemon(server_factory_type &&factory, const std::string &name);
 
 	/// \brief Avoid excessive automatic restart due to failing to start up
 	///
@@ -73,8 +72,8 @@ class daemon
 	/// \param run_as_user			The user to run the forked process. Daemons are usually
 	///								started as root and should drop their privileges as soon
 	///								as possible.
-	int start(const std::string& address, uint16_t port, size_t nr_of_procs,
-		size_t nr_of_threads, const std::string& run_as_user);
+	int start(std::string_view address, uint16_t port, size_t nr_of_procs,
+		size_t nr_of_threads, std::string run_as_user);
 
 	/// \brief Start the daemon, forking off in the background with single process
 	///
@@ -84,8 +83,8 @@ class daemon
 	/// \param run_as_user			The user to run the forked process. Daemons are usually
 	///								started as root and should drop their privileges as soon
 	///								as possible.
-	int start(const std::string& address, uint16_t port, size_t nr_of_threads,
-		const std::string& run_as_user);
+	int start(std::string_view address, uint16_t port, size_t nr_of_threads,
+		std::string run_as_user);
 
 	/// \brief Stop a running daemon process. Returns 0 in case of successfully stopping a process.
 	int stop();
@@ -103,17 +102,16 @@ class daemon
 	/// For debugging purposes it is sometimes useful to start a server
 	/// without forking so you can see the stdout and stderr. Often this
 	/// is done by adding a --no-daemon flag to the program options.
-	int run_foreground(const std::string& address, uint16_t port);
+	int run_foreground(std::string_view address, uint16_t port);
 
   private:
-
 #if HTTP_HAS_UNIX_DAEMON
 
 	int daemonize();
 	void open_log_file();
 
-	bool run_main_loop(const std::string& address, uint16_t port, size_t nr_of_procs,
-		size_t nr_of_threads, const std::string& run_as_user);
+	bool run_main_loop(std::string_view address, uint16_t port, size_t nr_of_procs,
+		size_t nr_of_threads, std::string run_as_user);
 
 	bool pid_is_for_executable();
 #endif
@@ -125,4 +123,4 @@ class daemon
 	int m_max_restarts = 5, m_restart_time_window = 10;
 };
 
-}
+} // namespace zeep::http

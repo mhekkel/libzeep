@@ -20,7 +20,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOXYGEN_OUTPUT_DIR})
 
 add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-				   BYPRODUCTS ${DOXYGEN_OUTPUT_DIR}
+				#    BYPRODUCTS ${DOXYGEN_OUTPUT_DIR}
                    DEPENDS ${ZEEP_PUBLIC_HEADERS}  ${DOXYGEN_OUTPUT_DIR} ${DOXYFILE_OUT}
                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
                    MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
@@ -42,4 +42,4 @@ add_custom_target("Sphinx-libzeep" ALL
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                   COMMENT "Generating documentation with Sphinx")
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/sphinx/ DESTINATION ${CMAKE_INSTALL_DOCDIR} PATTERN .doctrees EXCLUDE)
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/sphinx/ DESTINATION share/doc/libzeep PATTERN .doctrees EXCLUDE)

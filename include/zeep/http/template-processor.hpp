@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -9,14 +9,16 @@
 /// definition of the zeep::template_processor class. This class
 /// handles the loading and processing of XHTML files.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <set>
 #include <filesystem>
+#include <set>
 
-#include <zeep/http/el-processing.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/tag-processor.hpp>
+#include "zeep/el/object.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/tag-processor.hpp"
+
+#include <mxml.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -39,14 +41,14 @@ class resource_loader
   public:
 	virtual ~resource_loader() {}
 
-	resource_loader(const resource_loader&) = delete;
-	resource_loader& operator=(const resource_loader&) = delete;
+	resource_loader(const resource_loader &) = delete;
+	resource_loader &operator=(const resource_loader &) = delete;
 
 	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept = 0;
+	virtual std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept = 0;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept = 0;
+	virtual std::istream *load_file(std::string file, std::error_code &ec) noexcept = 0;
 
   protected:
 	resource_loader() {}
@@ -54,7 +56,7 @@ class resource_loader
 
 // -----------------------------------------------------------------------
 /// \brief actual implementation of a zeep::resource_loader that loads files from disk
-/// 
+///
 /// Load the resources from the directory specified in the docroot constructor parameter.
 
 class file_loader : public resource_loader
@@ -65,13 +67,13 @@ class file_loader : public resource_loader
 	/// \param docroot	Path to the directory where the 'resources' are located
 	///
 	/// Throws a runtime_error if the docroot does not exist
-	file_loader(const std::filesystem::path& docroot = ".");
-	
+	file_loader(std::filesystem::path docroot);
+
 	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;
+	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept;
+	std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
 	std::filesystem::path m_docroot;
@@ -80,22 +82,22 @@ class file_loader : public resource_loader
 #if USE_RSRC
 // -----------------------------------------------------------------------
 /// \brief actual implementation of a zeep::resource_loader that loads resources from memory
-/// 
+///
 /// Load the resources from resource data created with mrc (see https://github.com/mhekkel/mrc )
 
 class rsrc_loader : public resource_loader
 {
   public:
 	/// \brief constructor
-	/// 
+	///
 	/// The parameter is not used
-	rsrc_loader(const std::string&);
-	
+	rsrc_loader(std::filesystem::path);
+
 	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept;
+	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept;
+	std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
 	std::filesystem::file_time_type mRsrcWriteTime = {};
@@ -113,13 +115,15 @@ class rsrc_loader : public resource_loader
 class basic_template_processor
 {
   public:
-	basic_template_processor(const std::string& docroot)
-		: m_docroot(docroot) {}
+	basic_template_processor(std::filesystem::path docroot)
+		: m_docroot(std::move(docroot))
+	{
+	}
 
 	virtual ~basic_template_processor() {}
 
 	/// \brief set the docroot for this processor
-	virtual void set_docroot(const std::filesystem::path& docroot);
+	virtual void set_docroot(std::filesystem::path docroot);
 
 	/// \brief get the current docroot of this processor
 	std::filesystem::path get_docroot() const { return m_docroot; }
@@ -128,67 +132,63 @@ class basic_template_processor
 	// tag processor support
 
 	/// \brief process all the tags in this node
-	virtual void process_tags(xml::node* node, const scope& scope);
+	virtual void process_tags(mxml::node *node, const scope &scope);
 
   protected:
-
-	std::map<std::string,std::function<tag_processor*(const std::string&)>> m_tag_processor_creators;
+	std::map<std::string, std::function<tag_processor_base *(const std::string &)>> m_tag_processor_creators;
 
 	/// \brief process only the tags with the specified namespace prefixes
-	virtual void process_tags(xml::element* node, const scope& scope, std::set<std::string> registeredNamespaces);
+	virtual void process_tags(mxml::element *node, const scope &scope, std::set<std::string> registeredNamespaces);
 
   public:
-
 	/// \brief Use to register a new tag_processor and couple it to a namespace
-	template<typename TagProcessor>
-	void register_tag_processor(const std::string& ns = TagProcessor::ns())
+	template <typename TagProcessor>
+	void register_tag_processor(const std::string &ns = TagProcessor::ns())
 	{
-		m_tag_processor_creators.emplace(ns, [](const std::string& ns) { return new TagProcessor(ns.c_str()); });
+		m_tag_processor_creators.emplace(ns, [](const std::string &ns)
+			{ return new TagProcessor(ns.c_str()); });
 	}
 
 	/// \brief Create a tag_processor
-	tag_processor* create_tag_processor(const std::string& ns) const
+	tag_processor_base *create_tag_processor(const std::string &ns) const
 	{
 		return m_tag_processor_creators.at(ns)(ns);
 	}
 
 	// --------------------------------------------------------------------
-	
-	/// \brief Default handler for serving files out of our doc root
-	virtual void handle_file(const request& request, const scope& scope, reply& reply);
 
   public:
-
 	/// \brief return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept = 0;
+	virtual std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept = 0;
 
 	/// \brief return error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept = 0;
+	virtual std::istream *load_file(const std::string &file, std::error_code &ec) noexcept = 0;
 
   public:
-
 	/// \brief Use load_template to fetch the XHTML template file
-	virtual void load_template(const std::string& file, xml::document& doc);
+	virtual void load_template(const std::string &file, mxml::document &doc);
 
 	/// \brief Check if the argument \a file contains a valid reference to an XHTML template file and return the path, if any.
-	virtual std::tuple<bool, std::filesystem::path> is_template_file(const std::string& file);
+	virtual std::optional<std::filesystem::path> get_template_file(const std::string &file);
 
 	/// \brief create a reply based on a template
-	virtual void create_reply_from_template(const std::string& file, const scope& scope, reply& reply);
+	virtual void create_reply_from_template(const std::string &file, const scope &scope, reply &reply);
 
 	/// \brief create a reply based on a template, alternate version
-	reply create_reply_from_template(const std::string& file, const scope& scope)
+	reply create_reply_from_template(const std::string &file, const scope &scope)
 	{
 		reply result = reply::stock_reply(ok);
 		create_reply_from_template(file, scope, result);
 		return result;
 	}
 
+	/// \brief Default handler for serving files out of our doc root
+	reply create_reply_for_get_file(const scope &scope);
+
 	/// \brief Initialize the scope object
-	virtual void init_scope(scope& scope);
+	virtual void init_scope(request &req, scope &scope);
 
   protected:
-
 	std::string m_ns;
 	std::filesystem::path m_docroot;
 };
@@ -196,33 +196,28 @@ class basic_template_processor
 // --------------------------------------------------------------------
 /// \brief actual implementation of the abstract basic_template_processor
 
-template<typename Loader>
+template <typename Loader>
 class html_template_processor : public basic_template_processor
 {
   public:
-
-	html_template_processor(const std::string& docroot = "", bool addDefaultTagProcessors = true)
-		: basic_template_processor(docroot), m_loader(docroot)
+	html_template_processor(std::filesystem::path docroot = {}, bool addDefaultTagProcessors = true)
+		: basic_template_processor(docroot)
+		, m_loader(docroot)
 	{
 		if (addDefaultTagProcessors)
-		{
-#if ZEEP_SUPPORT_TAG_PROCESSOR_V1
-			register_tag_processor<tag_processor_v1>();
-#endif
-			register_tag_processor<tag_processor_v2>();
-		}
+			register_tag_processor<tag_processor>();
 	}
 
 	virtual ~html_template_processor() {}
 
 	/// return last_write_time of \a file
-	virtual std::filesystem::file_time_type file_time(const std::string& file, std::error_code& ec) noexcept
+	std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.file_time(file, ec);
 	}
 
 	// basic loader, returns error in ec if file was not found
-	virtual std::istream* load_file(const std::string& file, std::error_code& ec) noexcept
+	std::istream *load_file(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.load_file(file, ec);
 	}
@@ -245,4 +240,4 @@ using template_processor = rsrc_based_html_template_processor;
 using template_processor = file_based_html_template_processor;
 #endif
 
-}
+} // namespace zeep::http

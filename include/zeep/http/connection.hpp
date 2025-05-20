@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -9,13 +9,13 @@
 /// \file
 /// definition of the zeep::http::connection class, that handles HTTP connections
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <memory>
 
 #include "zeep/http/asio.hpp"
 
-#include <zeep/http/message-parser.hpp>
+#include "zeep/http/message-parser.hpp"
 
 namespace zeep::http
 {

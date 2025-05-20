@@ -1,4 +1,4 @@
-//          Copyright Maarten L. Hekkelman, 2021-2023
+//          Copyright Maarten L. Hekkelman, 2021-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -7,9 +7,9 @@
 
 // A simple uri class.
 
-#include <zeep/config.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/unicode-support.hpp>
+#include "zeep/config.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/unicode-support.hpp"
 
 #include <cstdint>
 
@@ -28,7 +28,7 @@ bool is_fully_qualified_uri(const std::string &uri);
 
 /// \brief Check the parameter in \a host is of the form HOST:PORT as required by CONNECT
 /// \param host		The host string to check
-bool is_valid_connect_host(const std::string &host);
+bool is_valid_connect_host(std::string_view host);
 
 // --------------------------------------------------------------------
 
@@ -50,9 +50,9 @@ class uri_parse_error : public zeep::exception
 {
   public:
 	uri_parse_error()
-		: exception("invalid uri"){};
-	uri_parse_error(const std::string &u)
-		: exception("invalid uri: " + u){};
+		: exception("invalid uri") {};
+	uri_parse_error(std::string u)
+		: exception("invalid uri: " + u) {};
 };
 
 // --------------------------------------------------------------------
@@ -150,9 +150,9 @@ class uri
 	}
 
 	/// \brief Set the scheme to \a scheme
-	void set_scheme(const std::string &scheme)
+	void set_scheme(std::string scheme)
 	{
-		m_scheme = scheme;
+		m_scheme = std::move(scheme);
 		zeep::to_lower(m_scheme);
 	}
 
@@ -163,9 +163,9 @@ class uri
 	}
 
 	/// \brief Set the userinfo to \a userinfo
-	void set_userinfo(const std::string &userinfo)
+	void set_userinfo(std::string userinfo)
 	{
-		m_userinfo = userinfo;
+		m_userinfo = std::move(userinfo);
 	}
 
 	/// \brief Return the host
@@ -175,9 +175,9 @@ class uri
 	}
 
 	/// \brief Set the host to \a host
-	void set_host(const std::string &host)
+	void set_host(std::string host)
 	{
-		m_host = host;
+		m_host = std::move(host);
 		zeep::to_lower(m_host);
 	}
 
@@ -212,7 +212,7 @@ class uri
 	}
 
 	/// \brief Set the query to \a query and optionally encode it based on \a encode
-	void set_query(const std::string &query, bool encode);
+	void set_query(std::string query, bool encode);
 
 	/// \brief Return the fragment
 	std::string get_fragment(bool decoded) const
@@ -221,7 +221,7 @@ class uri
 	}
 
 	/// \brief Set the fragment to \a fragment and optionally encode it based on \a encode
-	void set_fragment(const std::string &fragment, bool encode);
+	void set_fragment(std::string fragment, bool encode);
 
 	/// \brief Return the uri as a string
 	std::string string() const;
@@ -278,6 +278,7 @@ class uri
 	};
 
 	static constexpr uint8_t kCharClassTable[] = {
+		// clang-format off
 		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
 		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 
 		 0,  2,  0,  1,  2,  0,  2,  2,  2,  2,  2, 10,  2, 12, 12,  1, 
@@ -285,11 +286,11 @@ class uri
 		 1, 60, 60, 60, 60, 60, 60, 44, 44, 44, 44, 44, 44, 44, 44, 44, 
 		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  1,  0,  1,  0,  4, 
 		 0, 60, 60, 60, 60, 60, 60, 44, 44, 44, 44, 44, 44, 44, 44, 44, 
-		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  0,  0,  0,  4,  0, 
+		44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,  0,  0,  0,  4,  0,
+		// clang-format on
 	};
 
   public:
-
 	static inline constexpr bool is_char_class(int ch, char_class mask)
 	{
 		return ch > 0 and ch < 128 and (kCharClassTable[static_cast<uint8_t>(ch)] bitand static_cast<char>(mask)) != 0;
@@ -333,7 +334,6 @@ class uri
 	friend std::string encode_url(std::string_view s);
 
   private:
-
 	// --------------------------------------------------------------------
 
 	bool is_pct_encoded(const char *&cp)

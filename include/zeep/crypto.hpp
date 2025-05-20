@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2019-2020
+//        Copyright Maarten L. Hekkelman, 2019-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <exception>
 #include <string>
@@ -28,7 +28,7 @@ class invalid_base64 : public std::exception
   public:
 	invalid_base64() {}
 
-	const char* what() const noexcept { return "invalid base64 input"; }
+	const char* what() const noexcept override { return "invalid base64 input"; }
 };
 
 /// \brief encode \a data in base64 format
@@ -62,7 +62,7 @@ class invalid_base32 : public std::exception
   public:
 	invalid_base32() {}
 
-	const char* what() const noexcept { return "invalid base32 input"; }
+	const char* what() const noexcept override { return "invalid base32 input"; }
 };
 
 /// \brief encode \a data in base32 format
@@ -82,7 +82,7 @@ class invalid_hex : public std::exception
   public:
 	invalid_hex() {}
 
-	const char* what() const noexcept { return "invalid hexadecimal input"; }
+	const char* what() const noexcept override { return "invalid hexadecimal input"; }
 };
 
 /// \brief encode \a data in hexadecimal format

@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -11,11 +11,11 @@
 /// Instances of this class take care of mapping member functions to
 /// SOAP calls automatically converting in- and output data
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/http/controller.hpp>
-#include <zeep/xml/document.hpp>
-#include <zeep/xml/serialize.hpp>
+#include "zeep/http/controller.hpp"
+
+#include <mxml.hpp>
 
 namespace zeep::http
 {
@@ -38,35 +38,35 @@ class soap_envelope
 
 	// /// \brief Parse a SOAP message received from a client,
 	// /// throws an exception if the envelope is empty or invalid.
-	// envelope(xml::document& data);
+	// envelope(mxml::document& data);
 
 	/// \brief The request element as contained in the original SOAP message
-	xml::element &request() { return *m_request; }
+	mxml::element &request() { return *m_request; }
 
   private:
-	xml::document m_payload;
-	xml::element *m_request;
+	mxml::document m_payload;
+	mxml::element *m_request;
 };
 
 // --------------------------------------------------------------------
 
 /// Wrap data into a SOAP envelope
 ///
-/// \param    data  The xml::element object to wrap into the envelope
-/// \return   A new xml::element object containing the envelope.
-xml::element make_envelope(xml::element &&data);
-// xml::element make_envelope(const xml::element& data);
+/// \param    data  The mxml::element object to wrap into the envelope
+/// \return   A new mxml::element object containing the envelope.
+mxml::element make_envelope(mxml::element &&data);
+// mxml::element make_envelope(const mxml::element& data);
 
 /// Create a standard SOAP Fault message for the string parameter
 ///
 /// \param    message The string object containing a descriptive error message.
-/// \return   A new xml::element object containing the fault envelope.
-xml::element make_fault(const std::string &message);
+/// \return   A new mxml::element object containing the fault envelope.
+mxml::element make_fault(std::string message);
 /// Create a standard SOAP Fault message for the exception object
 ///
 /// \param    ex The exception object that was catched.
-/// \return   A new xml::element object containing the fault envelope.
-xml::element make_fault(const std::exception &ex);
+/// \return   A new mxml::element object containing the fault envelope.
+mxml::element make_fault(const std::exception &ex);
 
 // --------------------------------------------------------------------
 
@@ -88,10 +88,10 @@ class soap_controller : public controller
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
 	/// \param service      The name of the service
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	soap_controller(const std::string &prefix_path, const std::string &service, const std::string &ns)
-		: controller(prefix_path)
-		, m_ns(ns)
-		, m_service(service)
+	soap_controller(std::string prefix_path, std::string service, std::string ns)
+		: controller(std::move(prefix_path))
+		, m_ns(std::move(ns))
+		, m_service(std::move(service))
 	{
 		// while (m_prefix_path.front() == '/')
 		// 	m_prefix_path.erase(0, 1);
@@ -105,15 +105,15 @@ class soap_controller : public controller
 	}
 
 	/// \brief Set the external address at which this service is visible
-	void set_location(const std::string &location)
+	void set_location(std::string location)
 	{
-		m_location = location;
+		m_location = std::move(location);
 	}
 
 	/// \brief Set the service name
-	void set_service(const std::string &service)
+	void set_service(std::string service)
 	{
-		m_service = service;
+		m_service = std::move(service);
 	}
 
 	/// \brief map a SOAP action to \a callback using \a names for mapping the arguments
@@ -127,7 +127,7 @@ class soap_controller : public controller
 	}
 
 	/// \brief Create a WSDL based on the registered actions
-	xml::element make_wsdl();
+	mxml::element make_wsdl();
 
 	/// \brief Handle the SOAP request
 	virtual bool handle_request(request &req, reply &reply_);
@@ -135,8 +135,8 @@ class soap_controller : public controller
   protected:
 	/// @cond
 
-	using type_map = std::map<std::string, xml::element>;
-	using message_map = std::map<std::string, xml::element>;
+	using type_map = std::map<std::string, mxml::element>;
+	using message_map = std::map<std::string, mxml::element>;
 
 	struct mount_point_base
 	{
@@ -147,8 +147,8 @@ class soap_controller : public controller
 
 		virtual ~mount_point_base() {}
 
-		virtual void call(const xml::element &request, reply &reply_, const std::string &ns) = 0;
-		virtual void describe(type_map &types, message_map &messages, xml::element &portType, xml::element &binding) = 0;
+		virtual void call(const mxml::element &request, reply &reply_, std::string_view ns) = 0;
+		virtual void describe(type_map &types, message_map &messages, mxml::element &portType, mxml::element &binding) = 0;
 
 		std::string m_action;
 	};
@@ -193,7 +193,7 @@ class soap_controller : public controller
 				m_names[i++] = name;
 		}
 
-		virtual void call(const xml::element &request, reply &rep, const std::string &ns)
+		virtual void call(const mxml::element &request, reply &rep, std::string_view ns)
 		{
 			rep.set_status(ok);
 
@@ -202,24 +202,24 @@ class soap_controller : public controller
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &rep, const std::string &ns)
+		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
-			xml::element response(m_action + "Response");
+			mxml::element response(m_action + "Response");
 			response.move_to_name_space("m", ns, false, false);
 			rep.set_content(make_envelope(std::move(response)));
 		}
 
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
-		void invoke(ArgsTuple &&args, reply &rep, const std::string &ns)
+		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
 			// and serialize the result back into XML
-			xml::element response(m_action + "Response");
+			mxml::element response(m_action + "Response");
 
-			xml::serializer sr(response);
+			mxml::serializer sr(response);
 			sr.serialize_element(result);
 			response.move_to_name_space("m", ns, true, true);
 
@@ -229,48 +229,48 @@ class soap_controller : public controller
 		}
 
 		template <std::size_t... I>
-		ArgsTuple collect_arguments(const xml::element &request, std::index_sequence<I...>)
+		ArgsTuple collect_arguments(const mxml::element &request, std::index_sequence<I...>)
 		{
-			xml::deserializer ds(request);
+			mxml::deserializer ds(request);
 
 			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(ds, m_names[I])...);
 		}
 
 		template <typename T>
-		T get_parameter(xml::deserializer &ds, const char *name)
+		T get_parameter(mxml::deserializer &ds, const char *name)
 		{
 			T v = {};
 			ds.deserialize_element(name, v);
 			return v;
 		}
 
-		virtual void collect_types(xml::type_map &types, xml::element &seq, const std::string &ns)
+		virtual void collect_types(mxml::type_map &types, mxml::element &seq, std::string_view ns)
 		{
 			if constexpr (sizeof...(Args) > 0)
 				collect_types(types, seq, ns, std::make_index_sequence<N>());
 		}
 
 		template <std::size_t... I>
-		void collect_types(xml::type_map &types, xml::element &seq, const std::string &ns, std::index_sequence<I...> /*ix*/)
+		void collect_types(mxml::type_map &types, mxml::element &seq, std::string_view ns, std::index_sequence<I...> /*ix*/)
 		{
 			(collect_type<I>(types, seq, ns), ...);
 		}
 
 		template <std::size_t I>
-		void collect_type(xml::type_map &types, xml::element &seq, const std::string &/*ns*/)
+		void collect_type(mxml::type_map &types, mxml::element &seq, std::string_view /*ns*/)
 		{
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
 
-			xml::schema_creator sc(types, seq);
+			mxml::schema_creator sc(types, seq);
 
 			sc.add_element(m_names[I], type{});
 		}
 
 		virtual void describe(type_map &types, message_map &messages,
-			xml::element &portType, xml::element &binding)
+			mxml::element &portType, mxml::element &binding)
 		{
 			// the request type
-			xml::element requestType("xsd:element", { { "name", m_action } });
+			mxml::element requestType("xsd:element", { { "name", m_action } });
 			auto &complexType = requestType.emplace_back("xsd:complexType");
 
 			collect_types(types, complexType.emplace_back("xsd:sequence"), "ns");
@@ -278,30 +278,30 @@ class soap_controller : public controller
 			types[m_action + "Request"] = requestType;
 
 			// and the response type
-			xml::element responseType("xsd:element", { { "name", m_action + "Response" } });
+			mxml::element responseType("xsd:element", { { "name", m_action + "Response" } });
 
 			if constexpr (not std::is_void_v<Result>)
 			{
 				auto &complexType2 = responseType.emplace_back("xsd:complexType");
 				auto &sequence = complexType2.emplace_back("xsd:sequence");
 
-				xml::schema_creator sc(types, sequence);
+				mxml::schema_creator sc(types, sequence);
 				sc.add_element("Response", Result{});
 			}
 
 			types[m_action + "Response"] = responseType;
 
 			// now the wsdl operations
-			xml::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});
+			mxml::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});
 			message.emplace_back("wsdl:part", { {"name", "parameters"}, { "element", "ns:" + m_action }});
 			messages[m_action + "RequestMessage"] = message;
 
-			message = xml::element("wsdl:message", {{ "name", m_action + "Message" }});
+			message = mxml::element("wsdl:message", {{ "name", m_action + "Message" }});
 			message.emplace_back("wsdl:part", {{ "name", "parameters"}, {"element", "ns:" + m_action }});
 			messages[m_action + "Message"] = message;
 
 			// port type
-			xml::element operation("wsdl:operation", { { "name", m_action } });
+			mxml::element operation("wsdl:operation", { { "name", m_action } });
 
 			operation.emplace_back("wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } });
 			operation.emplace_back("wsdl:output", { { "message", "ns:" + m_action + "Message" } });
@@ -312,14 +312,14 @@ class soap_controller : public controller
 			operation = { "wsdl:operation", { { "name", m_action } } };
 			operation.emplace_back("soap:operation", { { "soapAction", "" }, { "style", "document" } });
 
-			xml::element body("soap:body");
+			mxml::element body("soap:body");
 			body.set_attribute("use", "literal");
 
-			xml::element input("wsdl:input");
+			mxml::element input("wsdl:input");
 			input.push_back(body);
 			operation.emplace_back(std::move(input));
 
-			xml::element output("wsdl:output");
+			mxml::element output("wsdl:output");
 			output.emplace_back(std::move(body));
 			operation.emplace_back(std::move(output));
 

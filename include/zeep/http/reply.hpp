@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -9,14 +9,14 @@
 /// \file
 /// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
-#include <zeep/config.hpp>
-
-#include <zeep/http/header.hpp>
-#include <zeep/http/uri.hpp>
-#include <zeep/json/element.hpp>
-#include <zeep/xml/document.hpp>
+#include "zeep/config.hpp"
 
 #include "zeep/http/asio.hpp"
+#include "zeep/el/object.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/uri.hpp"
+
+#include <mxml.hpp>
 
 namespace zeep::http
 {
@@ -71,17 +71,34 @@ class reply
 		std::vector<header> &&headers, std::string &&payload);
 
 	reply(const reply &rhs);
-	reply(reply &&rhs);
+
+	reply(reply &&rhs)
+	{
+		swap(*this, rhs);
+	}
 
 	~reply();
-	reply &operator=(const reply &);
-	reply &operator=(reply &&);
+
+	reply &operator=(reply rhs)
+	{
+		swap(*this, rhs);
+		return *this;
+	}
+
+	/// Swap two replies
+	friend void swap(reply &a, reply &b) noexcept
+	{
+		std::swap(a.m_status, b.m_status);
+		std::swap(a.m_version_minor, b.m_version_minor);
+		std::swap(a.m_headers, b.m_headers);
+		std::swap(a.m_data, b.m_data);
+		std::swap(a.m_buffer, b.m_buffer);
+		std::swap(a.m_content, b.m_content);
+		std::swap(a.m_chunked, b.m_chunked);
+	}
 
 	/// Simple way to check if a reply is valid
 	explicit operator bool() const { return m_status == ok; }
-
-	/// Clear contents and reset status and version
-	void reset();
 
 	/// Set the version to \a version_major . \a version_minor
 	void set_version(int version_major, int version_minor);
@@ -93,22 +110,22 @@ class reply
 	}
 
 	/// Add a header with name \a name and value \a value
-	void set_header(const std::string &name, const std::string &value);
+	void set_header(std::string name, std::string value);
 
 	/// Return the value of the header with name \a name
-	std::string get_header(const std::string &name) const;
+	std::string get_header(std::string_view name) const;
 
 	/// Remove the header with name \a name from the list of headers
-	void remove_header(const std::string &name);
+	void remove_header(std::string_view name);
 
 	/// Set a cookie
-	void set_cookie(const char *name, const std::string &value, std::initializer_list<cookie_directive> directives = {});
+	void set_cookie(std::string_view name, std::string value, std::initializer_list<cookie_directive> directives = {});
 
 	/// Set a header to delete the \a name cookie
-	void set_delete_cookie(const char *name);
+	void set_delete_cookie(std::string_view name);
 
 	/// Get a cookie
-	std::string get_cookie(const char *name) const;
+	std::string get_cookie(std::string_view name) const;
 
 	/// Return the value of the header named content-type
 	std::string get_content_type() const
@@ -116,30 +133,30 @@ class reply
 		return get_header("Content-Type");
 	}
 
- 	/// Set the Content-Type header to \a type
-	void set_content_type(const std::string &type)
+	/// Set the Content-Type header to \a type
+	void set_content_type(std::string type)
 	{
-		set_header("Content-Type", type);
+		set_header("Content-Type", std::move(type));
 	}
 
 	/// Set the content and the content-type header depending on the content of doc (might be xhtml)
-	void set_content(xml::document &doc);
+	void set_content(mxml::document &doc);
 
 	/// Set the content and the content-type header to text/xml
-	void set_content(const xml::element &data);
+	void set_content(const mxml::element &data);
 
 	/// Set the content and the content-type header based on JSON data
-	void set_content(const json::element &json);
+	void set_content(const el::object &data);
 
 	/// Set the content and the content-type header
-	void set_content(const std::string &data, const std::string &contentType);
+	void set_content(std::string data, std::string contentType);
 
 	/// Set the content by copying \a data and the content-type header
-	void set_content(const char *data, size_t size, const std::string &contentType);
+	void set_content(const char *data, size_t size, std::string contentType);
 
 	/// To send a stream of data, with unknown size (using chunked transfer).
 	/// reply takes ownership of \a data and deletes it when done.
-	void set_content(std::istream *data, const std::string &contentType);
+	void set_content(std::istream *data, std::string contentType);
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data.
@@ -156,7 +173,7 @@ class reply
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
-	static reply stock_reply(status_type inStatus, const std::string &info);
+	static reply stock_reply(status_type inStatus, std::string info);
 
 	/// Create a standard redirect reply with the specified \a location
 	static reply redirect(const uri &location);
@@ -180,15 +197,10 @@ class reply
 	status_type m_status;
 	int m_version_major, m_version_minor;
 	std::vector<header> m_headers;
-	std::istream *m_data;
+	std::shared_ptr<std::istream> m_data;
 	std::vector<char> m_buffer;
 	std::string m_content;
-
 	bool m_chunked = false;
-	char m_size_buffer[8]; ///< to store the string with the size for chunked encoding
-
-	// this status line is only here to have a sensible location to store it
-	mutable std::string m_status_line;
 };
 
 } // namespace zeep::http

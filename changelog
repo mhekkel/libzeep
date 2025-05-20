@@ -1,3 +1,18 @@
+Version 7.0.2
+- Fix various deamon and log file related problems
+- Fix serialization of enums
+
+Version 7.0.1
+- Removed double move of string
+
+Version 7.0.0
+- Complete rewrite
+- Removed xml code, now depends on libmxml
+- Refactored json code into el::object (el = expression language)
+- Moved legacy html_controller code into a new sub class html_controller_v1
+- Removed rest_controller, code is now in the base class controller.
+- Many small API changes
+
 Version 6.1.1
 - Fixed copyright on named characters files
 

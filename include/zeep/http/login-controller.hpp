@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -10,10 +10,10 @@
 /// definition of the zeep::login_controller class. This class inherits from
 /// html::controller and provides a default for /login and /logout handling.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
+#include "zeep/http/html-controller.hpp"
 
-#include <zeep/http/html-controller.hpp>
-#include <zeep/xml/document.hpp>
+#include <mxml.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -30,13 +30,13 @@ namespace zeep::http
 class login_controller : public html_controller
 {
   public:
-	login_controller(const std::string &prefix_path = "/");
+	login_controller(std::string prefix_path = "/");
 
 	/// \brief bind this controller to \a server
 	///
 	/// Makes sure the server has a security context and adds rules
 	/// to this security context to allow access to the /login page
-	virtual void set_server(basic_server *server);
+	void set_server(basic_server *server) override;
 
 	/// \brief return the XHTML login form, subclasses can override this to provide custom login forms
 	///
@@ -47,7 +47,7 @@ class login_controller : public html_controller
 	/// in case of a valid login.
 	///
 	/// \param req		The request that triggered this call
-	virtual xml::document load_login_form(const request &req) const;
+	virtual mxml::document load_login_form(const request &req) const;
 
 	/// \brief Create an error reply for an unauthorized access
 	///

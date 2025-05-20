@@ -1,4 +1,4 @@
-//           Copyright Maarten L. Hekkelman, 2022-2023
+//           Copyright Maarten L. Hekkelman, 2022-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -13,7 +13,7 @@ class hello_controller : public zeep::http::controller
     /* Specify the root path as prefix, will handle any request URI */
     hello_controller() : controller("/") {}
 
-    bool handle_request([[maybe_unused]] zeep::http::request& req, zeep::http::reply& rep)
+    bool handle_request([[maybe_unused]] zeep::http::request& req, zeep::http::reply& rep) override
     {
         /* Construct a simple reply with status OK (200) and content string */
         rep = zeep::http::reply::stock_reply(zeep::http::ok);

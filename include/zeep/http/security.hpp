@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -8,16 +8,14 @@
 /// \file
 /// definition of various classes that help in handling HTTP authentication.
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/json/element.hpp>
-
-#include <set>
+#include "zeep/crypto.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/server.hpp"
 
 #include <cassert>
+#include <set>
 
 // --------------------------------------------------------------------
 //
@@ -39,7 +37,6 @@ struct unauthorized_exception : public zeep::exception
 };
 
 // --------------------------------------------------------------------
-
 
 /// \brief Base class for password encoders
 class password_encoder
@@ -66,7 +63,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 	{
 	}
 
-	virtual std::string encode(const std::string &password) const
+	std::string encode(const std::string &password) const override
 	{
 		using namespace std::literals;
 
@@ -75,7 +72,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
 	}
 
-	virtual bool matches(const std::string &raw_password, const std::string &stored_password) const
+	bool matches(const std::string &raw_password, const std::string &stored_password) const override
 	{
 		using namespace std::literals;
 
@@ -112,10 +109,10 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 struct user_details
 {
 	user_details() {}
-	user_details(const std::string &username, const std::string &password, const std::set<std::string> &roles)
-		: username(username)
-		, password(password)
-		, roles(roles)
+	user_details(std::string username, std::string password, std::set<std::string> roles)
+		: username(std::move(username))
+		, password(std::move(password))
+		, roles(std::move(roles))
 	{
 	}
 
@@ -129,8 +126,8 @@ struct user_details
 class authentication_exception : public zeep::exception
 {
   public:
-	authentication_exception(const char *msg)
-		: zeep::exception(msg) {}
+	authentication_exception(std::string msg)
+		: zeep::exception(std::move(msg)) {}
 };
 
 /// \brief exception thrown by user_service when trying to load user_details for an unknown user
@@ -165,7 +162,7 @@ class user_service
 	virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
-	virtual bool user_is_valid(const json::element &credentials) const;
+	virtual bool user_is_valid(const object &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
 	virtual bool user_is_valid(const std::string &username) const;
@@ -188,7 +185,7 @@ class simple_user_service : public user_service
 	}
 
 	/// \brief return the user_details for a user named \a username
-	virtual user_details load_user(const std::string &username) const
+	user_details load_user(const std::string &username) const override
 	{
 		user_details result = {};
 		auto ui = std::find_if(m_users.begin(), m_users.end(), [username](const user_details &u)
@@ -198,9 +195,9 @@ class simple_user_service : public user_service
 		return result;
 	}
 
-	void add_user(const std::string &username, const std::string &password, const std::set<std::string> &roles)
+	void add_user(std::string username, std::string password, std::set<std::string> roles)
 	{
-		m_users.emplace_back(username, password, roles);
+		m_users.emplace_back(std::move(username), std::move(password), std::move(roles));
 	}
 
   protected:
@@ -224,7 +221,7 @@ class security_context
 	///
 	/// Create a security context for server \a s with validator \a validator and
 	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
-	security_context(const std::string &secret, user_service &users, bool defaultAccessAllowed = false);
+	security_context(std::string secret, user_service &users, bool defaultAccessAllowed = false);
 
 	/// \brief register a custom password encoder
 	///
@@ -242,9 +239,9 @@ class security_context
 	/// to users having role \a role
 	///
 	/// \a glob_pattern should start with a slash
-	void add_rule(const std::string &glob_pattern, const std::string &role)
+	void add_rule(std::string glob_pattern, std::string role)
 	{
-		add_rule(glob_pattern, { role });
+		add_rule(std::move(glob_pattern), { role });
 	}
 
 	/// \brief Add a new rule for access
@@ -258,7 +255,7 @@ class security_context
 	void add_rule(std::string glob_pattern, std::initializer_list<std::string> roles)
 	{
 		assert(glob_pattern.front() == '/');
-		m_rules.emplace_back(rule{ glob_pattern, roles });
+		m_rules.emplace_back(rule{ std::move(glob_pattern), roles });
 	}
 
 	/// \brief Validate the request \a req against the stored rules

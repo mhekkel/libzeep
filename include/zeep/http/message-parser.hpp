@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -9,12 +9,12 @@
 /// \file
 /// definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <tuple>
 
-#include <zeep/http/reply.hpp>
-#include <zeep/http/request.hpp>
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 
 namespace zeep::http
 {
@@ -119,7 +119,7 @@ class parser
 
 	parse_result post_process_headers();
 
-	bool find_last_token(const header& h, const std::string& t) const;
+	bool find_last_token(const header &h, std::string_view t) const;
 
 	state_parser m_parser;
 	int m_state;
@@ -162,7 +162,7 @@ class reply_parser : public parser
 
 	reply get_reply();
 
-	virtual void reset();
+	void reset() override;
 
   private:
 	parse_result parse_initial_line(char ch);

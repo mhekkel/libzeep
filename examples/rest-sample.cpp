@@ -1,4 +1,4 @@
-//           Copyright Maarten L. Hekkelman, 2022-2023
+//           Copyright Maarten L. Hekkelman, 2022-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -42,11 +42,11 @@ struct Cart
 //]
 
 //[ shop_rest_controller
-class shop_rest_controller : public zeep::http::rest_controller
+class shop_rest_controller : public zeep::http::controller
 {
   public:
     shop_rest_controller()
-        : zeep::http::rest_controller("/cart")
+        : zeep::http::controller("/cart")
     {
         map_post_request("", &shop_rest_controller::create_cart, "client");
         map_get_request("{id}", &shop_rest_controller::get_cart, "id");

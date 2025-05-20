@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
+//        Copyright Maarten L. Hekkelman, 2014-2025
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -9,7 +9,7 @@
 /// \file
 /// definition of zeep::exception, base class for exceptions thrown by libzeep
 
-#include <zeep/config.hpp>
+#include "zeep/config.hpp"
 
 #include <exception>
 #include <string>
@@ -22,12 +22,12 @@ class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
-	exception(const std::string& message)
-		: m_message(message) {}
+	exception(std::string message)
+		: m_message(std::move(message)) {}
 
-	virtual ~exception() throw() {}
+	virtual ~exception() noexcept {}
 
-	virtual const char* what() const throw() { return m_message.c_str(); }
+	virtual const char* what() const noexcept override { return m_message.c_str(); }
 
   protected:
 	std::string m_message;
