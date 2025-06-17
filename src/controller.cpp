@@ -156,14 +156,7 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 
 reply controller::call_mount_point(mount_point_base *mp, const scope &scope)
 {
-	try
-	{
-		return mp->call(scope);
-	}
-	catch (const std::exception &e)
-	{
-		return reply::stock_reply(internal_server_error);
-	}
+	return mp->call(scope);
 }
 
 } // namespace zeep::http
