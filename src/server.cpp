@@ -282,7 +282,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		bool handled = false;
 
 		// special case, caller expects a JSON reply
-		if (req.get_accept("application/json") == 1.0f)
+		if (not req.get_header("Accept").empty() and req.get_accept("application/json") == 1.0f)
 		{
 			try
 			{
