@@ -5,6 +5,8 @@
 
 #include <zeep/http/soap-controller.hpp>
 
+#include <algorithm>
+
 //[ cart_items
 struct Item
 {

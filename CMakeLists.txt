@@ -279,5 +279,3 @@ endif()
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
 	add_subdirectory(test)
 endif()
-
-# add_subdirectory(examples)

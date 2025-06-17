@@ -9,6 +9,9 @@
 
 #include <unordered_set>
 
+#include <algorithm>
+#include <unordered_set>
+
 namespace fs = std::filesystem;
 
 namespace zeep::http

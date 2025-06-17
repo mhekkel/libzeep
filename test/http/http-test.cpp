@@ -18,8 +18,8 @@
 #include <zeep/http/server.hpp>
 
 #include "client-test-code.hpp"
-#include "../src/signals.hpp"
- 
+#include "signals.hpp"
+
 namespace z = zeep;
 namespace zh = zeep::http;
 
