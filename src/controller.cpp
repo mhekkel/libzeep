@@ -123,29 +123,10 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 		scope.put("baseuri", path);
 		init_scope(scope);
 
-		try
-		{
-			if (req.get_method() == "OPTIONS")
-				get_options(req, rep);
-			else
-				rep = call_mount_point(mp, scope);
-		}
-		catch (status_type s)
-		{
-			rep = http::reply::stock_reply(s);
-
-			object error({ { "error", get_status_description(s) } });
-			rep.set_content(error);
-			rep.set_status(s);
-		}
-		catch (const std::exception &e)
-		{
-			rep = http::reply::stock_reply(http::internal_server_error);
-
-			object error({ { "error", e.what() } });
-			rep.set_content(error);
-			rep.set_status(http::internal_server_error);
-		}
+		if (req.get_method() == "OPTIONS")
+			get_options(req, rep);
+		else
+			rep = call_mount_point(mp, scope);
 
 		result = true;
 		break;

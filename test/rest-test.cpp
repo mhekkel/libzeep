@@ -258,7 +258,8 @@ TEST_CASE("rest_2")
 		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
 		CHECK(reply.get_status() == zh::not_found);
 
-		reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
+		// reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
+		reply = simple_request(port, zh::request("GET", "/ajax/opname/xxx", { 1, 0 }, { { "Accept", "application/json" }}));
 		CHECK(reply.get_status() == zh::not_found);
 		CHECK(reply.get_content_type() == "application/json");
 	}
