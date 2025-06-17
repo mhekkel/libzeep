@@ -191,6 +191,18 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, s
 
 			_exit(0);
 		}
+
+		// Forking is done twice, so mop up the zombie here
+		int status, pid_c;
+		pid_c = waitpid(-1, &status, WUNTRACED);
+
+		if (pid_c != -1)
+		{
+			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
+				std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
+			// else
+			// 	std::clog << "child terminated normally\n";
+		}
 	}
 
 	return result;
@@ -338,6 +350,8 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 				sc.unblock();
 				int sig = sc.wait();
 
+std::cerr << "Process " << getpid() << " received signal " << sig << "\n";
+
 				server->stop();
 
 				if (t.joinable())
@@ -392,6 +406,18 @@ int daemon::stop()
 			std::clog << "Failed to stop process " << pid << ": " << strerror(errno) << '\n';
 		try
 		{
+			// avoid zombies
+			int status, pid_c;
+			pid_c = waitpid(-1, &status, WUNTRACED);
+
+			if (pid_c != -1)
+			{
+				if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
+					std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
+				// else
+				// 	std::clog << "child terminated normally\n";
+			}
+
 			if (fs::exists(m_pid_file))
 				fs::remove(m_pid_file);
 		}
@@ -468,7 +494,7 @@ int daemon::daemonize()
 	}
 
 	// it is dubious if this is needed:
-	signal(SIGHUP, SIG_IGN);
+	// signal(SIGHUP, SIG_IGN);
 
 	// fork again, to avoid being able to attach to a terminal device
 	pid = fork();
