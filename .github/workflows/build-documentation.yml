@@ -28,7 +28,7 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install dependencies Ubuntu
-      run: sudo apt-get update && sudo apt-get install cmake doxygen dot
+      run: sudo apt-get update && sudo apt-get install cmake doxygen graphviz
 
     - uses: actions/setup-python@v4
       with:
