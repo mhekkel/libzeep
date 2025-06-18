@@ -28,7 +28,7 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install dependencies Ubuntu
-      run: sudo apt-get update && sudo apt-get install cmake doxygen
+      run: sudo apt-get update && sudo apt-get install cmake doxygen dot
 
     - uses: actions/setup-python@v4
       with:
@@ -37,7 +37,7 @@ jobs:
     - run: pip install -r docs/requirements.txt
 
     - name: Configure CMake
-      run: cmake -S docs -B build -DCMAKE_MODULE_PATH=./cmake
+      run: cmake -S docs -B build
 
     - name: Run Sphinx
       run: cmake --build build --target Sphinx-libzeep
