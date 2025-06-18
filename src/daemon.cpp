@@ -493,8 +493,8 @@ int daemon::daemonize()
 		exit(1);
 	}
 
-	// it is dubious if this is needed:
-	// signal(SIGHUP, SIG_IGN);
+	// This in-between process should not catch SIGHUP
+	signal(SIGHUP, SIG_IGN);
 
 	// fork again, to avoid being able to attach to a terminal device
 	pid = fork();
@@ -525,6 +525,9 @@ int daemon::daemonize()
 	// close stdin
 	close(STDIN_FILENO);
 	open("/dev/null", O_RDONLY);
+
+	// The final process should however catch SIGHUP
+	signal(SIGHUP, SIG_DFL);
 
 	return 0;
 }

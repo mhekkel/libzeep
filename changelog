@@ -1,6 +1,7 @@
 Version 7.0.3
 - Do not catch exception in controller to allow error handlers to
   properly handle the exception.
+- Fix the reload option of daemon
 
 Version 7.0.2
 - Fix various deamon and log file related problems
