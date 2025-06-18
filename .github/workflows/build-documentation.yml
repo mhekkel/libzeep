@@ -37,12 +37,7 @@ jobs:
     - run: pip install -r docs/requirements.txt
 
     - name: Configure CMake
-      run: >
-          cmake -S . -B build
-          -DZEEP_BUILD_DOCUMENTATION=ON
-          -DZEEP_BUILD_LIBRARY=OFF
-          -DZEEP_BUILD_EXAMPLES=OFF
-          -DBUILD_TESTING=OFF
+      run: cmake -S docs -B build
 
     - name: Run Sphinx
       run: cmake --build build --target Sphinx-libzeep
