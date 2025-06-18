@@ -45,7 +45,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ${{ steps.strings.outputs.build-output-dir }}/docs/sphinx
+        path: ${{ steps.strings.outputs.build-output-dir }}/sphinx
 
   deploy:
     environment:
