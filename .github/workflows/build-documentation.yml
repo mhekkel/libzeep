@@ -37,7 +37,7 @@ jobs:
     - run: pip install -r docs/requirements.txt
 
     - name: Configure CMake
-      run: cmake -S docs -B build
+      run: cmake -S docs -B build -DCMAKE_MODULE_PATH=./cmake
 
     - name: Run Sphinx
       run: cmake --build build --target Sphinx-libzeep
