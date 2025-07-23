@@ -37,6 +37,7 @@ endif()
 
 # Windows specific stuff
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 if(WIN32)
 	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
 		add_definitions(-D _WIN32_WINNT=0x0A00)
@@ -96,10 +97,23 @@ else()
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-set(CPM_USE_LOCAL_PACKAGES ON)
-CPMAddPackage("gh:HowardHinnant/date@3.0.3")
-CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF")
-CPMAddPackage("gh:mhekkel/mxml@2.0.0")
+CPMFindPackage(NAME date
+	GIT_REPOSITORY "https://github.com/HowardHinnant/date"
+	VERSION 3.0.3
+	EXCLUDE_FROM_ALL YES
+	OPTIONS
+	"BUILD_TZ_LIB ON")
+
+CPMFindPackage(NAME nlohmann_json
+	GITHUB_REPOSITORY nlohmann/json
+	VERSION 3.12.0
+	EXCLUDE_FROM_ALL YES
+	OPTIONS "JSON_BuildTests OFF")
+
+CPMFindPackage(NAME mxml
+	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mxml.git"
+	VERSION 2.0.0
+	EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -109,6 +123,7 @@ if(UNIX)
 	endif()
 
 	find_file(HAVE_UNISTD_H "unistd.h")
+
 	if(HAVE_UNISTD_H)
 		set(HTTP_HAS_UNIX_DAEMON 1)
 	endif()
@@ -206,7 +221,8 @@ target_include_directories(zeep
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(zeep PUBLIC Threads::Threads date::date mxml::mxml nlohmann_json::nlohmann_json)
+target_link_libraries(zeep
+	PUBLIC Threads::Threads date::date mxml::mxml $<BUILD_LOCAL_INTERFACE:nlohmann_json::nlohmann_json>)
 
 if(ZEEP_USE_BOOST_ASIO)
 	target_link_libraries(zeep PUBLIC Boost::headers)
@@ -257,7 +273,6 @@ set_target_properties(zeep PROPERTIES
 )
 
 # Config file
-
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
