@@ -62,7 +62,7 @@ endif()
 
 # Optionally use mrc to create resources
 if(WIN32 AND BUILD_SHARED_LIBS)
-	message("Not using resources when building shared libraries for Windows")
+	message(STATUS "zeep: Not using resources when building shared libraries for Windows")
 else()
 	find_package(mrc QUIET)
 
@@ -70,11 +70,11 @@ else()
 		option(USE_RSRC "Use mrc to create resources" ON)
 
 		if(USE_RSRC)
-			message("Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
+			message(STATUS "zeep: Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
 			set(WEBAPP_USES_RESOURCES 1)
 		endif()
 	else()
-		message(STATUS "Not using resources since mrc was not found")
+		message(STATUS "zeep: Not using resources since mrc was not found")
 	endif()
 endif()
 
@@ -85,14 +85,14 @@ find_package(Threads REQUIRED)
 if(ZEEP_USE_BOOST_ASIO)
 	find_package(Boost 1.74 REQUIRED COMPONENTS headers)
 
-	message(STATUS "Using asio from boost")
+	message(STATUS "zeep: Using asio from boost")
 
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 
 	set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 else()
 	find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
-	message(STATUS "Using standalone asio")
+	message(STATUS "zeep: Using standalone asio")
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
