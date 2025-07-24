@@ -102,6 +102,7 @@ CPMFindPackage(NAME date
 	VERSION 3.0.3
 	EXCLUDE_FROM_ALL YES
 	OPTIONS
+	"USE_SYSTEM_TZ_DB ON"
 	"BUILD_TZ_LIB ON")
 
 CPMFindPackage(NAME nlohmann_json
