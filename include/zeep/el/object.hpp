@@ -7,12 +7,18 @@
 
 #include "zeep/streambuf.hpp"
 
+#if __has_include(<nlohmann/json.hpp>)
 #include <nlohmann/json.hpp>
+#define HAVE_NLOHMANN_JSON 1
+#endif
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <compare>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -438,6 +444,7 @@ class object
 	{
 	}
 
+#if HAVE_NLOHMANN_JSON
 	explicit object(const nlohmann::json &j)
 	{
 		// to be implemented
@@ -491,6 +498,7 @@ class object
 				break;
 		}
 	}
+#endif
 
 	object(object &&rhs) noexcept
 	{

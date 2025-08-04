@@ -105,12 +105,6 @@ CPMFindPackage(NAME date
 	"USE_SYSTEM_TZ_DB ON"
 	"BUILD_TZ_LIB ON")
 
-CPMFindPackage(NAME nlohmann_json
-	GITHUB_REPOSITORY nlohmann/json
-	VERSION 3.12.0
-	EXCLUDE_FROM_ALL YES
-	OPTIONS "JSON_BuildTests OFF")
-
 CPMFindPackage(NAME mxml
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mxml.git"
 	VERSION 2.0.0
@@ -222,8 +216,7 @@ target_include_directories(zeep
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(zeep
-	PUBLIC Threads::Threads date::date mxml::mxml $<BUILD_LOCAL_INTERFACE:nlohmann_json::nlohmann_json>)
+target_link_libraries(zeep PUBLIC Threads::Threads date::date mxml::mxml)
 
 if(ZEEP_USE_BOOST_ASIO)
 	target_link_libraries(zeep PUBLIC Boost::headers)
