@@ -1,3 +1,10 @@
+Version 7.0.4
+- Dependabot updates
+- Using date with system time zone db
+- Fix for building with cmake 4
+- Remove forced dependency on nlohmann
+- Updated documentation
+
 Version 7.0.3
 - Do not catch exception in controller to allow error handlers to
   properly handle the exception.
