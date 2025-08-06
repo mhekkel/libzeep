@@ -201,7 +201,8 @@ struct object_deserializer
 template <typename T>
 	requires(
 		not std::is_constructible_v<object, T> and
-		has_value_serializer_v<T>)
+		has_value_serializer_v<T> and
+		not std::is_enum_v<T>)
 struct serializer<T>
 {
 	static object serialize(const T &v)
