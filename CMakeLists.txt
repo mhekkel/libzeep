@@ -107,7 +107,7 @@ CPMFindPackage(NAME date
 
 CPMFindPackage(NAME mxml
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mxml.git"
-	VERSION 2.0.0
+	VERSION 2.0.1
 	EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
