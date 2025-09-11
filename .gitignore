@@ -13,3 +13,4 @@ docs/api
 docs/conf.py
 src/revision.hpp
 test/xml/XML-Test-Suite/
+.cache/
