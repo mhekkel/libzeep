@@ -608,8 +608,6 @@ void uri::transform(const uri &base)
 
 void uri::write(std::ostream &os, bool encoded) const
 {
-	// --------------------------------------------------------------------
-
 	if (not m_scheme.empty())
 		os << m_scheme << ':';
 
@@ -629,7 +627,7 @@ void uri::write(std::ostream &os, bool encoded) const
 		write_slash = true;
 	}
 
-	for (auto segment : m_path)
+	for (auto &segment : m_path)
 	{
 		if (write_slash)
 			os << '/';
