@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(libzeep VERSION 7.0.3 LANGUAGES CXX)
+project(libzeep VERSION 7.0.4 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -37,6 +37,7 @@ endif()
 
 # Windows specific stuff
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 if(WIN32)
 	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
 		add_definitions(-D _WIN32_WINNT=0x0A00)
@@ -109,6 +110,7 @@ if(UNIX)
 	endif()
 
 	find_file(HAVE_UNISTD_H "unistd.h")
+
 	if(HAVE_UNISTD_H)
 		set(HTTP_HAS_UNIX_DAEMON 1)
 	endif()
@@ -202,7 +204,7 @@ target_compile_features(zeep PUBLIC cxx_std_20)
 
 target_include_directories(zeep
 	PUBLIC
-	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
@@ -257,7 +259,6 @@ set_target_properties(zeep PROPERTIES
 )
 
 # Config file
-
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
 set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})

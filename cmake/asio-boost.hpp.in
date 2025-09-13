@@ -10,7 +10,11 @@
 #endif
 
 #include <utility>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/asio.hpp>
+#pragma GCC diagnostic pop
 
 namespace asio_ns = ::boost::asio;
 namespace asio_system_ns = ::boost::system;

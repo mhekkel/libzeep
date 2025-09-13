@@ -3,8 +3,16 @@
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
-CPMAddPackage("gh:catchorg/Catch2@3.4.0")
-CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
+CPMFindPackage(
+	NAME Catch2
+	GIT_REPOSITORY "https://github.com/catchorg/Catch2"
+	VERSION 3.4.0
+	EXCLUDE_FROM_ALL YES)
+CPMFindPackage(
+	NAME mcfp
+	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mcfp.git"
+	VERSION 1.4.2
+	EXCLUDE_FROM_ALL YES)
 
 # unit parser serializer xpath json crypto http processor webapp soap rest security uri
 list(APPEND zeep_tests
