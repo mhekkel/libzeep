@@ -244,20 +244,20 @@ class soap_controller : public controller
 			return v;
 		}
 
-		virtual void collect_types(mxml::type_map &types, mxml::element &seq, std::string_view ns)
+		virtual void collect_types(type_map &types, mxml::element &seq, std::string_view ns)
 		{
 			if constexpr (sizeof...(Args) > 0)
 				collect_types(types, seq, ns, std::make_index_sequence<N>());
 		}
 
 		template <std::size_t... I>
-		void collect_types(mxml::type_map &types, mxml::element &seq, std::string_view ns, std::index_sequence<I...> /*ix*/)
+		void collect_types(type_map &types, mxml::element &seq, std::string_view ns, std::index_sequence<I...> /*ix*/)
 		{
 			(collect_type<I>(types, seq, ns), ...);
 		}
 
 		template <std::size_t I>
-		void collect_type(mxml::type_map &types, mxml::element &seq, std::string_view /*ns*/)
+		void collect_type(type_map &types, mxml::element &seq, std::string_view /*ns*/)
 		{
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
 
@@ -271,7 +271,7 @@ class soap_controller : public controller
 		{
 			// the request type
 			mxml::element requestType("xsd:element", { { "name", m_action } });
-			auto &complexType = requestType.emplace_back("xsd:complexType");
+			auto complexType = requestType.emplace_back("xsd:complexType");
 
 			collect_types(types, complexType.emplace_back("xsd:sequence"), "ns");
 
@@ -282,8 +282,8 @@ class soap_controller : public controller
 
 			if constexpr (not std::is_void_v<Result>)
 			{
-				auto &complexType2 = responseType.emplace_back("xsd:complexType");
-				auto &sequence = complexType2.emplace_back("xsd:sequence");
+				auto complexType2 = responseType.emplace_back("xsd:complexType");
+				auto sequence = complexType2->emplace_back("xsd:sequence");
 
 				mxml::schema_creator sc(types, sequence);
 				sc.add_element("Response", Result{});

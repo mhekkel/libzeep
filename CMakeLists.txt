@@ -96,10 +96,10 @@ else()
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-set(CPM_USE_LOCAL_PACKAGES ON)
-CPMAddPackage("gh:HowardHinnant/date@3.0.3")
-CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF")
-CPMAddPackage("gh:mhekkel/mxml@2.0.0")
+CPMFindPackage(NAME mxml
+	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mxml.git"
+	VERSION 2.0.2
+	EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
 	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
@@ -206,7 +206,7 @@ target_include_directories(zeep
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(zeep PUBLIC Threads::Threads date::date mxml::mxml nlohmann_json::nlohmann_json)
+target_link_libraries(zeep PUBLIC Threads::Threads mxml::mxml)
 
 if(ZEEP_USE_BOOST_ASIO)
 	target_link_libraries(zeep PUBLIC Boost::headers)

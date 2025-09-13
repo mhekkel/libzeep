@@ -124,17 +124,13 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 	else if (file.extension() == ".gz")
 		mimetype = "application/gzip";
 
-
 	reply result(ok);
 	result.set_content(in.release(), mimetype);
 
-	using namespace date;
 	using namespace std::chrono;
 
-	std::stringstream s;
-	to_stream(s, "%a, %d %b %Y %H:%M:%S GMT", fileDate);
-
-	result.set_header("Last-Modified", s.str());
+	result.set_header("Last-Modified",
+		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", fileDate));
 
 	return result;
 }

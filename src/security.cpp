@@ -50,7 +50,7 @@ security_context::security_context(std::string secret, user_service &users, bool
 	: m_secret(std::move(secret))
 	, m_users(users)
 	, m_default_allow(defaultAccessAllowed)
-	, m_default_jwt_exp(date::years{ 1 })
+	, m_default_jwt_exp(std::chrono::years{ 1 })
 {
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
 }
@@ -158,7 +158,6 @@ void security_context::validate_request(request &req) const
 void security_context::add_authorization_headers(reply &rep, const user_details user,
 	std::chrono::system_clock::duration exp)
 {
-	using namespace date;
 	using namespace std::chrono;
 
 	object JOSEHeader{
@@ -197,9 +196,6 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 
 void security_context::add_authorization_headers(reply &rep, const user_details user)
 {
-	using namespace date;
-	using namespace std::chrono;
-
 	add_authorization_headers(rep, user, m_default_jwt_exp);
 }
 

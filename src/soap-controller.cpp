@@ -42,14 +42,14 @@ mxml::element make_envelope(mxml::element&& data)
 	return env;
 }
 
-mxml::element make_fault(const std::string& what)
+mxml::element make_fault(std::string what)
 {
 	mxml::element fault("soap:Fault");
 	
-	auto& faultCode = fault.emplace_back("faultcode");
+	auto faultCode = fault.emplace_back("faultcode");
 	faultCode.set_content("soap:Server");
 	
-	auto& faultString(fault.emplace_back("faultstring"));
+	auto faultString(fault.emplace_back("faultstring"));
 	faultString.set_content(what);
 
 	return make_envelope(std::move(fault));

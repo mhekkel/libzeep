@@ -104,14 +104,11 @@ reply::reply(status_type status, std::tuple<int, int> version)
 	, m_version_major(std::get<0>(version))
 	, m_version_minor(std::get<1>(version))
 {
-	using namespace date;
-	using namespace std::chrono;
 	using namespace std::literals;
 
-	std::stringstream s;
-	to_stream(s, "%a, %d %b %Y %H:%M:%S GMT", system_clock::now());
-
-	set_header("Date", s.str());
+	set_header("Date", 
+		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", std::chrono::system_clock::now()
+	));
 	set_header("Server", "libzeep/"s + klibzeepVersionNumber);
 	set_header("Content-Length", "0");
 }
