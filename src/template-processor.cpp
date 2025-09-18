@@ -66,6 +66,8 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 
 reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 {
+	// TODO: The time used here is local, not GMT. Needs fix?
+
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].get<std::string>(), ec);
 
@@ -73,7 +75,8 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 		return reply::stock_reply(not_found);
 
 	using namespace std::chrono;
-	auto fileDate = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+	auto fileDate = 
+		floor<seconds>(time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now()));
 
 	std::string ifModifiedSince;
 	for (const header &h : scope.get_headers())

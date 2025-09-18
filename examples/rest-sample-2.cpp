@@ -4,9 +4,9 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // In this example we don't want to use rsrc based templates
+#include "zeep/el/serializer.hpp"
 #define WEBAPP_USES_RESOURCES 0
 
-#include <zeep/http/rest-controller.hpp>
 #include <zeep/http/html-controller.hpp>
 
 #include <algorithm>
@@ -20,8 +20,8 @@ struct Item
     template<typename Archive>
     void serialize(Archive& ar, unsigned long version)
     {
-        ar & zeep::make_nvp("name", name)
-           & zeep::make_nvp("count", count);
+        ar & mxml::name_value_pair("name", name)
+           & mxml::name_value_pair("count", count);
     }
 };
 
@@ -34,9 +34,9 @@ struct Cart
     template<typename Archive>
     void serialize(Archive& ar, unsigned long version)
     {
-        ar & zeep::make_nvp("id", id)
-           & zeep::make_nvp("client", client)
-           & zeep::make_nvp("items", items);
+        ar & mxml::name_value_pair("id", id)
+           & mxml::name_value_pair("client", client)
+           & mxml::name_value_pair("items", items);
     }
 };
 //]
@@ -100,13 +100,13 @@ class shop_html_controller : public zeep::http::html_controller
   public:
     shop_html_controller()
     {
-        mount("", &shop_html_controller::handle_index);
-        mount("{css,scripts}/", &shop_html_controller::handle_file);
+        map_get("", &shop_html_controller::handle_index);
+        map_get_file("{css,scripts}/");
     }
 
-    void handle_index(const zeep::http::request& req, const zeep::http::scope& scope, zeep::http::reply& rep)
+    zeep::http::reply handle_index(const zeep::http::scope& scope)
     {
-        get_template_processor().create_reply_from_template("shop-2.xhtml", scope, rep);
+        return get_template_processor().create_reply_from_template("shop-2.xhtml", scope);
     }
 };
 //]

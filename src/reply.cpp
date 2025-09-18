@@ -106,8 +106,10 @@ reply::reply(status_type status, std::tuple<int, int> version)
 {
 	using namespace std::literals;
 
+	auto now = std::chrono::ceil<std::chrono::seconds>(std::chrono::system_clock::now());
+
 	set_header("Date", 
-		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", std::chrono::system_clock::now()
+		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", now
 	));
 	set_header("Server", "libzeep/"s + klibzeepVersionNumber);
 	set_header("Content-Length", "0");
