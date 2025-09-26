@@ -295,6 +295,8 @@ void basic_template_processor::create_reply_from_template(const std::string &fil
 
 	process_tags(doc.child(), scope);
 
+	doc.set_write_html(true);
+
 	reply.set_content(doc);
 }
 
