@@ -13,6 +13,7 @@
 #include "zeep/http/server.hpp"
 
 #include <fstream>
+#include <tuple>
 
 namespace zeep::http
 {
@@ -24,9 +25,9 @@ namespace zeep::http
 ///
 /// There can be multiple controllers in a web application, each is connected
 /// to a certain prefix-path. This is the leading part of the request URI.
-/// 
+///
 /// The base class controller can be used as a REST controller. To process
-/// web pages, use the derived class zeep::http::html_controller. For 
+/// web pages, use the derived class zeep::http::html_controller. For
 /// processing SOAP requests there is a zeep::http::soap_controller class.
 
 class controller
@@ -136,7 +137,7 @@ class controller
 							assert(false);
 							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
 						}
-	
+
 						size_t ni = i - m_names.begin();
 						m_path_params.emplace_back(m_names[ni]);
 						ps += "([^/]*)";
@@ -286,7 +287,7 @@ class controller
 		{
 			object v;
 
-			if (scope.get_header("content-type") == "application/json")
+			if (iequals(scope.get_header("content-type"), "application/json"))
 				v = object::parse_JSON(scope.get_payload());
 			else
 			{
@@ -296,6 +297,28 @@ class controller
 			}
 
 			return el::serializer<T>::deserialize(v);
+		}
+
+		reply set_reply(std::filesystem::path v)
+		{
+			reply rep(ok);
+			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
+			return rep;
+		}
+
+		reply set_reply(object &&v)
+		{
+			reply rep(ok);
+			rep.set_content(std::move(v));
+			return rep;
+		}
+
+		template <typename T>
+		reply set_reply(T &&v)
+		{
+			reply rep(ok);
+			rep.set_content(el::serializer<T>::serialize(std::forward<T>(v)));
+			return rep;
 		}
 
 		std::string m_path;
@@ -341,49 +364,15 @@ class controller
 
 		reply call(const scope &scope) override
 		{
-			ArgsTuple args = collect_arguments(scope, std::make_index_sequence<N>());
-			return invoke<Result>(std::move(args));
-		}
-
-		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
-		reply invoke(ArgsTuple &&args)
-		{
-			std::apply(m_callback, std::forward<ArgsTuple>(args));
-			return reply::stock_reply(ok);
-		}
-
-		template <typename ResultType, typename ArgsTuple, std::enable_if_t<not(std::is_void_v<ResultType> or std::is_same_v<ResultType, reply>), int> = 0>
-		reply invoke(ArgsTuple &&args)
-		{
-			return set_reply(std::apply(m_callback, std::forward<ArgsTuple>(args)));
-		}
-
-		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_same_v<ResultType, reply>, int> = 0>
-		reply invoke(ArgsTuple &&args)
-		{
-			return std::apply(m_callback, std::forward<ArgsTuple>(args));
-		}
-
-		reply set_reply(std::filesystem::path v)
-		{
-			reply rep(ok);
-			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
-			return rep;
-		}
-
-		reply set_reply(object &&v)
-		{
-			reply rep(ok);
-			rep.set_content(std::move(v));
-			return rep;
-		}
-
-		template <typename T>
-		reply set_reply(T &&v)
-		{
-			reply rep(ok);
-			rep.set_content(el::serializer<T>::serialize(std::forward<T>(v)));
-			return rep;
+			if constexpr (std::is_void_v<ResultType>)
+			{
+				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
+				return reply::stock_reply(ok);
+			}
+			else if constexpr (std::is_same_v<ResultType, reply>)
+				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
+			else
+				return set_reply(std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>())));
 		}
 
 		template <std::size_t... I>
@@ -391,6 +380,59 @@ class controller
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
 			return std::make_tuple(get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
+		}
+
+		Callback m_callback;
+	};
+
+	/// \brief Same, but then for callbacks that need to have a scope as first parameter
+
+	/// \brief templated abstract base class for mount points
+	template <typename ControllerType, typename Result, typename... Args>
+	struct mount_point<Result (ControllerType::*)(const scope &, Args...)> : mount_point_base
+	{
+		using Sig = Result (ControllerType::*)(const scope &, Args...);
+		using ArgsTuple = std::tuple<typename std::remove_const_t<typename std::remove_reference_t<Args>>...>;
+		using ResultType = typename std::remove_const_t<typename std::remove_reference_t<Result>>;
+		using Callback = std::function<ResultType(const scope &, Args...)>;
+
+		static constexpr size_t N = sizeof...(Args);
+
+		template <typename... Names>
+		mount_point(std::string path, std::string method, controller *owner, Sig sig, Names... names)
+			: mount_point_base(std::move(path), std::move(method))
+		{
+			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
+
+			ControllerType *controller = dynamic_cast<ControllerType *>(owner);
+			if (controller == nullptr)
+				throw std::runtime_error("Invalid controller for callback");
+
+			m_callback = [controller, sig](const scope &scope, Args... args)
+			{
+				return (controller->*sig)(scope, args...);
+			};
+
+			set_names(names...);
+		}
+
+		reply call(const scope &scope) override
+		{
+			if constexpr (std::is_void_v<ResultType>)
+			{
+				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
+				return reply::stock_reply(ok);
+			}
+			else if constexpr (std::is_same_v<ResultType, reply>)
+				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
+			else
+				return set_reply(std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>())));
+		}
+
+		template <std::size_t... I>
+		auto collect_arguments(const scope &scope, std::index_sequence<I...>)
+		{
+			return std::make_tuple(std::ref(scope), get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
 
 		Callback m_callback;

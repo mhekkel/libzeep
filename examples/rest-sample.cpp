@@ -57,7 +57,7 @@ class shop_rest_controller : public zeep::http::controller
     int create_cart(const std::string& client)
     {
         int cartID = sNextCartID++;
-        m_carts.push_back({ cartID, client });
+        m_carts.push_back({ .id = cartID, .client = client, .items = {} });
         return cartID;
     }
 

@@ -12,6 +12,7 @@
 #include "test-main.hpp"
 
 #include "client-test-code.hpp"
+#include "zeep/http/reply.hpp"
 
 #include <iostream>
 #include <random>
@@ -135,6 +136,8 @@ class e_rest_controller : public zeep::http::controller
 		map_put_request("opnames", &e_rest_controller::set_opnames, "opnames");
 
 		map_get_request("all_data", &e_rest_controller::get_all_data);
+
+		map_get_request("scope_test", &e_rest_controller::scope_test, "id");
 	}
 
 	// CRUD routines
@@ -187,6 +190,17 @@ class e_rest_controller : public zeep::http::controller
 	zeep::http::reply get_all_data()
 	{
 		return { zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
+	}
+
+	zeep::http::reply scope_test(const zeep::http::scope &scope, int id)
+	{
+		zeep::http::reply result{ zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
+
+		if (scope.get_request().get_accept("application/json"))
+			result.set_content(zeep::el::object{
+				{ "message", "Hello, world!" }
+			});
+		return result;
 	}
 };
 
@@ -272,3 +286,53 @@ TEST_CASE("rest_2")
 
 	t.join();
 }
+
+TEST_CASE("rest_3")
+{
+	// start up a http server and stop it again
+
+	zh::daemon d([]()
+		{
+		auto s = new zh::server;
+		s->add_controller(new e_rest_controller());
+		return s; },
+		"zeep-http-test");
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+
+	std::clog << "started daemon at port " << port << '\n';
+
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(1s);
+
+	try
+	{
+		zh::request req_1{"GET", "/ajax/scope_test", { 1, 0 }, {
+			{ "accept", "text/plain" }
+		}};
+
+		auto rep_1 = simple_request(port, req_1);
+		CHECK(rep_1.get_status() == zeep::http::ok);
+		CHECK(rep_1.get_content_type() == "text/plain");
+
+		zh::request req_2{"GET", "/ajax/scope_test", { 1, 0 }, {
+			{ "accept", "application/json" }
+		}};
+
+		auto rep_2 = simple_request(port, req_2);
+		CHECK(rep_2.get_status() == zeep::http::ok);
+		CHECK(rep_2.get_content_type() == "application/json");
+	}
+	catch (const std::exception &e)
+	{
+		std::clog << e.what() << '\n';
+	}
+
+	zeep::signal_catcher::signal_hangup(t);
+
+	t.join();
+}
+

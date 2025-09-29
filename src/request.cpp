@@ -87,7 +87,7 @@ float request::get_accept(std::string_view type) const
 
 	for (const header &h : m_headers)
 	{
-		if (h.name != "Accept")
+		if (not iequals(h.name, "Accept"))
 			continue;
 
 		result = 0;
