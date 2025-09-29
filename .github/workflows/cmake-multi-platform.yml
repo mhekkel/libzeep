@@ -54,7 +54,7 @@ jobs:
       id: install-boost
       with:
           boost_version: 1.88.0
-          platform_version: 2019
+          platform_version: 2022
           toolset: msvc
 
     - name: Install Boost macOS
