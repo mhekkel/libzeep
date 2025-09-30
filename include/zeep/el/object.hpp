@@ -6,6 +6,7 @@
 #pragma once
 
 #include "zeep/streambuf.hpp"
+#include <cstddef>
 
 #if __has_include(<nlohmann/json.hpp>)
 #include <nlohmann/json.hpp>
@@ -410,6 +411,11 @@ class object
 			m_data.m_type = value_type::array;
 			m_data.m_value.m_array = create<array_type>(init.begin(), init.end());
 		}
+	}
+
+	object(std::nullptr_t)
+	{
+		m_data.m_type = value_type::null;
 	}
 
 	template <StringType T>
@@ -880,6 +886,26 @@ class object
 
 	const_iterator cbegin() { return const_iterator(this); }
 	const_iterator cend() { return const_iterator(this, 1); }
+
+	object &front()
+	{
+		return *begin();
+	}
+
+	const object &front() const
+	{
+		return *begin();
+	}
+
+	object &back()
+	{
+		return *--end();
+	}
+
+	const object &back() const
+	{
+		return *--end();
+	}
 
 	// I/O
 
