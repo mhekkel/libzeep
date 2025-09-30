@@ -1,6 +1,7 @@
 Version 7.2.0
 - zeep::http::controller callbacks (for REST calls) can now
   have a zeep::http::scope as first parameter.
+- Added methods to el::object (nullptr constructor and back/front)
 
 Version 7.1.0
 - Fix huge memory leak
