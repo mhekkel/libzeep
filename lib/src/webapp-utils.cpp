@@ -3,6 +3,7 @@
 #include <codecvt>
 #include <deque>
 #include <limits>
+#include <tuple>
 
 #include "zeep/el/utils.hpp"
 

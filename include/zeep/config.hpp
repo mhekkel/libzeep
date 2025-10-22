@@ -29,6 +29,8 @@
 // some VC specific include files to make the standard C++
 // keywords work.
 
+#include <cstdint>
+
 #if defined(_MSC_VER)
 #	if defined(_MSC_EXTENSIONS)		// why is it an extension to leave out something?
 #		define and		&&

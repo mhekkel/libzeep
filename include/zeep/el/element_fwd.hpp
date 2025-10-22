@@ -6,11 +6,13 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 #include <string>
 #include <memory>
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <array>
 #include <experimental/type_traits>
 
 namespace zeep
