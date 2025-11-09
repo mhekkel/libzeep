@@ -36,9 +36,6 @@ namespace zeep::el
 template <typename T, typename = void>
 struct serializer;
 
-template <typename T, typename = void>
-struct deserializer;
-
 struct object_serializer;
 struct object_deserializer;
 
@@ -381,6 +378,13 @@ object to_object(const T &v)
 {
 	using value_serializer_impl = serializer<T>;
 	return value_serializer_impl::serialize(v);
+}
+
+template <typename T, std::enable_if_t<is_serializable_to_object_v<T>, int> = 0>
+T from_object(const object &o)
+{
+	using value_serializer_impl = serializer<T>;
+	return value_serializer_impl::deserialize(o);
 }
 
 } // namespace zeep::el
