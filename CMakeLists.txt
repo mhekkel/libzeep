@@ -98,8 +98,8 @@ else()
 endif()
 
 CPMFindPackage(NAME zeem
-	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
-	VERSION 2.0.2
+	GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
+	VERSION 2.0.5
 	EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
