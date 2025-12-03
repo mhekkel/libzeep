@@ -165,7 +165,7 @@ std::optional<std::filesystem::path> basic_template_processor::get_template_file
 	return result;
 }
 
-void basic_template_processor::load_template(const std::string &file, mxml::document &doc)
+void basic_template_processor::load_template(const std::string &file, zeem::document &doc)
 {
 	std::string templateSelector;
 
@@ -238,7 +238,7 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 	{
 		// tricky? Find first matching fragment and make it the root node of the document
 
-		mxml::context ctx;
+		zeem::context ctx;
 
 		// this is problematic, take the first processor namespace for now.
 		// TODO fix this
@@ -254,17 +254,17 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 			ctx.set("ns", ns);
 			break;
 		}
-		mxml::xpath xp(templateSelector);
+		zeem::xpath xp(templateSelector);
 
-		std::vector<std::unique_ptr<mxml::node>> result;
+		std::vector<std::unique_ptr<zeem::node>> result;
 
-		for (auto n : xp.evaluate<mxml::node>(doc, ctx))
+		for (auto n : xp.evaluate<zeem::node>(doc, ctx))
 		{
-			auto e = dynamic_cast<mxml::element *>(n);
+			auto e = dynamic_cast<zeem::element *>(n);
 			if (e == nullptr)
 				continue;
 
-			mxml::document dest;
+			zeem::document dest;
 
 			auto &attr = e->attributes();
 
@@ -277,8 +277,8 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 			auto parent = e->parent();
 			dest.push_back(std::move(*e));
 
-			if (parent->type() == mxml::node_type::element)
-				mxml::fix_namespaces(dest.front(), static_cast<const mxml::element &>(*parent), dest.front());
+			if (parent->type() == zeem::node_type::element)
+				zeem::fix_namespaces(dest.front(), static_cast<const zeem::element &>(*parent), dest.front());
 
 			std::swap(doc, dest);
 			break;
@@ -288,7 +288,7 @@ void basic_template_processor::load_template(const std::string &file, mxml::docu
 
 void basic_template_processor::create_reply_from_template(const std::string &file, const scope &scope, reply &reply)
 {
-	mxml::document doc;
+	zeem::document doc;
 	doc.set_preserve_cdata(true);
 
 	load_template(file, doc);
@@ -304,10 +304,10 @@ void basic_template_processor::init_scope(request &req, scope & /*scope*/)
 {
 }
 
-void basic_template_processor::process_tags(mxml::node *node, const scope &scope)
+void basic_template_processor::process_tags(zeem::node *node, const scope &scope)
 {
 	// only process elements
-	if (dynamic_cast<mxml::element *>(node) == nullptr)
+	if (dynamic_cast<zeem::element *>(node) == nullptr)
 		return;
 
 	std::set<std::string> registeredNamespaces;
@@ -315,23 +315,23 @@ void basic_template_processor::process_tags(mxml::node *node, const scope &scope
 		registeredNamespaces.insert(tpc.first);
 
 	if (not registeredNamespaces.empty())
-		process_tags(static_cast<mxml::element *>(node), scope, registeredNamespaces);
+		process_tags(static_cast<zeem::element *>(node), scope, registeredNamespaces);
 
 	// decorate all forms with a hidden input with name _csrf
 
 	auto csrf = scope.get_csrf_token();
 	if (not csrf.empty())
 	{
-		auto forms = mxml::xpath(R"(//form[not(input[@name='_csrf'])])");
-		mxml::context ctx;
-		for (auto &form : forms.evaluate<mxml::element>(*node, ctx))
-			form->emplace_back(mxml::element("input", { { "name", "_csrf" },
+		auto forms = zeem::xpath(R"(//form[not(input[@name='_csrf'])])");
+		zeem::context ctx;
+		for (auto &form : forms.evaluate<zeem::element>(*node, ctx))
+			form->emplace_back(zeem::element("input", { { "name", "_csrf" },
 														  { "value", csrf },
 														  { "type", "hidden" } }));
 	}
 }
 
-void basic_template_processor::process_tags(mxml::element *node, const scope &scope, std::set<std::string> registeredNamespaces)
+void basic_template_processor::process_tags(zeem::element *node, const scope &scope, std::set<std::string> registeredNamespaces)
 {
 	std::set<std::string> nss;
 

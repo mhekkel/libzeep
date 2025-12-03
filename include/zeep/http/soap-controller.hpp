@@ -15,7 +15,7 @@
 
 #include "zeep/http/controller.hpp"
 
-#include <mxml.hpp>
+#include <zeem.hpp>
 
 namespace zeep::http
 {
@@ -38,35 +38,35 @@ class soap_envelope
 
 	// /// \brief Parse a SOAP message received from a client,
 	// /// throws an exception if the envelope is empty or invalid.
-	// envelope(mxml::document& data);
+	// envelope(zeem::document& data);
 
 	/// \brief The request element as contained in the original SOAP message
-	mxml::element &request() { return *m_request; }
+	zeem::element &request() { return *m_request; }
 
   private:
-	mxml::document m_payload;
-	mxml::element *m_request;
+	zeem::document m_payload;
+	zeem::element *m_request;
 };
 
 // --------------------------------------------------------------------
 
 /// Wrap data into a SOAP envelope
 ///
-/// \param    data  The mxml::element object to wrap into the envelope
-/// \return   A new mxml::element object containing the envelope.
-mxml::element make_envelope(mxml::element &&data);
-// mxml::element make_envelope(const mxml::element& data);
+/// \param    data  The zeem::element object to wrap into the envelope
+/// \return   A new zeem::element object containing the envelope.
+zeem::element make_envelope(zeem::element &&data);
+// zeem::element make_envelope(const zeem::element& data);
 
 /// Create a standard SOAP Fault message for the string parameter
 ///
 /// \param    message The string object containing a descriptive error message.
-/// \return   A new mxml::element object containing the fault envelope.
-mxml::element make_fault(std::string message);
+/// \return   A new zeem::element object containing the fault envelope.
+zeem::element make_fault(std::string message);
 /// Create a standard SOAP Fault message for the exception object
 ///
 /// \param    ex The exception object that was catched.
-/// \return   A new mxml::element object containing the fault envelope.
-mxml::element make_fault(const std::exception &ex);
+/// \return   A new zeem::element object containing the fault envelope.
+zeem::element make_fault(const std::exception &ex);
 
 // --------------------------------------------------------------------
 
@@ -127,7 +127,7 @@ class soap_controller : public controller
 	}
 
 	/// \brief Create a WSDL based on the registered actions
-	mxml::element make_wsdl();
+	zeem::element make_wsdl();
 
 	/// \brief Handle the SOAP request
 	virtual bool handle_request(request &req, reply &reply_);
@@ -135,8 +135,8 @@ class soap_controller : public controller
   protected:
 	/// @cond
 
-	using type_map = std::map<std::string, mxml::element>;
-	using message_map = std::map<std::string, mxml::element>;
+	using type_map = std::map<std::string, zeem::element>;
+	using message_map = std::map<std::string, zeem::element>;
 
 	struct mount_point_base
 	{
@@ -147,8 +147,8 @@ class soap_controller : public controller
 
 		virtual ~mount_point_base() {}
 
-		virtual void call(const mxml::element &request, reply &reply_, std::string_view ns) = 0;
-		virtual void describe(type_map &types, message_map &messages, mxml::element &portType, mxml::element &binding) = 0;
+		virtual void call(const zeem::element &request, reply &reply_, std::string_view ns) = 0;
+		virtual void describe(type_map &types, message_map &messages, zeem::element &portType, zeem::element &binding) = 0;
 
 		std::string m_action;
 	};
@@ -193,7 +193,7 @@ class soap_controller : public controller
 				m_names[i++] = name;
 		}
 
-		virtual void call(const mxml::element &request, reply &rep, std::string_view ns)
+		virtual void call(const zeem::element &request, reply &rep, std::string_view ns)
 		{
 			rep.set_status(ok);
 
@@ -206,7 +206,7 @@ class soap_controller : public controller
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
-			mxml::element response(m_action + "Response");
+			zeem::element response(m_action + "Response");
 			response.move_to_name_space("m", ns, false, false);
 			rep.set_content(make_envelope(std::move(response)));
 		}
@@ -217,9 +217,9 @@ class soap_controller : public controller
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
 			// and serialize the result back into XML
-			mxml::element response(m_action + "Response");
+			zeem::element response(m_action + "Response");
 
-			mxml::serializer sr(response);
+			zeem::serializer sr(response);
 			sr.serialize_element(result);
 			response.move_to_name_space("m", ns, true, true);
 
@@ -229,48 +229,48 @@ class soap_controller : public controller
 		}
 
 		template <std::size_t... I>
-		ArgsTuple collect_arguments(const mxml::element &request, std::index_sequence<I...>)
+		ArgsTuple collect_arguments(const zeem::element &request, std::index_sequence<I...>)
 		{
-			mxml::deserializer ds(request);
+			zeem::deserializer ds(request);
 
 			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(ds, m_names[I])...);
 		}
 
 		template <typename T>
-		T get_parameter(mxml::deserializer &ds, const char *name)
+		T get_parameter(zeem::deserializer &ds, const char *name)
 		{
 			T v = {};
 			ds.deserialize_element(name, v);
 			return v;
 		}
 
-		virtual void collect_types(type_map &types, mxml::element &seq, std::string_view ns)
+		virtual void collect_types(type_map &types, zeem::element &seq, std::string_view ns)
 		{
 			if constexpr (sizeof...(Args) > 0)
 				collect_types(types, seq, ns, std::make_index_sequence<N>());
 		}
 
 		template <std::size_t... I>
-		void collect_types(type_map &types, mxml::element &seq, std::string_view ns, std::index_sequence<I...> /*ix*/)
+		void collect_types(type_map &types, zeem::element &seq, std::string_view ns, std::index_sequence<I...> /*ix*/)
 		{
 			(collect_type<I>(types, seq, ns), ...);
 		}
 
 		template <std::size_t I>
-		void collect_type(type_map &types, mxml::element &seq, std::string_view /*ns*/)
+		void collect_type(type_map &types, zeem::element &seq, std::string_view /*ns*/)
 		{
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
 
-			mxml::schema_creator sc(types, seq);
+			zeem::schema_creator sc(types, seq);
 
 			sc.add_element(m_names[I], type{});
 		}
 
 		virtual void describe(type_map &types, message_map &messages,
-			mxml::element &portType, mxml::element &binding)
+			zeem::element &portType, zeem::element &binding)
 		{
 			// the request type
-			mxml::element requestType("xsd:element", { { "name", m_action } });
+			zeem::element requestType("xsd:element", { { "name", m_action } });
 			auto complexType = requestType.emplace_back("xsd:complexType");
 
 			collect_types(types, complexType.emplace_back("xsd:sequence"), "ns");
@@ -278,30 +278,30 @@ class soap_controller : public controller
 			types[m_action + "Request"] = requestType;
 
 			// and the response type
-			mxml::element responseType("xsd:element", { { "name", m_action + "Response" } });
+			zeem::element responseType("xsd:element", { { "name", m_action + "Response" } });
 
 			if constexpr (not std::is_void_v<Result>)
 			{
 				auto complexType2 = responseType.emplace_back("xsd:complexType");
 				auto sequence = complexType2->emplace_back("xsd:sequence");
 
-				mxml::schema_creator sc(types, sequence);
+				zeem::schema_creator sc(types, sequence);
 				sc.add_element("Response", Result{});
 			}
 
 			types[m_action + "Response"] = responseType;
 
 			// now the wsdl operations
-			mxml::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});
+			zeem::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});
 			message.emplace_back("wsdl:part", { {"name", "parameters"}, { "element", "ns:" + m_action }});
 			messages[m_action + "RequestMessage"] = message;
 
-			message = mxml::element("wsdl:message", {{ "name", m_action + "Message" }});
+			message = zeem::element("wsdl:message", {{ "name", m_action + "Message" }});
 			message.emplace_back("wsdl:part", {{ "name", "parameters"}, {"element", "ns:" + m_action }});
 			messages[m_action + "Message"] = message;
 
 			// port type
-			mxml::element operation("wsdl:operation", { { "name", m_action } });
+			zeem::element operation("wsdl:operation", { { "name", m_action } });
 
 			operation.emplace_back("wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } });
 			operation.emplace_back("wsdl:output", { { "message", "ns:" + m_action + "Message" } });
@@ -312,14 +312,14 @@ class soap_controller : public controller
 			operation = { "wsdl:operation", { { "name", m_action } } };
 			operation.emplace_back("soap:operation", { { "soapAction", "" }, { "style", "document" } });
 
-			mxml::element body("soap:body");
+			zeem::element body("soap:body");
 			body.set_attribute("use", "literal");
 
-			mxml::element input("wsdl:input");
+			zeem::element input("wsdl:input");
 			input.push_back(body);
 			operation.emplace_back(std::move(input));
 
-			mxml::element output("wsdl:output");
+			zeem::element output("wsdl:output");
 			output.emplace_back(std::move(body));
 			operation.emplace_back(std::move(output));
 

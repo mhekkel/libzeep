@@ -4,7 +4,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 @FIND_DEPENDENCY_BOOST@
 find_dependency(date REQUIRED)
-find_dependency(mxml REQUIRED)
+find_dependency(zeem REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/zeep-targets.cmake")
 

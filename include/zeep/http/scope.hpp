@@ -183,9 +183,9 @@ class scope
 
 	/// \brief a nodeset for a selector, cached to avoid recusive expansion
 	///
-	/// In tag processors it is sometimes needed to take a selection of mxml::nodes
+	/// In tag processors it is sometimes needed to take a selection of zeem::nodes
 	/// and reuse these, as a copy when inserting templates e.g.
-	using node_set_type = mxml::element;
+	using node_set_type = zeem::element;
 
 	/// \brief return the node_set_type with name \a name
 	node_set_type get_nodeset(const std::string &name) const;

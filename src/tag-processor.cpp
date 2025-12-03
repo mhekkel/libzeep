@@ -23,7 +23,7 @@ std::unordered_set<std::string> kFixedValueBooleanAttributes{
 
 // --------------------------------------------------------------------
 
-int attribute_precedence(const mxml::attribute &attr)
+int attribute_precedence(const zeem::attribute &attr)
 {
 	if (attr.name() == "insert" or attr.name() == "replace")
 		return -10;
@@ -74,14 +74,14 @@ tag_processor::tag_processor(const char *ns)
 	register_attr_handler("with", std::bind(&tag_processor::process_attr_with, this, _1, _2, _3, _4, _5));
 }
 
-void tag_processor::process_xml(mxml::node *node, const scope &parentScope, fs::path dir, basic_template_processor &loader)
+void tag_processor::process_xml(zeem::node *node, const scope &parentScope, fs::path dir, basic_template_processor &loader)
 {
 	m_template.clear();
-	m_template.emplace_back(*static_cast<const mxml::element *>(node));
+	m_template.emplace_back(*static_cast<const zeem::element *>(node));
 
 	process_node(node, parentScope, dir, loader);
 
-	auto e = dynamic_cast<mxml::element *>(node);
+	auto e = dynamic_cast<zeem::element *>(node);
 	if (e != nullptr)
 		post_process(e, parentScope, dir, loader);
 }
@@ -89,7 +89,7 @@ void tag_processor::process_xml(mxml::node *node, const scope &parentScope, fs::
 // --------------------------------------------------------------------
 // post processing: remove blocks, remove attributes with ns = ns(), process remove
 
-void tag_processor::post_process(mxml::element *e, const scope &parentScope, fs::path dir, basic_template_processor &loader)
+void tag_processor::post_process(zeem::element *e, const scope &parentScope, fs::path dir, basic_template_processor &loader)
 {
 	auto parent = e->parent();
 
@@ -123,7 +123,7 @@ void tag_processor::post_process(mxml::element *e, const scope &parentScope, fs:
 	}
 
 	// take a copy since iterators might get invalid
-	std::vector<mxml::element *> children;
+	std::vector<zeem::element *> children;
 	std::transform(e->begin(), e->end(), std::back_inserter(children), [](auto &c)
 		{ return &c; });
 
@@ -142,7 +142,7 @@ void tag_processor::post_process(mxml::element *e, const scope &parentScope, fs:
 
 // -----------------------------------------------------------------------
 
-void tag_processor::process_text(mxml::node_with_text &text, const scope &scope)
+void tag_processor::process_text(zeem::node_with_text &text, const scope &scope)
 {
 	auto parent = text.parent();
 
@@ -181,7 +181,7 @@ void tag_processor::process_text(mxml::node_with_text &text, const scope &scope)
 
 		if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 		{
-			mxml::document subDoc("<foo>" + m + "</foo>");
+			zeem::document subDoc("<foo>" + m + "</foo>");
 			auto foo = subDoc.front();
 
 			for (auto &n : foo.nodes())
@@ -191,7 +191,7 @@ void tag_processor::process_text(mxml::node_with_text &text, const scope &scope)
 
 			s = s.substr(j + 2);
 			b = 0;
-			parent->nodes().emplace(next, mxml::text(s));
+			parent->nodes().emplace(next, zeem::text(s));
 		}
 		else
 		{
@@ -205,8 +205,8 @@ void tag_processor::process_text(mxml::node_with_text &text, const scope &scope)
 
 // --------------------------------------------------------------------
 
-mxml::element tag_processor::resolve_fragment_spec(
-	mxml::element *node, fs::path dir, basic_template_processor &loader, const object &spec, const scope &scope)
+zeem::element tag_processor::resolve_fragment_spec(
+	zeem::element *node, fs::path dir, basic_template_processor &loader, const object &spec, const scope &scope)
 {
 	if (spec.contains("is-node-set") and spec["is-node-set"])
 		return scope.get_nodeset(spec["node-set-name"].get<std::string>());
@@ -248,17 +248,17 @@ mxml::element tag_processor::resolve_fragment_spec(
 	return {};
 }
 
-mxml::element tag_processor::resolve_fragment_spec(
-	mxml::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, std::string_view selector, bool byID)
+zeem::element tag_processor::resolve_fragment_spec(
+	zeem::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, std::string_view selector, bool byID)
 {
-	mxml::context ctx;
+	zeem::context ctx;
 	ctx.set("ns", ns());
 
-	mxml::xpath xp(selector);
+	zeem::xpath xp(selector);
 	// xp.dump();
 
-	mxml::document doc;
-	mxml::element_container *root = nullptr;
+	zeem::document doc;
+	zeem::element_container *root = nullptr;
 
 	if (file.empty() or file == "this")
 		root = m_template.root();
@@ -290,19 +290,19 @@ mxml::element tag_processor::resolve_fragment_spec(
 		root = doc.root();
 	}
 
-	mxml::element result;
+	zeem::element result;
 
-	for (auto n : xp.evaluate<mxml::node>(*root, ctx))
+	for (auto n : xp.evaluate<zeem::node>(*root, ctx))
 	{
 		auto ni = result.nodes().emplace_back(*n);
 
-		if (ni->type() != mxml::node_type::element)
+		if (ni->type() != zeem::node_type::element)
 			continue;
 
-		auto e = static_cast<mxml::element *>(&*ni);
+		auto e = static_cast<zeem::element *>(&*ni);
 
 		if (root != node->root())
-			fix_namespaces(*e, *static_cast<mxml::element *>(n), *node);
+			fix_namespaces(*e, *static_cast<zeem::element *>(n), *node);
 
 		auto &attr = e->attributes();
 
@@ -318,24 +318,24 @@ mxml::element tag_processor::resolve_fragment_spec(
 
 // -----------------------------------------------------------------------
 
-void tag_processor::process_node(mxml::node *node, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader)
+void tag_processor::process_node(zeem::node *node, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader)
 {
 	for (;;)
 	{
-		if (node->type() == mxml::node_type::cdata)
+		if (node->type() == zeem::node_type::cdata)
 		{
-			if (node->root()->type() == mxml::node_type::document and static_cast<mxml::document *>(node->root())->is_html5())
+			if (node->root()->type() == zeem::node_type::document and static_cast<zeem::document *>(node->root())->is_html5())
 			{
 				// HTML5 does not support CDATA sections, replace it
 
-				mxml::element_container *parent = node->parent();
+				zeem::element_container *parent = node->parent();
 
 				auto parent_nodes = parent->nodes();
 				auto ni = std::find_if(parent_nodes.begin(), parent_nodes.end(), [node](auto &n)
 					{ return &n == node; });
 
-				[[maybe_unused]] auto ti = parent_nodes.emplace(ni, mxml::text(
-																		static_cast<mxml::cdata *>(node)->get_text()));
+				[[maybe_unused]] auto ti = parent_nodes.emplace(ni, zeem::text(
+																		static_cast<zeem::cdata *>(node)->get_text()));
 
 				// assert(std::next(ti) == ni); // < this fails when building with MSVC
 
@@ -344,17 +344,17 @@ void tag_processor::process_node(mxml::node *node, const scope &parentScope, std
 			}
 		}
 
-		if (node->type() == mxml::node_type::text or node->type() == mxml::node_type::cdata)
+		if (node->type() == zeem::node_type::text or node->type() == zeem::node_type::cdata)
 		{
-			process_text(*static_cast<mxml::node_with_text *>(node), parentScope);
+			process_text(*static_cast<zeem::node_with_text *>(node), parentScope);
 			break;
 		}
 
-		mxml::element *e = dynamic_cast<mxml::element *>(node);
+		zeem::element *e = dynamic_cast<zeem::element *>(node);
 		if (e == nullptr)
 			break;
 
-		mxml::element_container *parent = e->parent();
+		zeem::element_container *parent = e->parent();
 		scope scope(parentScope);
 		bool inlined = false;
 
@@ -407,7 +407,7 @@ void tag_processor::process_node(mxml::node *node, const scope &parentScope, std
 		}
 		catch (const std::exception &ex)
 		{
-			parent->nodes().insert(e, mxml::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
+			parent->nodes().insert(e, zeem::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
 			// parent->erase(e);
 		}
 
@@ -419,7 +419,7 @@ void tag_processor::process_node(mxml::node *node, const scope &parentScope, std
 				auto &n = *i;
 				++i;
 
-				if (inlined and dynamic_cast<mxml::node_with_text *>(&n) != nullptr)
+				if (inlined and dynamic_cast<zeem::node_with_text *>(&n) != nullptr)
 					continue;
 
 				process_node(&n, scope, dir, loader);
@@ -432,14 +432,14 @@ void tag_processor::process_node(mxml::node *node, const scope &parentScope, std
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_if(mxml::element * /*element*/, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
+auto tag_processor::process_attr_if(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
 {
 	return ((not evaluate_el(scope, attr.value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_assert(mxml::element * /*element*/, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor::process_attr_assert(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
 	if (not evaluate_el_assert(scope, attr.value()))
 		throw zeep::exception("Assertion failed for '" + attr.value() + "'");
@@ -448,7 +448,7 @@ auto tag_processor::process_attr_assert(mxml::element * /*element*/, mxml::attri
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_text(mxml::element *element, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
+auto tag_processor::process_attr_text(zeem::element *element, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
 {
 	object obj = evaluate_el(scope, attr.value());
 
@@ -470,7 +470,7 @@ auto tag_processor::process_attr_text(mxml::element *element, mxml::attribute &a
 		{
 			element->set_text("");
 
-			mxml::document subDoc("<foo>" + text + "</foo>");
+			zeem::document subDoc("<foo>" + text + "</foo>");
 			auto foo = subDoc.front();
 			for (auto &n : foo.nodes())
 				element->nodes().emplace(element->end(), std::move(n));
@@ -482,20 +482,20 @@ auto tag_processor::process_attr_text(mxml::element *element, mxml::attribute &a
 
 // --------------------------------------------------------------------
 
-auto tag_processor::process_attr_switch(mxml::element *element, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor::process_attr_switch(zeem::element *element, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
 	auto vo = evaluate_el(scope, attr.value());
 	std::string v;
 	if (not vo.is_null())
 		v = vo.get<std::string>();
 
-	mxml::element e2(*element);
+	zeem::element e2(*element);
 	element->nodes().clear();
 
 	auto cases = e2.find(".//*[@case]");
 
-	mxml::element *selected = nullptr;
-	mxml::element *wildcard = nullptr;
+	zeem::element *selected = nullptr;
+	zeem::element *wildcard = nullptr;
 	for (auto c : cases)
 	{
 		auto ca = c->get_attribute(element->prefix_tag("case", ns()));
@@ -523,7 +523,7 @@ auto tag_processor::process_attr_switch(mxml::element *element, mxml::attribute 
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_with(mxml::element * /*element*/, mxml::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor::process_attr_with(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
 	evaluate_el_with(scope, attr.value());
 	return AttributeAction::none;
@@ -531,7 +531,7 @@ auto tag_processor::process_attr_with(mxml::element * /*element*/, mxml::attribu
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_each(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader)
+tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader)
 {
 	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
@@ -570,7 +570,7 @@ tag_processor::AttributeAction tag_processor::process_attr_each(mxml::element *n
 									   { "first", ix == 0 },
 									   { "last", ix + 1 == collectionSize } });
 
-			mxml::element clone(*node);
+			zeem::element clone(*node);
 			clone.attributes().erase(attr.get_qname());
 
 			auto i = parent->emplace(node, std::move(clone)); // insert before processing, to assign namespaces
@@ -585,7 +585,7 @@ tag_processor::AttributeAction tag_processor::process_attr_each(mxml::element *n
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_attr(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_attr(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto v = evaluate_el_attr(scope, attr.value());
 	for (auto vi : v)
@@ -596,7 +596,7 @@ tag_processor::AttributeAction tag_processor::process_attr_attr(mxml::element *n
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_generic(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_generic(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto s = attr.value();
 
@@ -609,7 +609,7 @@ tag_processor::AttributeAction tag_processor::process_attr_generic(mxml::element
 // --------------------------------------------------------------------
 
 tag_processor::AttributeAction tag_processor::process_attr_boolean_value(
-	mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+	zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto s = attr.value();
 
@@ -623,7 +623,7 @@ tag_processor::AttributeAction tag_processor::process_attr_boolean_value(
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_inline(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto type = attr.value();
 
@@ -633,9 +633,9 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(mxml::element 
 
 		for (auto &n : node->nodes())
 		{
-			if (n.type() != mxml::node_type::text and n.type() != mxml::node_type::cdata)
+			if (n.type() != zeem::node_type::text and n.type() != zeem::node_type::cdata)
 				continue;
-			mxml::node_with_text *text = static_cast<mxml::node_with_text *>(&n);
+			zeem::node_with_text *text = static_cast<zeem::node_with_text *>(&n);
 
 			std::string s = text->get_text();
 			std::string t;
@@ -671,9 +671,9 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(mxml::element 
 	{
 		for (auto &n : node->nodes())
 		{
-			if (n.type() != mxml::node_type::text and n.type() != mxml::node_type::cdata)
+			if (n.type() != zeem::node_type::text and n.type() != zeem::node_type::cdata)
 				continue;
-			mxml::node_with_text *text_p = static_cast<mxml::node_with_text *>(&n);
+			zeem::node_with_text *text_p = static_cast<zeem::node_with_text *>(&n);
 
 			auto &text = *text_p;
 
@@ -708,7 +708,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(mxml::element 
 
 				if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 				{
-					mxml::document subDoc("<foo>" + m + "</foo>");
+					zeem::document subDoc("<foo>" + m + "</foo>");
 					for (auto &subnode : subDoc.front().nodes())
 						node->nodes().emplace(next, std::move(subnode));
 
@@ -716,7 +716,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(mxml::element 
 
 					s = s.substr(j + 2);
 					b = 0;
-					node->nodes().insert(next, mxml::text(s));
+					node->nodes().insert(next, zeem::text(s));
 				}
 				else
 				{
@@ -734,7 +734,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(mxml::element 
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element *node, mxml::attribute &attr, scope &parentScope, std::filesystem::path dir, basic_template_processor &loader, TemplateIncludeAction tia)
+tag_processor::AttributeAction tag_processor::process_attr_include(zeem::element *node, zeem::attribute &attr, scope &parentScope, std::filesystem::path dir, basic_template_processor &loader, TemplateIncludeAction tia)
 {
 	AttributeAction result = AttributeAction::none;
 
@@ -750,7 +750,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element
 
 	for (auto &templ : templates.nodes())
 	{
-		mxml::element *el = dynamic_cast<mxml::element *>(&templ);
+		zeem::element *el = dynamic_cast<zeem::element *>(&templ);
 
 		if (el == nullptr)
 		{
@@ -779,7 +779,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element
 		}
 
 		// take a full copy, and fix up the prefixes for the namespaces, if required
-		mxml::element &replacement(*el);
+		zeem::element &replacement(*el);
 
 		scope scope(parentScope);
 
@@ -838,7 +838,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element
 		}
 		else
 		{
-			mxml::element::iterator i;
+			zeem::element::iterator i;
 
 			if (tia == TemplateIncludeAction::insert)
 				i = node->emplace(node->end(), std::move(replacement));
@@ -848,7 +848,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element
 				result = AttributeAction::remove;
 			}
 
-			auto e2 = dynamic_cast<mxml::element *>(&*i);
+			auto e2 = dynamic_cast<zeem::element *>(&*i);
 			if (e2 != nullptr)
 			{
 				auto &attrs = e2->attributes();
@@ -865,7 +865,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element
 	}
 
 	if (result == AttributeAction::remove)
-		static_cast<mxml::element *>(node->parent())->flatten_text();
+		static_cast<zeem::element *>(node->parent())->flatten_text();
 	else
 		node->flatten_text();
 
@@ -874,7 +874,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(mxml::element
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_remove(mxml::element *node, mxml::attribute &attr, scope & /*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_remove(zeem::element *node, zeem::attribute &attr, scope & /*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
 {
 	auto mode = attr.value();
 
@@ -891,7 +891,7 @@ tag_processor::AttributeAction tag_processor::process_attr_remove(mxml::element 
 	}
 	else if (mode == "tag")
 	{
-		auto i = mxml::element::iterator(node);
+		auto i = zeem::element::iterator(node);
 
 		for (auto &c : *node)
 		{
@@ -908,7 +908,7 @@ tag_processor::AttributeAction tag_processor::process_attr_remove(mxml::element 
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_classappend(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_classappend(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	for (;;)
 	{
@@ -945,7 +945,7 @@ tag_processor::AttributeAction tag_processor::process_attr_classappend(mxml::ele
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_styleappend(mxml::element *node, mxml::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_styleappend(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
 {
 	for (;;)
 	{

@@ -35,4 +35,4 @@ Various simple routines used when working with UTF-8 encoded Unicode text. Routi
 Serialization support
 ^^^^^^^^^^^^^^^^^^^^^
 
-The serialization code in libzeep builds upon the code in libmxml. You serialize and deserialize objects into the internal el::object format which can be converted into JSON.
+The serialization code in libzeep builds upon the code in libzeem. You serialize and deserialize objects into the internal el::object format which can be converted into JSON.

@@ -16,13 +16,13 @@ soap_envelope::soap_envelope()
 {
 }
 
-// envelope::envelope(mxml::document& data)
+// envelope::envelope(zeem::document& data)
 // 	: m_request(nullptr)
 // {
-// 	const mxml::xpath
+// 	const zeem::xpath
 // 		sRequestPath("/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
 	
-// 	std::list<mxml::element*> l = sRequestPath.evaluate<mxml::element>(*data.root());
+// 	std::list<zeem::element*> l = sRequestPath.evaluate<zeem::element>(*data.root());
 	
 // 	if (l.empty())
 // 		throw zeep::exception("Empty or invalid SOAP envelope passed");
@@ -30,9 +30,9 @@ soap_envelope::soap_envelope()
 // 	m_request = l.front();
 // }
 
-mxml::element make_envelope(mxml::element&& data)
+zeem::element make_envelope(zeem::element&& data)
 {
-	mxml::element env("soap:Envelope", {
+	zeem::element env("soap:Envelope", {
 		{ "xmlns:soap", "http://schemas.xmlsoap.org/soap/envelope/" },
 		{ "soap:encodingStyle", "http://www.w3.org/2003/05/soap-encoding" }
 	});
@@ -42,9 +42,9 @@ mxml::element make_envelope(mxml::element&& data)
 	return env;
 }
 
-mxml::element make_fault(std::string what)
+zeem::element make_fault(std::string what)
 {
-	mxml::element fault("soap:Fault");
+	zeem::element fault("soap:Fault");
 	
 	auto faultCode = fault.emplace_back("faultcode");
 	faultCode.set_content("soap:Server");
@@ -55,7 +55,7 @@ mxml::element make_fault(std::string what)
 	return make_envelope(std::move(fault));
 }
 
-mxml::element make_fault(const std::exception& ex)
+zeem::element make_fault(const std::exception& ex)
 {
 	return make_fault(std::string(ex.what()));
 }
@@ -74,7 +74,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 
 		try
 		{
-			mxml::document envelope(req.get_payload());
+			zeem::document envelope(req.get_payload());
 
 			auto request = envelope.find_first(
 				"/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
@@ -118,11 +118,11 @@ bool soap_controller::handle_request(request& req, reply& reply)
 }
 
 /// \brief Create a WSDL based on the registered actions
-mxml::element soap_controller::make_wsdl()
+zeem::element soap_controller::make_wsdl()
 {
 	// start by making the root node: wsdl:definitions
 
-	mxml::element wsdl("wsdl:definitions",
+	zeem::element wsdl("wsdl:definitions",
 	{
 		{ "targetNamespace", m_ns },
 		{ "xmlns:ns", m_ns },
@@ -165,7 +165,7 @@ mxml::element soap_controller::make_wsdl()
 	});
 	
 	// and the types
-	mxml::type_map typeMap;
+	zeem::type_map typeMap;
 	message_map messageMap;
 	
 	for (auto& mp: m_mountpoints)

@@ -3,18 +3,12 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 
 #include "zeep/http/error-handler.hpp"
 #include "zeep/http/login-controller.hpp"
 #include "zeep/http/security.hpp"
 #include "zeep/http/uri.hpp"
-
-namespace fs = std::filesystem;
 
 namespace zeep::http
 {
@@ -82,7 +76,7 @@ void login_controller::set_server(basic_server *server)
 	server->add_error_handler(new login_error_handler(this));
 }
 
-mxml::document login_controller::load_login_form(const request &req) const
+zeem::document login_controller::load_login_form(const request &req) const
 {
 	if (m_server->has_template_processor())
 	{
@@ -90,7 +84,7 @@ mxml::document login_controller::load_login_form(const request &req) const
 		{
 			auto &tp = m_server->get_template_processor();
 
-			mxml::document doc;
+			zeem::document doc;
 			doc.set_preserve_cdata(true);
 
 			tp.load_template("login", doc);
@@ -108,7 +102,7 @@ mxml::document login_controller::load_login_form(const request &req) const
 		}
 	}
 
-	using namespace mxml::literals;
+	using namespace zeem::literals;
 
 	auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

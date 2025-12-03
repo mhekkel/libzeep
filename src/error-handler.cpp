@@ -70,7 +70,7 @@ bool error_handler::create_error_reply(const request &req, status_type status, s
 		}
 		catch (const std::exception &)
 		{
-			using namespace mxml::literals;
+			using namespace zeem::literals;
 
 			auto doc = R"(<!DOCTYPE html SYSTEM "about:legacy-compat">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:z="http://www.hekkelman.com/libzeep/m2" xml:lang="en" lang="en">

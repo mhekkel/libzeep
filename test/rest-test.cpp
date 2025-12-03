@@ -31,8 +31,8 @@ struct Opname
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & mxml::name_value_pair("id", id)
-		   & mxml::name_value_pair("standen", standen);
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("standen", standen);
 		// clang-format on
 	}
 
@@ -108,9 +108,9 @@ struct GrafiekData
 	void serialize(Archive &ar, unsigned long)
 	{
 		// clang-format off
-		ar & mxml::name_value_pair("type", type)
-		   & mxml::name_value_pair("punten", punten)
-		   & mxml::name_value_pair("vsgem", vsGem);
+		ar & zeem::name_value_pair("type", type)
+		   & zeem::name_value_pair("punten", punten)
+		   & zeem::name_value_pair("vsgem", vsGem);
 		// clang-format on
 	}
 };

@@ -5,7 +5,7 @@ Libzeep started as a spin-off of `MRS <https://mrs.cmbi.umcn.nl>`_ which is a to
 
 One of the major parts of libzeep used to be the XML library. It contains a full validating parser with support for XML 1.0 and 1.1 as well as a DOM API for manipulating XML based data structures in memory.
 
-The XML part of libzeep has been split off in version 7 and libzeep now uses `libmxml <https://github.com/mhekkel/libmxml>` for the manipulation of XML.
+The XML part of libzeep has been split off in version 7 and libzeep now uses `libzeem <https://github.com/mhekkel/libzeem>` for the manipulation of XML.
 
 You can use libzeep for building web applications in C++ including a web server implementation, SOAP and REST controller support and a templating engine looking suspisciously like `Thymeleaf <https://www.thymeleaf.org/>`_. Lots of the concepts used in libzeep are inspired by the Java based `Spring framework <https://spring.io/>`_.
 

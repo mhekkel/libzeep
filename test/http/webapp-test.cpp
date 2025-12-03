@@ -20,7 +20,7 @@ namespace z = zeep;
 
 using webapp = zeep::http::html_controller_v1;
 
-void compare(mxml::document &a, mxml::document &b)
+void compare(zeem::document &a, zeem::document &b)
 {
 	CHECK(a == b);
 	if (a != b)
@@ -101,7 +101,7 @@ TEST_CASE("webapp_1")
 
 // TEST_CASE("webapp_4")
 // {
-// 	using namespace mxml::literals;
+// 	using namespace zeem::literals;
 
 // 	webapp app;
 // 	zx::document doc;

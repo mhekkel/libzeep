@@ -26,8 +26,8 @@ struct Opname
 	void serialize(Archive &ar, unsigned long /*version*/)
 	{
 		// clang-format off
-		ar & mxml::name_value_pair("id", id)
-		   & mxml::name_value_pair("standen", standen);
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("standen", standen);
 		// clang-format on
 	}
 
@@ -133,7 +133,7 @@ TEST_CASE("test-6")
 {
 	enum class Status { RUNNING, STOPPED };
 
-	mxml::value_serializer<Status>::init({
+	zeem::value_serializer<Status>::init({
 		{ Status::RUNNING, "running" },
 		{ Status::STOPPED, "stopped" }
 	});

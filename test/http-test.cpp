@@ -298,7 +298,7 @@ TEST_CASE("server_with_security_1")
 		auto csrfCookie = reply.get_cookie("csrf-token");
 		req.set_cookie("csrf-token", csrfCookie);
 
-		mxml::document form(reply.get_content());
+		zeem::document form(reply.get_content());
 		auto csrf = form.find_first("//input[@name='_csrf']");
 		REQUIRE(csrf != form.end());
 

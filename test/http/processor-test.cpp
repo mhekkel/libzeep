@@ -15,9 +15,9 @@
 
 #include <iostream>
 
-using namespace mxml::literals;
+using namespace zeem::literals;
 
-void process_and_compare(mxml::document &a, mxml::document &b, const zeep::http::scope &scope = {})
+void process_and_compare(zeem::document &a, zeem::document &b, const zeep::http::scope &scope = {})
 {
 	zeep::http::template_processor p(gDocrootDir);
 	zeep::http::tag_processor tp;
@@ -664,7 +664,7 @@ TEST_CASE("test_22a")
 {
 	zeep::http::template_processor p(gDocrootDir);
 
-	mxml::document doc1;
+	zeem::document doc1;
 	p.load_template("fragment-file :: frag1", doc1);
 
 	auto doct = R"(<div>fragment-1</div>)"_xml;

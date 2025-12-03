@@ -4,7 +4,7 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // In this example we don't want to use rsrc based templates
-#include "mxml/serialize.hpp"
+#include "zeem/serialize.hpp"
 #define WEBAPP_USES_RESOURCES 0
 
 #include <zeep/http/html-controller.hpp>
@@ -20,8 +20,8 @@ struct Item
     template<typename Archive>
     void serialize(Archive& ar, unsigned long version)
     {
-        ar & mxml::name_value_pair("name", name)
-           & mxml::name_value_pair("count", count);
+        ar & zeem::name_value_pair("name", name)
+           & zeem::name_value_pair("count", count);
     }
 };
 
@@ -34,9 +34,9 @@ struct Cart
     template<typename Archive>
     void serialize(Archive& ar, unsigned long version)
     {
-        ar & mxml::name_value_pair("id", id)
-           & mxml::name_value_pair("client", client)
-           & mxml::name_value_pair("items", items);
+        ar & zeem::name_value_pair("id", id)
+           & zeem::name_value_pair("client", client)
+           & zeem::name_value_pair("items", items);
     }
 };
 //]

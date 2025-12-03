@@ -33,7 +33,7 @@ Version 6.0.0 of libzeep was a completely refactored set of libraries. One
 for manipulating XML, one for handling JSON and one for building web applications.
 
 But then I decided it would be better to have the xml code in a separate library
-and so version 7 now comes without an XML library but uses mxml instead.
+and so version 7 now comes without an XML library but uses zeem instead.
 
 What remains is a web application library. This one makes it very easy to build
 a HTTP server that serves HTML but also speaks REST and SOAP. The current

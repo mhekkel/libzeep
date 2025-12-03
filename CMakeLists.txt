@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(libzeep VERSION 7.2.0 LANGUAGES CXX)
+project(libzeep VERSION 7.3.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -97,8 +97,8 @@ else()
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-CPMFindPackage(NAME mxml
-	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/mxml.git"
+CPMFindPackage(NAME zeem
+	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
 	VERSION 2.0.2
 	EXCLUDE_FROM_ALL YES)
 
@@ -208,7 +208,7 @@ target_include_directories(zeep
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(zeep PUBLIC Threads::Threads mxml::mxml)
+target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
 
 if(ZEEP_USE_BOOST_ASIO)
 	target_link_libraries(zeep PUBLIC Boost::headers)

@@ -13,7 +13,7 @@
 #include "zeep/config.hpp"
 #include "zeep/http/html-controller.hpp"
 
-#include <mxml.hpp>
+#include <zeem.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -47,7 +47,7 @@ class login_controller : public html_controller
 	/// in case of a valid login.
 	///
 	/// \param req		The request that triggered this call
-	virtual mxml::document load_login_form(const request &req) const;
+	virtual zeem::document load_login_form(const request &req) const;
 
 	/// \brief Create an error reply for an unauthorized access
 	///

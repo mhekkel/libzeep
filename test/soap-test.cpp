@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE(soap_w1)
 
 	my_test_controller srv;
 
-	mxml::document doc;
+	zeem::document doc;
 	doc.emplace_back(srv.make_wsdl());
 
 	cerr << setw(2) << doc << endl;

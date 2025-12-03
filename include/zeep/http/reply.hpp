@@ -16,7 +16,7 @@
 #include "zeep/http/header.hpp"
 #include "zeep/http/uri.hpp"
 
-#include <mxml.hpp>
+#include <zeem.hpp>
 
 namespace zeep::http
 {
@@ -140,10 +140,10 @@ class reply
 	}
 
 	/// Set the content and the content-type header depending on the content of doc (might be xhtml)
-	void set_content(mxml::document &doc);
+	void set_content(zeem::document &doc);
 
 	/// Set the content and the content-type header to text/xml
-	void set_content(const mxml::element &data);
+	void set_content(const zeem::element &data);
 
 	/// Set the content and the content-type header based on JSON data
 	void set_content(const el::object &data);

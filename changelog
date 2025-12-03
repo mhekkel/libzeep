@@ -1,3 +1,6 @@
+Version 7.3.0
+- Using zeem instead of mxml.
+
 Version 7.2.0
 - zeep::http::controller callbacks (for REST calls) can now
   have a zeep::http::scope as first parameter.
@@ -30,7 +33,7 @@ Version 7.0.1
 
 Version 7.0.0
 - Complete rewrite
-- Removed xml code, now depends on libmxml
+- Removed xml code, now depends on libzeem
 - Refactored json code into el::object (el = expression language)
 - Moved legacy html_controller code into a new sub class html_controller_v1
 - Removed rest_controller, code is now in the base class controller.
