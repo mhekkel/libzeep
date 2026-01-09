@@ -3,12 +3,26 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/crypto.hpp"
-#include "zeep/exception.hpp"
 #include "zeep/el/object.hpp"
+#include "zeep/exception.hpp"
 #include "zeep/unicode-support.hpp"
 
+#include <algorithm>
+#include <assert.h>
+#include <cctype>
 #include <charconv>
+#include <cmath>
+#include <compare>
+#include <functional>
+#include <istream>
+#include <map>
+#include <stddef.h>
+#include <stdexcept>
+#include <stdint.h>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace zeep::el
 {
@@ -508,7 +522,7 @@ void serialize(std::ostream &os, const object &v)
 							os << "\\u00" << kHex[(c >> 4) & 0x0f] << kHex[c & 0x0f];
 						}
 						else
-							os << c;
+							os << static_cast<char>(c);
 						break;
 				}
 			}
@@ -1172,4 +1186,4 @@ void deserialize(std::istream &is, object &o)
 	p.parse(o);
 }
 
-} // namespace zeep::http
+} // namespace zeep::el

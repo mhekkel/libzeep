@@ -495,9 +495,6 @@ class object
 				break;
 
 			case nlohmann::json::value_t::binary:
-				assert(false);
-				break;
-
 			case nlohmann::json::value_t::discarded:
 				assert(false);
 				break;

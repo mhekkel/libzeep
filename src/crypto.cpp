@@ -3,15 +3,17 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include "zeep/crypto.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <climits>
 #include <cstring>
+#include <endian.h>
 #include <random>
-#include <sstream>
-
-#include "zeep/crypto.hpp"
+#include <stdint.h>
+#include <streambuf>
 
 namespace zeep
 {
@@ -65,86 +67,86 @@ const uint8_t kBase64IndexTable[128] = {
 	128, // not used
 	128, // not used
 	128, // not used
-	62, // +
+	62,  // +
 	128, // not used
 	128, // not used
 	128, // not used
-	63, // /
-	52, // 0
-	53, // 1
-	54, // 2
-	55, // 3
-	56, // 4
-	57, // 5
-	58, // 6
-	59, // 7
-	60, // 8
-	61, // 9
-	128, // not used
-	128, // not used
-	128, // not used
-	128, // not used
-	128, // not used
-	128, // not used
-	128, // not used
-	0, // A
-	1, // B
-	2, // C
-	3, // D
-	4, // E
-	5, // F
-	6, // G
-	7, // H
-	8, // I
-	9, // J
-	10, // K
-	11, // L
-	12, // M
-	13, // N
-	14, // O
-	15, // P
-	16, // Q
-	17, // R
-	18, // S
-	19, // T
-	20, // U
-	21, // V
-	22, // W
-	23, // X
-	24, // Y
-	25, // Z
+	63,  // /
+	52,  // 0
+	53,  // 1
+	54,  // 2
+	55,  // 3
+	56,  // 4
+	57,  // 5
+	58,  // 6
+	59,  // 7
+	60,  // 8
+	61,  // 9
 	128, // not used
 	128, // not used
 	128, // not used
 	128, // not used
 	128, // not used
 	128, // not used
-	26, // a
-	27, // b
-	28, // c
-	29, // d
-	30, // e
-	31, // f
-	32, // g
-	33, // h
-	34, // i
-	35, // j
-	36, // k
-	37, // l
-	38, // m
-	39, // n
-	40, // o
-	41, // p
-	42, // q
-	43, // r
-	44, // s
-	45, // t
-	46, // u
-	47, // v
-	48, // w
-	49, // x
-	50, // y
-	51, // z
+	128, // not used
+	0,   // A
+	1,   // B
+	2,   // C
+	3,   // D
+	4,   // E
+	5,   // F
+	6,   // G
+	7,   // H
+	8,   // I
+	9,   // J
+	10,  // K
+	11,  // L
+	12,  // M
+	13,  // N
+	14,  // O
+	15,  // P
+	16,  // Q
+	17,  // R
+	18,  // S
+	19,  // T
+	20,  // U
+	21,  // V
+	22,  // W
+	23,  // X
+	24,  // Y
+	25,  // Z
+	128, // not used
+	128, // not used
+	128, // not used
+	128, // not used
+	128, // not used
+	128, // not used
+	26,  // a
+	27,  // b
+	28,  // c
+	29,  // d
+	30,  // e
+	31,  // f
+	32,  // g
+	33,  // h
+	34,  // i
+	35,  // j
+	36,  // k
+	37,  // l
+	38,  // m
+	39,  // n
+	40,  // o
+	41,  // p
+	42,  // q
+	43,  // r
+	44,  // s
+	45,  // t
+	46,  // u
+	47,  // v
+	48,  // w
+	49,  // x
+	50,  // y
+	51,  // z
 	128, // not used
 	128, // not used
 	128, // not used
@@ -276,7 +278,7 @@ std::string decode_base64(std::string_view data)
 				case '\n':
 				case '\r':
 					break;
-				
+
 				case '=':
 					if (b == 2 and *i++ == '=')
 					{
@@ -291,7 +293,7 @@ std::string decode_base64(std::string_view data)
 					else
 						throw invalid_base64();
 					break;
-				
+
 				default:
 					sxt[b] = sextet(ch);
 					++b;
@@ -320,12 +322,12 @@ std::string encode_base64url(std::string_view data)
 
 	while (not result.empty() and result.back() == '=')
 		result.pop_back();
-	
+
 	for (auto p = result.find('+'); p != std::string::npos; p = result.find('+', p + 1))
 		result.replace(p, 1, 1, '-');
 	for (auto p = result.find('/'); p != std::string::npos; p = result.find('/', p + 1))
 		result.replace(p, 1, 1, '_');
-	
+
 	return result;
 }
 
@@ -338,7 +340,7 @@ std::string decode_base64url(std::string data)
 
 	switch (data.length() % 4)
 	{
-		case 0:	break;
+		case 0: break;
 		case 2: data.append(2, '='); break;
 		case 3: data.append(1, '='); break;
 		default: throw invalid_base64();
@@ -348,7 +350,6 @@ std::string decode_base64url(std::string data)
 }
 
 // --------------------------------------------------------------------
-
 
 const char kBase32CharTable[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -418,16 +419,16 @@ const uint8_t kBase32IndexTable[128] = {
 	32, // not used
 	32, // not used
 	32, // not used
-	0, // A
-	1, // B
-	2, // C
-	3, // D
-	4, // E
-	5, // F
-	6, // G
-	7, // H
-	8, // I
-	9, // J
+	0,  // A
+	1,  // B
+	2,  // C
+	3,  // D
+	4,  // E
+	5,  // F
+	6,  // G
+	7,  // H
+	8,  // I
+	9,  // J
 	10, // K
 	11, // L
 	12, // M
@@ -450,16 +451,16 @@ const uint8_t kBase32IndexTable[128] = {
 	32, // not used
 	32, // not used
 	32, // not used
-	0, // a
-	1, // b
-	2, // c
-	3, // d
-	4, // e
-	5, // f
-	6, // g
-	7, // h
-	8, // i
-	9, // j
+	0,  // a
+	1,  // b
+	2,  // c
+	3,  // d
+	4,  // e
+	5,  // f
+	6,  // g
+	7,  // h
+	8,  // i
+	9,  // j
 	10, // k
 	11, // l
 	12, // m
@@ -528,11 +529,11 @@ std::string encode_base32(std::string_view data, size_t wrap_width)
 			{
 				uint8_t i1 = *ch++;
 				uint8_t i2 = *ch++;
-																				//	i1	i2
-				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
-				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
-				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
-				s[3] = kBase32CharTable[(i2 << 4              ) bitand 0x01f];	//		1
+				//	i1	i2
+				s[0] = kBase32CharTable[(i1 >> 3) bitand 0x01f];               //  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f]; //  3	2
+				s[2] = kBase32CharTable[(i2 >> 1) bitand 0x01f];               //		5
+				s[3] = kBase32CharTable[(i2 << 4) bitand 0x01f];               //		1
 
 				n -= 2;
 				break;
@@ -543,12 +544,12 @@ std::string encode_base32(std::string_view data, size_t wrap_width)
 				uint8_t i1 = *ch++;
 				uint8_t i2 = *ch++;
 				uint8_t i3 = *ch++;
-																				//	i1	i2	i3
-				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
-				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
-				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
-				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f];	//		1	4
-				s[4] = kBase32CharTable[(i3 << 1              ) bitand 0x01f];	//			4
+				//	i1	i2	i3
+				s[0] = kBase32CharTable[(i1 >> 3) bitand 0x01f];               //  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f]; //  3	2
+				s[2] = kBase32CharTable[(i2 >> 1) bitand 0x01f];               //		5
+				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f]; //		1	4
+				s[4] = kBase32CharTable[(i3 << 1) bitand 0x01f];               //			4
 
 				n -= 3;
 				break;
@@ -560,14 +561,14 @@ std::string encode_base32(std::string_view data, size_t wrap_width)
 				uint8_t i2 = *ch++;
 				uint8_t i3 = *ch++;
 				uint8_t i4 = *ch++;
-																				//	i1	i2	i3	i4
-				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
-				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
-				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
-				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f];	//		1	4
-				s[4] = kBase32CharTable[(i3 << 1              ) bitand 0x01f];	//			4	1
-				s[5] = kBase32CharTable[(			   i4 >> 2) bitand 0x01f];	//				5
-				s[6] = kBase32CharTable[(i4 << 3              ) bitand 0x01f];	//				2
+				//	i1	i2	i3	i4
+				s[0] = kBase32CharTable[(i1 >> 3) bitand 0x01f];               //  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f]; //  3	2
+				s[2] = kBase32CharTable[(i2 >> 1) bitand 0x01f];               //		5
+				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f]; //		1	4
+				s[4] = kBase32CharTable[(i3 << 1) bitand 0x01f];               //			4	1
+				s[5] = kBase32CharTable[(i4 >> 2) bitand 0x01f];               //				5
+				s[6] = kBase32CharTable[(i4 << 3) bitand 0x01f];               //				2
 
 				n -= 4;
 				break;
@@ -580,15 +581,15 @@ std::string encode_base32(std::string_view data, size_t wrap_width)
 				uint8_t i3 = *ch++;
 				uint8_t i4 = *ch++;
 				uint8_t i5 = *ch++;
-																				//	i1	i2	i3	i4	i5
-				s[0] = kBase32CharTable[(i1 >> 3              ) bitand 0x01f];	//  5
-				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f];	//  3	2
-				s[2] = kBase32CharTable[(              i2 >> 1) bitand 0x01f];	//		5
-				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f];	//		1	4
-				s[4] = kBase32CharTable[(i3 << 1 bitor i4 >> 7) bitand 0x01f];	//			4	1
-				s[5] = kBase32CharTable[(			   i4 >> 2) bitand 0x01f];	//				5
-				s[6] = kBase32CharTable[(i4 << 3 bitor i5 >> 5) bitand 0x01f];	//				2	3
-				s[7] = kBase32CharTable[(i5 				  ) bitand 0x01f];	//					5						
+				//	i1	i2	i3	i4	i5
+				s[0] = kBase32CharTable[(i1 >> 3) bitand 0x01f];               //  5
+				s[1] = kBase32CharTable[(i1 << 2 bitor i2 >> 6) bitand 0x01f]; //  3	2
+				s[2] = kBase32CharTable[(i2 >> 1) bitand 0x01f];               //		5
+				s[3] = kBase32CharTable[(i2 << 4 bitor i3 >> 4) bitand 0x01f]; //		1	4
+				s[4] = kBase32CharTable[(i3 << 1 bitor i4 >> 7) bitand 0x01f]; //			4	1
+				s[5] = kBase32CharTable[(i4 >> 2) bitand 0x01f];               //				5
+				s[6] = kBase32CharTable[(i4 << 3 bitor i5 >> 5) bitand 0x01f]; //				2	3
+				s[7] = kBase32CharTable[(i5) bitand 0x01f];                    //					5
 
 				n -= 5;
 				break;
@@ -661,19 +662,32 @@ std::string decode_base32(std::string_view data)
 
 			if (ch < '2' or ch > 'z' or kBase32IndexTable[static_cast<uint8_t>(ch)] >= 32)
 				throw invalid_base32();
-			
+
 			auto b = kBase32IndexTable[static_cast<uint8_t>(ch)];
 
 			switch (c++)
 			{
-				case 0:	qnt[0] |= b << 3;					break;
-				case 1: qnt[0] |= b >> 2; qnt[1] = b << 6;	break;
-				case 2: qnt[1] |= b << 1;					break;
-				case 3: qnt[1] |= b >> 4; qnt[2] = b << 4;	break;
-				case 4: qnt[2] |= b >> 1; qnt[3] = b << 7;	break;
-				case 5: qnt[3] |= b << 2;					break;
-				case 6: qnt[3] |= b >> 3; qnt[4] = b << 5;	break;
-				case 7: qnt[4] |= b;						break;
+				case 0: qnt[0] |= b << 3; break;
+				case 1:
+					qnt[0] |= b >> 2;
+					qnt[1] = b << 6;
+					break;
+				case 2: qnt[1] |= b << 1; break;
+				case 3:
+					qnt[1] |= b >> 4;
+					qnt[2] = b << 4;
+					break;
+				case 4:
+					qnt[2] |= b >> 1;
+					qnt[3] = b << 7;
+					break;
+				case 5: qnt[3] |= b << 2; break;
+				case 6:
+					qnt[3] |= b >> 3;
+					qnt[4] = b << 5;
+					break;
+				case 7: qnt[4] |= b; break;
+				default:;
 			}
 		}
 
@@ -682,11 +696,11 @@ std::string decode_base32(std::string_view data)
 
 		switch (c)
 		{
-			case 2:	result.append(qnt, qnt + 1); break;
-			case 4:	result.append(qnt, qnt + 2); break;
-			case 5:	result.append(qnt, qnt + 3); break;
-			case 7:	result.append(qnt, qnt + 4); break;
-			case 8:	result.append(qnt, qnt + 5); break;
+			case 2: result.append(qnt, qnt + 1); break;
+			case 4: result.append(qnt, qnt + 2); break;
+			case 5: result.append(qnt, qnt + 3); break;
+			case 7: result.append(qnt, qnt + 4); break;
+			case 8: result.append(qnt, qnt + 5); break;
 			default:
 				throw invalid_base32();
 		}
@@ -710,13 +724,13 @@ std::string encode_hex(std::string_view data)
 	const char kHexChars[] = "0123456789abcdef";
 	std::string result;
 	result.reserve(data.length() * 2);
-	
-	for (uint8_t b: data)
+
+	for (uint8_t b : data)
 	{
 		result += kHexChars[b >> 4];
 		result += kHexChars[b bitand 0x0f];
 	}
-	
+
 	return result;
 }
 
@@ -758,7 +772,8 @@ std::string random_hash()
 {
 	std::random_device rng;
 
-	union {
+	union
+	{
 		uint32_t data[4];
 		char s[4 * 4];
 	} v = { { rng(), rng(), rng(), rng() } };
@@ -769,30 +784,28 @@ std::string random_hash()
 // --------------------------------------------------------------------
 // hashes
 
-
-
 // --------------------------------------------------------------------
 
 #if _WIN32
-#	pragma warning (disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
+# pragma warning(disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif
 
-static inline uint32_t rotl32 (uint32_t n, unsigned int c)
+static inline uint32_t rotl32(uint32_t n, unsigned int c)
 {
-	const unsigned int mask = (CHAR_BIT*sizeof(n) - 1);  // assumes width is a power of 2.
+	const unsigned int mask = (CHAR_BIT * sizeof(n) - 1); // assumes width is a power of 2.
 
 	// assert ( (c<=mask) &&"rotate by type width or more");
 	c &= mask;
-	return (n<<c) bitor (n>>( (-c)&mask ));
+	return (n << c) bitor (n >> ((-c) & mask));
 }
 
-static inline uint32_t rotr32 (uint32_t n, unsigned int c)
+static inline uint32_t rotr32(uint32_t n, unsigned int c)
 {
-	const unsigned int mask = (CHAR_BIT*sizeof(n) - 1);
+	const unsigned int mask = (CHAR_BIT * sizeof(n) - 1);
 
 	// assert ( (c<=mask) &&"rotate by type width or more");
 	c &= mask;
-	return (n>>c) bitor (n<<( (-c)&mask ));
+	return (n >> c) bitor (n << ((-c) & mask));
 }
 
 // --------------------------------------------------------------------
@@ -801,22 +814,40 @@ struct hash_impl
 {
 	virtual ~hash_impl() {}
 
-	virtual void write_bit_length(uint64_t l, uint8_t* b) = 0;
-	virtual void transform(const uint8_t* data) = 0;
+	virtual void write_bit_length(uint64_t l, uint8_t *b) = 0;
+	virtual void transform(const uint8_t *data) = 0;
 	virtual std::string final() = 0;
 };
 
 // --------------------------------------------------------------------
 
-#define F1(x,y,z)	(z xor (x bitand (y xor z)))
-#define F2(x,y,z)	F1(z, x, y)
-#define F3(x,y,z)	(x xor y xor z)
-#define	F4(x,y,z)	(y xor ( x bitor compl z))
+constexpr auto F1(uint32_t x, uint32_t y, uint32_t z)
+{
+	return (z xor (x bitand (y xor z)));
+}
 
-#define STEP(F,w,x,y,z,data,s) 	\
-	w += F(x, y, z) + data;		\
-	w = rotl32(w, s); \
+constexpr auto F2(uint32_t x, uint32_t y, uint32_t z)
+{
+	return F1(z, x, y);
+}
+
+constexpr auto F3(uint32_t x, uint32_t y, uint32_t z)
+{
+	return (x xor y xor z);
+}
+
+constexpr auto F4(uint32_t x, uint32_t y, uint32_t z)
+{
+	return (y xor (x bitor compl z));
+}
+
+template <typename F>
+constexpr void STEP(F f, uint32_t &w, uint32_t x, uint32_t y, uint32_t z, uint32_t data, uint32_t s)
+{
+	w += f(x, y, z) + data;
+	w = rotl32(w, s);
 	w += x;
+}
 
 struct md5_hash_impl : public hash_impl
 {
@@ -825,7 +856,7 @@ struct md5_hash_impl : public hash_impl
 	static const size_t block_size = 64;
 	static const size_t digest_size = word_count * sizeof(word_type);
 
-	word_type	m_h[word_count];
+	word_type m_h[word_count];
 
 	virtual void init()
 	{
@@ -835,114 +866,114 @@ struct md5_hash_impl : public hash_impl
 		m_h[3] = 0x10325476;
 	}
 
-	void write_bit_length(uint64_t l, uint8_t* p) override
+	void write_bit_length(uint64_t l, uint8_t *p) override
 	{
 		for (int i = 0; i < 8; ++i)
 			*p++ = static_cast<uint8_t>((l >> (i * 8)));
 	}
 
-	void transform(const uint8_t* data) override
+	void transform(const uint8_t *data) override
 	{
 		uint32_t a = m_h[0], b = m_h[1], c = m_h[2], d = m_h[3];
 		uint32_t in[16];
-		
+
 		for (int i = 0; i < 16; ++i)
 		{
-			in[i] = static_cast<uint32_t>(data[0]) <<  0 |
-					static_cast<uint32_t>(data[1]) <<  8 |
-					static_cast<uint32_t>(data[2]) << 16 |
-					static_cast<uint32_t>(data[3]) << 24;
+			in[i] = static_cast<uint32_t>(data[0]) << 0 |
+			        static_cast<uint32_t>(data[1]) << 8 |
+			        static_cast<uint32_t>(data[2]) << 16 |
+			        static_cast<uint32_t>(data[3]) << 24;
 			data += 4;
 		}
-		
-		STEP(F1, a, b, c, d, in[ 0] + 0xd76aa478,  7);
-		STEP(F1, d, a, b, c, in[ 1] + 0xe8c7b756, 12);
-		STEP(F1, c, d, a, b, in[ 2] + 0x242070db, 17);
-		STEP(F1, b, c, d, a, in[ 3] + 0xc1bdceee, 22);
-		STEP(F1, a, b, c, d, in[ 4] + 0xf57c0faf,  7);
-		STEP(F1, d, a, b, c, in[ 5] + 0x4787c62a, 12);
-		STEP(F1, c, d, a, b, in[ 6] + 0xa8304613, 17);
-		STEP(F1, b, c, d, a, in[ 7] + 0xfd469501, 22);
-		STEP(F1, a, b, c, d, in[ 8] + 0x698098d8,  7);
-		STEP(F1, d, a, b, c, in[ 9] + 0x8b44f7af, 12);
+
+		STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
+		STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
+		STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
+		STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
+		STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
+		STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
+		STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
+		STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
+		STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
+		STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
 		STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
 		STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
-		STEP(F1, a, b, c, d, in[12] + 0x6b901122,  7);
+		STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
 		STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
 		STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
 		STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
 
-		STEP(F2, a, b, c, d, in[ 1] + 0xf61e2562,  5);
-		STEP(F2, d, a, b, c, in[ 6] + 0xc040b340,  9);
+		STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
+		STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
 		STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
-		STEP(F2, b, c, d, a, in[ 0] + 0xe9b6c7aa, 20);
-		STEP(F2, a, b, c, d, in[ 5] + 0xd62f105d,  5);
-		STEP(F2, d, a, b, c, in[10] + 0x02441453,  9);
+		STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
+		STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
+		STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
 		STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
-		STEP(F2, b, c, d, a, in[ 4] + 0xe7d3fbc8, 20);
-		STEP(F2, a, b, c, d, in[ 9] + 0x21e1cde6,  5);
-		STEP(F2, d, a, b, c, in[14] + 0xc33707d6,  9);
-		STEP(F2, c, d, a, b, in[ 3] + 0xf4d50d87, 14);
-		STEP(F2, b, c, d, a, in[ 8] + 0x455a14ed, 20);
-		STEP(F2, a, b, c, d, in[13] + 0xa9e3e905,  5);
-		STEP(F2, d, a, b, c, in[ 2] + 0xfcefa3f8,  9);
-		STEP(F2, c, d, a, b, in[ 7] + 0x676f02d9, 14);
+		STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
+		STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
+		STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
+		STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
+		STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
+		STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
+		STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
+		STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
 		STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
 
-		STEP(F3, a, b, c, d, in[ 5] + 0xfffa3942,  4);
-		STEP(F3, d, a, b, c, in[ 8] + 0x8771f681, 11);
+		STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
+		STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
 		STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
 		STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
-		STEP(F3, a, b, c, d, in[ 1] + 0xa4beea44,  4);
-		STEP(F3, d, a, b, c, in[ 4] + 0x4bdecfa9, 11);
-		STEP(F3, c, d, a, b, in[ 7] + 0xf6bb4b60, 16);
+		STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
+		STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
+		STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
 		STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
-		STEP(F3, a, b, c, d, in[13] + 0x289b7ec6,  4);
-		STEP(F3, d, a, b, c, in[ 0] + 0xeaa127fa, 11);
-		STEP(F3, c, d, a, b, in[ 3] + 0xd4ef3085, 16);
-		STEP(F3, b, c, d, a, in[ 6] + 0x04881d05, 23);
-		STEP(F3, a, b, c, d, in[ 9] + 0xd9d4d039,  4);
+		STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
+		STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
+		STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
+		STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
+		STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
 		STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
 		STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
-		STEP(F3, b, c, d, a, in[ 2] + 0xc4ac5665, 23);
+		STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
 
-		STEP(F4, a, b, c, d, in[ 0] + 0xf4292244,  6);
-		STEP(F4, d, a, b, c, in[ 7] + 0x432aff97, 10);
+		STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
+		STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
 		STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
-		STEP(F4, b, c, d, a, in[ 5] + 0xfc93a039, 21);
-		STEP(F4, a, b, c, d, in[12] + 0x655b59c3,  6);
-		STEP(F4, d, a, b, c, in[ 3] + 0x8f0ccc92, 10);
+		STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
+		STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
+		STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
 		STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
-		STEP(F4, b, c, d, a, in[ 1] + 0x85845dd1, 21);
-		STEP(F4, a, b, c, d, in[ 8] + 0x6fa87e4f,  6);
+		STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
+		STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
 		STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
-		STEP(F4, c, d, a, b, in[ 6] + 0xa3014314, 15);
+		STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
 		STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
-		STEP(F4, a, b, c, d, in[ 4] + 0xf7537e82,  6);
+		STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
 		STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
-		STEP(F4, c, d, a, b, in[ 2] + 0x2ad7d2bb, 15);
-		STEP(F4, b, c, d, a, in[ 9] + 0xeb86d391, 21);
-		
+		STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
+		STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
+
 		m_h[0] += a;
 		m_h[1] += b;
 		m_h[2] += c;
-		m_h[3] += d;		
+		m_h[3] += d;
 	}
 
 	std::string final() override
 	{
 		std::string result;
 		result.reserve(digest_size);
-		
+
 		for (size_t i = 0; i < word_count; ++i)
 		{
 			for (size_t j = 0; j < sizeof(word_type); ++j)
 			{
-				uint8_t b = static_cast<uint8_t>(m_h[i] >> (j * 8));
+				auto b = static_cast<char>(m_h[i] >> (j * 8));
 				result.push_back(b);
 			}
 		}
-		
+
 		return result;
 	}
 };
@@ -956,7 +987,7 @@ struct sha1_hash_impl : public hash_impl
 	static const size_t block_size = 64;
 	static const size_t digest_size = word_count * sizeof(word_type);
 
-	word_type	m_h[word_count];
+	word_type m_h[word_count];
 
 	virtual void init()
 	{
@@ -967,7 +998,7 @@ struct sha1_hash_impl : public hash_impl
 		m_h[4] = 0xC3D2E1F0;
 	}
 
-	void write_bit_length(uint64_t l, uint8_t* b) override
+	void write_bit_length(uint64_t l, uint8_t *b) override
 	{
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
@@ -978,14 +1009,15 @@ struct sha1_hash_impl : public hash_impl
 		b[3] = static_cast<uint8_t>(l >> 32);
 		b[4] = static_cast<uint8_t>(l >> 24);
 		b[5] = static_cast<uint8_t>(l >> 16);
-		b[6] = static_cast<uint8_t>(l >>  8);
-		b[7] = static_cast<uint8_t>(l >>  0);
+		b[6] = static_cast<uint8_t>(l >> 8);
+		b[7] = static_cast<uint8_t>(l >> 0);
 #endif
 	}
 
-	void transform(const uint8_t* data) override
+	void transform(const uint8_t *data) override
 	{
-		union {
+		union
+		{
 			uint8_t s[64];
 			uint32_t w[80];
 		} w;
@@ -1021,13 +1053,13 @@ struct sha1_hash_impl : public hash_impl
 			}
 			else if (i < 40)
 			{
-	            f = wv[1] xor wv[2] xor wv[3];
-	            k = 0x6ED9EBA1;
+				f = wv[1] xor wv[2] xor wv[3];
+				k = 0x6ED9EBA1;
 			}
 			else if (i < 60)
 			{
-	            f = (wv[1] bitand wv[2]) bitor (wv[1] bitand wv[3]) bitor (wv[2] bitand wv[3]);
-	            k = 0x8F1BBCDC;
+				f = (wv[1] bitand wv[2]) bitor (wv[1] bitand wv[3]) bitor (wv[2] bitand wv[3]);
+				k = 0x8F1BBCDC;
 			}
 			else
 			{
@@ -1053,15 +1085,15 @@ struct sha1_hash_impl : public hash_impl
 		std::string result(digest_size, '\0');
 
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
+		memcpy(const_cast<char *>(result.data()), &m_h, digest_size);
 #else
 		auto s = result.begin();
 		for (size_t i = 0; i < word_count; ++i)
 		{
 			*s++ = static_cast<char>(m_h[i] >> 24);
 			*s++ = static_cast<char>(m_h[i] >> 16);
-			*s++ = static_cast<char>(m_h[i] >>  8);
-			*s++ = static_cast<char>(m_h[i] >>  0);
+			*s++ = static_cast<char>(m_h[i] >> 8);
+			*s++ = static_cast<char>(m_h[i] >> 0);
 		}
 #endif
 
@@ -1078,7 +1110,7 @@ struct sha256_hash_impl : public hash_impl
 	static const size_t block_size = 64;
 	static const size_t digest_size = word_count * sizeof(word_type);
 
-	word_type	m_h[word_count];
+	word_type m_h[word_count];
 
 	virtual void init()
 	{
@@ -1092,7 +1124,7 @@ struct sha256_hash_impl : public hash_impl
 		m_h[7] = 0x5be0cd19;
 	}
 
-	void write_bit_length(uint64_t l, uint8_t* b) override
+	void write_bit_length(uint64_t l, uint8_t *b) override
 	{
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
 		memcpy(b, &l, sizeof(l));
@@ -1103,12 +1135,12 @@ struct sha256_hash_impl : public hash_impl
 		b[3] = static_cast<uint8_t>(l >> 32);
 		b[4] = static_cast<uint8_t>(l >> 24);
 		b[5] = static_cast<uint8_t>(l >> 16);
-		b[6] = static_cast<uint8_t>(l >>  8);
-		b[7] = static_cast<uint8_t>(l >>  0);
+		b[6] = static_cast<uint8_t>(l >> 8);
+		b[7] = static_cast<uint8_t>(l >> 0);
 #endif
 	}
 
-	void transform(const uint8_t* data) override
+	void transform(const uint8_t *data) override
 	{
 		static const uint32_t k[] = {
 			0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -1125,7 +1157,8 @@ struct sha256_hash_impl : public hash_impl
 		for (size_t i = 0; i < word_count; ++i)
 			wv[i] = m_h[i];
 
-		union {
+		union
+		{
 			uint8_t s[64];
 			uint32_t w[64];
 		} w;
@@ -1178,15 +1211,15 @@ struct sha256_hash_impl : public hash_impl
 		std::string result(digest_size, '\0');
 
 #if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(const_cast<char*>(result.data()), &m_h, digest_size);
+		memcpy(const_cast<char *>(result.data()), &m_h, digest_size);
 #else
 		auto s = result.begin();
 		for (size_t i = 0; i < word_count; ++i)
 		{
 			*s++ = static_cast<char>(m_h[i] >> 24);
 			*s++ = static_cast<char>(m_h[i] >> 16);
-			*s++ = static_cast<char>(m_h[i] >>  8);
-			*s++ = static_cast<char>(m_h[i] >>  0);
+			*s++ = static_cast<char>(m_h[i] >> 8);
+			*s++ = static_cast<char>(m_h[i] >> 0);
 		}
 #endif
 
@@ -1196,7 +1229,7 @@ struct sha256_hash_impl : public hash_impl
 
 // --------------------------------------------------------------------
 
-template<typename I>
+template <typename I>
 class hash_base : public I
 {
   public:
@@ -1219,55 +1252,54 @@ class hash_base : public I
 	}
 
 	void update(std::string_view data);
-	void update(const uint8_t* data, size_t n);
-	
+	void update(const uint8_t *data, size_t n);
+
 	using I::transform;
 	std::string final() override;
 
   private:
-	uint8_t		m_data[block_size];
-	uint32_t	m_data_length;
-	int64_t		m_bit_length;
+	uint8_t m_data[block_size];
+	uint32_t m_data_length;
+	int64_t m_bit_length;
 };
 
-
-template<typename I>
+template <typename I>
 void hash_base<I>::update(std::string_view data)
 {
-	update(reinterpret_cast<const uint8_t*>(data.data()), data.size());
+	update(reinterpret_cast<const uint8_t *>(data.data()), data.size());
 }
 
-template<typename I>
-void hash_base<I>::update(const uint8_t* p, size_t length)
+template <typename I>
+void hash_base<I>::update(const uint8_t *p, size_t length)
 {
 	m_bit_length += length * 8;
-	
+
 	if (m_data_length > 0)
 	{
 		uint32_t n = block_size - m_data_length;
 		if (n > length)
 			n = static_cast<uint32_t>(length);
-		
+
 		memcpy(m_data + m_data_length, p, n);
 		m_data_length += n;
-		
+
 		if (m_data_length == block_size)
 		{
 			transform(m_data);
 			m_data_length = 0;
 		}
-		
+
 		p += n;
 		length -= n;
 	}
-	
+
 	while (length >= block_size)
 	{
 		transform(p);
 		p += block_size;
 		length -= block_size;
 	}
-	
+
 	if (length > 0)
 	{
 		memcpy(m_data, p, length);
@@ -1275,13 +1307,13 @@ void hash_base<I>::update(const uint8_t* p, size_t length)
 	}
 }
 
-template<typename I>
+template <typename I>
 std::string hash_base<I>::final()
 {
 	m_data[m_data_length] = 0x80;
 	++m_data_length;
 	std::fill(m_data + m_data_length, m_data + block_size, uint8_t(0));
-	
+
 	if (block_size - m_data_length < 8)
 	{
 		transform(m_data);
@@ -1289,10 +1321,10 @@ std::string hash_base<I>::final()
 	}
 
 	I::write_bit_length(m_bit_length, m_data + block_size - 8);
-	
+
 	transform(m_data);
 	std::fill(m_data, m_data + block_size, uint8_t(0));
-	
+
 	auto result = I::final();
 	init();
 	return result;
@@ -1312,7 +1344,7 @@ std::string sha1(std::string_view data)
 	return h.final();
 }
 
-std::string sha1(std::streambuf& data)
+std::string sha1(std::streambuf &data)
 {
 	SHA1 h;
 	h.init();
@@ -1320,7 +1352,7 @@ std::string sha1(std::streambuf& data)
 	while (data.in_avail() > 0)
 	{
 		uint8_t buffer[256];
-		auto n = data.sgetn(reinterpret_cast<char*>(buffer), sizeof(buffer));
+		auto n = data.sgetn(reinterpret_cast<char *>(buffer), sizeof(buffer));
 		h.update(buffer, n);
 	}
 
@@ -1346,7 +1378,7 @@ std::string md5(std::string_view data)
 // --------------------------------------------------------------------
 // hmac
 
-template<typename H>
+template <typename H>
 class HMAC
 {
   public:
@@ -1354,25 +1386,28 @@ class HMAC
 	static const size_t digest_size = H::digest_size;
 
 	HMAC(std::string_view key)
-		: m_ipad(block_size, '\x36'), m_opad(block_size, '\x5c')
+		: m_ipad(block_size, '\x36')
+		, m_opad(block_size, '\x5c')
 	{
+		std::string key_data{ key };
+
 		if (key.length() > block_size)
 		{
 			H keyHash;
 			keyHash.update(key);
-			key = keyHash.final();
+			key_data = keyHash.final();
 		}
 
-		assert(key.length() < block_size);
+		assert(key_data.length() < block_size);
 
-		for (size_t i = 0; i < key.length(); ++i)
+		for (size_t i = 0; i < key_data.length(); ++i)
 		{
-			m_opad[i] ^= key[i];
-			m_ipad[i] ^= key[i];
+			m_opad[i] ^= key_data[i];
+			m_ipad[i] ^= key_data[i];
 		}
 	}
 
-	HMAC& update(std::string_view data)
+	HMAC &update(std::string_view data)
 	{
 		if (not m_inner_updated)
 		{
@@ -1417,7 +1452,7 @@ std::string hmac_md5(std::string_view message, std::string_view key)
 // --------------------------------------------------------------------
 // password/key derivation
 
-template<typename HMAC>
+template <typename HMAC>
 std::string pbkdf2(std::string_view salt,
 	std::string_view password, unsigned iterations, unsigned keyLength)
 {
@@ -1444,7 +1479,7 @@ std::string pbkdf2(std::string_view salt,
 			for (size_t ix = 0; ix < buffer.length(); ++ix)
 				derived[ix] ^= buffer[ix];
 		}
-		
+
 		result.append(derived);
 		++i;
 	}
@@ -1469,4 +1504,4 @@ std::string pbkdf2_hmac_sha256(std::string_view salt,
 	return pbkdf2<HMAC<SHA256>>(salt, password, iterations, keyLength);
 }
 
-}
+} // namespace zeep

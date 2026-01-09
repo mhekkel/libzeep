@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include "zeep/config.hpp"
-
 #include <exception>
+#include <iosfwd>
+#include <stddef.h>
 #include <string>
+#include <string_view>
 
 /// \file
 /// This file contains an interface to the crypto related routines used
@@ -28,7 +29,7 @@ class invalid_base64 : public std::exception
   public:
 	invalid_base64() {}
 
-	const char* what() const noexcept override { return "invalid base64 input"; }
+	const char *what() const noexcept override { return "invalid base64 input"; }
 };
 
 /// \brief encode \a data in base64 format
@@ -62,7 +63,7 @@ class invalid_base32 : public std::exception
   public:
 	invalid_base32() {}
 
-	const char* what() const noexcept override { return "invalid base32 input"; }
+	const char *what() const noexcept override { return "invalid base32 input"; }
 };
 
 /// \brief encode \a data in base32 format
@@ -82,7 +83,7 @@ class invalid_hex : public std::exception
   public:
 	invalid_hex() {}
 
-	const char* what() const noexcept override { return "invalid hexadecimal input"; }
+	const char *what() const noexcept override { return "invalid hexadecimal input"; }
 };
 
 /// \brief encode \a data in hexadecimal format
@@ -111,7 +112,7 @@ std::string md5(std::string_view data);
 std::string sha1(std::string_view data);
 
 /// \brief return the SHA1 hash of \a data
-std::string sha1(std::streambuf& data);
+std::string sha1(std::streambuf &data);
 
 /// \brief return the SHA256 hash of \a data
 std::string sha256(std::string_view data);
@@ -155,5 +156,4 @@ std::string pbkdf2_hmac_sha1(std::string_view salt,
 std::string pbkdf2_hmac_sha256(std::string_view salt,
 	std::string_view password, unsigned iterations, unsigned keyLength);
 
-}
-
+} // namespace zeep
