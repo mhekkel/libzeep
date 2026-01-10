@@ -143,6 +143,7 @@ list(APPEND ZEEP_HEADERS
 	include/zeep/http/error-handler.hpp
 	include/zeep/http/reply.hpp
 	include/zeep/http/scope.hpp
+	include/zeep/http/status.hpp
 	include/zeep/http/template-processor.hpp
 	include/zeep/http/header.hpp
 	include/zeep/http/request.hpp

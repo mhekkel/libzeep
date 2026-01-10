@@ -95,7 +95,7 @@ bool html_controller_v1::handle_request(request &req, reply &rep)
 	}
 
 	if (not result)
-		rep = reply::stock_reply(not_found);
+		rep = reply::stock_reply(status_type::not_found);
 
 	return result;
 }

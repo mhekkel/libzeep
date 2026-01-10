@@ -23,7 +23,6 @@
 #include <cassert>
 #include <charconv>
 #include <chrono>
-#include <compare>
 #include <cstdint>
 #include <ctime>
 #include <exception>
@@ -1281,7 +1280,7 @@ object interpreter::parse_link_template_expr()
 				{
 					do
 					{
-						path = path.substr(0, p) + value + path.substr(p + name.length() + 2);
+						path.replace(p, name.length() + 2, value);
 						p += value.length();
 					} while ((p = path.find('{' + name + '}', p)) != std::string::npos);
 				}
@@ -1304,7 +1303,7 @@ object interpreter::parse_link_template_expr()
 		{
 			path += '?';
 			auto n = parameters.size();
-			for (const auto& p : parameters)
+			for (const auto &p : parameters)
 			{
 				path += encode_url(p.first);
 
@@ -1406,12 +1405,9 @@ object interpreter::parse_selector()
 					xpath += name;
 				else
 					xpath +=
-						"*[name()='" + name + "' or "
-											  "attribute::*[namespace-uri() = $ns and "
-											  "(local-name() = 'ref' or local-name() = 'fragment') and "
-											  "starts-with(string(), '" +
-						name + "')]"
-							   "]";
+						std::format(
+							R"(*[name()='{}' or attribute::*[namespace-uri() = $ns and (local-name() = 'ref' or local-name() = 'fragment') and starts-with(string(), '{}')]])",
+							name, name);
 
 				if (m_lookahead == token_type::lparen)
 				{
@@ -1527,9 +1523,10 @@ expression_utility_object_base::instance *expression_utility_object_base::s_head
 
 class date_expr_util_object : public expression_utility_object<date_expr_util_object>
 {
-  protected:
+  public:
 	static constexpr const char *name() { return "dates"; }
 
+  protected:
 	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
@@ -1561,9 +1558,10 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 
 class number_expr_util_object : public expression_utility_object<number_expr_util_object>
 {
-  protected:
+  public:
 	static constexpr const char *name() { return "numbers"; }
 
+  protected:
 	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
@@ -1620,9 +1618,10 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 
 class request_expr_util_object : public expression_utility_object<request_expr_util_object>
 {
-  protected:
+  public:
 	static constexpr const char *name() { return "request"; }
 
+  protected:
 	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
@@ -1643,9 +1642,10 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 
 class security_expr_util_object : public expression_utility_object<security_expr_util_object>
 {
-  protected:
+  public:
 	static constexpr const char *name() { return "security"; }
 
+  protected:
 	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{

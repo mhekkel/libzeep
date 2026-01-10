@@ -323,14 +323,14 @@ class controller
 
 		reply set_reply(const std::filesystem::path &v)
 		{
-			reply rep(ok);
+			reply rep(status_type::ok);
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
 			return rep;
 		}
 
 		reply set_reply(object &&v)
 		{
-			reply rep(ok);
+			reply rep(status_type::ok);
 			rep.set_content(v);
 			return rep;
 		}
@@ -338,7 +338,7 @@ class controller
 		template <typename T>
 		reply set_reply(T &&v)
 		{
-			reply rep(ok);
+			reply rep(status_type::ok);
 			rep.set_content(el::serializer<T>::serialize(std::forward<T>(v)));
 			return rep;
 		}
@@ -389,7 +389,7 @@ class controller
 			if constexpr (std::is_void_v<ResultType>)
 			{
 				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
-				return reply::stock_reply(ok);
+				return reply::stock_reply(status_type::ok);
 			}
 			else if constexpr (std::is_same_v<ResultType, reply>)
 				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
@@ -443,7 +443,7 @@ class controller
 			if constexpr (std::is_void_v<ResultType>)
 			{
 				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
-				return reply::stock_reply(ok);
+				return reply::stock_reply(status_type::ok);
 			}
 			else if constexpr (std::is_same_v<ResultType, reply>)
 				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));

@@ -124,15 +124,15 @@ class parser
 	[[nodiscard]] bool find_last_token(const header &h, std::string_view t) const;
 
 	state_parser m_parser;
-	int m_state;
-	unsigned int m_chunk_size;
+	int m_state = 0;
+	unsigned int m_chunk_size = 0;
 	std::string m_data;
 	std::string m_uri;
 	std::string m_method;
 
-	bool m_parsing_content;
-	bool m_collect_payload;
-	int m_http_version_major, m_http_version_minor;
+	bool m_parsing_content = false;
+	bool m_collect_payload = false;
+	int m_http_version_major = 0, m_http_version_minor = 0;
 
 	std::vector<header> m_headers;
 	std::string m_payload;

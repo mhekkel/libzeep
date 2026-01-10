@@ -117,13 +117,13 @@ class rsrc
 	rsrc(const rsrc &other) = default;
 	rsrc &operator=(const rsrc &other) = default;
 
-	rsrc(std::filesystem::path path);
+	rsrc(const std::filesystem::path& path);
 
 	[[nodiscard]] std::string name() const { return m_impl ? rsrc_data::instance().name(m_impl->m_name) : ""; }
 
 	[[nodiscard]] const char *data() const { return m_impl ? rsrc_data::instance().data(m_impl->m_data) : nullptr; }
 
-	[[nodiscard]] unsigned long size() const { return m_impl ? m_impl->m_size : 0; }
+	[[nodiscard]] size_t size() const { return m_impl ? m_impl->m_size : 0; }
 
 	explicit operator bool() const { return m_impl != nullptr and m_impl->m_size > 0; }
 
@@ -195,7 +195,7 @@ class rsrc
 	const rsrc_imp *m_impl;
 };
 
-inline rsrc::rsrc(std::filesystem::path p)
+inline rsrc::rsrc(const std::filesystem::path& p)
 {
 	m_impl = rsrc_data::instance().index();
 
@@ -387,10 +387,10 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 	using off_type = typename traits_type::off_type;
 
   private:
-	using __streambuf_type = basic_streambuf<CharT, Traits>;
-	using __istream_type = std::basic_istream<CharT, Traits>;
+	using rsrc_streambuf_type = basic_streambuf<CharT, Traits>;
+	using rsrc_istream_type = std::basic_istream<CharT, Traits>;
 
-	__streambuf_type m_buffer;
+	rsrc_streambuf_type m_buffer;
 
   public:
 	basic_istream(std::string path)
@@ -399,42 +399,42 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 	}
 
 	basic_istream(const rsrc &resource)
-		: __istream_type(&m_buffer)
+		: rsrc_istream_type(&m_buffer)
 		, m_buffer(resource)
 	{
 		if (resource)
 			this->init(&m_buffer);
 		else
-			__istream_type::setstate(std::ios_base::badbit);
+			rsrc_istream_type::setstate(std::ios_base::badbit);
 	}
 
 	basic_istream(const basic_istream &) = delete;
 
 	basic_istream(basic_istream &&rhs) noexcept
-		: __istream_type(std::move(rhs))
+		: rsrc_istream_type(std::move(rhs))
 		, m_buffer(std::move(rhs.m_buffer))
 	{
-		__istream_type::set_rdbuf(&m_buffer);
+		rsrc_istream_type::set_rdbuf(&m_buffer);
 	}
 
 	basic_istream &operator=(const basic_istream &) = delete;
 
 	basic_istream &operator=(basic_istream &&rhs) noexcept
 	{
-		__istream_type::operator=(std::move(rhs));
+		rsrc_istream_type::operator=(std::move(rhs));
 		m_buffer = std::move(rhs.m_buffer);
 		return *this;
 	}
 
 	void swap(basic_istream &rhs) noexcept
 	{
-		__istream_type::swap(rhs);
+		rsrc_istream_type::swap(rhs);
 		m_buffer.swap(rhs.m_buffer);
 	}
 
-	__streambuf_type *rdbuf() const
+	rsrc_streambuf_type *rdbuf() const
 	{
-		return const_cast<__streambuf_type *>(&m_buffer);
+		return const_cast<rsrc_streambuf_type *>(&m_buffer);
 	}
 };
 
@@ -453,7 +453,7 @@ namespace zeep::http
 # include <windows.h>
 #endif
 
-rsrc_loader::rsrc_loader(std::filesystem::path)
+rsrc_loader::rsrc_loader(std::filesystem::path /*unused*/)
 {
 #if _WIN32
 	char exePath[MAX_PATH] = {};
@@ -482,7 +482,7 @@ fs::file_time_type rsrc_loader::file_time(std::filesystem::path file, std::error
 	fs::file_time_type result = {};
 
 	ec = {};
-	mrsrc::rsrc rsrc(std::move(file));
+	mrsrc::rsrc rsrc(file);
 
 	if (rsrc)
 		result = mRsrcWriteTime;

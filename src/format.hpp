@@ -18,6 +18,6 @@ namespace zeep::http
 ///
 /// Returns a formatted number with the specified number of digits
 /// using separators taken from std::locale \a loc
-std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc);
+std::string FormatDecimal(double d, int integerDigits, int decimalDigits, const std::locale &loc);
 
 } // namespace zeep::http

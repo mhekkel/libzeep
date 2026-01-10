@@ -14,44 +14,12 @@
 #include "zeep/http/header.hpp"
 #include "zeep/http/uri.hpp"
 #include "zeep/http/asio.hpp"
+#include "zeep/http/status.hpp"
 
 #include <zeem.hpp>
 
 namespace zeep::http
 {
-
-/// Various predefined HTTP status codes
-
-enum status_type
-{
-	cont = 100,
-	ok = 200,
-	created = 201,
-	accepted = 202,
-	no_content = 204,
-	multiple_choices = 300,
-	moved_permanently = 301,
-	moved_temporarily = 302,
-	see_other = 303,
-	not_modified = 304,
-	bad_request = 400,
-	unauthorized = 401,
-	forbidden = 403,
-	not_found = 404,
-	method_not_allowed = 405,
-	unprocessable_entity = 422,
-	proxy_authentication_required = 407,
-	internal_server_error = 500,
-	not_implemented = 501,
-	bad_gateway = 502,
-	service_unavailable = 503
-};
-
-/// Return the error string for the status_type
-std::string get_status_text(status_type status);
-
-/// Return the string describing the status_type in more detail
-std::string get_status_description(status_type status);
 
 /// the class containing everything you need to generate a HTTP reply
 ///
@@ -63,7 +31,7 @@ class reply
 	using cookie_directive = header;
 
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
-	reply(status_type status = internal_server_error, std::tuple<int, int> version = { 1, 0 });
+	reply(status_type status = status_type::internal_server_error, std::tuple<int, int> version = { 1, 0 });
 
 	/// Create a reply with \a status, \a version, \a headers and a \a payload
 	reply(status_type status, std::tuple<int, int> version,
@@ -76,7 +44,7 @@ class reply
 		swap(*this, rhs);
 	}
 
-	~reply();
+	~reply() = default;
 
 	reply &operator=(reply rhs)
 	{
@@ -97,7 +65,7 @@ class reply
 	}
 
 	/// Simple way to check if a reply is valid
-	explicit operator bool() const { return m_status == ok; }
+	explicit operator bool() const { return m_status == status_type::ok; }
 
 	/// Set the version to \a version_major . \a version_minor
 	void set_version(int version_major, int version_minor);

@@ -17,6 +17,7 @@
 #include <cctype>
 #include <cstring>
 #include <exception>
+#include <ios>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
@@ -580,7 +581,7 @@ std::string request::get_cookie(std::string_view name) const
 	return "";
 }
 
-void request::set_cookie(std::string name, std::string value)
+void request::set_cookie(const std::string &name, std::string value)
 {
 	std::map<std::string, std::string> cookies;
 	for (auto &h : m_headers)
@@ -603,10 +604,8 @@ void request::set_cookie(std::string name, std::string value)
 		}
 	}
 
-	m_headers.erase(
-		std::remove_if(m_headers.begin(), m_headers.end(), [](header &h)
-			{ return iequals(h.name, "Cookie"); }),
-		m_headers.end());
+	std::erase_if(m_headers, [](header &h)
+		{ return iequals(h.name, "Cookie"); });
 
 	cookies[name] = std::move(value);
 
@@ -793,7 +792,7 @@ std::ostream &operator<<(std::ostream &io, const request &req)
 	std::vector<asio_ns::const_buffer> buffers = req.to_buffers();
 
 	for (auto &b : buffers)
-		io.write(static_cast<const char *>(b.data()), b.size());
+		io.write(static_cast<const char *>(b.data()), static_cast<std::streamsize>(b.size()));
 
 	return io;
 }

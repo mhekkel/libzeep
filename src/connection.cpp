@@ -113,7 +113,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 			}
 			else if (not result)
 			{
-				m_reply = reply::stock_reply(bad_request);
+				m_reply = reply::stock_reply(status_type::bad_request);
 
 				auto buffers = m_reply.to_buffers();
 
@@ -132,7 +132,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 		catch (const uri_parse_error &ex)
 		{
 			std::clog << "Invalid URI requested\n";
-			m_reply = reply::stock_reply(bad_request);
+			m_reply = reply::stock_reply(status_type::bad_request);
 
 			auto buffers = m_reply.to_buffers();
 
@@ -143,7 +143,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 		catch (const std::exception &ex)
 		{
 			std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
-			m_reply = reply::stock_reply(internal_server_error);
+			m_reply = reply::stock_reply(status_type::internal_server_error);
 
 			auto buffers = m_reply.to_buffers();
 

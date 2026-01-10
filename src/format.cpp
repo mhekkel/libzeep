@@ -28,7 +28,7 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 namespace
 {
 
-std::string decimal_point(std::locale loc)
+std::string decimal_point(const std::locale& loc)
 {
 	std::string result;
 
@@ -42,7 +42,7 @@ std::string decimal_point(std::locale loc)
 	return result;
 }
 
-std::string thousands_sep(std::locale loc)
+std::string thousands_sep(const std::locale& loc)
 {
 	std::string result;
 
@@ -56,7 +56,7 @@ std::string thousands_sep(std::locale loc)
 	return result;
 }
 
-std::string grouping(std::locale loc)
+std::string grouping(const std::locale& loc)
 {
 	std::string result;
 
@@ -71,7 +71,7 @@ std::string grouping(std::locale loc)
 struct thousand_grouping
 {
   public:
-	thousand_grouping(std::locale loc)
+	thousand_grouping(const std::locale& loc)
 		: m_sep(thousands_sep(loc))
 		, m_grouping(grouping(loc))
 	{
@@ -108,7 +108,7 @@ struct thousand_grouping
 		return result;
 	}
 
-	std::string separator() const
+	[[nodiscard]] std::string separator() const
 	{
 		return m_sep;
 	}
@@ -123,7 +123,7 @@ class Decimal
   public:
 	Decimal(T x);
 
-	std::string formatFixed(int minIntDigits, int decimals, std::locale loc);
+	std::string formatFixed(int minIntDigits, int decimals, const std::locale& loc);
 
 	friend std::ostream &operator<<(std::ostream &os, Decimal d)
 	{
@@ -229,7 +229,7 @@ Decimal<T>::Decimal(T x)
 }
 
 template <typename T>
-std::string Decimal<T>::formatFixed(int intDigits, int decimals, std::locale loc)
+std::string Decimal<T>::formatFixed(int intDigits, int decimals, const std::locale& loc)
 {
 	int digits = decimals + intDigits;
 	if (m_exp10 > intDigits)
@@ -321,7 +321,7 @@ std::tuple<std::string, int> Decimal<T>::roundDecimal(int newLength)
 namespace zeep::http
 {
 
-std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)
+std::string FormatDecimal(double d, int integerDigits, int decimalDigits, const std::locale &loc)
 {
 	Decimal<double> dec(d);
 

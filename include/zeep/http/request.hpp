@@ -199,7 +199,7 @@ class request
 	[[nodiscard]] std::string get_cookie(std::string_view name) const;
 
 	/// \brief Set the value of HTTP Cookie with name \a name to \a value
-	void set_cookie(std::string name, std::string value);
+	void set_cookie(const std::string &name, std::string value);
 
 	/// \brief Return the content of this request in a sequence of const_buffers
 	///

@@ -350,7 +350,7 @@ parse_result parser::parse_content(char ch)
 
 parse_result request_parser::parse(std::streambuf &text)
 {
-	if (m_parser == NULL)
+	if (m_parser == nullptr)
 	{
 		m_parser = static_cast<state_parser>(&request_parser::parse_initial_line);
 		m_parsing_content = false;
@@ -438,11 +438,6 @@ parse_result request_parser::parse_initial_line(char ch)
 				result = false;
 			break;
 		case 3:
-			if (ch == 'T')
-				++m_state;
-			else
-				result = false;
-			break;
 		case 4:
 			if (ch == 'T')
 				++m_state;
@@ -566,11 +561,6 @@ parse_result reply_parser::parse_initial_line(char ch)
 				result = false;
 			break;
 		case 1:
-			if (ch == 'T')
-				++m_state;
-			else
-				result = false;
-			break;
 		case 2:
 			if (ch == 'T')
 				++m_state;

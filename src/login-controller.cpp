@@ -14,9 +14,11 @@
 #include "zeep/http/scope.hpp"
 #include "zeep/http/security.hpp"
 #include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 
+#include <system_error>
 #include <zeem/node.hpp>
 
 #include <cassert>
@@ -202,7 +204,7 @@ reply login_controller::handle_get_login(const scope &scope)
 	auto &req = scope.get_request();
 	auto doc = load_login_form(req);
 
-	reply rep = reply::stock_reply(ok);
+	reply rep = reply::stock_reply(status_type::ok);
 
 	auto csrf_cookie = req.get_cookie("csrf-token");
 	if (csrf_cookie.empty())
@@ -223,7 +225,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	auto &req = scope.get_request();
 	auto csrf = req.get_parameter("_csrf").value_or("");
 	if (csrf != req.get_cookie("csrf-token"))
-		throw status_type::forbidden;
+		throw std::system_error(make_error_code(status_type::forbidden));
 
 	uri uri(req.get_parameter("uri").value_or(""));
 	auto rep = create_redirect_for_request(req);
@@ -279,7 +281,7 @@ reply login_controller::create_redirect_for_request(const request &req) const
 	if (url.empty())
 		url = "/";
 
-	return reply::redirect(url, see_other);
+	return reply::redirect(url, status_type::see_other);
 }
 
 } // namespace zeep::http

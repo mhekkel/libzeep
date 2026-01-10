@@ -24,7 +24,7 @@ class hello_controller : public zeep::http::controller
 	bool handle_request([[maybe_unused]] zeep::http::request &req, zeep::http::reply &rep) override
 	{
 		/* Construct a simple reply with status OK (200) and content string */
-		rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content("Hello", "text/plain");
 		return true;
 	}

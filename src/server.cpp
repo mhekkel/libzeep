@@ -17,6 +17,7 @@
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/security.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
@@ -57,6 +58,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <tuple> // for tie
 #include <vector>
@@ -150,7 +152,7 @@ void basic_server::bind(std::string_view address, unsigned short port)
 
 void basic_server::get_options_for_request(const request &req, reply &rep)
 {
-	rep = reply::stock_reply(no_content);
+	rep = reply::stock_reply(status_type::no_content);
 	rep.set_header("Allow", join(m_allowed_methods, ","));
 	rep.set_header("Cache-Control", "max-age=86400");
 
@@ -223,7 +225,7 @@ std::ostream &basic_server::get_log()
 void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req, reply &rep)
 {
 	// we're pessimistic
-	rep = reply::stock_reply(not_found);
+	rep = reply::stock_reply(status_type::not_found);
 
 	// set up a logging stream and collect logging information
 	detail::s_log = std::make_unique<std::ostringstream>();
@@ -267,7 +269,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		// shortcut, check for supported method
 		auto method = req.get_method();
 		if (not(m_allowed_methods.empty() or m_allowed_methods.count(method)))
-			throw bad_request;
+			throw std::system_error(make_error_code(status_type::bad_request));
 
 		std::string csrf;
 		bool csrf_is_new = false;
@@ -314,7 +316,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
 
 		if (not m_context_name.empty() and
-			(rep.get_status() == moved_permanently or rep.get_status() == moved_temporarily))
+			rep.get_status() == status_type::moved_permanently)
 		{
 			auto location = rep.get_header("location");
 			if (location.front() == '/')
@@ -356,11 +358,11 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			}
 			catch (const std::exception &e)
 			{
-				rep = http::reply::stock_reply(http::internal_server_error);
+				rep = http::reply::stock_reply(http::status_type::internal_server_error);
 
 				object error({ { "error", e.what() } });
 				rep.set_content(error);
-				rep.set_status(http::internal_server_error);
+				rep.set_status(http::status_type::internal_server_error);
 
 				handled = true;
 			}
@@ -414,7 +416,7 @@ void basic_server::log_request(std::string_view client,
 				  << std::put_time(std::localtime(&now_t), "[%d/%b/%Y:%H:%M:%S %z]") << ' '
 				  << '"' << req.get_method() << ' ' << req.get_uri() << ' '
 				  << "HTTP/" << major << '.' << minor << "\" "
-				  << rep.get_status() << ' '
+				  << static_cast<int>(rep.get_status()) << ' '
 				  << rep.size() << ' '
 				  << '"' << referer << '"' << ' '
 				  << '"' << userAgent << '"' << ' ';

@@ -12,6 +12,7 @@
 #include "zeep/http/scope.hpp"
 #include "zeep/http/security.hpp"
 #include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 
@@ -36,7 +37,7 @@ bool error_handler::create_error_reply(const request & /*req*/, std::exception_p
 
 bool error_handler::create_unauth_reply(const request &req, reply &rep)
 {
-	return create_error_reply(req, unauthorized, "You don't have access to this page", rep);
+	return create_error_reply(req, status_type::unauthorized, "You don't have access to this page", rep);
 }
 
 bool error_handler::create_error_reply(const request &req, status_type status, reply &rep)
@@ -56,7 +57,7 @@ bool error_handler::create_error_reply(const request &req, status_type status, s
 
 		object error{
 			{ "nr", static_cast<int>(status) },
-			{ "head", get_status_text(status) },
+			{ "head", make_error_code(status).message() },
 			{ "description", get_status_description(status) },
 			{ "message", message },
 			{ "request",
@@ -174,11 +175,11 @@ bool default_error_handler::create_error_reply(const request &req, std::exceptio
 	}
 	catch (const std::exception &ex)
 	{
-		result = error_handler::create_error_reply(req, internal_server_error, ex.what(), reply);
+		result = error_handler::create_error_reply(req, status_type::internal_server_error, ex.what(), reply);
 	}
 	catch (...)
 	{
-		result = error_handler::create_error_reply(req, internal_server_error, "unhandled exception", reply);
+		result = error_handler::create_error_reply(req, status_type::internal_server_error, "unhandled exception", reply);
 	}
 
 	return result;

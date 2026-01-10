@@ -181,7 +181,7 @@ class basic_template_processor
 	/// \brief create a reply based on a template, alternate version
 	[[nodiscard]] reply create_reply_from_template(const std::string &file, const scope &scope)
 	{
-		reply result = reply::stock_reply(ok);
+		reply result = reply::stock_reply(status_type::ok);
 		create_reply_from_template(file, scope, result);
 		return result;
 	}

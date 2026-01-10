@@ -691,7 +691,7 @@ std::string encode_url(std::string_view s)
 
 	for (auto c = s.begin(); c != s.end(); ++c)
 	{
-		unsigned char a = (unsigned char)*c;
+		auto a = static_cast<unsigned char>(*c);
 		if (not uri::is_unreserved(a))
 		{
 			result += '%';
