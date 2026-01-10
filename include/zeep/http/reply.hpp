@@ -9,12 +9,11 @@
 /// \file
 /// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
-#include "zeep/config.hpp"
 
-#include "zeep/http/asio.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/http/header.hpp"
 #include "zeep/http/uri.hpp"
+#include "zeep/http/asio.hpp"
 
 #include <zeem.hpp>
 
@@ -72,7 +71,7 @@ class reply
 
 	reply(const reply &rhs);
 
-	reply(reply &&rhs)
+	reply(reply &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -113,7 +112,7 @@ class reply
 	void set_header(std::string name, std::string value);
 
 	/// Return the value of the header with name \a name
-	std::string get_header(std::string_view name) const;
+	[[nodiscard]] std::string get_header(std::string_view name) const;
 
 	/// Remove the header with name \a name from the list of headers
 	void remove_header(std::string_view name);
@@ -125,10 +124,10 @@ class reply
 	void set_delete_cookie(std::string_view name);
 
 	/// Get a cookie
-	std::string get_cookie(std::string_view name) const;
+	[[nodiscard]] std::string get_cookie(std::string_view name) const;
 
 	/// Return the value of the header named content-type
-	std::string get_content_type() const
+	[[nodiscard]] std::string get_content_type() const
 	{
 		return get_header("Content-Type");
 	}
@@ -160,16 +159,16 @@ class reply
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data.
-	const std::string &get_content() const
+	[[nodiscard]] const std::string &get_content() const
 	{
 		return m_content;
 	}
 
 	/// return the content of the reply as an array of asio_ns::const_buffer objects
-	std::vector<asio_ns::const_buffer> to_buffers() const;
+	[[nodiscard]] std::vector<asio_ns::const_buffer> to_buffers() const;
 
 	/// for istream data, if the returned buffer array is empty, the data is done
-	std::vector<asio_ns::const_buffer> data_to_buffers();
+	[[nodiscard]] std::vector<asio_ns::const_buffer> data_to_buffers();
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
@@ -180,13 +179,13 @@ class reply
 	static reply redirect(const uri &location, status_type status);
 
 	void set_status(status_type status) { m_status = status; }
-	status_type get_status() const { return m_status; }
+	[[nodiscard]] status_type get_status() const { return m_status; }
 
 	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
-	size_t size() const;
+	[[nodiscard]] size_t size() const;
 
 	/// Return true if the content will be sent chunked encoded
-	bool get_chunked() const { return m_chunked; }
+	[[nodiscard]] bool get_chunked() const { return m_chunked; }
 
 	/// for debugging
 	friend std::ostream &operator<<(std::ostream &os, const reply &rep);
@@ -194,8 +193,8 @@ class reply
   private:
 	friend class reply_parser;
 
-	status_type m_status;
-	int m_version_major, m_version_minor;
+	status_type m_status{ status_type::bad_request };
+	int m_version_major = 0, m_version_minor = 0;
 	std::vector<header> m_headers;
 	std::shared_ptr<std::istream> m_data;
 	std::vector<char> m_buffer;

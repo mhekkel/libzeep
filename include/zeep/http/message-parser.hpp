@@ -9,12 +9,14 @@
 /// \file
 /// definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
 
-#include "zeep/config.hpp"
-
-#include <tuple>
-
+#include "zeep/http/header.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
+
+#include <iosfwd>
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace zeep::http
 {
@@ -103,23 +105,23 @@ constexpr parse_result operator==(parse_result lhs, parse_result rhs)
 class parser
 {
   public:
-	virtual ~parser() {}
+	virtual ~parser() = default;
 
 	virtual void reset();
 
-	parse_result parse_header_lines(char ch);
-	parse_result parse_chunk(char ch);
-	parse_result parse_footer(char ch);
-	parse_result parse_content(char ch);
+	[[nodiscard]] parse_result parse_header_lines(char ch);
+	[[nodiscard]] parse_result parse_chunk(char ch);
+	[[nodiscard]] parse_result parse_footer(char ch);
+	[[nodiscard]] parse_result parse_content(char ch);
 
   protected:
-	typedef parse_result (parser::*state_parser)(char ch);
+	using state_parser = parse_result (parser::*)(char ch);
 
 	parser();
 
 	parse_result post_process_headers();
 
-	bool find_last_token(const header &h, std::string_view t) const;
+	[[nodiscard]] bool find_last_token(const header &h, std::string_view t) const;
 
 	state_parser m_parser;
 	int m_state;
@@ -140,11 +142,11 @@ class parser
 class request_parser : public parser
 {
   public:
-	request_parser();
+	request_parser() = default;
 
 	parse_result parse(std::streambuf &text);
 
-	request get_request();
+	[[nodiscard]] request get_request();
 
   private:
 	parse_result parse_initial_line(char ch);
@@ -156,11 +158,11 @@ class request_parser : public parser
 class reply_parser : public parser
 {
   public:
-	reply_parser();
+	reply_parser() = default;
 
 	parse_result parse(std::streambuf &text);
 
-	reply get_reply();
+	[[nodiscard]] reply get_reply();
 
 	void reset() override;
 

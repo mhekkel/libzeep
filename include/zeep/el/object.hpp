@@ -713,7 +713,7 @@ class object
 	// --------------------------------------------------------------------
 	// array/object interface
 
-	[[nodiscard]] bool contains(object test) const;
+	[[nodiscard]] bool contains(const object &test) const;
 
 	[[nodiscard]] bool empty() const noexcept;
 	[[nodiscard]] size_t size() const noexcept;

@@ -8,18 +8,33 @@
 // A script language used in the XHTML templates used by the zeep webapp.
 //
 
-#include "zeep/config.hpp"
-
 #include "format.hpp"
-
-#include "zeep/crypto.hpp"
+#include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
-#include "zeep/http/server.hpp"
+#include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include <codecvt>
-#include <locale>
+#include <zeem/serialize.hpp>
+
+#include <cassert>
+#include <charconv>
+#include <chrono>
+#include <compare>
+#include <cstdint>
+#include <ctime>
+#include <exception>
+#include <iomanip>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {
@@ -168,10 +183,10 @@ struct interpreter
 	object call_method(const std::string &className, const std::string &method, std::vector<object> &params);
 
 	const scope &m_scope;
-	token_type m_lookahead;
+	token_type m_lookahead = token_type::eof;
 	std::string m_token_string;
-	int64_t m_token_number_int;
-	double m_token_number_float;
+	int64_t m_token_number_int{};
+	double m_token_number_float{};
 	std::string::const_iterator m_ptr, m_end;
 	bool m_return_whitespace = false;
 	bool m_expect_fragment_spec = false;
@@ -1103,7 +1118,7 @@ object interpreter::parse_primary_expr()
 					if (not result.is_null())
 					{
 						if (result.type() == object::value_type::array and (m_token_string == "count" or m_token_string == "length"))
-							result = object((uint32_t)result.size());
+							result = object(static_cast<uint32_t>(result.size()));
 						else if (m_token_string == "empty")
 							result = result.empty();
 						else if (result.type() == object::value_type::object)
@@ -1289,7 +1304,7 @@ object interpreter::parse_link_template_expr()
 		{
 			path += '?';
 			auto n = parameters.size();
-			for (auto p : parameters)
+			for (const auto& p : parameters)
 			{
 				path += encode_url(p.first);
 
@@ -1512,10 +1527,10 @@ expression_utility_object_base::instance *expression_utility_object_base::s_head
 
 class date_expr_util_object : public expression_utility_object<date_expr_util_object>
 {
-  public:
+  protected:
 	static constexpr const char *name() { return "dates"; }
 
-	object evaluate(const scope &scope, const std::string &method,
+	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
 		object result;
@@ -1546,10 +1561,10 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 
 class number_expr_util_object : public expression_utility_object<number_expr_util_object>
 {
-  public:
+  protected:
 	static constexpr const char *name() { return "numbers"; }
 
-	object evaluate(const scope &scope, const std::string &method,
+	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
 		object result;
@@ -1605,17 +1620,15 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 
 class request_expr_util_object : public expression_utility_object<request_expr_util_object>
 {
-  public:
+  protected:
 	static constexpr const char *name() { return "request"; }
 
-	object evaluate(const scope &scope, const std::string &method,
+	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
 		object result;
 
-		if (method == "getRequestURI")
-			result = scope.get_request().get_uri().string();
-		else if (method == "getRequestURL")
+		if (method == "getRequestURI" or method == "getRequestURL")
 			result = scope.get_request().get_uri().string();
 		else if ((method == "getParameter") and params.size() == 1)
 		{
@@ -1630,10 +1643,10 @@ class request_expr_util_object : public expression_utility_object<request_expr_u
 
 class security_expr_util_object : public expression_utility_object<security_expr_util_object>
 {
-  public:
+  protected:
 	static constexpr const char *name() { return "security"; }
 
-	object evaluate(const scope &scope, const std::string &method,
+	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
 		object result;
@@ -1706,6 +1719,5 @@ object evaluate_el_link(const scope &scope, const std::string &text)
 	interpreter interpreter(scope);
 	return interpreter.evaluate_link(text);
 }
-
 
 } // namespace zeep::http

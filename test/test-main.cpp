@@ -5,15 +5,17 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch_session.hpp>
 
 #include "test-main.hpp"
 
-std::filesystem::path gTestDir = std::filesystem::current_path();
+std::filesystem::path gTestDir;
 std::filesystem::path gDocrootDir;
 
 int main(int argc, char *argv[])
 {
+	gTestDir = std::filesystem::current_path();
+
 	Catch::Session session; // There must be exactly one instance
 
 	// Build a new parser on top of Catch2's

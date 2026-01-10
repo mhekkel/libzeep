@@ -3,24 +3,49 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <zeep/exception.hpp>
-#include <zeep/http/controller.hpp>
-#include <zeep/http/daemon.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "../src/signals.hpp"
-
-#include "test-main.hpp"
-
 #include "client-test-code.hpp"
-#include "zeep/http/reply.hpp"
 
+#include "zeep/el/object.hpp"
+#include "zeep/el/serializer.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/controller.hpp"
+#include "zeep/http/daemon.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/uri.hpp"
+
+#include <zeem/serialize.hpp>
+
+#include <boost/asio/detail/handler_invoke_helpers.hpp>
+#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
+#include <boost/asio/detail/impl/scheduler.ipp>
+#include <boost/asio/detail/impl/service_registry.hpp>
+#include <boost/asio/execution/context_as.hpp>
+#include <boost/asio/execution/prefer_only.hpp>
+#include <boost/asio/impl/any_io_executor.ipp>
+#include <boost/asio/impl/io_context.hpp>
+#include <boost/asio/impl/io_context.ipp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+
+#include <cstdint>
+#include <exception>
 #include <iostream>
+#include <map>
 #include <random>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <tuple>
+#include <type_traits>
+#include <vector>
 
 using namespace std;
-namespace z = zeep;
-namespace zh = zeep::http;
-namespace e = zeep::el;
 
 struct Opname
 {
@@ -28,7 +53,7 @@ struct Opname
 	map<string, float> standen;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long /*version*/)
+	void serialize(Archive &ar, uint64_t /*version*/)
 	{
 		// clang-format off
 		ar & zeem::name_value_pair("id", id)
@@ -39,21 +64,21 @@ struct Opname
 	auto operator<=>(const Opname &) const = default;
 };
 
-static_assert(not std::is_constructible_v<e::object, Opname>, "");
+static_assert(not std::is_constructible_v<zeep::el::object, Opname>);
 
 using a_map_type = map<string, float>;
-static_assert(e::is_serializable_map_type_v<a_map_type>, "");
+static_assert(zeep::el::is_serializable_map_type_v<a_map_type>);
 
 TEST_CASE("foo")
 {
 	Opname opn{ "1", { { "een", 0.1f },
 						 { "twee", 0.2f } } };
 
-	e::object o = e::serializer<Opname>::serialize(opn);
+	zeep::el::object o = zeep::el::serializer<Opname>::serialize(opn);
 
 	std::cout << o << "\n";
 
-	Opname opn2 = e::serializer<Opname>::deserialize(o);
+	Opname opn2 = zeep::el::serializer<Opname>::deserialize(o);
 
 	CHECK(opn == opn2);
 }
@@ -67,11 +92,11 @@ TEST_CASE("bar")
 				   { "vier", 0.4f } } },
 	};
 
-	e::object o = e::serializer<std::vector<Opname>>::serialize(opnames);
+	zeep::el::object o = zeep::el::serializer<std::vector<Opname>>::serialize(opnames);
 
 	std::cout << o << "\n";
 
-	auto opn2 = e::serializer<std::vector<Opname>>::deserialize(o);
+	auto opn2 = zeep::el::serializer<std::vector<Opname>>::deserialize(o);
 
 	CHECK(opnames == opn2);
 }
@@ -105,7 +130,7 @@ struct GrafiekData
 	map<string, float> vsGem;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long)
+	void serialize(Archive &ar, uint64_t /* version */)
 	{
 		// clang-format off
 		ar & zeem::name_value_pair("type", type)
@@ -141,12 +166,12 @@ class e_rest_controller : public zeep::http::controller
 	}
 
 	// CRUD routines
-	string post_opname(Opname /*opname*/)
+	string post_opname(const Opname& /*opname*/)
 	{
 		return {};
 	}
 
-	void put_opname(string /*opnameId*/, string /*opnameId*/)
+	void put_opname(const string& /*opnameId*/, const string& /*opnameId*/)
 	{
 		{};
 	}
@@ -156,11 +181,11 @@ class e_rest_controller : public zeep::http::controller
 		return { {}, {} };
 	}
 
-	void set_opnames(Opnames /*opnames*/)
+	void set_opnames(const Opnames& /*opnames*/)
 	{
 	}
 
-	Opname get_opname(string id)
+	Opname get_opname(const string& id)
 	{
 		if (id == "xxx")
 			throw zeep::http::not_found;
@@ -178,7 +203,7 @@ class e_rest_controller : public zeep::http::controller
 		return {};
 	}
 
-	void delete_opname(string /*id*/)
+	void delete_opname(const string& /*id*/)
 	{
 	}
 
@@ -196,10 +221,9 @@ class e_rest_controller : public zeep::http::controller
 	{
 		zeep::http::reply result{ zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
 
-		if (scope.get_request().get_accept("application/json"))
+		if (scope.get_request().get_accept("application/json") == 1.0f)
 			result.set_content(zeep::el::object{
-				{ "message", "Hello, world!" }
-			});
+				{ "message", "Hello, world!" } });
 		return result;
 	}
 };
@@ -245,9 +269,9 @@ TEST_CASE("rest_2")
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]()
+	zeep::http::daemon d([]()
 		{
-		auto s = new zh::server;
+		auto s = new zeep::http::server;
 		s->add_controller(new e_rest_controller());
 		return s; },
 		"zeep-http-test");
@@ -255,7 +279,8 @@ TEST_CASE("rest_2")
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port]
+		{ return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
@@ -270,11 +295,11 @@ TEST_CASE("rest_2")
 		CHECK(rep.get_content_type() == "text/plain");
 
 		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zeep::http::not_found);
 
 		// reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
-		reply = simple_request(port, zh::request("GET", "/ajax/opname/xxx", { 1, 0 }, { { "Accept", "application/json" }}));
-		CHECK(reply.get_status() == zh::not_found);
+		reply = simple_request(port, zeep::http::request("GET", "/ajax/opname/xxx", { 1, 0 }, { { "Accept", "application/json" } }));
+		CHECK(reply.get_status() == zeep::http::not_found);
 		CHECK(reply.get_content_type() == "application/json");
 	}
 	catch (const std::exception &e)
@@ -291,9 +316,9 @@ TEST_CASE("rest_3")
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]()
+	zeep::http::daemon d([]()
 		{
-		auto s = new zh::server;
+		auto s = new zeep::http::server;
 		s->add_controller(new e_rest_controller());
 		return s; },
 		"zeep-http-test");
@@ -301,7 +326,7 @@ TEST_CASE("rest_3")
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port] { return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
@@ -310,17 +335,13 @@ TEST_CASE("rest_3")
 
 	try
 	{
-		zh::request req_1{"GET", "/ajax/scope_test", { 1, 0 }, {
-			{ "accept", "text/plain" }
-		}};
+		zeep::http::request req_1{ "GET", "/ajax/scope_test", { 1, 0 }, { { "accept", "text/plain" } } };
 
 		auto rep_1 = simple_request(port, req_1);
 		CHECK(rep_1.get_status() == zeep::http::ok);
 		CHECK(rep_1.get_content_type() == "text/plain");
 
-		zh::request req_2{"GET", "/ajax/scope_test", { 1, 0 }, {
-			{ "accept", "application/json" }
-		}};
+		zeep::http::request req_2{ "GET", "/ajax/scope_test", { 1, 0 }, { { "accept", "application/json" } } };
 
 		auto rep_2 = simple_request(port, req_2);
 		CHECK(rep_2.get_status() == zeep::http::ok);
@@ -335,4 +356,3 @@ TEST_CASE("rest_3")
 
 	t.join();
 }
-

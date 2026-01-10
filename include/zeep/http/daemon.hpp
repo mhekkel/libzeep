@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <string_view>
 
 namespace zeep::http
 {
@@ -72,8 +73,8 @@ class daemon
 	/// \param run_as_user			The user to run the forked process. Daemons are usually
 	///								started as root and should drop their privileges as soon
 	///								as possible.
-	int start(std::string_view address, uint16_t port, size_t nr_of_procs,
-		size_t nr_of_threads, std::string run_as_user);
+	int start(std::string_view address, uint16_t port, int nr_of_procs,
+		int nr_of_threads, const std::string &run_as_user);
 
 	/// \brief Start the daemon, forking off in the background with single process
 	///
@@ -83,8 +84,8 @@ class daemon
 	/// \param run_as_user			The user to run the forked process. Daemons are usually
 	///								started as root and should drop their privileges as soon
 	///								as possible.
-	int start(std::string_view address, uint16_t port, size_t nr_of_threads,
-		std::string run_as_user);
+	int start(std::string_view address, uint16_t port, int nr_of_threads,
+		const std::string &run_as_user);
 
 	/// \brief Stop a running daemon process. Returns 0 in case of successfully stopping a process.
 	int stop();
@@ -110,8 +111,8 @@ class daemon
 	int daemonize();
 	void open_log_file();
 
-	bool run_main_loop(std::string_view address, uint16_t port, size_t nr_of_procs,
-		size_t nr_of_threads, std::string run_as_user);
+	bool run_main_loop(std::string_view address, uint16_t port, int nr_of_procs,
+		int nr_of_threads, const std::string &run_as_user);
 
 	bool pid_is_for_executable();
 #endif

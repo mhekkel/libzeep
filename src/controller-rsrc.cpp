@@ -4,12 +4,21 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/template-processor.hpp"
-#include "zeep/streambuf.hpp"
 
+#include <cassert>
+#include <chrono>
+#include <climits>
+#include <cstddef>
+#include <filesystem>
+#include <functional>
 #include <iostream>
+#include <iterator>
+#include <new>
+#include <string>
+#include <system_error>
+#include <unistd.h>
+#include <utility>
 
 namespace fs = std::filesystem;
 
@@ -40,9 +49,9 @@ extern "C" const mrsrc::rsrc_imp gResourceIndex[];
 extern "C" const char gResourceData[];
 extern "C" const char gResourceName[];
 
-#pragma comment(linker, "/alternatename:gResourceIndex=gResourceIndexDefault")
-#pragma comment(linker, "/alternatename:gResourceData=gResourceDataDefault")
-#pragma comment(linker, "/alternatename:gResourceName=gResourceNameDefault")
+# pragma comment(linker, "/alternatename:gResourceIndex=gResourceIndexDefault")
+# pragma comment(linker, "/alternatename:gResourceData=gResourceDataDefault")
+# pragma comment(linker, "/alternatename:gResourceName=gResourceNameDefault")
 
 #else
 
@@ -67,14 +76,14 @@ class rsrc_data
 		return s_instance;
 	}
 
-	const rsrc_imp *index() const { return m_index; }
+	[[nodiscard]] const rsrc_imp *index() const { return m_index; }
 
-	const char *data(unsigned int offset) const
+	[[nodiscard]] const char *data(unsigned int offset) const
 	{
 		return m_data + offset;
 	}
 
-	const char *name(unsigned int offset) const
+	[[nodiscard]] const char *name(unsigned int offset) const
 	{
 		return m_name + offset;
 	}
@@ -105,26 +114,18 @@ class rsrc
 	{
 	}
 
-	rsrc(const rsrc &other)
-		: m_impl(other.m_impl)
-	{
-	}
-
-	rsrc &operator=(const rsrc &other)
-	{
-		m_impl = other.m_impl;
-		return *this;
-	}
+	rsrc(const rsrc &other) = default;
+	rsrc &operator=(const rsrc &other) = default;
 
 	rsrc(std::filesystem::path path);
 
-	std::string name() const { return m_impl ? rsrc_data::instance().name(m_impl->m_name) : ""; }
+	[[nodiscard]] std::string name() const { return m_impl ? rsrc_data::instance().name(m_impl->m_name) : ""; }
 
-	const char *data() const { return m_impl ? rsrc_data::instance().data(m_impl->m_data) : nullptr; }
+	[[nodiscard]] const char *data() const { return m_impl ? rsrc_data::instance().data(m_impl->m_data) : nullptr; }
 
-	unsigned long size() const { return m_impl ? m_impl->m_size : 0; }
+	[[nodiscard]] unsigned long size() const { return m_impl ? m_impl->m_size : 0; }
 
-	explicit operator bool() const { return m_impl != NULL and m_impl->m_size > 0; }
+	explicit operator bool() const { return m_impl != nullptr and m_impl->m_size > 0; }
 
 	template <typename RSRC>
 	class iterator_t
@@ -141,16 +142,8 @@ class rsrc
 		{
 		}
 
-		iterator_t(const iterator_t &i)
-			: m_cur(i.m_cur)
-		{
-		}
-
-		iterator_t &operator=(const iterator_t &i)
-		{
-			m_cur = i.m_cur;
-			return *this;
-		}
+		iterator_t(const iterator_t &i) = default;
+		iterator_t &operator=(const iterator_t &i) = default;
 
 		reference operator*() { return m_cur; }
 		pointer operator->() { return &m_cur; }
@@ -180,17 +173,17 @@ class rsrc
 
 	using iterator = iterator_t<rsrc>;
 
-	iterator begin() const
+	[[nodiscard]] iterator begin() const
 	{
 		const rsrc_imp *impl = nullptr;
 		if (m_impl and m_impl->m_child)
 			impl = rsrc_data::instance().index() + m_impl->m_child;
-		return iterator(impl);
+		return { impl };
 	}
 
-	iterator end() const
+	[[nodiscard]] iterator end() const
 	{
-		return iterator(nullptr);
+		return { nullptr };
 	}
 
   private:
@@ -216,7 +209,7 @@ inline rsrc::rsrc(std::filesystem::path p)
 		auto name = *pb++;
 
 		const rsrc_imp *impl = nullptr;
-		for (rsrc child : *this)
+		for (const rsrc &child : *this)
 		{
 			if (child.name() == name)
 			{
@@ -238,11 +231,11 @@ template <typename CharT, typename Traits>
 class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 {
   public:
-	typedef CharT char_type;
-	typedef Traits traits_type;
-	typedef typename traits_type::int_type int_type;
-	typedef typename traits_type::pos_type pos_type;
-	typedef typename traits_type::off_type off_type;
+	using char_type = CharT;
+	using traits_type = Traits;
+	using int_type = typename traits_type::int_type;
+	using pos_type = typename traits_type::pos_type;
+	using off_type = typename traits_type::off_type;
 
 	/// \brief constructor taking a \a path to the resource in memory
 	basic_streambuf(std::string path)
@@ -260,20 +253,20 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 
 	basic_streambuf(const basic_streambuf &) = delete;
 
-	basic_streambuf(basic_streambuf &&rhs)
+	basic_streambuf(basic_streambuf &&rhs) noexcept
 		: basic_streambuf(rhs.m_rsrc)
 	{
 	}
 
 	basic_streambuf &operator=(const basic_streambuf &) = delete;
 
-	basic_streambuf &operator=(basic_streambuf &&rhs)
+	basic_streambuf &operator=(basic_streambuf &&rhs) noexcept
 	{
 		swap(rhs);
 		return *this;
 	}
 
-	void swap(basic_streambuf &rhs)
+	void swap(basic_streambuf &rhs) noexcept
 	{
 		std::swap(m_begin, rhs.m_begin);
 		std::swap(m_end, rhs.m_end);
@@ -281,7 +274,7 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 	}
 
 	/// \brief Analogous to is_open of an ifstream_buffer, return true if the resource is valid
-	bool is_valid() const
+	[[nodiscard]] bool is_valid() const
 	{
 		return static_cast<bool>(m_rsrc);
 	}
@@ -297,7 +290,9 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		}
 	}
 
+  protected:
 	int_type underflow() override
+
 	{
 		if (m_current == m_end)
 			return traits_type::eof();
@@ -385,11 +380,11 @@ template <typename CharT, typename Traits>
 class basic_istream : public std::basic_istream<CharT, Traits>
 {
   public:
-	typedef CharT char_type;
-	typedef Traits traits_type;
-	typedef typename traits_type::int_type int_type;
-	typedef typename traits_type::pos_type pos_type;
-	typedef typename traits_type::off_type off_type;
+	using char_type = CharT;
+	using traits_type = Traits;
+	using int_type = typename traits_type::int_type;
+	using pos_type = typename traits_type::pos_type;
+	using off_type = typename traits_type::off_type;
 
   private:
 	using __streambuf_type = basic_streambuf<CharT, Traits>;
@@ -415,7 +410,7 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 
 	basic_istream(const basic_istream &) = delete;
 
-	basic_istream(basic_istream &&rhs)
+	basic_istream(basic_istream &&rhs) noexcept
 		: __istream_type(std::move(rhs))
 		, m_buffer(std::move(rhs.m_buffer))
 	{
@@ -424,14 +419,14 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 
 	basic_istream &operator=(const basic_istream &) = delete;
 
-	basic_istream &operator=(basic_istream &&rhs)
+	basic_istream &operator=(basic_istream &&rhs) noexcept
 	{
 		__istream_type::operator=(std::move(rhs));
 		m_buffer = std::move(rhs.m_buffer);
 		return *this;
 	}
 
-	void swap(basic_istream &rhs)
+	void swap(basic_istream &rhs) noexcept
 	{
 		__istream_type::swap(rhs);
 		m_buffer.swap(rhs.m_buffer);
@@ -454,8 +449,8 @@ namespace zeep::http
 // -----------------------------------------------------------------------
 
 #if _WIN32 and not defined(WIN32_LEAN_AND_MEAN)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
 #endif
 
 rsrc_loader::rsrc_loader(std::filesystem::path)
@@ -466,7 +461,7 @@ rsrc_loader::rsrc_loader(std::filesystem::path)
 		mRsrcWriteTime = fs::last_write_time(exePath);
 #else
 	char exePath[PATH_MAX + 1];
-	int r = readlink("/proc/self/exe", exePath, PATH_MAX);
+	auto r = readlink("/proc/self/exe", exePath, PATH_MAX);
 	if (r > 0)
 	{
 		exePath[r] = 0;
@@ -506,7 +501,16 @@ std::istream *rsrc_loader::load_file(std::string file, std::error_code &ec) noex
 	ec = {};
 
 	if (resource)
-		result = new mrsrc::istream(resource);
+	{
+		try
+		{
+			result = new mrsrc::istream(resource);
+		}
+		catch (const std::bad_alloc &)
+		{
+			ec = std::make_error_code(std::errc::not_enough_memory);
+		}
+	}
 	else
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
 

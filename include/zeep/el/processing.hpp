@@ -145,7 +145,7 @@ class expression_utility_object : public expression_utility_object_base
 	using implementation_type = OBJ;
 
   protected:
-	expression_utility_object()
+	expression_utility_object() // NOLINT(bugprone-crtp-constructor-accessibility)
 	{
 		static instance s_next{ this, implementation_type::name(), s_head };
 		s_head = &s_next;

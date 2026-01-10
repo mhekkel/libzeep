@@ -93,7 +93,14 @@ basic_server::basic_server(security_context *s_cntxt)
 
 basic_server::~basic_server()
 {
-	stop();
+	try
+	{
+		stop();
+	}
+	catch (const std::exception &ex)
+	{
+		std::clog << "error stopping server: " << ex.what() << '\n';
+	}
 
 	for (auto c : m_controllers)
 		delete c;
@@ -112,8 +119,8 @@ void basic_server::bind(std::string_view address, unsigned short port)
 	m_address = address;
 	m_port = port;
 
-	m_acceptor.reset(new asio_ns::ip::tcp::acceptor(get_io_context()));
-	m_new_connection.reset(new connection(get_io_context(), *this));
+	m_acceptor = std::make_shared<asio_ns::ip::tcp::acceptor>(get_io_context());
+	m_new_connection = std::make_shared<connection>(get_io_context(), *this);
 
 	// then bind the address here
 	asio_ns::ip::tcp::endpoint endpoint;
@@ -199,7 +206,7 @@ void basic_server::handle_accept(asio_system_ns::error_code ec)
 	if (not ec)
 	{
 		m_new_connection->start();
-		m_new_connection.reset(new connection(get_io_context(), *this));
+		m_new_connection = std::make_shared<connection>(get_io_context(), *this);
 		m_acceptor->async_accept(m_new_connection->get_socket(),
 			[this](asio_system_ns::error_code ec)
 			{ this->handle_accept(ec); });
@@ -209,7 +216,7 @@ void basic_server::handle_accept(asio_system_ns::error_code ec)
 std::ostream &basic_server::get_log()
 {
 	if (detail::s_log.get() == NULL)
-		detail::s_log.reset(new std::ostringstream);
+		detail::s_log = std::make_unique<std::ostringstream>();
 	return *detail::s_log;
 }
 
@@ -219,7 +226,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 	rep = reply::stock_reply(not_found);
 
 	// set up a logging stream and collect logging information
-	detail::s_log.reset(new std::ostringstream);
+	detail::s_log = std::make_unique<std::ostringstream>();
 	auto start = std::chrono::system_clock::now();
 
 	std::string referer("-"), userAgent("-"), accept, client;
@@ -294,8 +301,9 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 					if (eh->create_error_reply(req, not_found, rep))
 						break;
 				}
-				catch (...)
+				catch (...) // NOLINT(bugprone-empty-catch)
 				{
+					// try next
 				}
 			}
 		}
@@ -356,7 +364,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 				handled = true;
 			}
-			catch (...)
+			catch (...) // NOLINT(bugprone-empty-catch)
 			{
 			}
 		}
@@ -370,7 +378,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 					if (eh->create_error_reply(req, eptr, rep))
 						break;
 				}
-				catch (...)
+				catch (...) // NOLINT(bugprone-empty-catch)
 				{
 				}
 			}
@@ -412,11 +420,11 @@ void basic_server::log_request(std::string_view client,
 				  << '"' << userAgent << '"' << ' ';
 
 		if (entry.empty())
-			std::cout << "-" << std::endl;
+			std::cout << "-" << '\n';
 		else
-			std::cout << std::quoted(entry) << std::endl;
+			std::cout << std::quoted(entry) << '\n';
 	}
-	catch (...)
+	catch (...) // NOLINT(bugprone-empty-catch)
 	{
 	}
 }

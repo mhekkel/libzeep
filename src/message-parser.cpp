@@ -4,12 +4,25 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/message-parser.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <charconv>
+#include <cstddef>
+#include <streambuf>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {
@@ -55,7 +68,7 @@ parser::parser()
 
 void parser::reset()
 {
-	m_parser = NULL;
+	m_parser = nullptr;
 	m_state = 0;
 	m_chunk_size = 0;
 	m_data.clear();
@@ -88,7 +101,7 @@ parse_result parser::parse_header_lines(char ch)
 				result = false;
 			else
 			{
-				m_headers.push_back(header());
+				m_headers.emplace_back();
 				m_headers.back().name += ch;
 				m_state = 1;
 			}
@@ -152,6 +165,8 @@ parse_result parser::parse_header_lines(char ch)
 			else
 				result = false;
 			break;
+
+		default:;
 	}
 
 	return result;
@@ -178,7 +193,7 @@ parse_result parser::post_process_headers()
 
 	parse_result result = true;
 
-	auto i = find_if(m_headers.begin(), m_headers.end(), [](const header &h)
+	auto i = std::ranges::find_if(m_headers, [](const header &h)
 		{ return iequals(h.name, "transfer-encoding"sv); });
 	if (i != m_headers.end())
 	{
@@ -193,7 +208,7 @@ parse_result parser::post_process_headers()
 	}
 	else
 	{
-		i = find_if(m_headers.begin(), m_headers.end(), [](const header &h)
+		i = std::ranges::find_if(m_headers, [](const header &h)
 			{ return iequals(h.name, "content-length"sv); });
 		if (i != m_headers.end())
 		{
@@ -306,6 +321,8 @@ parse_result parser::parse_chunk(char ch)
 			else
 				result = false;
 			break;
+
+		default:;
 	}
 
 	return result;
@@ -330,10 +347,6 @@ parse_result parser::parse_content(char ch)
 
 // --------------------------------------------------------------------
 //
-
-request_parser::request_parser()
-{
-}
 
 parse_result request_parser::parse(std::streambuf &text)
 {
@@ -377,8 +390,8 @@ request request_parser::get_request()
 		m_uri = "http://" + m_uri;
 	}
 
-	return request(m_method, std::move(m_uri), { m_http_version_major, m_http_version_minor },
-		std::move(m_headers), std::move(m_payload));
+	return { m_method, m_uri, { m_http_version_major, m_http_version_minor },
+		std::move(m_headers), std::move(m_payload) };
 }
 
 parse_result request_parser::parse_initial_line(char ch)
@@ -487,6 +500,8 @@ parse_result request_parser::parse_initial_line(char ch)
 			else
 				result = false;
 			break;
+		
+		default:;
 	}
 
 	return result;
@@ -495,9 +510,6 @@ parse_result request_parser::parse_initial_line(char ch)
 // --------------------------------------------------------------------
 //
 
-reply_parser::reply_parser()
-{
-}
 
 void reply_parser::reset()
 {
@@ -508,7 +520,7 @@ void reply_parser::reset()
 
 parse_result reply_parser::parse(std::streambuf &text)
 {
-	if (m_parser == NULL)
+	if (m_parser == nullptr)
 	{
 		m_parser = static_cast<state_parser>(&reply_parser::parse_initial_line);
 		m_parsing_content = false;
@@ -664,6 +676,8 @@ parse_result reply_parser::parse_initial_line(char ch)
 			else
 				result = false;
 			break;
+		
+		default:;
 	}
 
 	return result;

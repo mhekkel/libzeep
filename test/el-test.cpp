@@ -1,20 +1,25 @@
-#include <zeep/exception.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/controller.hpp>
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <zeep/el/object.hpp>
 #include <zeep/el/serializer.hpp>
+#include <zeep/http/scope.hpp>
 
-#include "../src/signals.hpp"
+#include <zeem/serialize.hpp>
 
-#include "test-main.hpp"
-
-#include "client-test-code.hpp"
-
+#include <chrono>
 #include <iostream>
-#include <random>
+#include <map>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace std;
-namespace z = zeep;
-namespace zh = zeep::http;
 namespace e = zeep::el;
 
 struct Opname
@@ -23,7 +28,7 @@ struct Opname
 	map<string, float> standen;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long /*version*/)
+	void serialize(Archive &ar, uint64_t /*version*/)
 	{
 		// clang-format off
 		ar & zeem::name_value_pair("id", id)
@@ -34,12 +39,12 @@ struct Opname
 	auto operator<=>(const Opname &) const = default;
 };
 
-static_assert(not std::is_constructible_v<e::object, Opname>, "");
+static_assert(not std::is_constructible_v<e::object, Opname>);
 
 using a_map_type = map<string, float>;
-static_assert(e::is_serializable_map_type_v<a_map_type>, "");
+static_assert(e::is_serializable_map_type_v<a_map_type>);
 
-static_assert(std::is_constructible_v<e::object, std::string>, "");
+static_assert(std::is_constructible_v<e::object, std::string>);
 
 TEST_CASE("test-1")
 {
@@ -114,12 +119,12 @@ TEST_CASE("test-4")
 
 TEST_CASE("test-5")
 {
-	zh::scope scope;
+	zeep::http::scope scope;
 
 	Opname opn{ "1", { { "een", 0.1f },
 						 { "twee", 0.2f } } };
 
-	static_assert(e::is_serializable_to_object_v<Opname>, "");
+	static_assert(e::is_serializable_to_object_v<Opname>);
 
 	scope.put("o1", e::to_object(opn));
 
@@ -128,18 +133,19 @@ TEST_CASE("test-5")
 	scope.put("o2", e::to_object(opn_v));
 }
 
-
 TEST_CASE("test-6")
 {
-	enum class Status { RUNNING, STOPPED };
+	enum class Status
+	{
+		RUNNING,
+		STOPPED
+	};
 
-	zeem::value_serializer<Status>::init({
-		{ Status::RUNNING, "running" },
-		{ Status::STOPPED, "stopped" }
-	});
+	zeem::value_serializer<Status>::init({ { Status::RUNNING, "running" },
+		{ Status::STOPPED, "stopped" } });
 
 	Status status = Status::RUNNING;
-	
+
 	e::object o = e::serializer<Status>::serialize(status);
 
 	std::cout << o << "\n";

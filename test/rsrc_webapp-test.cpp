@@ -1,18 +1,20 @@
-// rsrc_webapp-test
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "test-main.hpp"
+#include "zeep/http/scope.hpp"
+#include "zeep/http/tag-processor.hpp"
+#include "zeep/http/template-processor.hpp"
 
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/http/template-processor.hpp>
-#include <zeep/streambuf.hpp>
+#include <catch2/catch_test_macros.hpp>
 
+#include <zeem/document.hpp>
+#include <zeem/node.hpp>
+
+#include <filesystem>
 #include <iostream>
-#include <random>
+#include <string>
 
 using namespace zeem::literals;
 

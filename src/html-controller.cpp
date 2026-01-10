@@ -18,10 +18,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <functional>
 #include <string>
-#include <vector>
 
 namespace zeep::http
 {
@@ -74,7 +72,7 @@ bool html_controller_v1::handle_request(request &req, reply &rep)
 
 		init_scope(scope);
 
-		auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
+		auto handler = std::ranges::find_if(m_dispatch_table,
 			[&uri, method = req.get_method()](const mount_point_v1 &m)
 			{
 				// return m.path == path and

@@ -8,16 +8,35 @@
 /// \file
 /// definition of the base class zeep::http::controller, used by e.g. controller and soap_controller
 
-#include "zeep/config.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/el/serializer.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
-#include "zeep/el/object.hpp"
-#include "zeep/el/serializer.hpp"
+#include "zeep/http/uri.hpp"
+#include "zeep/unicode-support.hpp"
 
+#include <boost/asio/ip/tcp.hpp>
 #include <zeem/serialize.hpp>
 
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <exception>
+#include <filesystem>
 #include <fstream>
+#include <functional>
+#include <list>
+#include <optional>
+#include <regex>
+#include <stdexcept>
+#include <string>
 #include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {
@@ -44,7 +63,7 @@ class controller
 	///
 	/// \param prefix_path  The prefix path this controller is bound to
 
-	controller(std::string prefix_path);
+	controller(const std::string &prefix_path);
 
 	virtual ~controller();
 
@@ -70,8 +89,7 @@ class controller
 	}
 
 	/// \brief return the server object we're bound to
-	[[nodiscard]] const basic_server *get_server() const { return m_server; }
-	[[nodiscard]] basic_server *get_server() { return m_server; }
+	[[nodiscard]] basic_server *get_server() const { return m_server; }
 
 	/// \brief return the context name, if specified. Empty string otherwise
 	[[nodiscard]] std::string get_context_name() const
@@ -95,7 +113,7 @@ class controller
 		{
 		}
 
-		virtual ~mount_point_base() {}
+		virtual ~mount_point_base() = default;
 
 		virtual reply call(const scope &scope) = 0;
 
@@ -112,7 +130,7 @@ class controller
 			// construct a regex for matching paths
 			std::string ps;
 
-			for (auto pp : p)
+			for (const auto &pp : p)
 			{
 				if (pp.empty())
 					continue;
@@ -135,7 +153,7 @@ class controller
 					}
 					else
 					{
-						auto i = std::find(m_names.begin(), m_names.end(), param);
+						auto i = std::ranges::find(m_names, param);
 						if (i == m_names.end())
 						{
 							assert(false);
@@ -287,7 +305,7 @@ class controller
 		template <typename T>
 			requires zeem::has_serialize_v<T, el::serializer<object>> or
 		             zeem::is_serializable_array_type_v<T, el::serializer<object>>
-		T get_parameter(const scope &scope, const std::string &name, T  /*result*/)
+		T get_parameter(const scope &scope, const std::string &name, const T & /*result*/)
 		{
 			object v;
 
@@ -303,7 +321,7 @@ class controller
 			return el::serializer<T>::deserialize(v);
 		}
 
-		reply set_reply(std::filesystem::path v)
+		reply set_reply(const std::filesystem::path &v)
 		{
 			reply rep(ok);
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
@@ -313,7 +331,7 @@ class controller
 		reply set_reply(object &&v)
 		{
 			reply rep(ok);
-			rep.set_content(std::move(v));
+			rep.set_content(v);
 			return rep;
 		}
 
@@ -380,7 +398,7 @@ class controller
 		}
 
 		template <std::size_t... I>
-		ArgsTuple collect_arguments(const scope &scope, std::index_sequence<I...>)
+		ArgsTuple collect_arguments(const scope &scope, std::index_sequence<I...> /*unused*/)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
 			return std::make_tuple(get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
@@ -434,7 +452,7 @@ class controller
 		}
 
 		template <std::size_t... I>
-		auto collect_arguments(const scope &scope, std::index_sequence<I...>)
+		auto collect_arguments(const scope &scope, std::index_sequence<I...> /*unused*/)
 		{
 			return std::make_tuple(std::ref(scope), get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}

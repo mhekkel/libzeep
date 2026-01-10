@@ -4,24 +4,69 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include "zeep/http/preforked-server.hpp"
 
-#include <iostream>
+#include "zeep/config.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/connection.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/server.hpp"
+
+#include <boost/asio/associated_cancellation_slot.hpp>
+#include <boost/asio/async_result.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/completion_condition.hpp>
+#include <boost/asio/detail/handler_cont_helpers.hpp>
+#include <boost/asio/detail/handler_invoke_helpers.hpp>
+#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
+#include <boost/asio/detail/impl/resolver_service_base.ipp>
+#include <boost/asio/detail/impl/scheduler.ipp>
+#include <boost/asio/detail/impl/service_registry.hpp>
+#include <boost/asio/execution/context_as.hpp>
+#include <boost/asio/execution/prefer_only.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/impl/any_io_executor.ipp>
+#include <boost/asio/impl/handler_alloc_hook.ipp>
+#include <boost/asio/impl/io_context.hpp>
+#include <boost/asio/impl/io_context.ipp>
+#include <boost/asio/impl/write.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/basic_resolver_entry.hpp>
+#include <boost/asio/ip/basic_resolver_iterator.hpp>
+#include <boost/asio/ip/impl/address.ipp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
+
 #include <cerrno>
 #include <chrono>
+#include <csignal>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <functional>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
 #if HTTP_SERVER_HAS_PREFORK
 
-#include <sys/wait.h>
+# include <sys/socket.h>
+# include <sys/uio.h>
+# include <sys/wait.h>
 
 // for Hurd
-#if not defined(WCONTINUED)
-#define WCONTINUED 0
-#endif
-
-#include "zeep/http/connection.hpp"
-#include "zeep/http/preforked-server.hpp"
+# if not defined(WCONTINUED)
+#  define WCONTINUED 0
+# endif
 
 namespace zeep::http
 {
@@ -30,26 +75,25 @@ bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 {
 	using native_handle_type = asio_ns::ip::tcp::socket::native_handle_type;
 
-#if __APPLE__
+# if __APPLE__
 	// macos is special...
 	assert(CMSG_SPACE(sizeof(int)) == 16);
-#endif
+# endif
 
-	struct msghdr msg;
 	union
 	{
 		struct cmsghdr cm;
-#if __APPLE__
+# if __APPLE__
 		char control[16];
-#else
+# else
 		char control[CMSG_SPACE(sizeof(int))];
-#endif
-	} control_un;
+# endif
+	} control_un{};
 
-	msg.msg_control = control_un.control;
-	msg.msg_controllen = sizeof(control_un.control);
-	msg.msg_name = nullptr;
-	msg.msg_namelen = 0;
+	struct msghdr msg{
+		.msg_control = control_un.control,
+		.msg_controllen = sizeof(control_un.control)
+	};
 
 	asio_ns::ip::tcp::socket::endpoint_type peer_endpoint;
 
@@ -60,7 +104,7 @@ bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 	msg.msg_iovlen = 1;
 
 	bool result = false;
-	int n = recvmsg(fd_socket, &msg, 0);
+	auto n = recvmsg(fd_socket, &msg, 0);
 	if (n >= 0)
 	{
 		peer_endpoint.resize(n);
@@ -77,7 +121,7 @@ bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 				/* Produces warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
 				int fd = *(reinterpret_cast<native_handle_type*>(CMSG_DATA(cmptr)));
 				*/
-				native_handle_type *fdptr = reinterpret_cast<native_handle_type *>(CMSG_DATA(cmptr));
+				auto *fdptr = reinterpret_cast<native_handle_type *>(CMSG_DATA(cmptr));
 				int fd = *fdptr;
 				if (fd >= 0)
 				{
@@ -95,12 +139,13 @@ class child_process
 {
   public:
 	child_process(std::function<basic_server *(void)> constructor, asio_ns::io_context &io_context, asio_ns::ip::tcp::acceptor &acceptor, int nr_of_threads)
-		: m_constructor(constructor)
+		: m_constructor(std::move(constructor))
 		, m_acceptor(acceptor)
 		, m_socket(io_context)
 		, m_nr_of_threads(nr_of_threads)
 	{
-		m_acceptor.async_accept(m_socket, std::bind(&child_process::handle_accept, this, std::placeholders::_1));
+		m_acceptor.async_accept(m_socket, [this](auto &&a1)
+			{ handle_accept(std::forward<decltype(a1)>(a1)); });
 	}
 
 	~child_process()
@@ -163,13 +208,14 @@ void child_process::start()
 		// remove the blocks on the signal handlers
 		sigset_t wait_mask;
 		sigemptyset(&wait_mask);
-		pthread_sigmask(SIG_SETMASK, &wait_mask, 0);
+		pthread_sigmask(SIG_SETMASK, &wait_mask, nullptr);
 
 		// Time to construct the Server object
 		std::unique_ptr<basic_server> srvr(m_constructor());
 
 		// run the server as a worker
-		std::thread t(std::bind(&basic_server::run, srvr.get(), m_nr_of_threads));
+		std::thread t([server = srvr.get(), this]
+			{ server->run(m_nr_of_threads); });
 
 		// now start the processing loop passing on file descriptors read
 		// from the parent process
@@ -177,7 +223,7 @@ void child_process::start()
 		{
 			for (;;)
 			{
-				std::shared_ptr<connection> conn(new connection(srvr->get_io_context(), *srvr));
+				auto conn = std::make_shared<connection>(srvr->get_io_context(), *srvr);
 
 				if (not read_socket_from_parent(sockfd[1], conn->get_socket()))
 					break;
@@ -253,19 +299,20 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 
 		using native_handle_type = asio_ns::ip::tcp::socket::native_handle_type;
 
-		struct msghdr msg;
 		union
 		{
 			struct cmsghdr cm;
-#if __APPLE__
+# if __APPLE__
 			char control[16];
-#else
+# else
 			char control[CMSG_SPACE(sizeof(native_handle_type))];
-#endif
-		} control_un;
+# endif
+		} control_un{};
 
-		msg.msg_control = control_un.control;
-		msg.msg_controllen = sizeof(control_un.control);
+		struct msghdr msg{
+			.msg_control = control_un.control,
+			.msg_controllen = sizeof(control_un.control)
+		};
 
 		struct cmsghdr *cmptr = CMSG_FIRSTHDR(&msg);
 		cmptr->cmsg_len = CMSG_LEN(sizeof(int));
@@ -274,7 +321,7 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 		/* Procudes warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
 		 *(reinterpret_cast<native_handle_type*>(CMSG_DATA(cmptr))) = socket.native();
 		 */
-		native_handle_type *fdptr = reinterpret_cast<native_handle_type *>(CMSG_DATA(cmptr));
+		auto *fdptr = reinterpret_cast<native_handle_type *>(CMSG_DATA(cmptr));
 		*fdptr = m_socket.native_handle();
 
 		msg.msg_name = nullptr;
@@ -286,7 +333,7 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 		msg.msg_iov = iov;
 		msg.msg_iovlen = 1;
 
-		int err = sendmsg(m_fd, &msg, 0);
+		auto err = sendmsg(m_fd, &msg, 0);
 		if (err < 0)
 		{
 			std::clog << "Error passing file descriptor: " << strerror(errno) << '\n';
@@ -314,22 +361,19 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 
 	m_socket.close();
 
-	m_acceptor.async_accept(m_socket, std::bind(&child_process::handle_accept, this, std::placeholders::_1));
+	m_acceptor.async_accept(m_socket, [this](auto &&a1)
+		{ handle_accept(std::forward<decltype(a1)>(a1)); });
 }
 
 // --------------------------------------------------------------------
 
 preforked_server::preforked_server(std::function<basic_server *(void)> constructor)
-	: m_constructor(constructor)
+	: m_constructor(std::move(constructor))
 {
 	m_lock.lock();
 }
 
-preforked_server::~preforked_server()
-{
-}
-
-void preforked_server::run(std::string_view address, short port, int nr_of_processes, int nr_of_threads)
+void preforked_server::run(std::string_view address, uint16_t port, int nr_of_processes, int nr_of_threads)
 {
 	// first wait until we are allowed to start listening
 	std::unique_lock<std::mutex> lock(m_lock);
@@ -358,6 +402,7 @@ void preforked_server::run(std::string_view address, short port, int nr_of_proce
 	acceptor.listen();
 
 	std::vector<std::thread> threads;
+	threads.reserve(nr_of_processes);
 
 	for (int i = 0; i < nr_of_processes; ++i)
 	{

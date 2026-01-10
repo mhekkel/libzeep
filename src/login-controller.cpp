@@ -8,7 +8,6 @@
 #include "zeep/crypto.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/error-handler.hpp"
-#include "zeep/http/header.hpp"
 #include "zeep/http/html-controller.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
@@ -18,7 +17,7 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 
-#include <zeem.hpp>
+#include <zeem/node.hpp>
 
 #include <cassert>
 #include <exception>
@@ -27,9 +26,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 
 namespace zeep::http
 {
@@ -73,8 +69,8 @@ class login_error_handler : public error_handler
 	login_controller *m_login_controller;
 };
 
-login_controller::login_controller(std::string prefix_path)
-	: html_controller(std::move(prefix_path))
+login_controller::login_controller(const std::string &prefix_path)
+	: html_controller(prefix_path)
 {
 	map_get("login", &login_controller::handle_get_login);
 	map_post("login", &login_controller::handle_post_login, "username", "password");
@@ -269,7 +265,7 @@ reply login_controller::handle_logout(const scope &scope)
 	return rep;
 }
 
-reply login_controller::create_redirect_for_request(const request &req)
+reply login_controller::create_redirect_for_request(const request &req) const
 {
 	uri url = get_context_name();
 

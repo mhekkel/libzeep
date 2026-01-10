@@ -8,8 +8,6 @@
 /// \file
 /// A simple std::streambuf implementation that wraps around const char* data.
 
-#include "zeep/config.hpp"
-
 #include <cassert>
 #include <cstring>
 
@@ -33,7 +31,7 @@ class char_streambuf : public std::streambuf
 		, m_end(buffer + length)
 		, m_current(buffer)
 	{
-		assert(std::less_equal<const char *>()(m_begin, m_end));
+		assert(std::less_equal<>()(m_begin, m_end));
 	}
 
 	/// \brief constructor taking a \a buffer using the standard strlen to determine the length
@@ -47,7 +45,7 @@ class char_streambuf : public std::streambuf
 	char_streambuf(const char_streambuf &) = delete;
 	char_streambuf &operator=(const char_streambuf &) = delete;
 
-  private:
+  protected:
 	int_type underflow() override
 	{
 		if (m_current == m_end)
@@ -74,7 +72,7 @@ class char_streambuf : public std::streambuf
 
 	std::streamsize showmanyc() override
 	{
-		assert(std::less_equal<const char *>()(m_current, m_end));
+		assert(std::less_equal<>()(m_current, m_end));
 		return m_end - m_current;
 	}
 

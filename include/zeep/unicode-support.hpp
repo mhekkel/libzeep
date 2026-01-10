@@ -130,6 +130,7 @@ inline unicode pop_last_char(std::string &s)
 				case 6: result |= (*ch & 0x01F) << 6; break;
 				case 12: result |= (*ch & 0x00F) << 12; break;
 				case 18: result |= (*ch & 0x007) << 18; break;
+				default:;
 			}
 
 			s.erase(ch, s.end());
@@ -301,23 +302,23 @@ inline void trim(std::string &s)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of starts_with
 
-inline bool starts_with(std::string_view s, std::string_view p)
+constexpr inline bool starts_with(std::string_view s, std::string_view p)
 {
-	return s.compare(0, p.length(), p) == 0;
+	return s.starts_with(p);
 }
 
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of ends_with
 
-inline bool ends_with(std::string_view s, std::string_view p)
+constexpr inline bool ends_with(std::string_view s, std::string_view p)
 {
-	return s.length() >= p.length() and s.compare(s.length() - p.length(), p.length(), p) == 0;
+	return s.length() >= p.length() and s.ends_with(p);
 }
 
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of contains
 
-inline bool contains(std::string_view s, std::string_view p)
+constexpr inline bool contains(std::string_view s, std::string_view p)
 {
 	return s.find(p) != std::string_view::npos;
 }

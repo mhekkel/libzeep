@@ -7,7 +7,6 @@
 
 // A simple uri class.
 
-#include "zeep/config.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/unicode-support.hpp"
 
@@ -51,7 +50,7 @@ class uri_parse_error : public zeep::exception
   public:
 	uri_parse_error()
 		: exception("invalid uri") {};
-	uri_parse_error(std::string u)
+	uri_parse_error(const std::string& u)
 		: exception("invalid uri: " + u) {};
 };
 
@@ -78,8 +77,9 @@ class uri
 	uri(const std::string &s, const uri &base);
 
 	/// \brief constructor taking two iterators into path segments, for a relative path
-	template <typename InputIterator, std::enable_if_t<std::is_constructible_v<std::string, typename InputIterator::value_type>, int> = 0>
+	template <typename InputIterator>
 	uri(InputIterator b, InputIterator e)
+		requires(std::is_constructible_v<std::string, typename InputIterator::value_type>)
 		: uri()
 	{
 		for (auto i = b; i != e; ++i)
@@ -90,7 +90,7 @@ class uri
 
 	uri(const uri &u) = default;
 
-	uri(uri &&u)
+	uri(uri &&u) noexcept
 	{
 		swap(*this, u);
 	}
@@ -105,46 +105,46 @@ class uri
 
 	// --------------------------------------------------------------------
 
-	bool has_scheme() const
+	[[nodiscard]] bool has_scheme() const
 	{
 		return not m_scheme.empty();
 	}
 
-	bool has_authority() const
+	[[nodiscard]] bool has_authority() const
 	{
 		return not(m_userinfo.empty() and m_host.empty() and m_port == 0);
 	}
 
-	bool has_path() const
+	[[nodiscard]] bool has_path() const
 	{
 		return not m_path.empty();
 	}
 
-	bool has_query() const
+	[[nodiscard]] bool has_query() const
 	{
 		return not m_query.empty();
 	}
 
-	bool has_fragment() const
+	[[nodiscard]] bool has_fragment() const
 	{
 		return not m_fragment.empty();
 	}
 
 	/// \brief Return true if url is empty
-	bool empty() const
+	[[nodiscard]] bool empty() const
 	{
 		return not(
 			has_scheme() or has_authority() or has_path() or has_query() or has_fragment());
 	}
 
 	/// \brief Return true if the path is absolute
-	bool is_absolute() const
+	[[nodiscard]] bool is_absolute() const
 	{
 		return m_absolutePath;
 	}
 
 	/// \brief Return the scheme
-	const std::string &get_scheme() const
+	[[nodiscard]] const std::string &get_scheme() const
 	{
 		return m_scheme;
 	}
@@ -157,7 +157,7 @@ class uri
 	}
 
 	/// \brief Return the user info
-	const std::string &get_userinfo() const
+	[[nodiscard]] const std::string &get_userinfo() const
 	{
 		return m_userinfo;
 	}
@@ -169,7 +169,7 @@ class uri
 	}
 
 	/// \brief Return the host
-	const std::string &get_host() const
+	[[nodiscard]] const std::string &get_host() const
 	{
 		return m_host;
 	}
@@ -182,7 +182,7 @@ class uri
 	}
 
 	/// \brief Return the port
-	uint16_t get_port() const
+	[[nodiscard]] uint16_t get_port() const
 	{
 		return m_port;
 	}
@@ -194,10 +194,10 @@ class uri
 	}
 
 	/// \brief Return a uri containing only the path
-	uri get_path() const;
+	[[nodiscard]] uri get_path() const;
 
 	/// \brief Get the individual segments of the path
-	const std::vector<std::string> &get_segments() const
+	[[nodiscard]] const std::vector<std::string> &get_segments() const
 	{
 		return m_path;
 	}
@@ -206,7 +206,7 @@ class uri
 	void set_path(const std::string &path);
 
 	/// \brief Return the query
-	std::string get_query(bool decoded) const
+	[[nodiscard]] std::string get_query(bool decoded) const
 	{
 		return decoded ? decode_url(m_query) : m_query;
 	}
@@ -215,7 +215,7 @@ class uri
 	void set_query(std::string query, bool encode);
 
 	/// \brief Return the fragment
-	std::string get_fragment(bool decoded) const
+	[[nodiscard]] std::string get_fragment(bool decoded) const
 	{
 		return decoded ? decode_url(m_fragment) : m_fragment;
 	}
@@ -224,10 +224,10 @@ class uri
 	void set_fragment(std::string fragment, bool encode);
 
 	/// \brief Return the uri as a string
-	std::string string() const;
+	[[nodiscard]] std::string string() const;
 
 	/// \brief Return the uri as a string, without encoded characters
-	std::string unencoded_string() const;
+	[[nodiscard]] std::string unencoded_string() const;
 
 	/// \brief Write the uri in \a u to the stream \a os
 	friend std::ostream &operator<<(std::ostream &os, const uri &u)
@@ -246,7 +246,7 @@ class uri
 	}
 
 	/// \brief Comparison
-	bool operator==(const uri &rhs) const
+	[[nodiscard]] bool operator==(const uri &rhs) const
 	{
 		return m_scheme == rhs.m_scheme and
 		       m_userinfo == rhs.m_userinfo and
@@ -263,7 +263,7 @@ class uri
 	/// If the scheme and authority of this and \a base
 	/// a relative uri will be returned with the path
 	/// of base removed from this path.
-	uri relative(const uri &base) const;
+	[[nodiscard]] uri relative(const uri &base) const;
 
   private:
 	enum class char_class : uint8_t

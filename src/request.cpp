@@ -4,13 +4,22 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <filesystem>
+#include "zeep/http/request.hpp"
 
-#include "zeep/crypto.hpp"
-#include "zeep/http/server.hpp"
+#include "zeep/el/object.hpp"
 #include "zeep/streambuf.hpp"
+#include "zeep/unicode-support.hpp"
 
-namespace fs = std::filesystem;
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/impl/address.ipp>
+
+#include <algorithm>
+#include <cctype>
+#include <cstring>
+#include <exception>
+#include <regex>
+#include <sstream>
+#include <stdexcept>
 
 namespace zeep::http
 {
@@ -25,36 +34,21 @@ request::request(std::string method, uri uri, std::tuple<int, int> version,
 {
 }
 
-request::request(const request &req)
-	: m_local_address(req.m_local_address)
-	, m_local_port(req.m_local_port)
-	, m_method(req.m_method)
-	, m_uri(req.m_uri)
-	, m_version(req.m_version)
-	, m_headers(req.m_headers)
-	, m_payload(req.m_payload)
-	, m_close(req.m_close)
-	, m_timestamp(req.m_timestamp)
-	, m_credentials(req.m_credentials)
-	, m_remote_address(req.m_remote_address)
+void swap(request &lhs, request &rhs) noexcept
 {
-}
-
-void request::swap(request &req) noexcept
-{
-	if (this != &req)
+	if (&lhs != &rhs)
 	{
-		std::swap(m_local_address, req.m_local_address);
-		std::swap(m_local_port, req.m_local_port);
-		std::swap(m_method, req.m_method);
-		std::swap(m_uri, req.m_uri);
-		std::swap(m_version, req.m_version);
-		std::swap(m_headers, req.m_headers);
-		std::swap(m_payload, req.m_payload);
-		std::swap(m_close, req.m_close);
-		std::swap(m_timestamp, req.m_timestamp);
-		std::swap(m_credentials, req.m_credentials);
-		std::swap(m_remote_address, req.m_remote_address);
+		std::swap(lhs.m_local_address, rhs.m_local_address);
+		std::swap(lhs.m_local_port, rhs.m_local_port);
+		std::swap(lhs.m_method, rhs.m_method);
+		std::swap(lhs.m_uri, rhs.m_uri);
+		std::swap(lhs.m_version, rhs.m_version);
+		std::swap(lhs.m_headers, rhs.m_headers);
+		std::swap(lhs.m_payload, rhs.m_payload);
+		std::swap(lhs.m_close, rhs.m_close);
+		std::swap(lhs.m_timestamp, rhs.m_timestamp);
+		std::swap(lhs.m_credentials, rhs.m_credentials);
+		std::swap(lhs.m_remote_address, rhs.m_remote_address);
 	}
 }
 
@@ -162,7 +156,7 @@ void request::set_header(std::string name, std::string value)
 	}
 
 	if (not replaced)
-		m_headers.push_back({ std::move(name), std::move(value) });
+		m_headers.emplace_back(std::move(name), std::move(value));
 }
 
 std::string request::get_header(std::string_view name) const
@@ -183,11 +177,9 @@ std::string request::get_header(std::string_view name) const
 
 void request::remove_header(std::string_view name)
 {
-	m_headers.erase(
-		remove_if(m_headers.begin(), m_headers.end(),
-			[name](const header &h) -> bool
-			{ return h.name == name; }),
-		m_headers.end());
+	std::erase_if(m_headers,
+		[name](const header &h) -> bool
+		{ return h.name == name; });
 }
 
 std::pair<std::string, bool> get_urldecoded_parameter(std::string_view s, std::string_view name)
@@ -251,7 +243,7 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 		{
 			char_streambuf buf(m_payload.data(), m_payload.length());
 			std::istream is(&buf);
-			object e;
+			el::object e;
 			deserialize(is, e);
 
 			if (e.is_object() and e.contains(name))
@@ -262,6 +254,7 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 		}
 		catch (const std::exception &)
 		{
+			found = false;
 		}
 	}
 	else if (starts_with(contentType, "multipart/form-data"))

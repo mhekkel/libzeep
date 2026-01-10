@@ -1,22 +1,31 @@
-#include "zeep/http/asio.hpp"
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "test-main.hpp"
-
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/streambuf.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "../src/signals.hpp"
 #include "client-test-code.hpp"
 
-#include <iostream>
-#include <random>
+#include <zeep/http/reply.hpp>
+#include <zeep/http/request.hpp>
+#include <zeep/http/uri.hpp>
+#include <zeep/http/daemon.hpp>
+#include <zeep/http/html-controller.hpp>
+#include <zeep/http/server.hpp>
 
-namespace z = zeep;
+#include <zeem/document.hpp>
+
+#include <exception>
+#include <iostream>
+#include <optional>
+#include <random>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <tuple>
 
 using webapp = zeep::http::html_controller_v1;
 
@@ -26,10 +35,10 @@ void compare(zeem::document &a, zeem::document &b)
 	if (a != b)
 	{
 		std::cerr << std::string(80, '-') << '\n'
-			 << a << '\n'
-			 << std::string(80, '-') << '\n'
-			 << b << '\n'
-			 << std::string(80, '-') << '\n';
+				  << a << '\n'
+				  << std::string(80, '-') << '\n'
+				  << b << '\n'
+				  << std::string(80, '-') << '\n';
 	}
 }
 
@@ -252,7 +261,7 @@ TEST_CASE("webapp_8")
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port] { return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
@@ -428,14 +437,14 @@ class hello_controller_2 : public zeep::http::html_controller
 		map_get("hello/{user}/x", &hello_controller_2::handle_hello, "user");
 	}
 
-	zeep::http::reply handle_index([[maybe_unused]] const zeep::http::scope &scope, std::optional<std::string> user)
+	zeep::http::reply handle_index([[maybe_unused]] const zeep::http::scope &scope, const std::optional<std::string>& user)
 	{
 		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
 		rep.set_content("Hello, " + user.value_or("world") + "!", "text/plain");
 		return rep;
 	}
 
-	zeep::http::reply handle_hello([[maybe_unused]] const zeep::http::scope &scope, std::optional<std::string> user)
+	zeep::http::reply handle_hello([[maybe_unused]] const zeep::http::scope &scope, const std::optional<std::string>& user)
 	{
 		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
 		rep.set_content("Hello, " + user.value_or("world") + "!", "text/plain");
@@ -457,7 +466,7 @@ TEST_CASE("controller_2_1")
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zeep::http::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port] { return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
@@ -495,7 +504,6 @@ TEST_CASE("controller_2_1")
 
 		CHECK(reply.get_status() == zeep::http::ok);
 		CHECK(reply.get_content() == "Hello, daniëlle!");
-
 	}
 	catch (const std::exception &ex)
 	{

@@ -9,28 +9,38 @@
 /// \file
 /// definition of the zeep::http::server class
 
-#include "zeep/config.hpp"
-
-#include <chrono>
-#include <mutex>
-#include <thread>
-
-#include "zeep/http/asio.hpp"
-
 #include "zeep/http/access-control.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
+#include "zeep/http/asio.hpp"
 #include "zeep/http/template-processor.hpp"
 
+#include <boost/asio/impl/io_context.hpp>
+#include <boost/asio/impl/io_context.ipp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <chrono>
+#include <cstdint>
+#include <filesystem>
+#include <iosfwd>
 #include <list>
+#include <memory>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <utility>
 
 namespace zeep::http
 {
 
 class connection;
 class controller;
-class security_context;
 class error_handler;
+class reply;
+class request;
+class security_context;
 
 /// \brief The libzeep HTTP server implementation. Originally based on example code found in boost::asio.
 ///
@@ -67,10 +77,10 @@ class basic_server
 	virtual ~basic_server();
 
 	/// \brief Get the security context provided in the constructor
-	security_context &get_security_context() { return *m_security_context; }
+	[[nodiscard]] security_context &get_security_context() { return *m_security_context; }
 
 	/// \brief Test if a security context was provided in the constructor
-	bool has_security_context() const { return (bool)m_security_context; }
+	[[nodiscard]] bool has_security_context() const { return m_security_context != nullptr; }
 
 	/// \brief Set the set of allowed methods (default is "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE")
 	void set_allowed_methods(const std::set<std::string> &methods)
@@ -79,7 +89,7 @@ class basic_server
 	}
 
 	/// \brief Get the set of allowed methods
-	std::set<std::string> get_allowed_methods() const
+	[[nodiscard]] std::set<std::string> get_allowed_methods() const
 	{
 		return m_allowed_methods;
 	}
@@ -99,12 +109,12 @@ class basic_server
 	/// \brief Set the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	void set_context_name(std::string context_name) { m_context_name = context_name; }
+	void set_context_name(std::string context_name) { m_context_name = std::move(context_name); }
 
 	/// \brief Get the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	std::string get_context_name() const { return m_context_name; }
+	[[nodiscard]] std::string get_context_name() const { return m_context_name; }
 
 	/// \brief Add controller to the list of controllers
 	///
@@ -130,7 +140,7 @@ class basic_server
 	/// A template processor handles loading templates and processing
 	/// the contents. This will throw if the processor has not been set
 	/// yet.
-	basic_template_processor &get_template_processor()
+	[[nodiscard]] basic_template_processor &get_template_processor()
 	{
 		if (not m_template_processor)
 			throw std::logic_error("Template processor not specified yet");
@@ -142,7 +152,7 @@ class basic_server
 	/// A template processor handles loading templates and processing
 	/// the contents. This will throw if the processor has not been set
 	/// yet.
-	const basic_template_processor &get_template_processor() const
+	[[nodiscard]] const basic_template_processor &get_template_processor() const
 	{
 		if (not m_template_processor)
 			throw std::logic_error("Template processor not specified yet");
@@ -150,9 +160,9 @@ class basic_server
 	}
 
 	/// \brief returns whether template processor has been set
-	bool has_template_processor() const
+	[[nodiscard]] bool has_template_processor() const
 	{
-		return (bool)m_template_processor;
+		return m_template_processor != nullptr;
 	}
 
 	/// \brief Bind the server to address \a address and port \a port
@@ -171,16 +181,16 @@ class basic_server
 	void set_log_forwarded(bool v) { m_log_forwarded = v; }
 
 	/// \brief returns the address as specified in bind
-	std::string get_address() const { return m_address; }
+	[[nodiscard]] std::string get_address() const { return m_address; }
 
 	/// \brief returns the port as specified in bind
-	unsigned short get_port() const { return m_port; }
+	[[nodiscard]] uint16_t get_port() const { return m_port; }
 
 	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
-	virtual asio_ns::io_context &get_io_context() = 0;
+	[[nodiscard]] virtual asio_ns::io_context &get_io_context() = 0;
 
 	/// \brief get_executor has to be public since we need it to call notify_fork from child code
-	asio_ns::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
+	[[nodiscard]] asio_ns::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
 
   protected:
 	/// \brief the default entry logger
@@ -203,7 +213,7 @@ class basic_server
 	std::list<std::thread> m_threads;
 	std::shared_ptr<connection> m_new_connection;
 	std::string m_address;
-	unsigned short m_port;
+	uint16_t m_port;
 	bool m_log_forwarded;
 	std::string m_context_name; /// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
@@ -221,7 +231,7 @@ class server : public basic_server
 {
   public:
 	/// \brief Simple server, no security, no template processor
-	server() {}
+	server() = default;
 
 	/// \brief Simple server, no security, create default template processor with \a docroot
 	server(std::string docroot)
@@ -247,7 +257,7 @@ class server : public basic_server
 	}
 
 	/// \brief Stop the server and also stop the io_context
-	virtual void stop() override
+	void stop() override
 	{
 		m_io_context.stop();
 		basic_server::stop();

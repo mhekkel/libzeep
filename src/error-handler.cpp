@@ -4,21 +4,28 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/error-handler.hpp"
+#include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/security.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/template-processor.hpp"
+#include "zeep/http/uri.hpp"
+
+#include <zeem.hpp>
+
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace zeep::http
 {
 
 error_handler::error_handler(std::string error_template)
 	: m_error_template(std::move(error_template))
-{
-}
-
-error_handler::~error_handler()
 {
 }
 

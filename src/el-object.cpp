@@ -8,17 +8,17 @@
 #include "zeep/unicode-support.hpp"
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <cctype>
 #include <charconv>
 #include <cmath>
 #include <compare>
-#include <functional>
+#include <cstddef>
+#include <cstdint>
+#include <format>
 #include <istream>
 #include <map>
-#include <stddef.h>
 #include <stdexcept>
-#include <stdint.h>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -317,7 +317,6 @@ void object::push_back(object &&val)
 	}
 
 	m_data.m_value.m_array->push_back(std::move(val));
-	val.m_data.m_type = value_type::null;
 }
 
 void object::push_back(const object &val)
@@ -350,13 +349,13 @@ object::const_reference object::at(size_t index) const
 	return m_data.m_value.m_array->at(index);
 }
 
-bool object::contains(object test) const
+bool object::contains(const object &test) const
 {
 	bool result = false;
 	if (is_object())
 		result = m_data.m_value.m_object->count(test.get<std::string>()) > 0;
 	else if (is_array())
-		result = std::find(m_data.m_value.m_array->begin(), m_data.m_value.m_array->end(), test) != m_data.m_value.m_array->end();
+		result = std::ranges::find(*m_data.m_value.m_array, test) != m_data.m_value.m_array->end();
 
 	return result;
 }
@@ -564,7 +563,7 @@ class json_parser
 		Undef
 	};
 
-	std::string describe_token(token_t t) const
+	[[nodiscard]] std::string describe_token(token_t t) const
 	{
 		switch (t)
 		{
@@ -592,23 +591,23 @@ class json_parser
 	void parse_object(object &e);
 	void parse_array(object &e);
 
-	uint8_t get_next_byte();
-	char32_t get_next_unicode();
-	char32_t get_next_char();
+	[[nodiscard]] uint8_t get_next_byte();
+	[[nodiscard]] char32_t get_next_unicode();
+	[[nodiscard]] char32_t get_next_char();
 	void retract();
 
-	token_t get_next_token();
+	[[nodiscard]] token_t get_next_token();
 
 	std::istream &m_is;
 
 	// a minimal stack for ungetc like operations
-	char32_t m_buffer[2];
+	char32_t m_buffer[2]{};
 	char32_t *m_buffer_ptr = m_buffer;
 
 	std::string m_token;
-	double m_token_float;
-	int64_t m_token_int;
-	token_t m_lookahead;
+	double m_token_float{};
+	int64_t m_token_int{};
+	token_t m_lookahead{ token_t::Eof };
 };
 
 uint8_t json_parser::get_next_byte()
@@ -822,10 +821,12 @@ auto json_parser::get_next_token() -> token_t
 							m_token_int = ch - '0';
 							state = state_t::Number;
 						}
-						else if (ch < 128 and std::isalpha(ch))
+						else if (ch < 128 and std::isalpha(static_cast<int>(ch)))
 							state = state_t::Literal;
 						else
-							throw zeep::exception("invalid character (" + (std::isprint(ch) ? std::string(1, static_cast<char>(ch)) : to_hex(ch)) + ") in json");
+							throw zeep::exception(
+								std::format("Invalid character '{}' in json",
+									std::isprint(static_cast<int>(ch)) ? std::string{ static_cast<char>(ch) } : to_hex(ch)));
 				}
 				break;
 
@@ -947,7 +948,7 @@ auto json_parser::get_next_token() -> token_t
 				break;
 
 			case state_t::Literal:
-				if (ch > 128 or not std::isalpha(ch))
+				if (ch > 128 or not std::isalpha(static_cast<int>(ch)))
 				{
 					retract();
 					if (m_token == "true")

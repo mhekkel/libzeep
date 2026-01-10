@@ -849,7 +849,7 @@ constexpr void STEP(F f, uint32_t &w, uint32_t x, uint32_t y, uint32_t z, uint32
 	w += x;
 }
 
-struct md5_hash_impl : public hash_impl
+struct md5_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 {
 	using word_type = uint32_t;
 	static const size_t word_count = 4;
@@ -980,7 +980,7 @@ struct md5_hash_impl : public hash_impl
 
 // --------------------------------------------------------------------
 
-struct sha1_hash_impl : public hash_impl
+struct sha1_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 {
 	using word_type = uint32_t;
 	static const size_t word_count = 5;
@@ -1016,7 +1016,7 @@ struct sha1_hash_impl : public hash_impl
 
 	void transform(const uint8_t *data) override
 	{
-		union
+		union // NOLINT(hicpp-member-init)
 		{
 			uint8_t s[64];
 			uint32_t w[80];
@@ -1103,7 +1103,7 @@ struct sha1_hash_impl : public hash_impl
 
 // --------------------------------------------------------------------
 
-struct sha256_hash_impl : public hash_impl
+struct sha256_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 {
 	using word_type = uint32_t;
 	static const size_t word_count = 8;
@@ -1157,7 +1157,7 @@ struct sha256_hash_impl : public hash_impl
 		for (size_t i = 0; i < word_count; ++i)
 			wv[i] = m_h[i];
 
-		union
+		union // NOLINT(hicpp-member-init)
 		{
 			uint8_t s[64];
 			uint32_t w[64];
@@ -1238,7 +1238,7 @@ class hash_base : public I
 	static const size_t block_size = I::block_size;
 	static const size_t digest_size = I::digest_size;
 
-	hash_base()
+	hash_base() // NOLINT(hicpp-member-init)
 	{
 		init();
 	}

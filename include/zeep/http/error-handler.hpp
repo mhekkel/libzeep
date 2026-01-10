@@ -9,8 +9,6 @@
 /// definition of the base class zeep::error_handler, the default
 /// creates very simple HTTP replies. Override to do something more fancy.
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/server.hpp"
 #include "zeep/http/template-processor.hpp"
 
@@ -24,16 +22,19 @@ namespace zeep::http
 class error_handler
 {
   public:
-	virtual ~error_handler();
+	error_handler(const error_handler &) = delete;
+	error_handler &operator=(const error_handler &) = delete;
+
+	virtual ~error_handler() = default;
 
 	/// \brief set the server object we're bound to
 	void set_server(basic_server *s) { m_server = s; }
 
 	/// \brief get the server object we're bound to
-	basic_server *get_server() { return m_server; }
+	[[nodiscard]] basic_server *get_server() { return m_server; }
 
 	/// \brief set the server object we're bound to
-	const basic_server *get_server() const { return m_server; }
+	[[nodiscard]] const basic_server *get_server() const { return m_server; }
 
 	/// \brief Create an error reply for an exception
 	///
@@ -42,7 +43,7 @@ class error_handler
 	/// \param eptr		The captured exception, use std::rethrow_exception to use this
 	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep);
+	[[nodiscard]] virtual bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep);
 
 	/// \brief Create an error reply for the error containing a validation header
 	///
@@ -51,7 +52,7 @@ class error_handler
 	/// \param req		The request that triggered this call
 	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_unauth_reply(const request &req, reply &rep);
+	[[nodiscard]] virtual bool create_unauth_reply(const request &req, reply &rep);
 
 	/// \brief Create an error reply for the error
 	///
@@ -60,7 +61,7 @@ class error_handler
 	/// \param status	The status code, describing the error
 	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, status_type status, reply &rep);
+	[[nodiscard]] virtual bool create_error_reply(const request &req, status_type status, reply &rep);
 
 	/// \brief Create an error reply for the error with an additional message for the user
 	///
@@ -71,7 +72,7 @@ class error_handler
 	/// \param message	The message describing the error
 	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	virtual bool create_error_reply(const request &req, status_type status, std::string message, reply &rep);
+	[[nodiscard]] virtual bool create_error_reply(const request &req, status_type status, std::string message, reply &rep);
 
   protected:
 	/// \brief constructor
@@ -81,9 +82,6 @@ class error_handler
 	/// If that fails or error_template is empty, a simple stock message
 	/// is returned.
 	error_handler(std::string error_template = "error");
-
-	error_handler(const error_handler &) = delete;
-	error_handler &operator=(const error_handler &) = delete;
 
 	basic_server *m_server = nullptr;
 	std::string m_error_template;
@@ -104,7 +102,7 @@ class default_error_handler : public error_handler
 	{
 	}
 
-	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep) override;
+	[[nodiscard]] bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep) override;
 };
 
 } // namespace zeep::http

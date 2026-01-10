@@ -19,17 +19,15 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <cstddef>
 #include <filesystem>
-#include <list>
 #include <regex>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace zeep::http
 {
 
-controller::controller(std::string prefix_path)
-	: m_prefix_path(std::move(prefix_path))
+controller::controller(const std::string &prefix_path)
+	: m_prefix_path(prefix_path)
 {
 }
 
@@ -100,7 +98,7 @@ void controller::get_options(const request &req, reply &rep)
 
 // --------------------------------------------------------------------
 
-void controller::init_scope(scope &)
+void controller::init_scope(scope & /*unused*/)
 {
 }
 

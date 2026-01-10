@@ -10,15 +10,18 @@
 /// handles the loading and processing of XHTML files.
 
 #include "zeep/config.hpp"
-
-#include <filesystem>
-#include <set>
-
-#include "zeep/el/object.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/tag-processor.hpp"
 
 #include <zeem.hpp>
+
+#include <filesystem>
+#include <iosfwd>
+#include <optional>
+#include <set>
+#include <string>
+#include <system_error>
+#include <utility>
 
 // --------------------------------------------------------------------
 //
@@ -40,7 +43,7 @@ class html_controller;
 class resource_loader
 {
   public:
-	virtual ~resource_loader() {}
+	virtual ~resource_loader() = default;
 
 	resource_loader(const resource_loader &) = delete;
 	resource_loader &operator=(const resource_loader &) = delete;
@@ -52,7 +55,7 @@ class resource_loader
 	virtual std::istream *load_file(std::string file, std::error_code &ec) noexcept = 0;
 
   protected:
-	resource_loader() {}
+	resource_loader() = default;
 };
 
 // -----------------------------------------------------------------------
@@ -92,7 +95,7 @@ class rsrc_loader : public resource_loader
 	/// \brief constructor
 	///
 	/// The parameter is not used
-	rsrc_loader(std::filesystem::path);
+	rsrc_loader(std::filesystem::path /* unused */);
 
 	/// \brief return last_write_time of \a file
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
@@ -121,13 +124,13 @@ class basic_template_processor
 	{
 	}
 
-	virtual ~basic_template_processor() {}
+	virtual ~basic_template_processor() = default;
 
 	/// \brief set the docroot for this processor
 	virtual void set_docroot(std::filesystem::path docroot);
 
 	/// \brief get the current docroot of this processor
-	std::filesystem::path get_docroot() const { return m_docroot; }
+	[[nodiscard]] std::filesystem::path get_docroot() const { return m_docroot; }
 
 	// --------------------------------------------------------------------
 	// tag processor support
@@ -151,7 +154,7 @@ class basic_template_processor
 	}
 
 	/// \brief Create a tag_processor
-	tag_processor_base *create_tag_processor(const std::string &ns) const
+	[[nodiscard]] tag_processor_base *create_tag_processor(const std::string &ns) const
 	{
 		return m_tag_processor_creators.at(ns)(ns);
 	}
@@ -176,7 +179,7 @@ class basic_template_processor
 	virtual void create_reply_from_template(const std::string &file, const scope &scope, reply &reply);
 
 	/// \brief create a reply based on a template, alternate version
-	reply create_reply_from_template(const std::string &file, const scope &scope)
+	[[nodiscard]] reply create_reply_from_template(const std::string &file, const scope &scope)
 	{
 		reply result = reply::stock_reply(ok);
 		create_reply_from_template(file, scope, result);
@@ -184,7 +187,7 @@ class basic_template_processor
 	}
 
 	/// \brief Default handler for serving files out of our doc root
-	reply create_reply_for_get_file(const scope &scope);
+	[[nodiscard]] reply create_reply_for_get_file(const scope &scope);
 
 	/// \brief Initialize the scope object
 	virtual void init_scope(request &req, scope &scope);
@@ -201,7 +204,7 @@ template <typename Loader>
 class html_template_processor : public basic_template_processor
 {
   public:
-	html_template_processor(std::filesystem::path docroot = {}, bool addDefaultTagProcessors = true)
+	html_template_processor(const std::filesystem::path &docroot = {}, bool addDefaultTagProcessors = true)
 		: basic_template_processor(docroot)
 		, m_loader(docroot)
 	{
@@ -209,16 +212,16 @@ class html_template_processor : public basic_template_processor
 			register_tag_processor<tag_processor>();
 	}
 
-	virtual ~html_template_processor() {}
+	~html_template_processor() override = default;
 
 	/// return last_write_time of \a file
-	std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept override
+	[[nodiscard]] std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.file_time(file, ec);
 	}
 
 	// basic loader, returns error in ec if file was not found
-	std::istream *load_file(const std::string &file, std::error_code &ec) noexcept override
+	[[nodiscard]] std::istream *load_file(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.load_file(file, ec);
 	}

@@ -4,11 +4,43 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include "client-test-code.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/message-parser.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/streambuf.hpp"
+
+#include <array>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/completion_condition.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/detail/handler_invoke_helpers.hpp>
+#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
+#include <boost/asio/detail/impl/resolver_service_base.ipp>
+#include <boost/asio/detail/impl/scheduler.ipp>
+#include <boost/asio/detail/impl/service_registry.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/execution/context_as.hpp>
+#include <boost/asio/execution/prefer_only.hpp>
+#include <boost/asio/impl/any_io_executor.ipp>
+#include <boost/asio/impl/connect.hpp>
+#include <boost/asio/impl/io_context.hpp>
+#include <boost/asio/impl/io_context.ipp>
+#include <boost/asio/impl/write.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/basic_resolver_iterator.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
+#include <boost/version.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <sstream>
 
 namespace zh = zeep::http;
 
-zh::reply simple_request(uint16_t port, const std::string& req)
+zh::reply simple_request(uint16_t port, const std::string &req)
 {
 	using asio_ns::ip::tcp;
 
@@ -20,10 +52,10 @@ zh::reply simple_request(uint16_t port, const std::string& req)
 	tcp::socket socket(io_context);
 	asio_ns::connect(socket, endpoints);
 #else
-    asio_ns::io_context io_context;
+	asio_ns::io_context io_context;
 
-    tcp::resolver resolver(io_context);
-    auto endpoint_iterator = resolver.resolve("localhost", std::to_string(port));
+	tcp::resolver resolver(io_context);
+	auto endpoint_iterator = resolver.resolve("localhost", std::to_string(port));
 
 	tcp::socket socket(io_context);
 
@@ -38,7 +70,7 @@ zh::reply simple_request(uint16_t port, const std::string& req)
 
 	for (;;)
 	{
-		std::array<char, 128> buf;
+		std::array<char, 128> buf;  // NOLINT(hicpp-member-init)
 		asio_system_ns::error_code error;
 
 		size_t len = socket.read_some(asio_ns::buffer(buf), error);
@@ -61,7 +93,7 @@ zh::reply simple_request(uint16_t port, const std::string& req)
 	return result;
 }
 
-zh::reply simple_request(uint16_t port, const zeep::http::request& req)
+zh::reply simple_request(uint16_t port, const zeep::http::request &req)
 {
 	std::ostringstream os;
 	os << req;

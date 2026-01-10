@@ -30,7 +30,7 @@ namespace zeep::http
 /// \param p			The path to match
 /// \param pattern		The pattern to match against
 /// \return				True in case of a match
-bool glob_match(const std::filesystem::path& p, std::string pattern);
+bool glob_match(const std::filesystem::path &p, std::string pattern);
 
 /// \brief compare the path part of a uri with a glob pattern
 ///
@@ -46,7 +46,6 @@ bool glob_match(const std::filesystem::path& p, std::string pattern);
 /// \param u			The uri whose path to match
 /// \param pattern		The pattern to match against
 /// \return				True in case of a match
-bool glob_match(const uri& u, std::string pattern);
+bool glob_match(const uri &u, std::string pattern);
 
-
-}
+} // namespace zeep::http

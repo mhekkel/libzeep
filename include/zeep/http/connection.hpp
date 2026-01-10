@@ -9,13 +9,9 @@
 /// \file
 /// definition of the zeep::http::connection class, that handles HTTP connections
 
-#include "zeep/config.hpp"
+#include "zeep/http/message-parser.hpp"
 
 #include <memory>
-
-#include "zeep/http/asio.hpp"
-
-#include "zeep/http/message-parser.hpp"
 
 namespace zeep::http
 {

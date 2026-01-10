@@ -14,12 +14,13 @@
 #include "zeep/http/tag-processor.hpp"
 #include "zeep/unicode-support.hpp"
 
+#include <new>
 #include <zeem.hpp>
 
-#include <chrono>
-#include <compare>
-#include <ctime>
 #include <cerrno>
+#include <chrono>
+#include <cstring>
+#include <ctime>
 #include <exception>
 #include <filesystem>
 #include <format>
@@ -28,13 +29,11 @@
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <optional>
 #include <set>
 #include <sstream>
 #include <stdexcept>
-#include <cstring>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -78,12 +77,20 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
 	else
 	{
-		result = new std::ifstream(m_docroot / path, std::ios::binary);
-		if (not result->is_open())
+		try
 		{
-			delete result;
+			result = new std::ifstream(m_docroot / path, std::ios::binary);
+			if (not result->is_open())
+			{
+				delete result;
+				result = nullptr;
+				ec = std::make_error_code(std::errc::no_such_file_or_directory);
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			ec = std::make_error_code(std::errc::not_enough_memory);
 			result = nullptr;
-			ec = std::make_error_code(std::errc::no_such_file_or_directory);
 		}
 	}
 
@@ -107,7 +114,6 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 	auto fileDate =
 		floor<seconds>(time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now()));
 
-	std::string ifModifiedSince;
 	for (const header &h : scope.get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
