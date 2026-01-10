@@ -4,11 +4,6 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
-#include <condition_variable>
-#include <mutex>
-
 #include "signals.hpp"
 
 // --------------------------------------------------------------------
@@ -120,7 +115,7 @@ void signal_catcher::signal_hangup(std::thread &t)
 #else
 
 #include <pthread.h>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 namespace zeep

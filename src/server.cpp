@@ -4,15 +4,62 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <chrono>
-#include <iostream>
+#include "zeep/http/server.hpp"
 
+#include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/http/access-control.hpp"
+#include "zeep/http/asio.hpp"
 #include "zeep/http/connection.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/error-handler.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/security.hpp"
-#include "zeep/http/server.hpp"
+#include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
+#include "zeep/unicode-support.hpp"
+#include <boost/asio/associated_cancellation_slot.hpp>
+#include <boost/asio/async_result.hpp>
+#include <boost/asio/basic_socket_acceptor.hpp>
+#include <boost/asio/detail/handler_cont_helpers.hpp>
+#include <boost/asio/detail/handler_invoke_helpers.hpp>
+#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
+#include <boost/asio/detail/impl/resolver_service_base.ipp>
+#include <boost/asio/detail/impl/scheduler.ipp>
+#include <boost/asio/detail/impl/service_registry.hpp>
+#include <boost/asio/execution/context_as.hpp>
+#include <boost/asio/execution/prefer_only.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/impl/any_io_executor.ipp>
+#include <boost/asio/impl/handler_alloc_hook.ipp>
+#include <boost/asio/impl/io_context.hpp>
+#include <boost/asio/impl/io_context.ipp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/basic_resolver_entry.hpp>
+#include <boost/asio/ip/basic_resolver_iterator.hpp>
+#include <boost/asio/ip/impl/address.ipp>
+#include <boost/asio/ip/tcp.hpp> // for tcp
+#include <boost/system/detail/error_code.hpp>
+
+#include <chrono>
+#include <ctime>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <list> // for list
+#include <memory>
+#include <mutex>
+#include <new>
+#include <set> // for set
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <tuple> // for tie
+#include <vector>
 
 namespace zeep::http
 {

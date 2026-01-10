@@ -3,14 +3,16 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <cassert>
-#include <iostream>
+#include "zeep/http/uri.hpp"
+
+#include "zeep/unicode-support.hpp"
+
 #include <regex>
 #include <sstream>
+#include <string>
+#include <string_view>
 #include <utility>
-
-#include "zeep/http/uri.hpp"
-#include "zeep/unicode-support.hpp"
+#include <vector>
 
 namespace zeep::http
 {

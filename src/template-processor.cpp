@@ -3,13 +3,42 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <chrono>
-#include <fstream>
-#include <iostream>
+#include "zeep/http/template-processor.hpp"
 
 #include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/reply.hpp"
 #include "zeep/http/scope.hpp"
-#include "zeep/http/template-processor.hpp"
+#include "zeep/http/tag-processor.hpp"
+#include "zeep/unicode-support.hpp"
+
+#include <zeem.hpp>
+
+#include <chrono>
+#include <compare>
+#include <ctime>
+#include <cerrno>
+#include <exception>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <functional>
+#include <initializer_list>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <cstring>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -75,7 +104,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 		return reply::stock_reply(not_found);
 
 	using namespace std::chrono;
-	auto fileDate = 
+	auto fileDate =
 		floor<seconds>(time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now()));
 
 	std::string ifModifiedSince;

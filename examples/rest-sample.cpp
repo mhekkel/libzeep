@@ -7,6 +7,7 @@
 #include "zeem/serialize.hpp"
 #define WEBAPP_USES_RESOURCES 0
 
+#include <algorithm>
 #include <zeep/http/html-controller.hpp>
 
 #include <algorithm>
@@ -18,7 +19,7 @@ struct Item
     uint32_t	count;
 
     template<typename Archive>
-    void serialize(Archive& ar, unsigned long version)
+    void serialize(Archive& ar, uint64_t  /*version*/)
     {
         ar & zeem::name_value_pair("name", name)
            & zeem::name_value_pair("count", count);
@@ -32,7 +33,7 @@ struct Cart
     std::vector<Item>	items;
 
     template<typename Archive>
-    void serialize(Archive& ar, unsigned long version)
+    void serialize(Archive& ar, uint64_t  /*version*/)
     {
         ar & zeem::name_value_pair("id", id)
            & zeem::name_value_pair("client", client)
@@ -63,7 +64,7 @@ class shop_rest_controller : public zeep::http::controller
 
     Cart& get_cart(int cartID)
     {
-        auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
+        auto oi = std::ranges::find_if(m_carts, [&](auto& o) { return o.id == cartID; });
         if (oi == m_carts.end())
             throw std::invalid_argument("No such cart");
         return *oi;
@@ -73,7 +74,7 @@ class shop_rest_controller : public zeep::http::controller
     {
         Cart& cart = get_cart(cartID);
 
-        auto ii = std::find_if(cart.items.begin(), cart.items.end(), [&](auto& i) { return i.name == item; });
+        auto ii = std::ranges::find_if(cart.items, [&](auto& i) { return i.name == item; });
         if (ii == cart.items.end())
             cart.items.push_back({item, 1});
         else
@@ -86,7 +87,7 @@ class shop_rest_controller : public zeep::http::controller
     {
         Cart& cart = get_cart(cartID);
 
-        auto ii = std::find_if(cart.items.begin(), cart.items.end(), [&](auto& i) { return i.name == item; });
+        auto ii = std::ranges::find_if(cart.items, [&](auto& i) { return i.name == item; });
         if (ii != cart.items.end())
         {
             if (--ii->count == 0)

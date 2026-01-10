@@ -8,10 +8,10 @@
 /// \file
 /// This file contains definitions of various utility routines
 
-#include "zeep/config.hpp"
 #include "zeep/http/uri.hpp"
 
 #include <filesystem>
+#include <string>
 
 namespace zeep::http
 {

@@ -4,14 +4,26 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include "zeep/http/controller.hpp"
+
+#include "zeep/exception.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/uri.hpp"
 
 #include "glob.hpp"
 
-#include <cassert>
-
-#include "zeep/http/controller.hpp"
-#include "zeep/http/uri.hpp"
+#include <boost/asio/ip/tcp.hpp>
+#include <cstddef>
+#include <filesystem>
+#include <list>
+#include <regex>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {

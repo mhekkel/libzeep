@@ -8,20 +8,25 @@
 /// \file
 /// definition of the zeep::http::access_control class, that handles CORS for HTTP connections
 
-#include "zeep/config.hpp"
-#include "zeep/http/reply.hpp"
 #include "zeep/unicode-support.hpp"
+
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {
+
+class reply;
 
 /// The zeep::http::access_control class handles CORS for HTTP connections
 
 class access_control
 {
   public:
-	access_control() {}
-	virtual ~access_control() {}
+	access_control() = default;
+	virtual ~access_control() = default;
 
 	access_control(access_control &&) = default;
 	access_control &operator=(access_control &&) = default;

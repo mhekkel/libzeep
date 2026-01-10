@@ -8,10 +8,8 @@
 /// \file
 /// This file contains definitions of various utility routines
 
-#include "zeep/config.hpp"
-
-#include <string>
 #include <locale>
+#include <string>
 
 namespace zeep::http
 {
@@ -22,4 +20,4 @@ namespace zeep::http
 /// using separators taken from std::locale \a loc
 std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc);
 
-}
+} // namespace zeep::http

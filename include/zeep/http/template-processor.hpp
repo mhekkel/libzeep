@@ -26,6 +26,7 @@
 namespace zeep::http
 {
 
+class request;
 class html_controller;
 
 // -----------------------------------------------------------------------

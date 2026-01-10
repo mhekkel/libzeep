@@ -5,6 +5,8 @@
 
 // In this example we don't want to use rsrc based templates
 #include "zeep/el/serializer.hpp"
+#include <algorithm>
+#include <cstdint>
 #define WEBAPP_USES_RESOURCES 0
 
 #include <zeep/http/html-controller.hpp>
@@ -18,7 +20,7 @@ struct Item
     uint32_t	count;
 
     template<typename Archive>
-    void serialize(Archive& ar, unsigned long version)
+    void serialize(Archive& ar, uint64_t  /*version*/)
     {
         ar & zeem::name_value_pair("name", name)
            & zeem::name_value_pair("count", count);
@@ -32,7 +34,7 @@ struct Cart
     std::vector<Item>	items;
 
     template<typename Archive>
-    void serialize(Archive& ar, unsigned long version)
+    void serialize(Archive& ar, uint64_t  /*version*/)
     {
         ar & zeem::name_value_pair("id", id)
            & zeem::name_value_pair("client", client)
@@ -65,7 +67,7 @@ class shop_rest_controller : public zeep::http::controller
 
     Cart& retrieve_cart(int cartID)
     {
-        auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
+        auto oi = std::ranges::find_if(m_carts, [&](auto& o) { return o.id == cartID; });
         if (oi == m_carts.end())
             throw std::invalid_argument("No such cart");
         return *oi;
@@ -73,7 +75,7 @@ class shop_rest_controller : public zeep::http::controller
 
     void update_cart(int cartID, const Cart& cart)
     {
-        auto oi = std::find_if(m_carts.begin(), m_carts.end(), [&](auto& o) { return o.id == cartID; });
+        auto oi = std::ranges::find_if(m_carts, [&](auto& o) { return o.id == cartID; });
         if (oi == m_carts.end())
             throw std::invalid_argument("No such cart");
 
@@ -83,7 +85,7 @@ class shop_rest_controller : public zeep::http::controller
 
     void delete_cart(int cartID)
     {
-        m_carts.erase(std::remove_if(m_carts.begin(), m_carts.end(), [cartID](auto& cart) { return cart.id == cartID; }), m_carts.end());
+        std::erase_if(m_carts, [cartID](auto& cart) { return cart.id == cartID; });
     }
 
   private:

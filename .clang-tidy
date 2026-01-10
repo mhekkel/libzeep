@@ -18,6 +18,7 @@ Checks: >
     -hicpp-special-member-functions,
     -hicpp-signed-bitwise,
     -hicpp-uppercase-literal-suffix,
+    -hicpp-explicit-conversions,
     google-*,
     -google-readability-braces-around-statements,
     -google-explicit-constructor,

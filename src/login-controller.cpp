@@ -3,12 +3,33 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
-
-#include "zeep/http/error-handler.hpp"
 #include "zeep/http/login-controller.hpp"
+
+#include "zeep/crypto.hpp"
+#include "zeep/http/controller.hpp"
+#include "zeep/http/error-handler.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/html-controller.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
 #include "zeep/http/security.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
+
+#include <zeem.hpp>
+
+#include <cassert>
+#include <exception>
+#include <initializer_list>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {

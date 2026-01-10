@@ -27,9 +27,9 @@ namespace zeep
 class invalid_base64 : public std::exception
 {
   public:
-	invalid_base64() {}
+	invalid_base64() = default;
 
-	const char *what() const noexcept override { return "invalid base64 input"; }
+	[[nodiscard]] const char *what() const noexcept override { return "invalid base64 input"; }
 };
 
 /// \brief encode \a data in base64 format
@@ -61,9 +61,9 @@ std::string decode_base64url(std::string data);
 class invalid_base32 : public std::exception
 {
   public:
-	invalid_base32() {}
+	invalid_base32() = default;
 
-	const char *what() const noexcept override { return "invalid base32 input"; }
+	[[nodiscard]] const char *what() const noexcept override { return "invalid base32 input"; }
 };
 
 /// \brief encode \a data in base32 format
@@ -81,9 +81,9 @@ std::string decode_base32(std::string_view data);
 class invalid_hex : public std::exception
 {
   public:
-	invalid_hex() {}
+	invalid_hex() = default;
 
-	const char *what() const noexcept override { return "invalid hexadecimal input"; }
+	[[nodiscard]] const char *what() const noexcept override { return "invalid hexadecimal input"; }
 };
 
 /// \brief encode \a data in hexadecimal format

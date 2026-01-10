@@ -3,10 +3,15 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <regex>
-
 #include "glob.hpp"
+
 #include "zeep/unicode-support.hpp"
+
+#include <algorithm>
+#include <cctype>
+#include <regex>
+#include <utility>
+#include <vector>
 
 // --------------------------------------------------------------------
 

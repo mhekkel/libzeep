@@ -8,12 +8,10 @@
 /// \file
 /// definition of the serializer classes that help serialize data into and out of our el script objects
 
-#include "zeep/config.hpp"
-
 #include "zeep/el/object.hpp"
 
-#include <zeem/serialize.hpp>
 #include <zeem/detail/charconv.hpp>
+#include <zeem/serialize.hpp>
 
 // --------------------------------------------------------------------
 
@@ -23,10 +21,10 @@ namespace zeep
 template <typename T>
 using name_value_pair = zeem::name_value_pair<T>;
 
-template<typename T>
+template <typename T>
 using value_serializer = zeem::value_serializer<T>;
 
-}
+} // namespace zeep
 
 // --------------------------------------------------------------------
 
@@ -42,38 +40,40 @@ struct object_deserializer;
 // --------------------------------------------------------------------
 /// Struct used to detect if there is a value_serializer for type \a T
 
-template<typename T>
-using vs_to_string_function = decltype(value_serializer<T>::to_string(std::declval<T&>()));
+template <typename T>
+using vs_to_string_function = decltype(value_serializer<T>::to_string(std::declval<T &>()));
 
-template<typename T>
-using vs_from_string_function = decltype(value_serializer<T>::from_string(std::declval<const std::string&>()));
+template <typename T>
+using vs_from_string_function = decltype(value_serializer<T>::from_string(std::declval<const std::string &>()));
 
-template<typename T>
+template <typename T>
 struct has_value_serializer
 {
 	static constexpr bool value =
-		zeem::detail::is_detected_v<vs_to_string_function,T> and
-		zeem::detail::is_detected_v<vs_from_string_function,T>;
+		zeem::detail::is_detected_v<vs_to_string_function, T> and
+		zeem::detail::is_detected_v<vs_from_string_function, T>;
 };
 
-template<typename T>
+template <typename T>
 inline constexpr bool has_value_serializer_v = has_value_serializer<T>::value;
 
 // --------------------------------------------------------------------
 
-template<typename T, typename Archive>
-using serialize_function = decltype(std::declval<T&>().serialize(std::declval<Archive&>(), std::declval<unsigned long>()));
+template <typename T, typename Archive>
+using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
-template<typename T, typename Archive, typename = void>
-struct has_serialize : std::false_type {};
-
-template<typename T, typename Archive>
-struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
+template <typename T, typename Archive, typename = void>
+struct has_serialize : std::false_type
 {
-	static constexpr bool value = zeem::detail::is_detected_v<serialize_function,T,Archive>;
 };
 
-template<typename T, typename S>
+template <typename T, typename Archive>
+struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
+{
+	static constexpr bool value = zeem::detail::is_detected_v<serialize_function, T, Archive>;
+};
+
+template <typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
 // --------------------------------------------------------------------
@@ -132,7 +132,7 @@ inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<
 
 struct object_serializer
 {
-	object_serializer() {}
+	object_serializer() = default;
 
 	template <typename T>
 	object_serializer &operator&(name_value_pair<T> &&nvp)
@@ -162,7 +162,7 @@ struct object_serializer
 
 struct object_deserializer
 {
-	object_deserializer(const object &o)
+	explicit object_deserializer(const object &o)
 		: m_elem(o)
 	{
 	}
@@ -175,7 +175,7 @@ struct object_deserializer
 	}
 
 	template <typename T>
-	void deserialize(std::string name, T &data)
+	void deserialize(const std::string &name, T &data)
 	{
 		if (not m_elem.is_object() or m_elem.empty())
 			return;
@@ -373,15 +373,17 @@ inline constexpr bool is_serializable_to_object_v = is_serializable_to_object<T>
 
 // --------------------------------------------------------------------
 
-template <typename T, std::enable_if_t<is_serializable_to_object_v<T>, int> = 0>
+template <typename T>
 object to_object(const T &v)
+	requires(is_serializable_to_object_v<T>)
 {
 	using value_serializer_impl = serializer<T>;
 	return value_serializer_impl::serialize(v);
 }
 
-template <typename T, std::enable_if_t<is_serializable_to_object_v<T>, int> = 0>
+template <typename T>
 T from_object(const object &o)
+	requires(is_serializable_to_object_v<T>)
 {
 	using value_serializer_impl = serializer<T>;
 	return value_serializer_impl::deserialize(o);
