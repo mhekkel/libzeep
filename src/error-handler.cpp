@@ -30,7 +30,7 @@ error_handler::error_handler(std::string error_template)
 {
 }
 
-bool error_handler::create_error_reply(const request & /*req*/, std::exception_ptr /*eptr*/, reply & /*reply*/)
+bool error_handler::create_error_reply(const request & /*req*/, const std::exception_ptr & /*eptr*/, reply & /*reply*/)
 {
 	return false;
 }
@@ -145,7 +145,7 @@ body, html {
 
 	if (not handled)
 	{
-		rep = reply::stock_reply(status, std::move(message));
+		rep = reply::stock_reply(status, message);
 		handled = true;
 	}
 	else
@@ -156,7 +156,7 @@ body, html {
 
 // --------------------------------------------------------------------
 
-bool default_error_handler::create_error_reply(const request &req, std::exception_ptr eptr, reply &reply)
+bool default_error_handler::create_error_reply(const request &req, const std::exception_ptr &eptr, reply &reply)
 {
 	bool result = false;
 

@@ -11,7 +11,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -35,7 +34,7 @@ class my_controller : public zh::controller
 
 	zh::reply test()
 	{
-		return { zh::ok };
+		return { zh::status_type::ok };
 	}
 };
 
@@ -80,7 +79,7 @@ TEST_CASE("daemon-test-1")
 	std::this_thread::sleep_for(1s);
 
 	auto reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
-	CHECK(reply.get_status() == zh::ok);
+	CHECK(reply.get_status() == zh::status_type::ok);
 
 	std::filesystem::rename(access_file, log_dir / "access.log.1");
 	std::filesystem::rename(error_file, log_dir / "error.log.1");
@@ -90,7 +89,7 @@ TEST_CASE("daemon-test-1")
 	std::this_thread::sleep_for(1s);
 
 	reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
-	CHECK(reply.get_status() == zh::ok);
+	CHECK(reply.get_status() == zh::status_type::ok);
 
 	d.stop();
 

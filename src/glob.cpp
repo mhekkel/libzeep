@@ -130,7 +130,7 @@ bool glob_match(const std::filesystem::path &path, std::string glob_pattern)
 	split(patterns, glob_pattern, ";");
 
 	std::vector<std::string> expandedpatterns;
-	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string &pattern)
+	std::ranges::for_each(patterns, [&expandedpatterns](std::string &pattern)
 		{ expand_group(pattern, expandedpatterns); });
 
 	for (std::string &pat : expandedpatterns)
@@ -159,7 +159,7 @@ bool glob_match(const uri &path, std::string glob_pattern)
 	split(patterns, glob_pattern, ";");
 
 	std::vector<std::string> expandedpatterns;
-	std::for_each(patterns.begin(), patterns.end(), [&expandedpatterns](std::string &pattern)
+	std::ranges::for_each(patterns, [&expandedpatterns](std::string &pattern)
 		{ expand_group(pattern, expandedpatterns); });
 
 	for (std::string &pat : expandedpatterns)

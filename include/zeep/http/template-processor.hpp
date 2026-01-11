@@ -95,7 +95,7 @@ class rsrc_loader : public resource_loader
 	/// \brief constructor
 	///
 	/// The parameter is not used
-	rsrc_loader(std::filesystem::path /* unused */);
+	rsrc_loader(const std::filesystem::path &/* unused */);
 
 	/// \brief return last_write_time of \a file
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;

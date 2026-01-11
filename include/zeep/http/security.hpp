@@ -287,7 +287,7 @@ class security_context
 	///
 	/// \param rep			Then zeep::http::reply object that will be send to the user
 	/// \param user			The authorized user details
-	void add_authorization_headers(reply &rep, const user_details user);
+	void add_authorization_headers(reply &rep, const user_details &user);
 
 	/// \brief Add e.g. headers to reply for an authorized request, with an expiration parameter
 	///

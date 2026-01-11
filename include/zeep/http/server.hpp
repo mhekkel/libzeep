@@ -213,7 +213,7 @@ class basic_server
 	std::list<std::thread> m_threads;
 	std::shared_ptr<connection> m_new_connection;
 	std::string m_address;
-	uint16_t m_port;
+	uint16_t m_port = 0;
 	bool m_log_forwarded;
 	std::string m_context_name; /// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
@@ -249,6 +249,11 @@ class server : public basic_server
 	server(security_context *s_ctxt, std::string docroot)
 		: basic_server(s_ctxt, std::move(docroot))
 	{
+	}
+
+	~server() override
+	{
+		m_io_context.stop();
 	}
 
 	asio_ns::io_context &get_io_context() override

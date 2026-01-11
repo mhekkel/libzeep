@@ -102,13 +102,13 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 
 reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 {
-	// TODO: The time used here is local, not GMT. Needs fix?
+	// TODO: maarten - The time used here is local, not GMT. Needs fix?
 
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].get<std::string>(), ec);
 
 	if (ec)
-		return reply::stock_reply(not_found);
+		return reply::stock_reply(status_type::not_found);
 
 	using namespace std::chrono;
 	auto fileDate =
@@ -125,7 +125,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 			auto modifiedSince = system_clock::from_time_t(std::mktime(&tm));
 
 			if (fileDate <= modifiedSince)
-				return reply::stock_reply(not_modified);
+				return reply::stock_reply(status_type::not_modified);
 
 			break;
 		}
@@ -135,7 +135,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 
 	std::unique_ptr<std::istream> in(load_file(file.string(), ec));
 	if (ec)
-		return reply::stock_reply(not_found);
+		return reply::stock_reply(status_type::not_found);
 
 	std::string mimetype = "text/plain";
 
@@ -162,7 +162,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 	else if (file.extension() == ".gz")
 		mimetype = "application/gzip";
 
-	reply result(ok);
+	reply result(status_type::ok);
 	result.set_content(in.release(), mimetype);
 
 	using namespace std::chrono;
@@ -276,7 +276,7 @@ void basic_template_processor::load_template(const std::string &file, zeem::docu
 		zeem::context ctx;
 
 		// this is problematic, take the first processor namespace for now.
-		// TODO fix this
+		// TODO: maarten - fix this
 		std::string ns;
 
 		for (auto &tp : m_tag_processor_creators)

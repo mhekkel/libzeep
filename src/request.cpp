@@ -324,7 +324,7 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 						else
 							state = SKIP;
 					}
-					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx))
+					else if (auto s = m_payload.substr(l, i - l); std::regex_match(s, m, rx))
 						contentName = m[1].str();
 				}
 
@@ -490,7 +490,8 @@ file_param file_param_parser::next()
 					m_state = SKIP;
 				}
 			}
-			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_disp))
+			else if (auto s = m_payload.substr(l, m_i - l);
+				std::regex_match(s, m, k_rx_disp))
 			{
 				auto p = m[1].str();
 				std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
@@ -513,7 +514,7 @@ file_param file_param_parser::next()
 					b = m2[0].second;
 				}
 			}
-			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_cont))
+			else if (auto s = m_payload.substr(l, m_i - 1); std::regex_match(s, m, k_rx_cont))
 			{
 				result.mimetype = m[1].str();
 				if (starts_with(result.mimetype, "multipart/"))
@@ -693,7 +694,6 @@ const std::regex locale_table::kAcceptsRX(R"(([[:alpha:]]{1,8})(?:-([[:alnum:]]{
 
 std::locale locale_table::get(const std::string &acceptedLanguage)
 {
-	std::string preferred;
 	std::vector<std::string> accepted;
 	split(accepted, acceptedLanguage, ",");
 
@@ -717,9 +717,9 @@ std::locale locale_table::get(const std::string &acceptedLanguage)
 			auto name = lang + '_' + region + ".UTF-8";
 			std::locale loc(name);
 			if (iequals(loc.name(), name))
-				scores.push_back({ std::move(lang), std::move(region), score, loc });
+				scores.emplace_back(std::move(lang), std::move(region), score, loc);
 		}
-		catch (const std::exception &)
+		catch (const std::exception &) // NOLINT(bugprone-empty-catch)
 		{
 		}
 	};
@@ -770,7 +770,7 @@ std::vector<asio_ns::const_buffer> request::to_buffers() const
 
 	s_request_line = get_request_line();
 
-	result.push_back(asio_ns::buffer(s_request_line));
+	result.emplace_back(asio_ns::buffer(s_request_line));
 	result.push_back(asio_ns::buffer(kCRLF));
 
 	for (const header &h : m_headers)

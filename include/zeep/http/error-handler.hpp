@@ -43,7 +43,7 @@ class error_handler
 	/// \param eptr		The captured exception, use std::rethrow_exception to use this
 	/// \param rep  	Write the reply in this object
 	/// \return			Return true if the reply was created successfully
-	[[nodiscard]] virtual bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep);
+	[[nodiscard]] virtual bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &rep);
 
 	/// \brief Create an error reply for the error containing a validation header
 	///
@@ -102,7 +102,7 @@ class default_error_handler : public error_handler
 	{
 	}
 
-	[[nodiscard]] bool create_error_reply(const request &req, std::exception_ptr eptr, reply &rep) override;
+	[[nodiscard]] bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &rep) override;
 };
 
 } // namespace zeep::http

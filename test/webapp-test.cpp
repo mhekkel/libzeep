@@ -56,18 +56,18 @@ TEST_CASE("webapp_1")
 
 		void handle_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		}
 
 		void handle_get_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("get", "text/plain");
 		}
 
 		void handle_post_test(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("post", "text/plain");
 		}
 
@@ -78,17 +78,17 @@ TEST_CASE("webapp_1")
 	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "get");
 
 	req.set_method("POST");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "post");
 
 	req.set_method("DELETE");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::not_found);
+	CHECK(rep.get_status() == zeep::http::status_type::not_found);
 }
 
 // TEST_CASE("webapp_2")
@@ -152,37 +152,37 @@ TEST_CASE("webapp_5")
 
 		void handle_test1(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("1", "text/plain");
 		}
 
 		void handle_test2(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("2", "text/plain");
 		}
 
 		void handle_test2b(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("2b", "text/plain");
 		}
 
 		void handle_test3(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("3", "text/plain");
 		}
 
 		void handle_test4(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("4", "text/plain");
 		}
 
 		void handle_testf(const zeep::http::request & /*request*/, const zeep::http::scope & /*scope*/, zeep::http::reply &reply)
 		{
-			reply = zeep::http::reply::stock_reply(zeep::http::ok);
+			reply = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			reply.set_content("f", "text/plain");
 		}
 
@@ -192,42 +192,42 @@ TEST_CASE("webapp_5")
 	zeep::http::reply rep;
 
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "1");
 
 	req.set_uri("/test/x");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "3");
 
 	req.set_uri("/test/x/x");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "4");
 
 	req.set_uri("iew.x");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "2b");
 
 	req.set_uri("x/iew.x");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "2");
 
 	req.set_uri("x/x/iew.x");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "2b");
 
 	req.set_uri("css/styles/my-style.css");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "f");
 
 	req.set_uri("scripts/x.js");
 	app.handle_request(req, rep);
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content() == "f");
 }
 
@@ -242,7 +242,7 @@ class hello_controller : public zeep::http::html_controller_v1
 
 	void handle_index(const zeep::http::request & /*req*/, const zeep::http::scope & /*scope*/, zeep::http::reply &rep)
 	{
-		rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content("Hello", "text/plain");
 	}
 };
@@ -272,7 +272,7 @@ TEST_CASE("webapp_8")
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello");
 	}
 	catch (const std::exception &ex)
@@ -439,14 +439,14 @@ class hello_controller_2 : public zeep::http::html_controller
 
 	zeep::http::reply handle_index([[maybe_unused]] const zeep::http::scope &scope, const std::optional<std::string>& user)
 	{
-		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content("Hello, " + user.value_or("world") + "!", "text/plain");
 		return rep;
 	}
 
 	zeep::http::reply handle_hello([[maybe_unused]] const zeep::http::scope &scope, const std::optional<std::string>& user)
 	{
-		auto rep = zeep::http::reply::stock_reply(zeep::http::ok);
+		auto rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 		rep.set_content("Hello, " + user.value_or("world") + "!", "text/plain");
 		return rep;
 	}
@@ -477,32 +477,32 @@ TEST_CASE("controller_2_1")
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, world!");
 
 		reply = simple_request(port, "GET /?user=maarten HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, maarten!");
 
 		reply = simple_request(port, "GET /hello/maarten HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, maarten!");
 
 		reply = simple_request(port, "GET /hello/maarten/x HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, maarten!");
 
 		reply = simple_request(port, "GET /hello//x HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, world!");
 
 		reply = simple_request(port, "GET /hello/dani%C3%ABlle/x HTTP/1.0\r\n\r\n");
 
-		CHECK(reply.get_status() == zeep::http::ok);
+		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, daniëlle!");
 	}
 	catch (const std::exception &ex)

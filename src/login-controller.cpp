@@ -46,7 +46,7 @@ class login_error_handler : public error_handler
 		return true;
 	}
 
-	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply) override
+	bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &reply) override
 	{
 		bool result = false;
 

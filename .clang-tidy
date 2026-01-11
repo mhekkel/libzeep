@@ -3,8 +3,11 @@ Checks: >
     -abseil-string-find-str-contains,
     bugprone-*,
     -bugprone-easily-swappable-parameters,
+    -bugprone-throwing-static-initialization,
     cert-*,
     -cert-int09-c,
+    -cert-err58-cpp,
+    clang-*,
     modernize*,
     -modernize-use-trailing-return-type,
     -modernize-avoid-c-arrays,
@@ -33,8 +36,3 @@ Checks: >
 
 HeaderFilterRegex: ".*"
 ExcludeHeaderFilterRegex: "date.h"
-RemovedArgs:
- - -fdeps-format=p1689r5
- - -fmodules-ts
- - -fmodule-wrapper=.*
-

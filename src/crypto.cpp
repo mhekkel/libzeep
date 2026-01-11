@@ -750,11 +750,11 @@ std::string decode_hex(std::string_view data)
 		{
 			auto ch = data[i + j];
 			if (ch >= '0' and ch <= '9')
-				n[i] = ch - '0';
+				n[j] = ch - '0';
 			else if (ch >= 'a' and ch <= 'f')
-				n[i] = ch - 'a' + 10;
+				n[j] = ch - 'a' + 10;
 			else if (ch >= 'A' and ch <= 'F')
-				n[i] = ch - 'A' + 10;
+				n[j] = ch - 'A' + 10;
 			else
 				throw invalid_hex();
 		}
@@ -1240,7 +1240,7 @@ class hash_base : public I
 
 	hash_base() // NOLINT(hicpp-member-init)
 	{
-		init();
+		I::init();
 	}
 
 	void init() override
@@ -1259,8 +1259,8 @@ class hash_base : public I
 
   private:
 	uint8_t m_data[block_size];
-	uint32_t m_data_length;
-	int64_t m_bit_length;
+	uint32_t m_data_length = 0;
+	int64_t m_bit_length = 0;
 };
 
 template <typename I>

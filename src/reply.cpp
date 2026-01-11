@@ -170,7 +170,7 @@ void reply::remove_header(std::string_view name)
 		{ return iequals(h.name, name); });
 }
 
-void reply::set_cookie(std::string_view name, std::string value, std::initializer_list<cookie_directive> directives)
+void reply::set_cookie(std::string_view name, const std::string &value, std::initializer_list<cookie_directive> directives)
 {
 	std::ostringstream vs;
 	vs << name << '=' << value;
@@ -346,7 +346,7 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 		std::streamsize n = 0;
 		try
 		{
-			n = m_data->rdbuf()->sgetn(m_buffer.data(), m_buffer.size());
+			n = m_data->rdbuf()->sgetn(m_buffer.data(), static_cast<std::streamsize>(m_buffer.size()));
 		}
 		catch (...)
 		{
@@ -396,7 +396,7 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 	return result;
 }
 
-reply reply::stock_reply(status_type status, std::string info)
+reply reply::stock_reply(status_type status, const std::string &info)
 {
 	reply result;
 

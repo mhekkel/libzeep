@@ -8,7 +8,6 @@
 #include "zeep/crypto.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
-#include "zeep/http/header.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/uri.hpp"
@@ -17,7 +16,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <compare>
 #include <cstdint>
 #include <ctime>
 #include <iomanip>
@@ -29,7 +27,6 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace zeep::http
 {
@@ -58,6 +55,7 @@ bool user_service::user_is_valid(const std::string &username) const
 	}
 	catch (...)
 	{
+		result = false;
 	}
 
 	return result;
@@ -213,7 +211,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	);
 }
 
-void security_context::add_authorization_headers(reply &rep, const user_details user)
+void security_context::add_authorization_headers(reply &rep, const user_details &user)
 {
 	add_authorization_headers(rep, user, m_default_jwt_exp);
 }

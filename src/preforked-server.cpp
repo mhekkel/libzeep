@@ -345,7 +345,7 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 	{
 		std::clog << "error writing socket to client: " << e.what() << '\n';
 
-		reply r = reply::stock_reply(service_unavailable);
+		reply r = reply::stock_reply(status_type::service_unavailable);
 
 		auto buffers = r.to_buffers();
 

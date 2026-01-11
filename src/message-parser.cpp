@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
-#include <cstddef>
 #include <streambuf>
 #include <string>
 #include <string_view>
@@ -63,7 +62,6 @@ namespace
 
 parser::parser()
 {
-	reset();
 }
 
 void parser::reset()
@@ -495,7 +493,7 @@ parse_result request_parser::parse_initial_line(char ch)
 			else
 				result = false;
 			break;
-		
+
 		default:;
 	}
 
@@ -504,7 +502,6 @@ parse_result request_parser::parse_initial_line(char ch)
 
 // --------------------------------------------------------------------
 //
-
 
 void reply_parser::reset()
 {
@@ -666,7 +663,7 @@ parse_result reply_parser::parse_initial_line(char ch)
 			else
 				result = false;
 			break;
-		
+
 		default:;
 	}
 

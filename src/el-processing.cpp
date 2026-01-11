@@ -645,7 +645,8 @@ void interpreter::get_next_token()
 					token = token_type::error;
 					// throw zeep::exception("unexpected character ('!') in expression");
 				}
-				token = token_type::ne;
+				else
+					token = token_type::ne;
 				break;
 
 			case State::LessThan:

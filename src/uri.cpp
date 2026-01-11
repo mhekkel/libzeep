@@ -30,7 +30,7 @@ namespace
 
 #define GEN_DELIMS R"([][]:/?#@])"
 #define SUB_DELIMS R"([!$&'()*+,;=])"
-#define RESERVED GEN_DELIMS | SUB_DELIMS
+// #define RESERVED GEN_DELIMS | SUB_DELIMS
 #define UNRESERVED R"([-._~A-Za-z0-9])"
 #define SCHEME R"([a-zA-Z][-+.a-zA-Z0-9]*)"
 #define PCT_ENCODED "%[[:xdigit:]]{2}"
@@ -401,11 +401,7 @@ const char *uri::parse_authority(const char *cp)
 	if (*cp == '@')
 	{
 		m_userinfo.assign(b, cp);
-
-		++cp;
-		b = cp;
-
-		cp = parse_host(cp);
+		cp = parse_host(cp + 1);
 	}
 	else
 		cp = parse_host(b);
@@ -547,7 +543,7 @@ void uri::remove_dot_segments()
 
 			if (in == m_path.end())
 			{
-				out.push_back({});
+				out.emplace_back();
 				break;
 			}
 
@@ -563,7 +559,7 @@ void uri::remove_dot_segments()
 
 			if (in == m_path.end())
 			{
-				out.push_back({});
+				out.emplace_back();
 				break;
 			}
 
@@ -689,9 +685,9 @@ std::string encode_url(std::string_view s)
 {
 	std::string result;
 
-	for (auto c = s.begin(); c != s.end(); ++c)
+	for (char c : s)
 	{
-		auto a = static_cast<unsigned char>(*c);
+		auto a = static_cast<unsigned char>(c);
 		if (not uri::is_unreserved(a))
 		{
 			result += '%';
@@ -699,7 +695,7 @@ std::string encode_url(std::string_view s)
 			result += kHex[a & 15];
 		}
 		else
-			result += *c;
+			result += c;
 	}
 
 	return result;

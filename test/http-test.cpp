@@ -9,7 +9,6 @@
 #include "zeep/crypto.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/daemon.hpp"
-#include "zeep/http/header.hpp"
 #include "zeep/http/login-controller.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
@@ -262,6 +261,7 @@ TEST_CASE("server_with_security_1")
 
 	zh::daemon d([&]()
 		{
+			// NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
 		auto s = new zh::server(new zeep::http::security_context(secret, users, new zeep::http::pbkdf2_sha256_password_encoder()));
 		s->add_controller(new my_controller());
 		s->add_controller(new zeep::http::login_controller());

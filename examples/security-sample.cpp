@@ -4,6 +4,7 @@
 //           http://www.boost.org/LICENSE_1_0.txt)
 
 // In this example we don't want to use rsrc based templates
+#include <memory>
 #undef WEBAPP_USES_RESOURCES
 #define WEBAPP_USES_RESOURCES 0
 
@@ -62,7 +63,7 @@ int main()
 		//[ create_security_context
 		// Create a security context with a secret and users
 		std::string secret = zeep::random_hash();
-		auto sc = new zeep::http::security_context(secret, users, false);
+		auto sc = std::make_unique<zeep::http::security_context>(secret, users, false);
 		//]
 
 		//[ add_access_rules
@@ -73,7 +74,7 @@ int main()
 
 		//[ start_server
 		/* Use the server constructor that takes the path to a docroot so it will construct a template processor */
-		zeep::http::server srv(sc, "docroot");
+		zeep::http::server srv(sc.release(), "docroot");
 
 		srv.add_controller(new hello_controller());
 		srv.add_controller(new zeep::http::login_controller());

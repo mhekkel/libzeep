@@ -188,7 +188,7 @@ class e_rest_controller : public zeep::http::controller
 	Opname get_opname(const string& id)
 	{
 		if (id == "xxx")
-			throw zeep::http::not_found;
+			throw std::system_error(zeep::http::make_error_code(zeep::http::status_type::not_found));
 
 		return {};
 	}
@@ -214,12 +214,12 @@ class e_rest_controller : public zeep::http::controller
 
 	zeep::http::reply get_all_data()
 	{
-		return { zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
+		return { zeep::http::status_type::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
 	}
 
-	zeep::http::reply scope_test(const zeep::http::scope &scope, int id)
+	zeep::http::reply scope_test(const zeep::http::scope &scope, int  /*id*/)
 	{
-		zeep::http::reply result{ zeep::http::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
+		zeep::http::reply result{ zeep::http::status_type::ok, { 1, 0 }, { { "Content-Length", "13" }, { "Content-Type", "text/plain" } }, "Hello, world!" };
 
 		if (scope.get_request().get_accept("application/json") == 1.0f)
 			result.set_content(zeep::el::object{
@@ -261,7 +261,7 @@ TEST_CASE("rest_1")
 
 	CHECK(rc.dispatch_request(s, req, rep));
 
-	CHECK(rep.get_status() == zeep::http::ok);
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
 	CHECK(rep.get_content_type() == "text/plain");
 }
 
@@ -291,15 +291,15 @@ TEST_CASE("rest_2")
 	{
 		auto rep = simple_request(port, "GET /ajax/all_data HTTP/1.0\r\n\r\n");
 
-		CHECK(rep.get_status() == zeep::http::ok);
+		CHECK(rep.get_status() == zeep::http::status_type::ok);
 		CHECK(rep.get_content_type() == "text/plain");
 
 		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zeep::http::not_found);
+		CHECK(reply.get_status() == zeep::http::status_type::not_found);
 
 		// reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
 		reply = simple_request(port, zeep::http::request("GET", "/ajax/opname/xxx", { 1, 0 }, { { "Accept", "application/json" } }));
-		CHECK(reply.get_status() == zeep::http::not_found);
+		CHECK(reply.get_status() == zeep::http::status_type::not_found);
 		CHECK(reply.get_content_type() == "application/json");
 	}
 	catch (const std::exception &e)
@@ -338,13 +338,13 @@ TEST_CASE("rest_3")
 		zeep::http::request req_1{ "GET", "/ajax/scope_test", { 1, 0 }, { { "accept", "text/plain" } } };
 
 		auto rep_1 = simple_request(port, req_1);
-		CHECK(rep_1.get_status() == zeep::http::ok);
+		CHECK(rep_1.get_status() == zeep::http::status_type::ok);
 		CHECK(rep_1.get_content_type() == "text/plain");
 
 		zeep::http::request req_2{ "GET", "/ajax/scope_test", { 1, 0 }, { { "accept", "application/json" } } };
 
 		auto rep_2 = simple_request(port, req_2);
-		CHECK(rep_2.get_status() == zeep::http::ok);
+		CHECK(rep_2.get_status() == zeep::http::status_type::ok);
 		CHECK(rep_2.get_content_type() == "application/json");
 	}
 	catch (const std::exception &e)

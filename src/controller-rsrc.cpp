@@ -119,6 +119,7 @@ class rsrc
 
 	rsrc(const std::filesystem::path& path);
 
+	// NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
 	[[nodiscard]] std::string name() const { return m_impl ? rsrc_data::instance().name(m_impl->m_name) : ""; }
 
 	[[nodiscard]] const char *data() const { return m_impl ? rsrc_data::instance().data(m_impl->m_data) : nullptr; }
@@ -453,7 +454,7 @@ namespace zeep::http
 # include <windows.h>
 #endif
 
-rsrc_loader::rsrc_loader(std::filesystem::path /*unused*/)
+rsrc_loader::rsrc_loader(const std::filesystem::path &/*unused*/)
 {
 #if _WIN32
 	char exePath[MAX_PATH] = {};

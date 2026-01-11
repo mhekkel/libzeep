@@ -86,7 +86,7 @@ class reply
 	void remove_header(std::string_view name);
 
 	/// Set a cookie
-	void set_cookie(std::string_view name, std::string value, std::initializer_list<cookie_directive> directives = {});
+	void set_cookie(std::string_view name, const std::string &value, std::initializer_list<cookie_directive> directives = {});
 
 	/// Set a header to delete the \a name cookie
 	void set_delete_cookie(std::string_view name);
@@ -140,7 +140,7 @@ class reply
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
-	static reply stock_reply(status_type inStatus, std::string info);
+	static reply stock_reply(status_type inStatus, const std::string &info);
 
 	/// Create a standard redirect reply with the specified \a location
 	static reply redirect(const uri &location);

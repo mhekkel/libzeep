@@ -9,7 +9,6 @@
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/http/access-control.hpp"
-#include "zeep/http/asio.hpp"
 #include "zeep/http/connection.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/error-handler.hpp"
@@ -61,7 +60,6 @@
 #include <system_error>
 #include <thread>
 #include <tuple> // for tie
-#include <vector>
 
 namespace zeep::http
 {
@@ -97,7 +95,7 @@ basic_server::~basic_server()
 {
 	try
 	{
-		stop();
+		basic_server::stop();
 	}
 	catch (const std::exception &ex)
 	{
@@ -217,7 +215,7 @@ void basic_server::handle_accept(asio_system_ns::error_code ec)
 
 std::ostream &basic_server::get_log()
 {
-	if (detail::s_log.get() == NULL)
+	if (detail::s_log.get() == nullptr)
 		detail::s_log = std::make_unique<std::ostringstream>();
 	return *detail::s_log;
 }
@@ -300,7 +298,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			{
 				try
 				{
-					if (eh->create_error_reply(req, not_found, rep))
+					if (eh->create_error_reply(req, status_type::not_found, rep))
 						break;
 				}
 				catch (...) // NOLINT(bugprone-empty-catch)
