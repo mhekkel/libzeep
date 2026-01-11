@@ -277,7 +277,7 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 			std::regex rx("content-disposition:\\s*form-data;.*?\\bname=\"([^\"]+)\".*", std::regex::icase);
 			std::smatch m;
 
-			std::string::size_type i = 0, r = 0, l = 0;
+			std::string::difference_type i = 0, r = 0, l = 0;
 
 			for (i = 0; i <= m_payload.length(); ++i)
 			{

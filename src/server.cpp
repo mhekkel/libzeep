@@ -57,7 +57,6 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <thread>
 #include <tuple> // for tie
 
@@ -267,7 +266,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		// shortcut, check for supported method
 		auto method = req.get_method();
 		if (not(m_allowed_methods.empty() or m_allowed_methods.count(method)))
-			throw std::system_error(make_error_code(status_type::bad_request));
+			throw http_status_exception(status_type::bad_request);
 
 		std::string csrf;
 		bool csrf_is_new = false;
@@ -344,13 +343,13 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				if (eptr)
 					std::rethrow_exception(eptr);
 			}
-			catch (status_type s)
+			catch (const http_status_exception &ex)
 			{
-				rep = http::reply::stock_reply(s);
+				rep = http::reply::stock_reply(ex.status());
 
-				object error({ { "error", get_status_description(s) } });
+				object error({ { "error", get_status_description(ex.status()) } });
 				rep.set_content(error);
-				rep.set_status(s);
+				rep.set_status(ex.status());
 
 				handled = true;
 			}

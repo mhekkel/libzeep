@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "zeep/exception.hpp"
+
 #include <cassert>
 #include <string>
 #include <system_error>
@@ -126,5 +128,28 @@ inline std::error_condition make_error_condition(status_type e)
 
 /// Return the string describing the status_type in more detail
 std::string get_status_description(status_type status);
+
+// http exception
+
+class http_status_exception : public exception
+{
+  public:
+	http_status_exception(std::error_code ec) noexcept
+		: exception(ec.message())
+		, m_code(ec)
+	{
+	}
+
+	http_status_exception(status_type status) noexcept
+		: zeep::http::http_status_exception(make_error_code(status))
+	{
+	}
+
+	[[nodiscard]] const std::error_code &code() const noexcept { return m_code; }
+	[[nodiscard]] status_type status() const noexcept { return static_cast<status_type>(m_code.value()); }
+
+  private:
+	std::error_code m_code;
+};
 
 } // namespace zeep::http

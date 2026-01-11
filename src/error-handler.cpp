@@ -173,6 +173,10 @@ bool default_error_handler::create_error_reply(const request &req, const std::ex
 	{
 		result = error_handler::create_unauth_reply(req, reply);
 	}
+	catch (const http_status_exception &ex)
+	{
+		result = error_handler::create_error_reply(req, ex.status(), get_status_description(ex.status()), reply);
+	}
 	catch (const std::exception &ex)
 	{
 		result = error_handler::create_error_reply(req, status_type::internal_server_error, ex.what(), reply);

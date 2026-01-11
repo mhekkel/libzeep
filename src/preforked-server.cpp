@@ -250,6 +250,8 @@ void child_process::start()
 
 void child_process::stop()
 {
+	using namespace std::chrono_literals;
+
 	if (m_fd > 0)
 	{
 		// close the socket to the worker, this should terminate the child if it is still alive
@@ -274,7 +276,7 @@ void child_process::stop()
 			if (WIFEXITED(status))
 				break;
 
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::this_thread::sleep_for(100ms);
 		}
 
 		if (not WIFEXITED(status))

@@ -58,7 +58,10 @@ TEST_CASE("daemon-test-1")
 		{
 		auto s = new zh::server;
 		s->add_controller(new my_controller());
-		return s; }, log_dir / "daemon-test.pid", access_file.string(), error_file.string());
+		return s; },
+		log_dir / "daemon-test.pid",
+		access_file.string(),
+		error_file.string());
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
@@ -76,7 +79,7 @@ TEST_CASE("daemon-test-1")
 	}
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	auto reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
 	CHECK(reply.get_status() == zh::status_type::ok);
@@ -86,7 +89,7 @@ TEST_CASE("daemon-test-1")
 
 	d.reload();
 
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
 	CHECK(reply.get_status() == zh::status_type::ok);

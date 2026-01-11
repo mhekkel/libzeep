@@ -140,26 +140,6 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 				{ self->handle_write(ec, bytes_transferred); });
 		}
-		catch (const std::system_error &e)
-		{
-			if (e.code().category() == status_type_category())
-			{
-				auto s = static_cast<status_type>(e.code().value());
-				m_reply = http::reply::stock_reply(s);
-
-				object error({ { "error", get_status_description(s) } });
-				m_reply.set_content(error);
-				m_reply.set_status(s);
-			}
-			else
-			{
-				m_reply = http::reply::stock_reply(http::status_type::internal_server_error);
-
-				object error({ { "error", e.what() } });
-				m_reply.set_content(error);
-				m_reply.set_status(http::status_type::internal_server_error);
-			}
-		}
 		catch (const std::exception &ex)
 		{
 			std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';

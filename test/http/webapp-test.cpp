@@ -257,7 +257,7 @@ TEST_CASE("webapp_8")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(2s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
@@ -286,7 +286,7 @@ TEST_CASE("webapp_10")
 		{
 		
 		using namespace std::chrono_literals;
-		std::this_thread::sleep_for(2s);
+		std::this_thread::sleep_for(100ms);
 
 		srv.stop(); });
 
@@ -462,7 +462,7 @@ TEST_CASE("controller_2_1")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(2s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{

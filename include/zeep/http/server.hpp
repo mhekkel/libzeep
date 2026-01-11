@@ -253,7 +253,7 @@ class server : public basic_server
 
 	~server() override
 	{
-		m_io_context.stop();
+		stop();
 	}
 
 	asio_ns::io_context &get_io_context() override

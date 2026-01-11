@@ -17,6 +17,7 @@
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/http/uri.hpp"
 
 #include <zeem/serialize.hpp>
@@ -188,7 +189,7 @@ class e_rest_controller : public zeep::http::controller
 	Opname get_opname(const string& id)
 	{
 		if (id == "xxx")
-			throw std::system_error(zeep::http::make_error_code(zeep::http::status_type::not_found));
+			throw zeep::http::http_status_exception(zeep::http::status_type::not_found);
 
 		return {};
 	}
@@ -285,7 +286,7 @@ TEST_CASE("rest_2")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
@@ -331,7 +332,7 @@ TEST_CASE("rest_3")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{

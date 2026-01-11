@@ -225,7 +225,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	auto &req = scope.get_request();
 	auto csrf = req.get_parameter("_csrf").value_or("");
 	if (csrf != req.get_cookie("csrf-token"))
-		throw std::system_error(make_error_code(status_type::forbidden));
+		throw http_status_exception(status_type::forbidden);
 
 	uri uri(req.get_parameter("uri").value_or(""));
 	auto rep = create_redirect_for_request(req);

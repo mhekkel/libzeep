@@ -392,7 +392,7 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 				sc.unblock();
 				int sig = sc.wait();
 
-				std::cerr << "Process " << getpid() << " received signal " << sig << "\n";
+				std::clog << "Process " << getpid() << " received signal " << sig << "\n";
 
 				server->stop();
 
@@ -401,8 +401,6 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 
 				if (sig == SIGHUP)
 				{
-					std::this_thread::sleep_for(100ms);
-
 					// re-open log files
 					open_log_file();
 
@@ -423,6 +421,18 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 
 			// We're done. Exit
 			_exit(0);
+		}
+
+		// avoid zombies
+		int status, pid_c;
+		pid_c = waitpid(-1, &status, WUNTRACED);
+
+		if (pid_c != -1)
+		{
+			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
+				std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
+			// else
+			// 	std::clog << "child terminated normally\n";
 		}
 	}
 
@@ -449,7 +459,7 @@ int daemon::stop()
 
 		// avoid zombies
 		int status, pid_c;
-		pid_c = waitpid(-1, &status, WUNTRACED);
+		pid_c = waitpid(pid, &status, WUNTRACED);
 
 		if (pid_c != -1)
 		{

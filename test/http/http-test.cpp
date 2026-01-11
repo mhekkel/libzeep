@@ -143,7 +143,7 @@ TEST_CASE("webapp_7")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
@@ -193,7 +193,7 @@ TEST_CASE("webapp_8")
 	std::clog << "started daemon for test_8 at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
@@ -263,7 +263,7 @@ TEST_CASE("server_with_security_1")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
@@ -353,7 +353,7 @@ TEST_CASE("long_filename_test_1")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
@@ -390,7 +390,7 @@ TEST_CASE("pen_test_resilience_1")
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
