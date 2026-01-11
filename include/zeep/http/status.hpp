@@ -91,6 +91,7 @@ class status_type_impl : public std::error_category
 			case status_type::not_implemented: return "Not Implemented";
 			case status_type::bad_gateway: return "Bad Gateway";
 			case status_type::service_unavailable: return "Service Unavailable";
+			default: return "unknown status code";
 		}
 	}
 

@@ -90,10 +90,9 @@ bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 # endif
 	} control_un{};
 
-	struct msghdr msg{
-		.msg_control = control_un.control,
-		.msg_controllen = sizeof(control_un.control)
-	};
+	struct msghdr msg{};
+	msg.msg_control = control_un.control;
+	msg.msg_controllen = sizeof(control_un.control);
 
 	asio_ns::ip::tcp::socket::endpoint_type peer_endpoint;
 
@@ -311,10 +310,9 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 # endif
 		} control_un{};
 
-		struct msghdr msg{
-			.msg_control = control_un.control,
-			.msg_controllen = sizeof(control_un.control)
-		};
+		struct msghdr msg{};
+		msg.msg_control = control_un.control;
+		msg.msg_controllen = sizeof(control_un.control);
 
 		struct cmsghdr *cmptr = CMSG_FIRSTHDR(&msg);
 		cmptr->cmsg_len = CMSG_LEN(sizeof(int));

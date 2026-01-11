@@ -11,7 +11,6 @@
 
 using namespace std;
 namespace z = zeep;
-namespace zx = zeep::xml;
 namespace zh = zeep::http;
 
 struct TestStruct
