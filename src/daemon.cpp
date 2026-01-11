@@ -39,7 +39,6 @@
 #include <sys/types.h>
 #include <system_error>
 #include <thread>
-#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -47,6 +46,7 @@
 # include <grp.h>
 # include <pwd.h>
 # include <sys/wait.h>
+# include <unistd.h>
 #endif
 
 namespace fs = std::filesystem;
