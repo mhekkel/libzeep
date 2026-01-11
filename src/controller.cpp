@@ -16,7 +16,6 @@
 
 #include "glob.hpp"
 
-#include <boost/asio/ip/tcp.hpp>
 #include <cstddef>
 #include <filesystem>
 #include <regex>

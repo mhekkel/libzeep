@@ -6,12 +6,12 @@
 #include "zeep/crypto.hpp"
 
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cctype>
 #include <climits>
 #include <cstdint>
 #include <cstring>
-#include <endian.h>
 #include <random>
 #include <streambuf>
 
@@ -1000,18 +1000,19 @@ struct sha1_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 
 	void write_bit_length(uint64_t l, uint8_t *b) override
 	{
-#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(b, &l, sizeof(l));
-#else
-		b[0] = static_cast<uint8_t>(l >> 56);
-		b[1] = static_cast<uint8_t>(l >> 48);
-		b[2] = static_cast<uint8_t>(l >> 40);
-		b[3] = static_cast<uint8_t>(l >> 32);
-		b[4] = static_cast<uint8_t>(l >> 24);
-		b[5] = static_cast<uint8_t>(l >> 16);
-		b[6] = static_cast<uint8_t>(l >> 8);
-		b[7] = static_cast<uint8_t>(l >> 0);
-#endif
+		if constexpr (std::endian::native == std::endian::big)
+			memcpy(b, &l, sizeof(l));
+		else
+		{
+			b[0] = static_cast<uint8_t>(l >> 56);
+			b[1] = static_cast<uint8_t>(l >> 48);
+			b[2] = static_cast<uint8_t>(l >> 40);
+			b[3] = static_cast<uint8_t>(l >> 32);
+			b[4] = static_cast<uint8_t>(l >> 24);
+			b[5] = static_cast<uint8_t>(l >> 16);
+			b[6] = static_cast<uint8_t>(l >> 8);
+			b[7] = static_cast<uint8_t>(l >> 0);
+		}
 	}
 
 	void transform(const uint8_t *data) override
@@ -1022,18 +1023,20 @@ struct sha1_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 			uint32_t w[80];
 		} w;
 
-#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(w.s, data, 64);
-#else
-		auto p = data;
-		for (size_t i = 0; i < 16; ++i)
+		if constexpr (std::endian::native == std::endian::big)
+			memcpy(w.s, data, 64);
+		else
 		{
-			w.s[i * 4 + 3] = *p++;
-			w.s[i * 4 + 2] = *p++;
-			w.s[i * 4 + 1] = *p++;
-			w.s[i * 4 + 0] = *p++;
+
+			auto p = data;
+			for (size_t i = 0; i < 16; ++i)
+			{
+				w.s[i * 4 + 3] = *p++;
+				w.s[i * 4 + 2] = *p++;
+				w.s[i * 4 + 1] = *p++;
+				w.s[i * 4 + 0] = *p++;
+			}
 		}
-#endif
 
 		for (size_t i = 16; i < 80; ++i)
 			w.w[i] = rotl32(w.w[i - 3] xor w.w[i - 8] xor w.w[i - 14] xor w.w[i - 16], 1);
@@ -1084,18 +1087,19 @@ struct sha1_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 	{
 		std::string result(digest_size, '\0');
 
-#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(const_cast<char *>(result.data()), &m_h, digest_size);
-#else
-		auto s = result.begin();
-		for (unsigned int i : m_h)
+		if constexpr (std::endian::native == std::endian::big)
+			memcpy(const_cast<char *>(result.data()), &m_h, digest_size);
+		else
 		{
-			*s++ = static_cast<char>(i >> 24);
-			*s++ = static_cast<char>(i >> 16);
-			*s++ = static_cast<char>(i >> 8);
-			*s++ = static_cast<char>(i >> 0);
+			auto s = result.begin();
+			for (unsigned int i : m_h)
+			{
+				*s++ = static_cast<char>(i >> 24);
+				*s++ = static_cast<char>(i >> 16);
+				*s++ = static_cast<char>(i >> 8);
+				*s++ = static_cast<char>(i >> 0);
+			}
 		}
-#endif
 
 		return result;
 	}
@@ -1126,18 +1130,20 @@ struct sha256_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 
 	void write_bit_length(uint64_t l, uint8_t *b) override
 	{
-#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(b, &l, sizeof(l));
-#else
-		b[0] = static_cast<uint8_t>(l >> 56);
-		b[1] = static_cast<uint8_t>(l >> 48);
-		b[2] = static_cast<uint8_t>(l >> 40);
-		b[3] = static_cast<uint8_t>(l >> 32);
-		b[4] = static_cast<uint8_t>(l >> 24);
-		b[5] = static_cast<uint8_t>(l >> 16);
-		b[6] = static_cast<uint8_t>(l >> 8);
-		b[7] = static_cast<uint8_t>(l >> 0);
-#endif
+		if constexpr (std::endian::native == std::endian::big)
+			memcpy(b, &l, sizeof(l));
+		else
+		{
+
+			b[0] = static_cast<uint8_t>(l >> 56);
+			b[1] = static_cast<uint8_t>(l >> 48);
+			b[2] = static_cast<uint8_t>(l >> 40);
+			b[3] = static_cast<uint8_t>(l >> 32);
+			b[4] = static_cast<uint8_t>(l >> 24);
+			b[5] = static_cast<uint8_t>(l >> 16);
+			b[6] = static_cast<uint8_t>(l >> 8);
+			b[7] = static_cast<uint8_t>(l >> 0);
+		}
 	}
 
 	void transform(const uint8_t *data) override
@@ -1163,18 +1169,19 @@ struct sha256_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 			uint32_t w[64];
 		} w;
 
-#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(w.w, data, 64);
-#else
-		auto p = data;
-		for (size_t i = 0; i < 16; ++i)
+		if constexpr (std::endian::native == std::endian::big)
+			memcpy(w.w, data, 64);
+		else
 		{
-			w.s[i * 4 + 3] = *p++;
-			w.s[i * 4 + 2] = *p++;
-			w.s[i * 4 + 1] = *p++;
-			w.s[i * 4 + 0] = *p++;
+			auto p = data;
+			for (size_t i = 0; i < 16; ++i)
+			{
+				w.s[i * 4 + 3] = *p++;
+				w.s[i * 4 + 2] = *p++;
+				w.s[i * 4 + 1] = *p++;
+				w.s[i * 4 + 0] = *p++;
+			}
 		}
-#endif
 
 		for (size_t i = 16; i < 64; ++i)
 		{
@@ -1210,18 +1217,19 @@ struct sha256_hash_impl : public hash_impl // NOLINT(hicpp-member-init)
 	{
 		std::string result(digest_size, '\0');
 
-#if defined(BYTE_ORDER) and BYTE_ORDER == BIG_ENDIAN
-		memcpy(const_cast<char *>(result.data()), &m_h, digest_size);
-#else
-		auto s = result.begin();
-		for (unsigned int i : m_h)
+		if constexpr (std::endian::native == std::endian::big)
+			memcpy(const_cast<char *>(result.data()), &m_h, digest_size);
+		else
 		{
-			*s++ = static_cast<char>(i >> 24);
-			*s++ = static_cast<char>(i >> 16);
-			*s++ = static_cast<char>(i >> 8);
-			*s++ = static_cast<char>(i >> 0);
+			auto s = result.begin();
+			for (unsigned int i : m_h)
+			{
+				*s++ = static_cast<char>(i >> 24);
+				*s++ = static_cast<char>(i >> 16);
+				*s++ = static_cast<char>(i >> 8);
+				*s++ = static_cast<char>(i >> 0);
+			}
 		}
-#endif
 
 		return result;
 	}

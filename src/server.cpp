@@ -20,28 +20,6 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
-#include <boost/asio/associated_cancellation_slot.hpp>
-#include <boost/asio/async_result.hpp>
-#include <boost/asio/basic_socket_acceptor.hpp>
-#include <boost/asio/detail/handler_cont_helpers.hpp>
-#include <boost/asio/detail/handler_invoke_helpers.hpp>
-#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
-#include <boost/asio/detail/impl/resolver_service_base.ipp>
-#include <boost/asio/detail/impl/scheduler.ipp>
-#include <boost/asio/detail/impl/service_registry.hpp>
-#include <boost/asio/execution/context_as.hpp>
-#include <boost/asio/execution/prefer_only.hpp>
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/impl/any_io_executor.ipp>
-#include <boost/asio/impl/handler_alloc_hook.ipp>
-#include <boost/asio/impl/io_context.hpp>
-#include <boost/asio/impl/io_context.ipp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/basic_resolver_entry.hpp>
-#include <boost/asio/ip/basic_resolver_iterator.hpp>
-#include <boost/asio/ip/impl/address.ipp>
-#include <boost/asio/ip/tcp.hpp> // for tcp
 #include <boost/system/detail/error_code.hpp>
 
 #include <chrono>

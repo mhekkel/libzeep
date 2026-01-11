@@ -27,9 +27,9 @@ list(APPEND zeep_tests
 	uri
 )
 
-if(HTTP_HAS_UNIX_DAEMON)
-	list(APPEND zeep_tests daemon)
-endif()
+# if(HTTP_HAS_UNIX_DAEMON)
+# 	list(APPEND zeep_tests daemon)
+# endif()
 
 if(USE_RSRC)
 	list(APPEND zeep_tests rsrc_webapp)

@@ -12,21 +12,6 @@
 #include "zeep/http/server.hpp"
 #include "zeep/http/uri.hpp"
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/async_result.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/detail/handler_cont_helpers.hpp>
-#include <boost/asio/detail/handler_invoke_helpers.hpp>
-#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
-#include <boost/asio/detail/impl/scheduler.ipp>
-#include <boost/asio/detail/impl/service_registry.hpp>
-#include <boost/asio/execution/context_as.hpp>
-#include <boost/asio/execution/prefer_only.hpp>
-#include <boost/asio/impl/any_io_executor.ipp>
-#include <boost/asio/impl/handler_alloc_hook.ipp>
-#include <boost/asio/impl/io_context.hpp>
-#include <boost/asio/impl/write.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cstddef>

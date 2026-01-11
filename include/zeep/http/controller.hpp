@@ -18,7 +18,6 @@
 #include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include <boost/asio/ip/tcp.hpp>
 #include <zeem/serialize.hpp>
 
 #include <algorithm>

@@ -15,8 +15,6 @@
 #include "zeep/http/uri.hpp"
 
 #include <array>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/ip/tcp.hpp>
 
 #include <chrono>
 #include <cstddef>

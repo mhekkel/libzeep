@@ -13,10 +13,6 @@
 #include "zeep/http/asio.hpp"
 #include "zeep/http/template-processor.hpp"
 
-#include <boost/asio/impl/io_context.hpp>
-#include <boost/asio/impl/io_context.ipp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <chrono>

@@ -10,8 +10,6 @@
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/impl/address.ipp>
 
 #include <algorithm>
 #include <cctype>
@@ -756,9 +754,7 @@ namespace
 {
 	const char
 		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' },
-		kSpace[] = { ' ' },
-		kHTTPSlash[] = { ' ', 'H', 'T', 'T', 'P', '/' };
+		kCRLF[] = { '\r', '\n' };
 }
 
 std::vector<asio_ns::const_buffer> request::to_buffers() const
