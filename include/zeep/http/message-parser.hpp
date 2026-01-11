@@ -117,7 +117,7 @@ class parser
   protected:
 	using state_parser = parse_result (parser::*)(char ch);
 
-	parser();
+	parser() = default;
 
 	parse_result post_process_headers();
 

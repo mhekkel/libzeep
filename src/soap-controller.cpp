@@ -100,7 +100,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 		catch (const std::exception& e)
 		{
 			reply.set_content(make_fault(e));
-			reply.set_status(internal_server_error);
+			reply.set_status(status_type::internal_server_error);
 		}
 		catch (status_type& s)
 		{
@@ -111,7 +111,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 	else if (req.get_method() == "GET" and p == "wsdl")
 	{
 		reply.set_content(make_wsdl());
-		reply.set_status(ok);
+		reply.set_status(status_type::ok);
 	}
 
 	return result;

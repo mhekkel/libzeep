@@ -60,10 +60,6 @@ namespace
 
 } // namespace
 
-parser::parser()
-{
-}
-
 void parser::reset()
 {
 	m_parser = nullptr;

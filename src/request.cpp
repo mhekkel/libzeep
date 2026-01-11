@@ -324,7 +324,7 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 						else
 							state = SKIP;
 					}
-					else if (auto s = m_payload.substr(l, i - l); std::regex_match(s, m, rx))
+					else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + i, m, rx))
 						contentName = m[1].str();
 				}
 
@@ -490,8 +490,7 @@ file_param file_param_parser::next()
 					m_state = SKIP;
 				}
 			}
-			else if (auto s = m_payload.substr(l, m_i - l);
-				std::regex_match(s, m, k_rx_disp))
+			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_disp))
 			{
 				auto p = m[1].str();
 				std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
@@ -514,7 +513,7 @@ file_param file_param_parser::next()
 					b = m2[0].second;
 				}
 			}
-			else if (auto s = m_payload.substr(l, m_i - 1); std::regex_match(s, m, k_rx_cont))
+			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_cont))
 			{
 				result.mimetype = m[1].str();
 				if (starts_with(result.mimetype, "multipart/"))
