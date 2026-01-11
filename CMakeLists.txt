@@ -99,7 +99,7 @@ endif()
 
 CPMFindPackage(NAME zeem
 	GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
-	VERSION 2.0.5
+	VERSION 2.1.0
 	EXCLUDE_FROM_ALL YES)
 
 if(UNIX)

@@ -10,7 +10,6 @@
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
 
-
 #include <algorithm>
 #include <cctype>
 #include <cstring>
