@@ -13,6 +13,9 @@
 
 #if _WIN32
 
+#include <mutex>
+#include <condition_variable>
+
 #include <Windows.h>
 #include <signal.h>
 #include <wincon.h>
