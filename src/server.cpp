@@ -295,7 +295,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 	catch (...)
 	{
 		auto eptr = std::current_exception();
-		bool handled = false;
 
 		// special case, caller expects a JSON reply
 		if (req.get_accept("application/json") == 1.0f)
@@ -312,8 +311,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", get_status_description(ex.status()) } });
 				rep.set_content(error);
 				rep.set_status(ex.status());
-
-				handled = true;
 			}
 			catch (status_type s)
 			{
@@ -322,8 +319,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", get_status_description(s) } });
 				rep.set_content(error);
 				rep.set_status(s);
-
-				handled = true;
 			}
 			catch (const std::exception &e)
 			{
@@ -332,8 +327,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", e.what() } });
 				rep.set_content(error);
 				rep.set_status(status_type::internal_server_error);
-
-				handled = true;
 			}
 			catch (...)
 			{
@@ -342,8 +335,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", "unknown error" } });
 				rep.set_content(error);
 				rep.set_status(status_type::internal_server_error);
-
-				handled = true;
 			}
 		}
 		else

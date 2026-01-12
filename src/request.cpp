@@ -276,9 +276,9 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 
 			std::string::difference_type i = 0, r = 0, l = 0;
 
-			for (i = 0; i <= m_payload.length(); ++i)
+			for (i = 0; i <= static_cast<decltype(i)>(m_payload.length()); ++i)
 			{
-				if (i < m_payload.length() and m_payload[i] != '\r' and m_payload[i] != '\n')
+				if (m_payload[i] != '\r' and m_payload[i] != '\n')
 					continue;
 
 				// we have found a 'line' at [l, i)
@@ -437,9 +437,9 @@ file_param file_param_parser::next()
 	file_param result = {};
 	bool found = false;
 
-	for (; m_i <= m_payload.length(); ++m_i)
+	for (; m_i <= static_cast<decltype(m_i)>(m_payload.length()); ++m_i)
 	{
-		if (m_i < m_payload.length() and m_payload[m_i] != '\r' and m_payload[m_i] != '\n')
+		if (m_payload[m_i] != '\r' and m_payload[m_i] != '\n')
 			continue;
 
 		// we have found a 'line' at [l, i)
