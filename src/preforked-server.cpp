@@ -120,8 +120,8 @@ class child_process
 		, m_socket(io_context)
 		, m_nr_of_threads(nr_of_threads)
 	{
-		m_acceptor.async_accept(m_socket, [this](auto &&a1)
-			{ handle_accept(std::forward<decltype(a1)>(a1)); });
+		m_acceptor.async_accept(m_socket, [this](auto ec)
+			{ handle_accept(ec); });
 	}
 
 	~child_process()
@@ -338,8 +338,8 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 
 	m_socket.close();
 
-	m_acceptor.async_accept(m_socket, [this](auto &&a1)
-		{ handle_accept(std::forward<decltype(a1)>(a1)); });
+	m_acceptor.async_accept(m_socket, [this](auto ec)
+		{ handle_accept(ec); });
 }
 
 // --------------------------------------------------------------------

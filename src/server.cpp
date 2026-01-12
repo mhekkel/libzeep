@@ -41,15 +41,6 @@
 namespace zeep::http
 {
 
-namespace detail
-{
-
-	// a thread specific logger
-	thread_local std::unique_ptr<std::ostringstream> s_log;
-	std::mutex s_log_lock;
-
-} // namespace detail
-
 // --------------------------------------------------------------------
 // http::basic_server
 
@@ -190,20 +181,12 @@ void basic_server::handle_accept(asio_system_ns::error_code ec)
 	}
 }
 
-std::ostream &basic_server::get_log()
-{
-	if (detail::s_log.get() == nullptr)
-		detail::s_log = std::make_unique<std::ostringstream>();
-	return *detail::s_log;
-}
-
 void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req, reply &rep)
 {
 	// we're pessimistic
 	rep = reply::stock_reply(status_type::not_found);
 
 	// set up a logging stream and collect logging information
-	detail::s_log = std::make_unique<std::ostringstream>();
 	auto start = std::chrono::system_clock::now();
 
 	std::string referer("-"), userAgent("-"), accept, client;
@@ -278,9 +261,8 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 					if (eh->create_error_reply(req, status_type::not_found, rep))
 						break;
 				}
-				catch (...) // NOLINT(bugprone-empty-catch)
+				catch (...)
 				{
-					// try next
 				}
 			}
 		}
@@ -291,7 +273,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
 
 		if (not m_context_name.empty() and
-			rep.get_status() == status_type::moved_permanently)
+			(rep.get_status() == status_type::moved_permanently or rep.get_status() == status_type::moved_temporarily))
 		{
 			auto location = rep.get_header("location");
 			if (location.front() == '/')
@@ -314,7 +296,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		bool handled = false;
 
 		// special case, caller expects a JSON reply
-		if (not req.get_header("Accept").empty() and req.get_accept("application/json") == 1.0f)
+		if (req.get_accept("application/json") == 1.0f)
 		{
 			try
 			{
@@ -331,17 +313,27 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 				handled = true;
 			}
-			catch (const std::exception &e)
+			catch (status_type s)
 			{
-				rep = http::reply::stock_reply(http::status_type::internal_server_error);
+				rep = http::reply::stock_reply(s);
 
-				object error({ { "error", e.what() } });
+				object error({ { "error", get_status_description(s) } });
 				rep.set_content(error);
-				rep.set_status(http::status_type::internal_server_error);
+				rep.set_status(s);
 
 				handled = true;
 			}
-			catch (...) // NOLINT(bugprone-empty-catch)
+			catch (const std::exception &e)
+			{
+				rep = http::reply::stock_reply(status_type::internal_server_error);
+
+				object error({ { "error", e.what() } });
+				rep.set_content(error);
+				rep.set_status(status_type::internal_server_error);
+
+				handled = true;
+			}
+			catch (...)
 			{
 			}
 		}
@@ -355,14 +347,14 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 					if (eh->create_error_reply(req, eptr, rep))
 						break;
 				}
-				catch (...) // NOLINT(bugprone-empty-catch)
+				catch (...)
 				{
 				}
 			}
 		}
 	}
 
-	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
+	log_request(client, req, rep, start, referer, userAgent);
 }
 
 void basic_server::log_request(std::string_view client,
@@ -374,8 +366,6 @@ void basic_server::log_request(std::string_view client,
 	try
 	{
 		// protect the output stream from garbled log messages
-		std::unique_lock<std::mutex> lock(detail::s_log_lock);
-
 		const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
 
 		auto credentials = req.get_credentials();
@@ -397,11 +387,11 @@ void basic_server::log_request(std::string_view client,
 				  << '"' << userAgent << '"' << ' ';
 
 		if (entry.empty())
-			std::cout << "-" << '\n';
+			std::cout << "-" << std::endl;
 		else
-			std::cout << std::quoted(entry) << '\n';
+			std::cout << std::quoted(entry) << std::endl;
 	}
-	catch (...) // NOLINT(bugprone-empty-catch)
+	catch (...)
 	{
 	}
 }

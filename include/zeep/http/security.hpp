@@ -11,6 +11,7 @@
 #include "zeep/crypto.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
+#include "zeep/http/status.hpp"
 
 #include <cassert>
 #include <chrono>
@@ -36,11 +37,11 @@ class request;
 ///
 /// when using authentication, this exception is thrown for unauthorized access
 
-struct unauthorized_exception : public zeep::exception
+struct unauthorized_exception : public http_status_exception
 {
 	/// \brief constructor
 	unauthorized_exception()
-		: exception("unauthorized")
+		: http_status_exception(status_type::unauthorized)
 	{
 	}
 };

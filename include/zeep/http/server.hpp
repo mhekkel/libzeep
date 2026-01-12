@@ -170,9 +170,6 @@ class basic_server
 	/// \brief Stop all threads and stop listening
 	virtual void stop();
 
-	/// \brief to extend the log entry for a current request, use this ostream:
-	static std::ostream &get_log();
-
 	/// \brief log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
 	void set_log_forwarded(bool v) { m_log_forwarded = v; }
 
@@ -194,7 +191,7 @@ class basic_server
 		const request &req, const reply &rep,
 		std::chrono::system_clock::time_point start,
 		std::string_view referer, std::string_view userAgent,
-		std::string_view entry) noexcept;
+		std::string_view entry = {}) noexcept;
 
   private:
 	friend class preforked_server_base;
