@@ -3,12 +3,31 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
-
-#include "zeep/http/error-handler.hpp"
 #include "zeep/http/login-controller.hpp"
+
+#include "zeep/crypto.hpp"
+#include "zeep/http/controller.hpp"
+#include "zeep/http/error-handler.hpp"
+#include "zeep/http/html-controller.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
 #include "zeep/http/security.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
+#include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
+
+#include <system_error>
+#include <zeem/node.hpp>
+
+#include <cassert>
+#include <exception>
+#include <initializer_list>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace zeep::http
 {
@@ -27,7 +46,7 @@ class login_error_handler : public error_handler
 		return true;
 	}
 
-	bool create_error_reply(const request &req, std::exception_ptr eptr, reply &reply) override
+	bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &reply) override
 	{
 		bool result = false;
 
@@ -52,8 +71,8 @@ class login_error_handler : public error_handler
 	login_controller *m_login_controller;
 };
 
-login_controller::login_controller(std::string prefix_path)
-	: html_controller(std::move(prefix_path))
+login_controller::login_controller(const std::string &prefix_path)
+	: html_controller(prefix_path)
 {
 	map_get("login", &login_controller::handle_get_login);
 	map_post("login", &login_controller::handle_post_login, "username", "password");
@@ -185,7 +204,7 @@ reply login_controller::handle_get_login(const scope &scope)
 	auto &req = scope.get_request();
 	auto doc = load_login_form(req);
 
-	reply rep = reply::stock_reply(ok);
+	reply rep = reply::stock_reply(status_type::ok);
 
 	auto csrf_cookie = req.get_cookie("csrf-token");
 	if (csrf_cookie.empty())
@@ -206,7 +225,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	auto &req = scope.get_request();
 	auto csrf = req.get_parameter("_csrf").value_or("");
 	if (csrf != req.get_cookie("csrf-token"))
-		throw status_type::forbidden;
+		throw http_status_exception(status_type::forbidden);
 
 	uri uri(req.get_parameter("uri").value_or(""));
 	auto rep = create_redirect_for_request(req);
@@ -248,7 +267,7 @@ reply login_controller::handle_logout(const scope &scope)
 	return rep;
 }
 
-reply login_controller::create_redirect_for_request(const request &req)
+reply login_controller::create_redirect_for_request(const request &req) const
 {
 	uri url = get_context_name();
 
@@ -262,7 +281,7 @@ reply login_controller::create_redirect_for_request(const request &req)
 	if (url.empty())
 		url = "/";
 
-	return reply::redirect(url, see_other);
+	return reply::redirect(url, status_type::see_other);
 }
 
 } // namespace zeep::http

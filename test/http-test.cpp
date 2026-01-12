@@ -1,26 +1,39 @@
-#include "zeep/http/asio.hpp"
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "test-main.hpp"
-
-#include <iostream>
-#include <random>
-#include <sstream>
-
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/streambuf.hpp>
-
-#include <zeep/http/controller.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/login-controller.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/server.hpp>
-
-#include "client-test-code.hpp"
 #include "../src/signals.hpp"
- 
-namespace z = zeep;
+#include "client-test-code.hpp"
+#include "zeep/config.hpp"
+#include "zeep/crypto.hpp"
+#include "zeep/http/controller.hpp"
+#include "zeep/http/daemon.hpp"
+#include "zeep/http/login-controller.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/security.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/uri.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <zeem/document.hpp>
+#include <zeem/node.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <initializer_list>
+#include <iostream>
+#include <optional>
+#include <random>
+#include <set>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <tuple>
+#include <vector>
+
 namespace zh = zeep::http;
 
 TEST_CASE("http_base64_1")
@@ -28,7 +41,7 @@ TEST_CASE("http_base64_1")
 	using namespace std::literals;
 
 	auto in = R"(Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.)"s;
-	
+
 	auto out = R"(TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz
 IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg
 dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu
@@ -49,13 +62,12 @@ TEST_CASE("http_base64_2")
 {
 	using namespace std::literals;
 
-	const std::string tests[] =
-	{
+	const std::string tests[] = {
 		"1", "12", "123", "1234",
 		{ '\0' }, { '\0', '\001' }, { '\0', '\001', '\002' }
 	};
 
-	for (const auto& test: tests)
+	for (const auto &test : tests)
 	{
 		auto enc = zeep::encode_base64(test, 76);
 
@@ -72,7 +84,7 @@ TEST_CASE("http_base64_2")
 
 TEST_CASE("request_params_1")
 {
-	zh::request req{ "GET", "http://www.example.com/index?a=A;b=B&c=C%24"};
+	zh::request req{ "GET", "http://www.example.com/index?a=A;b=B&c=C%24" };
 
 	CHECK(req.get_parameter("a") == "A");
 	CHECK(req.get_parameter("b") == "B");
@@ -81,7 +93,7 @@ TEST_CASE("request_params_1")
 
 TEST_CASE("webapp_6")
 {
-	zh::request req("GET", "/", {1, 0}, { { "Content-Type", "multipart/form-data; boundary=xYzZY" } },
+	zh::request req("GET", "/", { 1, 0 }, { { "Content-Type", "multipart/form-data; boundary=xYzZY" } },
 		"--xYzZY\r\n"
 		"Content-Disposition: form-data; name=\"pdb-file\"; filename=\"1cbs.cif.gz\"\r\n"
 		"Content-Encoding: gzip\r\n"
@@ -109,18 +121,21 @@ TEST_CASE("webapp_6")
 // a very simple controller, serving only /test/one and /test/three
 class my_controller : public zeep::http::controller
 {
-	public:
-	my_controller() : zeep::http::controller("/test") {}
+  public:
+	my_controller()
+		: zeep::http::controller("/test")
+	{
+	}
 
-	bool handle_request(zeep::http::request& req, zeep::http::reply& rep) override
+	bool handle_request(zeep::http::request &req, zeep::http::reply &rep) override
 	{
 		bool result = false;
 		if (req.get_uri() == "/test/one" or req.get_uri() == "/test/three")
 		{
-			rep = zeep::http::reply::stock_reply(zeep::http::ok);
+			rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
 			result = true;
 		}
-		
+
 		return result;
 	}
 };
@@ -129,37 +144,38 @@ TEST_CASE("webapp_7")
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]() {
+	zh::daemon d([]()
+		{
 		auto s = new zh::server;
 		s->add_controller(new my_controller());
-		return s;
-	}, "zeep-http-test");
+		return s; }, "zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port]
+		{ return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::status_type::not_found);
 
 		reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::bad_request);
+		CHECK(reply.get_status() == zh::status_type::bad_request);
 
 		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::ok);
+		CHECK(reply.get_status() == zh::status_type::ok);
 
 		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::status_type::not_found);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::clog << e.what() << '\n';
 	}
@@ -177,11 +193,11 @@ TEST_CASE("webapp_8")
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]() {
+	zh::daemon d([]()
+		{
 		auto s = new zh::server;
 		s->add_controller(new my_controller());
-		return s;
-	}, "/tmp/libzeep-tests/zeep-http-test.pid",
+		return s; }, "/tmp/libzeep-tests/zeep-http-test.pid",
 		"/tmp/libzeep-tests/zeep-http-test-access.log",
 		"/tmp/libzeep-tests/zeep-http-test-error.log");
 
@@ -193,23 +209,23 @@ TEST_CASE("webapp_8")
 	std::clog << "started daemon for test_8 at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
 		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::status_type::not_found);
 
 		reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::bad_request);
+		CHECK(reply.get_status() == zh::status_type::bad_request);
 
 		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::ok);
+		CHECK(reply.get_status() == zh::status_type::ok);
 
 		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::status_type::not_found);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::clog << e.what() << '\n';
 		throw;
@@ -225,7 +241,8 @@ TEST_CASE("server_with_security_1")
 {
 	class my_user_service : public zeep::http::user_service
 	{
-		zeep::http::user_details load_user(const std::string& username) const override
+	  public:
+		[[nodiscard]] zeep::http::user_details load_user(const std::string &username) const override
 		{
 			if (username != "scott")
 				throw zeep::http::user_unknown_exception();
@@ -242,7 +259,9 @@ TEST_CASE("server_with_security_1")
 
 	std::string secret = "geheim";
 
-	zh::daemon d([&]() {
+	zh::daemon d([&]()
+		{
+			// NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
 		auto s = new zh::server(new zeep::http::security_context(secret, users, new zeep::http::pbkdf2_sha256_password_encoder()));
 		s->add_controller(new my_controller());
 		s->add_controller(new zeep::http::login_controller());
@@ -252,47 +271,47 @@ TEST_CASE("server_with_security_1")
 		sec.add_rule("/test/three", "admin");
 		sec.add_rule("/**", {});
 
-		return s;
-		}, "zeep-http-test");
+		return s; }, "zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port]
+		{ d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
 
 		auto reply = simple_request(port, "XXX / HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::bad_request);
+		CHECK(reply.get_status() == zh::status_type::bad_request);
 
 		reply = simple_request(port, "GET /test/one HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::ok);
+		CHECK(reply.get_status() == zh::status_type::ok);
 
 		reply = simple_request(port, "GET /test/two HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::status_type::not_found);
 
 		reply = simple_request(port, "GET /test/three HTTP/1.0\r\n\r\n");
-		CHECK(reply.get_status() == zh::unauthorized);
+		CHECK(reply.get_status() == zh::status_type::unauthorized);
 
 		// now try to log in and see if we can access all of the above
 
 		// we use a request object now, to store cookies
-		zeep::http::request req{ "POST", "/login", {1, 0}, { { "Content-Type", "application/x-www-form-urlencoded" } }, "username=scott&password=tiger" };
+		zeep::http::request req{ "POST", "/login", { 1, 0 }, { { "Content-Type", "application/x-www-form-urlencoded" } }, "username=scott&password=tiger" };
 
 		// first test is to send a POST to login, but without the csrf token
 		reply = simple_request(port, req);
-		CHECK(reply.get_status() == zh::forbidden);
+		CHECK(reply.get_status() == zh::status_type::forbidden);
 
 		// OK, fetch the login form then and pry the csrf token out of it
 		req.set_method("GET");
 		reply = simple_request(port, req);
-		REQUIRE(reply.get_status() == zh::ok);
+		REQUIRE(reply.get_status() == zh::status_type::ok);
 
 		// copy the cookie
 		auto csrfCookie = reply.get_cookie("csrf-token");
@@ -312,7 +331,7 @@ TEST_CASE("server_with_security_1")
 		req.set_method("POST");
 		req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
 		reply = simple_request(port, req);
-		CHECK(reply.get_status() == zh::see_other);
+		CHECK(reply.get_status() == zh::status_type::see_other);
 
 		auto accessToken = reply.get_cookie("access_token");
 		req.set_cookie("access_token", accessToken);
@@ -321,9 +340,9 @@ TEST_CASE("server_with_security_1")
 		req.set_uri("/test/three");
 		req.set_method("GET");
 		reply = simple_request(port, req);
-		CHECK(reply.get_status() == zh::ok);
+		CHECK(reply.get_status() == zh::status_type::ok);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::clog << e.what() << '\n';
 	}
@@ -339,28 +358,29 @@ TEST_CASE("long_filename_test_1")
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]() {
+	zh::daemon d([]()
+		{
 		auto s = new zh::server;
 		s->add_controller(new my_controller());
-		return s;
-	}, "zeep-http-test");
+		return s; }, "zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port]
+		{ return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
 		auto reply = simple_request(port, "GET /%E3%80%82%E7%84%B6%E8%80%8C%EF%BC%8C%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84%E6%98%AF%EF%BC%8C%E8%AF%A5%E7%BD%91%E7%AB%99%E5%B7%B2%E7%BB%8F%E5%BE%88%E4%B9%85%E6%B2%A1%E6%9C%89%E6%9B%B4%E6%96%B0%E4%BA%86%EF%BC%8C%E5%9B%A0%E6%AD%A4%E5%8F%AF%E8%83%BD%E6%97%A0%E6%B3%95%E6%8F%90%E4%BE%9B%E6%9C%80%E6%96%B0%E7%9A%84%E8%BD%AF%E4%BB%B6%E7%89%88%E6%9C%AC%E5%92%8C%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90%E3%80%82 HTTP/1.1\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
+		CHECK(reply.get_status() == zh::status_type::not_found);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::clog << e.what() << '\n';
 	}
@@ -376,32 +396,32 @@ TEST_CASE("pen_test_resilience_1")
 {
 	// start up a http server and stop it again
 
-	zh::daemon d([]() {
+	zh::daemon d([]()
+		{
 		auto s = new zh::server;
 		s->add_controller(new my_controller());
-		return s;
-	}, "zeep-http-test");
+		return s; }, "zeep-http-test");
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
 
-	std::thread t(std::bind(&zh::daemon::run_foreground, d, "::", port));
+	std::thread t([&d, port]
+		{ return d.run_foreground("::", port); });
 
 	std::clog << "started daemon at port " << port << '\n';
 
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	try
 	{
 		auto reply = simple_request(port, "GET //plus/mytag_js.php?aid=9999&nocache=90sec HTTP/1.1\r\n\r\n");
-		CHECK(reply.get_status() == zh::not_found);
-
+		CHECK(reply.get_status() == zh::status_type::not_found);
 
 		reply = simple_request(port, "GET //plus/erraddsave.php?dopost=saveedit&a=b&arrs1[]=99&c=d&arrs1[]=102&arrs1[]=103&arrs1[]=95&arrs1[]=100&arrs1[]=98&arrs1[]=112&arrs1[]=114&arrs1[]=101&arrs1[]=102&arrs1[]=105&arrs1[]=120&arrs2[]=109&arrs2[]=121&arrs2[]=97&arrs2[]=100&arrs2[]=96&arrs2[]=32&arrs2[]=40&arrs2[]=97&arrs2[]=105&arrs2[]=100&arrs2[]=44&arrs2[]=110&arrs2[]=111&arrs2[]=114&arrs2[]=109&arrs2[]=98&arrs2[]=111&arrs2[]=100&arrs2[]=121&arrs2[]=41&arrs2[]=32&arrs2[]=86&arrs2[]=65&arrs2[]=76&arrs2[]=85&arrs2[]=69&arrs2[]=83&arrs2[]=40&arrs2[]=56&arrs2[]=56&arrs2[]=56&arrs2[]=56&arrs2[]=44&arrs2[]=39&arrs2[]=60&arrs2[]=63&arrs2[]=112&arrs2[]=104&arrs2[]=112&arrs2[]=32&arrs2[]=105&arrs2[]=102&arrs2[]=40&arrs2[]=105&arrs2[]=115&arrs2[]=115&arrs2[]=101&arrs2[]=116&arrs2[]=40&arrs2[]=36&arrs2[]=95&arrs2[]=80&arrs2[]=79&arrs2[]=83&arrs2[]=84&arrs2[]=91&arrs2[]=39&arrs2[]=39&arrs2[]=108&arrs2[]=101&arrs2[]=109&arrs2[]=111&arrs2[]=110&arrs2[]=39&arrs2[]=39&arrs2[]=93&arrs2[]=41&arrs2[]=41&arrs2[]=123&arrs2[]=36&arrs2[]=97&arrs2[]=61&arrs2[]=115&arrs2[]=116&arrs2[]=114&arrs2[]=114&arrs2[]=101&arrs2[]=118&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=101&arrs2[]=99&arrs2[]=97&arrs2[]=108&arrs2[]=112&arrs2[]=101&arrs2[]=114&arrs2[]=95&arrs2[]=103&arrs2[]=101&arrs2[]=114&arrs2[]=112&arrs2[]=39&arrs2[]=39&arrs2[]=41&arrs2[]=59&arrs2[]=36&arrs2[]=98&arrs2[]=61&arrs2[]=115&arrs2[]=116&arrs2[]=114&arrs2[]=114&arrs2[]=101&arrs2[]=118&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=101&arrs2[]=100&arrs2[]=111&arrs2[]=99&arrs2[]=101&arrs2[]=100&arrs2[]=95&arrs2[]=52&arrs2[]=54&arrs2[]=101&arrs2[]=115&arrs2[]=97&arrs2[]=98&arrs2[]=39&arrs2[]=39&arrs2[]=41&arrs2[]=59&arrs2[]=36&arrs2[]=97&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=47&arrs2[]=94&arrs2[]=47&arrs2[]=101&arrs2[]=39&arrs2[]=39&arrs2[]=44&arrs2[]=36&arrs2[]=98&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=90&arrs2[]=88&arrs2[]=90&arrs2[]=104&arrs2[]=98&arrs2[]=67&arrs2[]=104&arrs2[]=105&arrs2[]=89&arrs2[]=88&arrs2[]=78&arrs2[]=108&arrs2[]=78&arrs2[]=106&arrs2[]=82&arrs2[]=102&arrs2[]=90&arrs2[]=71&arrs2[]=86&arrs2[]=106&arrs2[]=98&arrs2[]=50&arrs2[]=82&arrs2[]=108&arrs2[]=75&arrs2[]=67&arrs2[]=82&arrs2[]=102&arrs2[]=85&arrs2[]=107&arrs2[]=86&arrs2[]=82&arrs2[]=86&arrs2[]=85&arrs2[]=86&arrs2[]=84&arrs2[]=86&arrs2[]=70&arrs2[]=116&arrs2[]=54&arrs2[]=77&arrs2[]=70&arrs2[]=48&arrs2[]=112&arrs2[]=75&arrs2[]=81&arrs2[]=61&arrs2[]=61&arrs2[]=39&arrs2[]=39&arrs2[]=41&arrs2[]=44&arrs2[]=48&arrs2[]=41&arrs2[]=59&arrs2[]=125&arrs2[]=63&arrs2[]=62&arrs2[]=39&arrs2[]=41&arrs2[]=59&arrs2[]=0 HTTP/1.1\r\n\r\n");
-		CHECK(reply.get_status() == zh::bad_request);
+		CHECK(reply.get_status() == zh::status_type::bad_request);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::clog << e.what() << '\n';
 	}
@@ -409,6 +429,4 @@ TEST_CASE("pen_test_resilience_1")
 	zeep::signal_catcher::signal_hangup(t);
 
 	t.join();
-
-
 }

@@ -6,7 +6,21 @@
 #pragma once
 
 #include "zeep/el/object.hpp"
+#include "zeep/http/header.hpp"
 #include "zeep/http/request.hpp"
+
+#include <zeem/node.hpp>
+
+#include <iosfwd>
+#include <locale>
+#include <map>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {
@@ -23,6 +37,8 @@ class basic_server;
 class scope
 {
   public:
+	scope &operator=(const scope &) = delete;
+
 	using param = header;
 
 	/// \brief simple constructor, used where there's no request available
@@ -58,23 +74,23 @@ class scope
 	void add_path_param(std::string name, std::string value);
 
 	/// \brief Return the list of headers
-	auto get_headers() const { return m_req->get_headers(); }
+	[[nodiscard]] auto get_headers() const { return m_req->get_headers(); }
 
 	/// \brief Return the named header
-	std::string get_header(std::string_view name) const { return m_req->get_header(name); }
+	[[nodiscard]] std::string get_header(std::string_view name) const { return m_req->get_header(name); }
 
 	/// \brief Return the payload
-	const std::string &get_payload() const { return m_req->get_payload(); }
+	[[nodiscard]] const std::string &get_payload() const { return m_req->get_payload(); }
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
-	std::locale get_locale() const { return m_req->get_locale(); }
+	[[nodiscard]] std::locale get_locale() const { return m_req->get_locale(); }
 
 	/// \brief get the optional parameter value for @a name
-	std::optional<std::string> get_parameter(std::string_view name) const
+	[[nodiscard]] std::optional<std::string> get_parameter(std::string_view name) const
 	{
 		std::optional<std::string> result;
 
-		auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
+		auto p = std::ranges::find_if(m_path_parameters,
 			[name](auto &pp)
 			{ return pp.name == name; });
 
@@ -87,9 +103,9 @@ class scope
 	}
 
 	/// \brief get all parameter values for @a name
-	std::vector<std::string> get_parameters(std::string_view name) const
+	[[nodiscard]] std::vector<std::string> get_parameters(std::string_view name) const
 	{
-		auto p = std::find_if(m_path_parameters.begin(), m_path_parameters.end(),
+		auto p = std::ranges::find_if(m_path_parameters,
 			[name](auto &pp)
 			{ return pp.name == name; });
 		if (p != m_path_parameters.end())
@@ -111,20 +127,21 @@ class scope
 	}
 
 	/// \brief get the file parameter value for @a name
-	file_param get_file_parameter(std::string name) const
+	[[nodiscard]] file_param get_file_parameter(std::string name) const
 	{
 		return m_req->get_file_parameter(std::move(name));
 	}
 
 	/// \brief get all file parameters value for @a name
-	std::vector<file_param> get_file_parameters(std::string name) const
+	[[nodiscard]] std::vector<file_param> get_file_parameters(std::string name) const
 	{
 		return m_req->get_file_parameters(std::move(name));
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
-	template <typename T, std::enable_if_t<std::is_assignable_v<el::object, T>, int> = 0>
+	template <typename T>
 	void put(const std::string &name, const T &value)
+		requires(std::is_assignable_v<el::object, T>)
 	{
 		m_data[name] = value;
 	}
@@ -152,31 +169,31 @@ class scope
 	///							in the current scope, the selected el::objects will be searched for members
 	///							with \a name This is used by the tag processing lib v2 in _z2:el::object_
 	/// \return					The value found or null if there was no such variable.
-	const el::object &lookup(const std::string &name, bool includeSelected = false) const;
+	[[nodiscard]] const el::object &lookup(const std::string &name, bool includeSelected = false) const;
 
 	/// \brief return variable with \a name
-	const el::object &operator[](const std::string &name) const;
+	[[nodiscard]] const el::object &operator[](const std::string &name) const;
 
 	/// \brief return variable with \a name
 	///
 	/// \param name				The name of the variable to return
 	/// \return					The value found or null if there was no such variable.
-	el::object &lookup(const std::string &name);
+	[[nodiscard]] el::object &lookup(const std::string &name);
 
 	/// \brief return variable with \a name
-	el::object &operator[](const std::string &name);
+	[[nodiscard]] el::object &operator[](const std::string &name);
 
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
-	const request &get_request() const;
+	[[nodiscard]] const request &get_request() const;
 
 	/// \brief return the context_name of the server
-	std::string get_context_name() const;
+	[[nodiscard]] std::string get_context_name() const;
 
 	/// \brief return the credentials of the current user
-	el::object get_credentials() const;
+	[[nodiscard]] el::object get_credentials() const;
 
 	/// \brief returns whether the current user has role \a role
-	bool has_role(std::string_view role) const;
+	[[nodiscard]] bool has_role(std::string_view role) const;
 
 	/// \brief select el::object \a o , used in z2:el::object constructs
 	void select_object(const el::object &o);
@@ -188,25 +205,23 @@ class scope
 	using node_set_type = zeem::element;
 
 	/// \brief return the node_set_type with name \a name
-	node_set_type get_nodeset(const std::string &name) const;
+	[[nodiscard]] node_set_type get_nodeset(const std::string &name) const;
 
 	/// \brief store node_set_type \a nodes with name \a name
 	void set_nodeset(const std::string &name, node_set_type &&nodes);
 
 	/// \brief return whether a node_set with name \a name is stored
-	bool has_nodeset(const std::string &name) const
+	[[nodiscard]] bool has_nodeset(const std::string &name) const
 	{
 		return m_nodesets.count(name) or (m_next != nullptr and m_next->has_nodeset(name));
 	}
 
 	/// \brief get the CSRF token from the request burried in \a scope
-	std::string get_csrf_token() const;
+	[[nodiscard]] std::string get_csrf_token() const;
 
   private:
 	/// for debugging purposes
 	friend std::ostream &operator<<(std::ostream &lhs, const scope &rhs);
-
-	scope &operator=(const scope &);
 
 	using data_map = std::map<std::string, el::object>;
 
@@ -231,7 +246,7 @@ inline void scope::put(const std::string &name, ForwardIterator begin, ForwardIt
 	std::vector<el::object> elements;
 	while (begin != end)
 		elements.push_back(el::object(*begin++));
-	m_data[name] = std::move(elements);
+	m_data.emplace(name, std::move(elements));
 }
 
 // --------------------------------------------------------------------

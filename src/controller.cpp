@@ -4,20 +4,29 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
+#include "zeep/http/controller.hpp"
+
+#include "zeep/exception.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/uri.hpp"
 
 #include "glob.hpp"
 
-#include <cassert>
-
-#include "zeep/http/controller.hpp"
-#include "zeep/http/uri.hpp"
+#include <cstddef>
+#include <filesystem>
+#include <regex>
+#include <string>
+#include <vector>
 
 namespace zeep::http
 {
 
-controller::controller(std::string prefix_path)
-	: m_prefix_path(std::move(prefix_path))
+controller::controller(const std::string &prefix_path)
+	: m_prefix_path(prefix_path)
 {
 }
 
@@ -88,7 +97,7 @@ void controller::get_options(const request &req, reply &rep)
 
 // --------------------------------------------------------------------
 
-void controller::init_scope(scope &)
+void controller::init_scope(scope & /*unused*/)
 {
 }
 

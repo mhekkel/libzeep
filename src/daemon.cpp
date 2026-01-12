@@ -7,20 +7,45 @@
 // Source code specifically for Unix/Linux
 // Utility routines to build daemon processes
 
+#include "zeep/http/daemon.hpp"
+
+#include "signals.hpp"
+#include "zeep/config.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/preforked-server.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/unicode-support.hpp"
+
+#include <cerrno>
+#include <climits>
+#include <csignal>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <exception>
+#include <fcntl.h>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <sys/types.h>
+#include <system_error>
+#include <thread>
+#include <utility>
+#include <vector>
+
 #ifndef _WIN32
 # include <grp.h>
 # include <pwd.h>
 # include <sys/wait.h>
+# include <unistd.h>
 #endif
-
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-
-#include "zeep/http/daemon.hpp"
-#include "zeep/http/preforked-server.hpp"
-
-#include "signals.hpp"
 
 namespace fs = std::filesystem;
 
@@ -71,8 +96,7 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 	asio_ns::ip::tcp::acceptor acceptor(io_context);
 	acceptor.open(endpoint.protocol());
 	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
-	acceptor.bind(endpoint, ec);
-	if (ec)
+	if (acceptor.bind(endpoint, ec) != std::errc{})
 		throw std::runtime_error(std::string("Is server running already? ") + ec.message());
 	acceptor.listen();
 
@@ -83,7 +107,8 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 
 	std::unique_ptr<basic_server> s(m_factory());
 	s->bind(address, port);
-	std::thread t(std::bind(&server::run, s.get(), 1));
+	std::thread t([s = s.get()]
+		{ s->run(1); });
 
 	sc.unblock();
 
@@ -99,7 +124,7 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 
 #if HTTP_HAS_UNIX_DAEMON
 
-int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, std::string run_as_user)
+int daemon::start(std::string_view address, uint16_t port, int nr_of_procs, int nr_of_threads, const std::string &run_as_user)
 {
 	int result = 0;
 
@@ -173,7 +198,7 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, s
 		{
 			for (;;)
 			{
-				bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, std::move(run_as_user));
+				bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
 				if (hupped)
 				{
 					std::clog << "Server was interrupted, will attempt to resume\n";
@@ -208,7 +233,7 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_procs, s
 	return result;
 }
 
-int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads, std::string run_as_user)
+int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, const std::string &run_as_user)
 {
 	using namespace std::literals;
 
@@ -294,7 +319,7 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 			if (not run_as_user.empty())
 			{
 				struct passwd *pw = getpwnam(run_as_user.c_str());
-				if (pw == NULL)
+				if (pw == nullptr)
 				{
 					std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
 					exit(1);
@@ -350,7 +375,7 @@ int daemon::start(std::string_view address, uint16_t port, size_t nr_of_threads,
 				sc.unblock();
 				int sig = sc.wait();
 
-std::cerr << "Process " << getpid() << " received signal " << sig << "\n";
+				std::clog << "Process " << getpid() << " received signal " << sig << "\n";
 
 				server->stop();
 
@@ -359,13 +384,11 @@ std::cerr << "Process " << getpid() << " received signal " << sig << "\n";
 
 				if (sig == SIGHUP)
 				{
-					std::this_thread::sleep_for(100ms);
-
 					// re-open log files
 					open_log_file();
 
 					std::clog << "re-starting server\n"
-							<< "Listening to " << address << ':' << port << '\n';
+							  << "Listening to " << address << ':' << port << '\n';
 
 					continue;
 				}
@@ -381,6 +404,18 @@ std::cerr << "Process " << getpid() << " received signal " << sig << "\n";
 
 			// We're done. Exit
 			_exit(0);
+		}
+
+		// avoid zombies
+		int status, pid_c;
+		pid_c = waitpid(-1, &status, WUNTRACED);
+
+		if (pid_c != -1)
+		{
+			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
+				std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
+			// else
+			// 	std::clog << "child terminated normally\n";
 		}
 	}
 
@@ -404,26 +439,24 @@ int daemon::stop()
 		result = ::kill(pid, SIGINT);
 		if (result != 0)
 			std::clog << "Failed to stop process " << pid << ": " << strerror(errno) << '\n';
-		try
-		{
-			// avoid zombies
-			int status, pid_c;
-			pid_c = waitpid(-1, &status, WUNTRACED);
 
-			if (pid_c != -1)
-			{
-				if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
-					std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
-				// else
-				// 	std::clog << "child terminated normally\n";
-			}
+		// avoid zombies
+		int status, pid_c;
+		pid_c = waitpid(pid, &status, WUNTRACED);
 
-			if (fs::exists(m_pid_file))
-				fs::remove(m_pid_file);
-		}
-		catch (...)
+		if (pid_c != -1)
 		{
+			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
+				std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
+			// else
+			// 	std::clog << "child terminated normally\n";
 		}
+
+		std::error_code ec;
+		if (fs::exists(m_pid_file, ec))
+			fs::remove(m_pid_file, ec);
+		if (ec != std::errc{})
+			std::clog << "Could not remove pid file: " << ec.message() << '\n';
 	}
 	else
 		throw std::runtime_error("Not my pid file: " + m_pid_file);
@@ -494,7 +527,7 @@ int daemon::daemonize()
 	}
 
 	// This in-between process should not catch SIGHUP
-	signal(SIGHUP, SIG_IGN);
+	(void)signal(SIGHUP, SIG_IGN);
 
 	// fork again, to avoid being able to attach to a terminal device
 	pid = fork();
@@ -524,18 +557,23 @@ int daemon::daemonize()
 
 	// close stdin
 	close(STDIN_FILENO);
-	open("/dev/null", O_RDONLY);
+	(void)open("/dev/null", O_RDONLY); // NOLINT(hicpp-vararg)
 
 	// The final process should however catch SIGHUP
-	signal(SIGHUP, SIG_DFL);
+	(void)signal(SIGHUP, SIG_DFL);
 
 	return 0;
 }
 
 void daemon::open_log_file()
 {
+	// Flush the IO first
+	std::cout.flush();
+	std::cerr.flush();
+	std::clog.flush();
+
 	// open the log file
-	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
+	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
 	if (fd_out < 0)
 	{
 		std::clog << "Opening log file " << m_stdout_log_file << " failed\n";
@@ -548,7 +586,7 @@ void daemon::open_log_file()
 		fd_err = fd_out;
 	else
 	{
-		fd_err = open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
+		fd_err = open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
 		if (fd_err < 0)
 		{
 			std::clog << "Opening log file " << m_stderr_log_file << " failed\n";
@@ -566,7 +604,7 @@ void daemon::open_log_file()
 		close(fd_err);
 }
 
-bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of_procs, size_t nr_of_threads, std::string run_as_user)
+bool daemon::run_main_loop(std::string_view address, uint16_t port, int nr_of_procs, int nr_of_threads, const std::string &run_as_user)
 {
 	int sig = 0;
 
@@ -596,7 +634,7 @@ bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of
 				if (not run_as_user.empty())
 				{
 					struct passwd* pw = getpwnam(run_as_user.c_str());
-					if (pw == NULL)
+					if (pw == nullptr)
 					{
 						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
 						exit(1);
@@ -638,7 +676,8 @@ bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of
 				exit(1);
 			} });
 
-		std::thread t(std::bind(&zeep::http::preforked_server::run, &server, address, port, nr_of_procs, nr_of_threads));
+		std::thread t([s = &server, address, port, nr_of_procs, nr_of_threads]
+			{ s->run(address, port, nr_of_procs, nr_of_threads); });
 
 		try
 		{
@@ -653,7 +692,7 @@ bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of
 			exit(1);
 		}
 
-		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+		pthread_sigmask(SIG_SETMASK, &old_mask, nullptr);
 
 		// Wait for signal indicating time to shut down.
 		sigset_t wait_mask;
@@ -663,11 +702,11 @@ bool daemon::run_main_loop(std::string_view address, uint16_t port, size_t nr_of
 		sigaddset(&wait_mask, SIGQUIT);
 		sigaddset(&wait_mask, SIGTERM);
 		sigaddset(&wait_mask, SIGCHLD);
-		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+		pthread_sigmask(SIG_BLOCK, &wait_mask, nullptr);
 
 		sigwait(&wait_mask, &sig);
 
-		pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+		pthread_sigmask(SIG_SETMASK, &old_mask, nullptr);
 
 		server.stop();
 		t.join();

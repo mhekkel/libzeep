@@ -10,16 +10,21 @@
 /// definition of the zeep::login_controller class. This class inherits from
 /// html::controller and provides a default for /login and /logout handling.
 
-#include "zeep/config.hpp"
 #include "zeep/http/html-controller.hpp"
+#include "zeep/http/reply.hpp"
 
-#include <zeem.hpp>
+#include <zeem/document.hpp>
+
+#include <string>
 
 // --------------------------------------------------------------------
 //
 
 namespace zeep::http
 {
+
+class request;
+class scope;
 
 // --------------------------------------------------------------------
 
@@ -30,7 +35,7 @@ namespace zeep::http
 class login_controller : public html_controller
 {
   public:
-	login_controller(std::string prefix_path = "/");
+	login_controller(const std::string &prefix_path = "/");
 
 	/// \brief bind this controller to \a server
 	///
@@ -47,7 +52,7 @@ class login_controller : public html_controller
 	/// in case of a valid login.
 	///
 	/// \param req		The request that triggered this call
-	virtual zeem::document load_login_form(const request &req) const;
+	[[nodiscard]] virtual zeem::document load_login_form(const request &req) const;
 
 	/// \brief Create an error reply for an unauthorized access
 	///
@@ -57,16 +62,16 @@ class login_controller : public html_controller
 	virtual void create_unauth_reply(const request &req, reply &rep);
 
 	/// \brief Handle a GET on /login
-	reply handle_get_login(const scope &scope_);
+	[[nodiscard]] reply handle_get_login(const scope &scope_);
 
 	/// \brief Handle a POST on /login
-	reply handle_post_login(const scope &scope_, const std::string &username, const std::string &password);
+	[[nodiscard]] reply handle_post_login(const scope &scope_, const std::string &username, const std::string &password);
 
 	/// \brief Handle a GET or POST on /logout
-	reply handle_logout(const scope &scope_);
+	[[nodiscard]] reply handle_logout(const scope &scope_);
 
 	/// \brief Return a reply for a redirect to the requested or default destination.
-	reply create_redirect_for_request(const request &req);
+	[[nodiscard]] reply create_redirect_for_request(const request &req) const;
 };
 
 } // namespace zeep::http

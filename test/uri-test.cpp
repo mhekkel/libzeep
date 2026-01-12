@@ -1,16 +1,23 @@
-#include "test-main.hpp"
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
+
+#include <catch2/catch_test_macros.hpp>
 
 #include <zeep/http/uri.hpp>
 
-namespace z = zeep;
+#include <cctype>
+#include <string>
+#include <vector>
 
 TEST_CASE("cc_1")
 {
 	for (int ch = 0; ch <= 255; ++ch)
 	{
 		// std::cout << ch << ' ' << char(ch) << '\n';
-		CHECK((std::isalpha(ch) != 0) == z::http::uri::is_scheme_start(ch));
-		CHECK((std::isxdigit(ch) != 0) == z::http::uri::is_xdigit(ch));
+		CHECK((std::isalpha(ch) != 0) == zeep::http::uri::is_scheme_start(ch));
+		CHECK((std::isxdigit(ch) != 0) == zeep::http::uri::is_xdigit(ch));
 	}
 }
 
@@ -108,33 +115,32 @@ TEST_CASE("uri_6c")
 	CHECK_THROWS_AS(zeep::http::uri("file://a#c"), zeep::http::uri_parse_error);
 }
 
-
 TEST_CASE("normalize_1")
 {
 	zeep::http::uri base("http://a/b/c/d;p?q");
 
-	CHECK(zeep::http::uri("g:h"    , base).string() == "g:h");
-	CHECK(zeep::http::uri("g"      , base).string() == "http://a/b/c/g");
-	CHECK(zeep::http::uri("./g"    , base).string() == "http://a/b/c/g");
-	CHECK(zeep::http::uri("g/"     , base).string() == "http://a/b/c/g/");
-	CHECK(zeep::http::uri("/g"     , base).string() == "http://a/g");
-	CHECK(zeep::http::uri("//g"    , base).string() == "http://g");
-	CHECK(zeep::http::uri("?y"     , base).string() == "http://a/b/c/d;p?y");
-	CHECK(zeep::http::uri("g?y"    , base).string() == "http://a/b/c/g?y");
-	CHECK(zeep::http::uri("#s"     , base).string() == "http://a/b/c/d;p?q#s");
-	CHECK(zeep::http::uri("g#s"    , base).string() == "http://a/b/c/g#s");
-	CHECK(zeep::http::uri("g?y#s"  , base).string() == "http://a/b/c/g?y#s");
-	CHECK(zeep::http::uri(";x"     , base).string() == "http://a/b/c/;x");
-	CHECK(zeep::http::uri("g;x"    , base).string() == "http://a/b/c/g;x");
+	CHECK(zeep::http::uri("g:h", base).string() == "g:h");
+	CHECK(zeep::http::uri("g", base).string() == "http://a/b/c/g");
+	CHECK(zeep::http::uri("./g", base).string() == "http://a/b/c/g");
+	CHECK(zeep::http::uri("g/", base).string() == "http://a/b/c/g/");
+	CHECK(zeep::http::uri("/g", base).string() == "http://a/g");
+	CHECK(zeep::http::uri("//g", base).string() == "http://g");
+	CHECK(zeep::http::uri("?y", base).string() == "http://a/b/c/d;p?y");
+	CHECK(zeep::http::uri("g?y", base).string() == "http://a/b/c/g?y");
+	CHECK(zeep::http::uri("#s", base).string() == "http://a/b/c/d;p?q#s");
+	CHECK(zeep::http::uri("g#s", base).string() == "http://a/b/c/g#s");
+	CHECK(zeep::http::uri("g?y#s", base).string() == "http://a/b/c/g?y#s");
+	CHECK(zeep::http::uri(";x", base).string() == "http://a/b/c/;x");
+	CHECK(zeep::http::uri("g;x", base).string() == "http://a/b/c/g;x");
 	CHECK(zeep::http::uri("g;x?y#s", base).string() == "http://a/b/c/g;x?y#s");
-	CHECK(zeep::http::uri(""       , base).string() == "http://a/b/c/d;p?q");
-	CHECK(zeep::http::uri("."      , base).string() == "http://a/b/c/");
-	CHECK(zeep::http::uri("./"     , base).string() == "http://a/b/c/");
-	CHECK(zeep::http::uri(".."     , base).string() == "http://a/b/");
-	CHECK(zeep::http::uri("../"    , base).string() == "http://a/b/");
-	CHECK(zeep::http::uri("../g"   , base).string() == "http://a/b/g");
-	CHECK(zeep::http::uri("../.."  , base).string() == "http://a/");
-	CHECK(zeep::http::uri("../../" , base).string() == "http://a/");
+	CHECK(zeep::http::uri("", base).string() == "http://a/b/c/d;p?q");
+	CHECK(zeep::http::uri(".", base).string() == "http://a/b/c/");
+	CHECK(zeep::http::uri("./", base).string() == "http://a/b/c/");
+	CHECK(zeep::http::uri("..", base).string() == "http://a/b/");
+	CHECK(zeep::http::uri("../", base).string() == "http://a/b/");
+	CHECK(zeep::http::uri("../g", base).string() == "http://a/b/g");
+	CHECK(zeep::http::uri("../..", base).string() == "http://a/");
+	CHECK(zeep::http::uri("../../", base).string() == "http://a/");
 	CHECK(zeep::http::uri("../../g", base).string() == "http://a/g");
 }
 
@@ -142,40 +148,45 @@ TEST_CASE("normalize_2")
 {
 	zeep::http::uri base("http://a/b/c/d;p?q");
 
-
-	CHECK(zeep::http::uri("../../../g"   , base).string() == "http://a/g");
+	CHECK(zeep::http::uri("../../../g", base).string() == "http://a/g");
 	CHECK(zeep::http::uri("../../../../g", base).string() == "http://a/g");
-	CHECK(zeep::http::uri("/./g"         , base).string() == "http://a/g");
-	CHECK(zeep::http::uri("/../g"        , base).string() == "http://a/g");
-	CHECK(zeep::http::uri("g."           , base).string() == "http://a/b/c/g.");
-	CHECK(zeep::http::uri(".g"           , base).string() == "http://a/b/c/.g");
-	CHECK(zeep::http::uri("g.."          , base).string() == "http://a/b/c/g..");
-	CHECK(zeep::http::uri("..g"          , base).string() == "http://a/b/c/..g");
-	CHECK(zeep::http::uri("./../g"       , base).string() == "http://a/b/g");
-	CHECK(zeep::http::uri("./g/."        , base).string() == "http://a/b/c/g/");
-	CHECK(zeep::http::uri("g/./h"        , base).string() == "http://a/b/c/g/h");
-	CHECK(zeep::http::uri("g/../h"       , base).string() == "http://a/b/c/h");
-	CHECK(zeep::http::uri("g;x=1/./y"    , base).string() == "http://a/b/c/g;x=1/y");
-	CHECK(zeep::http::uri("g;x=1/../y"   , base).string() == "http://a/b/c/y");
-	CHECK(zeep::http::uri("g?y/./x"      , base).string() == "http://a/b/c/g?y/./x");
-	CHECK(zeep::http::uri("g?y/../x"     , base).string() == "http://a/b/c/g?y/../x");
-	CHECK(zeep::http::uri("g#s/./x"      , base).string() == "http://a/b/c/g#s/./x");
-	CHECK(zeep::http::uri("g#s/../x"     , base).string() == "http://a/b/c/g#s/../x");
-	        //    ; for strict parsers
-	CHECK(zeep::http::uri("http:g"       , base).string() == "http:g");
-                    //   /  "http://a/b/c/g" ; for backward compatibility
+	CHECK(zeep::http::uri("/./g", base).string() == "http://a/g");
+	CHECK(zeep::http::uri("/../g", base).string() == "http://a/g");
+	CHECK(zeep::http::uri("g.", base).string() == "http://a/b/c/g.");
+	CHECK(zeep::http::uri(".g", base).string() == "http://a/b/c/.g");
+	CHECK(zeep::http::uri("g..", base).string() == "http://a/b/c/g..");
+	CHECK(zeep::http::uri("..g", base).string() == "http://a/b/c/..g");
+	CHECK(zeep::http::uri("./../g", base).string() == "http://a/b/g");
+	CHECK(zeep::http::uri("./g/.", base).string() == "http://a/b/c/g/");
+	CHECK(zeep::http::uri("g/./h", base).string() == "http://a/b/c/g/h");
+	CHECK(zeep::http::uri("g/../h", base).string() == "http://a/b/c/h");
+	CHECK(zeep::http::uri("g;x=1/./y", base).string() == "http://a/b/c/g;x=1/y");
+	CHECK(zeep::http::uri("g;x=1/../y", base).string() == "http://a/b/c/y");
+	CHECK(zeep::http::uri("g?y/./x", base).string() == "http://a/b/c/g?y/./x");
+	CHECK(zeep::http::uri("g?y/../x", base).string() == "http://a/b/c/g?y/../x");
+	CHECK(zeep::http::uri("g#s/./x", base).string() == "http://a/b/c/g#s/./x");
+	CHECK(zeep::http::uri("g#s/../x", base).string() == "http://a/b/c/g#s/../x");
+	//    ; for strict parsers
+	CHECK(zeep::http::uri("http:g", base).string() == "http:g");
+	//   /  "http://a/b/c/g" ; for backward compatibility
 }
 
 TEST_CASE("path_1")
 {
 	zeep::http::uri t("http://a/b");
 
-	t.set_path("c");			CHECK(t.get_path().string() == "c");
-	t.set_path("/c");			CHECK(t.get_path().string() == "/c");
-	t.set_path("/c/");			CHECK(t.get_path().string() == "/c/");
-	t.set_path("c/d");			CHECK(t.get_path().string() == "c/d");
-	t.set_path("/c/d");			CHECK(t.get_path().string() == "/c/d");
-	t.set_path("/c/d/");		CHECK(t.get_path().string() == "/c/d/");
+	t.set_path("c");
+	CHECK(t.get_path().string() == "c");
+	t.set_path("/c");
+	CHECK(t.get_path().string() == "/c");
+	t.set_path("/c/");
+	CHECK(t.get_path().string() == "/c/");
+	t.set_path("c/d");
+	CHECK(t.get_path().string() == "c/d");
+	t.set_path("/c/d");
+	CHECK(t.get_path().string() == "/c/d");
+	t.set_path("/c/d/");
+	CHECK(t.get_path().string() == "/c/d/");
 }
 
 TEST_CASE("path_2")
@@ -183,12 +194,18 @@ TEST_CASE("path_2")
 	zeep::http::uri t("http://a/b");
 	zeep::http::uri u;
 
-	u = t / zeep::http::uri("c");			CHECK(u.string() == "http://a/b/c");
-	u = t / zeep::http::uri("/c");			CHECK(u.string() == "http://a/b/c");
-	u = t / zeep::http::uri("/c/");			CHECK(u.string() == "http://a/b/c/");
-	u = t / zeep::http::uri("c/d");			CHECK(u.string() == "http://a/b/c/d");
-	u = t / zeep::http::uri("/c/d");		CHECK(u.string() == "http://a/b/c/d");
-	u = t / zeep::http::uri("/c/d/");		CHECK(u.string() == "http://a/b/c/d/");
+	u = t / zeep::http::uri("c");
+	CHECK(u.string() == "http://a/b/c");
+	u = t / zeep::http::uri("/c");
+	CHECK(u.string() == "http://a/b/c");
+	u = t / zeep::http::uri("/c/");
+	CHECK(u.string() == "http://a/b/c/");
+	u = t / zeep::http::uri("c/d");
+	CHECK(u.string() == "http://a/b/c/d");
+	u = t / zeep::http::uri("/c/d");
+	CHECK(u.string() == "http://a/b/c/d");
+	u = t / zeep::http::uri("/c/d/");
+	CHECK(u.string() == "http://a/b/c/d/");
 }
 
 TEST_CASE("relative_1")
@@ -196,23 +213,23 @@ TEST_CASE("relative_1")
 	zeep::http::uri base("http://a/b/c/d;p?q");
 	zeep::http::uri u;
 
-	CHECK(zeep::http::uri("g:h"                 ).relative(base).string() == "g:h");
-	CHECK(zeep::http::uri("http://a/b/c/g"      ).relative(base).string() == "g");
-	CHECK(zeep::http::uri("http://a/b/c/g/"     ).relative(base).string() == "g/");
-	CHECK(zeep::http::uri("http://a/g"          ).relative(base).string() == "/g");
-	CHECK(zeep::http::uri("http://g"            ).relative(base).string() == "//g");
-	CHECK(zeep::http::uri("http://a/b/c/d;p?y"  ).relative(base).string() == "?y");
-	CHECK(zeep::http::uri("http://a/b/c/g?y"    ).relative(base).string() == "g?y");
+	CHECK(zeep::http::uri("g:h").relative(base).string() == "g:h");
+	CHECK(zeep::http::uri("http://a/b/c/g").relative(base).string() == "g");
+	CHECK(zeep::http::uri("http://a/b/c/g/").relative(base).string() == "g/");
+	CHECK(zeep::http::uri("http://a/g").relative(base).string() == "/g");
+	CHECK(zeep::http::uri("http://g").relative(base).string() == "//g");
+	CHECK(zeep::http::uri("http://a/b/c/d;p?y").relative(base).string() == "?y");
+	CHECK(zeep::http::uri("http://a/b/c/g?y").relative(base).string() == "g?y");
 	CHECK(zeep::http::uri("http://a/b/c/d;p?q#s").relative(base).string() == "#s");
-	CHECK(zeep::http::uri("http://a/b/c/g#s"    ).relative(base).string() == "g#s");
-	CHECK(zeep::http::uri("http://a/b/c/g?y#s"  ).relative(base).string() == "g?y#s");
-	CHECK(zeep::http::uri("http://a/b/c/;x"     ).relative(base).string() == ";x");
-	CHECK(zeep::http::uri("http://a/b/c/g;x"    ).relative(base).string() == "g;x");
+	CHECK(zeep::http::uri("http://a/b/c/g#s").relative(base).string() == "g#s");
+	CHECK(zeep::http::uri("http://a/b/c/g?y#s").relative(base).string() == "g?y#s");
+	CHECK(zeep::http::uri("http://a/b/c/;x").relative(base).string() == ";x");
+	CHECK(zeep::http::uri("http://a/b/c/g;x").relative(base).string() == "g;x");
 	CHECK(zeep::http::uri("http://a/b/c/g;x?y#s").relative(base).string() == "g;x?y#s");
-	CHECK(zeep::http::uri("http://a/b/c/d;p?q"  ).relative(base).string() == "");
-	CHECK(zeep::http::uri("http://a/b/c/"       ).relative(base).string() == ".");
-	CHECK(zeep::http::uri("http://a/b/"         ).relative(base).string() == "..");
-	CHECK(zeep::http::uri("http://a/b/g"        ).relative(base).string() == "../g");
+	CHECK(zeep::http::uri("http://a/b/c/d;p?q").relative(base).string() == "");
+	CHECK(zeep::http::uri("http://a/b/c/").relative(base).string() == ".");
+	CHECK(zeep::http::uri("http://a/b/").relative(base).string() == "..");
+	CHECK(zeep::http::uri("http://a/b/g").relative(base).string() == "../g");
 }
 
 TEST_CASE("relative_2")
@@ -220,23 +237,23 @@ TEST_CASE("relative_2")
 	zeep::http::uri base("http://a/b/c/d;p?q");
 	zeep::http::uri u;
 
-	CHECK(zeep::http::uri(zeep::http::uri("g:h"                 ).relative(base).string(), base).string() == "g:h"                 );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g"      ).relative(base).string(), base).string() == "http://a/b/c/g"      );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g/"     ).relative(base).string(), base).string() == "http://a/b/c/g/"     );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/g"          ).relative(base).string(), base).string() == "http://a/g"          );
-	CHECK(zeep::http::uri(zeep::http::uri("http://g"            ).relative(base).string(), base).string() == "http://g"            );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?y"  ).relative(base).string(), base).string() == "http://a/b/c/d;p?y"  );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g?y"    ).relative(base).string(), base).string() == "http://a/b/c/g?y"    );
+	CHECK(zeep::http::uri(zeep::http::uri("g:h").relative(base).string(), base).string() == "g:h");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g").relative(base).string(), base).string() == "http://a/b/c/g");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g/").relative(base).string(), base).string() == "http://a/b/c/g/");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/g").relative(base).string(), base).string() == "http://a/g");
+	CHECK(zeep::http::uri(zeep::http::uri("http://g").relative(base).string(), base).string() == "http://g");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?y").relative(base).string(), base).string() == "http://a/b/c/d;p?y");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g?y").relative(base).string(), base).string() == "http://a/b/c/g?y");
 	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?q#s").relative(base).string(), base).string() == "http://a/b/c/d;p?q#s");
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g#s"    ).relative(base).string(), base).string() == "http://a/b/c/g#s"    );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g?y#s"  ).relative(base).string(), base).string() == "http://a/b/c/g?y#s"  );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/;x"     ).relative(base).string(), base).string() == "http://a/b/c/;x"     );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g;x"    ).relative(base).string(), base).string() == "http://a/b/c/g;x"    );
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g#s").relative(base).string(), base).string() == "http://a/b/c/g#s");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g?y#s").relative(base).string(), base).string() == "http://a/b/c/g?y#s");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/;x").relative(base).string(), base).string() == "http://a/b/c/;x");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g;x").relative(base).string(), base).string() == "http://a/b/c/g;x");
 	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/g;x?y#s").relative(base).string(), base).string() == "http://a/b/c/g;x?y#s");
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?q"  ).relative(base).string(), base).string() == "http://a/b/c/d;p?q"  );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/"       ).relative(base).string(), base).string() == "http://a/b/c/"       );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/"         ).relative(base).string(), base).string() == "http://a/b/"         );
-	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/g"        ).relative(base).string(), base).string() == "http://a/b/g"        );
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/d;p?q").relative(base).string(), base).string() == "http://a/b/c/d;p?q");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/c/").relative(base).string(), base).string() == "http://a/b/c/");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/").relative(base).string(), base).string() == "http://a/b/");
+	CHECK(zeep::http::uri(zeep::http::uri("http://a/b/g").relative(base).string(), base).string() == "http://a/b/g");
 }
 
 TEST_CASE("encoding_1")

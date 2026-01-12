@@ -4,27 +4,43 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <chrono>
-#include <iostream>
+#include "zeep/http/server.hpp"
 
+#include "date/tz.h"
+#include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/http/access-control.hpp"
 #include "zeep/http/connection.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/error-handler.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/security.hpp"
-#include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
+#include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
+#include "zeep/unicode-support.hpp"
+
+#include <date/date.h>
+
+#include <chrono>
+#include <ctime>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <list> // for list
+#include <memory>
+#include <new>
+#include <set> // for set
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <tuple> // for tie
 
 namespace zeep::http
 {
-
-namespace detail
-{
-
-	// a thread specific logger
-	thread_local std::unique_ptr<std::ostringstream> s_log;
-	std::mutex s_log_lock;
-
-} // namespace detail
 
 // --------------------------------------------------------------------
 // http::basic_server
@@ -46,7 +62,14 @@ basic_server::basic_server(security_context *s_cntxt)
 
 basic_server::~basic_server()
 {
-	stop();
+	try
+	{
+		basic_server::stop();
+	}
+	catch (const std::exception &ex)
+	{
+		std::clog << "error stopping server: " << ex.what() << '\n';
+	}
 
 	for (auto c : m_controllers)
 		delete c;
@@ -65,8 +88,8 @@ void basic_server::bind(std::string_view address, unsigned short port)
 	m_address = address;
 	m_port = port;
 
-	m_acceptor.reset(new asio_ns::ip::tcp::acceptor(get_io_context()));
-	m_new_connection.reset(new connection(get_io_context(), *this));
+	m_acceptor = std::make_shared<asio_ns::ip::tcp::acceptor>(get_io_context());
+	m_new_connection = std::make_shared<connection>(get_io_context(), *this);
 
 	// then bind the address here
 	asio_ns::ip::tcp::endpoint endpoint;
@@ -96,7 +119,7 @@ void basic_server::bind(std::string_view address, unsigned short port)
 
 void basic_server::get_options_for_request(const request &req, reply &rep)
 {
-	rep = reply::stock_reply(no_content);
+	rep = reply::stock_reply(status_type::no_content);
 	rep.set_header("Allow", join(m_allowed_methods, ","));
 	rep.set_header("Cache-Control", "max-age=86400");
 
@@ -152,27 +175,19 @@ void basic_server::handle_accept(asio_system_ns::error_code ec)
 	if (not ec)
 	{
 		m_new_connection->start();
-		m_new_connection.reset(new connection(get_io_context(), *this));
+		m_new_connection = std::make_shared<connection>(get_io_context(), *this);
 		m_acceptor->async_accept(m_new_connection->get_socket(),
 			[this](asio_system_ns::error_code ec)
 			{ this->handle_accept(ec); });
 	}
 }
 
-std::ostream &basic_server::get_log()
-{
-	if (detail::s_log.get() == NULL)
-		detail::s_log.reset(new std::ostringstream);
-	return *detail::s_log;
-}
-
 void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req, reply &rep)
 {
 	// we're pessimistic
-	rep = reply::stock_reply(not_found);
+	rep = reply::stock_reply(status_type::not_found);
 
 	// set up a logging stream and collect logging information
-	detail::s_log.reset(new std::ostringstream);
 	auto start = std::chrono::system_clock::now();
 
 	std::string referer("-"), userAgent("-"), accept, client;
@@ -213,7 +228,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		// shortcut, check for supported method
 		auto method = req.get_method();
 		if (not(m_allowed_methods.empty() or m_allowed_methods.count(method)))
-			throw bad_request;
+			throw http_status_exception(status_type::bad_request);
 
 		std::string csrf;
 		bool csrf_is_new = false;
@@ -244,11 +259,12 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			{
 				try
 				{
-					if (eh->create_error_reply(req, not_found, rep))
+					if (eh->create_error_reply(req, status_type::not_found, rep))
 						break;
 				}
 				catch (...)
 				{
+					continue;
 				}
 			}
 		}
@@ -259,7 +275,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
 
 		if (not m_context_name.empty() and
-			(rep.get_status() == moved_permanently or rep.get_status() == moved_temporarily))
+			(rep.get_status() == status_type::moved_permanently or rep.get_status() == status_type::moved_temporarily))
 		{
 			auto location = rep.get_header("location");
 			if (location.front() == '/')
@@ -282,12 +298,22 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		bool handled = false;
 
 		// special case, caller expects a JSON reply
-		if (not req.get_header("Accept").empty() and req.get_accept("application/json") == 1.0f)
+		if (req.get_accept("application/json") == 1.0f)
 		{
 			try
 			{
 				if (eptr)
 					std::rethrow_exception(eptr);
+			}
+			catch (const http_status_exception &ex)
+			{
+				rep = http::reply::stock_reply(ex.status());
+
+				object error({ { "error", get_status_description(ex.status()) } });
+				rep.set_content(error);
+				rep.set_status(ex.status());
+
+				handled = true;
 			}
 			catch (status_type s)
 			{
@@ -301,20 +327,26 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			}
 			catch (const std::exception &e)
 			{
-				rep = http::reply::stock_reply(http::internal_server_error);
+				rep = http::reply::stock_reply(status_type::internal_server_error);
 
 				object error({ { "error", e.what() } });
 				rep.set_content(error);
-				rep.set_status(http::internal_server_error);
+				rep.set_status(status_type::internal_server_error);
 
 				handled = true;
 			}
 			catch (...)
 			{
+				rep = http::reply::stock_reply(status_type::internal_server_error);
+
+				object error({ { "error", "unknown error" } });
+				rep.set_content(error);
+				rep.set_status(status_type::internal_server_error);
+
+				handled = true;
 			}
 		}
-
-		if (not handled)
+		else
 		{
 			for (auto eh : m_error_handlers)
 			{
@@ -325,12 +357,13 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				}
 				catch (...)
 				{
+					continue;
 				}
 			}
 		}
 	}
 
-	log_request(client, req, rep, start, referer, userAgent, detail::s_log->str());
+	log_request(client, req, rep, start, referer, userAgent, {});
 }
 
 void basic_server::log_request(std::string_view client,
@@ -341,11 +374,6 @@ void basic_server::log_request(std::string_view client,
 {
 	try
 	{
-		// protect the output stream from garbled log messages
-		std::unique_lock<std::mutex> lock(detail::s_log_lock);
-
-		const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
-
 		auto credentials = req.get_credentials();
 		std::string username = credentials.is_object() ? credentials["username"].get<std::string>() : "";
 		if (username.empty())
@@ -353,24 +381,30 @@ void basic_server::log_request(std::string_view client,
 
 		const auto &[major, minor] = req.get_version();
 
-		std::cout << client << ' '
-				  << "-" << ' '
-				  << username << ' '
-				  << std::put_time(std::localtime(&now_t), "[%d/%b/%Y:%H:%M:%S %z]") << ' '
-				  << '"' << req.get_method() << ' ' << req.get_uri() << ' '
-				  << "HTTP/" << major << '.' << minor << "\" "
-				  << rep.get_status() << ' '
-				  << rep.size() << ' '
-				  << '"' << referer << '"' << ' '
-				  << '"' << userAgent << '"' << ' ';
+		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
 
-		if (entry.empty())
-			std::cout << "-" << std::endl;
-		else
-			std::cout << std::quoted(entry) << std::endl;
+		std::ostringstream ts;
+		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
+
+		std::cout << std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
+						 client,
+						 username,
+						 ts.str(),
+						 req.get_method(),
+						 req.get_uri().string(),
+						 major,
+						 minor,
+						 static_cast<int>(rep.get_status()),
+						 rep.size(),
+						 referer,
+						 userAgent,
+						 entry.empty() ? std::string{} : ((std::ostringstream() << ' ' << std::quoted(entry)).str()))
+				  << '\n'
+				  << std::flush;
 	}
-	catch (...)
+	catch (const std::exception &ex)
 	{
+		std::cerr << "error writing to log: " << ex.what() << '\n';
 	}
 }
 

@@ -4,7 +4,11 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include "zeep/http/scope.hpp"
+#include "zeep/exception.hpp"
 #include "zeep/http/server.hpp"
+
+#include <ostream>
+#include <stdexcept>
 
 namespace zeep::http
 {
@@ -16,7 +20,7 @@ std::ostream &operator<<(std::ostream &lhs, const scope &rhs)
 	const scope *s = &rhs;
 	while (s != nullptr)
 	{
-		for (scope::data_map::value_type e : s->m_data)
+		for (const scope::data_map::value_type& e : s->m_data)
 			lhs << e.first << " = " << e.second << '\n';
 		s = s->m_next;
 	}

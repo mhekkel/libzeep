@@ -3,11 +3,35 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/http/html-controller.hpp"
 #include "zeep/http/tag-processor.hpp"
+#include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/scope.hpp"
 #include "zeep/http/template-processor.hpp"
+#include "zeep/unicode-support.hpp"
 
+#include <algorithm>
+#include <zeem.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <exception>
+#include <filesystem>
+#include <functional>
+#include <initializer_list>
+#include <iterator>
+#include <map>
+#include <regex>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -57,24 +81,39 @@ tag_processor::tag_processor(const char *ns)
 {
 	using namespace std::placeholders;
 
-	register_attr_handler("assert", std::bind(&tag_processor::process_attr_assert, this, _1, _2, _3, _4, _5));
-	register_attr_handler("attr", std::bind(&tag_processor::process_attr_attr, this, _1, _2, _3, _4, _5));
-	register_attr_handler("classappend", std::bind(&tag_processor::process_attr_classappend, this, _1, _2, _3, _4, _5));
-	register_attr_handler("each", std::bind(&tag_processor::process_attr_each, this, _1, _2, _3, _4, _5));
-	register_attr_handler("if", std::bind(&tag_processor::process_attr_if, this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("include", std::bind(&tag_processor::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::include));
-	register_attr_handler("inline", std::bind(&tag_processor::process_attr_inline, this, _1, _2, _3, _4, _5));
-	register_attr_handler("insert", std::bind(&tag_processor::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::insert));
-	register_attr_handler("replace", std::bind(&tag_processor::process_attr_include, this, _1, _2, _3, _4, _5, TemplateIncludeAction::replace));
-	register_attr_handler("styleappend", std::bind(&tag_processor::process_attr_styleappend, this, _1, _2, _3, _4, _5));
-	register_attr_handler("switch", std::bind(&tag_processor::process_attr_switch, this, _1, _2, _3, _4, _5));
-	register_attr_handler("text", std::bind(&tag_processor::process_attr_text, this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("unless", std::bind(&tag_processor::process_attr_if, this, _1, _2, _3, _4, _5, true));
-	register_attr_handler("utext", std::bind(&tag_processor::process_attr_text, this, _1, _2, _3, _4, _5, false));
-	register_attr_handler("with", std::bind(&tag_processor::process_attr_with, this, _1, _2, _3, _4, _5));
+	register_attr_handler("assert", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_assert(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("attr", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_attr(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("classappend", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_classappend(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("each", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_each(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("if", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_if(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), false); });
+	register_attr_handler("include", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_include(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), TemplateIncludeAction::include); });
+	register_attr_handler("inline", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_inline(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("insert", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_include(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), TemplateIncludeAction::insert); });
+	register_attr_handler("replace", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_include(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), TemplateIncludeAction::replace); });
+	register_attr_handler("styleappend", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_styleappend(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("switch", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_switch(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("text", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_text(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), true); });
+	register_attr_handler("unless", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_if(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), true); });
+	register_attr_handler("utext", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_text(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), false); });
+	register_attr_handler("with", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
+		{ return process_attr_with(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
 }
 
-void tag_processor::process_xml(zeem::node *node, const scope &parentScope, fs::path dir, basic_template_processor &loader)
+void tag_processor::process_xml(zeem::node *node, const scope &parentScope, const fs::path &dir, basic_template_processor &loader)
 {
 	m_template.clear();
 	m_template.emplace_back(*static_cast<const zeem::element *>(node));
@@ -89,7 +128,7 @@ void tag_processor::process_xml(zeem::node *node, const scope &parentScope, fs::
 // --------------------------------------------------------------------
 // post processing: remove blocks, remove attributes with ns = ns(), process remove
 
-void tag_processor::post_process(zeem::element *e, const scope &parentScope, fs::path dir, basic_template_processor &loader)
+void tag_processor::post_process(zeem::element *e, const scope &parentScope, const fs::path &dir, basic_template_processor &loader)
 {
 	auto parent = e->parent();
 
@@ -124,8 +163,8 @@ void tag_processor::post_process(zeem::element *e, const scope &parentScope, fs:
 
 	// take a copy since iterators might get invalid
 	std::vector<zeem::element *> children;
-	std::transform(e->begin(), e->end(), std::back_inserter(children), [](auto &c)
-		{ return &c; });
+	for (auto &c : *e)
+		children.push_back(&c);
 
 	for (auto &c : children)
 		post_process(c, parentScope, dir, loader);
@@ -177,7 +216,7 @@ void tag_processor::process_text(zeem::node_with_text &text, const scope &scope)
 		auto m = s.substr(i, j - i);
 
 		if (not process_el(scope, m))
-			m = "Error processing " + m;
+			m.insert(0, "Error processing ");
 
 		if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 		{
@@ -206,7 +245,7 @@ void tag_processor::process_text(zeem::node_with_text &text, const scope &scope)
 // --------------------------------------------------------------------
 
 zeem::element tag_processor::resolve_fragment_spec(
-	zeem::element *node, fs::path dir, basic_template_processor &loader, const object &spec, const scope &scope)
+	zeem::element *node, const fs::path &dir, basic_template_processor &loader, const object &spec, const scope &scope)
 {
 	if (spec.contains("is-node-set") and spec["is-node-set"])
 		return scope.get_nodeset(spec["node-set-name"].get<std::string>());
@@ -249,7 +288,7 @@ zeem::element tag_processor::resolve_fragment_spec(
 }
 
 zeem::element tag_processor::resolve_fragment_spec(
-	zeem::element *node, fs::path dir, basic_template_processor &loader, const std::string &file, std::string_view selector, bool byID)
+	zeem::element *node, const fs::path &dir, basic_template_processor &loader, const std::string &file, std::string_view selector, bool byID)
 {
 	zeem::context ctx;
 	ctx.set("ns", ns());
@@ -318,7 +357,7 @@ zeem::element tag_processor::resolve_fragment_spec(
 
 // -----------------------------------------------------------------------
 
-void tag_processor::process_node(zeem::node *node, const scope &parentScope, std::filesystem::path dir, basic_template_processor &loader)
+void tag_processor::process_node(zeem::node *node, const scope &parentScope, const std::filesystem::path &dir, basic_template_processor &loader)
 {
 	for (;;)
 	{
@@ -331,13 +370,11 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, std
 				zeem::element_container *parent = node->parent();
 
 				auto parent_nodes = parent->nodes();
-				auto ni = std::find_if(parent_nodes.begin(), parent_nodes.end(), [node](auto &n)
+				auto ni = std::ranges::find_if(parent_nodes, [node](const auto &n)
 					{ return &n == node; });
 
-				[[maybe_unused]] auto ti = parent_nodes.emplace(ni, zeem::text(
-																		static_cast<zeem::cdata *>(node)->get_text()));
-
-				// assert(std::next(ti) == ni); // < this fails when building with MSVC
+				parent_nodes.emplace(
+					ni, zeem::text(static_cast<zeem::cdata *>(node)->get_text()));
 
 				parent_nodes.erase(ni);
 				break;
@@ -350,7 +387,7 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, std
 			break;
 		}
 
-		zeem::element *e = dynamic_cast<zeem::element *>(node);
+		auto *e = dynamic_cast<zeem::element *>(node);
 		if (e == nullptr)
 			break;
 
@@ -362,7 +399,7 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, std
 		{
 			auto &attributes = e->attributes();
 
-			attributes.sort([](auto a, auto b)
+			attributes.sort([](auto &a, auto &b)
 				{ return attribute_precedence(a) < attribute_precedence(b); });
 
 			auto attr = attributes.begin();
@@ -432,14 +469,14 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, std
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_if(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
+auto tag_processor::process_attr_if(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
 {
 	return ((not evaluate_el(scope, attr.value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_assert(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor::process_attr_assert(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
 	if (not evaluate_el_assert(scope, attr.value()))
 		throw zeep::exception("Assertion failed for '" + attr.value() + "'");
@@ -448,7 +485,7 @@ auto tag_processor::process_attr_assert(zeem::element * /*element*/, zeem::attri
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_text(zeem::element *element, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
+auto tag_processor::process_attr_text(zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/, bool escaped) -> AttributeAction
 {
 	object obj = evaluate_el(scope, attr.value());
 
@@ -482,7 +519,7 @@ auto tag_processor::process_attr_text(zeem::element *element, zeem::attribute &a
 
 // --------------------------------------------------------------------
 
-auto tag_processor::process_attr_switch(zeem::element *element, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor::process_attr_switch(zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
 	auto vo = evaluate_el(scope, attr.value());
 	std::string v;
@@ -523,7 +560,7 @@ auto tag_processor::process_attr_switch(zeem::element *element, zeem::attribute 
 
 // -----------------------------------------------------------------------
 
-auto tag_processor::process_attr_with(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, fs::path /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
+auto tag_processor::process_attr_with(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/) -> AttributeAction
 {
 	evaluate_el_with(scope, attr.value());
 	return AttributeAction::none;
@@ -531,7 +568,7 @@ auto tag_processor::process_attr_with(zeem::element * /*element*/, zeem::attribu
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path dir, basic_template_processor &loader)
+tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path &dir, basic_template_processor &loader)
 {
 	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
@@ -585,10 +622,10 @@ tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *n
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_attr(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_attr(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto v = evaluate_el_attr(scope, attr.value());
-	for (auto vi : v)
+	for (const auto &vi : v)
 		node->set_attribute(vi.first, vi.second);
 
 	return AttributeAction::none;
@@ -596,7 +633,7 @@ tag_processor::AttributeAction tag_processor::process_attr_attr(zeem::element *n
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_generic(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_generic(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto s = attr.value();
 
@@ -609,7 +646,7 @@ tag_processor::AttributeAction tag_processor::process_attr_generic(zeem::element
 // --------------------------------------------------------------------
 
 tag_processor::AttributeAction tag_processor::process_attr_boolean_value(
-	zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+	zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto s = attr.value();
 
@@ -623,7 +660,7 @@ tag_processor::AttributeAction tag_processor::process_attr_boolean_value(
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto type = attr.value();
 
@@ -635,7 +672,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 		{
 			if (n.type() != zeem::node_type::text and n.type() != zeem::node_type::cdata)
 				continue;
-			zeem::node_with_text *text = static_cast<zeem::node_with_text *>(&n);
+			auto *text = static_cast<zeem::node_with_text *>(&n);
 
 			std::string s = text->get_text();
 			std::string t;
@@ -647,7 +684,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 
 			for (auto ri = b; ri != e; ++ri)
 			{
-				auto m = *ri;
+				const auto &m = *ri;
 
 				t.append(i, s.begin() + m.position());
 				i = s.begin() + m.position() + m.length();
@@ -673,7 +710,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 		{
 			if (n.type() != zeem::node_type::text and n.type() != zeem::node_type::cdata)
 				continue;
-			zeem::node_with_text *text_p = static_cast<zeem::node_with_text *>(&n);
+			auto *text_p = static_cast<zeem::node_with_text *>(&n);
 
 			auto &text = *text_p;
 
@@ -704,7 +741,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 				auto m = s.substr(i, j - i);
 
 				if (not process_el(scope, m))
-					m = "Error processing " + m;
+					m.insert(0, "Error processing ");
 
 				if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 				{
@@ -734,7 +771,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_include(zeem::element *node, zeem::attribute &attr, scope &parentScope, std::filesystem::path dir, basic_template_processor &loader, TemplateIncludeAction tia)
+tag_processor::AttributeAction tag_processor::process_attr_include(zeem::element *node, zeem::attribute &attr, scope &parentScope, const std::filesystem::path &dir, basic_template_processor &loader, TemplateIncludeAction tia)
 {
 	AttributeAction result = AttributeAction::none;
 
@@ -750,7 +787,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(zeem::element
 
 	for (auto &templ : templates.nodes())
 	{
-		zeem::element *el = dynamic_cast<zeem::element *>(&templ);
+		auto *el = dynamic_cast<zeem::element *>(&templ);
 
 		if (el == nullptr)
 		{
@@ -874,7 +911,7 @@ tag_processor::AttributeAction tag_processor::process_attr_include(zeem::element
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_remove(zeem::element *node, zeem::attribute &attr, scope & /*scope*/, [[maybe_unused]] std::filesystem::path /*dir*/, [[maybe_unused]] basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_remove(zeem::element *node, zeem::attribute &attr, scope & /*scope*/, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto mode = attr.value();
 
@@ -908,7 +945,7 @@ tag_processor::AttributeAction tag_processor::process_attr_remove(zeem::element 
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_classappend(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_classappend(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	for (;;)
 	{
@@ -935,7 +972,7 @@ tag_processor::AttributeAction tag_processor::process_attr_classappend(zeem::ele
 		if (cs.empty())
 			c->set_value(s);
 		else
-			c->set_value(cs + ' ' + s);
+			c->set_value(cs += ' ' + s);
 
 		break;
 	}
@@ -945,7 +982,7 @@ tag_processor::AttributeAction tag_processor::process_attr_classappend(zeem::ele
 
 // --------------------------------------------------------------------
 
-tag_processor::AttributeAction tag_processor::process_attr_styleappend(zeem::element *node, zeem::attribute &attr, scope &scope, std::filesystem::path /*dir*/, basic_template_processor & /*loader*/)
+tag_processor::AttributeAction tag_processor::process_attr_styleappend(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	for (;;)
 	{
@@ -973,15 +1010,11 @@ tag_processor::AttributeAction tag_processor::process_attr_styleappend(zeem::ele
 		trim(cs);
 
 		if (cs.empty())
-		{
 			c->set_value(s);
-			break;
-		}
-
-		if (cs.back() == ';')
-			c->set_value(cs + ' ' + s);
+		else if (cs.back() == ';')
+			c->set_value(cs += ' ' + s);
 		else
-			c->set_value(cs + "; " + s);
+			c->set_value(cs += "; " + s);
 
 		break;
 	}

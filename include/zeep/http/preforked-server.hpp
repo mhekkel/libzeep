@@ -69,10 +69,10 @@ class preforked_server
 	/// The constructor takes one argument, a function object that creates
 	/// a server class instance.
 	preforked_server(std::function<basic_server *(void)> server_factory);
-	virtual ~preforked_server();
+	virtual ~preforked_server() = default;
 
 	/// \brief forks \a nr_of_child_processes children and starts listening, should be a separate thread
-	virtual void run(std::string_view address, short port, int nr_of_child_processes, int nr_of_threads);
+	virtual void run(std::string_view address, uint16_t port, int nr_of_child_processes, int nr_of_threads);
 	virtual void start(); ///< signal the thread it can start listening:
 	virtual void stop();  ///< stop the running thread
 

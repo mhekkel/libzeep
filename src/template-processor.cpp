@@ -3,13 +3,41 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include <chrono>
-#include <fstream>
-#include <iostream>
+#include "zeep/http/template-processor.hpp"
 
 #include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/header.hpp"
+#include "zeep/http/reply.hpp"
 #include "zeep/http/scope.hpp"
-#include "zeep/http/template-processor.hpp"
+#include "zeep/http/tag-processor.hpp"
+#include "zeep/unicode-support.hpp"
+
+#include <new>
+#include <zeem.hpp>
+
+#include <cerrno>
+#include <chrono>
+#include <cstring>
+#include <ctime>
+#include <exception>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <functional>
+#include <initializer_list>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -49,12 +77,20 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
 	else
 	{
-		result = new std::ifstream(m_docroot / path, std::ios::binary);
-		if (not result->is_open())
+		try
 		{
-			delete result;
+			result = new std::ifstream(m_docroot / path, std::ios::binary);
+			if (not result->is_open())
+			{
+				delete result;
+				result = nullptr;
+				ec = std::make_error_code(std::errc::no_such_file_or_directory);
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			ec = std::make_error_code(std::errc::not_enough_memory);
 			result = nullptr;
-			ec = std::make_error_code(std::errc::no_such_file_or_directory);
 		}
 	}
 
@@ -66,19 +102,18 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 
 reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 {
-	// TODO: The time used here is local, not GMT. Needs fix?
+	// TODO: maarten - The time used here is local, not GMT. Needs fix?
 
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].get<std::string>(), ec);
 
 	if (ec)
-		return reply::stock_reply(not_found);
+		return reply::stock_reply(status_type::not_found);
 
 	using namespace std::chrono;
-	auto fileDate = 
+	auto fileDate =
 		floor<seconds>(time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now()));
 
-	std::string ifModifiedSince;
 	for (const header &h : scope.get_headers())
 	{
 		if (iequals(h.name, "If-Modified-Since"))
@@ -90,7 +125,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 			auto modifiedSince = system_clock::from_time_t(std::mktime(&tm));
 
 			if (fileDate <= modifiedSince)
-				return reply::stock_reply(not_modified);
+				return reply::stock_reply(status_type::not_modified);
 
 			break;
 		}
@@ -100,7 +135,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 
 	std::unique_ptr<std::istream> in(load_file(file.string(), ec));
 	if (ec)
-		return reply::stock_reply(not_found);
+		return reply::stock_reply(status_type::not_found);
 
 	std::string mimetype = "text/plain";
 
@@ -127,7 +162,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 	else if (file.extension() == ".gz")
 		mimetype = "application/gzip";
 
-	reply result(ok);
+	reply result(status_type::ok);
 	result.set_content(in.release(), mimetype);
 
 	using namespace std::chrono;
@@ -241,7 +276,7 @@ void basic_template_processor::load_template(const std::string &file, zeem::docu
 		zeem::context ctx;
 
 		// this is problematic, take the first processor namespace for now.
-		// TODO fix this
+		// TODO: maarten - fix this
 		std::string ns;
 
 		for (auto &tp : m_tag_processor_creators)

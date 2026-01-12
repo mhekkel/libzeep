@@ -4,15 +4,22 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/html-controller.hpp"
+
+#include "zeep/http/controller.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
+#include "zeep/http/server.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 
 #include "glob.hpp"
 
-namespace fs = std::filesystem;
+#include <algorithm>
+#include <cassert>
+#include <functional>
+#include <string>
 
 namespace zeep::http
 {
@@ -49,7 +56,7 @@ void html_controller::init_scope(scope &scope)
 // --------------------------------------------------------------------
 //
 
-bool html_controller_v1::handle_request(request& req, reply& rep)
+bool html_controller_v1::handle_request(request &req, reply &rep)
 {
 	bool result = controller::handle_request(req, rep);
 
@@ -57,23 +64,23 @@ bool html_controller_v1::handle_request(request& req, reply& rep)
 	{
 		auto uri = get_prefixless_path(req);
 		auto path = uri.string();
-	
+
 		// set up the scope by putting some globals in it
 		scope scope(get_server(), req);
-	
+
 		scope.put("baseuri", path);
-	
+
 		init_scope(scope);
-	
-		auto handler = find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
-			[&uri, method=req.get_method()](const mount_point_v1& m)
+
+		auto handler = std::ranges::find_if(m_dispatch_table,
+			[&uri, method = req.get_method()](const mount_point_v1 &m)
 			{
 				// return m.path == path and
 				return glob_match(uri, m.path) and
-					(	method == "HEAD" or
-						method == "OPTIONS" or
-						m.method == method or
-						m.method == "UNDEFINED");
+			           (method == "HEAD" or
+						   method == "OPTIONS" or
+						   m.method == method or
+						   m.method == "UNDEFINED");
 			});
 
 		if (handler != m_dispatch_table.end())
@@ -88,7 +95,7 @@ bool html_controller_v1::handle_request(request& req, reply& rep)
 	}
 
 	if (not result)
-		rep = reply::stock_reply(not_found);
+		rep = reply::stock_reply(status_type::not_found);
 
 	return result;
 }

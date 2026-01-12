@@ -1,25 +1,22 @@
-#include "zeep/http/asio.hpp"
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "test-main.hpp"
+#include "zeep/exception.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/security.hpp"
+#include "zeep/http/uri.hpp"
 
-#include <random>
-#include <sstream>
+#include <catch2/catch_test_macros.hpp>
 
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/streambuf.hpp>
+#include <chrono>
+#include <set>
+#include <string>
+#include <thread>
+#include <tuple>
 
-#include <zeep/http/controller.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/login-controller.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/server.hpp>
-
-#include "client-test-code.hpp"
-#include "../src/signals.hpp"
-
-namespace z = zeep;
 namespace zh = zeep::http;
 
 TEST_CASE("sec_1")
@@ -38,31 +35,29 @@ TEST_CASE("sec_1")
 
 	CHECK(rep.get_header("Location") == "http://example.com");
 
-/*
-	std::clog << rep << '\n';
+	/*
+	    std::clog << rep << '\n';
 
-	std::ostringstream os;
-	os << rep;
+	    std::ostringstream os;
+	    os << rep;
 
-	zh::reply_parser p;
+	    zh::reply_parser p;
 
-	std::string s = os.str();
-	zeep::char_streambuf sb(s.c_str(), s.length());
+	    std::string s = os.str();
+	    zeep::char_streambuf sb(s.c_str(), s.length());
 
-	p.parse(sb);
-	auto r2 = p.get_reply();
+	    p.parse(sb);
+	    auto r2 = p.get_reply();
 
-	std::clog << r2 << '\n';
+	    std::clog << r2 << '\n';
 
-	BOOST_CHECK(r2.get_cookie("wrong").empty());
-*/
+	    BOOST_CHECK(r2.get_cookie("wrong").empty());
+	*/
 }
 
 TEST_CASE("sec_2")
 {
-	zh::simple_user_service users({
-		{ "scott", "tiger", { "USER" } }
-	});
+	zh::simple_user_service users({ { "scott", "tiger", { "USER" } } });
 
 	zeep::http::security_context sc("1234", users, false);
 	sc.add_rule("/**", { "USER" });
@@ -81,20 +76,17 @@ TEST_CASE("sec_2")
 		CHECK_NOTHROW(sc.validate_request(req));
 	}
 
-
 	{
 		// check with 1 second
 
 		zh::reply rep;
-		sc.add_authorization_headers(rep, user, std::chrono::seconds{1});
+		sc.add_authorization_headers(rep, user, std::chrono::seconds{ 1 });
 
 		zh::request req{ "GET", "/" };
 		req.set_cookie("access_token", rep.get_cookie("access_token"));
 
-		std::this_thread::sleep_for(std::chrono::seconds{2});
+		std::this_thread::sleep_for(std::chrono::seconds{ 2 });
 
 		CHECK_THROWS_AS(sc.validate_request(req), zeep::exception);
 	}
-
 }
-

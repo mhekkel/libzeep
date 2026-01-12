@@ -12,14 +12,7 @@
 /// \file
 /// definition of the routines that can parse and interpret el (expression language) code in a web application context
 
-#include "zeep/config.hpp"
-
-#include <map>
-
 #include "zeep/el/object.hpp"
-#include "zeep/el/serializer.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/request.hpp"
 
 #include <zeem.hpp>
 
@@ -126,7 +119,7 @@ class expression_utility_object_base
 	}
 
   protected:
-	virtual object evaluate(const scope &scope_, const std::string &methodName,
+	[[nodiscard]] virtual object evaluate(const scope &scope_, const std::string &methodName,
 		const std::vector<object> &parameters) const = 0;
 
 	/// Struct used to store the instances of the derived classes along with
@@ -134,7 +127,7 @@ class expression_utility_object_base
 	struct instance
 	{
 		expression_utility_object_base *m_obj = nullptr;
-		const char *m_name;
+		const char *m_name{};
 		instance *m_next = nullptr;
 	};
 
@@ -152,7 +145,7 @@ class expression_utility_object : public expression_utility_object_base
 	using implementation_type = OBJ;
 
   protected:
-	expression_utility_object()
+	expression_utility_object() noexcept // NOLINT(bugprone-crtp-constructor-accessibility)
 	{
 		static instance s_next{ this, implementation_type::name(), s_head };
 		s_head = &s_next;

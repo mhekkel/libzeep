@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <catch2/catch_all.hpp>
-
 #include <filesystem>
 
 extern std::filesystem::path gTestDir, gDocrootDir;

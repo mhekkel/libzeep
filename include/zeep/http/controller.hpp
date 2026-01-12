@@ -8,12 +8,34 @@
 /// \file
 /// definition of the base class zeep::http::controller, used by e.g. controller and soap_controller
 
-#include "zeep/config.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/el/serializer.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
+#include "zeep/http/uri.hpp"
+#include "zeep/unicode-support.hpp"
 
+#include <zeem/serialize.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <exception>
+#include <filesystem>
 #include <fstream>
+#include <functional>
+#include <list>
+#include <optional>
+#include <regex>
+#include <stdexcept>
+#include <string>
 #include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace zeep::http
 {
@@ -33,11 +55,14 @@ namespace zeep::http
 class controller
 {
   public:
+	controller(const controller &) = delete;
+	controller &operator=(const controller &) = delete;
+
 	/// \brief constructor
 	///
 	/// \param prefix_path  The prefix path this controller is bound to
 
-	controller(std::string prefix_path);
+	controller(const std::string &prefix_path);
 
 	virtual ~controller();
 
@@ -48,13 +73,13 @@ class controller
 	virtual bool handle_request(request &req, reply &rep);
 
 	/// \brief returns the defined prefix path
-	uri get_prefix() const { return m_prefix_path; }
+	[[nodiscard]] uri get_prefix() const { return m_prefix_path; }
 
 	/// \brief return whether this uri request path matches our prefix
-	bool path_matches_prefix(const uri &path) const;
+	[[nodiscard]] bool path_matches_prefix(const uri &path) const;
 
 	/// \brief return the path with the prefix path stripped off
-	uri get_prefixless_path(const request &req) const;
+	[[nodiscard]] uri get_prefixless_path(const request &req) const;
 
 	/// \brief bind this controller to \a server
 	virtual void set_server(basic_server *server)
@@ -63,11 +88,10 @@ class controller
 	}
 
 	/// \brief return the server object we're bound to
-	const basic_server *get_server() const { return m_server; }
-	basic_server *get_server() { return m_server; }
+	[[nodiscard]] basic_server *get_server() const { return m_server; }
 
 	/// \brief return the context name, if specified. Empty string otherwise
-	std::string get_context_name() const
+	[[nodiscard]] std::string get_context_name() const
 	{
 		return m_server ? m_server->get_context_name() : "";
 	}
@@ -76,9 +100,6 @@ class controller
 	virtual void get_options(const request &req, reply &rep);
 
   protected:
-	controller(const controller &) = delete;
-	controller &operator=(const controller &) = delete;
-
 	/// @cond
 
 	/// \brief abstract base class for mount points, derived classes should
@@ -91,7 +112,7 @@ class controller
 		{
 		}
 
-		virtual ~mount_point_base() {}
+		virtual ~mount_point_base() = default;
 
 		virtual reply call(const scope &scope) = 0;
 
@@ -108,7 +129,7 @@ class controller
 			// construct a regex for matching paths
 			std::string ps;
 
-			for (auto pp : p)
+			for (const auto &pp : p)
 			{
 				if (pp.empty())
 					continue;
@@ -131,7 +152,7 @@ class controller
 					}
 					else
 					{
-						auto i = std::find(m_names.begin(), m_names.end(), param);
+						auto i = std::ranges::find(m_names, param);
 						if (i == m_names.end())
 						{
 							assert(false);
@@ -235,7 +256,7 @@ class controller
 			{
 				auto v = scope.get_parameter(name);
 				if (v.has_value())
-					result = value_serializer<T>::from_string(*v);
+					result = zeem::value_serializer<T>::from_string(*v);
 			}
 			catch (const std::exception &e)
 			{
@@ -283,7 +304,7 @@ class controller
 		template <typename T>
 			requires zeem::has_serialize_v<T, el::serializer<object>> or
 		             zeem::is_serializable_array_type_v<T, el::serializer<object>>
-		T get_parameter(const scope &scope, const std::string &name, T result)
+		T get_parameter(const scope &scope, const std::string &name, const T & /*result*/)
 		{
 			object v;
 
@@ -299,24 +320,24 @@ class controller
 			return el::serializer<T>::deserialize(v);
 		}
 
-		reply set_reply(std::filesystem::path v)
+		reply set_reply(const std::filesystem::path &v)
 		{
-			reply rep(ok);
+			reply rep(status_type::ok);
 			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
 			return rep;
 		}
 
 		reply set_reply(object &&v)
 		{
-			reply rep(ok);
-			rep.set_content(std::move(v));
+			reply rep(status_type::ok);
+			rep.set_content(v);
 			return rep;
 		}
 
 		template <typename T>
 		reply set_reply(T &&v)
 		{
-			reply rep(ok);
+			reply rep(status_type::ok);
 			rep.set_content(el::serializer<T>::serialize(std::forward<T>(v)));
 			return rep;
 		}
@@ -350,13 +371,13 @@ class controller
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
-			ControllerType *controller = dynamic_cast<ControllerType *>(owner);
+			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
 				throw std::runtime_error("Invalid controller for callback");
 
 			m_callback = [controller, sig](Args... args)
 			{
-				return (controller->*sig)(args...);
+				return (controller->*sig)(std::move(args)...);
 			};
 
 			set_names(names...);
@@ -367,7 +388,7 @@ class controller
 			if constexpr (std::is_void_v<ResultType>)
 			{
 				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
-				return reply::stock_reply(ok);
+				return reply::stock_reply(status_type::ok);
 			}
 			else if constexpr (std::is_same_v<ResultType, reply>)
 				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
@@ -376,7 +397,7 @@ class controller
 		}
 
 		template <std::size_t... I>
-		ArgsTuple collect_arguments(const scope &scope, std::index_sequence<I...>)
+		ArgsTuple collect_arguments(const scope &scope, std::index_sequence<I...> /*unused*/)
 		{
 			// return std::make_tuple(params.get_parameter(m_names[I])...);
 			return std::make_tuple(get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
@@ -404,7 +425,7 @@ class controller
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
-			ControllerType *controller = dynamic_cast<ControllerType *>(owner);
+			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
 				throw std::runtime_error("Invalid controller for callback");
 
@@ -421,7 +442,7 @@ class controller
 			if constexpr (std::is_void_v<ResultType>)
 			{
 				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
-				return reply::stock_reply(ok);
+				return reply::stock_reply(status_type::ok);
 			}
 			else if constexpr (std::is_same_v<ResultType, reply>)
 				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
@@ -430,7 +451,7 @@ class controller
 		}
 
 		template <std::size_t... I>
-		auto collect_arguments(const scope &scope, std::index_sequence<I...>)
+		auto collect_arguments(const scope &scope, std::index_sequence<I...> /*unused*/)
 		{
 			return std::make_tuple(std::ref(scope), get_parameter(scope, m_names[I], typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}

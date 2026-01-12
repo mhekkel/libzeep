@@ -25,9 +25,7 @@ class exception : public std::exception
 	exception(std::string message)
 		: m_message(std::move(message)) {}
 
-	virtual ~exception() noexcept {}
-
-	virtual const char* what() const noexcept override { return m_message.c_str(); }
+	[[nodiscard]] const char* what() const noexcept override { return m_message.c_str(); }
 
   protected:
 	std::string m_message;

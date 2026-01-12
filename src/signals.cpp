@@ -4,11 +4,6 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
-#include <condition_variable>
-#include <mutex>
-
 #include "signals.hpp"
 
 // --------------------------------------------------------------------
@@ -17,6 +12,9 @@
 //
 
 #if _WIN32
+
+#include <mutex>
+#include <condition_variable>
 
 #include <Windows.h>
 #include <signal.h>
@@ -120,7 +118,7 @@ void signal_catcher::signal_hangup(std::thread &t)
 #else
 
 #include <pthread.h>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 
 namespace zeep
@@ -167,7 +165,7 @@ int signal_catcher::wait()
 	// sigaddset(&wait_mask, SIGCHLD);
 	sigaddset(&wait_mask, SIGQUIT);
 	sigaddset(&wait_mask, SIGTERM);
-	pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+	pthread_sigmask(SIG_BLOCK, &wait_mask, nullptr);
 
 	int sig = 0;
 	sigwait(&wait_mask, &sig);

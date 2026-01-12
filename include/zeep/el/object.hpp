@@ -6,21 +6,20 @@
 #pragma once
 
 #include "zeep/streambuf.hpp"
+#include <algorithm>
 #include <cstddef>
 
 #if __has_include(<nlohmann/json.hpp>)
-#include <nlohmann/json.hpp>
-#define HAVE_NLOHMANN_JSON 1
+# include <nlohmann/json.hpp>
+# define HAVE_NLOHMANN_JSON 1
 #endif
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <compare>
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -49,7 +48,6 @@ concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integ
 class object
 {
   public:
-
 	enum class value_type
 	{
 		null,
@@ -120,7 +118,7 @@ class object
 				default: m_it.m_p = 0; break;
 			}
 		}
-		iterator_impl(pointer obj, int) noexcept
+		iterator_impl(pointer obj, [[maybe_unused]] int dummy) noexcept
 			: m_obj(obj)
 		{
 			assert(m_obj);
@@ -325,7 +323,7 @@ class object
 			}
 		}
 
-		const std::string &key() const
+		[[nodiscard]] const std::string &key() const
 		{
 			assert(m_obj);
 
@@ -335,7 +333,7 @@ class object
 			return m_it.m_object_it->first;
 		}
 
-		reference value() const
+		[[nodiscard]] reference value() const
 		{
 			return operator*();
 		}
@@ -359,9 +357,7 @@ class object
 
 	// --------------------------------------------------------------------
 
-	object() noexcept
-	{
-	}
+	object() noexcept = default;
 
 	object(value_type t) noexcept
 		: m_data(t)
@@ -391,7 +387,7 @@ class object
 
 	object(std::initializer_list<object> init)
 	{
-		bool isAnObject = std::all_of(init.begin(), init.end(), [](auto &ref)
+		bool isAnObject = std::ranges::all_of(init, [](auto &ref)
 			{ return ref.is_array() and ref.m_data.m_value.m_array->size() == 2 and ref.m_data.m_value.m_array->front().is_string(); });
 
 		if (isAnObject)
@@ -450,7 +446,7 @@ class object
 	}
 
 #if HAVE_NLOHMANN_JSON
-	explicit object(const nlohmann::json &j)
+	object(const nlohmann::json &j)
 	{
 		// to be implemented
 		switch (j.type())
@@ -461,7 +457,7 @@ class object
 
 			case nlohmann::json::value_t::object:
 				for (auto i = j.begin(); i != j.end(); ++i)
-					operator[](i.key()) = object( i.value() );
+					operator[](i.key()) = object(i.value());
 				break;
 
 			case nlohmann::json::value_t::array:
@@ -495,9 +491,6 @@ class object
 				break;
 
 			case nlohmann::json::value_t::binary:
-				assert(false);
-				break;
-
 			case nlohmann::json::value_t::discarded:
 				assert(false);
 				break;
@@ -518,18 +511,18 @@ class object
 
 	// --------------------------------------------------------------------
 
-	constexpr bool is_null() const noexcept { return m_data.m_type == value_type::null; }
-	constexpr bool is_object() const noexcept { return m_data.m_type == value_type::object; }
-	constexpr bool is_array() const noexcept { return m_data.m_type == value_type::array; }
-	constexpr bool is_string() const noexcept { return m_data.m_type == value_type::string; }
-	constexpr bool is_number() const noexcept { return is_number_int() or is_number_float(); }
-	constexpr bool is_number_int() const noexcept { return m_data.m_type == value_type::number_int; }
-	constexpr bool is_number_float() const noexcept { return m_data.m_type == value_type::number_float; }
-	constexpr bool is_true() const noexcept { return is_boolean() and m_data.m_value.m_boolean == true; }
-	constexpr bool is_false() const noexcept { return is_boolean() and m_data.m_value.m_boolean == false; }
-	constexpr bool is_boolean() const noexcept { return m_data.m_type == value_type::boolean; }
+	[[nodiscard]] constexpr bool is_null() const noexcept { return m_data.m_type == value_type::null; }
+	[[nodiscard]] constexpr bool is_object() const noexcept { return m_data.m_type == value_type::object; }
+	[[nodiscard]] constexpr bool is_array() const noexcept { return m_data.m_type == value_type::array; }
+	[[nodiscard]] constexpr bool is_string() const noexcept { return m_data.m_type == value_type::string; }
+	[[nodiscard]] constexpr bool is_number() const noexcept { return is_number_int() or is_number_float(); }
+	[[nodiscard]] constexpr bool is_number_int() const noexcept { return m_data.m_type == value_type::number_int; }
+	[[nodiscard]] constexpr bool is_number_float() const noexcept { return m_data.m_type == value_type::number_float; }
+	[[nodiscard]] constexpr bool is_true() const noexcept { return is_boolean() and m_data.m_value.m_boolean == true; }
+	[[nodiscard]] constexpr bool is_false() const noexcept { return is_boolean() and m_data.m_value.m_boolean == false; }
+	[[nodiscard]] constexpr bool is_boolean() const noexcept { return m_data.m_type == value_type::boolean; }
 
-	constexpr value_type type() const { return m_data.m_type; }
+	[[nodiscard]] constexpr value_type type() const { return m_data.m_type; }
 
 	explicit operator bool() const noexcept
 	{
@@ -549,7 +542,7 @@ class object
 	// --------------------------------------------------------------------
 
 	template <StringType T>
-	inline std::string get() const
+	[[nodiscard]] inline std::string get() const
 	{
 		if (m_data.m_type == value_type::string)
 			return *m_data.m_value.m_string;
@@ -558,7 +551,7 @@ class object
 	}
 
 	template <BooleanType T>
-	inline bool get() const
+	[[nodiscard]] inline bool get() const
 	{
 		switch (m_data.m_type)
 		{
@@ -574,7 +567,7 @@ class object
 	}
 
 	template <NumberType T>
-	std::remove_cvref_t<T> get() const
+	[[nodiscard]] std::remove_cvref_t<T> get() const
 	{
 		switch (m_data.m_type)
 		{
@@ -720,24 +713,24 @@ class object
 	// --------------------------------------------------------------------
 	// array/object interface
 
-	bool contains(object test) const;
+	[[nodiscard]] bool contains(const object &test) const;
 
-	bool empty() const noexcept;
-	size_t size() const noexcept;
-	size_t max_size() const noexcept;
+	[[nodiscard]] bool empty() const noexcept;
+	[[nodiscard]] size_t size() const noexcept;
+	[[nodiscard]] size_t max_size() const noexcept;
 
-	reference at(const std::string &key);
-	const_reference at(const std::string &key) const;
+	[[nodiscard]] reference at(const std::string &key);
+	[[nodiscard]] const_reference at(const std::string &key) const;
 
-	reference operator[](const std::string &key);
-	const_reference operator[](const std::string &key) const;
+	[[nodiscard]] reference operator[](const std::string &key);
+	[[nodiscard]] const_reference operator[](const std::string &key) const;
 
 	// access to array objects
-	reference at(size_t index);
-	const_reference at(size_t index) const;
+	[[nodiscard]] reference at(size_t index);
+	[[nodiscard]] const_reference at(size_t index) const;
 
-	reference operator[](size_t index);
-	const_reference operator[](size_t index) const;
+	[[nodiscard]] reference operator[](size_t index);
+	[[nodiscard]] const_reference operator[](size_t index) const;
 
 	void push_back(object &&val);
 	void push_back(const object &val);
@@ -878,31 +871,31 @@ class object
 
 	// --------------------------------------------------------------------
 
-	iterator begin() { return iterator(this); }
-	iterator end() { return iterator(this, 1); }
+	[[nodiscard]] iterator begin() { return iterator(this); }
+	[[nodiscard]] iterator end() { return {this, 1}; }
 
-	const_iterator begin() const { return const_iterator(this); }
-	const_iterator end() const { return const_iterator(this, 1); }
+	[[nodiscard]] const_iterator begin() const { return const_iterator(this); }
+	[[nodiscard]] const_iterator end() const { return {this, 1}; }
 
-	const_iterator cbegin() { return const_iterator(this); }
-	const_iterator cend() { return const_iterator(this, 1); }
+	[[nodiscard]] const_iterator cbegin() { return const_iterator(this); }
+	[[nodiscard]] const_iterator cend() { return {this, 1}; }
 
-	object &front()
+	[[nodiscard]] object &front()
 	{
 		return *begin();
 	}
 
-	const object &front() const
+	[[nodiscard]] const object &front() const
 	{
 		return *begin();
 	}
 
-	object &back()
+	[[nodiscard]] object &back()
 	{
 		return *--end();
 	}
 
-	const object &back() const
+	[[nodiscard]] const object &back() const
 	{
 		return *--end();
 	}
@@ -928,7 +921,7 @@ class object
 	}
 
 	// And get the object as a JSON string
-	std::string get_JSON() const
+	[[nodiscard]] std::string get_JSON() const
 	{
 		std::ostringstream os;
 		serialize(os, *this);
@@ -943,7 +936,6 @@ class object
 	}
 
   private:
-
 	union object_value
 	{
 		object_type *m_object;
@@ -1035,26 +1027,26 @@ class object
 		{
 		}
 
-        object_data(size_type cnt, const object &val)
-            : m_type(value_type::array)
-        {
-            m_value.m_array = create<array_type>(cnt, val);
-        }
+		object_data(size_type cnt, const object &val)
+			: m_type(value_type::array)
+		{
+			m_value.m_array = create<array_type>(cnt, val);
+		}
 
-        object_data() noexcept = default;
-        object_data(object_data&&) noexcept = default;
-        object_data(const object_data&) noexcept = delete;
-        object_data& operator=(object_data&&) noexcept = delete;
-        object_data& operator=(const object_data&) noexcept = delete;
+		object_data() noexcept = default;
+		object_data(object_data &&) noexcept = default;
+		object_data(const object_data &) noexcept = delete;
+		object_data &operator=(object_data &&) noexcept = delete;
+		object_data &operator=(const object_data &) noexcept = delete;
 
-        ~object_data() noexcept
-        {
-            m_value.destroy(m_type);
-        }
+		~object_data() noexcept
+		{
+			m_value.destroy(m_type);
+		}
 	} m_data{};
 
 	template <typename T, typename... Args>
-	static T *create(Args &&...args)
+	[[nodiscard]] static T *create(Args &&...args)
 	{
 		// return new T(args...);
 		std::allocator<T> alloc;
@@ -1072,4 +1064,4 @@ class object
 	}
 };
 
-} // namespace zeep::http
+} // namespace zeep::el

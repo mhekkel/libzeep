@@ -1,37 +1,32 @@
-#include "zeep/http/asio.hpp"
-
-#include "test-main.hpp"
-
-#include <iostream>
-#include <random>
-#include <sstream>
-
-#include <zeep/crypto.hpp>
-#include <zeep/exception.hpp>
-#include <zeep/streambuf.hpp>
-
-#include <zeep/http/controller.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/login-controller.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/server.hpp>
+//          Copyright Maarten L. Hekkelman 2026
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
 
 #include "client-test-code.hpp"
-#include "../src/signals.hpp"
+#include "zeep/http/controller.hpp"
+#include "zeep/http/daemon.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/server.hpp"
 
-#include <sys/types.h>
+#include <catch2/catch_test_macros.hpp>
+
+#include <cstdint>
+#include <filesystem>
+#include <iostream>
 #include <pwd.h>
+#include <random>
+#include <string>
+#include <thread>
+#include <unistd.h>
 
-namespace z = zeep;
 namespace zh = zeep::http;
-
 
 // a very simple controller, serving only /test/one and /test/three
 class my_controller : public zh::controller
 {
-	public:
-	my_controller()	
+  public:
+	my_controller()
 		: zh::controller("/")
 	{
 		map_get_request("test", &my_controller::test);
@@ -39,10 +34,9 @@ class my_controller : public zh::controller
 
 	zh::reply test()
 	{
-		return zeep::http::reply(zh::ok);
+		return { zh::status_type::ok };
 	}
 };
-
 
 TEST_CASE("daemon-test-1")
 {
@@ -60,11 +54,14 @@ TEST_CASE("daemon-test-1")
 	auto pw = getpwuid(getuid());
 	REQUIRE(pw != nullptr);
 
-	zh::daemon d([]() {
+	zh::daemon d([]()
+		{
 		auto s = new zh::server;
 		s->add_controller(new my_controller());
-		return s;
-	}, log_dir / "daemon-test.pid", access_file.string(), error_file.string());
+		return s; },
+		log_dir / "daemon-test.pid",
+		access_file.string(),
+		error_file.string());
 
 	std::random_device rng;
 	uint16_t port = 1024 + (rng() % 10240);
@@ -80,22 +77,22 @@ TEST_CASE("daemon-test-1")
 	{
 		d.start("::", port, 1, 1, pw->pw_name);
 	}
-		
+
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	auto reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
-	CHECK(reply.get_status() == zh::ok);
+	CHECK(reply.get_status() == zh::status_type::ok);
 
 	std::filesystem::rename(access_file, log_dir / "access.log.1");
 	std::filesystem::rename(error_file, log_dir / "error.log.1");
 
 	d.reload();
 
-	std::this_thread::sleep_for(1s);
+	std::this_thread::sleep_for(100ms);
 
 	reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
-	CHECK(reply.get_status() == zh::ok);	
+	CHECK(reply.get_status() == zh::status_type::ok);
 
 	d.stop();
 

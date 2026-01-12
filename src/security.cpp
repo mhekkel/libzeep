@@ -4,13 +4,29 @@
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
 
-#include "glob.hpp"
-
-#include "zeep/crypto.hpp"
 #include "zeep/http/security.hpp"
+#include "zeep/crypto.hpp"
+#include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/uri.hpp"
 
+#include "glob.hpp"
+
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <ctime>
+#include <iomanip>
 #include <iostream>
+#include <iterator>
+#include <optional>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
 
 namespace zeep::http
 {
@@ -39,6 +55,7 @@ bool user_service::user_is_valid(const std::string &username) const
 	}
 	catch (...)
 	{
+		result = false;
 	}
 
 	return result;
@@ -105,7 +122,7 @@ void security_context::validate_request(request &req) const
 			if (not m_users.user_is_valid(credentials))
 				break;
 
-			for (auto role : credentials["role"])
+			for (const auto& role : credentials["role"])
 				roles.insert(role.get<std::string>());
 
 			req.set_credentials(std::move(credentials));
@@ -126,7 +143,7 @@ void security_context::validate_request(request &req) const
 			else
 			{
 				std::set<std::string> common;
-				std::set_intersection(roles.begin(), roles.end(), rule.m_roles.begin(), rule.m_roles.end(), std::inserter(common, common.begin()));
+				std::ranges::set_intersection(roles, rule.m_roles, std::inserter(common, common.begin()));
 
 				allow = not common.empty();
 			}
@@ -140,7 +157,7 @@ void security_context::validate_request(request &req) const
 	{
 		if (auto p = req.get_parameter("_csrf"); p.has_value())
 		{
-			auto req_csrf_param = *p;
+			const auto& req_csrf_param = *p;
 			if (auto req_csrf_cookie = req.get_cookie("csrf-token"); req_csrf_cookie != req_csrf_param)
 			{
 				allow = false;
@@ -194,7 +211,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	);
 }
 
-void security_context::add_authorization_headers(reply &rep, const user_details user)
+void security_context::add_authorization_headers(reply &rep, const user_details &user)
 {
 	add_authorization_headers(rep, user, m_default_jwt_exp);
 }
@@ -209,7 +226,7 @@ bool security_context::verify_username_password(const std::string &username, con
 
 	for (auto const &[name, pwenc] : m_known_password_encoders)
 	{
-		if (user.password.compare(0, name.length(), name) != 0)
+		if (!user.password.starts_with(name))
 			continue;
 
 		result = pwenc->matches(raw_password, user.password);

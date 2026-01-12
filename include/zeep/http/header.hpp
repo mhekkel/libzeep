@@ -9,9 +9,8 @@
 /// \file
 /// definition of the zeep::http::header class
 
-#include "zeep/config.hpp"
-
 #include <string>
+#include <utility>
 
 namespace zeep::http
 {
@@ -21,8 +20,8 @@ namespace zeep::http
 
 struct header
 {
-	std::string	name;
-	std::string	value;
+	std::string name;
+	std::string value;
 
 	header() = default;
 	header(const header &) = default;
@@ -30,10 +29,10 @@ struct header
 	header &operator=(header &&) = default;
 
 	header(std::string name, std::string value)
-		: name(name)
-		, value(value)
+		: name(std::move(name))
+		, value(std::move(value))
 	{
 	}
 };
-	
-}
+
+} // namespace zeep::http

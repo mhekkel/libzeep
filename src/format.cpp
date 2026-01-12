@@ -5,7 +5,7 @@
 
 #if __cpp_lib_format
 
-#include <format>
+# include <format>
 
 std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)
 {
@@ -14,24 +14,24 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 
 #else
 
-#include <regex>
-#include <codecvt>
-#include <cmath>
-#include <deque>
-#include <locale>
-#include <iostream>
+# include "format.hpp"
 
-#include "zeep/unicode-support.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include "format.hpp"
+# include <cmath>
+# include <deque>
+# include <iostream>
+# include <limits>
+# include <locale>
+# include <tuple>
 
 namespace
 {
 
-std::string decimal_point(std::locale loc)
+std::string decimal_point(const std::locale& loc)
 {
 	std::string result;
-	
+
 	if (std::has_facet<std::numpunct<wchar_t>>(loc))
 		zeep::append(result, std::use_facet<std::numpunct<wchar_t>>(loc).decimal_point());
 	else if (std::has_facet<std::numpunct<char>>(loc))
@@ -42,10 +42,10 @@ std::string decimal_point(std::locale loc)
 	return result;
 }
 
-std::string thousands_sep(std::locale loc)
+std::string thousands_sep(const std::locale& loc)
 {
 	std::string result;
-	
+
 	if (std::has_facet<std::numpunct<wchar_t>>(loc))
 		zeep::append(result, std::use_facet<std::numpunct<wchar_t>>(loc).thousands_sep());
 	else if (std::has_facet<std::numpunct<char>>(loc))
@@ -56,10 +56,10 @@ std::string thousands_sep(std::locale loc)
 	return result;
 }
 
-std::string grouping(std::locale loc)
+std::string grouping(const std::locale& loc)
 {
 	std::string result;
-	
+
 	if (std::has_facet<std::numpunct<wchar_t>>(loc))
 		result = std::use_facet<std::numpunct<wchar_t>>(loc).grouping();
 	else if (std::has_facet<std::numpunct<char>>(loc))
@@ -71,21 +71,22 @@ std::string grouping(std::locale loc)
 struct thousand_grouping
 {
   public:
-	thousand_grouping(std::locale loc)
-		: m_sep(thousands_sep(loc)), m_grouping(grouping(loc))
+	thousand_grouping(const std::locale& loc)
+		: m_sep(thousands_sep(loc))
+		, m_grouping(grouping(loc))
 	{
 	}
-	
+
 	bool operator()(int exp10) const
 	{
 		std::deque<int> gs(m_grouping.begin(), m_grouping.end());
-		
+
 		bool result = false;
 
 		if (not gs.empty())
 		{
 			int g = gs.front();
-			
+
 			for (;;)
 			{
 				if (exp10 < g)
@@ -96,7 +97,7 @@ struct thousand_grouping
 					result = true;
 					break;
 				}
-				
+
 				if (gs.size() > 1)
 					gs.pop_front();
 
@@ -104,42 +105,41 @@ struct thousand_grouping
 			}
 		}
 
-		return result;		
+		return result;
 	}
-	
-	std::string separator() const
+
+	[[nodiscard]] std::string separator() const
 	{
 		return m_sep;
 	}
 
   private:
-	std::string	m_sep, m_grouping;
+	std::string m_sep, m_grouping;
 };
 
-template<typename T>
+template <typename T>
 class Decimal
 {
   public:
 	Decimal(T x);
 
-	std::string formatFixed(int minIntDigits, int decimals, std::locale loc);
-	
-	friend std::ostream& operator<<(std::ostream& os, Decimal d)
+	std::string formatFixed(int minIntDigits, int decimals, const std::locale& loc);
+
+	friend std::ostream &operator<<(std::ostream &os, Decimal d)
 	{
 		os << "crunched: " << d.m_crunched << " exp10: " << d.m_exp10 << " dec: " << d.m_dec;
 		return os;
 	}
 
   private:
+	std::tuple<std::string, int> roundDecimal(int n);
 
-	std::tuple<std::string,int> roundDecimal(int n);
-
-	T			m_crunched;
-	int			m_exp10;
-	std::string	m_dec;
+	T m_crunched;
+	int m_exp10;
+	std::string m_dec;
 };
 
-template<typename T>
+template <typename T>
 Decimal<T>::Decimal(T x)
 {
 	// CrunchDouble
@@ -169,7 +169,7 @@ Decimal<T>::Decimal(T x)
 		}
 		x /= f;
 	}
-	
+
 	if (x != 0)
 	{
 		while (std::fabs(x) >= 1.0)
@@ -177,25 +177,24 @@ Decimal<T>::Decimal(T x)
 			x *= 0.1;
 			++m_exp10;
 		}
-		
+
 		while (std::fabs(x) < 0.1)
 		{
 			x *= 10.0;
 			--m_exp10;
 		}
 	}
-	
+
 	m_crunched = x;
 
 	// Num2Dec
-	
+
 	int digits = std::numeric_limits<T>::digits10 + 1;
 	int ix = 0;
 	if (x < 0)
 		x = -x;
 
-	const double kDigitValues[8] =
-	{
+	const double kDigitValues[8] = {
 		1.0E+01,
 		1.0E+02,
 		1.0E+03,
@@ -205,21 +204,21 @@ Decimal<T>::Decimal(T x)
 		1.0E+07,
 		1.0E+08
 	};
-	
+
 	while (digits > 0)
 	{
 		n = digits;
 		if (n > 8)
 			n = 8;
-		
+
 		digits -= n;
 		m_dec.insert(m_dec.end(), n, ' ');
-		
+
 		x *= kDigitValues[n - 1];
-		
+
 		auto lx = lrint(trunc(x));
 		x -= lx;
-		
+
 		for (int i = n - 1; i >= 0; --i)
 		{
 			m_dec[ix + i] = lx % 10 + '0';
@@ -229,8 +228,8 @@ Decimal<T>::Decimal(T x)
 	}
 }
 
-template<typename T>
-std::string Decimal<T>::formatFixed(int intDigits, int decimals, std::locale loc)
+template <typename T>
+std::string Decimal<T>::formatFixed(int intDigits, int decimals, const std::locale& loc)
 {
 	int digits = decimals + intDigits;
 	if (m_exp10 > intDigits)
@@ -238,17 +237,17 @@ std::string Decimal<T>::formatFixed(int intDigits, int decimals, std::locale loc
 
 	int exp10;
 	std::string dec;
-	
+
 	std::tie(dec, exp10) = roundDecimal(decimals + m_exp10);
-	
+
 	std::string s;
 	thousand_grouping tg(loc);
-		
+
 	auto dp = dec.begin(), de = dec.end();
 	int exp = intDigits;
 	if (exp < exp10)
 		exp = exp10;
-	
+
 	for (int i = 0; i < digits; ++i)
 	{
 		if (i > 0)
@@ -258,39 +257,39 @@ std::string Decimal<T>::formatFixed(int intDigits, int decimals, std::locale loc
 			else if (exp == 0)
 				s += decimal_point(loc);
 		}
-		
+
 		if (exp <= exp10 and dp != de)
 			s += *dp++;
 		else
 			s += '0';
-		
+
 		--exp;
 	}
-	
+
 	return s;
 }
 
-template<typename T>
-std::tuple<std::string,int> Decimal<T>::roundDecimal(int newLength)
+template <typename T>
+std::tuple<std::string, int> Decimal<T>::roundDecimal(int newLength)
 {
 	std::string dec = m_dec;
 	int exp10 = m_exp10;
-	
+
 	int l = static_cast<int>(dec.length());
-	
+
 	if (newLength < 0)
 		dec = "0";
 	else if (newLength < l)
 	{
 		l = newLength + 1;
-		
+
 		int carry = dec[l - 1] >= '5';
 		dec.resize(l - 1);
-		
+
 		while (newLength > 0)
 		{
 			--l;
-			int c = dec[l - 1] -'0' + carry;
+			int c = dec[l - 1] - '0' + carry;
 			carry = c > 9;
 			if (carry == 1)
 			{
@@ -304,7 +303,7 @@ std::tuple<std::string,int> Decimal<T>::roundDecimal(int newLength)
 				break;
 			}
 		}
-		
+
 		if (carry == 1)
 		{
 			++exp10;
@@ -313,19 +312,19 @@ std::tuple<std::string,int> Decimal<T>::roundDecimal(int newLength)
 		else if (newLength == 0)
 			dec = "0";
 	}
-	
+
 	return std::make_tuple(dec, exp10);
 }
 
-}
+} // namespace
 
 namespace zeep::http
 {
 
-std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)
+std::string FormatDecimal(double d, int integerDigits, int decimalDigits, const std::locale &loc)
 {
 	Decimal<double> dec(d);
-	
+
 	std::string result;
 	if (d < 0)
 		result = "-";
@@ -333,7 +332,6 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 	return result;
 }
 
-}
-
+} // namespace zeep::http
 
 #endif

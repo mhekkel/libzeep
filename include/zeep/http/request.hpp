@@ -9,24 +9,34 @@
 /// \file
 /// definition of the zeep::http::request class encapsulating a valid HTTP request
 
-#include "zeep/config.hpp"
-
 #include "zeep/el/object.hpp"
 #include "zeep/http/asio.hpp"
 #include "zeep/http/header.hpp"
 #include "zeep/http/uri.hpp"
 
-#include <zeem/serialize.hpp>
+#include <array>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
-#include <istream>
+#include <iosfwd>
+#include <locale>
+#include <map>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+#include <zeem/detail/charconv.hpp>
+#include <zeem/serialize.hpp>
 
 namespace zeep::http
 {
 
 // --------------------------------------------------------------------
-// TODO: one day this should be able to work with temporary files
+// TODO: maarten - one day this should be able to work with temporary files
 
 /// \brief container for file parameter information
 ///
@@ -84,78 +94,78 @@ class request
 	request(std::string method, uri uri_, std::tuple<int, int> version = { 1, 0 },
 		std::vector<header> &&headers = {}, std::string &&payload = {});
 
-	request(const request &req);
+	request(const request &req) = default;
 
 	request(request &&rhs) noexcept
 	{
-		swap(rhs);
+		swap(*this, rhs);
 	}
 
 	request &operator=(request rhs) noexcept
 	{
-		swap(rhs);
+		swap(*this, rhs);
 		return *this;
 	}
 
-	void swap(request &rhs) noexcept;
+	friend void swap(request &lhs, request &rhs) noexcept;
 
 	/// \brief Fetch the local address from the connected socket
 	void set_local_endpoint(asio_ns::ip::tcp::socket &socket);
-	std::tuple<std::string, uint16_t> get_local_endpoint() const { return { m_local_address, m_local_port }; }
+	[[nodiscard]] std::tuple<std::string, uint16_t> get_local_endpoint() const { return { m_local_address, m_local_port }; }
 
 	/// \brief Get the HTTP version requested
-	std::tuple<int, int> get_version() const { return { m_version[0] - '0', m_version[2] - '0' }; }
+	[[nodiscard]] std::tuple<int, int> get_version() const { return { m_version[0] - '0', m_version[2] - '0' }; }
 
 	/// \brief Set the METHOD type (POST, GET, etc)
 	void set_method(std::string method) { m_method = std::move(method); }
 
 	/// \brief Return the METHOD type (POST, GET, etc)
-	const std::string &get_method() const { return m_method; }
+	[[nodiscard]] const std::string &get_method() const { return m_method; }
 
 	/// \brief Return the original URI as requested
-	const uri &get_uri() const { return m_uri; }
+	[[nodiscard]] const uri &get_uri() const { return m_uri; }
 
 	/// \brief Set the URI
 	void set_uri(const uri &uri_) { m_uri = uri_; }
 
 	/// \brief Get the address of the connecting remote
-	const std::string &get_remote_address() const { return m_remote_address; }
+	[[nodiscard]] const std::string &get_remote_address() const { return m_remote_address; }
 
 	/// \brief Get the entire request line (convenience method)
-	std::string get_request_line() const
+	[[nodiscard]] std::string get_request_line() const
 	{
 		return m_method + ' ' + m_uri.string() + " HTTP/" + std::string(m_version.data(), m_version.data() + m_version.size());
 	}
 
 	/// \brief Return the payload
-	const std::string &get_payload() const { return m_payload; }
+	[[nodiscard]] const std::string &get_payload() const { return m_payload; }
 
 	/// \brief Set the payload
 	void set_payload(std::string payload) { m_payload = std::move(payload); }
 
 	/// \brief Return the time at which this request was received
-	std::chrono::system_clock::time_point get_timestamp() const { return m_timestamp; }
+	[[nodiscard]] std::chrono::system_clock::time_point get_timestamp() const { return m_timestamp; }
 
 	/// \brief Return the value in the Accept header for type
-	float get_accept(std::string_view type) const;
+	[[nodiscard]] float get_accept(std::string_view type) const;
 
 	/// \brief Check for Connection: keep-alive header
-	bool keep_alive() const;
+	[[nodiscard]] bool keep_alive() const;
 
 	/// \brief Set or replace a named header
 	void set_header(std::string name, std::string value);
 
 	/// \brief Return the list of headers
-	auto get_headers() const { return m_headers; }
+	[[nodiscard]] auto get_headers() const { return m_headers; }
 
 	/// \brief Return the named header
-	std::string get_header(std::string_view name) const;
+	[[nodiscard]] std::string get_header(std::string_view name) const;
 
 	/// \brief Remove this header from the list of headers
 	void remove_header(std::string_view name);
 
 	/// \brief Get the credentials. This is filled in if the request was validated
-	el::object get_credentials() const { return m_credentials; }
+	[[nodiscard]] el::object get_credentials() const { return m_credentials; }
 
 	/// \brief Set the credentials for the request
 	void set_credentials(el::object &&credentials) { m_credentials = std::move(credentials); }
@@ -164,38 +174,38 @@ class request
 	///
 	/// Fetch parameters from a request, either from the URL or from the payload in case
 	/// the request contains a url-encoded or multi-part content-type header
-	std::optional<std::string> get_parameter(std::string_view name) const;
+	[[nodiscard]] std::optional<std::string> get_parameter(std::string_view name) const;
 
 	/// \brief Return the value of the parameter named \a name or the \a defaultValue if this parameter was not found
-	std::string get_parameter(std::string_view name, std::string defaultValue) const
+	[[nodiscard]] std::string get_parameter(std::string_view name, const std::string &defaultValue) const
 	{
 		return get_parameter(name).value_or(defaultValue);
 	}
 
 	/// \brief Return a std::multimap of name/value pairs for all parameters
-	std::multimap<std::string, std::string> get_parameters() const;
+	[[nodiscard]] std::multimap<std::string, std::string> get_parameters() const;
 
 	/// \brief Return the info for a file parameter with name \a name
 	///
-	file_param get_file_parameter(std::string name) const;
+	[[nodiscard]] file_param get_file_parameter(std::string name) const;
 
 	/// \brief Return the info for all file parameters with name \a name
 	///
-	std::vector<file_param> get_file_parameters(std::string name) const;
+	[[nodiscard]] std::vector<file_param> get_file_parameters(std::string name) const;
 
 	/// \brief Return the value of HTTP Cookie with name \a name
-	std::string get_cookie(std::string_view name) const;
+	[[nodiscard]] std::string get_cookie(std::string_view name) const;
 
 	/// \brief Set the value of HTTP Cookie with name \a name to \a value
-	void set_cookie(std::string name, std::string value);
+	void set_cookie(const std::string &name, std::string value);
 
 	/// \brief Return the content of this request in a sequence of const_buffers
 	///
 	/// Can be used in code that sends HTTP requests
-	std::vector<asio_ns::const_buffer> to_buffers() const;
+	[[nodiscard]] std::vector<asio_ns::const_buffer> to_buffers() const;
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
-	std::locale get_locale() const;
+	[[nodiscard]] std::locale get_locale() const;
 
 	/// \brief For debugging purposes
 	friend std::ostream &operator<<(std::ostream &io, const request &req);
@@ -219,7 +229,7 @@ class request
 
 	std::string m_method = "UNDEFINED"; ///< POST, GET, etc.
 	uri m_uri;                          ///< The uri as requested
-	std::array<char, 3> m_version;      ///< The version string
+	std::array<char, 3> m_version{};    ///< The version string
 	std::vector<header> m_headers;      ///< A list with zeep::http::header values
 	std::string m_payload;              ///< For POST requests
 	bool m_close = false;               ///< Whether 'Connection: close' was specified

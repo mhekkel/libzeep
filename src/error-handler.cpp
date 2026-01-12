@@ -4,11 +4,23 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/error-handler.hpp"
+#include "zeep/el/object.hpp"
+#include "zeep/el/processing.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/security.hpp"
+#include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
+#include "zeep/http/template-processor.hpp"
+#include "zeep/http/uri.hpp"
+
+#include <zeem.hpp>
+
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace zeep::http
 {
@@ -18,18 +30,14 @@ error_handler::error_handler(std::string error_template)
 {
 }
 
-error_handler::~error_handler()
-{
-}
-
-bool error_handler::create_error_reply(const request & /*req*/, std::exception_ptr /*eptr*/, reply & /*reply*/)
+bool error_handler::create_error_reply(const request & /*req*/, const std::exception_ptr & /*eptr*/, reply & /*reply*/)
 {
 	return false;
 }
 
 bool error_handler::create_unauth_reply(const request &req, reply &rep)
 {
-	return create_error_reply(req, unauthorized, "You don't have access to this page", rep);
+	return create_error_reply(req, status_type::unauthorized, "You don't have access to this page", rep);
 }
 
 bool error_handler::create_error_reply(const request &req, status_type status, reply &rep)
@@ -49,7 +57,7 @@ bool error_handler::create_error_reply(const request &req, status_type status, s
 
 		object error{
 			{ "nr", static_cast<int>(status) },
-			{ "head", get_status_text(status) },
+			{ "head", make_error_code(status).message() },
 			{ "description", get_status_description(status) },
 			{ "message", message },
 			{ "request",
@@ -137,7 +145,7 @@ body, html {
 
 	if (not handled)
 	{
-		rep = reply::stock_reply(status, std::move(message));
+		rep = reply::stock_reply(status, message);
 		handled = true;
 	}
 	else
@@ -148,7 +156,7 @@ body, html {
 
 // --------------------------------------------------------------------
 
-bool default_error_handler::create_error_reply(const request &req, std::exception_ptr eptr, reply &reply)
+bool default_error_handler::create_error_reply(const request &req, const std::exception_ptr &eptr, reply &reply)
 {
 	bool result = false;
 
@@ -165,13 +173,17 @@ bool default_error_handler::create_error_reply(const request &req, std::exceptio
 	{
 		result = error_handler::create_unauth_reply(req, reply);
 	}
+	catch (const http_status_exception &ex)
+	{
+		result = error_handler::create_error_reply(req, ex.status(), get_status_description(ex.status()), reply);
+	}
 	catch (const std::exception &ex)
 	{
-		result = error_handler::create_error_reply(req, internal_server_error, ex.what(), reply);
+		result = error_handler::create_error_reply(req, status_type::internal_server_error, ex.what(), reply);
 	}
 	catch (...)
 	{
-		result = error_handler::create_error_reply(req, internal_server_error, "unhandled exception", reply);
+		result = error_handler::create_error_reply(req, status_type::internal_server_error, "unhandled exception", reply);
 	}
 
 	return result;

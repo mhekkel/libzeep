@@ -8,14 +8,21 @@
 /// \file
 /// definition of various classes that help in handling HTTP authentication.
 
-#include "zeep/config.hpp"
-
 #include "zeep/crypto.hpp"
+#include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
-#include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
 
 #include <cassert>
+#include <chrono>
+#include <initializer_list>
+#include <memory>
+#include <regex>
 #include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 // --------------------------------------------------------------------
 //
@@ -23,15 +30,18 @@
 namespace zeep::http
 {
 
+class reply;
+class request;
+
 /// \brief exception thrown when unauthorized access is detected
 ///
 /// when using authentication, this exception is thrown for unauthorized access
 
-struct unauthorized_exception : public zeep::exception
+struct unauthorized_exception : public http_status_exception
 {
 	/// \brief constructor
 	unauthorized_exception()
-		: exception("unauthorized")
+		: http_status_exception(status_type::unauthorized)
 	{
 	}
 };
@@ -42,10 +52,10 @@ struct unauthorized_exception : public zeep::exception
 class password_encoder
 {
   public:
-	virtual ~password_encoder() {}
+	virtual ~password_encoder() = default;
 
-	virtual std::string encode(const std::string &password) const = 0;
-	virtual bool matches(const std::string &raw_password, const std::string &stored_password) const = 0;
+	[[nodiscard]] virtual std::string encode(const std::string &password) const = 0;
+	[[nodiscard]] virtual bool matches(const std::string &raw_password, const std::string &stored_password) const = 0;
 };
 
 // --------------------------------------------------------------------
@@ -63,7 +73,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 	{
 	}
 
-	std::string encode(const std::string &password) const override
+	[[nodiscard]] std::string encode(const std::string &password) const override
 	{
 		using namespace std::literals;
 
@@ -72,7 +82,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
 	}
 
-	bool matches(const std::string &raw_password, const std::string &stored_password) const override
+	[[nodiscard]] bool matches(const std::string &raw_password, const std::string &stored_password) const override
 	{
 		using namespace std::literals;
 
@@ -108,7 +118,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 /// password.
 struct user_details
 {
-	user_details() {}
+	user_details() = default;
 	user_details(std::string username, std::string password, std::set<std::string> roles)
 		: username(std::move(username))
 		, password(std::move(password))
@@ -127,7 +137,9 @@ class authentication_exception : public zeep::exception
 {
   public:
 	authentication_exception(std::string msg)
-		: zeep::exception(std::move(msg)) {}
+		: zeep::exception(std::move(msg))
+	{
+	}
 };
 
 /// \brief exception thrown by user_service when trying to load user_details for an unknown user
@@ -135,7 +147,7 @@ class user_unknown_exception : public authentication_exception
 {
   public:
 	user_unknown_exception()
-		: authentication_exception("user unknown"){};
+		: authentication_exception("user unknown") {};
 };
 
 /// \brief exception thrown by security_context when a username/password combo is not valid
@@ -143,7 +155,7 @@ class invalid_password_exception : public authentication_exception
 {
   public:
 	invalid_password_exception()
-		: authentication_exception("invalid password"){};
+		: authentication_exception("invalid password") {};
 };
 
 // --------------------------------------------------------------------
@@ -155,17 +167,17 @@ class invalid_password_exception : public authentication_exception
 class user_service
 {
   public:
-	user_service() {}
-	virtual ~user_service() {}
+	user_service() = default;
+	virtual ~user_service() = default;
 
 	/// \brief return the user_details for a user named \a username
-	virtual user_details load_user(const std::string &username) const = 0;
+	[[nodiscard]] virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
-	virtual bool user_is_valid(const object &credentials) const;
+	[[nodiscard]] virtual bool user_is_valid(const object &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
-	virtual bool user_is_valid(const std::string &username) const;
+	[[nodiscard]] virtual bool user_is_valid(const std::string &username) const;
 };
 
 // --------------------------------------------------------------------
@@ -185,10 +197,10 @@ class simple_user_service : public user_service
 	}
 
 	/// \brief return the user_details for a user named \a username
-	user_details load_user(const std::string &username) const override
+	[[nodiscard]] user_details load_user(const std::string &username) const override
 	{
 		user_details result = {};
-		auto ui = std::find_if(m_users.begin(), m_users.end(), [username](const user_details &u)
+		auto ui = std::ranges::find_if(m_users, [username](const user_details &u)
 			{ return u.username == username; });
 		if (ui != m_users.end())
 			result = *ui;
@@ -217,6 +229,9 @@ class simple_user_service : public user_service
 class security_context
 {
   public:
+	security_context(const security_context &) = delete;
+	security_context &operator=(const security_context &) = delete;
+
 	/// \brief constructor taking a validator
 	///
 	/// Create a security context for server \a s with validator \a validator and
@@ -241,7 +256,7 @@ class security_context
 	/// \a glob_pattern should start with a slash
 	void add_rule(std::string glob_pattern, std::string role)
 	{
-		add_rule(std::move(glob_pattern), { role });
+		add_rule(std::move(glob_pattern), { std::move(role) });
 	}
 
 	/// \brief Add a new rule for access
@@ -273,7 +288,7 @@ class security_context
 	///
 	/// \param rep			Then zeep::http::reply object that will be send to the user
 	/// \param user			The authorized user details
-	void add_authorization_headers(reply &rep, const user_details user);
+	void add_authorization_headers(reply &rep, const user_details &user);
 
 	/// \brief Add e.g. headers to reply for an authorized request, with an expiration parameter
 	///
@@ -300,29 +315,26 @@ class security_context
 	/// \param username		The name for the user
 	/// \param password		The password for the user
 	/// \result             True in case of valid combination
-	bool verify_username_password(const std::string &username, const std::string &password);
+	[[nodiscard]] bool verify_username_password(const std::string &username, const std::string &password);
 
 	/// \brief return reference to the user_service object
-	user_service &get_user_service() const { return m_users; }
+	[[nodiscard]] user_service &get_user_service() const { return m_users; }
 
 	/// \brief Get or create a CSRF token for the current request
 	///
 	/// Return a CSRF token. If this was not present in the request, a new will be generated
 	/// \param req		The HTTP request
 	/// \return			A std::pair containing the CSRF token and a flag indicating the token is new
-	std::pair<std::string, bool> get_csrf_token(request &req);
+	[[nodiscard]] std::pair<std::string, bool> get_csrf_token(request &req);
 
 	/// \brief To automatically validate CSRF tokens, set this flag
 	void set_validate_csrf(bool validate) { m_validate_csrf = validate; }
-	bool get_validate_csrf() const { return m_validate_csrf; }
+	[[nodiscard]] bool get_validate_csrf() const { return m_validate_csrf; }
 
-	std::chrono::system_clock::duration get_jwt_exp() const { return m_default_jwt_exp; }
+	[[nodiscard]] std::chrono::system_clock::duration get_jwt_exp() const { return m_default_jwt_exp; }
 	void set_jwt_exp(std::chrono::system_clock::duration exp) { m_default_jwt_exp = exp; }
 
   private:
-	security_context(const security_context &) = delete;
-	security_context &operator=(const security_context &) = delete;
-
 	struct rule
 	{
 		std::string m_pattern;

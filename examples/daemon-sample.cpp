@@ -22,7 +22,7 @@ class hello_controller : public zh::controller
 	bool handle_request([[maybe_unused]] zh::request &req, zh::reply &rep)
 	{
 		/* Construct a simple reply with status OK (200) and content string */
-		rep = zh::reply::stock_reply(zh::ok);
+		rep.set_status(zh::status_type::ok);
 		rep.set_content("Hello", "text/plain");
 		return true;
 	}

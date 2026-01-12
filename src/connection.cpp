@@ -4,17 +4,21 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "zeep/config.hpp"
-
-#include "zeep/http/asio.hpp"
-
 #include "zeep/http/connection.hpp"
+#include "zeep/http/asio.hpp"
+#include "zeep/http/message-parser.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
 #include "zeep/http/server.hpp"
-#include "zeep/streambuf.hpp"
+#include "zeep/http/uri.hpp"
 
+#include <cstddef>
+#include <iomanip>
 #include <iostream>
-
-
+#include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
 
 namespace zeep::http
 {
@@ -92,7 +96,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 			}
 			else if (not result)
 			{
-				m_reply = reply::stock_reply(bad_request);
+				m_reply = reply::stock_reply(status_type::bad_request);
 
 				auto buffers = m_reply.to_buffers();
 
@@ -111,7 +115,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 		catch (const uri_parse_error &ex)
 		{
 			std::clog << "Invalid URI requested\n";
-			m_reply = reply::stock_reply(bad_request);
+			m_reply = reply::stock_reply(status_type::bad_request);
 
 			auto buffers = m_reply.to_buffers();
 
@@ -122,7 +126,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 		catch (const std::exception &ex)
 		{
 			std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
-			m_reply = reply::stock_reply(internal_server_error);
+			m_reply = reply::stock_reply(status_type::internal_server_error);
 
 			auto buffers = m_reply.to_buffers();
 
@@ -130,9 +134,8 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 				{ self->handle_write(ec, bytes_transferred); });
 		}
-		catch (...)
+		catch (...) // NOLINT(bugprone-empty-catch)
 		{
-
 		}
 	}
 }

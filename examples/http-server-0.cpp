@@ -6,12 +6,22 @@
 //[ most_simple_http_server_start
 #include <zeep/http/server.hpp>
 
+#include <exception>
+#include <iostream>
+
 int main()
 {
-    zeep::http::server srv;
-    srv.bind("::", 8080);
-    srv.run(2);
+	try
+	{
+		zeep::http::server srv;
+		srv.bind("::", 8080);
+		srv.run(2);
+	}
+	catch (const std::exception &ex)
+	{
+		std::cerr << ex.what() << "\n";
+	}
 
-    return 0;
+	return 0;
 }
 //]

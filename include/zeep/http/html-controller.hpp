@@ -11,9 +11,21 @@
 /// care of handling requests that are mapped to call back functions
 /// and provides code to return XHTML formatted replies.
 
-#include "zeep/config.hpp"
-
 #include "zeep/http/controller.hpp"
+#include "zeep/http/reply.hpp"
+#include "zeep/http/request.hpp"
+#include "zeep/http/scope.hpp"
+
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <list>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 // --------------------------------------------------------------------
 //
@@ -34,8 +46,8 @@ class basic_template_processor;
 class html_controller : public controller
 {
   public:
-	html_controller(std::string prefix_path = "/")
-		: controller(std::move(prefix_path))
+	html_controller(const std::string &prefix_path = "/")
+		: controller(prefix_path)
 	{
 	}
 
@@ -43,7 +55,7 @@ class html_controller : public controller
 	basic_template_processor &get_template_processor();
 
 	/// \brief return the basic_template_processor of the server
-	const basic_template_processor &get_template_processor() const;
+	[[nodiscard]] const basic_template_processor &get_template_processor() const;
 
 	/// \brief default file handling
 	///
@@ -77,13 +89,13 @@ class html_controller : public controller
 		{
 			static_assert(sizeof...(Names) == sizeof...(Args), "Number of names should be equal to number of arguments of callback function");
 
-			ControllerType *controller = dynamic_cast<ControllerType *>(owner);
+			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
 				throw std::runtime_error("Invalid controller for callback");
 
 			m_callback = [controller, sig](const scope &scope_, Args... args)
 			{
-				return (controller->*sig)(scope_, args...);
+				return (controller->*sig)(scope_, std::move(args)...);
 			};
 
 			set_names(names...);
@@ -96,7 +108,7 @@ class html_controller : public controller
 		}
 
 		template <std::size_t... I>
-		auto collect_arguments(const scope &scope, std::index_sequence<I...>)
+		auto collect_arguments(const scope &scope, std::index_sequence<I...> /*unused*/)
 		{
 			return std::make_tuple(scope, get_parameter(scope, m_names[I].c_str(), typename std::tuple_element_t<I, ArgsTuple>{})...);
 		}
@@ -233,7 +245,7 @@ class html_controller : public controller
 		m_mountpoints.emplace_back(new html_mount_point_simple(std::move(mountPoint), "POST", std::move(templateName), *this));
 	}
 
-	void map_simple(std::string mountPoint, std::string templateName)
+	void map_simple(const std::string &mountPoint, const std::string &templateName)
 	{
 		map_get_simple(mountPoint, templateName);
 		map_post_simple(mountPoint, templateName);
@@ -241,6 +253,7 @@ class html_controller : public controller
 
 	// --------------------------------------------------------------------
 
+  protected:
 	/// \brief Initialize the scope object
 	///
 	/// Initialize scope, derived classes should call this first
@@ -253,8 +266,8 @@ class html_controller : public controller
 class html_controller_v1 : public html_controller
 {
   public:
-	html_controller_v1(std::string prefix_path = "/")
-		: html_controller(std::move(prefix_path))
+	html_controller_v1(const std::string &prefix_path = "/")
+		: html_controller(prefix_path)
 	{
 	}
 
@@ -323,9 +336,9 @@ class html_controller_v1 : public html_controller
 	}
 
 	/// \brief mount a handler on URI path \a path for HTTP method \a method
-	void mount(std::string path, std::string method, handler_type handler)
+	void mount(std::string path, std::string method, const handler_type &handler)
 	{
-		auto mpi = std::find_if(m_dispatch_table.begin(), m_dispatch_table.end(),
+		auto mpi = std::ranges::find_if(m_dispatch_table,
 			[&path, &method](auto &mp)
 			{
 				return mp.path == path and (mp.method == method or mp.method == "UNDEFINED" or method == "UNDEFINED");
@@ -342,14 +355,14 @@ class html_controller_v1 : public html_controller
 		}
 	}
 
-	private:
+  private:
 	/// @cond
 	struct mount_point_v1
 	{
 		mount_point_v1(std::string path, std::string method, handler_type handler)
 			: path(std::move(path))
 			, method(std::move(method))
-			, handler(handler)
+			, handler(std::move(handler))
 		{
 		}
 
