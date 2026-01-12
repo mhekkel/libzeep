@@ -5,11 +5,14 @@
 
 #pragma once
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#if not MSVC
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wsuggest-override"
+#endif
 #include <asio.hpp>
-#pragma GCC diagnostic pop
+#if not MSVC
+# pragma GCC diagnostic pop
+#endif
 
 namespace asio_ns = ::asio;
 namespace asio_system_ns = ::std;
-
