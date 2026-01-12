@@ -20,7 +20,6 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
-#include <boost/system/detail/error_code.hpp>
 
 #include <chrono>
 #include <ctime>
@@ -29,7 +28,6 @@
 #include <iostream>
 #include <list> // for list
 #include <memory>
-#include <mutex>
 #include <new>
 #include <set> // for set
 #include <sstream>
@@ -263,6 +261,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				}
 				catch (...)
 				{
+					continue;
 				}
 			}
 		}
@@ -335,10 +334,16 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			}
 			catch (...)
 			{
+				rep = http::reply::stock_reply(status_type::internal_server_error);
+
+				object error({ { "error", "unknown error" } });
+				rep.set_content(error);
+				rep.set_status(status_type::internal_server_error);
+
+				handled = true;
 			}
 		}
-
-		if (not handled)
+		else
 		{
 			for (auto eh : m_error_handlers)
 			{
@@ -349,12 +354,13 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				}
 				catch (...)
 				{
+					continue;
 				}
 			}
 		}
 	}
 
-	log_request(client, req, rep, start, referer, userAgent);
+	log_request(client, req, rep, start, referer, userAgent, {});
 }
 
 void basic_server::log_request(std::string_view client,
@@ -365,9 +371,6 @@ void basic_server::log_request(std::string_view client,
 {
 	try
 	{
-		// protect the output stream from garbled log messages
-		const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
-
 		auto credentials = req.get_credentials();
 		std::string username = credentials.is_object() ? credentials["username"].get<std::string>() : "";
 		if (username.empty())
@@ -375,24 +378,24 @@ void basic_server::log_request(std::string_view client,
 
 		const auto &[major, minor] = req.get_version();
 
-		std::cout << client << ' '
-				  << "-" << ' '
-				  << username << ' '
-				  << std::put_time(std::localtime(&now_t), "[%d/%b/%Y:%H:%M:%S %z]") << ' '
-				  << '"' << req.get_method() << ' ' << req.get_uri() << ' '
-				  << "HTTP/" << major << '.' << minor << "\" "
-				  << static_cast<int>(rep.get_status()) << ' '
-				  << rep.size() << ' '
-				  << '"' << referer << '"' << ' '
-				  << '"' << userAgent << '"' << ' ';
-
-		if (entry.empty())
-			std::cout << "-" << std::endl;
-		else
-			std::cout << std::quoted(entry) << std::endl;
+		std::cout << std::format(R"({} - {} [{:%d/%b/%Y:%H:%M:%S}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})", 
+			client,
+			username,
+			std::chrono::current_zone()->to_local(start),
+			req.get_method(),
+			req.get_uri().string(),
+			major,
+			minor,
+			static_cast<int>(rep.get_status()),
+			rep.size(),
+			referer,
+			userAgent,
+			entry.empty() ? std::string{} : ( (std::ostringstream() << ' ' << std::quoted(entry)).str() )
+		);
 	}
-	catch (...)
+	catch (const std::exception &ex)
 	{
+		std::cerr << "error writing to log: " << ex.what() << '\n';
 	}
 }
 

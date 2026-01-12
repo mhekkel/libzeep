@@ -12,8 +12,6 @@
 #include "zeep/http/server.hpp"
 #include "zeep/http/uri.hpp"
 
-#include <boost/system/detail/error_code.hpp>
-
 #include <cstddef>
 #include <iomanip>
 #include <iostream>

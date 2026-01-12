@@ -31,7 +31,7 @@ class reply
 	using cookie_directive = header;
 
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
-	reply(status_type status = status_type::internal_server_error, std::tuple<int, int> version = { 1, 0 });
+	reply(status_type status = status_type::ok, std::tuple<int, int> version = { 1, 0 });
 
 	/// Create a reply with \a status, \a version, \a headers and a \a payload
 	reply(status_type status, std::tuple<int, int> version,

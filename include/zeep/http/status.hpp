@@ -16,7 +16,7 @@ namespace zeep::http
 
 /// Various predefined HTTP status codes
 
-enum class status_type
+enum status_type
 {
 	cont = 100,
 	ok = 200,

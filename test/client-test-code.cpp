@@ -11,12 +11,7 @@
 #include "zeep/streambuf.hpp"
 
 #include <array>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/system/system_error.hpp>
-#include <boost/version.hpp>
-
 #include <cstddef>
-#include <memory>
 #include <sstream>
 
 namespace zh = zeep::http;
@@ -51,7 +46,7 @@ zh::reply simple_request(uint16_t port, const std::string &req)
 
 	for (;;)
 	{
-		std::array<char, 128> buf;  // NOLINT(hicpp-member-init)
+		std::array<char, 128> buf; // NOLINT(hicpp-member-init)
 		asio_system_ns::error_code error;
 
 		size_t len = socket.read_some(asio_ns::buffer(buf), error);

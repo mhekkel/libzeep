@@ -13,8 +13,6 @@
 #include "zeep/http/reply.hpp"
 #include "zeep/http/server.hpp"
 
-#include <boost/system/detail/error_code.hpp>
-
 #include <cerrno>
 #include <chrono>
 #include <csignal>

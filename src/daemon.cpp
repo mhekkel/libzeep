@@ -17,8 +17,6 @@
 #include "zeep/http/server.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include <boost/system/detail/error_code.hpp>
-
 #include <cerrno>
 #include <climits>
 #include <csignal>

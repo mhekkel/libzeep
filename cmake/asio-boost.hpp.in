@@ -6,16 +6,22 @@
 #pragma once
 
 #if ZEEP_BOOST_ASIO_STANDALONE
-#define BOOST_ASIO_STANDALONE 1
+# define BOOST_ASIO_STANDALONE 1
 #endif
 
-#include <utility>
+// This header is missing in some asio versions
+#include <utility> // NOLINT(unused-includes)
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#if not MSVC
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wsuggest-override"
+#endif
+// IWYU pragma: begin_exports
 #include <boost/asio.hpp>
-#pragma GCC diagnostic pop
+// IWYU pragma: end_exports
+#if not MSVC
+# pragma GCC diagnostic pop
+#endif
 
 namespace asio_ns = ::boost::asio;
 namespace asio_system_ns = ::boost::system;
-

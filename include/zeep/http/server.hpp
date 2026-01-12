@@ -13,12 +13,9 @@
 #include "zeep/http/asio.hpp"
 #include "zeep/http/template-processor.hpp"
 
-#include <boost/system/detail/error_code.hpp>
-
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
-#include <iosfwd>
 #include <list>
 #include <memory>
 #include <set>
@@ -191,7 +188,7 @@ class basic_server
 		const request &req, const reply &rep,
 		std::chrono::system_clock::time_point start,
 		std::string_view referer, std::string_view userAgent,
-		std::string_view entry = {}) noexcept;
+		std::string_view entry) noexcept;
 
   private:
 	friend class preforked_server_base;
@@ -246,7 +243,7 @@ class server : public basic_server
 
 	~server() override
 	{
-		stop();
+		m_io_context.stop();
 	}
 
 	asio_ns::io_context &get_io_context() override

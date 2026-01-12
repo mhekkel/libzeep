@@ -268,10 +268,8 @@ void reply::set_content(zeem::document &doc)
 
 void reply::set_content(std::string data, std::string contentType)
 {
-	m_content = std::move(data);
-	m_status = status_type::ok;
-
 	m_data.reset();
+	m_content = std::move(data);
 	m_chunked = false;
 
 	set_header("Content-Length", std::to_string(m_content.length()));
@@ -281,10 +279,8 @@ void reply::set_content(std::string data, std::string contentType)
 
 void reply::set_content(const char *data, size_t size, std::string contentType)
 {
-	m_content = std::string(data, size);
-	m_status = status_type::ok;
-
 	m_data.reset();
+	m_content = std::string(data, size);
 	m_chunked = false;
 
 	set_header("Content-Length", std::to_string(m_content.length()));
@@ -296,8 +292,6 @@ void reply::set_content(std::istream *idata, std::string contentType)
 {
 	m_data.reset(idata);
 	m_content.clear();
-
-	m_status = status_type::ok;
 	m_chunked = true;
 
 	set_header("Content-Type", std::move(contentType));

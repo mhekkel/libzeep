@@ -404,7 +404,7 @@ struct file_param_parser
 		CONTENT,
 		SKIP
 	} m_state = SKIP;
-	std::string::size_type m_i = 0;
+	std::string::difference_type m_i = 0;
 };
 
 const std::regex file_param_parser::k_rx_disp(R"x(content-disposition:\s*form-data(;.+))x", std::regex::icase);
@@ -433,7 +433,7 @@ file_param file_param_parser::next()
 	std::string contentName;
 	std::smatch m;
 
-	std::string::size_type r = 0, l = 0;
+	std::string::difference_type r = 0, l = 0;
 	file_param result = {};
 	bool found = false;
 
