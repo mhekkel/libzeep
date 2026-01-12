@@ -381,15 +381,9 @@ void basic_server::log_request(std::string_view client,
 
 		const auto &[major, minor] = req.get_version();
 
-		// const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
-		// const std::string time_str = (std::ostringstream() << std::put_time(std::localtime(&now_t), "[%d/%b/%Y:%H:%M:%S %z]")).str();
+		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
 
 		std::ostringstream ts;
-
-		using namespace std::chrono_literals;
-		using namespace date;
-
-		auto t = make_zoned(current_zone(), date::floor<std::chrono::seconds>(start));
 		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
 
 		std::cout << std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
