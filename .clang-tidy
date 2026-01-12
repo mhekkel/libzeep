@@ -35,4 +35,4 @@ Checks: >
     -misc-non-private-member-variables-in-classes
 
 HeaderFilterRegex: ".*"
-ExcludeHeaderFilterRegex: "date.h"
+ExcludeHeaderFilterRegex: "date.h|date/date.h|date/tz.h"

@@ -97,6 +97,14 @@ else()
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
+CPMFindPackage(NAME date
+	GIT_REPOSITORY "https://github.com/HowardHinnant/date"
+	VERSION 3.0.3
+	EXCLUDE_FROM_ALL YES
+	OPTIONS
+	"USE_SYSTEM_TZ_DB ON"
+	"BUILD_TZ_LIB ON")
+
 CPMFindPackage(NAME zeem
 	GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
 	VERSION 2.1.0
@@ -209,7 +217,7 @@ target_include_directories(zeep
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
+target_link_libraries(zeep PUBLIC Threads::Threads date::date-tz zeem::zeem)
 
 if(ZEEP_USE_BOOST_ASIO)
 	target_link_libraries(zeep PUBLIC Boost::headers)

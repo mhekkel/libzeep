@@ -6,6 +6,7 @@
 
 #include "zeep/http/server.hpp"
 
+#include "date/tz.h"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/http/access-control.hpp"
@@ -20,6 +21,8 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
+
+#include <date/date.h>
 
 #include <chrono>
 #include <ctime>
@@ -378,20 +381,32 @@ void basic_server::log_request(std::string_view client,
 
 		const auto &[major, minor] = req.get_version();
 
-		std::cout << std::format(R"({} - {} [{:%d/%b/%Y:%H:%M:%S}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})", 
-			client,
-			username,
-			std::chrono::current_zone()->to_local(start),
-			req.get_method(),
-			req.get_uri().string(),
-			major,
-			minor,
-			static_cast<int>(rep.get_status()),
-			rep.size(),
-			referer,
-			userAgent,
-			entry.empty() ? std::string{} : ( (std::ostringstream() << ' ' << std::quoted(entry)).str() )
-		);
+		// const std::time_t now_t = std::chrono::system_clock::to_time_t(start);
+		// const std::string time_str = (std::ostringstream() << std::put_time(std::localtime(&now_t), "[%d/%b/%Y:%H:%M:%S %z]")).str();
+
+		std::ostringstream ts;
+
+		using namespace std::chrono_literals;
+		using namespace date;
+
+		auto t = make_zoned(current_zone(), date::floor<std::chrono::seconds>(start));
+		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
+
+		std::cout << std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
+						 client,
+						 username,
+						 ts.str(),
+						 req.get_method(),
+						 req.get_uri().string(),
+						 major,
+						 minor,
+						 static_cast<int>(rep.get_status()),
+						 rep.size(),
+						 referer,
+						 userAgent,
+						 entry.empty() ? std::string{} : ((std::ostringstream() << ' ' << std::quoted(entry)).str()))
+				  << '\n'
+				  << std::flush;
 	}
 	catch (const std::exception &ex)
 	{
