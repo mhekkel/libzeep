@@ -567,6 +567,11 @@ int daemon::daemonize()
 
 void daemon::open_log_file()
 {
+	// Flush the IO first
+	std::cout.flush();
+	std::cerr.flush();
+	std::clog.flush();
+
 	// open the log file
 	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
 	if (fd_out < 0)
