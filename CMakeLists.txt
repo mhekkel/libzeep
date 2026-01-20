@@ -128,84 +128,27 @@ endif()
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 
 # Library rules
-add_library(zeep)
+file(GLOB_RECURSE zeep_cpp src/*.cpp)
+file(GLOB_RECURSE zeep_hpp include/*.hpp)
+
+list(FILTER zeep_cpp EXCLUDE REGEX src/soap-controller.cpp)
+
+if(NOT USE_RSRC)
+	list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
+endif()
+
+if(NOT HTTP_SERVER_HAS_PREFORK)
+	list(FILTER zeep_hpp include/zeep/http/preforked-server.hpp)
+	list(FILTER ZEEP_cpp src/preforked-server.cpp)
+endif()
+
+add_library(zeep ${zeep_cpp})
 add_library(zeep::zeep ALIAS zeep)
 
-list(APPEND ZEEP_HEADERS
-	include/zeep/crypto.hpp
-	include/zeep/streambuf.hpp
-	include/zeep/config.hpp
-
-	include/zeep/el/object.hpp
-	include/zeep/el/serializer.hpp
-	include/zeep/el/processing.hpp
-
-	include/zeep/http/asio.hpp
-	include/zeep/http/access-control.hpp
-	include/zeep/http/controller.hpp
-	include/zeep/http/message-parser.hpp
-	include/zeep/http/tag-processor.hpp
-	include/zeep/http/connection.hpp
-	include/zeep/http/server.hpp
-	include/zeep/http/daemon.hpp
-	include/zeep/http/error-handler.hpp
-	include/zeep/http/reply.hpp
-	include/zeep/http/scope.hpp
-	include/zeep/http/status.hpp
-	include/zeep/http/template-processor.hpp
-	include/zeep/http/header.hpp
-	include/zeep/http/request.hpp
-
-	# include/zeep/http/soap-controller.hpp
-	include/zeep/http/html-controller.hpp
-	include/zeep/http/security.hpp
-	include/zeep/http/uri.hpp
-	include/zeep/http/login-controller.hpp
-	include/zeep/unicode-support.hpp
-	include/zeep/exception.hpp
-)
-
-list(APPEND ZEEP_SRC
-	src/access-control.cpp
-	src/connection.cpp
-	src/controller.cpp
-	src/crypto.cpp
-	src/daemon.cpp
-	src/el-object.cpp
-	src/el-processing.cpp
-	src/error-handler.cpp
-	src/format.cpp
-	src/glob.cpp
-	src/html-controller.cpp
-	src/login-controller.cpp
-	src/message-parser.cpp
-	src/reply.cpp
-	src/request.cpp
-	src/scope.cpp
-	src/security.cpp
-	src/server.cpp
-	src/uri.cpp
-
-	# src/soap-controller.cpp
-	src/tag-processor.cpp
-	src/template-processor.cpp
-	src/signals.cpp
-)
-
-if(USE_RSRC)
-	list(APPEND ZEEP_SRC src/controller-rsrc.cpp)
-endif()
-
-if(HTTP_SERVER_HAS_PREFORK)
-	list(APPEND ZEEP_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/preforked-server.hpp)
-	list(APPEND ZEEP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/preforked-server.cpp)
-endif()
-
 target_sources(zeep
-	PRIVATE ${ZEEP_SRC}
 	PUBLIC FILE_SET zeep_headers TYPE HEADERS
 	BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-	FILES ${ZEEP_HEADERS}
+	FILES ${zeep_hpp}
 )
 
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -214,8 +157,7 @@ target_compile_features(zeep PUBLIC cxx_std_20)
 target_include_directories(zeep
 	PUBLIC
 	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
-	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
+	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 target_link_libraries(zeep PUBLIC Threads::Threads date::date-tz zeem::zeem)
 
@@ -227,10 +169,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(zeep PRIVATE -undefined dynamic_lookup)
 endif()
 
-# Build debug library with d postfix
-set(CMAKE_DEBUG_POSTFIX d)
-set_target_properties(zeep PROPERTIES DEBUG_POSTFIX "d")
-
 # Install rules
 install(TARGETS zeep
 	EXPORT zeep-targets
@@ -239,33 +177,28 @@ install(TARGETS zeep
 
 install(EXPORT zeep-targets
 	NAMESPACE zeep::
-	DESTINATION lib/cmake/zeep
-)
+	DESTINATION lib/cmake/zeep)
 
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
-	INSTALL_DESTINATION lib/cmake/zeep
-)
+	INSTALL_DESTINATION lib/cmake/zeep)
 
 write_basic_package_version_file(
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-	COMPATIBILITY AnyNewerVersion
-)
+	COMPATIBILITY AnyNewerVersion)
 
 install(FILES
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
 	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
 	DESTINATION lib/cmake/zeep
-	COMPONENT Devel
-)
+	COMPONENT Devel)
 
 set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeep PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION
-)
+	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION)
 
 # Config file
 set(LIBZEEP_VERSION ${PROJECT_VERSION})

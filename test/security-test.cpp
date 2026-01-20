@@ -7,7 +7,7 @@
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/security.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

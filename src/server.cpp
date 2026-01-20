@@ -1,5 +1,5 @@
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -19,7 +19,7 @@
 #include "zeep/http/security.hpp"
 #include "zeep/http/status.hpp"
 #include "zeep/http/template-processor.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
 #include <date/date.h>
@@ -187,7 +187,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 	// we're pessimistic
 	rep = reply::stock_reply(status_type::not_found);
 
-	// set up a logging stream and collect logging information
 	auto start = std::chrono::system_clock::now();
 
 	std::string referer("-"), userAgent("-"), accept, client;
@@ -295,7 +294,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 	catch (...)
 	{
 		auto eptr = std::current_exception();
-		bool handled = false;
 
 		// special case, caller expects a JSON reply
 		if (req.get_accept("application/json") == 1.0f)
@@ -312,8 +310,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", get_status_description(ex.status()) } });
 				rep.set_content(error);
 				rep.set_status(ex.status());
-
-				handled = true;
 			}
 			catch (status_type s)
 			{
@@ -322,8 +318,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", get_status_description(s) } });
 				rep.set_content(error);
 				rep.set_status(s);
-
-				handled = true;
 			}
 			catch (const std::exception &e)
 			{
@@ -332,8 +326,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", e.what() } });
 				rep.set_content(error);
 				rep.set_status(status_type::internal_server_error);
-
-				handled = true;
 			}
 			catch (...)
 			{
@@ -342,8 +334,6 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", "unknown error" } });
 				rep.set_content(error);
 				rep.set_status(status_type::internal_server_error);
-
-				handled = true;
 			}
 		}
 		else
@@ -381,10 +371,10 @@ void basic_server::log_request(std::string_view client,
 
 		const auto &[major, minor] = req.get_version();
 
-		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
+		auto t = std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(start) };
 
 		std::ostringstream ts;
-		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
+		ts << std::format("{:%d/%b/%Y:%H:%M:%S %Ez}", t);
 
 		std::cout << std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
 						 client,

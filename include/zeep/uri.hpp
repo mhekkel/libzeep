@@ -1,4 +1,4 @@
-//          Copyright Maarten L. Hekkelman, 2021-2025
+//          Copyright Maarten L. Hekkelman, 2021-2026
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -12,7 +12,7 @@
 
 #include <cstdint>
 
-namespace zeep::http
+namespace zeep
 {
 
 // --------------------------------------------------------------------
@@ -50,7 +50,7 @@ class uri_parse_error : public zeep::exception
   public:
 	uri_parse_error()
 		: exception("invalid uri") {};
-	uri_parse_error(const std::string& u)
+	uri_parse_error(const std::string &u)
 		: exception("invalid uri: " + u) {};
 };
 
@@ -388,4 +388,4 @@ class uri
 	bool m_absolutePath = false;
 };
 
-} // namespace zeep::http
+} // namespace zeep

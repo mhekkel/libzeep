@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -10,7 +10,7 @@
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/server.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <cstddef>
 #include <iomanip>
@@ -22,6 +22,22 @@
 
 namespace zeep::http
 {
+
+std::vector<asio_ns::const_buffer> get_buffers(reply &rep)
+{
+	std::vector<asio_ns::const_buffer> result;
+	for (auto &buffer : rep.to_buffers())
+		result.emplace_back(buffer.data(), buffer.size());
+	return result;
+}
+
+std::vector<asio_ns::const_buffer> get_data_buffers(reply &rep)
+{
+	std::vector<asio_ns::const_buffer> result;
+	for (auto &buffer : rep.data_to_buffers())
+		result.emplace_back(buffer.data(), buffer.size());
+	return result;
+}
 
 // Needed for CLang/libc++ on FreeBSD 10
 connection *get_pointer(const std::shared_ptr<connection> &p)
@@ -58,7 +74,9 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 			if (result)
 			{
 				auto req = m_request_parser.get_request();
-				req.set_local_endpoint(m_socket);
+				req.set_local_endpoint(
+					m_socket.local_endpoint().address().to_string(),
+					m_socket.local_endpoint().port());
 
 				m_request_parser.reset();
 
@@ -87,64 +105,64 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 				}
 				else
 				{
-					auto buffers = m_reply.to_buffers();
+					auto buffers = get_buffers(m_reply);
 
 					asio_ns::async_write(m_socket, buffers,
 						[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 						{ self->handle_write(ec, bytes_transferred); });
 				}
-			}
-			else if (not result)
-			{
-				m_reply = reply::stock_reply(status_type::bad_request);
-
-				auto buffers = m_reply.to_buffers();
-
-				asio_ns::async_write(m_socket, buffers,
-					[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-					{ self->handle_write(ec, bytes_transferred); });
-			}
-			else
-			{
-				m_bufs = m_buffer.prepare(4096);
-				m_socket.async_read_some(m_bufs,
-					[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-					{ self->handle_read(ec, bytes_transferred); });
-			}
 		}
-		catch (const uri_parse_error &ex)
+		else if (not result)
 		{
-			std::clog << "Invalid URI requested\n";
 			m_reply = reply::stock_reply(status_type::bad_request);
 
-			auto buffers = m_reply.to_buffers();
+			auto buffers = get_buffers(m_reply);
 
 			asio_ns::async_write(m_socket, buffers,
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 				{ self->handle_write(ec, bytes_transferred); });
 		}
-		catch (const std::exception &ex)
+		else
 		{
-			std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
-			m_reply = reply::stock_reply(status_type::internal_server_error);
-
-			auto buffers = m_reply.to_buffers();
-
-			asio_ns::async_write(m_socket, buffers,
+			m_bufs = m_buffer.prepare(4096);
+			m_socket.async_read_some(m_bufs,
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-				{ self->handle_write(ec, bytes_transferred); });
-		}
-		catch (...) // NOLINT(bugprone-empty-catch)
-		{
+				{ self->handle_read(ec, bytes_transferred); });
 		}
 	}
+	catch (const uri_parse_error &ex)
+	{
+		std::clog << "Invalid URI requested\n";
+		m_reply = reply::stock_reply(status_type::bad_request);
+
+		auto buffers = get_buffers(m_reply);
+
+		asio_ns::async_write(m_socket, buffers,
+			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+			{ self->handle_write(ec, bytes_transferred); });
+	}
+	catch (const std::exception &ex)
+	{
+		std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
+		m_reply = reply::stock_reply(status_type::internal_server_error);
+
+		auto buffers = get_buffers(m_reply);
+
+		asio_ns::async_write(m_socket, buffers,
+			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+			{ self->handle_write(ec, bytes_transferred); });
+	}
+	catch (...) // NOLINT(bugprone-empty-catch)
+	{
+	}
+}
 }
 
 void connection::handle_write(asio_system_ns::error_code ec, size_t /*bytes_transferred*/)
 {
 	if (not ec)
 	{
-		auto buffers = m_reply.data_to_buffers();
+		auto buffers = get_data_buffers(m_reply);
 
 		if (not buffers.empty())
 		{

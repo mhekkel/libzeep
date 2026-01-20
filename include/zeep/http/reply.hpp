@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -9,12 +9,11 @@
 /// \file
 /// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
-
 #include "zeep/el/object.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/http/uri.hpp"
 #include "zeep/http/asio.hpp"
+#include "zeep/http/header.hpp"
 #include "zeep/http/status.hpp"
+#include "zeep/uri.hpp"
 
 #include <zeem.hpp>
 
@@ -132,11 +131,11 @@ class reply
 		return m_content;
 	}
 
-	/// return the content of the reply as an array of asio_ns::const_buffer objects
-	[[nodiscard]] std::vector<asio_ns::const_buffer> to_buffers() const;
+	/// return the content of the reply as an array of std::string_view objects
+	[[nodiscard]] std::vector<std::string_view> to_buffers() const;
 
 	/// for istream data, if the returned buffer array is empty, the data is done
-	[[nodiscard]] std::vector<asio_ns::const_buffer> data_to_buffers();
+	[[nodiscard]] std::vector<std::string_view> data_to_buffers();
 
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);

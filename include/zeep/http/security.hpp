@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -174,7 +174,7 @@ class user_service
 	[[nodiscard]] virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
-	[[nodiscard]] virtual bool user_is_valid(const object &credentials) const;
+	[[nodiscard]] virtual bool user_is_valid(const el::object &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
 	[[nodiscard]] virtual bool user_is_valid(const std::string &username) const;

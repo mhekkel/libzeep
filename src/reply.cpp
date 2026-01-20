@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -8,7 +8,7 @@
 
 #include "zeep/http/reply.hpp"
 #include "zeep/http/status.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <chrono>
 #include <iomanip>
@@ -59,9 +59,8 @@ reply::reply(status_type status, std::tuple<int, int> version)
 
 	auto now = std::chrono::ceil<std::chrono::seconds>(std::chrono::system_clock::now());
 
-	set_header("Date", 
-		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", now
-	));
+	set_header("Date",
+		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", now));
 	set_header("Server", "libzeep/"s + klibzeepVersionNumber);
 	set_header("Content-Length", "0");
 }
@@ -299,38 +298,37 @@ void reply::set_content(std::istream *idata, std::string contentType)
 	remove_header("Content-Length");
 }
 
-std::vector<asio_ns::const_buffer> reply::to_buffers() const
+std::vector<std::string_view> reply::to_buffers() const
 {
 	// A global, thread local storage for the status line text
 	thread_local static std::string s_status_line;
 
-	std::vector<asio_ns::const_buffer> result;
+	std::vector<std::string_view> result;
 
 	s_status_line =
 		std::format("HTTP/{}.{} {} {}\r\n",
 			m_version_major, m_version_minor, static_cast<int>(m_status),
-			make_error_code(m_status).message()
-		);
+			make_error_code(m_status).message());
 
-	result.emplace_back(asio_ns::buffer(s_status_line));
+	result.emplace_back(s_status_line);
 
 	for (const header &h : m_headers)
 	{
-		result.push_back(asio_ns::buffer(h.name));
-		result.push_back(asio_ns::buffer(kNameValueSeparator));
-		result.push_back(asio_ns::buffer(h.value));
-		result.push_back(asio_ns::buffer(kCRLF));
+		result.push_back(h.name);
+		result.push_back(kNameValueSeparator);
+		result.push_back(h.value);
+		result.push_back(kCRLF);
 	}
 
-	result.push_back(asio_ns::buffer(kCRLF));
-	result.push_back(asio_ns::buffer(m_content));
+	result.push_back(kCRLF);
+	result.push_back(m_content);
 
 	return result;
 }
 
-std::vector<asio_ns::const_buffer> reply::data_to_buffers()
+std::vector<std::string_view> reply::data_to_buffers()
 {
-	std::vector<asio_ns::const_buffer> result;
+	std::vector<std::string_view> result;
 
 	if (m_data)
 	{
@@ -352,9 +350,9 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 		{
 			if (n == 0)
 			{
-				result.push_back(asio_ns::buffer(kZERO));
-				result.push_back(asio_ns::buffer(kCRLF));
-				result.push_back(asio_ns::buffer(kCRLF));
+				result.push_back(kZERO);
+				result.push_back(kCRLF);
+				result.push_back(kCRLF);
 				m_data.reset();
 			}
 			else
@@ -372,16 +370,16 @@ std::vector<asio_ns::const_buffer> reply::data_to_buffers()
 					n >>= 4;
 				}
 
-				result.emplace_back(asio_ns::buffer(p, e - p));
-				result.push_back(asio_ns::buffer(kCRLF));
-				result.emplace_back(asio_ns::buffer(&m_buffer[0], l));
-				result.push_back(asio_ns::buffer(kCRLF));
+				result.emplace_back(p, e - p);
+				result.push_back(kCRLF);
+				result.emplace_back(&m_buffer[0], l);
+				result.push_back(kCRLF);
 			}
 		}
 		else
 		{
 			if (n > 0)
-				result.emplace_back(asio_ns::buffer(&m_buffer[0], n));
+				result.emplace_back(&m_buffer[0], n);
 			else
 				m_data.reset();
 		}
@@ -466,15 +464,16 @@ reply reply::redirect(const uri &location)
 
 size_t reply::size() const
 {
-	auto buffers = to_buffers();
-	return std::accumulate(buffers.begin(), buffers.end(), 0LL, [](size_t m, auto &buffer)
-		{ return m + asio_ns::buffer_size(buffer); });
+	size_t result = 0;
+	for (auto &b : to_buffers())
+		result += b.size();
+	return result;
 }
 
 std::ostream &operator<<(std::ostream &lhs, const reply &rhs)
 {
 	for (auto &b : rhs.to_buffers())
-		lhs.write(static_cast<const char *>(b.data()), static_cast<std::streamsize>(b.size()));
+		lhs << b;
 
 	return lhs;
 }

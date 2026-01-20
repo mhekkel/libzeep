@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -322,7 +322,9 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 
 		reply r = reply::stock_reply(status_type::service_unavailable);
 
-		auto buffers = r.to_buffers();
+		std::vector<asio_ns::const_buffer> buffers;
+		for (auto &buffer : r.to_buffers())
+			buffers.emplace_back(buffer.data(), buffer.size());
 
 		try
 		{
