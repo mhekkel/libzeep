@@ -3,7 +3,7 @@
 include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 @FIND_DEPENDENCY_BOOST@
-find_dependency(date REQUIRED)
+@FIND_DEPENDENCY_DATE@
 find_dependency(zeem REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/zeep-targets.cmake")

@@ -112,13 +112,32 @@ else()
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
-CPMFindPackage(NAME date
-    GIT_REPOSITORY "https://github.com/HowardHinnant/date"
-    VERSION 3.0.3
-    EXCLUDE_FROM_ALL YES
-    OPTIONS
-    "USE_SYSTEM_TZ_DB ON"
-    "BUILD_TZ_LIB ON")
+try_run(TEST_STD_CHRONO_ZONED_TIME_R TEST_STD_CHRONO_ZONED_TIME_C
+	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono-zoned_time.cpp
+	CXX_STANDARD 20
+)
+
+if ("${TEST_STD_CHRONO_ZONED_TIME_R}" EQUAL "0")
+	set(USE_STD_CHRONO_ZONED_TIME TRUE)
+else()
+	set(USE_STD_CHRONO_ZONED_TIME FALSE)
+endif()
+
+message(NOTICE "Output from test: ${USE_STD_CHRONO_ZONED_TIME}")
+
+if(NOT USE_STD_CHRONO_ZONED_TIME)
+	message(NOTICE "zeem: Using Howard Hinnants date for from_stream")
+	CPMFindPackage(
+		NAME date
+		GIT_REPOSITORY "https://github.com/HowardHinnant/date"
+		VERSION 3.0.3
+		EXCLUDE_FROM_ALL YES
+		OPTIONS
+		"USE_SYSTEM_TZ_DB ON"
+		"BUILD_TZ_LIB ON")
+	set(ZEEM_USE_DATE_H ON)
+endif()
+
 
 CPMFindPackage(NAME zeem
     GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
@@ -174,7 +193,7 @@ target_include_directories(zeep
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
-target_link_libraries(zeep PUBLIC Threads::Threads date::date-tz zeem::zeem)
+target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
 
 if(ZEEP_USE_BOOST_ASIO)
     target_link_libraries(zeep PUBLIC Boost::headers)

@@ -22,7 +22,7 @@
 #include "zeep/unicode-support.hpp"
 #include "zeep/uri.hpp"
 
-#if __has_include(<date/date.h>)
+#if USE_DATE_H
 # include <date/date.h>
 #endif
 
@@ -376,8 +376,8 @@ void basic_server::log_request(std::string_view client,
 
 		std::ostringstream ts;
 
-		// macOS still has no zoned time...
-#if __has_include(<date/date.h>)
+		// macOS still has no zoned time... 
+#if USE_DATE_H
 		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
 		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
 #else
