@@ -1,8 +1,7 @@
 Version 7.3.0
 - Using zeem instead of mxml.
 - Fixing many warnings and a couple of issues found with clang-tidy
-- Fixed the writing of log files, requires the use of Howard Hinnants
-  date library again.
+- Fixed the writing of log files.
 
 Version 7.2.0
 - zeep::http::controller callbacks (for REST calls) can now
