@@ -153,8 +153,8 @@ if(NOT USE_RSRC)
 endif()
 
 if(NOT HTTP_SERVER_HAS_PREFORK)
-    list(FILTER zeep_hpp include/zeep/http/preforked-server.hpp)
-    list(FILTER ZEEP_cpp src/preforked-server.cpp)
+    list(FILTER zeep_hpp EXCLUDE REGEX include/zeep/http/preforked-server.hpp)
+    list(FILTER ZEEP_cpp EXCLUDE REGEX src/preforked-server.cpp)
 endif()
 
 add_library(zeep ${zeep_cpp})
