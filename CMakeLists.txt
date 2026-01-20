@@ -133,7 +133,7 @@ if(NOT USE_STD_CHRONO_ZONED_TIME)
 		OPTIONS
 		"USE_SYSTEM_TZ_DB ON"
 		"BUILD_TZ_LIB ON")
-	set(ZEEM_USE_DATE_H ON)
+	add_compile_definitions(USE_DATE_H)
 endif()
 
 CPMFindPackage(NAME zeem
