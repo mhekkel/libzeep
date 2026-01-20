@@ -138,7 +138,6 @@ if(NOT USE_STD_CHRONO_ZONED_TIME)
 	set(ZEEM_USE_DATE_H ON)
 endif()
 
-
 CPMFindPackage(NAME zeem
     GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
     VERSION 2.1.0
@@ -194,6 +193,10 @@ target_include_directories(zeep
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
+
+if(NOT USE_STD_CHRONO_ZONED_TIME)
+    target_link_libraries(zeep PUBLIC Threads::Threads date::date-tz zeem::zeem)
+endif()
 
 if(ZEEP_USE_BOOST_ASIO)
     target_link_libraries(zeep PUBLIC Boost::headers)
