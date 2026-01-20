@@ -376,17 +376,14 @@ void basic_server::log_request(std::string_view client,
 
 		std::ostringstream ts;
 
-		// macOS still has no zoned time... 
-		if constexpr (requires { not std::is_same_v<void, std::chrono::zoned_time<std::chrono::system_clock>>; })
-		{
-			auto t = std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(start) };
-			ts << std::format("{:%d/%b/%Y:%H:%M:%S %Ez}", t);
-		}
-		else
-		{
-			auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
-			date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
-		}
+		// macOS still has no zoned time...
+#if __has_include(<date/date.h>)
+		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
+		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
+#else
+		auto t = std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(start) };
+		ts << std::format("{:%d/%b/%Y:%H:%M:%S %Ez}", t);
+#endif
 
 		std::cout << std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
 						 client,
