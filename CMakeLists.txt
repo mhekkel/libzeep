@@ -123,8 +123,6 @@ else()
 	set(USE_STD_CHRONO_ZONED_TIME FALSE)
 endif()
 
-message(NOTICE "Output from test: ${USE_STD_CHRONO_ZONED_TIME}")
-
 if(NOT USE_STD_CHRONO_ZONED_TIME)
 	message(NOTICE "zeem: Using Howard Hinnants date for from_stream")
 	CPMFindPackage(
