@@ -114,8 +114,7 @@ endif()
 
 try_run(TEST_STD_CHRONO_ZONED_TIME_R TEST_STD_CHRONO_ZONED_TIME_C
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono-zoned_time.cpp
-	CXX_STANDARD 20
-)
+	CXX_STANDARD 20)
 
 if ("${TEST_STD_CHRONO_ZONED_TIME_R}" EQUAL "0")
 	set(USE_STD_CHRONO_ZONED_TIME TRUE)
@@ -124,7 +123,7 @@ else()
 endif()
 
 if(NOT USE_STD_CHRONO_ZONED_TIME)
-	message(NOTICE "zeem: Using Howard Hinnants date for from_stream")
+	message(NOTICE "zeep: Using Howard Hinnants date for from_stream")
 	CPMFindPackage(
 		NAME date
 		GIT_REPOSITORY "https://github.com/HowardHinnant/date"
@@ -179,8 +178,7 @@ add_library(zeep::zeep ALIAS zeep)
 target_sources(zeep
     PUBLIC FILE_SET zeep_headers TYPE HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-    FILES ${zeep_hpp}
-)
+    FILES ${zeep_hpp})
 
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(zeep PUBLIC cxx_std_20)

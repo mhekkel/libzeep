@@ -6,7 +6,6 @@
 
 #include "zeep/http/server.hpp"
 
-#include "date/tz.h"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/http/access-control.hpp"
@@ -24,6 +23,7 @@
 
 #if USE_DATE_H
 # include <date/date.h>
+# include <date/tz.h>
 #endif
 
 #include <chrono>
