@@ -94,7 +94,7 @@ if(ZEEP_USE_BOOST_ASIO)
 else()
     find_path(ASIO_INCLUDE_DIR asio.hpp)
 
-    if(${ASIO_INCLUDE_DIR-NOTFOUND})
+    if(ASIO_INCLUDE_DIR STREQUAL "ASIO_INCLUDE_DIR-NOTFOUND")
         include(ExternalProject)
         # Use ExternalProject since FetchContent always tries to install the result...
         ExternalProject_Add(asio
@@ -168,10 +168,8 @@ if(NOT USE_RSRC)
     list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
 endif()
 
-set(HTTP_SERVER_HAS_PREFORK OFF)
-
 if(NOT HTTP_SERVER_HAS_PREFORK)
-    list(FILTER zeep_hpp EXCLUDE REGEX include/zeep/http/preforked-server.hpp)
+    list(FILTER zeep_hpp EXCLUDE REGEX zeep/http/preforked-server.hpp)
     list(FILTER zeep_cpp EXCLUDE REGEX src/preforked-server.cpp)
 endif()
 
