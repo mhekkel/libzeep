@@ -20,63 +20,63 @@ option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON)
 
 # When building with ninja-multiconfig, build both debug and release by default
 if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
-	set(CMAKE_CROSS_CONFIGS "Debug;Release")
-	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+    set(CMAKE_CROSS_CONFIGS "Debug;Release")
+    set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
 endif()
 
 # New policy for Boost, set it here
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
-	cmake_policy(SET CMP0167 NEW)
+    cmake_policy(SET CMP0167 NEW)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
 elseif(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
 # Windows specific stuff
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(WIN32)
-	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
-		add_definitions(-D _WIN32_WINNT=0x0A00)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
-		add_definitions(-D _WIN32_WINNT=0x0603)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
-		add_definitions(-D _WIN32_WINNT=0x0602)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
-		add_definitions(-D _WIN32_WINNT=0x0601)
-	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
-		add_definitions(-D _WIN32_WINNT=0x0600)
-	else() # Windows XP (5.1)
-		add_definitions(-D _WIN32_WINNT=0x0501)
-	endif()
+    if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
+        add_definitions(-D _WIN32_WINNT=0x0A00)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
+        add_definitions(-D _WIN32_WINNT=0x0603)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
+        add_definitions(-D _WIN32_WINNT=0x0602)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
+        add_definitions(-D _WIN32_WINNT=0x0601)
+    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
+        add_definitions(-D _WIN32_WINNT=0x0600)
+    else() # Windows XP (5.1)
+        add_definitions(-D _WIN32_WINNT=0x0501)
+    endif()
 
-	add_definitions(-DNOMINMAX)
+    add_definitions(-DNOMINMAX)
 endif()
 
 if(MSVC)
-	# make msvc standards compliant...
-	add_compile_options(/permissive-)
+    # make msvc standards compliant...
+    add_compile_options(/permissive-)
 endif()
 
 # Optionally use mrc to create resources
 if(WIN32 AND BUILD_SHARED_LIBS)
-	message(STATUS "zeep: Not using resources when building shared libraries for Windows")
+    message(STATUS "zeep: Not using resources when building shared libraries for Windows")
 else()
-	find_package(mrc QUIET)
+    find_package(mrc QUIET)
 
-	if(MRC_FOUND)
-		option(USE_RSRC "Use mrc to create resources" ON)
+    if(MRC_FOUND)
+        option(USE_RSRC "Use mrc to create resources" ON)
 
-		if(USE_RSRC)
-			message(STATUS "zeep: Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
-			set(WEBAPP_USES_RESOURCES 1)
-		endif()
-	else()
-		message(STATUS "zeep: Not using resources since mrc was not found")
-	endif()
+        if(USE_RSRC)
+            message(STATUS "zeep: Using resources compiled with ${MRC_EXECUTABLE} version ${MRC_VERSION_STRING}")
+            set(WEBAPP_USES_RESOURCES 1)
+        endif()
+    else()
+        message(STATUS "zeep: Not using resources since mrc was not found")
+    endif()
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
@@ -84,44 +84,59 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
 if(ZEEP_USE_BOOST_ASIO)
-	find_package(Boost 1.74 REQUIRED COMPONENTS headers)
+    find_package(Boost 1.74 REQUIRED COMPONENTS headers)
 
-	message(STATUS "zeep: Using asio from boost")
+    message(STATUS "zeep: Using asio from boost")
 
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 
-	set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
+    set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 else()
-	find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
-	message(STATUS "zeep: Using standalone asio")
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+    find_path(ASIO_INCLUDE_DIR asio.hpp)
+
+    if(${ASIO_INCLUDE_DIR-NOTFOUND})
+        include(ExternalProject)
+        # Use ExternalProject since FetchContent always tries to install the result...
+        ExternalProject_Add(asio
+            URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-36-0.tar.gz
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND "")
+
+        ExternalProject_Get_Property(asio SOURCE_DIR)
+        set(ASIO_INCLUDE_DIR ${SOURCE_DIR})
+    endif()
+
+    message(NOTICE "zeep: Using standalone asio at ${ASIO_INCLUDE_DIR}")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
 CPMFindPackage(NAME date
-	GIT_REPOSITORY "https://github.com/HowardHinnant/date"
-	VERSION 3.0.3
-	EXCLUDE_FROM_ALL YES
-	OPTIONS
-	"USE_SYSTEM_TZ_DB ON"
-	"BUILD_TZ_LIB ON")
+    GIT_REPOSITORY "https://github.com/HowardHinnant/date"
+    VERSION 3.0.3
+    EXCLUDE_FROM_ALL YES
+    OPTIONS
+    "USE_SYSTEM_TZ_DB ON"
+    "BUILD_TZ_LIB ON")
 
 CPMFindPackage(NAME zeem
-	GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
-	VERSION 2.1.0
-	EXCLUDE_FROM_ALL YES)
+    GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
+    VERSION 2.1.0
+    EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
-	find_file(HAVE_SYS_WAIT_H "sys/wait.h")
+    find_file(HAVE_SYS_WAIT_H "sys/wait.h")
 
-	if(HAVE_SYS_WAIT_H)
-		set(HTTP_SERVER_HAS_PREFORK 1)
-	endif()
+    if(HAVE_SYS_WAIT_H)
+        set(HTTP_SERVER_HAS_PREFORK 1)
+    endif()
 
-	find_file(HAVE_UNISTD_H "unistd.h")
+    find_file(HAVE_UNISTD_H "unistd.h")
 
-	if(HAVE_UNISTD_H)
-		set(HTTP_HAS_UNIX_DAEMON 1)
-	endif()
+    if(HAVE_UNISTD_H)
+        set(HTTP_HAS_UNIX_DAEMON 1)
+    endif()
 endif()
 
 # Generate the revision.hpp file
@@ -134,71 +149,71 @@ file(GLOB_RECURSE zeep_hpp include/*.hpp)
 list(FILTER zeep_cpp EXCLUDE REGEX src/soap-controller.cpp)
 
 if(NOT USE_RSRC)
-	list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
+    list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
 endif()
 
 if(NOT HTTP_SERVER_HAS_PREFORK)
-	list(FILTER zeep_hpp include/zeep/http/preforked-server.hpp)
-	list(FILTER ZEEP_cpp src/preforked-server.cpp)
+    list(FILTER zeep_hpp include/zeep/http/preforked-server.hpp)
+    list(FILTER ZEEP_cpp src/preforked-server.cpp)
 endif()
 
 add_library(zeep ${zeep_cpp})
 add_library(zeep::zeep ALIAS zeep)
 
 target_sources(zeep
-	PUBLIC FILE_SET zeep_headers TYPE HEADERS
-	BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-	FILES ${zeep_hpp}
+    PUBLIC FILE_SET zeep_headers TYPE HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+    FILES ${zeep_hpp}
 )
 
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(zeep PUBLIC cxx_std_20)
 
 target_include_directories(zeep
-	PUBLIC
-	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
-	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+    PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 target_link_libraries(zeep PUBLIC Threads::Threads date::date-tz zeem::zeem)
 
 if(ZEEP_USE_BOOST_ASIO)
-	target_link_libraries(zeep PUBLIC Boost::headers)
+    target_link_libraries(zeep PUBLIC Boost::headers)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-	target_link_options(zeep PRIVATE -undefined dynamic_lookup)
+    target_link_options(zeep PRIVATE -undefined dynamic_lookup)
 endif()
 
 # Install rules
 install(TARGETS zeep
-	EXPORT zeep-targets
-	FILE_SET zeep_headers
-	DESTINATION include)
+    EXPORT zeep-targets
+    FILE_SET zeep_headers
+    DESTINATION include)
 
 install(EXPORT zeep-targets
-	NAMESPACE zeep::
-	DESTINATION lib/cmake/zeep)
+    NAMESPACE zeep::
+    DESTINATION lib/cmake/zeep)
 
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
-	INSTALL_DESTINATION lib/cmake/zeep)
+    ${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
+    INSTALL_DESTINATION lib/cmake/zeep)
 
 write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-	COMPATIBILITY AnyNewerVersion)
+    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
+    COMPATIBILITY AnyNewerVersion)
 
 install(FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-	DESTINATION lib/cmake/zeep
-	COMPONENT Devel)
+    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
+    DESTINATION lib/cmake/zeep
+    COMPONENT Devel)
 
 set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeep PROPERTIES
-	VERSION ${PROJECT_VERSION}
-	SOVERSION ${PROJECT_VERSION_MAJOR}
-	INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
-	COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION)
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+    COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION)
 
 # Config file
 set(LIBZEEP_VERSION ${PROJECT_VERSION})
@@ -210,15 +225,15 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/config.hpp.in" "${CMAKE
 
 # Documentation
 if(ZEEP_BUILD_DOCUMENTATION)
-	add_subdirectory(docs)
+    add_subdirectory(docs)
 endif()
 
 # Examples
 if(ZEEP_BUILD_EXAMPLES)
-	add_subdirectory(examples)
+    add_subdirectory(examples)
 endif()
 
 # Test applications, but only if we're not included as a subproject
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
-	add_subdirectory(test)
+    add_subdirectory(test)
 endif()
