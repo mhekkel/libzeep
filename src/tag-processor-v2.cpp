@@ -607,7 +607,7 @@ tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *n
 tag_processor::AttributeAction tag_processor::process_attr_attr(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path & /*dir*/, basic_template_processor & /*loader*/)
 {
 	auto v = evaluate_el_attr(scope, attr.value());
-	for (const auto& vi : v)
+	for (const auto &vi : v)
 		node->set_attribute(vi.first, vi.second);
 
 	return AttributeAction::none;
@@ -666,7 +666,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 
 			for (auto ri = b; ri != e; ++ri)
 			{
-				const auto& m = *ri;
+				const auto &m = *ri;
 
 				t.append(i, s.begin() + m.position());
 				i = s.begin() + m.position() + m.length();
@@ -995,7 +995,7 @@ tag_processor::AttributeAction tag_processor::process_attr_styleappend(zeem::ele
 			if (cs.back() == ';')
 				s.insert(0, cs);
 			else
-			 	s.insert(0, cs + ';');
+				s.insert(0, cs + ';');
 		}
 
 		c->set_value(s);
