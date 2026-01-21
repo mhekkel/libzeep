@@ -48,10 +48,6 @@ foreach(TEST IN LISTS zeep_tests)
 	add_executable(${ZEEP_TEST})
 	target_sources(${ZEEP_TEST} PRIVATE ${ZEEP_TEST_SOURCE})
 	
-	if("${ZEEP_TEST}" STREQUAL "processor")
-		target_compile_definitions(${ZEEP_TEST} PUBLIC DOCROOT=".")
-	endif()
-
 	if(USE_RSRC AND("${TEST}" STREQUAL "processor" OR "${TEST}" STREQUAL "rsrc_webapp"))
 		mrc_target_resources(${ZEEP_TEST} ${CMAKE_CURRENT_SOURCE_DIR}/fragment-file.xhtml)
 	endif()

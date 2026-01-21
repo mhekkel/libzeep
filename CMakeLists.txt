@@ -1,4 +1,4 @@
-# Copyright Maarten L. Hekkelman, 2023-2025
+# Copyright Maarten L. Hekkelman, 2023-2026
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -18,27 +18,21 @@ option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
 option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON)
 
-# When building with ninja-multiconfig, build both debug and release by default
-if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
-    set(CMAKE_CROSS_CONFIGS "Debug;Release")
-    set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
-endif()
-
 # New policy for Boost, set it here
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wsuggest-override")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-# Windows specific stuff
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
 if(WIN32)
+    # Windows specific stuff
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
     if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
         add_definitions(-D _WIN32_WINNT=0x0A00)
     elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
@@ -79,8 +73,8 @@ else()
     endif()
 endif()
 
-set(CMAKE_THREAD_PREFER_PTHREAD)
-set(THREADS_PREFER_PTHREAD_FLAG)
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
 if(ZEEP_USE_BOOST_ASIO)
@@ -95,44 +89,39 @@ else()
     find_path(ASIO_INCLUDE_DIR asio.hpp)
 
     if(ASIO_INCLUDE_DIR STREQUAL "ASIO_INCLUDE_DIR-NOTFOUND")
-        include(ExternalProject)
-        # Use ExternalProject since FetchContent always tries to install the result...
-        ExternalProject_Add(asio
-            URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-36-0.tar.gz
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND ""
-            INSTALL_COMMAND "")
+        CPMAddPackage(
+            NAME asio
+            URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-36-0.tar.gz)
 
-        ExternalProject_Get_Property(asio SOURCE_DIR)
-        set(ASIO_INCLUDE_DIR ${SOURCE_DIR})
+        set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/asio/include)
     endif()
 
-    message(NOTICE "zeep: Using standalone asio at ${ASIO_INCLUDE_DIR}")
+    message(STATUS "zeep: Using asio from ${ASIO_INCLUDE_DIR}")
+
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
 endif()
 
 try_run(TEST_STD_CHRONO_ZONED_TIME_R TEST_STD_CHRONO_ZONED_TIME_C
-	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono-zoned_time.cpp
-	CXX_STANDARD 20)
+    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-chrono-zoned_time.cpp
+    CXX_STANDARD 20)
 
-if ("${TEST_STD_CHRONO_ZONED_TIME_R}" EQUAL "0")
-	set(USE_STD_CHRONO_ZONED_TIME TRUE)
+if("${TEST_STD_CHRONO_ZONED_TIME_R}" EQUAL "0")
+    set(USE_STD_CHRONO_ZONED_TIME TRUE)
 else()
-	set(USE_STD_CHRONO_ZONED_TIME FALSE)
+    set(USE_STD_CHRONO_ZONED_TIME FALSE)
 endif()
 
 if(NOT USE_STD_CHRONO_ZONED_TIME)
-	message(NOTICE "zeep: Using Howard Hinnants date for from_stream")
-	CPMFindPackage(
-		NAME date
-		GIT_REPOSITORY "https://github.com/HowardHinnant/date"
-		VERSION 3.0.3
-		EXCLUDE_FROM_ALL YES
-		OPTIONS
-		"USE_SYSTEM_TZ_DB ON"
-		"BUILD_TZ_LIB ON")
-	add_compile_definitions(USE_DATE_H)
+    message(NOTICE "zeep: Using Howard Hinnants date for from_stream")
+    CPMFindPackage(
+        NAME date
+        GIT_REPOSITORY "https://github.com/HowardHinnant/date"
+        VERSION 3.0.3
+        EXCLUDE_FROM_ALL YES
+        OPTIONS
+        "USE_SYSTEM_TZ_DB ON"
+        "BUILD_TZ_LIB ON")
+    add_compile_definitions(USE_DATE_H)
 endif()
 
 CPMFindPackage(NAME zeem
@@ -161,6 +150,7 @@ write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 file(GLOB_RECURSE zeep_cpp src/*.cpp)
 file(GLOB_RECURSE zeep_hpp include/*.hpp)
 
+# TODO: SOAP is not working at the moment, really need to fix that
 list(FILTER zeep_cpp EXCLUDE REGEX src/soap-controller.cpp)
 
 if(NOT USE_RSRC)
@@ -185,13 +175,12 @@ target_compile_features(zeep PUBLIC cxx_std_20)
 
 target_include_directories(zeep
     PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include;${ASIO_INCLUDE_DIR}>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+    "${ASIO_INCLUDE_DIR}>")
 
 target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
 
 if(NOT USE_STD_CHRONO_ZONED_TIME)
-    target_link_libraries(zeep PUBLIC Threads::Threads date::date-tz zeem::zeem)
+    target_link_libraries(zeep PUBLIC date::date-tz)
 endif()
 
 if(ZEEP_USE_BOOST_ASIO)
