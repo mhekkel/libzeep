@@ -172,11 +172,7 @@ target_sources(zeep
 
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(zeep PUBLIC cxx_std_20)
-
-target_include_directories(zeep
-    PUBLIC
-    "${ASIO_INCLUDE_DIR}>")
-
+target_include_directories(zeep PUBLIC "${ASIO_INCLUDE_DIR}")
 target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
 
 if(NOT USE_STD_CHRONO_ZONED_TIME)
