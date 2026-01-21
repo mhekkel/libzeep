@@ -18,7 +18,7 @@
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
 #include "zeep/http/status.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <zeem/serialize.hpp>
 

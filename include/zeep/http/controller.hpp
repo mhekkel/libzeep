@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -15,8 +15,8 @@
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
-#include "zeep/http/uri.hpp"
 #include "zeep/unicode-support.hpp"
+#include "zeep/uri.hpp"
 
 #include <zeem/serialize.hpp>
 
@@ -232,13 +232,13 @@ class controller
 			return result;
 		}
 
-		object get_parameter(const scope &scope, const std::string &name, object result)
+		el::object get_parameter(const scope &scope, const std::string &name, el::object result)
 		{
 			try
 			{
 				auto p = scope.get_parameter(name);
 				if (p.has_value())
-					result = object::parse_JSON(*p);
+					result = el::object::parse_JSON(*p);
 			}
 			catch (const std::exception &e)
 			{
@@ -302,19 +302,19 @@ class controller
 		}
 
 		template <typename T>
-			requires zeem::has_serialize_v<T, el::serializer<object>> or
-		             zeem::is_serializable_array_type_v<T, el::serializer<object>>
+			requires zeem::has_serialize_v<T, el::serializer<el::object>> or
+		             zeem::is_serializable_array_type_v<T, el::serializer<el::object>>
 		T get_parameter(const scope &scope, const std::string &name, const T & /*result*/)
 		{
-			object v;
+			el::object v;
 
 			if (iequals(scope.get_header("content-type"), "application/json"))
-				v = object::parse_JSON(scope.get_payload());
+				v = el::object::parse_JSON(scope.get_payload());
 			else
 			{
 				auto p = scope.get_parameter(name);
 				if (p.has_value())
-					v = object::parse_JSON(*p);
+					v = el::object::parse_JSON(*p);
 			}
 
 			return el::serializer<T>::deserialize(v);
@@ -327,7 +327,7 @@ class controller
 			return rep;
 		}
 
-		reply set_reply(object &&v)
+		reply set_reply(el::object &&v)
 		{
 			reply rep(status_type::ok);
 			rep.set_content(v);

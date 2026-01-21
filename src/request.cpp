@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -48,12 +48,6 @@ void swap(request &lhs, request &rhs) noexcept
 		std::swap(lhs.m_credentials, rhs.m_credentials);
 		std::swap(lhs.m_remote_address, rhs.m_remote_address);
 	}
-}
-
-void request::set_local_endpoint(asio_ns::ip::tcp::socket &socket)
-{
-	m_local_address = socket.local_endpoint().address().to_string();
-	m_local_port = socket.local_endpoint().port();
 }
 
 float request::get_accept(std::string_view type) const
@@ -276,9 +270,9 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 
 			std::string::difference_type i = 0, r = 0, l = 0;
 
-			for (i = 0; i <= m_payload.length(); ++i)
+			for (i = 0; i <= static_cast<decltype(i)>(m_payload.length()); ++i)
 			{
-				if (i < m_payload.length() and m_payload[i] != '\r' and m_payload[i] != '\n')
+				if (m_payload[i] != '\r' and m_payload[i] != '\n')
 					continue;
 
 				// we have found a 'line' at [l, i)
@@ -437,9 +431,9 @@ file_param file_param_parser::next()
 	file_param result = {};
 	bool found = false;
 
-	for (; m_i <= m_payload.length(); ++m_i)
+	for (; m_i <= static_cast<decltype(m_i)>(m_payload.length()); ++m_i)
 	{
-		if (m_i < m_payload.length() and m_payload[m_i] != '\r' and m_payload[m_i] != '\n')
+		if (m_payload[m_i] != '\r' and m_payload[m_i] != '\n')
 			continue;
 
 		// we have found a 'line' at [l, i)
@@ -756,37 +750,39 @@ namespace
 		kCRLF[] = { '\r', '\n' };
 }
 
-std::vector<asio_ns::const_buffer> request::to_buffers() const
-{
-	thread_local static std::string s_request_line;
+// std::vector<asio_ns::const_buffer> request::to_buffers() const
+// {
+// 	thread_local static std::string s_request_line;
 
-	std::vector<asio_ns::const_buffer> result;
+// 	std::vector<asio_ns::const_buffer> result;
 
-	s_request_line = get_request_line();
+// 	s_request_line = get_request_line();
 
-	result.emplace_back(asio_ns::buffer(s_request_line));
-	result.push_back(asio_ns::buffer(kCRLF));
+// 	result.emplace_back(asio_ns::buffer(s_request_line));
+// 	result.push_back(asio_ns::buffer(kCRLF));
 
-	for (const header &h : m_headers)
-	{
-		result.push_back(asio_ns::buffer(h.name));
-		result.push_back(asio_ns::buffer(kNameValueSeparator));
-		result.push_back(asio_ns::buffer(h.value));
-		result.push_back(asio_ns::buffer(kCRLF));
-	}
+// 	for (const header &h : m_headers)
+// 	{
+// 		result.push_back(asio_ns::buffer(h.name));
+// 		result.push_back(asio_ns::buffer(kNameValueSeparator));
+// 		result.push_back(asio_ns::buffer(h.value));
+// 		result.push_back(asio_ns::buffer(kCRLF));
+// 	}
 
-	result.push_back(asio_ns::buffer(kCRLF));
-	result.push_back(asio_ns::buffer(m_payload));
+// 	result.push_back(asio_ns::buffer(kCRLF));
+// 	result.push_back(asio_ns::buffer(m_payload));
 
-	return result;
-}
+// 	return result;
+// }
 
 std::ostream &operator<<(std::ostream &io, const request &req)
 {
-	std::vector<asio_ns::const_buffer> buffers = req.to_buffers();
+	io << req.get_request_line() << "\r\n";
 
-	for (auto &b : buffers)
-		io.write(static_cast<const char *>(b.data()), static_cast<std::streamsize>(b.size()));
+	for (const header &h : req.m_headers)
+		io << h.name << ": " << h.value << "\r\n";
+
+	io << "\r\n" << req.m_payload;
 
 	return io;
 }

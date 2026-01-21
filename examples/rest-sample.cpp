@@ -1,4 +1,4 @@
-//           Copyright Maarten L. Hekkelman, 2022-2025
+//         Copyright Maarten L. Hekkelman, 2022-2026
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -8,17 +8,17 @@
 #define WEBAPP_USES_RESOURCES 0
 
 #include <zeep/http/controller.hpp>
+#include <zeep/http/html-controller.hpp>
 #include <zeep/http/reply.hpp>
 #include <zeep/http/server.hpp>
 #include <zeep/http/template-processor.hpp>
-#include <zeep/http/html-controller.hpp>
 
 #include <zeem/serialize.hpp>
 
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -31,7 +31,10 @@ struct Item
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar &zeem::name_value_pair("name", name) & zeem::name_value_pair("count", count);
+		// clang-format off
+		ar & zeem::name_value_pair("name", name)
+		   & zeem::name_value_pair("count", count);
+		// clang-format on
 	}
 };
 
@@ -44,7 +47,11 @@ struct Cart
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar &zeem::name_value_pair("id", id) & zeem::name_value_pair("client", client) & zeem::name_value_pair("items", items);
+		// clang-format off
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("client", client)
+		   & zeem::name_value_pair("items", items);
+		// clang-format on
 	}
 };
 //]

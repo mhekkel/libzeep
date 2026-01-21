@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -15,7 +15,7 @@
 #include "zeep/http/asio.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
 #include <zeem/serialize.hpp>
@@ -1586,7 +1586,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 				else
 					d = params[0].get<double>();
 
-				return FormatDecimal(d, intDigits, decimals, scope.get_locale());
+				return format_decimal(d, intDigits, decimals, scope.get_locale());
 			}
 		}
 		else if (method == "formatDiskSize")
@@ -1609,7 +1609,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 				if (params.size() >= 2 and params[1].is_number_int())
 					decimals = params[1].get<int>();
 
-				return FormatDecimal(nr, 1, decimals, scope.get_locale()) + ' ' + kBase[base];
+				return format_decimal(nr, 1, decimals, scope.get_locale()) + ' ' + kBase[base];
 			}
 		}
 

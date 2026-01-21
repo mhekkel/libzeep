@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -16,7 +16,7 @@
 #include "zeep/http/server.hpp"
 #include "zeep/http/status.hpp"
 #include "zeep/http/template-processor.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <system_error>
 #include <zeem/node.hpp>

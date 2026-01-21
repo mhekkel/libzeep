@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman, 2019-2025
+//        Copyright Maarten L. Hekkelman, 2019-2026
 //   Distributed under the Boost Software License, Version 1.0.
 //      (See accompanying file LICENSE_1_0.txt or copy at
 //            http://www.boost.org/LICENSE_1_0.txt)
@@ -7,15 +7,15 @@
 
 #pragma once
 
-#include <exception>
-#include <iosfwd>
-#include <stddef.h>
-#include <string>
-#include <string_view>
-
-/// \file
+/// \file crypto.hpp
 /// This file contains an interface to the crypto related routines used
 /// throughout libzeep.
+
+#include <exception>
+#include <iosfwd>
+#include <cstddef>
+#include <string>
+#include <string_view>
 
 namespace zeep
 {

@@ -8,7 +8,7 @@
 /// \file
 /// This file contains definitions of various utility routines
 
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <filesystem>
 #include <string>

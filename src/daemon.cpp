@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -96,7 +96,7 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 	asio_ns::ip::tcp::acceptor acceptor(io_context);
 	acceptor.open(endpoint.protocol());
 	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
-	if (acceptor.bind(endpoint, ec) != std::errc{})
+	if (acceptor.bind(endpoint, ec))
 		throw std::runtime_error(std::string("Is server running already? ") + ec.message());
 	acceptor.listen();
 
@@ -455,7 +455,7 @@ int daemon::stop()
 		std::error_code ec;
 		if (fs::exists(m_pid_file, ec))
 			fs::remove(m_pid_file, ec);
-		if (ec != std::errc{})
+		if (ec)
 			std::clog << "Could not remove pid file: " << ec.message() << '\n';
 	}
 	else

@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -9,7 +9,7 @@
 #include "zeep/http/header.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
 #include <algorithm>
@@ -268,7 +268,7 @@ parse_result parser::parse_chunk(char ch)
 			{
 				auto r = std::from_chars(m_data.data(), m_data.data() + m_data.length(), m_chunk_size, 16);
 
-				if (r.ec != std::errc{})
+				if (r.ec == std::errc{})
 					result = false;
 				else if (m_chunk_size > 0)
 				{

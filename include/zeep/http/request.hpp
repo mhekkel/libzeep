@@ -1,5 +1,5 @@
 // Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2025
+//        Copyright Maarten L. Hekkelman, 2014-2026
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -12,7 +12,7 @@
 #include "zeep/el/object.hpp"
 #include "zeep/http/asio.hpp"
 #include "zeep/http/header.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <array>
 
@@ -110,7 +110,12 @@ class request
 	friend void swap(request &lhs, request &rhs) noexcept;
 
 	/// \brief Fetch the local address from the connected socket
-	void set_local_endpoint(asio_ns::ip::tcp::socket &socket);
+	void set_local_endpoint(std::string address, uint16_t port)
+	{
+		m_local_address = std::move(address);
+		m_local_port = port;
+	}
+
 	[[nodiscard]] std::tuple<std::string, uint16_t> get_local_endpoint() const { return { m_local_address, m_local_port }; }
 
 	/// \brief Get the HTTP version requested
@@ -202,7 +207,7 @@ class request
 	/// \brief Return the content of this request in a sequence of const_buffers
 	///
 	/// Can be used in code that sends HTTP requests
-	[[nodiscard]] std::vector<asio_ns::const_buffer> to_buffers() const;
+	[[nodiscard]] std::vector<std::string_view> to_buffers() const;
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
 	[[nodiscard]] std::locale get_locale() const;

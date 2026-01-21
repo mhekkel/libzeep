@@ -1,4 +1,4 @@
-//        Copyright Maarten L. Hekkelman 2025
+//        Copyright Maarten L. Hekkelman 2025-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -872,13 +872,13 @@ class object
 	// --------------------------------------------------------------------
 
 	[[nodiscard]] iterator begin() { return iterator(this); }
-	[[nodiscard]] iterator end() { return {this, 1}; }
+	[[nodiscard]] iterator end() { return { this, 1 }; }
 
 	[[nodiscard]] const_iterator begin() const { return const_iterator(this); }
-	[[nodiscard]] const_iterator end() const { return {this, 1}; }
+	[[nodiscard]] const_iterator end() const { return { this, 1 }; }
 
 	[[nodiscard]] const_iterator cbegin() { return const_iterator(this); }
-	[[nodiscard]] const_iterator cend() { return {this, 1}; }
+	[[nodiscard]] const_iterator cend() { return { this, 1 }; }
 
 	[[nodiscard]] object &front()
 	{

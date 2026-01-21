@@ -14,7 +14,7 @@
 #include "zeep/http/request.hpp"
 #include "zeep/http/security.hpp"
 #include "zeep/http/server.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

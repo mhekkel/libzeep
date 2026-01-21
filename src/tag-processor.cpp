@@ -1,37 +1,17 @@
-//        Copyright Maarten L. Hekkelman, 2019-2025
+//        Copyright Maarten L. Hekkelman, 2019-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include "zeep/http/tag-processor.hpp"
-#include "zeep/el/object.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/scope.hpp"
+#include "zeep/http/html-controller.hpp"
 #include "zeep/http/template-processor.hpp"
-#include "zeep/unicode-support.hpp"
 
 #include <algorithm>
-#include <zeem.hpp>
-
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <exception>
-#include <filesystem>
-#include <functional>
-#include <initializer_list>
-#include <iterator>
-#include <map>
-#include <regex>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <system_error>
 #include <unordered_set>
-#include <utility>
-#include <vector>
+
+#include <algorithm>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -81,36 +61,36 @@ tag_processor::tag_processor(const char *ns)
 {
 	using namespace std::placeholders;
 
-	register_attr_handler("assert", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_assert(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("attr", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_attr(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("classappend", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_classappend(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("each", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_each(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("if", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_if(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), false); });
-	register_attr_handler("include", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_include(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), TemplateIncludeAction::include); });
-	register_attr_handler("inline", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_inline(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("insert", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_include(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), TemplateIncludeAction::insert); });
-	register_attr_handler("replace", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_include(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), TemplateIncludeAction::replace); });
-	register_attr_handler("styleappend", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_styleappend(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("switch", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_switch(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
-	register_attr_handler("text", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_text(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), true); });
-	register_attr_handler("unless", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_if(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), true); });
-	register_attr_handler("utext", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_text(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), false); });
-	register_attr_handler("with", [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5)
-		{ return process_attr_with(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5)); });
+	register_attr_handler("assert", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_assert(element, attr, scope, dir, loader); });
+	register_attr_handler("attr", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_attr(element, attr, scope, dir, loader); });
+	register_attr_handler("classappend", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_classappend(element, attr, scope, dir, loader); });
+	register_attr_handler("each", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_each(element, attr, scope, dir, loader); });
+	register_attr_handler("if", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_if(element, attr, scope, dir, loader, false); });
+	register_attr_handler("include", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_include(element, attr, scope, dir, loader, TemplateIncludeAction::include); });
+	register_attr_handler("inline", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_inline(element, attr, scope, dir, loader); });
+	register_attr_handler("insert", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_include(element, attr, scope, dir, loader, TemplateIncludeAction::insert); });
+	register_attr_handler("replace", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_include(element, attr, scope, dir, loader, TemplateIncludeAction::replace); });
+	register_attr_handler("styleappend", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_styleappend(element, attr, scope, dir, loader); });
+	register_attr_handler("switch", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_switch(element, attr, scope, dir, loader); });
+	register_attr_handler("text", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_text(element, attr, scope, dir, loader, true); });
+	register_attr_handler("unless", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_if(element, attr, scope, dir, loader, true); });
+	register_attr_handler("utext", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_text(element, attr, scope, dir, loader, false); });
+	register_attr_handler("with", [this](zeem::element *element, zeem::attribute &attr, scope &scope, const fs::path &dir, basic_template_processor &loader)
+		{ return process_attr_with(element, attr, scope, dir, loader); });
 }
 
 void tag_processor::process_xml(zeem::node *node, const scope &parentScope, const fs::path &dir, basic_template_processor &loader)
@@ -163,8 +143,8 @@ void tag_processor::post_process(zeem::element *e, const scope &parentScope, con
 
 	// take a copy since iterators might get invalid
 	std::vector<zeem::element *> children;
-	for (auto &c : *e)
-		children.push_back(&c);
+	std::ranges::transform(*e, std::back_inserter(children), [](auto &c)
+		{ return &c; });
 
 	for (auto &c : children)
 		post_process(c, parentScope, dir, loader);
@@ -370,11 +350,13 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, con
 				zeem::element_container *parent = node->parent();
 
 				auto parent_nodes = parent->nodes();
-				auto ni = std::ranges::find_if(parent_nodes, [node](const auto &n)
+				auto ni = std::ranges::find_if(parent_nodes, [node](auto &n)
 					{ return &n == node; });
 
-				parent_nodes.emplace(
-					ni, zeem::text(static_cast<zeem::cdata *>(node)->get_text()));
+				[[maybe_unused]] auto ti = parent_nodes.emplace(ni, zeem::text(
+																		static_cast<zeem::cdata *>(node)->get_text()));
+
+				// assert(std::next(ti) == ni); // < this fails when building with MSVC
 
 				parent_nodes.erase(ni);
 				break;
@@ -969,11 +951,10 @@ tag_processor::AttributeAction tag_processor::process_attr_classappend(zeem::ele
 		auto cs = c->value();
 		trim(cs);
 
-		if (cs.empty())
-			c->set_value(s);
-		else
-			c->set_value(cs += ' ' + s);
+		if (not cs.empty())
+			s.insert(0, cs + ' ');
 
+		c->set_value(s);
 		break;
 	}
 
@@ -1009,13 +990,15 @@ tag_processor::AttributeAction tag_processor::process_attr_styleappend(zeem::ele
 		auto cs = c->value();
 		trim(cs);
 
-		if (cs.empty())
-			c->set_value(s);
-		else if (cs.back() == ';')
-			c->set_value(cs += ' ' + s);
-		else
-			c->set_value(cs += "; " + s);
+		if (not cs.empty())
+		{
+			if (cs.back() == ';')
+				s.insert(0, cs);
+			else
+				s.insert(0, cs + ';');
+		}
 
+		c->set_value(s);
 		break;
 	}
 

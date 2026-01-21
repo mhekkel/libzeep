@@ -1,4 +1,4 @@
-//           Copyright Maarten L. Hekkelman, 2022-2025
+//         Copyright Maarten L. Hekkelman, 2022-2026
 //  Distributed under the Boost Software License, Version 1.0.
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
@@ -33,7 +33,10 @@ struct Item
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar &zeem::name_value_pair("name", name) & zeem::name_value_pair("count", count);
+		// clang-format off
+		ar & zeem::name_value_pair("name", name)
+		   & zeem::name_value_pair("count", count);
+		// clang-format on
 	}
 };
 
@@ -46,7 +49,11 @@ struct Cart
 	template <typename Archive>
 	void serialize(Archive &ar, uint64_t /*version*/)
 	{
-		ar &zeem::name_value_pair("id", id) & zeem::name_value_pair("client", client) & zeem::name_value_pair("items", items);
+		// clang-format off
+		ar & zeem::name_value_pair("id", id)
+		   & zeem::name_value_pair("client", client)
+		   & zeem::name_value_pair("items", items);
+		// clang-format on
 	}
 };
 //]

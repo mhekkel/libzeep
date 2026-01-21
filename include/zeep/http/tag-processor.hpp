@@ -1,4 +1,4 @@
-//          Copyright Maarten L. Hekkelman, 2019
+//       Copyright Maarten L. Hekkelman, 2019-2026
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -108,7 +108,7 @@ class tag_processor : public tag_processor_base
 	void post_process(zeem::element *e, const scope &parentScope, const std::filesystem::path &dir, basic_template_processor &loader);
 
 	// zeem::element resolve_fragment_spec(zeem::element* node, const std::filesystem::path &dir, basic_html_controller& controller, const std::string& spec, const scope& scope);
-	zeem::element resolve_fragment_spec(zeem::element *node, const std::filesystem::path &dir, basic_template_processor &loader, const object &spec, const scope &scope);
+	zeem::element resolve_fragment_spec(zeem::element *node, const std::filesystem::path &dir, basic_template_processor &loader, const el::object &spec, const scope &scope);
 	zeem::element resolve_fragment_spec(zeem::element *node, const std::filesystem::path &dir, basic_template_processor &loader, const std::string &file, std::string_view selector, bool byID);
 
 	// virtual void process_node_attr(zeem::node* node, const scope& scope, std::filesystem::path dir);

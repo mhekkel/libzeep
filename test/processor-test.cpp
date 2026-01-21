@@ -7,7 +7,7 @@
 #include "zeep/el/processing.hpp"
 #include "zeep/http/header.hpp"
 #include "zeep/http/request.hpp"
-#include "zeep/http/uri.hpp"
+#include "zeep/uri.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/tag-processor.hpp"
