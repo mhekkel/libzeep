@@ -12,14 +12,14 @@
 // This header is missing in some asio versions
 #include <utility> // NOLINT(unused-includes)
 
-#if not MSVC
+#ifdef __GNUC__
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wsuggest-override"
 #endif
 // IWYU pragma: begin_exports
 #include <boost/asio.hpp>
 // IWYU pragma: end_exports
-#if not MSVC
+#ifdef __GNUC__
 # pragma GCC diagnostic pop
 #endif
 
