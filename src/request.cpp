@@ -745,9 +745,34 @@ std::locale request::get_locale() const
 
 namespace
 {
-	const char
-		kNameValueSeparator[] = { ':', ' ' },
-		kCRLF[] = { '\r', '\n' };
+	const std::string_view
+		kNameValueSeparator{ ": " },
+		kCRLF{ "\r\n" };
+}
+
+std::vector<std::string_view> request::to_buffers() const
+{
+	thread_local static std::string s_request_line;
+
+	std::vector<std::string_view> result;
+
+	s_request_line = get_request_line();
+
+	result.emplace_back(s_request_line);
+	result.emplace_back(kCRLF);
+
+	for (const header &h : m_headers)
+	{
+		result.emplace_back(h.name);
+		result.emplace_back(kNameValueSeparator);
+		result.emplace_back(h.value);
+		result.emplace_back(kCRLF);
+	}
+
+	result.emplace_back(kCRLF);
+	result.emplace_back(m_payload);
+
+	return result;
 }
 
 // std::vector<asio_ns::const_buffer> request::to_buffers() const
