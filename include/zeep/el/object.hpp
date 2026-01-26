@@ -8,6 +8,8 @@
 #include "zeep/streambuf.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
+#include <type_traits>
 
 #if __has_include(<nlohmann/json.hpp>)
 # include <nlohmann/json.hpp>
@@ -104,6 +106,7 @@ class object
 		using difference_type = T::difference_type;
 		using pointer = typename std::conditional_t<std::is_const_v<T>, typename T::const_pointer, typename T::pointer>;
 		using reference = typename std::conditional_t<std::is_const_v<T>, typename T::const_reference, typename T::reference>;
+		using value_type = std::remove_cv_t<T>;
 
 		iterator_impl() = default;
 
@@ -113,8 +116,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: m_it.m_array_it = m_obj->m_data.m_value.m_array->begin(); break;
-				case value_type::object: m_it.m_object_it = m_obj->m_data.m_value.m_object->begin(); break;
+				case object::value_type::array: m_it.m_array_it = m_obj->m_data.m_value.m_array->begin(); break;
+				case object::value_type::object: m_it.m_object_it = m_obj->m_data.m_value.m_object->begin(); break;
 				default: m_it.m_p = 0; break;
 			}
 		}
@@ -124,9 +127,9 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: m_it.m_array_it = m_obj->m_data.m_value.m_array->end(); break;
-				case value_type::object: m_it.m_object_it = m_obj->m_data.m_value.m_object->end(); break;
-				case value_type::null: m_it.m_p = 0; break;
+				case object::value_type::array: m_it.m_array_it = m_obj->m_data.m_value.m_array->end(); break;
+				case object::value_type::object: m_it.m_object_it = m_obj->m_data.m_value.m_object->end(); break;
+				case object::value_type::null: m_it.m_p = 0; break;
 				default: m_it.m_p = 1; break;
 			}
 		}
@@ -148,8 +151,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: std::advance(m_it.m_array_it, -1); break;
-				case value_type::object: std::advance(m_it.m_object_it, -1); break;
+				case object::value_type::array: std::advance(m_it.m_array_it, -1); break;
+				case object::value_type::object: std::advance(m_it.m_object_it, -1); break;
 				default: --m_it.m_p; break;
 			}
 			return *this;
@@ -167,8 +170,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: std::advance(m_it.m_array_it, +1); break;
-				case value_type::object: std::advance(m_it.m_object_it, +1); break;
+				case object::value_type::array: std::advance(m_it.m_array_it, +1); break;
+				case object::value_type::object: std::advance(m_it.m_object_it, +1); break;
 				default: ++m_it.m_p; break;
 			}
 			return *this;
@@ -179,17 +182,17 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array:
+				case object::value_type::array:
 					assert(m_it.m_array_it != m_obj->m_data.m_value.m_array->end());
 					return *m_it.m_array_it;
 					break;
 
-				case value_type::object:
+				case object::value_type::object:
 					assert(m_it.m_object_it != m_obj->m_data.m_value.m_object->end());
 					return m_it.m_object_it->second;
 					break;
 
-				case value_type::null:
+				case object::value_type::null:
 					throw std::runtime_error("Cannot get value");
 
 				default:
@@ -204,17 +207,17 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array:
+				case object::value_type::array:
 					assert(m_it.m_array_it != m_obj->m_data.m_value.m_array->end());
 					return &(*m_it.m_array_it);
 					break;
 
-				case value_type::object:
+				case object::value_type::object:
 					assert(m_it.m_object_it != m_obj->m_data.m_value.m_object->end());
 					return &(m_it.m_object_it->second);
 					break;
 
-				case value_type::null:
+				case object::value_type::null:
 					throw std::runtime_error("Cannot get value");
 
 				default:
@@ -232,8 +235,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: return m_it.m_array_it == other.m_it.m_array_it;
-				case value_type::object: return m_it.m_object_it == other.m_it.m_object_it;
+				case object::value_type::array: return m_it.m_array_it == other.m_it.m_array_it;
+				case object::value_type::object: return m_it.m_object_it == other.m_it.m_object_it;
 				default: return m_it.m_p == other.m_it.m_p;
 			}
 		}
@@ -246,8 +249,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: return m_it.m_array_it <=> other.m_it.m_array_it;
-				case value_type::object: throw std::runtime_error("Cannot compare order of object iterators");
+				case object::value_type::array: return m_it.m_array_it <=> other.m_it.m_array_it;
+				case object::value_type::object: throw std::runtime_error("Cannot compare order of object iterators");
 				default: return m_it.m_p <=> other.m_it.m_p;
 			}
 		}
@@ -257,8 +260,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: std::advance(m_it.m_array_it, i);
-				case value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
+				case object::value_type::array: std::advance(m_it.m_array_it, i);
+				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
 				default: m_it.m_p += i;
 			}
 			return *this;
@@ -303,8 +306,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: return m_it.m_array_it - other.m_it.m_array_it;
-				case value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
+				case object::value_type::array: return m_it.m_array_it - other.m_it.m_array_it;
+				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
 				default: return m_it.m_p - other.m_it.m_p;
 			}
 		}
@@ -314,8 +317,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case value_type::array: *std::next(m_it.m_array_it, i);
-				case value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
+				case object::value_type::array: *std::next(m_it.m_array_it, i);
+				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
 				default:
 					if (m_it.m_p == -i)
 						return *m_obj;
@@ -354,7 +357,10 @@ class object
 
 	using iterator = iterator_impl<object>;
 	using const_iterator = iterator_impl<const object>;
-
+	
+	static_assert(std::input_iterator<iterator>);
+	static_assert(std::input_iterator<const_iterator>);
+	
 	// --------------------------------------------------------------------
 
 	object() noexcept = default;
