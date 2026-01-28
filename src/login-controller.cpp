@@ -55,6 +55,11 @@ class login_error_handler : public error_handler
 			if (eptr)
 				std::rethrow_exception(eptr);
 		}
+		catch (const std::system_error &ex)
+		{
+			if (ex.code() == std::error_code(unauthorized, status_type_category()))
+				result = create_unauth_reply(req, reply);
+		}
 		catch (const unauthorized_exception &)
 		{
 			result = create_unauth_reply(req, reply);
@@ -249,6 +254,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri.string());
 
+		rep = reply::stock_reply(unauthorized);
 		rep.set_content(doc);
 
 		std::clog << e.what() << '\n';
