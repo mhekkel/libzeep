@@ -1,3 +1,6 @@
+Version 7.3.1
+- Fix regression in controller::set_reply for files.
+
 Version 7.3.0
 - Using zeem instead of mxml.
 - Fixing many warnings and a couple of issues found with clang-tidy

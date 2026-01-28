@@ -49,7 +49,7 @@ reply html_controller::handle_file(const scope &scope)
 	return get_template_processor().create_reply_for_get_file(scope);
 }
 
-void html_controller::init_scope(scope &scope)
+void html_controller::init_scope(scope &/* scope */)
 {
 }
 

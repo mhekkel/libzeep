@@ -320,17 +320,17 @@ class controller
 			return el::serializer<T>::deserialize(v);
 		}
 
-		reply set_reply(const std::filesystem::path &v)
+		reply set_reply(std::filesystem::path &&v)
 		{
 			reply rep(status_type::ok);
-			rep.set_content(new std::ifstream(v, std::ios::binary), "application/octet-stream");
+			rep.set_content(new std::ifstream(std::forward<std::filesystem::path>(v), std::ios::binary), "application/octet-stream");
 			return rep;
 		}
 
 		reply set_reply(el::object &&v)
 		{
 			reply rep(status_type::ok);
-			rep.set_content(v);
+			rep.set_content(std::forward<el::object>(v));
 			return rep;
 		}
 
