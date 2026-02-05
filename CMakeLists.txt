@@ -149,6 +149,7 @@ write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 # Library rules
 file(GLOB_RECURSE zeep_cpp src/*.cpp)
 file(GLOB_RECURSE zeep_hpp include/*.hpp)
+list(APPEND zeep_hpp include/zeep/config.hpp)
 
 # TODO: SOAP is not working at the moment, really need to fix that
 list(FILTER zeep_cpp EXCLUDE REGEX src/soap-controller.cpp)
