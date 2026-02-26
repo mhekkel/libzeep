@@ -41,8 +41,10 @@ class my_controller : public zh::controller
 TEST_CASE("daemon-test-1")
 {
 	// start up a http server and stop it again
+	// The pid is used in the log directory since it happened that the
+	// pid file was still around from a previous test run causing trouble.
 
-	std::filesystem::path log_dir = std::filesystem::temp_directory_path() / "daemon-test";
+	std::filesystem::path log_dir = std::filesystem::temp_directory_path() / std::format("daemon-test-{}", getpid());
 	std::filesystem::remove_all(log_dir);
 
 	std::filesystem::create_directories(log_dir);
@@ -98,4 +100,8 @@ TEST_CASE("daemon-test-1")
 
 	CHECK(std::filesystem::file_size(access_file) > 0);
 	CHECK(std::filesystem::file_size(error_file) > 0);
+
+	// Clean up
+	std::filesystem::remove_all(log_dir);
+
 }
