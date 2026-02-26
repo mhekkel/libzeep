@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Only try to find package if we're not included from the main libzeep CMakeLists.txt
-if(NOT PROJECT_IS_TOP_LEVEL)
+if(PROJECT_IS_TOP_LEVEL)
     find_package(zeep REQUIRED)
 endif()
 
