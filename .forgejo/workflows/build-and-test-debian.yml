@@ -1,0 +1,46 @@
+name: test on Debian
+
+on:
+  push:
+    branches: [ "trunk", "develop" ]
+  pull_request:
+    branches: [ "trunk" ]
+
+jobs:
+  build:
+    runs-on: debian-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [debian-latest]
+        build_type: [Release]
+        cpp_compiler: [g++]
+
+    steps:
+    - uses: https://data.forgejo.org/actions/checkout@v4
+
+    - name: Install Catch2 debian
+      run: >
+        apt-get update && apt-get install -y catch2 build-essential ninja-build cmake
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -G Ninja
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }}
