@@ -161,7 +161,7 @@ Many web application frameworks provide a way of templating, write some boilerpl
 loading
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Starting with the second task just mentioned, the :cpp:type:`zeep::http::template_processor` takes a ``docroot`` parameter in its constructor. This docroot is the location on disk where files are located. But it is also possible to build libzeep with in-memory resources by using `mrc <https://github.com/mhekkel/mrc>`_. Have a look at the example code for usage.
+Starting with the second task just mentioned, the :cpp:type:`zeep::http::template_processor` takes a ``docroot`` parameter in its constructor. This docroot is the location on disk where files are located. But it is also possible to build libzeep with in-memory resources by using `mrc <https://forge.hekkelman.net/maarten/mrc>`_. Have a look at the example code for usage.
 
 The :cpp:func:`zeep::http::basic_template_processor::load_file` member of :cpp:type:`zeep::http::template_processor` loads a file from disk (or compiled resources), the :cpp:func:`zeep::http::basic_template_processor::file_time` member can be used to get the file time of a file. This can be used to generate ``304 not modified`` replies instead.
 

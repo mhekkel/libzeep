@@ -125,8 +125,8 @@ if(NOT USE_STD_CHRONO_ZONED_TIME)
 endif()
 
 CPMFindPackage(NAME zeem
-    GIT_REPOSITORY "https://github.com/mhekkel/zeem.git"
-    VERSION 2.1.1
+    GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
+    VERSION 2.1.4
     EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
