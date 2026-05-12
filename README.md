@@ -3,8 +3,8 @@ libzeep
 
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
-[![github CI](https://forge.hekkelman.net/maarten/zeep/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://forge.hekkelman.net/maarten/zeep/actions)
-[![github CI](https://forge.hekkelman.net/maarten/zeep/actions/workflows/build-documentation.yml/badge.svg)](https://forge.hekkelman.net/maarten/zeep/actions)
+[![github CI](https://forge.hekkelman.net/maarten/zeep/actions/workflows/build-and-test-debian.yml/badge.svg)](https://forge.hekkelman.net/maarten/zeep/actions)
+[![github CI](https://forge.hekkelman.net/maarten/zeep/actions/workflows/build-and-test-freebsd.yml/badge.svg)](https://forge.hekkelman.net/maarten/zeep/actions)
 
 TL;DR
 -----
