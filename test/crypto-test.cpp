@@ -106,6 +106,12 @@ TEST_CASE("crypto_hmac_1")
 	auto h = zeep::encode_hex(zeep::hmac_sha256("The quick brown fox jumps over the lazy dog", "key"));
 	CHECK(h == "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8");
 
+	h = zeep::encode_base64(zeep::hmac_sha1("The quick brown fox jumps over the lazy dog", "key"));
+	CHECK(h == "3nybhbi3iqa8ino29wqQcBydtNk=");
+
+	h = zeep::encode_hex(zeep::hmac_sha256("The quick brown fox jumps over the lazy dog", "key"));
+	CHECK(h == "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8");
+
 	h = zeep::encode_hex(zeep::hmac_md5("The quick brown fox jumps over the lazy dog", "key"));
 	CHECK(h == "80070713463e7749b90c2dc24911e275");
 }

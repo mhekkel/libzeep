@@ -3,28 +3,38 @@
 //     (See accompanying file LICENSE_1_0.txt or copy at
 //           http://www.boost.org/LICENSE_1_0.txt)
 
+#include <filesystem>
 #include <iostream>
 
-#include <zeep/http/controller.hpp>
+#include <zeep/http/html-controller.hpp>
 #include <zeep/http/daemon.hpp>
+#include <zeep/http/template-processor.hpp>
 
-namespace zh = zeep::http;
-
-class hello_controller : public zh::controller
+class hello_controller : public zeep::http::html_controller
 {
   public:
 	/* Specify the root path as prefix, will handle any request URI */
 	hello_controller()
-		: controller("/")
 	{
+		/* Mount the handler `handle_index` on `/`, `/index` and `/index.html` */
+		map_get("{,index,index.html}", &hello_controller::handle_index, "name");
+
+		/* Add REST call */
+		map_get_request("restcall", &hello_controller::handle_rest_call);
 	}
 
-	bool handle_request([[maybe_unused]] zh::request &req, zh::reply &rep)
+	zeep::http::reply handle_index(const zeep::http::scope &scope, std::optional<std::string> name)
 	{
-		/* Construct a simple reply with status OK (200) and content string */
-		rep.set_status(zh::status_type::ok);
-		rep.set_content("Hello", "text/plain");
-		return true;
+		zeep::http::scope sub(scope);
+		if (name.has_value())
+			sub.put("name", *name);
+
+		return get_template_processor().create_reply_from_template("hello.xhtml", sub);
+	}
+
+	std::string handle_rest_call()
+	{
+		return "Hello, world!";
 	}
 };
 
@@ -42,24 +52,40 @@ int main(int argc, char *const argv[])
 
 	std::string command = argv[1];
 
-	zh::daemon server([&]()
+	// Avoid the need for super powers
+	std::filesystem::path
+		docRoot = std::filesystem::current_path() / "docroot",
+		pidFile = std::filesystem::temp_directory_path() / "zeep-daemon-test.pid",
+		logFile = std::filesystem::temp_directory_path() / "zeep-daemon-test.log",
+		errFile = std::filesystem::temp_directory_path() / "zeep-daemon-test.err";
+
+	if (not std::filesystem::exists(docRoot))
+	{
+		std::cout << "docroot directory not found in current directory, cannot continue\n";
+		exit(1);
+	}
+
+	zeep::http::daemon server([&]()
 		{
-		auto s = new zeep::http::server(/*sc*/);
+		auto s = new zeep::http::server(docRoot.string());
+
+		// Force using the file based template processor
+		s->set_template_processor(new zeep::http::file_based_html_template_processor(docRoot.string()));
 
 		s->add_controller(new hello_controller());
 
 		return s; },
-		"hello-daemon");
+		pidFile.string(), logFile.string(), errFile.string());
 
 	int result;
 
 	if (command == "start")
 	{
-		std::string address = "127.0.0.1";
+		std::string address = "localhost";
 		unsigned short port = 10330;
-		std::string user = "www-data";
-		std::cout << "starting server at http://" << address << ":' << port << '/\n";
-		result = server.start(address, port, 1, 16, user);
+		std::string user /* = "www-data" */;	// Using a non-empty username requires super user powers
+		std::cout << "starting server at http://" << address << ':' << port << "\n";
+		result = server.start(address, port, 1, 2, user);
 	}
 	else if (command == "stop")
 		result = server.stop();

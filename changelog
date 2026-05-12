@@ -1,3 +1,6 @@
+Version 7.3.2
+- Revive daemon-test example application
+
 Version 7.3.1
 - Fix regression in controller::set_reply for files.
 - Fix login controller behaviour on invalid password
