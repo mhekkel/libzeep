@@ -38,7 +38,7 @@ class html_controller;
 /// A resource loader is used to fetch the resources a webapp can serve
 /// This is an abstract base class, use either file_loader to load files
 /// from a 'docroot' directory or rsrc_loader to load files from compiled in
-/// resources. (See https://github.com/mhekkel/mrc for more info on resources)
+/// resources. (See https://forge.hekkelman.net/maarten/mrc for more info on resources)
 
 class resource_loader
 {
@@ -87,7 +87,7 @@ class file_loader : public resource_loader
 // -----------------------------------------------------------------------
 /// \brief actual implementation of a zeep::resource_loader that loads resources from memory
 ///
-/// Load the resources from resource data created with mrc (see https://github.com/mhekkel/mrc )
+/// Load the resources from resource data created with mrc (see https://forge.hekkelman.net/maarten/mrc )
 
 class rsrc_loader : public resource_loader
 {

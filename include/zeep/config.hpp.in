@@ -31,7 +31,7 @@
 
 /// The webapp class in libzeep can use resources to load files.
 /// In this case you need the resource compiler 'mrc' obtainable
-/// from https://github.com/mhekkel/mrc
+/// from https://forge.hekkelman.net/maarten/mrc
 
 #ifndef WEBAPP_USES_RESOURCES
 # cmakedefine01 WEBAPP_USES_RESOURCES
@@ -40,7 +40,7 @@
 /// We can use resources to store the contents of a docroot e.g.
 /// which makes web applications really portable. However, for
 /// this feature we need a working mrc
-/// (https://github.com/mhekkel/mrc) and that is limited to
+/// (https://forge.hekkelman.net/maarten/mrc) and that is limited to
 /// Windows and operating systems using the ELF executable format.
 
 #ifndef USE_RSRC

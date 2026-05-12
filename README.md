@@ -3,14 +3,14 @@ libzeep
 
 [![DOI](https://zenodo.org/badge/44161414.svg)](https://zenodo.org/badge/latestdoi/44161414)
 
-[![github CI](https://github.com/mhekkel/libzeep/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
-[![github CI](https://github.com/mhekkel/libzeep/actions/workflows/build-documentation.yml/badge.svg)](https://github.com/mhekkel/libzeep/actions)
+[![github CI](https://forge.hekkelman.net/maarten/zeep/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://forge.hekkelman.net/maarten/zeep/actions)
+[![github CI](https://forge.hekkelman.net/maarten/zeep/actions/workflows/build-documentation.yml/badge.svg)](https://forge.hekkelman.net/maarten/zeep/actions)
 
 TL;DR
 -----
 
 Libzeep is a web application framework written in C++. To see a starter project
-visit the [libzeep-webapp-starter](https://github.com/mhekkel/libzeep-webapp-starter.git)
+visit the [libzeep-webapp-starter](https://forge.hekkelman.net/maarten/zeep-webapp-starter.git)
 page.
 
 About
@@ -56,12 +56,12 @@ Building libzeep
 To build libzeep you have to have [cmake](https://cmake.org/) installed.
 
 And, unless you are using macOS, it is recommended to install
-[mrc](https://github.com/mhekkel/mrc) in order to have resources support in libzeep.
+[mrc](https://forge.hekkelman.net/maarten/mrc) in order to have resources support in libzeep.
 
 The commands to build libzeep from the command line are e.g.:
 
 ```bash
-    git clone https://github.com/mhekkel/libzeep
+    git clone https://forge.hekkelman.net/maarten/zeep
     cd libzeep
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     cmake --build build
