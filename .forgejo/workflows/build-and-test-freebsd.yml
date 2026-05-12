@@ -26,10 +26,35 @@ jobs:
       shell: bash
       run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    - name: Checkout libmcfp
+      uses: https://data.forgejo.org/actions/checkout@v4
+      with:
+        repository: maarten/mcfp
+        path: libmcfp
+
+    - name: Build & install libmcfp
+      run: |
+        cmake -B ${{github.workspace}}/libmcfp/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -S ${{github.workspace}}/libmcfp -DBUILD_DOCUMENTATION=OFF -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
+        cmake --build ${{github.workspace}}/libmcfp/build
+        sudo cmake --install ${{github.workspace}}/libmcfp/build
+
+    - name: Checkout mrc
+      uses: https://data.forgejo.org/actions/checkout@v4
+      with:
+        repository: maarten/mrc
+        path: mrc
+
+    - name: Build & install mrc
+      run: |
+        cmake -B ${{github.workspace}}/mrc/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -S ${{github.workspace}}/mrc -DBUILD_DOCUMENTATION=OFF -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
+        cmake --build ${{github.workspace}}/mrc/build
+        sudo cmake --install ${{github.workspace}}/mrc/build
+
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -G Ninja
+        -DCMAKE_PREFIX_PATH=${{github.workspace}}/installed
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
