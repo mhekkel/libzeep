@@ -29,7 +29,7 @@ jobs:
     - name: Checkout libmcfp
       uses: https://data.forgejo.org/actions/checkout@v4
       with:
-        repository: https://forge.hekkelman.net/maarten/mcfp
+        repository: maarten/mcfp.git
         path: libmcfp
 
     - name: Build & install libmcfp
@@ -41,7 +41,7 @@ jobs:
     - name: Checkout mrc
       uses: https://data.forgejo.org/actions/checkout@v4
       with:
-        repository: https://forge.hekkelman.net/maarten/mrc
+        repository: maarten/mrc.git
         path: mrc
 
     - name: Build & install mrc
