@@ -1548,7 +1548,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto tt = std::chrono::system_clock::to_time_t(st);
 				auto wf = convert_s2w(f);
 
-				os << std::put_time<wchar_t>(std::gmtime(&tt), wf.c_str());
+				os << std::put_time<wchar_t>(std::localtime(&tt), wf.c_str());
 				result = convert_w2s(os.str());
 			}
 		}
