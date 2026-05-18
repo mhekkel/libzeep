@@ -139,7 +139,7 @@ class request
 	/// \brief Get the entire request line (convenience method)
 	[[nodiscard]] std::string get_request_line() const
 	{
-		return m_method + ' ' + m_uri.string() + " HTTP/" + std::string(m_version.data(), m_version.data() + m_version.size());
+		return m_method + ' ' + m_uri.get_path().string() + " HTTP/" + std::string(m_version.data(), m_version.data() + m_version.size());
 	}
 
 	/// \brief Return the payload
