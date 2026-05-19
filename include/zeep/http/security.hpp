@@ -295,7 +295,7 @@ class security_context
 	/// When validation succeeds, a HTTP reply is send to the user and this routine will be
 	/// called to augment the reply with additional information.
 	///
-	/// \param rep			Then zeep::http::reply object that will be send to the user
+	/// \param rep			The zeep::http::reply object that will be send to the user
 	/// \param user			The authorized user details
 	/// \param exp			The maximum lifetime for the access token
 	void add_authorization_headers(reply &rep, const user_details user,
