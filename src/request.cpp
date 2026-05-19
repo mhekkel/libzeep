@@ -775,30 +775,13 @@ std::vector<std::string_view> request::to_buffers() const
 	return result;
 }
 
-// std::vector<asio_ns::const_buffer> request::to_buffers() const
-// {
-// 	thread_local static std::string s_request_line;
-
-// 	std::vector<asio_ns::const_buffer> result;
-
-// 	s_request_line = get_request_line();
-
-// 	result.emplace_back(asio_ns::buffer(s_request_line));
-// 	result.push_back(asio_ns::buffer(kCRLF));
-
-// 	for (const header &h : m_headers)
-// 	{
-// 		result.push_back(asio_ns::buffer(h.name));
-// 		result.push_back(asio_ns::buffer(kNameValueSeparator));
-// 		result.push_back(asio_ns::buffer(h.value));
-// 		result.push_back(asio_ns::buffer(kCRLF));
-// 	}
-
-// 	result.push_back(asio_ns::buffer(kCRLF));
-// 	result.push_back(asio_ns::buffer(m_payload));
-
-// 	return result;
-// }
+std::string request::get_request_line() const
+{
+	auto loc = m_uri.get_path().string();
+	if (m_uri.has_query())
+		loc += '?' + m_uri.get_query(false);
+	return m_method + ' ' + loc + " HTTP/" + std::string(m_version.data(), m_version.data() + m_version.size());
+}
 
 std::ostream &operator<<(std::ostream &io, const request &req)
 {

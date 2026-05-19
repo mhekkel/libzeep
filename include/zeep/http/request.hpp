@@ -137,10 +137,7 @@ class request
 	[[nodiscard]] const std::string &get_remote_address() const { return m_remote_address; }
 
 	/// \brief Get the entire request line (convenience method)
-	[[nodiscard]] std::string get_request_line() const
-	{
-		return m_method + ' ' + m_uri.get_path().string() + " HTTP/" + std::string(m_version.data(), m_version.data() + m_version.size());
-	}
+	[[nodiscard]] std::string get_request_line() const;
 
 	/// \brief Return the payload
 	[[nodiscard]] const std::string &get_payload() const { return m_payload; }
