@@ -15,3 +15,5 @@ src/revision.hpp
 test/xml/XML-Test-Suite/
 .cache/
 modules/zeep/http/asio.hpp
+lib-xml/test/XML-Test-Suite/
+

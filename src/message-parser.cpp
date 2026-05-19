@@ -9,8 +9,8 @@
 #include "zeep/http/header.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
-#include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
+#include "zeep/uri.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -217,6 +217,15 @@ parse_result parser::post_process_headers()
 			}
 			else
 				m_parsing_content = false;
+		}
+		// If no content-length is available but 'connection: close' is, we read until the end of the buffer
+		// Seems like a bug in new server software, content-length is omitted even if request type is HTTP/1.0
+		else if (i = std::ranges::find_if(m_headers, [](const header &h)
+					 { return iequals(h.name, "connection"sv); });
+			i != m_headers.end() and iequals(i->value, "close"))
+		{
+			m_parser = &parser::parse_content;
+			m_parsing_content = true;
 		}
 	}
 
