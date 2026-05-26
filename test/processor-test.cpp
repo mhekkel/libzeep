@@ -374,15 +374,21 @@ TEST_CASE("test_14")
 		if (l.name() != "nl_NL.UTF-8")
 			throw std::runtime_error("locale name not equal, not installed?");
 
+		// Rationale: input is a local time (no time zone information)
+		// and thus the output should be in local time too.
+
+		// If you specify a time with timezone, the test will fail
+		// unless local time is UTC.
+
 		auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-<test m:text="${#dates.format('2019-08-07T10:14:00+02:00', '%e %B %Y, %H:%M')}" />
+<test m:text="${#dates.format('2019-08-07T10:14:00', '%e %B %Y, %H:%M')}" />
 </data>
 	)"_xml;
 
 		auto doc_test = R"(<?xml version="1.0"?>
 <data>
-<test> 7 augustus 2019, 12:14</test>
+<test> 7 augustus 2019, 10:14</test>
 </data>
 	)"_xml;
 
@@ -416,13 +422,13 @@ TEST_CASE("test_15")
 
 		auto doc = R"(<?xml version="1.0"?>
 	<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
-	<test m:text="${#dates.format('2019-08-07T10:14:00+02:00', '%e %B %Y, %H:%M')}" />
+	<test m:text="${#dates.format('2019-08-07T10:14:00', '%e %B %Y, %H:%M')}" />
 	</data>
 		)"_xml;
 
 		auto doc_test = R"(<?xml version="1.0"?>
 	<data>
-	<test> 7 august 2019, 12:14</test>
+	<test> 7 august 2019, 10:14</test>
 	</data>
 		)"_xml;
 

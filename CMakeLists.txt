@@ -129,7 +129,7 @@ endif()
 
 CPMFindPackage(NAME zeem
     GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
-    VERSION 2.1.1
+    VERSION 2.1.5
     EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
@@ -175,7 +175,7 @@ target_sources(zeep
     FILES ${zeep_hpp})
 
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_compile_features(zeep PUBLIC cxx_std_20)
+target_compile_features(zeep PUBLIC cxx_std_23)
 target_include_directories(zeep PUBLIC "$<BUILD_INTERFACE:${ASIO_INCLUDE_DIR}>")
 target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem OpenSSL::SSL OpenSSL::Crypto)
 
