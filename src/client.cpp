@@ -68,7 +68,7 @@ class client_base
 
 		asio_ns::async_write(get_socket(),
 			buffers,
-			[this](const boost::system::error_code &error, std::size_t /*length*/)
+			[this](const asio_system_ns::error_code &error, std::size_t /*length*/)
 			{
 				if (not error)
 					receive_response();
@@ -81,7 +81,7 @@ class client_base
 	{
 		asio_ns::async_read(get_socket(),
 			asio_ns::buffer(m_buffer),
-			[this](const boost::system::error_code &error, std::size_t length)
+			[this](const asio_system_ns::error_code &error, std::size_t length)
 			{
 				if (error and error != asio_ns::error::eof)
 				{
@@ -125,7 +125,7 @@ class client : public client_base<tcp::socket>
 	void connect(const tcp::resolver::results_type &endpoints)
 	{
 		asio_ns::async_connect(m_socket, endpoints,
-			[this](const boost::system::error_code &error,
+			[this](const asio_system_ns::error_code &error,
 				const tcp::endpoint & /*endpoint*/)
 			{
 				if (not error)
@@ -184,7 +184,7 @@ class ssl_client : public client_base<asio_ns::ssl::stream<tcp::socket>>
 	void connect(const tcp::resolver::results_type &endpoints)
 	{
 		asio_ns::async_connect(m_socket.lowest_layer(), endpoints,
-			[this](const boost::system::error_code &error,
+			[this](const asio_system_ns::error_code &error,
 				const tcp::endpoint & /*endpoint*/)
 			{
 				if (not error)
@@ -197,7 +197,7 @@ class ssl_client : public client_base<asio_ns::ssl::stream<tcp::socket>>
 	void handshake()
 	{
 		m_socket.async_handshake(asio_ns::ssl::stream_base::client,
-			[this](const boost::system::error_code &error)
+			[this](const asio_system_ns::error_code &error)
 			{
 				if (not error)
 					send_request();
@@ -253,7 +253,7 @@ reply send_request(request req)
 		for (;;)
 		{
 			std::array<char, 4096> buf{};
-			boost::system::error_code error{};
+			asio_system_ns::error_code error{};
 
 			size_t len = socket.read_some(asio_ns::buffer(buf), error);
 
