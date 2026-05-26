@@ -6,11 +6,11 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "../src/signals.hpp"
-#include "client-test-code.hpp"
 
 #include "zeep/el/object.hpp"
 #include "zeep/el/serializer.hpp"
 #include "zeep/http/asio.hpp"
+#include "zeep/http/client.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/daemon.hpp"
 #include "zeep/http/reply.hpp"
@@ -277,18 +277,20 @@ TEST_CASE("rest_2")
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);
 
+	zeep::uri uri = std::format("http://localhost:{}/", port);
+	
 	try
 	{
-		auto rep = simple_request(port, "GET /ajax/all_data HTTP/1.0\r\n\r\n");
+		auto rep = zeep::http::get_request(uri / "ajax/all_data");
 
 		CHECK(rep.get_status() == zeep::http::status_type::ok);
 		CHECK(rep.get_content_type() == "text/plain");
 
-		auto reply = simple_request(port, "GET /ajax/xxxx HTTP/1.0\r\n\r\n");
+		auto reply = zeep::http::get_request(uri / "GET /ajax/xxxx");
 		CHECK(reply.get_status() == zeep::http::status_type::not_found);
 
-		// reply = simple_request(port, "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
-		reply = simple_request(port, zeep::http::request("GET", "/ajax/opname/xxx", { 1, 0 }, { { "Accept", "application/json" } }));
+		// reply = zeep::http::simple_request(uri / "GET /ajax/opname/xxx HTTP/1.0\r\n\r\n");
+		reply = zeep::http::get_request(uri / "ajax/opname/xxx", { { "Accept", "application/json" } });
 		CHECK(reply.get_status() == zeep::http::status_type::not_found);
 		CHECK(reply.get_content_type() == "application/json");
 	}
@@ -323,17 +325,15 @@ TEST_CASE("rest_3")
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);
 
+	zeep::uri uri = std::format("http://localhost:{}/", port);
+
 	try
 	{
-		zeep::http::request req_1{ "GET", "/ajax/scope_test", { 1, 0 }, { { "accept", "text/plain" } } };
-
-		auto rep_1 = simple_request(port, req_1);
+		auto rep_1 = zeep::http::get_request(uri / "ajax/scope_test", { { "accept", "text/plain" } });
 		CHECK(rep_1.get_status() == zeep::http::status_type::ok);
 		CHECK(rep_1.get_content_type() == "text/plain");
 
-		zeep::http::request req_2{ "GET", "/ajax/scope_test", { 1, 0 }, { { "accept", "application/json" } } };
-
-		auto rep_2 = simple_request(port, req_2);
+		auto rep_2 = zeep::http::get_request(uri / "ajax/scope_test", { { "accept", "application/json" } } );
 		CHECK(rep_2.get_status() == zeep::http::status_type::ok);
 		CHECK(rep_2.get_content_type() == "application/json");
 	}

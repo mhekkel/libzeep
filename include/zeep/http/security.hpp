@@ -147,7 +147,9 @@ class user_unknown_exception : public authentication_exception
 {
   public:
 	user_unknown_exception()
-		: authentication_exception("user unknown") {};
+		: authentication_exception("user unknown")
+	{
+	}
 };
 
 /// \brief exception thrown by security_context when a username/password combo is not valid
@@ -155,7 +157,9 @@ class invalid_password_exception : public authentication_exception
 {
   public:
 	invalid_password_exception()
-		: authentication_exception("invalid password") {};
+		: authentication_exception("invalid password")
+	{
+	}
 };
 
 // --------------------------------------------------------------------

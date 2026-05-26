@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(libzeep VERSION 7.3.2 LANGUAGES CXX)
+project(libzeep VERSION 7.4.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -76,6 +76,9 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
+
+# OpenSSL is now used in the client code
+find_package(OpenSSL REQUIRED)
 
 if(ZEEP_USE_BOOST_ASIO)
     find_package(Boost 1.74 REQUIRED COMPONENTS headers)
@@ -174,7 +177,7 @@ target_sources(zeep
 set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(zeep PUBLIC cxx_std_20)
 target_include_directories(zeep PUBLIC "$<BUILD_INTERFACE:${ASIO_INCLUDE_DIR}>")
-target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem)
+target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem OpenSSL::SSL OpenSSL::Crypto)
 
 if(NOT USE_STD_CHRONO_ZONED_TIME)
     target_link_libraries(zeep PUBLIC date::date-tz)

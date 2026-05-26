@@ -3,7 +3,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "client-test-code.hpp"
+#include "zeep/http/client.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/daemon.hpp"
 #include "zeep/http/reply.hpp"
@@ -83,7 +83,9 @@ TEST_CASE("daemon-test-1")
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);
 
-	auto reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
+	zeep::uri uri = std::format("http://localhost:{}/", port);
+
+	auto reply = zeep::http::get_request(uri / "test");
 	CHECK(reply.get_status() == zh::status_type::ok);
 
 	std::filesystem::rename(access_file, log_dir / "access.log.1");
@@ -93,7 +95,7 @@ TEST_CASE("daemon-test-1")
 
 	std::this_thread::sleep_for(100ms);
 
-	reply = simple_request(port, "GET /test HTTP/1.0\r\n\r\n");
+	reply = zeep::http::get_request(uri / "test");
 	CHECK(reply.get_status() == zh::status_type::ok);
 
 	d.stop();

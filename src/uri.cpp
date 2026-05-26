@@ -244,6 +244,8 @@ uri &uri::operator/=(const uri &rhs)
 		m_path.insert(m_path.end(), rhs.m_path.begin(), rhs.m_path.end());
 	}
 
+	m_query = rhs.m_query;
+
 	remove_dot_segments();
 
 	return *this;

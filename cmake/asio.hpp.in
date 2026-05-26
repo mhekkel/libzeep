@@ -10,6 +10,7 @@
 # pragma GCC diagnostic ignored "-Wsuggest-override"
 #endif
 #include <asio.hpp>
+#include <asio/ssl.hpp>
 #ifdef __GNUC__
 # pragma GCC diagnostic pop
 #endif

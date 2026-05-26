@@ -18,6 +18,7 @@
 #endif
 // IWYU pragma: begin_exports
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 // IWYU pragma: end_exports
 #ifdef __GNUC__
 # pragma GCC diagnostic pop

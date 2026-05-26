@@ -37,7 +37,6 @@ endif()
 
 add_library(zeep-test-lib OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/test-main.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/client-test-code.cpp
 )
 target_link_libraries(zeep-test-lib zeep mcfp::mcfp Catch2::Catch2)
 

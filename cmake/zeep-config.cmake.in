@@ -5,6 +5,7 @@ find_dependency(Threads)
 @FIND_DEPENDENCY_BOOST@
 @FIND_DEPENDENCY_DATE@
 find_dependency(zeem REQUIRED)
+find_dependency(OpenSSL REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/zeep-targets.cmake")
 

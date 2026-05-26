@@ -6,8 +6,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "../src/signals.hpp"
-#include "client-test-code.hpp"
 
+#include <zeep/http/client.hpp>
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/reply.hpp>
@@ -269,9 +269,11 @@ TEST_CASE("webapp_8")
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);
 
+	zeep::uri uri = std::format("http://localhost:{}/", port);
+
 	try
 	{
-		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+		auto reply = zeep::http::get_request(uri);
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello");
@@ -475,34 +477,36 @@ TEST_CASE("controller_2_1")
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);
 
+	zeep::uri uri = std::format("http://localhost:{}/", port);
+
 	try
 	{
-		auto reply = simple_request(port, "GET / HTTP/1.0\r\n\r\n");
+		auto reply = zeep::http::get_request(uri);
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, world!");
 
-		reply = simple_request(port, "GET /?user=maarten HTTP/1.0\r\n\r\n");
+		reply = zeep::http::get_request(uri / "?user=maarten");
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, maarten!");
 
-		reply = simple_request(port, "GET /hello/maarten HTTP/1.0\r\n\r\n");
+		reply = zeep::http::get_request(uri / "hello/maarten");
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, maarten!");
 
-		reply = simple_request(port, "GET /hello/maarten/x HTTP/1.0\r\n\r\n");
+		reply = zeep::http::get_request(uri / "hello/maarten/x");
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, maarten!");
 
-		reply = simple_request(port, "GET /hello//x HTTP/1.0\r\n\r\n");
+		reply = zeep::http::get_request(uri / "hello//x");
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, world!");
 
-		reply = simple_request(port, "GET /hello/dani%C3%ABlle/x HTTP/1.0\r\n\r\n");
+		reply = zeep::http::get_request(uri / "hello/dani%C3%ABlle/x");
 
 		CHECK(reply.get_status() == zeep::http::status_type::ok);
 		CHECK(reply.get_content() == "Hello, daniëlle!");

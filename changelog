@@ -1,3 +1,7 @@
+Version 7.4.0
+- Added HTTP client code, simple fetch uri 
+- Requires OpenSSL from now on
+
 Version 7.3.2
 - Revive daemon-test example application
 
