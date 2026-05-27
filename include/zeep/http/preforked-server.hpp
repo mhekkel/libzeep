@@ -68,7 +68,7 @@ class preforked_server
 	///
 	/// The constructor takes one argument, a function object that creates
 	/// a server class instance.
-	preforked_server(std::function<basic_server *(void)> server_factory);
+	preforked_server(std::function<basic_server *()> server_factory);
 	virtual ~preforked_server() = default;
 
 	/// \brief forks \a nr_of_child_processes children and starts listening, should be a separate thread
@@ -77,7 +77,7 @@ class preforked_server
 	virtual void stop();  ///< stop the running thread
 
   private:
-	std::function<basic_server *(void)> m_constructor;
+	std::function<basic_server *()> m_constructor;
 	std::mutex m_lock;
 	asio_ns::io_context m_io_context;
 };
