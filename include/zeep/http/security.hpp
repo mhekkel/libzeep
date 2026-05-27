@@ -12,6 +12,7 @@
 #include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/http/status.hpp"
+#include "zeep/uri.hpp"
 
 #include <cassert>
 #include <chrono>
@@ -240,6 +241,7 @@ class security_context
 	///
 	/// Create a security context for server \a s with validator \a validator and
 	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
+	/// Since 7.4 this flag is ignored.
 	security_context(std::string secret, user_service &users, bool defaultAccessAllowed = false);
 
 	/// \brief register a custom password encoder
@@ -338,6 +340,9 @@ class security_context
 	[[nodiscard]] std::chrono::system_clock::duration get_jwt_exp() const { return m_default_jwt_exp; }
 	void set_jwt_exp(std::chrono::system_clock::duration exp) { m_default_jwt_exp = exp; }
 
+	/// \brief Add OpenID provider info
+	void add_openid_provider(zeep::uri redirect_base_uri, std::string client_id, std::string client_secret);
+
   private:
 	struct rule
 	{
@@ -345,13 +350,21 @@ class security_context
 		std::set<std::string> m_roles;
 	};
 
+	[[nodiscard]] bool verify_rsa(const std::string &kid, const std::string &message, const std::string &signature) const;
+
 	std::string m_secret;
 	user_service &m_users;
-	bool m_default_allow;
+	bool m_default_allow; // not used anymore
 	bool m_validate_csrf = false;
 	std::vector<rule> m_rules;
 	std::vector<std::tuple<std::string, std::unique_ptr<password_encoder>>> m_known_password_encoders;
 	std::chrono::system_clock::duration m_default_jwt_exp;
+
+	// OpenID support
+	zeep::uri m_base_uri;
+	std::string m_client_id, m_client_secret;
+	zeep::el::object m_config;
+	zeep::el::object m_keys;
 };
 
 } // namespace zeep::http

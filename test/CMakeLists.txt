@@ -25,6 +25,7 @@ list(APPEND zeep_tests
 	rest
 	security
 	uri
+	openid
 )
 
 if(HTTP_HAS_UNIX_DAEMON)

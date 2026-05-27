@@ -14,6 +14,13 @@
 
 #include "glob.hpp"
 
+#include <openssl/bio.h>
+#include <openssl/decoder.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/param_build.h>
+#include <openssl/rsa.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -63,10 +70,9 @@ bool user_service::user_is_valid(const std::string &username) const
 
 // --------------------------------------------------------------------
 
-security_context::security_context(std::string secret, user_service &users, bool defaultAccessAllowed)
+security_context::security_context(std::string secret, user_service &users, bool /* defaultAccessAllowed */)
 	: m_secret(std::move(secret))
 	, m_users(users)
-	, m_default_allow(defaultAccessAllowed)
 	, m_default_jwt_exp(std::chrono::years{ 1 })
 {
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
@@ -74,8 +80,8 @@ security_context::security_context(std::string secret, user_service &users, bool
 
 void security_context::validate_request(request &req) const
 {
-	bool allow = m_default_allow;
-
+	bool allow = false;
+	
 	for (;;)
 	{
 		auto path = req.get_uri();
@@ -87,16 +93,32 @@ void security_context::validate_request(request &req) const
 		{
 			if (access_token.empty())
 				break;
-
+		
 			std::smatch m;
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
 
 			auto JOSEHeader = object::parse_JSON(decode_base64url(m[1].str()));
 
-			const object kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
+			if (not JOSEHeader.contains("typ") or JOSEHeader["typ"] != "JWT")
+				break;
 
-			if (JOSEHeader != kJOSEHeader)
+			if (auto alg = JOSEHeader["alg"].get<std::string>(); alg == "HS256")
+			{
+				// check signature
+				auto sig = zeep::encode_base64url(zeep::hmac_sha256(m[1].str() + '.' + m[2].str(),  m_secret));
+				if (sig != m[3].str())
+					break;
+			}
+			else if (alg == "RS256")
+			{
+				auto msg = m[1].str() + '.' + m[2].str();
+				auto sig = zeep::decode_base64url(m[3].str());
+
+				if (not verify_rsa(JOSEHeader["kid"].get<std::string>(), msg, sig))
+					break;
+			}
+			else
 				break;
 
 			// check signature
@@ -122,7 +144,7 @@ void security_context::validate_request(request &req) const
 			if (not m_users.user_is_valid(credentials))
 				break;
 
-			for (const auto& role : credentials["role"])
+			for (const auto &role : credentials["role"])
 				roles.insert(role.get<std::string>());
 
 			req.set_credentials(std::move(credentials));
@@ -157,7 +179,7 @@ void security_context::validate_request(request &req) const
 	{
 		if (auto p = req.get_parameter("_csrf"); p.has_value())
 		{
-			const auto& req_csrf_param = *p;
+			const auto &req_csrf_param = *p;
 			if (auto req_csrf_cookie = req.get_cookie("csrf-token"); req_csrf_cookie != req_csrf_param)
 			{
 				allow = false;
@@ -168,6 +190,80 @@ void security_context::validate_request(request &req) const
 
 	if (not allow)
 		throw unauthorized_exception();
+}
+
+bool security_context::verify_rsa(const std::string &kid, const std::string &message, const std::string &signature) const
+{
+	bool result = false;
+
+	auto hash = zeep::sha256(message);
+
+	for (auto key : m_keys)
+	{
+		if (key["kid"] != kid)
+			continue;
+
+		// Create bignums
+		auto ns = zeep::decode_base64url(key["n"].get<std::string>());
+		auto es = zeep::decode_base64url(key["e"].get<std::string>());
+
+		auto bnn = BN_bin2bn(reinterpret_cast<unsigned char *>(ns.data()), ns.length(), nullptr);
+		auto bne = BN_bin2bn(reinterpret_cast<unsigned char *>(es.data()), es.length(), nullptr);
+
+		auto params_builder = OSSL_PARAM_BLD_new();
+
+		if (bnn and bne and params_builder and
+			OSSL_PARAM_BLD_push_BN(params_builder, "n", bnn) and
+			OSSL_PARAM_BLD_push_BN(params_builder, "e", bne))
+		{
+			if (auto param = OSSL_PARAM_BLD_to_param(params_builder))
+			{
+				EVP_PKEY_CTX *pctx = nullptr;
+				EVP_PKEY *pkey = nullptr;
+
+				if (pctx = EVP_PKEY_CTX_new_from_name(nullptr, "RSA", nullptr);
+					pctx and
+					EVP_PKEY_fromdata_init(pctx) == 1 and
+					EVP_PKEY_fromdata(pctx, &pkey, EVP_PKEY_PUBLIC_KEY, param) == 1)
+				{
+					if (auto ctx = EVP_PKEY_CTX_new(pkey, nullptr))
+					{
+						if (EVP_PKEY_verify_init(ctx) == 1 and
+							EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) == 1 and
+							EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) == 1)
+						{
+							auto r = EVP_PKEY_verify(ctx,
+								reinterpret_cast<const unsigned char *>(signature.data()), signature.length(),
+								reinterpret_cast<const unsigned char *>(hash.data()), hash.length());
+
+							result = r == 1;
+						}
+
+						EVP_PKEY_CTX_free(ctx);
+					}
+				}
+				if (pctx)
+					EVP_PKEY_CTX_free(pctx);
+
+				OSSL_PARAM_free(param);
+			}
+		}
+
+		if (params_builder)
+			OSSL_PARAM_BLD_free(params_builder);
+
+		if (bne)
+			BN_free(bne);
+
+		if (bnn)
+			BN_free(bnn);
+
+		ERR_print_errors_fp(stderr);
+
+		break;
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
