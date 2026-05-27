@@ -7,10 +7,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(libzeep-examples LANGUAGES CXX)
 
-set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # Only try to find package if we're not included from the main libzeep CMakeLists.txt
 if(PROJECT_IS_TOP_LEVEL)
     find_package(zeep REQUIRED)
@@ -28,6 +24,14 @@ list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
     security-sample rest-sample rest-sample-2 # soap-sample
 )
 
+find_package(mcfp QUIET)
+
+if (NOT mcfp_FOUND)
+    message(WARNING "No mcfp found, cannot build openid-sample")
+else()
+    list(APPEND examples openid-sample)
+endif()
+
 if(HTTP_HAS_UNIX_DAEMON)
     list(APPEND examples daemon-sample)
 endif()
@@ -35,4 +39,8 @@ endif()
 foreach(EXAMPLE IN LISTS examples)
     add_executable(${EXAMPLE} ${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}.cpp)
     target_link_libraries(${EXAMPLE} zeep::zeep)
+
+    if (${EXAMPLE} STREQUAL "openid-sample")
+        target_link_libraries(${EXAMPLE} mcfp::mcfp)
+    endif()
 endforeach()

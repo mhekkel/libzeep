@@ -183,6 +183,12 @@ class user_service
 
 	/// \brief return true if a user named \a username is allowed to access this web application
 	[[nodiscard]] virtual bool user_is_valid(const std::string &username) const;
+
+	/// \brief A security context can delegate the validation of a request to a user_service.
+	[[nodiscard]] virtual bool validate_request(request &req) const
+	{
+		return false;
+	}
 };
 
 // --------------------------------------------------------------------
@@ -218,6 +224,56 @@ class simple_user_service : public user_service
 	}
 
   protected:
+	std::vector<user_details> m_users;
+};
+
+// --------------------------------------------------------------------
+
+/// \brief OpenID support. This class provides a user service based on what is
+/// returned by an OpenID Provider.
+
+class openid_user_service : public user_service
+{
+  public:
+	openid_user_service(
+		zeep::uri uri,
+		std::string name,
+		zeep::uri redirect_uri,
+		std::string client_id,
+		std::string client_secret);
+
+	/// \brief A security context can delegate the validation of a request to a user_service.
+	[[nodiscard]] bool validate_request(request &req) const override;
+
+	[[nodiscard]] std::string get_authorize_uri() const
+	{
+		return m_config["authorization_endpoint"].get<std::string>();
+	}
+
+	[[nodiscard]] std::string get_token_uri() const
+	{
+		return m_config["token_endpoint"].get<std::string>();
+	}
+
+	[[nodiscard]] const std::string &get_client_id() const { return m_client_id; }
+	[[nodiscard]] const std::string &get_client_secret() const { return m_client_secret; }
+
+	bool verify_rsa(const std::string &kid, const std::string &message, const std::string &signature);
+
+	/// \brief return the user_details for a user named \a username
+	/// Will obviously throw in this case.
+	[[nodiscard]] user_details load_user(const std::string &username) const override;
+
+  protected:
+	zeep::el::object fetch(zeep::uri uri);
+
+	zeep::uri m_base_uri;
+	std::string m_name;
+	zeep::uri m_redirect_uri;
+	std::string m_client_id, m_client_secret;
+	zeep::el::object m_config;
+	zeep::el::object m_keys;
+
 	std::vector<user_details> m_users;
 };
 

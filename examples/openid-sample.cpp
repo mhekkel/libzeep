@@ -16,6 +16,8 @@
 #include <zeep/http/server.hpp>
 #include <zeep/http/template-processor.hpp>
 
+#include <mcfp/mcfp.hpp>
+
 #include <exception>
 #include <initializer_list>
 #include <iostream>
@@ -49,21 +51,69 @@ class hello_controller : public zeep::http::html_controller
 };
 //]
 
-int main()
+int main(int argc, char *const argv[])
 {
 	try
 	{
+		auto &config = mcfp::config::instance();
+
+		config.init("usage",
+				  mcfp::make_option("help,h", "Display help message"),
+
+				  mcfp::make_option<std::string>("config", "Path of config file to use"),
+
+				  mcfp::make_option<std::string>("address", "0.0.0.0", "Address to listen to"),
+				  mcfp::make_option<uint16_t>("port", 8080, "Port to listen to"),
+
+				  mcfp::make_option<std::string>("port", "8080", "Port to listen to"))
+
+			.add_section("openid",
+				mcfp::make_option<std::string>("uri", "OpenID authentication provider"),
+				mcfp::make_option<std::string>("name", "User friendly name"),
+				mcfp::make_option<std::string>("redirect-uri",  "redirect-uri"),
+				mcfp::make_option<std::string>("client-id", "client-id"),
+				mcfp::make_option<std::string>("client-secret", "client-secret"));
+
+		std::error_code ec;
+
+		config.set_ignore_unknown(true);
+
+		config.parse(argc, argv, ec);
+		if (ec)
+		{
+			std::cerr << "Error parsing arguments: " << ec.message() << '\n';
+			return 1;
+		}
+
+		if (config.has("help"))
+		{
+			std::cout << config << '\n';
+			return 0;
+		}
+
+		config.parse_config_file("config", "openid-sample.conf",
+			{ ".", "/etc" }, ec);
+		if (ec)
+		{
+			std::cerr << "Error parsing config file: " << ec.message() << '\n';
+			return 1;
+		}
+
+		auto uri = config.get("openid.uri");
+		auto name = config.get("openid.name");
+		auto redirectUri = config.get("openid.redirect-uri");
+		auto clientId = config.get("openid.client-id");
+		auto clientSecret = config.get("openid.client-secret");
+
 		//[ create_user_service
-		// Create a user service with a single user
-		zeep::http::simple_user_service users({ { "scott",
-			zeep::http::pbkdf2_sha256_password_encoder().encode("tiger"),
-			{ "USER", "ADMIN" } } });
+		// create a OpenID user service
 		//]
 
+		zeep::http::openid_user_service users(uri, name, redirectUri, clientId, clientSecret);
+
 		//[ create_security_context
-		// Create a security context with a secret and users
-		std::string secret = zeep::random_hash();
-		auto sc = std::make_unique<zeep::http::security_context>(secret, users, false);
+		// Create a security context for use with the specified OpenID provider
+		auto sc = std::make_unique<zeep::http::security_context>(clientSecret, users);
 		//]
 
 		//[ add_access_rules
@@ -79,7 +129,7 @@ int main()
 		srv.add_controller(new hello_controller());
 		srv.add_controller(new zeep::http::login_controller());
 
-		srv.bind("::", 8080);
+		srv.bind(config.get("address"), config.get<uint16_t>("port"));
 		srv.run(2);
 		//]
 	}

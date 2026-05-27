@@ -8,6 +8,7 @@
 #include "zeep/crypto.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
+#include "zeep/http/client.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/uri.hpp"
@@ -70,6 +71,130 @@ bool user_service::user_is_valid(const std::string &username) const
 
 // --------------------------------------------------------------------
 
+openid_user_service::openid_user_service(
+	zeep::uri uri, std::string name, zeep::uri redirect_uri, std::string client_id, std::string client_secret)
+	: m_base_uri(std::move(uri))
+	, m_name(std::move(name))
+	, m_redirect_uri(std::move(redirect_uri))
+	, m_client_id(std::move(client_id))
+	, m_client_secret(std::move(client_secret))
+{
+	m_config = fetch(m_base_uri / ".well-known" / "openid-configuration");
+	zeep::uri jwks_uri = zeep::uri(m_config["jwks_uri"].get<std::string>());
+	m_keys = fetch(jwks_uri)["keys"];
+}
+
+zeep::el::object openid_user_service::fetch(zeep::uri uri)
+{
+	auto r = zeep::http::get_request(uri);
+
+	if (r.get_status() != zeep::http::ok)
+	{
+		if (r.get_content_type() == "application/json")
+		{
+			auto error = zeep::el::object::parse_JSON(r.get_content());
+			throw std::runtime_error(std::format("Failed to fetch openid information: {} ({})",
+				error["error"].get<std::string>(), error["error_description"].get<std::string>()));
+		}
+		throw std::runtime_error(
+			std::format("Failed to fetch openid information: {}", r.get_content()));
+	}
+
+	if (r.get_content_type() != "application/json")
+		throw std::runtime_error("Failed to fetch openid information");
+
+	return zeep::el::object::parse_JSON(r.get_content());
+}
+
+bool openid_user_service::verify_rsa(const std::string &kid, const std::string &message, const std::string &signature)
+{
+	bool result = false;
+
+	auto hash = zeep::sha256(message);
+
+	for (auto key : m_keys)
+	{
+		if (key["kid"] != kid)
+			continue;
+
+		// Create bignums
+		auto ns = zeep::decode_base64url(key["n"].get<std::string>());
+		auto es = zeep::decode_base64url(key["e"].get<std::string>());
+
+		BIGNUM *bnn = nullptr, *bne = nullptr;
+		OSSL_PARAM_BLD *params_build = nullptr;
+
+		bnn = BN_bin2bn(reinterpret_cast<unsigned char *>(ns.data()), ns.length(), nullptr);
+		bne = BN_bin2bn(reinterpret_cast<unsigned char *>(es.data()), es.length(), nullptr);
+
+		params_build = OSSL_PARAM_BLD_new();
+
+		if (bnn and bne and params_build and
+			OSSL_PARAM_BLD_push_BN(params_build, "n", bnn) and
+			OSSL_PARAM_BLD_push_BN(params_build, "e", bne))
+		{
+			if (auto params = OSSL_PARAM_BLD_to_param(params_build))
+			{
+				EVP_PKEY_CTX *pctx = nullptr;
+				EVP_PKEY *pkey = nullptr;
+
+				if (pctx = EVP_PKEY_CTX_new_from_name(nullptr, "RSA", nullptr);
+					pctx and
+					EVP_PKEY_fromdata_init(pctx) == 1 and
+					EVP_PKEY_fromdata(pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) == 1)
+				{
+					if (auto ctx = EVP_PKEY_CTX_new(pkey, nullptr))
+					{
+						if (EVP_PKEY_verify_init(ctx) > 0 and
+							EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) > 0 and
+							EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) > 0)
+						{
+							auto r = EVP_PKEY_verify(ctx,
+								reinterpret_cast<const unsigned char *>(signature.data()), signature.length(),
+								reinterpret_cast<const unsigned char *>(hash.data()), hash.length());
+
+							result = r == 1;
+						}
+
+						EVP_PKEY_CTX_free(ctx);
+					}
+				}
+				if (pctx)
+					EVP_PKEY_CTX_free(pctx);
+
+				OSSL_PARAM_free(params);
+			}
+		}
+
+		if (params_build)
+			OSSL_PARAM_BLD_free(params_build);
+
+		if (bne)
+			BN_free(bne);
+
+		if (bnn)
+			BN_free(bnn);
+
+		ERR_print_errors_fp(stdout);
+
+		break;
+	}
+
+	return result;
+}
+
+bool openid_user_service::validate_request(request &req) const
+{
+	return false;
+}
+
+user_details openid_user_service::load_user(const std::string &username) const
+{
+	return {};
+}
+
+// --------------------------------------------------------------------
+
 security_context::security_context(std::string secret, user_service &users, bool /* defaultAccessAllowed */)
 	: m_secret(std::move(secret))
 	, m_users(users)
@@ -81,7 +206,7 @@ security_context::security_context(std::string secret, user_service &users, bool
 void security_context::validate_request(request &req) const
 {
 	bool allow = false;
-	
+
 	for (;;)
 	{
 		auto path = req.get_uri();
@@ -93,7 +218,7 @@ void security_context::validate_request(request &req) const
 		{
 			if (access_token.empty())
 				break;
-		
+
 			std::smatch m;
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
@@ -106,7 +231,7 @@ void security_context::validate_request(request &req) const
 			if (auto alg = JOSEHeader["alg"].get<std::string>(); alg == "HS256")
 			{
 				// check signature
-				auto sig = zeep::encode_base64url(zeep::hmac_sha256(m[1].str() + '.' + m[2].str(),  m_secret));
+				auto sig = zeep::encode_base64url(zeep::hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
 				if (sig != m[3].str())
 					break;
 			}

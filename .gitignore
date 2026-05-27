@@ -17,3 +17,4 @@ test/xml/XML-Test-Suite/
 modules/zeep/http/asio.hpp
 lib-xml/test/XML-Test-Suite/
 
+examples/openid-sample.conf
