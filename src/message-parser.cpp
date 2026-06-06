@@ -220,8 +220,10 @@ parse_result parser::post_process_headers()
 		}
 		// If no content-length is available but 'connection: close' is, we read until the end of the buffer
 		// Seems like a bug in new server software, content-length is omitted even if request type is HTTP/1.0
+		// But only for reply parsing...
 		else if (i = std::ranges::find_if(m_headers, [](const header &h)
-					 { return iequals(h.name, "connection"sv); });
+				{ return iequals(h.name, "connection"sv); });
+			typeid(*this) == typeid(reply_parser) and
 			i != m_headers.end() and iequals(i->value, "close"))
 		{
 			m_parser = &parser::parse_content;

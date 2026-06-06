@@ -143,13 +143,11 @@ class child_process
 		}
 	}
 
+	void start();
 	void stop();
 
   private:
 	void handle_accept(const asio_system_ns::error_code &ec);
-
-	void start();
-	void run();
 
 	std::function<basic_server *(void)> m_constructor;
 	asio_ns::ip::tcp::acceptor &m_acceptor;
@@ -334,6 +332,8 @@ void child_process::handle_accept(const asio_system_ns::error_code &ec)
 		{
 			std::clog << e.what() << '\n';
 		}
+
+		stop();
 	}
 
 	m_socket.close();
@@ -385,12 +385,16 @@ void preforked_server::run(std::string_view address, uint16_t port, int nr_of_pr
 	{
 		threads.emplace_back([this, nr_of_threads, &acceptor]()
 			{
-			auto work = asio_ns::make_work_guard(m_io_context);
+				auto work = asio_ns::make_work_guard(m_io_context);
 
-			child_process p(m_constructor, m_io_context, acceptor, nr_of_threads);
-			
-			m_io_context.run(); });
+				child_process p(m_constructor, m_io_context, acceptor, nr_of_threads);
+
+				p.start();
+
+				m_io_context.run();
+			});
 	}
+
 
 	for (auto &t : threads)
 		t.join();
