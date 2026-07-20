@@ -22,13 +22,16 @@
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <regex>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 
+#if __has_include(<sys/mman.h>)
 #include <sys/mman.h>
+#endif
 
 namespace zeep::http
 {
@@ -65,7 +68,9 @@ security_context::security_context(std::string secret, user_service &users, bool
 	, m_default_allow(defaultAccessAllowed)
 	, m_default_jwt_exp(std::chrono::years{ 1 })
 {
+#if __has_include(<sys/mman.h>)
 	mlock(m_secret.data(), m_secret.length());
+#endif
 
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
 }
@@ -114,7 +119,14 @@ void security_context::validate_request(request &req) const
 			auto sig = encode_base64url(hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
 
 			// Apparently, we need a constant time comparison here to avoid timing attacks
-			if (sig.length() != m[3].str().length() or sha256(sig) != sha256(m[3].str()))
+			if (sig.length() != m[3].str().length())
+				break;
+			
+			// Compare strings in constant time
+			bool same = true;
+			for (const auto &[a, b] : std::views::zip(sig, m[3].str()))
+				same = same and a == b;
+			if (not same)
 				break;
 
 			auto credentials = object::parse_JSON(decode_base64url(m[2].str()));
