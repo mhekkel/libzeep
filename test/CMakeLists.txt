@@ -21,7 +21,7 @@ list(APPEND zeep_tests
 	http
 	processor
 	webapp
-	# soap
+	soap
 	rest
 	security
 	uri

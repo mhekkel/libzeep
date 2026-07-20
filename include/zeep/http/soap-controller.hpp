@@ -88,20 +88,14 @@ class soap_controller : public controller
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
 	/// \param service      The name of the service
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	soap_controller(std::string prefix_path, std::string service, std::string ns)
-		: controller(std::move(prefix_path))
+	soap_controller(const std::string& prefix_path, std::string service, std::string ns)
+		: controller(prefix_path)
 		, m_ns(std::move(ns))
 		, m_service(std::move(service))
 	{
 		// while (m_prefix_path.front() == '/')
 		// 	m_prefix_path.erase(0, 1);
 		m_location = m_prefix_path.string();
-	}
-
-	~soap_controller()
-	{
-		for (auto mp : m_mountpoints)
-			delete mp;
 	}
 
 	/// \brief Set the external address at which this service is visible
@@ -130,7 +124,7 @@ class soap_controller : public controller
 	zeem::element make_wsdl();
 
 	/// \brief Handle the SOAP request
-	virtual bool handle_request(request &req, reply &reply_);
+	bool handle_request(request &req, reply &reply_) override;
 
   protected:
 	/// @cond
@@ -171,7 +165,7 @@ class soap_controller : public controller
 		mount_point(const char *action, soap_controller *owner, Sig sig)
 			: mount_point_base(action)
 		{
-			ControllerType *controller = dynamic_cast<ControllerType *>(owner);
+			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
 				throw std::runtime_error("Invalid controller for callback");
 
@@ -193,7 +187,7 @@ class soap_controller : public controller
 				m_names[i++] = name;
 		}
 
-		virtual void call(const zeem::element &request, reply &rep, std::string_view ns)
+		void call(const zeem::element &request, reply &rep, std::string_view ns) override
 		{
 			rep.set_status(ok);
 
@@ -225,7 +219,7 @@ class soap_controller : public controller
 
 			auto envelope = make_envelope(std::move(response));
 
-			rep.set_content(std::move(envelope));
+			rep.set_content(envelope);
 		}
 
 		template <std::size_t... I>
@@ -266,14 +260,14 @@ class soap_controller : public controller
 			sc.add_element(m_names[I], type{});
 		}
 
-		virtual void describe(type_map &types, message_map &messages,
-			zeem::element &portType, zeem::element &binding)
+		void describe(type_map &types, message_map &messages,
+			zeem::element &portType, zeem::element &binding) override
 		{
 			// the request type
 			zeem::element requestType("xsd:element", { { "name", m_action } });
 			auto complexType = requestType.emplace_back("xsd:complexType");
 
-			collect_types(types, complexType.emplace_back("xsd:sequence"), "ns");
+			collect_types(types, *complexType->emplace_back("xsd:sequence"), "ns");
 
 			types[m_action + "Request"] = requestType;
 
@@ -285,32 +279,32 @@ class soap_controller : public controller
 				auto complexType2 = responseType.emplace_back("xsd:complexType");
 				auto sequence = complexType2->emplace_back("xsd:sequence");
 
-				zeem::schema_creator sc(types, sequence);
+				zeem::schema_creator sc(types, *sequence);
 				sc.add_element("Response", Result{});
 			}
 
 			types[m_action + "Response"] = responseType;
 
 			// now the wsdl operations
-			zeem::element message("wsdl:message", {{ "name", m_action + "RequestMessage"}});
-			message.emplace_back("wsdl:part", { {"name", "parameters"}, { "element", "ns:" + m_action }});
+			zeem::element message("wsdl:message", { { "name", m_action + "RequestMessage" } });
+			message.emplace_back(zeem::element{"wsdl:part", { { "name", "parameters" }, { "element", "ns:" + m_action } }});
 			messages[m_action + "RequestMessage"] = message;
 
-			message = zeem::element("wsdl:message", {{ "name", m_action + "Message" }});
-			message.emplace_back("wsdl:part", {{ "name", "parameters"}, {"element", "ns:" + m_action }});
+			message = zeem::element("wsdl:message", { { "name", m_action + "Message" } });
+			message.emplace_back(zeem::element{"wsdl:part", { { "name", "parameters" }, { "element", "ns:" + m_action } }});
 			messages[m_action + "Message"] = message;
 
 			// port type
 			zeem::element operation("wsdl:operation", { { "name", m_action } });
 
-			operation.emplace_back("wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } });
-			operation.emplace_back("wsdl:output", { { "message", "ns:" + m_action + "Message" } });
+			operation.emplace_back(zeem::element{"wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } }});
+			operation.emplace_back(zeem::element{"wsdl:output", { { "message", "ns:" + m_action + "Message" } }});
 
 			portType.emplace_back(std::move(operation));
 
 			// and the soap operations
-			operation = { "wsdl:operation", { { "name", m_action } } };
-			operation.emplace_back("soap:operation", { { "soapAction", "" }, { "style", "document" } });
+			operation = zeem::element{ "wsdl:operation", { { "name", m_action } } };
+			operation.emplace_back(zeem::element{ "soap:operation", { { "soapAction", "" }, { "style", "document" } } });
 
 			zeem::element body("soap:body");
 			body.set_attribute("use", "literal");
@@ -330,7 +324,7 @@ class soap_controller : public controller
 		std::array<const char *, N> m_names;
 	};
 
-	std::list<mount_point_base *> m_mountpoints;
+	std::list<std::unique_ptr<mount_point_base>> m_mountpoints;
 	std::string m_ns, m_location, m_service;
 
 	/// @endcond

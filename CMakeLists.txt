@@ -154,9 +154,6 @@ file(GLOB_RECURSE zeep_cpp src/*.cpp)
 file(GLOB_RECURSE zeep_hpp include/*.hpp)
 list(APPEND zeep_hpp include/zeep/config.hpp)
 
-# TODO: SOAP is not working at the moment, really need to fix that
-list(FILTER zeep_cpp EXCLUDE REGEX src/soap-controller.cpp)
-
 if(NOT USE_RSRC)
     list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
 endif()
