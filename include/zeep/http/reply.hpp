@@ -122,7 +122,7 @@ class reply
 
 	/// To send a stream of data, with unknown size (using chunked transfer).
 	/// reply takes ownership of \a data and deletes it when done.
-	void set_content(std::istream *data, std::string contentType);
+	void set_content(std::unique_ptr<std::istream> data, std::string contentType);
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data.

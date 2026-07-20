@@ -18,6 +18,7 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
 
+#include <memory>
 #include <system_error>
 #include <zeem/zeem.hpp>
 
@@ -35,15 +36,20 @@ namespace zeep::http
 class login_error_handler : public error_handler
 {
   public:
-	login_error_handler(login_controller &c)
+	login_error_handler(login_controller &c, std::shared_ptr<int> alive)
 		: m_login_controller(c)
+		, m_alive(std::move(alive))
 	{
 	}
 
 	bool create_unauth_reply(const request &req, reply &reply) override
 	{
-		m_login_controller.create_unauth_reply(req, reply);
-		return true;
+		if (*m_alive == 1)
+		{
+			m_login_controller.create_unauth_reply(req, reply);
+			return true;
+		}
+		return false;
 	}
 
 	bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &reply) override
@@ -74,16 +80,23 @@ class login_error_handler : public error_handler
 
   private:
 	login_controller &m_login_controller;
+	std::shared_ptr<int> m_alive;
 };
 
 login_controller::login_controller(const std::string &prefix_path)
 	: html_controller(prefix_path)
+	, m_alive(std::make_shared<int>(1))
 {
 	map_get("login", &login_controller::handle_get_login);
 	map_post("login", &login_controller::handle_post_login, "username", "password");
 
 	map_get("logout", &login_controller::handle_logout);
 	map_post("logout", &login_controller::handle_logout);
+}
+
+login_controller::~login_controller()
+{
+	*m_alive = 0;
 }
 
 void login_controller::set_server(basic_server *server)
@@ -97,10 +110,7 @@ void login_controller::set_server(basic_server *server)
 	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});
 
-	// login_error_handler takes a pointer to this login_controller
-	// That is not a problem since error_handlers are destroyed before
-	// controllers in basic_server.
-	server->add_error_handler(new login_error_handler(*this));
+	server->add_error_handler(new login_error_handler(*this, m_alive));
 }
 
 zeem::document login_controller::load_login_form(const request &req) const

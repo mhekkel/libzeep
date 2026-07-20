@@ -287,9 +287,9 @@ void reply::set_content(const char *data, size_t size, std::string contentType)
 	set_header("Content-Type", std::move(contentType));
 }
 
-void reply::set_content(std::istream *idata, std::string contentType)
+void reply::set_content(std::unique_ptr<std::istream> idata, std::string contentType)
 {
-	m_data.reset(idata);
+	m_data = std::move(idata);
 	m_content.clear();
 	m_chunked = true;
 

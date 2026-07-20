@@ -146,7 +146,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 			{ self->handle_write(ec, bytes_transferred); });
 	}
-	catch (...) // NOLINT(bugprone-empty-catch)
+	catch (...)
 	{
 		std::clog << "Internal server error\n";
 

@@ -323,7 +323,7 @@ class controller
 		reply set_reply(std::filesystem::path &&v)
 		{
 			reply rep(status_type::ok);
-			rep.set_content(new std::ifstream(std::forward<std::filesystem::path>(v), std::ios::binary), "application/octet-stream");
+			rep.set_content(std::make_unique<std::ifstream>(std::forward<std::filesystem::path>(v), std::ios::binary), "application/octet-stream");
 			return rep;
 		}
 

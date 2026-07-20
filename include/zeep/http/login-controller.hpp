@@ -36,6 +36,7 @@ class login_controller : public html_controller
 {
   public:
 	login_controller(const std::string &prefix_path = "/");
+	~login_controller() override;
 
 	/// \brief bind this controller to \a server
 	///
@@ -72,6 +73,9 @@ class login_controller : public html_controller
 
 	/// \brief Return a reply for a redirect to the requested or default destination.
 	[[nodiscard]] reply create_redirect_for_request(const request &req) const;
+
+  private:
+	std::shared_ptr<int> m_alive;
 };
 
 } // namespace zeep::http

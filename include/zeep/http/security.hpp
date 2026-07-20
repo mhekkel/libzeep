@@ -252,7 +252,7 @@ class security_context
 	template <typename PWEncoder>
 	void register_password_encoder()
 	{
-		m_known_password_encoders.emplace_back(PWEncoder::name(), new PWEncoder());
+		m_known_password_encoders.emplace_back(PWEncoder::name(), std::make_unique<PWEncoder>());
 	}
 
 	/// \brief Add a new rule for access

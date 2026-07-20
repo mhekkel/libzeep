@@ -163,7 +163,7 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 		mimetype = "application/gzip";
 
 	reply result(status_type::ok);
-	result.set_content(in.release(), mimetype);
+	result.set_content(std::move(in), mimetype);
 
 	using namespace std::chrono;
 
