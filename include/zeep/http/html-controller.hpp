@@ -266,7 +266,7 @@ class html_controller : public controller
 class html_controller_v1 : public html_controller
 {
   public:
-	html_controller_v1(const std::string &prefix_path = "/")
+	[[deprecated("This old controller will be removed in the next release")]] html_controller_v1(const std::string &prefix_path = "/")
 		: html_controller(prefix_path)
 	{
 	}

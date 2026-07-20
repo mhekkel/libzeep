@@ -260,7 +260,7 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: std::advance(m_it.m_array_it, i);
+				case object::value_type::array: std::advance(m_it.m_array_it, i); break;
 				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
 				default: m_it.m_p += i;
 			}
@@ -317,7 +317,7 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: *std::next(m_it.m_array_it, i);
+				case object::value_type::array: *std::next(m_it.m_array_it, i); break;
 				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
 				default:
 					if (m_it.m_p == -i)
@@ -357,10 +357,10 @@ class object
 
 	using iterator = iterator_impl<object>;
 	using const_iterator = iterator_impl<const object>;
-	
+
 	static_assert(std::input_iterator<iterator>);
 	static_assert(std::input_iterator<const_iterator>);
-	
+
 	// --------------------------------------------------------------------
 
 	object() noexcept = default;

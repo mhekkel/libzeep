@@ -494,18 +494,18 @@ fs::file_time_type rsrc_loader::file_time(std::filesystem::path file, std::error
 }
 
 // basic loader, returns error in ec if file was not found
-std::istream *rsrc_loader::load_file(std::string file, std::error_code &ec) noexcept
+std::unique_ptr<std::istream> rsrc_loader::load_file(std::string file, std::error_code &ec) noexcept
 {
 	mrsrc::rsrc resource(std::move(file));
 
-	std::istream *result = nullptr;
+	std::unique_ptr<std::istream> result;
 	ec = {};
 
 	if (resource)
 	{
 		try
 		{
-			result = new mrsrc::istream(resource);
+			result = std::make_unique<mrsrc::istream>(resource);
 		}
 		catch (const std::bad_alloc &)
 		{

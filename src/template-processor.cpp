@@ -65,13 +65,13 @@ std::filesystem::file_time_type file_loader::file_time(std::filesystem::path fil
 }
 
 /// return last_write_time of \a file
-std::istream *file_loader::load_file(std::string file, std::error_code &ec) noexcept
+std::unique_ptr<std::istream> file_loader::load_file(std::string file, std::error_code &ec) noexcept
 {
 	fs::path path(file);
 	if (path.has_root_path())
 		path = fs::relative(path, path.root_path());
 
-	std::ifstream *result = nullptr;
+	std::unique_ptr<std::ifstream> result;
 
 	if (not fs::is_regular_file(m_docroot / path))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
@@ -79,18 +79,17 @@ std::istream *file_loader::load_file(std::string file, std::error_code &ec) noex
 	{
 		try
 		{
-			result = new std::ifstream(m_docroot / path, std::ios::binary);
+			result = std::make_unique<std::ifstream>(m_docroot / path, std::ios::binary);
 			if (not result->is_open())
 			{
-				delete result;
-				result = nullptr;
+				result.reset();
 				ec = std::make_error_code(std::errc::no_such_file_or_directory);
 			}
 		}
 		catch (const std::bad_alloc &)
 		{
 			ec = std::make_error_code(std::errc::not_enough_memory);
-			result = nullptr;
+			result.reset();
 		}
 	}
 
@@ -211,7 +210,7 @@ void basic_template_processor::load_template(const std::string &file, zeem::docu
 	auto templateFile = get_template_file(file);
 
 	if (templateFile.has_value())
-		data.reset(load_file(templateFile->string(), ec));
+		data = load_file(templateFile->string(), ec);
 	else
 	{
 		auto espec = evaluate_el_link({}, file);
@@ -221,7 +220,7 @@ void basic_template_processor::load_template(const std::string &file, zeem::docu
 			templateFile = get_template_file(espec["template"].get<std::string>());
 
 			if (templateFile.has_value())
-				data.reset(load_file(templateFile->string(), ec));
+				data = load_file(templateFile->string(), ec);
 
 			templateSelector = espec["selector"]["xpath"].get<std::string>();
 		}

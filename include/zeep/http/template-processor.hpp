@@ -52,7 +52,7 @@ class resource_loader
 	virtual std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept = 0;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	virtual std::istream *load_file(std::string file, std::error_code &ec) noexcept = 0;
+	virtual std::unique_ptr<std::istream> load_file(std::string file, std::error_code &ec) noexcept = 0;
 
   protected:
 	resource_loader() = default;
@@ -77,7 +77,7 @@ class file_loader : public resource_loader
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
+	std::unique_ptr<std::istream> load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
 	std::filesystem::path m_docroot;
@@ -101,7 +101,7 @@ class rsrc_loader : public resource_loader
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
-	std::istream *load_file(std::string file, std::error_code &ec) noexcept override;
+	std::unique_ptr<std::istream> load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
 	std::filesystem::file_time_type mRsrcWriteTime = {};
@@ -166,7 +166,7 @@ class basic_template_processor
 	virtual std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept = 0;
 
 	/// \brief return error in ec if file was not found
-	virtual std::istream *load_file(const std::string &file, std::error_code &ec) noexcept = 0;
+	virtual std::unique_ptr<std::istream> load_file(const std::string &file, std::error_code &ec) noexcept = 0;
 
   public:
 	/// \brief Use load_template to fetch the XHTML template file
@@ -221,7 +221,7 @@ class html_template_processor : public basic_template_processor
 	}
 
 	// basic loader, returns error in ec if file was not found
-	[[nodiscard]] std::istream *load_file(const std::string &file, std::error_code &ec) noexcept override
+	[[nodiscard]] std::unique_ptr<std::istream> load_file(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.load_file(file, ec);
 	}
