@@ -28,14 +28,10 @@
 #include <string>
 #include <utility>
 
+#include <sys/mman.h>
+
 namespace zeep::http
 {
-
-namespace
-{
-#define BASE64URL "(?:[-_A-Za-z0-9]{4})*(?:[-_A-Za-z0-9]{2,3})?"
-	std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$");
-} // namespace
 
 // --------------------------------------------------------------------
 
@@ -69,11 +65,22 @@ security_context::security_context(std::string secret, user_service &users, bool
 	, m_default_allow(defaultAccessAllowed)
 	, m_default_jwt_exp(std::chrono::years{ 1 })
 {
+	mlock(m_secret.data(), m_secret.length());
+
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
+}
+
+security_context::~security_context()
+{
+	// wipe out secret
+	for (char &ch : m_secret)
+		ch = 0;
 }
 
 void security_context::validate_request(request &req) const
 {
+	using namespace std::literals;
+
 	bool allow = m_default_allow;
 
 	for (;;)
@@ -88,6 +95,10 @@ void security_context::validate_request(request &req) const
 			if (access_token.empty())
 				break;
 
+			// The JWT regex
+			constexpr const char *kBase64UrlChars("(?:[-_A-Za-z0-9]{4})*(?:[-_A-Za-z0-9]{2,3})?");
+			static const std::regex kJWTRx("^("s + kBase64UrlChars + R"()\.()" + kBase64UrlChars + R"()\.()" + kBase64UrlChars + ")$");
+
 			std::smatch m;
 			if (not std::regex_match(access_token, m, kJWTRx))
 				break;
@@ -101,7 +112,9 @@ void security_context::validate_request(request &req) const
 
 			// check signature
 			auto sig = encode_base64url(hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
-			if (sig != m[3].str())
+
+			// Apparently, we need a constant time comparison here to avoid timing attacks
+			if (sig.length() != m[3].str().length() or sha256(sig) != sha256(m[3].str()))
 				break;
 
 			auto credentials = object::parse_JSON(decode_base64url(m[2].str()));
@@ -161,7 +174,7 @@ void security_context::validate_request(request &req) const
 			if (auto req_csrf_cookie = req.get_cookie("csrf-token"); req_csrf_cookie != req_csrf_param)
 			{
 				allow = false;
-				std::cerr << "CSRF validation failed\n";
+				std::clog << "CSRF validation failed\n";
 			}
 		}
 	}

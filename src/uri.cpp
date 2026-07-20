@@ -434,7 +434,7 @@ const char *uri::parse_host(const char *cp)
 
 		++cp;
 
-		static std::regex rx(IP_LITERAL);
+		static const std::regex rx(IP_LITERAL);
 		if (not std::regex_match(b, cp, rx))
 			throw uri_parse_error();
 	}
@@ -736,7 +736,7 @@ bool is_fully_qualified_uri(const std::string &s)
 
 bool is_valid_connect_host(std::string_view host)
 {
-	std::regex rx(HOST ":" PORT);
+	static const std::regex rx(HOST ":" PORT);
 
 	return std::regex_match(host.data(), host.data() + host.length(), rx);
 }

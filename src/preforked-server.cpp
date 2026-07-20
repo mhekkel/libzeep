@@ -52,7 +52,7 @@ bool read_socket_from_parent(int fd_socket, asio_ns::ip::tcp::socket &socket)
 
 # if __APPLE__
 	// macos is special...
-	assert(CMSG_SPACE(sizeof(int)) == 16);
+	static_assert(CMSG_SPACE(sizeof(int)) == 16);
 # endif
 
 	union

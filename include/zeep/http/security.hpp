@@ -88,7 +88,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 
 		bool result = false;
 
-		std::regex rx(R"(pbkdf2_sha256\$(\d+)\$([^$]+)\$(.+))");
+		static const std::regex rx(R"(pbkdf2_sha256\$(\d+)\$([^$]+)\$(.+))");
 
 		std::smatch m;
 		if (std::regex_match(stored_password, m, rx))
@@ -241,6 +241,9 @@ class security_context
 	/// Create a security context for server \a s with validator \a validator and
 	/// a flag \a defaultAccessAllowed indicating if non-matched uri's should be allowed
 	security_context(std::string secret, user_service &users, bool defaultAccessAllowed = false);
+
+	/// \brief destructor
+	~security_context();
 
 	/// \brief register a custom password encoder
 	///

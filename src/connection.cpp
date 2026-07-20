@@ -39,12 +39,6 @@ std::vector<asio_ns::const_buffer> get_data_buffers(reply &rep)
 	return result;
 }
 
-// Needed for CLang/libc++ on FreeBSD 10
-connection *get_pointer(const std::shared_ptr<connection> &p)
-{
-	return p.get();
-}
-
 connection::connection(asio_ns::io_context &service, basic_server &handler)
 	: m_socket(service)
 	, m_server(handler)
@@ -154,6 +148,15 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 	}
 	catch (...) // NOLINT(bugprone-empty-catch)
 	{
+		std::clog << "Internal server error\n";
+
+		m_reply = reply::stock_reply(status_type::internal_server_error);
+
+		auto buffers = get_buffers(m_reply);
+
+		asio_ns::async_write(m_socket, buffers,
+			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+			{ self->handle_write(ec, bytes_transferred); });
 	}
 }
 }

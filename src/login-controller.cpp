@@ -35,14 +35,14 @@ namespace zeep::http
 class login_error_handler : public error_handler
 {
   public:
-	login_error_handler(login_controller *c)
+	login_error_handler(login_controller &c)
 		: m_login_controller(c)
 	{
 	}
 
 	bool create_unauth_reply(const request &req, reply &reply) override
 	{
-		m_login_controller->create_unauth_reply(req, reply);
+		m_login_controller.create_unauth_reply(req, reply);
 		return true;
 	}
 
@@ -73,7 +73,7 @@ class login_error_handler : public error_handler
 	}
 
   private:
-	login_controller *m_login_controller;
+	login_controller &m_login_controller;
 };
 
 login_controller::login_controller(const std::string &prefix_path)
@@ -97,7 +97,7 @@ void login_controller::set_server(basic_server *server)
 	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});
 
-	server->add_error_handler(new login_error_handler(this));
+	server->add_error_handler(new login_error_handler(*this));
 }
 
 zeem::document login_controller::load_login_form(const request &req) const
