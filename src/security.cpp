@@ -123,10 +123,10 @@ void security_context::validate_request(request &req) const
 				break;
 			
 			// Compare strings in constant time
-			bool same = true;
+			int diff = 0;
 			for (const auto &[a, b] : std::views::zip(sig, m[3].str()))
-				same = same and a == b;
-			if (not same)
+				diff |= a xor b;
+			if (diff)
 				break;
 
 			auto credentials = object::parse_JSON(decode_base64url(m[2].str()));
