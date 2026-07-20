@@ -112,6 +112,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 	{
 		reply.set_content(make_wsdl());
 		reply.set_status(status_type::ok);
+		result = true;
 	}
 
 	return result;

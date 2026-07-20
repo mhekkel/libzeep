@@ -25,7 +25,7 @@ if(UNIX)
 endif()
 
 list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
-    security-sample rest-sample rest-sample-2 # soap-sample
+    security-sample rest-sample rest-sample-2 soap-sample
 )
 
 if(HTTP_HAS_UNIX_DAEMON)

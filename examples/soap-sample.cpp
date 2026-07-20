@@ -10,6 +10,8 @@
 //[ cart_items
 struct Item
 {
+	constexpr static std::string type_name() { return "Item"; }
+
 	std::string name;
 	uint32_t count;
 
@@ -17,14 +19,16 @@ struct Item
 	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
-        ar & zeep::name_value_pair("name", name)
-           & zeep::name_value_pair("count", count);
+        ar & zeem::make_element_nvp("name", name)
+           & zeem::make_element_nvp("count", count);
 		// clang-format on
 	}
 };
 
 struct Cart
 {
+	constexpr static std::string type_name() { return "Cart"; }
+
 	int id;
 	std::string client;
 	std::vector<Item> items{};
@@ -33,9 +37,9 @@ struct Cart
 	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
-        ar & zeep::name_value_pair("id", id)
-           & zeep::name_value_pair("client", client)
-           & zeep::name_value_pair("items", items);
+        ar & zeem::make_element_nvp("id", id)
+           & zeem::make_element_nvp("client", client)
+           & zeem::make_element_nvp("items", items);
 		// clang-format on
 	}
 };
