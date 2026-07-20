@@ -97,6 +97,9 @@ void login_controller::set_server(basic_server *server)
 	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});
 
+	// login_error_handler takes a pointer to this login_controller
+	// That is not a problem since error_handlers are destroyed before
+	// controllers in basic_server.
 	server->add_error_handler(new login_error_handler(*this));
 }
 
