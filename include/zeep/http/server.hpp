@@ -208,8 +208,8 @@ class basic_server
 	std::string m_context_name; /// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
 	std::unique_ptr<basic_template_processor> m_template_processor;
-	std::list<controller *> m_controllers;
-	std::list<error_handler *> m_error_handlers;
+	std::list<std::unique_ptr<controller>> m_controllers;
+	std::list<std::unique_ptr<error_handler>> m_error_handlers;
 	std::set<std::string> m_allowed_methods;
 	std::unique_ptr<access_control> m_access_control;
 };

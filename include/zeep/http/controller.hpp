@@ -529,7 +529,7 @@ class controller
 	uri m_prefix_path;
 	basic_server *m_server = nullptr;
 
-	std::list<mount_point_base *> m_mountpoints;
+	std::list<std::unique_ptr<mount_point_base>> m_mountpoints;
 };
 
 } // namespace zeep::http

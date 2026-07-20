@@ -73,12 +73,6 @@ basic_server::~basic_server()
 	{
 		std::clog << "error stopping server: " << ex.what() << '\n';
 	}
-
-	for (auto c : m_controllers)
-		delete c;
-
-	for (auto eh : m_error_handlers)
-		delete eh;
 }
 
 void basic_server::set_template_processor(basic_template_processor *template_processor)
@@ -137,13 +131,13 @@ void basic_server::set_access_control_headers([[maybe_unused]] const request &re
 
 void basic_server::add_controller(controller *c)
 {
-	m_controllers.push_back(c);
+	m_controllers.emplace_back(c);
 	c->set_server(this);
 }
 
 void basic_server::add_error_handler(error_handler *eh)
 {
-	m_error_handlers.push_front(eh);
+	m_error_handlers.emplace_front(eh);
 	eh->set_server(this);
 }
 
@@ -243,7 +237,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 		// do the actual work.
 		bool processed = false;
-		for (auto c : m_controllers)
+		for (auto &c : m_controllers)
 		{
 			if (not c->path_matches_prefix(req.get_uri()))
 				continue;
@@ -257,7 +251,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 		if (not processed)
 		{
-			for (auto eh : m_error_handlers)
+			for (auto &eh : m_error_handlers)
 			{
 				try
 				{
@@ -341,7 +335,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		}
 		else
 		{
-			for (auto eh : m_error_handlers)
+			for (auto &eh : m_error_handlers)
 			{
 				try
 				{

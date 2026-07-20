@@ -30,11 +30,7 @@ controller::controller(const std::string &prefix_path)
 {
 }
 
-controller::~controller()
-{
-	for (auto mp : m_mountpoints)
-		delete mp;
-}
+controller::~controller() = default;
 
 bool controller::dispatch_request(asio_ns::ip::tcp::socket & /*socket*/, request &req, reply &rep)
 {
@@ -135,7 +131,7 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 		if (req.get_method() == "OPTIONS")
 			get_options(req, rep);
 		else
-			rep = call_mount_point(mp, scope);
+			rep = call_mount_point(mp.get(), scope);
 
 		result = true;
 		break;
