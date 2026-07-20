@@ -13,7 +13,7 @@
 #include "zeep/http/html-controller.hpp"
 #include "zeep/http/reply.hpp"
 
-#include <zeem/document.hpp>
+#include <zeem/zeem.hpp>
 
 #include <string>
 

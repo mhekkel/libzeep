@@ -19,7 +19,7 @@
 #include "zeep/uri.hpp"
 
 #include <system_error>
-#include <zeem/node.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cassert>
 #include <exception>

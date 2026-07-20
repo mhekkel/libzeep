@@ -14,7 +14,7 @@
 
 #include "zeep/el/object.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {

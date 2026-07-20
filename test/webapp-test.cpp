@@ -15,7 +15,7 @@
 #include <zeep/http/server.hpp>
 #include <zeep/uri.hpp>
 
-#include <zeem/document.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cstdint>
 #include <exception>

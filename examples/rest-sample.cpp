@@ -13,7 +13,7 @@
 #include <zeep/http/server.hpp>
 #include <zeep/http/template-processor.hpp>
 
-#include <zeem/serialize.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cstdint>
 #include <exception>

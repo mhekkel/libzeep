@@ -15,7 +15,7 @@
 #include "zeep/http/status.hpp"
 #include "zeep/uri.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {

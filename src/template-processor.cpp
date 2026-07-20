@@ -15,7 +15,7 @@
 #include "zeep/unicode-support.hpp"
 
 #include <new>
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cerrno>
 #include <chrono>

@@ -9,7 +9,7 @@
 #include "zeep/http/header.hpp"
 #include "zeep/http/request.hpp"
 
-#include <zeem/node.hpp>
+#include <zeem/zeem.hpp>
 
 #include <iosfwd>
 #include <locale>

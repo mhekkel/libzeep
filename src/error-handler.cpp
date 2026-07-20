@@ -16,7 +16,7 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 #include <exception>
 #include <string>

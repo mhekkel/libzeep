@@ -11,7 +11,7 @@
 #include "zeep/el/processing.hpp"
 #include "zeep/http/scope.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 #include <filesystem>
 #include <functional>

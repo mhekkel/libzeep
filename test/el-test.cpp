@@ -9,7 +9,7 @@
 #include <zeep/el/serializer.hpp>
 #include <zeep/http/scope.hpp>
 
-#include <zeem/serialize.hpp>
+#include <zeem/zeem.hpp>
 
 #include <chrono>
 #include <iostream>

@@ -18,7 +18,7 @@
 #include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include <zeem/serialize.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cassert>
 #include <charconv>

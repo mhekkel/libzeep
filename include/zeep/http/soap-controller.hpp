@@ -15,7 +15,7 @@
 
 #include "zeep/http/controller.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {

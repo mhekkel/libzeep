@@ -18,8 +18,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <zeem/document.hpp>
-#include <zeem/node.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cstdint>
 #include <exception>

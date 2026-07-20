@@ -13,7 +13,7 @@
 #include "zeep/http/reply.hpp"
 #include "zeep/http/tag-processor.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 #include <filesystem>
 #include <iosfwd>
