@@ -190,7 +190,7 @@ zeem::element soap_controller::make_wsdl()
 		{ "binding", "ns:" + m_service }
 	}});
 	
-	std::string location = get_context_name() + "/" + m_location;
+	std::string location = (uri(get_context_name()) / m_location).string();
 
 	port->emplace_back(zeem::element{"soap:address",
 	{

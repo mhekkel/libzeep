@@ -105,6 +105,9 @@ void basic_server::bind(std::string_view address, unsigned short port)
 		}
 	}
 
+	// if (m_context_name.empty())
+	// 	m_context_name = std::format("http://{}:{}/", address, port);
+
 	m_acceptor->open(endpoint.protocol());
 	m_acceptor->set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	m_acceptor->bind(endpoint);

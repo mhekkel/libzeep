@@ -37,7 +37,7 @@ struct Cart
 	void serialize(Archive &ar, unsigned long version)
 	{
 		// clang-format off
-        ar & zeem::make_element_nvp("id", id)
+        ar & zeem::make_element_nvp("cart-id", id)
            & zeem::make_element_nvp("client", client)
            & zeem::make_element_nvp("items", items);
 		// clang-format on
@@ -53,9 +53,9 @@ class shop_soap_controller : public zeep::http::soap_controller
 		: zeep::http::soap_controller("/ws", "cart", "https://www.hekkelman.com/libzeep/soap-sample")
 	{
 		map_action("create", &shop_soap_controller::create_cart, "client");
-		map_action("retrieve", &shop_soap_controller::get_cart, "id");
-		map_action("update", &shop_soap_controller::add_cart_item, "id", "name");
-		map_action("delete", &shop_soap_controller::delete_cart_item, "id", "name");
+		map_action("retrieve", &shop_soap_controller::get_cart, "cart-id");
+		map_action("update", &shop_soap_controller::add_cart_item, "cart-id", "name");
+		map_action("delete", &shop_soap_controller::delete_cart_item, "cart-id", "name");
 	}
 
 	int create_cart(const std::string &client)
@@ -126,6 +126,8 @@ int main()
 {
 	/* Use the server constructor that takes the path to a docroot so it will construct a template processor */
 	zeep::http::server srv("docroot");
+
+	srv.set_context_name("http://localhost:8080");
 
 	srv.add_controller(new shop_soap_controller());
 
