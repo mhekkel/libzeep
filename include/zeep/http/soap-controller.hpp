@@ -139,7 +139,7 @@ class soap_controller : public controller
 		{
 		}
 
-		virtual ~mount_point_base() {}
+		virtual ~mount_point_base() = default;
 
 		virtual void call(const zeem::element &request, reply &reply_, std::string_view ns) = 0;
 		virtual void describe(type_map &types, message_map &messages, zeem::element &portType, zeem::element &binding) = 0;
@@ -205,8 +205,9 @@ class soap_controller : public controller
 			rep.set_content(make_envelope(std::move(response)));
 		}
 
-		template <typename ResultType, typename ArgsTuple, std::enable_if_t<not std::is_void_v<ResultType>, int> = 0>
+		template <typename ResultType, typename ArgsTuple>
 		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
+			requires(not std::is_void_v<ResultType>)
 		{
 			auto result = std::apply(m_callback, std::forward<ArgsTuple>(args));
 
