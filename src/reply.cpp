@@ -297,17 +297,14 @@ void reply::set_content(std::unique_ptr<std::istream> idata, std::string content
 
 std::vector<std::string_view> reply::to_buffers() const
 {
-	// A global, thread local storage for the status line text
-	thread_local static std::string s_status_line;
-
 	std::vector<std::string_view> result;
 
-	s_status_line =
+	m_formatted_line =
 		std::format("HTTP/{}.{} {} {}\r\n",
 			m_version_major, m_version_minor, static_cast<int>(m_status),
 			make_error_code(m_status).message());
 
-	result.emplace_back(s_status_line);
+	result.emplace_back(m_formatted_line);
 
 	for (const header &h : m_headers)
 	{

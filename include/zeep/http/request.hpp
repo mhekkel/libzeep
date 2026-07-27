@@ -239,6 +239,7 @@ class request
 	el::object m_credentials; ///< The credentials as found in the validated access-token
 
 	std::string m_remote_address; ///< Address of connecting client
+	mutable std::string m_formatted_line;
 };
 
 } // namespace zeep::http

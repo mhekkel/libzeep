@@ -61,6 +61,7 @@ class reply
 		std::swap(a.m_buffer, b.m_buffer);
 		std::swap(a.m_content, b.m_content);
 		std::swap(a.m_chunked, b.m_chunked);
+		std::swap(a.m_formatted_line, b.m_formatted_line);
 	}
 
 	/// Simple way to check if a reply is valid
@@ -167,6 +168,7 @@ class reply
 	std::vector<char> m_buffer;
 	std::string m_content;
 	bool m_chunked = false;
+	mutable std::string m_formatted_line;
 };
 
 } // namespace zeep::http

@@ -754,13 +754,11 @@ namespace
 
 std::vector<std::string_view> request::to_buffers() const
 {
-	thread_local static std::string s_request_line;
-
 	std::vector<std::string_view> result;
 
-	s_request_line = get_request_line();
+	m_formatted_line = get_request_line();
 
-	result.emplace_back(s_request_line);
+	result.emplace_back(m_formatted_line);
 	result.emplace_back(kCRLF);
 
 	for (const header &h : m_headers)
