@@ -511,10 +511,7 @@ int daemon::daemonize()
 	int pid = fork();
 
 	if (pid == -1)
-	{
-		std::clog << "Fork failed\n";
-		exit(1);
-	}
+		throw exception("Fork failed\n");
 
 	// exit the parent (=calling) process
 	if (pid != 0)
@@ -574,24 +571,17 @@ void daemon::open_log_file()
 
 	// open the log file
 	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
-	if (fd_out < 0)
-	{
-		std::clog << "Opening log file " << m_stdout_log_file << " failed\n";
-		exit(1);
-	}
+	int fd_err = (m_stderr_log_file == m_stdout_log_file)
+	                 ? fd_out
+	                 : open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
 
-	int fd_err;
-
-	if (m_stderr_log_file == m_stdout_log_file)
-		fd_err = fd_out;
-	else
+	if (fd_out < 0 or fd_err < 0)
 	{
-		fd_err = open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
-		if (fd_err < 0)
-		{
-			std::clog << "Opening log file " << m_stderr_log_file << " failed\n";
-			exit(1);
-		}
+		if (fd_out >= 0)
+			close(fd_out);
+		if (fd_err >= 0 and fd_err != fd_out)
+			close(fd_err);
+		throw exception("Opening log file " + m_stdout_log_file);
 	}
 
 	// redirect stdout and stderr to the log file
