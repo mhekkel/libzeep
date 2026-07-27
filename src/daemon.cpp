@@ -194,96 +194,89 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 			throw exception(std::string("Is server running already? ") + e.what());
 		}
 
-		int pid = daemonize();
+		int pid = fork();
+		if (pid == -1)
+			throw exception("Fork failed");
+
 		if (pid == 0) // Child process
 		{
-			open_log_file();
-
-			std::clog << "starting server\n"
-					  << "Listening to " << address << ':' << port << '\n';
-
-			signal_catcher sc;
-			sc.block();
-
-			// Drop privileges
-			if (not run_as_user.empty())
+			try
 			{
-				struct passwd *pw = getpwnam(run_as_user.c_str());
-				if (pw == nullptr)
-				{
-					std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-					exit(1);
-				}
+				daemonize();
 
-				if (pw->pw_uid != getuid())
-				{
-					int ngroups = 0;
-					if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
-					{
-						std::vector<gid_t> groups(ngroups);
-						if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
-							setgroups(ngroups, groups.data()) == -1)
-						{
-							std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
-							exit(1);
-						}
-					}
+				open_log_file();
 
-					if (setgid(pw->pw_gid) < 0)
-					{
-						std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
-					}
+				std::clog << "starting server\n"
+						  << "Listening to " << address << ':' << port << '\n';
 
-					if (setuid(pw->pw_uid) < 0)
-					{
-						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
-					}
-				}
-			}
-
-			for (;;)
-			{
+				signal_catcher sc;
 				sc.block();
 
-				std::unique_ptr<basic_server> server;
-				try
+				// Drop privileges
+				if (not run_as_user.empty())
 				{
-					server.reset(m_factory());
+					struct passwd *pw = getpwnam(run_as_user.c_str());
+					if (pw == nullptr)
+						throw exception(std::format("Failed to set uid to {}: {}", run_as_user, strerror(errno)));
+
+					if (pw->pw_uid != getuid())
+					{
+						int ngroups = 0;
+						if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
+						{
+							std::vector<gid_t> groups(ngroups);
+							if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
+								setgroups(ngroups, groups.data()) == -1)
+							{
+								throw exception(std::format("Failed to set groups for {}: {}", run_as_user, strerror(errno)));
+							}
+						}
+
+						if (setgid(pw->pw_gid) < 0)
+							throw exception(std::format("Failed to set id for {}: {}", run_as_user, strerror(errno)));
+
+						if (setuid(pw->pw_uid) < 0)
+							throw exception(std::format("Failed to set uid for {}: {}", run_as_user, strerror(errno)));
+					}
+				}
+
+				for (;;)
+				{
+					sc.block();
+
+					std::unique_ptr<basic_server> server(m_factory());
 					server->bind(address, port);
+
+					std::thread t([nr_of_threads, &server]()
+						{ server->run(nr_of_threads); });
+
+					sc.unblock();
+					int sig = sc.wait();
+
+					std::clog << "Process " << getpid() << " received signal " << sig << "\n";
+
+					server->stop();
+
+					if (t.joinable())
+						t.join();
+
+					if (sig == SIGHUP)
+					{
+						// re-open log files
+						open_log_file();
+
+						std::clog << "re-starting server\n"
+								  << "Listening to " << address << ':' << port << '\n';
+
+						continue;
+					}
+
+					break;
 				}
-				catch (const exception &e)
-				{
-					std::clog << "Failed to launch server: " << e.what() << '\n';
-					exit(1);
-				}
-
-				std::thread t([nr_of_threads, &server]()
-					{ server->run(nr_of_threads); });
-
-				sc.unblock();
-				int sig = sc.wait();
-
-				std::clog << "Process " << getpid() << " received signal " << sig << "\n";
-
-				server->stop();
-
-				if (t.joinable())
-					t.join();
-
-				if (sig == SIGHUP)
-				{
-					// re-open log files
-					open_log_file();
-
-					std::clog << "re-starting server\n"
-							  << "Listening to " << address << ':' << port << '\n';
-
-					continue;
-				}
-
-				break;
+			}
+			catch (const std::exception &ex)
+			{
+				std::println(std::clog, "Process terminated with exception: {}", ex.what());
 			}
 
 			if (fs::exists(m_pid_file, ec))
@@ -398,26 +391,16 @@ int daemon::reload()
 
 int daemon::daemonize()
 {
-	int pid = fork();
-
-	if (pid == -1)
-		throw exception("Fork failed\n");
-
-	// exit the parent (=calling) process
-	if (pid != 0)
-		return pid;
+	using namespace std::literals;
 
 	if (setsid() < 0)
-	{
-		std::clog << "Failed to create process group: " << strerror(errno) << '\n';
-		exit(1);
-	}
+		throw exception("Failed to create process group: "s + strerror(errno));
 
 	// This in-between process should not catch SIGHUP
 	(void)signal(SIGHUP, SIG_IGN);
 
 	// fork again, to avoid being able to attach to a terminal device
-	pid = fork();
+	auto pid = fork();
 
 	if (pid == -1)
 		std::clog << "Fork failed\n";
@@ -428,10 +411,7 @@ int daemon::daemonize()
 	// write our pid to the pid file
 	std::ofstream pidFile(m_pid_file);
 	if (not pidFile.is_open())
-	{
-		std::clog << "Failed to write to " << m_pid_file << ": " << strerror(errno) << '\n';
-		exit(1);
-	}
+		throw exception(std::format("Failed to write to {}: {}", m_pid_file, strerror(errno)));
 
 	pidFile << getpid() << '\n';
 	pidFile.close();
