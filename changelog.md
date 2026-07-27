@@ -1,3 +1,22 @@
+<!--
+SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+SPDX-License-Identifier: BSL-1.0
+-->
+
+Version 8.0.0
+- Changed status_type to an enum class (breaking API change)
+- Removed preforked_server (breaking API change)
+- Removed std::regex from JWT parsing, replaced with string splitting
+- Replaced std::localtime with std::chrono::zoned_time
+- Replaced exit() calls in daemon with throwing exceptions
+- Revived SOAP support and tests
+- Security: constant-time string comparison to prevent timing attacks
+- Security: Secure cookie flag is now unconditional (no longer gated behind NDEBUG)
+- Security: added Secure attribute to CSRF cookie
+- Changed to_buffers() from thread_local static to mutable member
+- Replaced raw pointers with std::unique_ptr throughout
+- General code modernization
+
 Version 7.4.0
 - Added HTTP client code, simple fetch uri 
 - Requires OpenSSL from now on

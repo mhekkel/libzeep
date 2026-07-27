@@ -9,7 +9,7 @@ Originally libzeep came as a single library. But if you only need the XML functi
 The configuration file
 ^^^^^^^^^^^^^^^^^^^^^^
 
-In :ref:`file_zeep_config.hpp` you can find a couple of flags that influence what parts of libzeep should be left out. The first is to enable building a :cpp:class:`zeep::http::preforked_server` class, probably only useful in a UNIX context.
+In :ref:`file_zeep_config.hpp` you can find a couple of flags that influence what parts of libzeep should be left out. The first is to enable building a :cpp:class:`zeep::http::daemon` class that can actually run as a daemon, probably only useful in a UNIX context.
 
 The other flag allows the compilation of code that uses resources. Resources in a libzeep context are a bit different from their counterparts in MacOS and Windows. Libzeep uses *mrc* to bundle resources in an executable. Especially for small web applications this makes installation very easy at the cost of configurability. See `github pages for mrc <https://forge.hekkelman.net/maarten/mrc>`_ for more information.
 

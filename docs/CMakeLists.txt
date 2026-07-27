@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+#
+# SPDX-License-Identifier: BSL-1.0
+
 cmake_minimum_required(VERSION 3.28)
 
 project(zeep-docs)

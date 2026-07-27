@@ -1,25 +1,11 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2023
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2023
+// SPDX-License-Identifier: BSL-1.0
 
 /// \file
 /// Generic configuration file, contains defines and (probably obsolete) stuff for msvc
 
 #pragma once
-
-/// The http server implementation in libzeep can use a
-/// preforked mode. That means the main process listens to
-/// a network port and passes the socket to a client process
-/// for doing the actual handling. The advantages for a setup
-/// like this is that if the client fails, the server can detect
-/// this and restart the client thereby guaranteeing a better
-/// uptime.
-
-#ifndef HTTP_SERVER_HAS_PREFORK
-# cmakedefine01 HTTP_SERVER_HAS_PREFORK
-#endif
 
 /// The http::daemon class can use fork/exec to spawn a
 /// process in the background. That's not going to work
