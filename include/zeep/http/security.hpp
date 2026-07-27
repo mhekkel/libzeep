@@ -12,8 +12,10 @@
 #include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/http/status.hpp"
+#include "zeep/unicode-support.hpp"
 
 #include <cassert>
+#include <charconv>
 #include <chrono>
 #include <initializer_list>
 #include <memory>
@@ -88,18 +90,22 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 
 		bool result = false;
 
-		static const std::regex rx(R"(pbkdf2_sha256\$(\d+)\$([^$]+)\$(.+))");
-
-		std::smatch m;
-		if (std::regex_match(stored_password, m, rx))
+		auto parts = split(stored_password, "$");
+		
+		if (parts.size() == 4 and parts.front() == "pbkdf2_sha256")
 		{
-			auto salt = m[2].str();
-			auto iterations = std::stoul(m[1]);
+			int iterations;
+			const auto &[ptr, ec] = std::from_chars(parts[1].data(), parts[1].data() + parts[1].size(), iterations);
 
-			auto test = zeep::pbkdf2_hmac_sha256(salt, raw_password, iterations, m_key_length);
-			test = zeep::encode_base64(test);
-
-			result = (m[3] == test);
+			if (ec == std::errc{} and ptr == parts[1].data() + parts[1].length())
+			{
+				auto salt = parts[2];
+	
+				auto test = zeep::pbkdf2_hmac_sha256(salt, raw_password, iterations, m_key_length);
+				test = zeep::encode_base64(test);
+	
+				result = (parts[3] == test);
+			}
 		}
 
 		return result;

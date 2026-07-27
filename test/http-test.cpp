@@ -443,3 +443,122 @@ TEST_CASE("pen_test_resilience_1")
 
 	t.join();
 }
+
+// --------------------------------------------------------------------
+
+TEST_CASE("request_get_accept")
+{
+	SECTION("no accept header returns default 1.0")
+	{
+		zh::request req("GET", "/", { 1, 1 });
+		CHECK(req.get_accept("text/html") == 1.0f);
+	}
+
+	SECTION("empty type argument returns 1.0")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html" } });
+		CHECK(req.get_accept("") == 1.0f);
+	}
+
+	SECTION("exact match with default quality")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html" } });
+		CHECK(req.get_accept("text/html") == 1.0f);
+	}
+
+	SECTION("exact match with explicit quality")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html;q=0.5" } });
+		CHECK(req.get_accept("text/html") == 0.5f);
+	}
+
+	SECTION("no match returns zero")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html" } });
+		CHECK(req.get_accept("application/json") == 0.0f);
+	}
+
+	SECTION("wildcard subtype text/*")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/*" } });
+		CHECK(req.get_accept("text/html") == 1.0f);
+		CHECK(req.get_accept("text/plain") == 1.0f);
+		CHECK(req.get_accept("application/json") == 0.0f);
+	}
+
+	SECTION("wildcard type */*")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "*/*" } });
+		CHECK(req.get_accept("text/html") == 1.0f);
+		CHECK(req.get_accept("application/json") == 1.0f);
+		CHECK(req.get_accept("image/png") == 1.0f);
+	}
+
+	SECTION("multiple types exact match")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html, application/json;q=0.8" } });
+		CHECK(req.get_accept("text/html") == 1.0f);
+		CHECK(req.get_accept("application/json") == 0.8f);
+	}
+
+	SECTION("multiple types wildcard picks highest quality")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/*;q=0.3, */*;q=0.1" } });
+		CHECK(req.get_accept("text/html") == 0.3f);
+		CHECK(req.get_accept("image/png") == 0.1f);
+	}
+
+	SECTION("exact match preferred over wildcard")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/*;q=0.3, text/html;q=0.9" } });
+		CHECK(req.get_accept("text/html") == 0.9f);
+		CHECK(req.get_accept("text/plain") == 0.3f);
+	}
+
+	SECTION("whitespace tolerance")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "  text/html ; q=0.7 ,  application/json  " } });
+		CHECK(req.get_accept("text/html") == 0.7f);
+		CHECK(req.get_accept("application/json") == 1.0f);
+	}
+
+	SECTION("case insensitive header name")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "accept", "text/html;q=0.6" } });
+		CHECK(req.get_accept("text/html") == 0.6f);
+	}
+
+	SECTION("malformed quality value causes type to be skipped")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html;q=invalid" } });
+		CHECK(req.get_accept("text/html") == 0.0f);
+	}
+
+	SECTION("type without subtype separator is skipped")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "noseparator, text/html" } });
+		CHECK(req.get_accept("text/html") == 1.0f);
+		CHECK(req.get_accept("noseparator") == 0.0f);
+	}
+
+	SECTION("quality zero explicitly excludes type")
+	{
+		zh::request req("GET", "/", { 1, 1 },
+			{ { "Accept", "text/html;q=0, application/json" } });
+		CHECK(req.get_accept("text/html") == 0.0f);
+		CHECK(req.get_accept("application/json") == 1.0f);
+	}
+}

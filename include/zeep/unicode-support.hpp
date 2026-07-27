@@ -348,6 +348,31 @@ inline void split(std::vector<std::string> &v, std::string_view s, std::string_v
 	}
 }
 
+inline std::vector<std::string_view> split(std::string_view s, std::string_view p, bool compress = false)
+{
+	std::vector<std::string_view> result;
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i or compress == false)
+			result.emplace_back(s.substr(i, n - i));
+
+		if (n == std::string_view::npos)
+			break;
+
+		i = n + p.length();
+	}
+
+	return result;
+}
+
 // --------------------------------------------------------------------
 /// \brief Simplistic to_lower function, works for one byte charsets only...
 
