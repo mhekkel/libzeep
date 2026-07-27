@@ -417,10 +417,7 @@ int daemon::daemonize()
 	pidFile.close();
 
 	if (chdir("/") != 0)
-	{
-		std::clog << "Cannot chdir to /: " << strerror(errno) << '\n';
-		exit(1);
-	}
+		throw exception("Cannot chdir to /: "s + strerror(errno));
 
 	// close stdin
 	close(STDIN_FILENO);
