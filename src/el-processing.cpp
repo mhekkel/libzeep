@@ -141,9 +141,6 @@ struct interpreter
 	{
 	}
 
-	// template <class OutputIterator, class Match>
-	// OutputIterator operator()(Match &m, OutputIterator out, std::regex::match_flag_type);
-
 	object evaluate(const std::string &s);
 
 	std::vector<std::pair<std::string, std::string>> evaluate_attr_expr(const std::string &s);
@@ -190,18 +187,6 @@ struct interpreter
 	bool m_return_whitespace = false;
 	bool m_expect_fragment_spec = false;
 };
-
-// template <class OutputIterator, class Match>
-// inline OutputIterator interpreter::operator()(Match &m, OutputIterator out, std::regex_constants::match_flag_type)
-// {
-// 	string s(m[1]);
-
-// 	process(s);
-
-// 	copy(s.begin(), s.end(), out);
-
-// 	return out;
-// }
 
 object interpreter::evaluate(const std::string &s)
 {
