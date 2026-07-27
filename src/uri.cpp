@@ -28,6 +28,8 @@ namespace
 // libraries is sub-optimal. And thus we don't use this magic
 // anymore, apart from matching the IP_LITERAL part for a host.
 
+// TODO: maarten - replace with a recursive decent parser?
+
 #define GEN_DELIMS R"([][]:/?#@])"
 #define SUB_DELIMS R"([!$&'()*+,;=])"
 // #define RESERVED GEN_DELIMS | SUB_DELIMS
