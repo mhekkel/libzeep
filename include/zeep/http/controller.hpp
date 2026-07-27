@@ -156,7 +156,7 @@ class controller
 						if (i == m_names.end())
 						{
 							assert(false);
-							throw std::runtime_error("Invalid path for mount point, a parameter was not found in the list of parameter names");
+							throw exception("Invalid path for mount point, a parameter was not found in the list of parameter names");
 						}
 
 						size_t ni = i - m_names.begin();
@@ -181,7 +181,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -196,7 +196,7 @@ class controller
 			catch (const std::exception &)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -211,7 +211,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -226,7 +226,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -243,7 +243,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -261,7 +261,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -276,7 +276,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -295,7 +295,7 @@ class controller
 			catch (const std::exception &e)
 			{
 				using namespace std::literals::string_literals;
-				throw std::runtime_error("Invalid value passed for parameter "s + name);
+				throw exception("Invalid value passed for parameter "s + name);
 			}
 
 			return result;
@@ -373,7 +373,7 @@ class controller
 
 			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
-				throw std::runtime_error("Invalid controller for callback");
+				throw exception("Invalid controller for callback");
 
 			m_callback = [controller, sig](Args... args)
 			{
@@ -427,7 +427,7 @@ class controller
 
 			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
-				throw std::runtime_error("Invalid controller for callback");
+				throw exception("Invalid controller for callback");
 
 			m_callback = [controller, sig](const scope &scope, Args... args)
 			{

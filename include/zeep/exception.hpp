@@ -31,4 +31,25 @@ class exception : public std::exception
 	std::string m_message;
 };
 
+/// \brief logic error as thrown by libzeep
+class logic_exception : public exception
+{
+  public:
+	/// \brief Create an exception with the message in \a message
+	logic_exception(std::string message)
+		: exception(std::move(message)) {}
+};
+
+/// \brief invalid_argument error as thrown by libzeep
+class invalid_argument_exception : public exception
+{
+  public:
+	/// \brief Create an exception with the message in \a message
+	invalid_argument_exception(std::string message)
+		: exception(std::move(message)) {}
+};
+
+
+
+
 } // namespace zeep

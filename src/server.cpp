@@ -400,7 +400,7 @@ void basic_server::log_request(std::string_view client,
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "error writing to log: " << ex.what() << '\n';
+		std::clog << "error writing to log: " << ex.what() << '\n';
 	}
 }
 

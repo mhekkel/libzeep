@@ -11,6 +11,7 @@
 /// care of handling requests that are mapped to call back functions
 /// and provides code to return XHTML formatted replies.
 
+#include "zeep/exception.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
@@ -91,7 +92,7 @@ class html_controller : public controller
 
 			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
-				throw std::runtime_error("Invalid controller for callback");
+				throw exception("Invalid controller for callback");
 
 			m_callback = [controller, sig](const scope &scope_, Args... args)
 			{
@@ -349,7 +350,7 @@ class html_controller_v1 : public html_controller
 		else
 		{
 			if (mpi->method != method)
-				throw std::logic_error("cannot mix method UNDEFINED with something else");
+				throw logic_exception("cannot mix method UNDEFINED with something else");
 
 			mpi->handler = handler;
 		}

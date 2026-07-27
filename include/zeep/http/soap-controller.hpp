@@ -167,7 +167,7 @@ class soap_controller : public controller
 		{
 			auto *controller = dynamic_cast<ControllerType *>(owner);
 			if (controller == nullptr)
-				throw std::runtime_error("Invalid controller for callback");
+				throw exception("Invalid controller for callback");
 
 			m_callback = [controller, sig](Args... args)
 			{

@@ -508,7 +508,7 @@ file_param file_param_parser::next()
 			{
 				result.mimetype = m[1].str();
 				if (starts_with(result.mimetype, "multipart/"))
-					throw std::runtime_error("multipart file uploads are not supported");
+					throw exception("multipart file uploads are not supported");
 			}
 		}
 

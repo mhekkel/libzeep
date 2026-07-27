@@ -4,6 +4,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include "zeep/http/tag-processor.hpp"
+#include "zeep/exception.hpp"
 #include "zeep/http/html-controller.hpp"
 #include "zeep/http/template-processor.hpp"
 
@@ -246,7 +247,7 @@ zeem::element tag_processor::resolve_fragment_spec(
 
 		std::string s = spec.get<std::string>();
 		if (not std::regex_match(s, m, kTemplateRx))
-			throw std::runtime_error("Invalid attribute value for :include/insert/replace");
+			throw invalid_argument_exception("Invalid attribute value for :include/insert/replace");
 
 		std::string file = m[1];
 		std::string id = m[2];
@@ -304,7 +305,7 @@ zeem::element tag_processor::resolve_fragment_spec(
 		}
 
 		if (not loaded)
-			throw std::runtime_error("Could not locate template file " + file);
+			throw exception("Could not locate template file " + file);
 
 		root = doc.root();
 	}
@@ -558,7 +559,7 @@ tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *n
 	auto s = attr.value();
 
 	if (not std::regex_match(s, m, kEachRx))
-		throw std::runtime_error("Invalid attribute value for :each");
+		throw invalid_argument_exception("Invalid attribute value for :each");
 
 	std::string var = m[1];
 	std::string stat = m[2];

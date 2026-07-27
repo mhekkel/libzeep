@@ -57,7 +57,7 @@ object operator+(const object &lhs, const object &rhs)
 				break;
 
 			default:
-				throw std::runtime_error("Invalid types for operator +");
+				throw object_error("Invalid types for operator +");
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
@@ -71,7 +71,7 @@ object operator+(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::string or rhs_type == value_type::string)
 		result = lhs.get<std::string>() + rhs.get<std::string>();
 	else
-		throw std::runtime_error("Invalid types for operator +");
+		throw object_error("Invalid types for operator +");
 
 	return result;
 }
@@ -99,7 +99,7 @@ object operator-(const object &lhs, const object &rhs)
 				break;
 
 			default:
-				throw std::runtime_error("Invalid types for operator -");
+				throw object_error("Invalid types for operator -");
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
@@ -107,7 +107,7 @@ object operator-(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_int and rhs.is_number())
 		result = lhs.m_data.m_value.m_int - rhs.get<int64_t>();
 	else
-		throw std::runtime_error("Invalid types for operator -");
+		throw object_error("Invalid types for operator -");
 
 	return result;
 }
@@ -135,7 +135,7 @@ object operator*(const object &lhs, const object &rhs)
 				break;
 
 			default:
-				throw std::runtime_error("Invalid types for operator *");
+				throw object_error("Invalid types for operator *");
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
@@ -143,7 +143,7 @@ object operator*(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_int and rhs.is_number())
 		result = lhs.m_data.m_value.m_int * rhs.get<int64_t>();
 	else
-		throw std::runtime_error("Invalid types for operator *");
+		throw object_error("Invalid types for operator *");
 
 	return result;
 }
@@ -171,7 +171,7 @@ object operator/(const object &lhs, const object &rhs)
 				break;
 
 			default:
-				throw std::runtime_error("Invalid types for operator /");
+				throw object_error("Invalid types for operator /");
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
@@ -179,7 +179,7 @@ object operator/(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_int and rhs.is_number())
 		result = lhs.m_data.m_value.m_int / rhs.get<int64_t>();
 	else
-		throw std::runtime_error("Invalid types for operator /");
+		throw object_error("Invalid types for operator /");
 
 	return result;
 }
@@ -203,13 +203,13 @@ object operator%(const object &lhs, const object &rhs)
 				break;
 
 			default:
-				throw std::runtime_error("Invalid types for operator %");
+				throw object_error("Invalid types for operator %");
 		}
 	}
 	else if (lhs_type == value_type::number_int and rhs.is_number())
 		result = lhs.m_data.m_value.m_int % rhs.get<int64_t>();
 	else
-		throw std::runtime_error("Invalid types for operator %");
+		throw object_error("Invalid types for operator %");
 
 	return result;
 }
@@ -308,7 +308,7 @@ size_t object::max_size() const noexcept
 void object::push_back(object &&val)
 {
 	if (not(is_null() or is_array()))
-		throw std::runtime_error("Invalid type for push_back");
+		throw object_error("Invalid type for push_back");
 
 	if (is_null())
 	{
@@ -322,7 +322,7 @@ void object::push_back(object &&val)
 void object::push_back(const object &val)
 {
 	if (not(is_null() or is_array()))
-		throw std::runtime_error("Invalid type for push_back");
+		throw object_error("Invalid type for push_back");
 
 	if (is_null())
 	{
@@ -336,7 +336,7 @@ void object::push_back(const object &val)
 object::reference object::at(size_t index)
 {
 	if (not is_array())
-		throw std::runtime_error("Type should have been array to use at()");
+		throw object_error("Type should have been array to use at()");
 
 	return m_data.m_value.m_array->at(index);
 }
@@ -344,7 +344,7 @@ object::reference object::at(size_t index)
 object::const_reference object::at(size_t index) const
 {
 	if (not is_array())
-		throw std::runtime_error("Type should have been array to use at()");
+		throw object_error("Type should have been array to use at()");
 
 	return m_data.m_value.m_array->at(index);
 }
@@ -368,7 +368,7 @@ object::reference object::operator[](size_t index)
 		m_data.m_value.m_array = create<array_type>();
 	}
 	else if (not is_array())
-		throw std::runtime_error("Type should have been array to use operator[]");
+		throw object_error("Type should have been array to use operator[]");
 
 	if (index + 1 > m_data.m_value.m_array->size())
 		m_data.m_value.m_array->resize(index + 1);
@@ -379,7 +379,7 @@ object::reference object::operator[](size_t index)
 object::const_reference object::operator[](size_t index) const
 {
 	if (not is_array())
-		throw std::runtime_error("Type should have been array to use operator[]");
+		throw object_error("Type should have been array to use operator[]");
 
 	return m_data.m_value.m_array->operator[](index);
 }
@@ -389,7 +389,7 @@ object::const_reference object::operator[](size_t index) const
 object::reference object::at(const typename object_type::key_type &key)
 {
 	if (not is_object())
-		throw std::runtime_error("Type should have been object to use at()");
+		throw object_error("Type should have been object to use at()");
 
 	return m_data.m_value.m_object->at(key);
 }
@@ -397,7 +397,7 @@ object::reference object::at(const typename object_type::key_type &key)
 object::const_reference object::at(const typename object_type::key_type &key) const
 {
 	if (not is_object())
-		throw std::runtime_error("Type should have been object to use at()");
+		throw object_error("Type should have been object to use at()");
 
 	return m_data.m_value.m_object->at(key);
 }
@@ -410,7 +410,7 @@ object::reference object::operator[](const typename object_type::key_type &key)
 		m_data.m_value.m_object = create<object_type>();
 	}
 	else if (not is_object())
-		throw std::runtime_error("Type should have been object to use operator[]");
+		throw object_error("Type should have been object to use operator[]");
 
 	return m_data.m_value.m_object->operator[](key);
 }
@@ -418,7 +418,7 @@ object::reference object::operator[](const typename object_type::key_type &key)
 object::const_reference object::operator[](const typename object_type::key_type &key) const
 {
 	if (not is_object())
-		throw std::runtime_error("Type should have been object to use operator[]");
+		throw object_error("Type should have been object to use operator[]");
 
 	return m_data.m_value.m_object->operator[](key);
 }
@@ -632,7 +632,7 @@ char32_t json_parser::get_next_unicode()
 		{
 			ch[0] = get_next_byte();
 			if ((ch[0] & 0x0c0) != 0x080)
-				throw std::runtime_error("Invalid utf-8");
+				throw object_error("Invalid utf-8");
 			result = ((result & 0x01F) << 6) | (ch[0] & 0x03F);
 		}
 		else if ((result & 0x0F0) == 0x0E0)
@@ -640,7 +640,7 @@ char32_t json_parser::get_next_unicode()
 			ch[0] = get_next_byte();
 			ch[1] = get_next_byte();
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080)
-				throw std::runtime_error("Invalid utf-8");
+				throw object_error("Invalid utf-8");
 			result = ((result & 0x00F) << 12) | ((ch[0] & 0x03F) << 6) | (ch[1] & 0x03F);
 		}
 		else if ((result & 0x0F8) == 0x0F0)
@@ -649,11 +649,11 @@ char32_t json_parser::get_next_unicode()
 			ch[1] = get_next_byte();
 			ch[2] = get_next_byte();
 			if ((ch[0] & 0x0c0) != 0x080 or (ch[1] & 0x0c0) != 0x080 or (ch[2] & 0x0c0) != 0x080)
-				throw std::runtime_error("Invalid utf-8");
+				throw object_error("Invalid utf-8");
 			result = ((result & 0x007) << 18) | ((ch[0] & 0x03F) << 12) | ((ch[1] & 0x03F) << 6) | (ch[2] & 0x03F);
 
 			if (result > 0x10ffff)
-				throw std::runtime_error("invalid utf-8 character (out of range)");
+				throw object_error("invalid utf-8 character (out of range)");
 		}
 	}
 
@@ -678,9 +678,9 @@ char32_t json_parser::get_next_char()
 
 				char s[32] = {};
 				if (auto r = std::to_chars(s, s + sizeof(s), result, 16); r.ec == std::errc{})
-					throw std::runtime_error("character 0x"s + s + " is not allowed");
+					throw object_error("character 0x"s + s + " is not allowed");
 				else
-					throw std::runtime_error("character "s + std::to_string(result) + " is not allowed");
+					throw object_error("character "s + std::to_string(result) + " is not allowed");
 			}
 
 			// surrogate support
@@ -690,10 +690,10 @@ char32_t json_parser::get_next_char()
 				if (uc2 >= 0x0DC00 and uc2 <= 0x0DFFF)
 					result = (result - 0x0D800) * 0x400 + (uc2 - 0x0DC00) + 0x010000;
 				else
-					throw std::runtime_error("leading surrogate character without trailing surrogate character");
+					throw object_error("leading surrogate character without trailing surrogate character");
 			}
 			else if (result >= 0x0DC00 and result <= 0x0DFFF)
-				throw std::runtime_error("trailing surrogate character without a leading surrogate");
+				throw object_error("trailing surrogate character without a leading surrogate");
 		}
 	}
 
@@ -1127,7 +1127,7 @@ void json_parser::parse_value(object &e)
 			break;
 
 		default:
-			throw std::runtime_error("Syntax error in json, unexpected token " + describe_token(m_lookahead));
+			throw object_error("Syntax error in json, unexpected token " + describe_token(m_lookahead));
 	}
 }
 

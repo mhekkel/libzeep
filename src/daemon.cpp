@@ -97,7 +97,7 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 	acceptor.open(endpoint.protocol());
 	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	if (acceptor.bind(endpoint, ec))
-		throw std::runtime_error(std::string("Is server running already? ") + ec.message());
+		throw exception(std::string("Is server running already? ") + ec.message());
 	acceptor.listen();
 
 	acceptor.close();
@@ -190,7 +190,7 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_procs, int 
 		}
 		catch (exception &e)
 		{
-			throw std::runtime_error(std::string("Is server running already? ") + e.what());
+			throw exception(std::string("Is server running already? ") + e.what());
 		}
 
 		int pid = daemonize();
@@ -301,7 +301,7 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 		}
 		catch (exception &e)
 		{
-			throw std::runtime_error(std::string("Is server running already? ") + e.what());
+			throw exception(std::string("Is server running already? ") + e.what());
 		}
 
 		int pid = daemonize();
@@ -430,7 +430,7 @@ int daemon::stop()
 	{
 		std::ifstream file(m_pid_file);
 		if (not file.is_open())
-			throw std::runtime_error("Failed to open pid file");
+			throw exception("Failed to open pid file");
 
 		int pid;
 		file >> pid;
@@ -459,7 +459,7 @@ int daemon::stop()
 			std::clog << "Could not remove pid file: " << ec.message() << '\n';
 	}
 	else
-		throw std::runtime_error("Not my pid file: " + m_pid_file);
+		throw exception("Not my pid file: " + m_pid_file);
 
 	return result;
 }
@@ -490,7 +490,7 @@ int daemon::reload()
 	{
 		std::ifstream file(m_pid_file);
 		if (not file.is_open())
-			throw std::runtime_error("Failed to open pid file");
+			throw exception("Failed to open pid file");
 
 		int pid;
 		file >> pid;
@@ -752,7 +752,7 @@ bool daemon::pid_is_for_executable()
 	{
 		std::ifstream pidfile(m_pid_file);
 		if (not pidfile.is_open())
-			throw std::runtime_error("Failed to open pid file " + m_pid_file + ": " + strerror(errno));
+			throw exception("Failed to open pid file " + m_pid_file + ": " + strerror(errno));
 
 		int pid;
 		pidfile >> pid;
@@ -763,7 +763,7 @@ bool daemon::pid_is_for_executable()
 		{
 			char exe[PATH_MAX] = "";
 			if (readlink("/proc/self/exe", exe, sizeof(exe)) == -1)
-				throw std::runtime_error("could not get exe path ("s + strerror(errno) + ")");
+				throw exception("could not get exe path ("s + strerror(errno) + ")");
 
 			result = strcmp(exe, path) == 0 or
 			         (ends_with(path, " (deleted)") and starts_with(path, exe));
@@ -771,7 +771,7 @@ bool daemon::pid_is_for_executable()
 		else if (errno == ENOENT)       // link file doesn't exist (can happen on e.g. macOS)
 			result = kill(pid, 0) == 0; // simply test using kill with signal 0.
 		else
-			throw std::runtime_error("Failed to read executable link : "s + strerror(errno));
+			throw exception("Failed to read executable link : "s + strerror(errno));
 	}
 
 	return result;

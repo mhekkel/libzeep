@@ -30,7 +30,7 @@
 #include <utility>
 
 #if __has_include(<sys/mman.h>)
-#include <sys/mman.h>
+# include <sys/mman.h>
 #endif
 
 namespace zeep::http
@@ -121,7 +121,7 @@ void security_context::validate_request(request &req) const
 			// Apparently, we need a constant time comparison here to avoid timing attacks
 			if (sig.length() != m[3].str().length())
 				break;
-			
+
 			// Compare strings in constant time
 			int diff = 0;
 			for (const auto &[a, b] : std::views::zip(sig, m[3].str()))
@@ -147,7 +147,7 @@ void security_context::validate_request(request &req) const
 			if (not m_users.user_is_valid(credentials))
 				break;
 
-			for (const auto& role : credentials["role"])
+			for (const auto &role : credentials["role"])
 				roles.insert(role.get<std::string>());
 
 			req.set_credentials(std::move(credentials));
@@ -182,7 +182,7 @@ void security_context::validate_request(request &req) const
 	{
 		if (auto p = req.get_parameter("_csrf"); p.has_value())
 		{
-			const auto& req_csrf_param = *p;
+			const auto &req_csrf_param = *p;
 			if (auto req_csrf_cookie = req.get_cookie("csrf-token"); req_csrf_cookie != req_csrf_param)
 			{
 				allow = false;
@@ -227,6 +227,9 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 		// clang-format off
 		{
 			{ "HttpOnly", "" },
+#ifndef NDEBUG
+				{ "Secure", ""},
+#endif
 			{ "SameSite", "Lax" },
 			{ "Expires", std::format(R"("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT")", when) }
 		}

@@ -105,7 +105,7 @@ void login_controller::set_server(basic_server *server)
 
 	assert(server->has_security_context());
 	if (not server->has_security_context())
-		throw std::runtime_error("The HTTP server has no security context");
+		throw exception("The HTTP server has no security context");
 
 	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});

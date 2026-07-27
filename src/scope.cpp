@@ -42,7 +42,7 @@ scope::scope(const scope &next)
 	, m_server(next.m_server)
 {
 	if (m_depth > 1000)
-		throw std::runtime_error("scope stack overflow");
+		throw exception("scope stack overflow");
 }
 
 scope::scope(const request &req)

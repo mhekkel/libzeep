@@ -9,6 +9,7 @@
 /// \file
 /// definition of the zeep::http::server class
 
+#include "zeep/exception.hpp"
 #include "zeep/http/access-control.hpp"
 #include "zeep/http/asio.hpp"
 #include "zeep/http/template-processor.hpp"
@@ -136,7 +137,7 @@ class basic_server
 	[[nodiscard]] basic_template_processor &get_template_processor()
 	{
 		if (not m_template_processor)
-			throw std::logic_error("Template processor not specified yet");
+			throw logic_exception("Template processor not specified yet");
 		return *m_template_processor;
 	}
 
@@ -148,7 +149,7 @@ class basic_server
 	[[nodiscard]] const basic_template_processor &get_template_processor() const
 	{
 		if (not m_template_processor)
-			throw std::logic_error("Template processor not specified yet");
+			throw logic_exception("Template processor not specified yet");
 		return *m_template_processor;
 	}
 

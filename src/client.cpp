@@ -27,6 +27,7 @@
 // This code is originally written for mini-ibs, a content management system
 
 #include "zeep/http/client.hpp"
+#include "zeep/exception.hpp"
 #include "zeep/http/message-parser.hpp"
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
@@ -225,7 +226,7 @@ reply send_request(request req)
 		else if (iequals(uri.get_scheme(), "https"))
 			port = 443;
 		else
-			throw std::invalid_argument("Invalid scheme in uri for send_request");
+			throw invalid_argument_exception("Invalid scheme in uri for send_request");
 	}
 
 	asio_ns::io_context io_context;

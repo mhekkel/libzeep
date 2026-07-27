@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
+#include <stdexcept>
 #include <type_traits>
 
 #if __has_include(<nlohmann/json.hpp>)
@@ -28,6 +29,24 @@
 
 namespace zeep::el
 {
+
+// Exception type
+
+class object_error : public std::runtime_error
+{
+  public:
+	object_error(const std::string &err)
+		: std::runtime_error(err)
+	{
+	}
+
+	object_error(const char *err)
+		: std::runtime_error(err)
+	{
+	}
+
+	object_error(const object_error &) noexcept = default;
+};
 
 class object;
 
@@ -193,12 +212,12 @@ class object
 					break;
 
 				case object::value_type::null:
-					throw std::runtime_error("Cannot get value");
+					throw object_error("Cannot get value");
 
 				default:
 					if (m_it.m_p == 0)
 						return *m_obj;
-					throw std::runtime_error("Cannot get value");
+					throw object_error("Cannot get value");
 			}
 		}
 
@@ -218,19 +237,19 @@ class object
 					break;
 
 				case object::value_type::null:
-					throw std::runtime_error("Cannot get value");
+					throw object_error("Cannot get value");
 
 				default:
 					if (m_it.m_p == 0)
 						return m_obj;
-					throw std::runtime_error("Cannot get value");
+					throw object_error("Cannot get value");
 			}
 		}
 
 		bool operator==(const iterator_impl &other) const
 		{
 			if (m_obj != other.m_obj)
-				throw std::runtime_error("Containers are not the same");
+				throw object_error("Containers are not the same");
 
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
@@ -244,13 +263,13 @@ class object
 		auto operator<=>(const iterator_impl &other) const
 		{
 			if (m_obj != other.m_obj)
-				throw std::runtime_error("Containers are not the same");
+				throw object_error("Containers are not the same");
 
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
 				case object::value_type::array: return m_it.m_array_it <=> other.m_it.m_array_it;
-				case object::value_type::object: throw std::runtime_error("Cannot compare order of object iterators");
+				case object::value_type::object: throw object_error("Cannot compare order of object iterators");
 				default: return m_it.m_p <=> other.m_it.m_p;
 			}
 		}
@@ -261,7 +280,7 @@ class object
 			switch (m_obj->m_data.m_type)
 			{
 				case object::value_type::array: std::advance(m_it.m_array_it, i); break;
-				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
+				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
 				default: m_it.m_p += i;
 			}
 			return *this;
@@ -307,7 +326,7 @@ class object
 			switch (m_obj->m_data.m_type)
 			{
 				case object::value_type::array: return m_it.m_array_it - other.m_it.m_array_it;
-				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
+				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
 				default: return m_it.m_p - other.m_it.m_p;
 			}
 		}
@@ -318,11 +337,11 @@ class object
 			switch (m_obj->m_data.m_type)
 			{
 				case object::value_type::array: *std::next(m_it.m_array_it, i); break;
-				case object::value_type::object: throw std::runtime_error("Cannot use offsets with object iterators");
+				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
 				default:
 					if (m_it.m_p == -i)
 						return *m_obj;
-					throw std::runtime_error("Cannot get value");
+					throw object_error("Cannot get value");
 			}
 		}
 
@@ -331,7 +350,7 @@ class object
 			assert(m_obj);
 
 			if (not m_obj->is_object())
-				throw std::runtime_error("Can only use key() on object iterators");
+				throw object_error("Can only use key() on object iterators");
 
 			return m_it.m_object_it->first;
 		}
@@ -612,7 +631,7 @@ class object
 				break;
 
 			default:
-				throw std::runtime_error("Can only negate numbers");
+				throw object_error("Can only negate numbers");
 		}
 
 		return *this;
@@ -750,7 +769,7 @@ class object
 			m_data.m_value = value_type::object;
 		}
 		else if (not is_object())
-			throw std::runtime_error("emplace only works with object type");
+			throw object_error("emplace only works with object type");
 
 		auto r = m_data.m_value.m_object->emplace(std::forward<Args>(args)...);
 		auto i = begin();
@@ -763,7 +782,7 @@ class object
 	object &emplace_back(Args &&...args)
 	{
 		if (not(is_null() or is_array()))
-			throw std::runtime_error("emplace_back only works with array type");
+			throw object_error("emplace_back only works with array type");
 
 		if (is_null())
 		{
@@ -779,7 +798,7 @@ class object
 	Iterator erase(Iterator pos)
 	{
 		if (pos.m_obj != this)
-			throw std::runtime_error("Invalid iterator");
+			throw object_error("Invalid iterator");
 
 		auto result = end();
 
@@ -794,11 +813,11 @@ class object
 				break;
 
 			case value_type::null:
-				throw std::runtime_error("Cannot erase in null values");
+				throw object_error("Cannot erase in null values");
 
 			default:
 				if (pos.m_it.m_p != 0)
-					throw std::runtime_error("Iterator out of range");
+					throw object_error("Iterator out of range");
 
 				if (m_data.m_type == value_type::string)
 				{
@@ -820,7 +839,7 @@ class object
 	Iterator erase(Iterator first, Iterator last)
 	{
 		if (first.m_obj != this or last.m_obj != this)
-			throw std::runtime_error("Invalid iterator");
+			throw object_error("Invalid iterator");
 
 		auto result = end();
 
@@ -835,11 +854,11 @@ class object
 				break;
 
 			case value_type::null:
-				throw std::runtime_error("Cannot erase in null values");
+				throw object_error("Cannot erase in null values");
 
 			default:
 				if (first.m_it.m_p != 0 or last.m_it.m_p != 0)
-					throw std::runtime_error("Iterator out of range");
+					throw object_error("Iterator out of range");
 
 				if (m_data.m_type == value_type::string)
 				{
@@ -860,7 +879,7 @@ class object
 	{
 		if (is_object())
 			return m_data.m_value.m_object->erase(key);
-		throw std::runtime_error("erase with a string key only works with object type");
+		throw object_error("erase with a string key only works with object type");
 	}
 
 	void erase(const size_type index)
@@ -868,11 +887,11 @@ class object
 		if (is_array())
 		{
 			if (index >= size())
-				throw std::runtime_error("Index out of range");
+				throw object_error("Index out of range");
 			m_data.m_value.m_array->erase(m_data.m_value.m_array->begin() + static_cast<difference_type>(index));
 		}
 		else
-			throw std::runtime_error("erase with an index only works wiht array type");
+			throw object_error("erase with an index only works wiht array type");
 	}
 
 	// --------------------------------------------------------------------

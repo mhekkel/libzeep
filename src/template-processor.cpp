@@ -52,7 +52,7 @@ file_loader::file_loader(std::filesystem::path docroot)
 	, m_docroot(std::move(docroot))
 {
 	if (not m_docroot.empty() and not std::filesystem::exists(m_docroot))
-		throw std::runtime_error("Docroot '" + m_docroot.string() + "' does not seem to exist");
+		throw invalid_argument_exception("Docroot '" + m_docroot.string() + "' does not seem to exist");
 }
 
 /// return last_write_time of \a file
