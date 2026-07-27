@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "zeep/exception.hpp"
 #include "zeep/streambuf.hpp"
 #include <algorithm>
 #include <cstddef>
@@ -32,16 +33,16 @@ namespace zeep::el
 
 // Exception type
 
-class object_error : public std::runtime_error
+class object_error : public zeep::exception
 {
   public:
 	object_error(const std::string &err)
-		: std::runtime_error(err)
+		: zeep::exception(err)
 	{
 	}
 
 	object_error(const char *err)
-		: std::runtime_error(err)
+		: zeep::exception(err)
 	{
 	}
 

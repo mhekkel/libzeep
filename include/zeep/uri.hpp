@@ -260,9 +260,8 @@ class uri
 
 	/// \brief return the uri relative from \a base.
 	///
-	/// If the scheme and authority of this and \a base
-	/// a relative uri will be returned with the path
-	/// of base removed from this path.
+	/// If the scheme and authority of this and \a base are the same
+	/// a relative uri will be returned with the path of base removed from this path.
 	[[nodiscard]] uri relative(const uri &base) const;
 
   private:

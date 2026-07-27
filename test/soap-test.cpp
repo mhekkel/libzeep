@@ -3,6 +3,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include "zeep/http/status.hpp"
 #include <zeep/exception.hpp>
 #include <zeep/http/soap-controller.hpp>
 
@@ -75,7 +76,7 @@ TEST_CASE("soap_1")
 	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	REQUIRE(rep.get_status() == 200);
+	REQUIRE(rep.get_status() == zeep::http::status_type::ok);
 
 	std::stringstream srep;
 	srep << rep;
@@ -119,7 +120,7 @@ TEST_CASE("soap_2")
 	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	REQUIRE(rep.get_status() == 200);
+	REQUIRE(rep.get_status() == zeep::http::status_type::ok);
 
 	std::stringstream srep;
 	srep << rep;
@@ -166,7 +167,7 @@ TEST_CASE("soap_3")
 	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	REQUIRE(rep.get_status() == 200);
+	REQUIRE(rep.get_status() == zeep::http::status_type::ok);
 
 	std::stringstream srep;
 	srep << rep;
@@ -213,7 +214,7 @@ TEST_CASE("soap_3f")
 	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	CHECK(rep.get_status() == 500);
+	CHECK(rep.get_status() == zeep::http::status_type::internal_server_error);
 
 	std::stringstream srep;
 	srep << rep;

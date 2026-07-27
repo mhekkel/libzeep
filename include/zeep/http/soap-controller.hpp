@@ -189,7 +189,7 @@ class soap_controller : public controller
 
 		void call(const zeem::element &request, reply &rep, std::string_view ns) override
 		{
-			rep.set_status(ok);
+			rep.set_status(status_type::ok);
 
 			ArgsTuple args = collect_arguments(request, std::make_index_sequence<N>());
 			invoke<Result>(std::move(args), rep, ns);

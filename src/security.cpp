@@ -226,10 +226,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3,
 		// clang-format off
 		{
-			{ "HttpOnly", "" },
-#ifndef NDEBUG
-				{ "Secure", ""},
-#endif
+			{ "HttpOnly", "" }, { "Secure", ""},
 			{ "SameSite", "Lax" },
 			{ "Expires", std::format(R"("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT")", when) }
 		}

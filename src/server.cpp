@@ -271,7 +271,11 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		if (method == "HEAD" or method == "OPTIONS")
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
-			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+			rep.set_cookie("csrf-token", csrf,
+				{ { "HttpOnly", "" },
+					{ "Secure", "" },
+					{ "SameSite", "Lax" },
+					{ "Path", "/" } });
 
 		if (not m_context_name.empty() and
 			(rep.get_status() == status_type::moved_permanently or rep.get_status() == status_type::moved_temporarily))
@@ -373,7 +377,7 @@ void basic_server::log_request(std::string_view client,
 
 		std::ostringstream ts;
 
-		// macOS still has no zoned time... 
+		// macOS still has no zoned time...
 #if USE_DATE_H
 		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
 		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);

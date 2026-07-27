@@ -63,7 +63,7 @@ class login_error_handler : public error_handler
 		}
 		catch (const std::system_error &ex)
 		{
-			if (ex.code() == std::error_code(unauthorized, status_type_category()))
+			if (ex.code() == make_error_code(status_type::unauthorized))
 				result = create_unauth_reply(req, reply);
 		}
 		catch (const unauthorized_exception &)
@@ -195,7 +195,11 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 	if (csrf_cookie.empty())
 	{
 		csrf_cookie = encode_base64url(random_hash());
-		reply.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+		reply.set_cookie("csrf-token", csrf_cookie,
+			{ { "HttpOnly", "" },
+				{ "Secure", "" },
+				{ "SameSite", "Lax" },
+				{ "Path", "/" } });
 	}
 
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
@@ -228,7 +232,11 @@ reply login_controller::handle_get_login(const scope &scope)
 	if (csrf_cookie.empty())
 	{
 		csrf_cookie = encode_base64url(random_hash());
-		rep.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+		rep.set_cookie("csrf-token", csrf_cookie,
+			{ { "HttpOnly", "" },
+				{ "Secure", "" },
+				{ "SameSite", "Lax" },
+				{ "Path", "/" } });
 	}
 
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
@@ -267,7 +275,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri.string());
 
-		rep = reply::stock_reply(unauthorized);
+		rep = reply::stock_reply(status_type::unauthorized);
 		rep.set_content(doc);
 
 		std::clog << e.what() << '\n';
@@ -293,6 +301,8 @@ reply login_controller::create_redirect_for_request(const request &req) const
 	if (auto p = req.get_parameter("uri"); p.has_value())
 	{
 		uri requested_uri(*p);
+
+		// Only use the requested uri if it is relative to our context
 		if (not requested_uri.has_authority())
 			url /= requested_uri;
 	}

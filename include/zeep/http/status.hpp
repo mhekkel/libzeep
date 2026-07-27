@@ -16,7 +16,7 @@ namespace zeep::http
 
 /// Various predefined HTTP status codes
 
-enum status_type
+enum class status_type
 {
 	cont = 100,
 	switching_protocols = 101,
@@ -113,6 +113,8 @@ class status_type_impl : public std::error_category
 	{
 		switch (static_cast<status_type>(ev))
 		{
+			using enum status_type;
+
 			case cont: return "Continue";
 			case switching_protocols: return "Switching Protocols";
 			case processing: return "Processing";
