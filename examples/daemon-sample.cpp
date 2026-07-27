@@ -86,11 +86,7 @@ int main(int argc, char *const argv[])
 		std::string user /* = "www-data" */;	// Using a non-empty username requires super user powers
 		std::cout << "starting server at http://" << address << ':' << port << "\n";
 
-		// Using preforked server:
-		result = server.start(address, port, 8, 8, user);
-
-		// Alternatively use a threaded server:
-		// result = server.start(address, port, 8, user);
+		result = server.start(address, port, 8, user);
 	}
 	else if (command == "stop")
 		result = server.stop();

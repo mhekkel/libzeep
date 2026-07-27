@@ -70,15 +70,7 @@ TEST_CASE("daemon-test-1")
 
 	std::clog << "starting daemon at port " << port << '\n';
 
-	SECTION("single process")
-	{
-		d.start("::", port, 1, pw->pw_name);
-	}
-
-	SECTION("pre-forked process")
-	{
-		d.start("::", port, 1, 1, pw->pw_name);
-	}
+	d.start("::", port, 1, pw->pw_name);
 
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);
