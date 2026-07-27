@@ -221,16 +221,14 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	auto h2 = encode_base64url(credentials.get_JSON());
 	auto h3 = encode_base64url(hmac_sha256(h1 + '.' + h2, m_secret));
 
-	std::stringstream s;
-	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + exp);
-	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
+	auto when = floor<seconds>(system_clock::now() - 24h);
 
 	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3,
 		// clang-format off
 		{
 			{ "HttpOnly", "" },
 			{ "SameSite", "Lax" },
-			{ "Expires", '"' + s.str() + '"' }
+			{ "Expires", std::format(R"("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT")", when) }
 		}
 		// clang-format on
 	);

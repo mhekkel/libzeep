@@ -128,18 +128,16 @@ class child_process
 		{
 			kill(m_pid, SIGKILL);
 
-			const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+			auto now = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
 
 			int status;
 			if (waitpid(m_pid, &status, WUNTRACED | WCONTINUED) != -1)
 			{
 				if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
-					std::clog << std::put_time(std::localtime(&now_t), "%F %T") << " child " << m_pid << " terminated by signal " << WTERMSIG(status) << '\n';
-				// else
-				// 	std::clog << std::put_time(std::localtime(&now_t), "%F %T") << " child terminated normally\n";
+					std::println(std::clog, "{0:L%F} {0:L%T} child {1:} terminated by signal {2:}", now, m_pid, WTERMSIG(status));
 			}
 			else
-				std::clog << std::put_time(std::localtime(&now_t), "%F %T") << "error in waitpid: " << strerror(errno) << '\n';
+				std::println(std::clog, "{0:L%F} {0:L%T} error in waitpid: {1:}", now, strerror(errno));
 		}
 	}
 

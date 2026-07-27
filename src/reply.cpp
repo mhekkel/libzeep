@@ -183,11 +183,8 @@ void reply::set_delete_cookie(std::string_view name)
 {
 	using namespace std::literals;
 
-	std::stringstream s;
-	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() - 24h);
-	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
-
-	set_cookie(name, "", { { "Expires", '"' + s.str() + '"' } });
+	auto when = std::chrono::system_clock::now() - 24h;
+	set_cookie(name, "", { { "Expires", std::format(R"("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT")", when) } });
 }
 
 std::string reply::get_cookie(std::string_view name) const

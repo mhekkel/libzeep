@@ -1531,6 +1531,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
+		using namespace std::literals;
 		object result;
 
 		if (method == "format")
@@ -1540,16 +1541,33 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto t = params[0].get<std::string>();
 				auto f = params[1].get<std::string>();
 
+				for (std::string::size_type i = 0; i + 1 < f.length(); ++i)
+				{
+					if (f[i] != '%')
+						continue;
+
+					if (f[i + 1] == '%')
+					{
+						f.insert(f.begin() + i + 1, '%');
+						++i;
+						continue;
+					}
+
+					if (i + 2 < f.length() and (f[i + 1] == 'E' or f[i + 1] == 'O'))
+					{
+						f.replace(i, 3, "{0:L%"s + f[i + 1] + f[i + 2] + '}');
+						i += 6;
+					}
+					else
+					{
+						f.replace(i, 2, "{0:L%"s + f[i + 1] + '}');
+						i += 6;
+					}
+				}
+
 				auto st = zeem::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
-
-				std::wostringstream os;
-				os.imbue(scope.get_locale());
-
-				auto tt = std::chrono::system_clock::to_time_t(st);
-				auto wf = convert_s2w(f);
-
-				os << std::put_time<wchar_t>(std::localtime(&tt), wf.c_str());
-				result = convert_w2s(os.str());
+				auto lt = std::chrono::current_zone()->to_local(st);
+				result = std::vformat(scope.get_locale(), f, std::make_format_args(lt));
 			}
 		}
 
