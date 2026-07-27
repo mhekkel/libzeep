@@ -245,7 +245,7 @@ void basic_template_processor::load_template(const std::string &file, zeem::docu
 					--m;
 				lpMsgBuf[m] = 0;
 
-				strncpy(msg, lpMsgBuf, sizeof(msg));
+				strncpy(msg, lpMsgBuf, sizeof(msg) - 1);
 
 				::LocalFree(lpMsgBuf);
 			}

@@ -100,15 +100,13 @@ void security_context::validate_request(request &req) const
 			if (access_token.empty())
 				break;
 
-			// The JWT regex
-			constexpr const char *kBase64UrlChars("(?:[-_A-Za-z0-9]{4})*(?:[-_A-Za-z0-9]{2,3})?");
-			static const std::regex kJWTRx("^("s + kBase64UrlChars + R"()\.()" + kBase64UrlChars + R"()\.()" + kBase64UrlChars + ")$");
-
-			std::smatch m;
-			if (not std::regex_match(access_token, m, kJWTRx))
+			// Split the JWT into parts
+			std::vector<std::string> m;
+			split(m, access_token, ".");
+			if (m.size() != 3)
 				break;
 
-			auto JOSEHeader = object::parse_JSON(decode_base64url(m[1].str()));
+			auto JOSEHeader = object::parse_JSON(decode_base64url(m[0]));
 
 			const object kJOSEHeader{ { "typ", "JWT" }, { "alg", "HS256" } };
 
@@ -116,20 +114,20 @@ void security_context::validate_request(request &req) const
 				break;
 
 			// check signature
-			auto sig = encode_base64url(hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
+			auto sig = encode_base64url(hmac_sha256(m[0] + '.' + m[1], m_secret));
 
 			// Apparently, we need a constant time comparison here to avoid timing attacks
-			if (sig.length() != m[3].str().length())
+			if (sig.length() != m[2].length())
 				break;
 
 			// Compare strings in constant time
 			int diff = 0;
-			for (const auto &[a, b] : std::views::zip(sig, m[3].str()))
+			for (const auto &[a, b] : std::views::zip(sig, m[2]))
 				diff |= a xor b;
 			if (diff)
 				break;
 
-			auto credentials = object::parse_JSON(decode_base64url(m[2].str()));
+			auto credentials = object::parse_JSON(decode_base64url(m[1]));
 
 			// check exp
 			using namespace std::chrono;
