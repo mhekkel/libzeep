@@ -106,6 +106,8 @@ namespace
 
 #define URI "^(?:(" SCHEME "):)?(?:" HIER_PART ")(?:\\?(" QUERY "))?(?:#(" FRAGMENT "))?$"
 
+const std::regex kIPLiteralRx(IP_LITERAL);
+
 // --------------------------------------------------------------------
 
 // const std::regex kURIRx(URI);
@@ -434,8 +436,7 @@ const char *uri::parse_host(const char *cp)
 
 		++cp;
 
-		static const std::regex rx(IP_LITERAL);
-		if (not std::regex_match(b, cp, rx))
+		if (not std::regex_match(b, cp, kIPLiteralRx))
 			throw uri_parse_error();
 	}
 	else
@@ -663,9 +664,8 @@ std::string decode_url(std::string_view s)
 			if (s.end() - c >= 3)
 			{
 				int value;
-				std::string s2(c + 1, c + 3);
-				std::istringstream is(s2);
-				if (is >> std::hex >> value)
+				auto r = std::from_chars(c + 1, c + 3, value, 16);
+				if (r.ec == std::errc{} and r.ptr == c + 3)
 				{
 					result += static_cast<char>(value);
 					c += 2;
