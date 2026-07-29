@@ -10,6 +10,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #if __has_include(<nlohmann/json.hpp>)
 # include <nlohmann/json.hpp>
@@ -335,13 +336,14 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: *std::next(m_it.m_array_it, i); break;
+				case object::value_type::array: return *std::next(m_it.m_array_it, i); break;
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
 				default:
 					if (m_it.m_p == -i)
 						return *m_obj;
 					throw object_error("Cannot get value");
 			}
+			std::unreachable();
 		}
 
 		[[nodiscard]] const std::string &key() const
@@ -906,21 +908,29 @@ class object
 
 	[[nodiscard]] object &front()
 	{
+		if (empty())
+			throw exception("empty object");
 		return *begin();
 	}
 
 	[[nodiscard]] const object &front() const
 	{
+		if (empty())
+			throw exception("empty object");
 		return *begin();
 	}
 
 	[[nodiscard]] object &back()
 	{
+		if (empty())
+			throw exception("empty object");
 		return *--end();
 	}
 
 	[[nodiscard]] const object &back() const
 	{
+		if (empty())
+			throw exception("empty object");
 		return *--end();
 	}
 
