@@ -255,6 +255,7 @@ class soap_controller : public controller
 			using type = typename std::tuple_element_t<I, ArgsTuple>;
 
 			zeem::schema_creator sc(types, seq);
+			sc.set_ns_prefix("ns");
 
 			sc.add_element(m_names[I], type{});
 		}
@@ -279,6 +280,7 @@ class soap_controller : public controller
 				auto sequence = complexType2->emplace_back("xsd:sequence");
 
 				zeem::schema_creator sc(types, *sequence);
+				sc.set_ns_prefix("ns");
 				sc.add_element("Response", Result{});
 			}
 

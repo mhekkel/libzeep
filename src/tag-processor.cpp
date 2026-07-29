@@ -510,7 +510,7 @@ auto tag_processor::process_attr_switch(zeem::element *element, zeem::attribute 
 	zeem::element e2(*element);
 	element->nodes().clear();
 
-	auto cases = e2.find(".//*[@case]");
+	auto cases = e2.find(".//*[@*:case]");
 
 	zeem::element *selected = nullptr;
 	zeem::element *wildcard = nullptr;

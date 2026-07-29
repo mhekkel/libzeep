@@ -127,7 +127,7 @@ endif()
 
 CPMFindPackage(NAME zeem
     GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
-    GIT_TAG v2.2.0
+    GIT_TAG v2.3.0
     EXCLUDE_FROM_ALL YES)
 
 if(UNIX)

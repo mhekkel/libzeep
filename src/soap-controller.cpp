@@ -75,7 +75,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 			zeem::document envelope(req.get_payload());
 
 			auto request = envelope.find_first(
-				"/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
+				"/*:Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*:Body[position()=1]/*[position()=1]");
 			if (request == envelope.end())
 				throw zeep::exception("Empty or invalid SOAP envelope passed");
 
