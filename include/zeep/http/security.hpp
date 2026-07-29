@@ -67,7 +67,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
   public:
 	static inline constexpr const char *name() { return "pbkdf2_sha256"; };
 
-	pbkdf2_sha256_password_encoder(int iterations = 30000, int key_length = 32)
+	pbkdf2_sha256_password_encoder(int iterations = 100'000, int key_length = 32)
 		: m_iterations(iterations)
 		, m_key_length(key_length)
 	{
