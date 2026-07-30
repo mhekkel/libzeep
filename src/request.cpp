@@ -16,6 +16,7 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {
@@ -100,7 +101,7 @@ float request::get_accept(std::string_view type) const
 			float value = 1.0f;
 			if (quality.starts_with("q="))
 			{
-				const auto &[ptr, ec] = std::from_chars(quality.data() + 2, quality.data() + quality.length(), value);
+				const auto &[ptr, ec] = zeem::from_chars(quality.data() + 2, quality.data() + quality.length(), value);
 				if (ec != std::errc{})
 					continue;
 			}

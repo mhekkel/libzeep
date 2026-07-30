@@ -1524,6 +1524,13 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto t = params[0].get<std::string>();
 				auto f = params[1].get<std::string>();
 
+
+				auto st = zeem::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
+#if USE_DATE_H
+				auto lt = date::current_zone()->to_local(st);
+				result = date::format(scope.get_locale(), f.c_str(), lt);
+#else
+
 				for (std::string::size_type i = 0; i + 1 < f.length(); ++i)
 				{
 					if (f[i] != '%')
@@ -1548,13 +1555,9 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 					}
 				}
 
-				auto st = zeem::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
-#if USE_DATE_H
-				auto lt = date::current_zone()->to_local(st);
-#else
 				auto lt = std::chrono::current_zone()->to_local(st);
-#endif
 				result = std::vformat(scope.get_locale(), f, std::make_format_args(lt));
+#endif
 			}
 		}
 
