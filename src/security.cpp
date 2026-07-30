@@ -64,7 +64,7 @@ security_context::security_context(std::string secret, user_service &users, bool
 	: m_secret(std::move(secret))
 	, m_users(users)
 	, m_default_allow(defaultAccessAllowed)
-	, m_default_jwt_exp(std::chrono::years{ 1 })
+	, m_default_jwt_exp(std::chrono::weeks{ 1 })
 {
 #if __has_include(<sys/mman.h>)
 	mlock(m_secret.data(), m_secret.length());

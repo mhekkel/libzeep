@@ -938,7 +938,9 @@ auto json_parser::get_next_token() -> token_t
 				else
 				{
 					retract();
-					m_token_float *= std::pow(10, (negativeExp ? -1 : 1) * exponent);
+					while (exponent-- > 0)
+						m_token_float *= negativeExp ? -10 : 10;
+					// m_token_float *= std::pow(10, (negativeExp ? -1 : 1) * exponent);
 					if (negative)
 						m_token_float = -m_token_float;
 					token = token_t::Number;
