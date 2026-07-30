@@ -1549,7 +1549,11 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				}
 
 				auto st = zeem::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
+#if USE_DATE_H
+				auto lt = date::current_zone()->to_local(st);
+#else
 				auto lt = std::chrono::current_zone()->to_local(st);
+#endif
 				result = std::vformat(scope.get_locale(), f, std::make_format_args(lt));
 			}
 		}
