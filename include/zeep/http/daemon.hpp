@@ -92,6 +92,8 @@ class daemon
 	int run_foreground(std::string_view address, uint16_t port);
 
   private:
+	/// @cond
+
 #if HTTP_HAS_UNIX_DAEMON
 
 	int daemonize();
@@ -100,11 +102,12 @@ class daemon
 	bool pid_is_for_executable();
 #endif
 
-  private:
 	server_factory_type m_factory;
 	const std::string m_pid_file, m_stdout_log_file, m_stderr_log_file;
 
 	int m_max_restarts = 5, m_restart_time_window = 10;
+
+	/// @endcond
 };
 
 } // namespace zeep::http

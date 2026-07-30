@@ -5,7 +5,7 @@
 #pragma once
 
 /// \file
-/// definition of the zeep::soap_controller class.
+/// definition of the zeep::http::soap_controller class.
 /// Instances of this class take care of mapping member functions to
 /// SOAP calls automatically converting in- and output data
 
@@ -18,8 +18,7 @@
 namespace zeep::http
 {
 
-/// soap_envelope is a wrapper around a SOAP envelope. Use it for
-/// input and output of correctly formatted SOAP messages.
+/// \brief Wrapper around a SOAP envelope for input and output of correctly formatted SOAP messages
 
 class soap_envelope
 {
@@ -39,6 +38,7 @@ class soap_envelope
 	// envelope(zeem::document& data);
 
 	/// \brief The request element as contained in the original SOAP message
+	/// \return The request \a zeem::element
 	zeem::element &request() { return *m_request; }
 
   private:
@@ -48,35 +48,35 @@ class soap_envelope
 
 // --------------------------------------------------------------------
 
-/// Wrap data into a SOAP envelope
+/// \brief Wrap data into a SOAP envelope
 ///
-/// \param    data  The zeem::element object to wrap into the envelope
-/// \return   A new zeem::element object containing the envelope.
+/// \param    data  The \a zeem::element object to wrap into the envelope
+/// \return   A new \a zeem::element object containing the envelope.
 zeem::element make_envelope(zeem::element &&data);
 // zeem::element make_envelope(const zeem::element& data);
 
-/// Create a standard SOAP Fault message for the string parameter
+/// \brief Create a standard SOAP Fault message for the string parameter
 ///
 /// \param    message The string object containing a descriptive error message.
-/// \return   A new zeem::element object containing the fault envelope.
+/// \return   A new \a zeem::element object containing the fault envelope.
 zeem::element make_fault(std::string message);
-/// Create a standard SOAP Fault message for the exception object
+/// \brief Create a standard SOAP Fault message for the exception object
 ///
-/// \param    ex The exception object that was catched.
-/// \return   A new zeem::element object containing the fault envelope.
+/// \param    ex The exception object that was caught.
+/// \return   A new \a zeem::element object containing the fault envelope.
 zeem::element make_fault(const std::exception &ex);
 
 // --------------------------------------------------------------------
 
-/// \brief class that helps with handling SOAP requests
+/// \brief Controller class that helps with handling SOAP requests
 ///
-/// This controller will handle SOAP requests automatically handing the packing
+/// This controller will handle SOAP requests automatically handling the packing
 /// and unpacking of XML envelopes.
 ///
 /// To use this, create a subclass and add some methods that should be exposed.
 /// Then _map_ these methods on a path that optionally contains parameter values.
 ///
-/// See the chapter on SOAP controllers in the documention for more information.
+/// See the chapter on SOAP controllers in the documentation for more information.
 
 class soap_controller : public controller
 {
@@ -97,21 +97,28 @@ class soap_controller : public controller
 	}
 
 	/// \brief Set the external address at which this service is visible
+	/// \param location   The external URL of this service
 	void set_location(std::string location)
 	{
 		m_location = std::move(location);
 	}
 
 	/// \brief Set the service name
+	/// \param service   The name of the service
 	void set_service(std::string service)
 	{
 		m_service = std::move(service);
 	}
 
-	/// \brief map a SOAP action to \a callback using \a names for mapping the arguments
+	/// \brief Map a SOAP action to \a callback using \a names for mapping the arguments
 	///
 	/// The method in \a callback should be a method of the derived class having as many
 	/// arguments as the number of specified \a names.
+	/// \tparam Callback    The callback function type
+	/// \tparam ArgNames    The parameter name types
+	/// \param actionName   The SOAP action name
+	/// \param callback     The member function pointer to invoke
+	/// \param names        The parameter names for mapping XML elements to arguments
 	template <typename Callback, typename... ArgNames>
 	void map_action(const char *actionName, Callback callback, ArgNames... names)
 	{
@@ -119,9 +126,13 @@ class soap_controller : public controller
 	}
 
 	/// \brief Create a WSDL based on the registered actions
+	/// \return A \a zeem::element containing the WSDL description
 	zeem::element make_wsdl();
 
 	/// \brief Handle the SOAP request
+	/// \param req      The incoming SOAP request
+	/// \param reply_   The reply to populate with the SOAP response
+	/// \return True if the request was handled
 	bool handle_request(request &req, reply &reply_) override;
 
   protected:
@@ -130,8 +141,11 @@ class soap_controller : public controller
 	using type_map = std::map<std::string, zeem::element>;
 	using message_map = std::map<std::string, zeem::element>;
 
+	/// \brief Base class for SOAP mount points
 	struct mount_point_base
 	{
+		/// \brief Construct a SOAP mount point base
+		/// \param action   The SOAP action name
 		mount_point_base(const char *action)
 			: m_action(action)
 		{
@@ -139,10 +153,15 @@ class soap_controller : public controller
 
 		virtual ~mount_point_base() = default;
 
+		/// \brief Invoke the mount point handler
+		/// \param request   The SOAP request element
+		/// \param reply_    The reply to populate
+		/// \param ns        The XML namespace
 		virtual void call(const zeem::element &request, reply &reply_, std::string_view ns) = 0;
+		/// \brief Describe this action for WSDL generation
 		virtual void describe(type_map &types, message_map &messages, zeem::element &portType, zeem::element &binding) = 0;
 
-		std::string m_action;
+		std::string m_action; ///< The SOAP action name
 	};
 
 	template <typename Callback, typename...>
@@ -150,7 +169,10 @@ class soap_controller : public controller
 	{
 	};
 
-	/// \brief templated abstract base class for mount points
+	/// \brief Templated abstract base class for SOAP mount points
+	/// \tparam ControllerType   The type of the controller
+	/// \tparam Result           The return type of the callback
+	/// \tparam Args             The argument types of the callback
 	template <typename ControllerType, typename Result, typename... Args>
 	struct mount_point<Result (ControllerType::*)(Args...)> : mount_point_base
 	{
@@ -160,6 +182,10 @@ class soap_controller : public controller
 
 		static constexpr size_t N = sizeof...(Args);
 
+		/// \brief Construct a mount point
+		/// \param action   The SOAP action name
+		/// \param owner    The owning controller
+		/// \param sig      The member function pointer
 		mount_point(const char *action, soap_controller *owner, Sig sig)
 			: mount_point_base(action)
 		{
@@ -173,6 +199,12 @@ class soap_controller : public controller
 			};
 		}
 
+		/// \brief Construct a mount point with named parameters
+		/// \tparam Names   The parameter name types
+		/// \param action   The SOAP action name
+		/// \param owner    The owning controller
+		/// \param sig      The member function pointer
+		/// \param names    The parameter names for XML element mapping
 		template <typename... Names>
 		mount_point(const char *action, soap_controller *owner, Sig sig, Names... names)
 			: mount_point(action, owner, sig)
@@ -185,6 +217,10 @@ class soap_controller : public controller
 				m_names[i++] = name;
 		}
 
+		/// \brief Invoke the mount point handler
+		/// \param request   The SOAP request element
+		/// \param rep       The reply to populate
+		/// \param ns        The XML namespace
 		void call(const zeem::element &request, reply &rep, std::string_view ns) override
 		{
 			rep.set_status(status_type::ok);
@@ -193,6 +229,7 @@ class soap_controller : public controller
 			invoke<Result>(std::move(args), rep, ns);
 		}
 
+		/// \brief Invoke for void-returning callbacks
 		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
 		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
 		{
@@ -203,6 +240,7 @@ class soap_controller : public controller
 			rep.set_content(make_envelope(std::move(response)));
 		}
 
+		/// \brief Invoke for non-void-returning callbacks
 		template <typename ResultType, typename ArgsTuple>
 		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
 			requires(not std::is_void_v<ResultType>)
@@ -221,6 +259,7 @@ class soap_controller : public controller
 			rep.set_content(envelope);
 		}
 
+		/// \brief Collect arguments from the SOAP request XML
 		template <std::size_t... I>
 		ArgsTuple collect_arguments(const zeem::element &request, std::index_sequence<I...>)
 		{
@@ -229,6 +268,7 @@ class soap_controller : public controller
 			return std::make_tuple(get_parameter<typename std::tuple_element_t<I, ArgsTuple>>(ds, m_names[I])...);
 		}
 
+		/// \brief Extract a single parameter from the deserializer
 		template <typename T>
 		T get_parameter(zeem::deserializer &ds, const char *name)
 		{
@@ -237,6 +277,7 @@ class soap_controller : public controller
 			return v;
 		}
 
+		/// \brief Collect types for WSDL schema generation
 		virtual void collect_types(type_map &types, zeem::element &seq, std::string_view ns)
 		{
 			if constexpr (sizeof...(Args) > 0)
@@ -260,6 +301,7 @@ class soap_controller : public controller
 			sc.add_element(m_names[I], type{});
 		}
 
+		/// \brief Describe this action for WSDL generation
 		void describe(type_map &types, message_map &messages,
 			zeem::element &portType, zeem::element &binding) override
 		{
@@ -321,12 +363,14 @@ class soap_controller : public controller
 			binding.emplace_back(std::move(operation));
 		}
 
-		Callback m_callback;
-		std::array<const char *, N> m_names;
+		Callback m_callback;                        ///< The stored callback function
+		std::array<const char *, N> m_names;        ///< The parameter names for XML element mapping
 	};
 
-	std::list<std::unique_ptr<mount_point_base>> m_mountpoints;
-	std::string m_ns, m_location, m_service;
+	std::list<std::unique_ptr<mount_point_base>> m_mountpoints; ///< The list of registered SOAP mount points
+	std::string m_ns;       ///< The XML namespace
+	std::string m_location; ///< The external address of this service
+	std::string m_service;  ///< The service name
 
 	/// @endcond
 };

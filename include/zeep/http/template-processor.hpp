@@ -47,9 +47,15 @@ class resource_loader
 	resource_loader &operator=(const resource_loader &) = delete;
 
 	/// \brief return last_write_time of \a file
+	/// \param file  The path to the file to check
+	/// \param ec    Error code set on failure
+	/// \return      The last write time of the file
 	virtual std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept = 0;
 
 	/// \brief basic loader, returns error in ec if file was not found
+	/// \param file  The path to the file to load
+	/// \param ec    Error code set on failure
+	/// \return      A unique pointer to an input stream, or nullptr on error
 	virtual std::unique_ptr<std::istream> load_file(std::string file, std::error_code &ec) noexcept = 0;
 
   protected:
@@ -72,9 +78,15 @@ class file_loader : public resource_loader
 	file_loader(std::filesystem::path docroot);
 
 	/// \brief return last_write_time of \a file
+	/// \param file  The path to the file to check
+	/// \param ec    Error code set on failure
+	/// \return      The last write time of the file
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
+	/// \param file  The path to the file to load
+	/// \param ec    Error code set on failure
+	/// \return      A unique pointer to an input stream, or nullptr on error
 	std::unique_ptr<std::istream> load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
@@ -96,9 +108,15 @@ class rsrc_loader : public resource_loader
 	rsrc_loader(const std::filesystem::path &/* unused */);
 
 	/// \brief return last_write_time of \a file
+	/// \param file  The path to the file to check
+	/// \param ec    Error code set on failure
+	/// \return      The last write time of the file
 	std::filesystem::file_time_type file_time(std::filesystem::path file, std::error_code &ec) noexcept override;
 
 	/// \brief basic loader, returns error in ec if file was not found
+	/// \param file  The path to the file to load
+	/// \param ec    Error code set on failure
+	/// \return      A unique pointer to an input stream, or nullptr on error
 	std::unique_ptr<std::istream> load_file(std::string file, std::error_code &ec) noexcept override;
 
   private:
@@ -117,6 +135,8 @@ class rsrc_loader : public resource_loader
 class basic_template_processor
 {
   public:
+	/// \brief Construct a processor with the given docroot
+	/// \param docroot  Path to the document root directory
 	basic_template_processor(std::filesystem::path docroot)
 		: m_docroot(std::move(docroot))
 	{
@@ -125,25 +145,34 @@ class basic_template_processor
 	virtual ~basic_template_processor() = default;
 
 	/// \brief set the docroot for this processor
+	/// \param docroot  The new document root path
 	virtual void set_docroot(std::filesystem::path docroot);
 
 	/// \brief get the current docroot of this processor
+	/// \return The document root path
 	[[nodiscard]] std::filesystem::path get_docroot() const { return m_docroot; }
 
 	// --------------------------------------------------------------------
 	// tag processor support
 
 	/// \brief process all the tags in this node
+	/// \param node   The root XML node to process
+	/// \param scope  The scope containing variables and request data
 	virtual void process_tags(zeem::node *node, const scope &scope);
 
   protected:
 	std::map<std::string, std::function<tag_processor_base *(const std::string &)>> m_tag_processor_creators;
 
 	/// \brief process only the tags with the specified namespace prefixes
+	/// \param node                  The XML element to process
+	/// \param scope                 The scope containing variables and request data
+	/// \param registeredNamespaces  The set of namespace prefixes to process
 	virtual void process_tags(zeem::element *node, const scope &scope, std::set<std::string> registeredNamespaces);
 
   public:
 	/// \brief Use to register a new tag_processor and couple it to a namespace
+	/// \tparam TagProcessor  The tag processor type, must derive from \a tag_processor_base
+	/// \param ns             The namespace to associate with the processor (defaults to TagProcessor::ns())
 	template <typename TagProcessor>
 	void register_tag_processor(const std::string &ns = TagProcessor::ns())
 	{
@@ -152,6 +181,8 @@ class basic_template_processor
 	}
 
 	/// \brief Create a tag_processor
+	/// \param ns  The namespace of the processor to create
+	/// \return    A pointer to the newly created \a tag_processor_base
 	[[nodiscard]] tag_processor_base *create_tag_processor(const std::string &ns) const
 	{
 		return m_tag_processor_creators.at(ns)(ns);
@@ -161,22 +192,38 @@ class basic_template_processor
 
   public:
 	/// \brief return last_write_time of \a file
+	/// \param file  The file path to check
+	/// \param ec    Error code set on failure
+	/// \return      The last write time of the file
 	virtual std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept = 0;
 
 	/// \brief return error in ec if file was not found
+	/// \param file  The file path to load
+	/// \param ec    Error code set on failure
+	/// \return      A unique pointer to an input stream, or nullptr on error
 	virtual std::unique_ptr<std::istream> load_file(const std::string &file, std::error_code &ec) noexcept = 0;
 
   public:
 	/// \brief Use load_template to fetch the XHTML template file
+	/// \param file  The path to the template file
+	/// \param doc   The document to load the template into
 	virtual void load_template(const std::string &file, zeem::document &doc);
 
 	/// \brief Check if the argument \a file contains a valid reference to an XHTML template file and return the path, if any.
+	/// \param file  The file path to check
+	/// \return      The valid template path, or std::nullopt if not valid
 	virtual std::optional<std::filesystem::path> get_template_file(const std::string &file);
 
 	/// \brief create a reply based on a template
+	/// \param file   The template file path
+	/// \param scope  The scope containing variables and request data
+	/// \param reply  The reply object to populate
 	virtual void create_reply_from_template(const std::string &file, const scope &scope, reply &reply);
 
 	/// \brief create a reply based on a template, alternate version
+	/// \param file   The template file path
+	/// \param scope  The scope containing variables and request data
+	/// \return       The populated reply object
 	[[nodiscard]] reply create_reply_from_template(const std::string &file, const scope &scope)
 	{
 		reply result = reply::stock_reply(status_type::ok);
@@ -185,9 +232,13 @@ class basic_template_processor
 	}
 
 	/// \brief Default handler for serving files out of our doc root
+	/// \param scope  The scope containing variables and request data
+	/// \return       A reply with the file contents or a 404
 	[[nodiscard]] reply create_reply_for_get_file(const scope &scope);
 
 	/// \brief Initialize the scope object
+	/// \param req    The HTTP request
+	/// \param scope  The scope to initialize
 	virtual void init_scope(request &req, scope &scope);
 
   protected:
@@ -197,11 +248,16 @@ class basic_template_processor
 
 // --------------------------------------------------------------------
 /// \brief actual implementation of the abstract basic_template_processor
+///
+/// \tparam Loader  The resource loader type, either \a file_loader or \a rsrc_loader
 
 template <typename Loader>
 class html_template_processor : public basic_template_processor
 {
   public:
+	/// \brief Construct an HTML template processor
+	/// \param docroot                 The document root path
+	/// \param addDefaultTagProcessors Whether to register default tag processors
 	html_template_processor(const std::filesystem::path &docroot = {}, bool addDefaultTagProcessors = true)
 		: basic_template_processor(docroot)
 		, m_loader(docroot)
@@ -212,25 +268,33 @@ class html_template_processor : public basic_template_processor
 
 	~html_template_processor() override = default;
 
-	/// return last_write_time of \a file
+	/// \brief return last_write_time of \a file
+	/// \param file  The file path to check
+	/// \param ec    Error code set on failure
+	/// \return      The last write time of the file
 	[[nodiscard]] std::filesystem::file_time_type file_time(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.file_time(file, ec);
 	}
 
-	// basic loader, returns error in ec if file was not found
+	/// \brief basic loader, returns error in ec if file was not found
+	/// \param file  The file path to load
+	/// \param ec    Error code set on failure
+	/// \return      A unique pointer to an input stream, or nullptr on error
 	[[nodiscard]] std::unique_ptr<std::istream> load_file(const std::string &file, std::error_code &ec) noexcept override
 	{
 		return m_loader.load_file(file, ec);
 	}
 
   protected:
-	Loader m_loader;
+	Loader m_loader; ///< The resource loader instance
 };
 
+/// \brief HTML template processor using \a file_loader
 using file_based_html_template_processor = html_template_processor<file_loader>;
 
 #if USE_RSRC
+/// \brief HTML template processor using \a rsrc_loader
 using rsrc_based_html_template_processor = html_template_processor<rsrc_loader>;
 #endif
 

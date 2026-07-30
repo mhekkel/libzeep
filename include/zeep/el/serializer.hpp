@@ -15,9 +15,13 @@
 namespace zeep
 {
 
+/// \brief Alias for zeem::name_value_pair, used in conjunction with object_serializer
+///        to serialize individual struct members
 template <typename T>
 using name_value_pair = zeem::name_value_pair<T>;
 
+/// \brief Alias for zeem::value_serializer, used to convert between C++ types
+///        and their string representation
 template <typename T>
 using value_serializer = zeem::value_serializer<T>;
 
@@ -28,14 +32,28 @@ using value_serializer = zeem::value_serializer<T>;
 namespace zeep::el
 {
 
+/// \brief Primary template for the serializer struct
+///
+/// Specializations of \a serializer provide static \a serialize and \a deserialize
+/// methods for converting between C++ types and \a object. The primary template
+/// is left undefined; only the specializations below are valid.
+/// \tparam T  The C++ type to serialize
+/// \tparam enabled  Unused, allows SFINAE-based specializations
 template <typename T, typename = void>
 struct serializer;
 
+/// \brief Serializer helper used by types that expose a \a serialize method
+///        taking an \a object_serializer parameter
 struct object_serializer;
+
+/// \brief Deserializer helper used by types that expose a \a serialize method
+///        taking an \a object_deserializer parameter
 struct object_deserializer;
 
 // --------------------------------------------------------------------
-/// Struct used to detect if there is a value_serializer for type \a T
+/// \brief Detects whether a value_serializer specialization exists for type \a T
+///
+/// Checks for both \a to_string and \a from_string member functions.
 
 template <typename T>
 using vs_to_string_function = decltype(value_serializer<T>::to_string(std::declval<T &>()));
@@ -51,10 +69,12 @@ struct has_value_serializer
 		zeem::detail::is_detected_v<vs_from_string_function, T>;
 };
 
+/// \brief Convenience variable template for \a has_value_serializer
 template <typename T>
 inline constexpr bool has_value_serializer_v = has_value_serializer<T>::value;
 
 // --------------------------------------------------------------------
+/// \brief Detects whether type \a T has a \a serialize(Archive&, uint64_t) member
 
 template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
@@ -70,10 +90,13 @@ struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 	static constexpr bool value = zeem::detail::is_detected_v<serialize_function, T, Archive>;
 };
 
+/// \brief Convenience variable template for \a has_serialize
 template <typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
 // --------------------------------------------------------------------
+/// \brief Detects whether \a T is a map-like type (e.g. std::map<std::string, V>)
+///        that can be serialized to an object value
 
 template <typename T>
 using mapped_type_t = typename T::mapped_type;
@@ -99,10 +122,13 @@ struct is_serializable_map_type<T,
 			has_serialize_v<typename T::mapped_type, object_serializer>);
 };
 
+/// \brief Convenience variable template for \a is_serializable_map_type
 template <typename T>
 inline constexpr bool is_serializable_map_type_v = is_serializable_map_type<T>::value;
 
 // --------------------------------------------------------------------
+/// \brief Detects whether \a T is an array-like type (e.g. std::vector<V>)
+///        that can be serialized to an array value
 
 template <typename T, typename = void>
 struct is_serializable_array_type : std::false_type
@@ -122,15 +148,23 @@ struct is_serializable_array_type<T,
 	                              has_serialize_v<typename T::value_type, object_serializer>;
 };
 
+/// \brief Convenience variable template for \a is_serializable_array_type
 template <typename T>
 inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T>::value;
 
 // --------------------------------------------------------------------
 
+/// \brief Helper struct for serializing C++ objects to an \a object
+///
+/// Iterates over the members (via name_value_pair) and stores each value
+/// as a named entry in the resulting object.
+
 struct object_serializer
 {
 	object_serializer() = default;
 
+	/// \brief Accept a name-value pair and serialize the value under the given name
+	/// \tparam T  The type of the value to serialize
 	template <typename T>
 	object_serializer &operator&(name_value_pair<T> &&nvp)
 	{
@@ -138,6 +172,9 @@ struct object_serializer
 		return *this;
 	}
 
+	/// \brief Serialize a named value into the result object
+	/// \param name  The key under which to store the value
+	/// \param data  The value to serialize
 	template <typename T>
 	void serialize(std::string name, const T &data)
 	{
@@ -146,6 +183,7 @@ struct object_serializer
 		m_elem.emplace(name, serializer_impl::serialize(data));
 	}
 
+	/// \brief Static convenience: serialize \a v directly into \a o
 	template <typename T>
 	static void serialize(object &o, const T &v)
 	{
@@ -154,16 +192,25 @@ struct object_serializer
 		o = serializer_impl::serialize(v);
 	}
 
+	/// \brief The accumulated serialized object
 	object m_elem;
 };
 
+/// \brief Helper struct for deserializing C++ objects from an \a object
+///
+/// Reads named members from an \a object and assigns them to the corresponding
+/// fields via name_value_pair.
+
 struct object_deserializer
 {
+	/// \brief Construct a deserializer from a source object
 	explicit object_deserializer(const object &o)
 		: m_elem(o)
 	{
 	}
 
+	/// \brief Accept a name-value pair and deserialize the value from the named member
+	/// \tparam T  The type to deserialize into
 	template <typename T>
 	object_deserializer &operator&(name_value_pair<T> &&nvp)
 	{
@@ -171,6 +218,9 @@ struct object_deserializer
 		return *this;
 	}
 
+	/// \brief Deserialize a named member from the source object
+	/// \param name  The key to look up
+	/// \param data  Reference to store the deserialized value into
 	template <typename T>
 	void deserialize(const std::string &name, T &data)
 	{
@@ -187,10 +237,20 @@ struct object_deserializer
 		data = serializer_impl::deserialize(value);
 	}
 
+	/// \brief The source object being deserialized from
 	const object &m_elem;
 };
 
 // --------------------------------------------------------------------
+/// \name Serializer specializations
+
+///@{
+
+/// \brief Specialization for types that have a \a value_serializer but are not
+///        constructible as an \a object directly.
+///
+/// Converts to/from a string representation using \a value_serializer::to_string
+/// and \a value_serializer::from_string. Excludes enum types (handled separately).
 
 template <typename T>
 	requires(
@@ -215,6 +275,12 @@ struct serializer<T>
 	}
 };
 
+/// \brief Specialization for types directly constructible from (or convertible to)
+///        \a object, such as built-in arithmetic types, std::string, bool, etc.
+///
+/// Excludes \a object itself, \a std::initializer_list, map-like types,
+/// array-like types, and enums.
+
 template <typename T>
 	requires(
 		std::is_constructible_v<object, T> and
@@ -236,6 +302,11 @@ struct serializer<T>
 	}
 };
 
+/// \brief Specialization for types that expose a \a serialize(Archive&, uint64_t) member
+///
+/// The member function writes into an \a object_serializer during serialization
+/// and reads from an \a object_deserializer during deserialization.
+
 template <typename T>
 	requires zeem::has_serialize_v<T, object_serializer>
 struct serializer<T>
@@ -255,6 +326,11 @@ struct serializer<T>
 		return result;
 	}
 };
+
+/// \brief Specialization for map-like types (e.g. std::map<std::string, V>)
+///
+/// Serializes to an \a object with keys matching the map keys and values
+/// recursively serialized.
 
 template <typename T>
 	requires is_serializable_map_type_v<T>
@@ -285,6 +361,10 @@ struct serializer<T>
 	}
 };
 
+/// \brief Specialization for array-like types (e.g. std::vector<V>)
+///
+/// Serializes to an \a object array with each element recursively serialized.
+
 template <typename T>
 	requires is_serializable_array_type_v<T>
 struct serializer<T>
@@ -314,6 +394,12 @@ struct serializer<T>
 	}
 };
 
+/// \brief Specialization for std::optional<T>
+///
+/// Serializes a disengaged optional to null, an engaged optional to the
+/// serialized value of \a T. Deserializes null to disengaged, any other
+/// value to the deserialized \a T wrapped in optional.
+
 template <typename T>
 struct serializer<std::optional<T>>
 {
@@ -338,6 +424,10 @@ struct serializer<std::optional<T>>
 	}
 };
 
+/// \brief Specialization for enum types that have a \a value_serializer
+///
+/// Converts the enum to/from its string representation.
+
 template <typename T>
 	requires(std::is_enum_v<T> and has_value_serializer_v<T>)
 struct serializer<T>
@@ -353,7 +443,10 @@ struct serializer<T>
 	}
 };
 
+///@}
+
 // --------------------------------------------------------------------
+/// \brief Detects whether a type \a T has a valid \a serializer specialization
 
 template <typename T>
 using serialize_to_object_function = decltype(zeep::el::serializer<T>::serialize(std::declval<T &>()));
@@ -365,10 +458,16 @@ struct is_serializable_to_object
 		zeem::detail::is_detected_v<serialize_to_object_function, T>;
 };
 
+/// \brief Convenience variable template for \a is_serializable_to_object
 template <typename T>
 inline constexpr bool is_serializable_to_object_v = is_serializable_to_object<T>::value;
 
 // --------------------------------------------------------------------
+
+/// \brief Convenience function to serialize a value to an \a object
+/// \tparam T  The type to serialize (must be serializable)
+/// \param v   The value to serialize
+/// \return    The resulting object
 
 template <typename T>
 object to_object(const T &v)
@@ -377,6 +476,11 @@ object to_object(const T &v)
 	using value_serializer_impl = serializer<T>;
 	return value_serializer_impl::serialize(v);
 }
+
+/// \brief Convenience function to deserialize a value from an \a object
+/// \tparam T  The target type (must be deserializable)
+/// \param o   The object to deserialize from
+/// \return    The deserialized value
 
 template <typename T>
 T from_object(const object &o)

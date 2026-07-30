@@ -18,7 +18,7 @@ namespace zeep::http
 
 class reply;
 
-/// The zeep::http::access_control class handles CORS for HTTP connections
+/// \brief Handles CORS (Cross-Origin Resource Sharing) for HTTP connections
 
 class access_control
 {
@@ -38,37 +38,44 @@ class access_control
 	{
 	}
 
-	/// Set the "Access-Control-Allow-Origin" header to \a allow_origin
+	/// \brief Set the "Access-Control-Allow-Origin" header value
+	/// \param allow_origin  The allowed origin (e.g. "*" or a specific URL)
 	void set_allow_origin(std::string allow_origin)
 	{
 		m_allow_origin = std::move(allow_origin);
 	}
 
-	/// Set the "Access-Control-Allow-Credentials" header corresponding to \a allow_credentials
+	/// \brief Set the "Access-Control-Allow-Credentials" header value
+	/// \param allow_credentials  Whether credentials are allowed
 	void set_allow_credentials(bool allow_credentials)
 	{
 		m_allow_credentials = allow_credentials;
 	}
 
-	/// Set the "Access-Control-Allow-Headers" header to \a allowed_headers
+	/// \brief Set the "Access-Control-Allow-Headers" header value
+	/// \param allowed_headers  Comma-separated list of allowed headers
 	void set_allowed_headers(std::string_view allowed_headers)
 	{
 		split(m_allowed_headers, allowed_headers, ",");
 	}
 
-	/// Add \a allowed_headers to the list in the header "Access-Control-Allow-Headers"
+	/// \brief Add a single header to the "Access-Control-Allow-Headers" list
+	/// \param allowed_header  The header name to add
 	void add_allowed_header(std::string allowed_header)
 	{
 		m_allowed_headers.emplace_back(std::move(allowed_header));
 	}
 
-	/// Add the specified headers to @ref reply \a rep
+	/// \brief Add the CORS headers to the specified reply
+	/// \param rep  The reply to add CORS headers to
 	virtual void get_access_control_headers(reply &rep) const;
 
   private:
+	/// @cond
 	std::string m_allow_origin;
 	std::vector<std::string> m_allowed_headers;
 	bool m_allow_credentials = false;
+	/// @endcond
 };
 
 } // namespace zeep::http

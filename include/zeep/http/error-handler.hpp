@@ -81,8 +81,8 @@ class error_handler
 	/// is returned.
 	error_handler(std::string error_template = "error");
 
-	basic_server *m_server = nullptr;
-	std::string m_error_template;
+	basic_server *m_server = nullptr; ///< The associated server instance
+	std::string m_error_template;     ///< The name of the error template
 };
 
 // --------------------------------------------------------------------
@@ -95,11 +95,18 @@ class error_handler
 class default_error_handler : public error_handler
 {
   public:
+	/// \brief Construct a default error handler with an optional template name
+	/// \param error_template  The name of the error template (default "error")
 	default_error_handler(std::string error_template = "error")
 		: error_handler(std::move(error_template))
 	{
 	}
 
+	/// \brief Create an error reply for an exception
+	/// \param req   The request that triggered this call
+	/// \param eptr  The captured exception
+	/// \param rep   Write the reply in this object
+	/// \return      True if the reply was created successfully
 	[[nodiscard]] bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &rep) override;
 };
 
