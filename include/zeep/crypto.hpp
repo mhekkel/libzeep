@@ -19,7 +19,8 @@ namespace zeep
 {
 
 // --------------------------------------------------------------------
-// encoding/decoding
+/// \name Encoding / decoding
+///@{
 
 /// \brief Thrown when the input does not contain valid base64 encoded data
 class invalid_base64 : public std::exception
@@ -94,29 +95,38 @@ std::string encode_hex(std::string_view data);
 /// \param data			The string containing data to decode
 std::string decode_hex(std::string_view data);
 
+///@}
+
 // --------------------------------------------------------------------
-// random bytes
+/// \name Random bytes
+///@{
 
 /// \brief return a string containing some random bytes
 std::string random_hash();
 
+///@}
+
 // --------------------------------------------------------------------
-// hashing
+/// \name Hashing
+///@{
 
 /// \brief return the MD5 hash of \a data
 std::string md5(std::string_view data);
 
-/// \brief return the SHA1 hash of \a data
+/// \brief return the SHA1 hash of \a data (string view overload)
 std::string sha1(std::string_view data);
 
-/// \brief return the SHA1 hash of \a data
+/// \brief return the SHA1 hash of \a data (streambuf overload)
 std::string sha1(std::streambuf &data);
 
 /// \brief return the SHA256 hash of \a data
 std::string sha256(std::string_view data);
 
+///@}
+
 // --------------------------------------------------------------------
-// hmac
+/// \name HMAC
+///@{
 
 /// \brief return the HMAC using an MD5 hash of \a message signed with \a key
 std::string hmac_md5(std::string_view message, std::string_view key);
@@ -127,8 +137,13 @@ std::string hmac_sha1(std::string_view message, std::string_view key);
 /// \brief return the HMAC using an SHA256 hash of \a message signed with \a key
 std::string hmac_sha256(std::string_view message, std::string_view key);
 
+///@}
+
 // --------------------------------------------------------------------
-// key derivation based on password (PBKDF2)
+/// \name Key derivation (PBKDF2)
+///@{
+
+/// \brief create password hash according to PBKDF2 with HmacSHA1
 
 /// \brief create password hash according to PBKDF2 with HmacSHA1
 ///
@@ -153,5 +168,7 @@ std::string pbkdf2_hmac_sha1(std::string_view salt,
 /// \param keyLength	the requested key length that will be returned
 std::string pbkdf2_hmac_sha256(std::string_view salt,
 	std::string_view password, unsigned iterations, unsigned keyLength);
+
+///@}
 
 } // namespace zeep

@@ -44,6 +44,7 @@ class char_streambuf : public std::streambuf
 	char_streambuf &operator=(const char_streambuf &) = delete;
 
   protected:
+	/// \brief Read one character without advancing the get pointer
 	int_type underflow() override
 	{
 		if (m_current == m_end)
@@ -52,6 +53,7 @@ class char_streambuf : public std::streambuf
 		return traits_type::to_int_type(*m_current);
 	}
 
+	/// \brief Read one character and advance the get pointer
 	int_type uflow() override
 	{
 		if (m_current == m_end)
@@ -60,6 +62,7 @@ class char_streambuf : public std::streambuf
 		return traits_type::to_int_type(*m_current++);
 	}
 
+	/// \brief Put a character back into the buffer
 	int_type pbackfail(int_type ch) override
 	{
 		if (m_current == m_begin or (ch != traits_type::eof() and ch != m_current[-1]))
@@ -68,12 +71,14 @@ class char_streambuf : public std::streambuf
 		return traits_type::to_int_type(*--m_current);
 	}
 
+	/// \brief Return the number of characters available
 	std::streamsize showmanyc() override
 	{
 		assert(std::less_equal<>()(m_current, m_end));
 		return m_end - m_current;
 	}
 
+	/// \brief Seek to a position relative to a base location
 	pos_type seekoff(std::streambuf::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode /*which*/) override
 	{
 		switch (dir)
@@ -103,6 +108,7 @@ class char_streambuf : public std::streambuf
 		return m_current - m_begin;
 	}
 
+	/// \brief Seek to an absolute position
 	pos_type seekpos(std::streambuf::pos_type pos, std::ios_base::openmode /*which*/) override
 	{
 		m_current = m_begin + pos;
@@ -117,9 +123,13 @@ class char_streambuf : public std::streambuf
 	}
 
   private:
-	const char *const m_begin;
-	const char *const m_end;
-	const char *m_current;
+	/// @cond
+
+	const char *const m_begin;  ///< Start of the buffer
+	const char *const m_end;    ///< End of the buffer
+	const char *m_current;      ///< Current read position
+
+	/// @endcond
 };
 
 } // namespace zeep

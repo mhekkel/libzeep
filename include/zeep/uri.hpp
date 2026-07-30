@@ -3,7 +3,8 @@
 
 #pragma once
 
-// A simple uri class.
+/// \file
+/// definition of the uri class, a URI parser and builder based on RFC 3986
 
 #include "zeep/exception.hpp"
 #include "zeep/unicode-support.hpp"
