@@ -3,6 +3,9 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSL-1.0
 -->
 
+Version 8.0.1
+- Fix generating documentation
+
 Version 8.0.0
 - Changed status_type to an enum class (breaking API change)
 - Removed preforked_server (breaking API change)
