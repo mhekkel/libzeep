@@ -195,7 +195,9 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 		csrf_cookie = encode_base64url(random_hash());
 		reply.set_cookie("csrf-token", csrf_cookie,
 			{ { "HttpOnly", "" },
+#ifdef NDEBUG
 				{ "Secure", "" },
+#endif
 				{ "SameSite", "Lax" },
 				{ "Path", "/" } });
 	}
@@ -232,7 +234,9 @@ reply login_controller::handle_get_login(const scope &scope)
 		csrf_cookie = encode_base64url(random_hash());
 		rep.set_cookie("csrf-token", csrf_cookie,
 			{ { "HttpOnly", "" },
+#ifdef NDEBUG
 				{ "Secure", "" },
+#endif
 				{ "SameSite", "Lax" },
 				{ "Path", "/" } });
 	}
