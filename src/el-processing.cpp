@@ -1196,7 +1196,7 @@ object interpreter::parse_link_template_expr()
 	{
 		match(token_type::div);
 		path = context;
-		if (path.back() != '/')
+		if (not path.empty() and path.back() != '/')
 			path += '/';
 	}
 
