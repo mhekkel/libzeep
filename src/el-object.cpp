@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <format>
 #include <istream>
+#include <limits>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -936,7 +937,11 @@ auto json_parser::get_next_token() -> token_t
 
 			case state_t::NumberExpDigit2:
 				if (ch >= '0' and ch <= '9')
+				{
 					exponent = 10 * exponent + (ch - '0');
+					if (exponent > std::numeric_limits<double>::max_exponent10)
+						throw zeep::exception("Number out of range");
+				}
 				else
 				{
 					retract();
