@@ -3,6 +3,14 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSL-1.0
 -->
 
+Version 8.1.0
+- Added fuzz tests for HTTP parser, EL parser, and JSON deserializer
+- Updated to 100% Doxygen coverage across all public headers
+- Added noexcept to numerous getter, setter, and query functions
+- Moved internal headers (format, glob, signals) into src/detail/
+- Fixed infinite loop in JSON lexer when encountering EOF in exponent states
+- Added exponent overflow guard in JSON parser (capped at double::max_exponent10)
+
 Version 8.0.1
 - Fix generating documentation
 
