@@ -16,6 +16,8 @@ CPMFindPackage(
 list(APPEND zeep_tests
 	crypto
 	el
+	fuzz-parser
+	fuzz-el
 	http
 	processor
 	webapp
@@ -28,8 +30,6 @@ list(APPEND zeep_tests
 if(HTTP_HAS_UNIX_DAEMON)
 	list(APPEND zeep_tests daemon)
 endif()
-
-list(APPEND zeep_tests fuzz-parser)
 
 if(USE_RSRC)
 	list(APPEND zeep_tests rsrc_webapp)
