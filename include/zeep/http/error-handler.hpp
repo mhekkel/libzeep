@@ -26,13 +26,13 @@ class error_handler
 	virtual ~error_handler() = default;
 
 	/// \brief set the server object we're bound to
-	void set_server(basic_server *s) { m_server = s; }
+	void set_server(basic_server *s) noexcept { m_server = s; }
 
 	/// \brief get the server object we're bound to
-	[[nodiscard]] basic_server *get_server() { return m_server; }
+	[[nodiscard]] basic_server *get_server() noexcept { return m_server; }
 
 	/// \brief set the server object we're bound to
-	[[nodiscard]] const basic_server *get_server() const { return m_server; }
+	[[nodiscard]] const basic_server *get_server() const noexcept { return m_server; }
 
 	/// \brief Create an error reply for an exception
 	///

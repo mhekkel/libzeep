@@ -107,7 +107,7 @@ class request
 	friend void swap(request &lhs, request &rhs) noexcept;
 
 	/// \brief Fetch the local address from the connected socket
-	void set_local_endpoint(std::string address, uint16_t port)
+	void set_local_endpoint(std::string address, uint16_t port) noexcept
 	{
 		m_local_address = std::move(address);
 		m_local_port = port;
@@ -116,34 +116,34 @@ class request
 	[[nodiscard]] std::tuple<std::string, uint16_t> get_local_endpoint() const { return { m_local_address, m_local_port }; }
 
 	/// \brief Get the HTTP version requested
-	[[nodiscard]] std::tuple<int, int> get_version() const { return { m_version[0] - '0', m_version[2] - '0' }; }
+	[[nodiscard]] std::tuple<int, int> get_version() const noexcept { return { m_version[0] - '0', m_version[2] - '0' }; }
 
 	/// \brief Set the METHOD type (POST, GET, etc)
-	void set_method(std::string method) { m_method = std::move(method); }
+	void set_method(std::string method) noexcept { m_method = std::move(method); }
 
 	/// \brief Return the METHOD type (POST, GET, etc)
-	[[nodiscard]] const std::string &get_method() const { return m_method; }
+	[[nodiscard]] const std::string &get_method() const noexcept { return m_method; }
 
 	/// \brief Return the original URI as requested
-	[[nodiscard]] const uri &get_uri() const { return m_uri; }
+	[[nodiscard]] const uri &get_uri() const noexcept { return m_uri; }
 
 	/// \brief Set the URI
-	void set_uri(const uri &uri_) { m_uri = uri_; }
+	void set_uri(const uri &uri_) noexcept { m_uri = uri_; }
 
 	/// \brief Get the address of the connecting remote
-	[[nodiscard]] const std::string &get_remote_address() const { return m_remote_address; }
+	[[nodiscard]] const std::string &get_remote_address() const noexcept { return m_remote_address; }
 
 	/// \brief Get the entire request line (convenience method)
 	[[nodiscard]] std::string get_request_line() const;
 
 	/// \brief Return the payload
-	[[nodiscard]] const std::string &get_payload() const { return m_payload; }
+	[[nodiscard]] const std::string &get_payload() const noexcept { return m_payload; }
 
 	/// \brief Set the payload
-	void set_payload(std::string payload) { m_payload = std::move(payload); }
+	void set_payload(std::string payload) noexcept { m_payload = std::move(payload); }
 
 	/// \brief Return the time at which this request was received
-	[[nodiscard]] std::chrono::system_clock::time_point get_timestamp() const { return m_timestamp; }
+	[[nodiscard]] std::chrono::system_clock::time_point get_timestamp() const noexcept { return m_timestamp; }
 
 	/// \brief Return the value in the Accept header for type
 	[[nodiscard]] float get_accept(std::string_view type) const;
@@ -167,7 +167,7 @@ class request
 	[[nodiscard]] el::object get_credentials() const { return m_credentials; }
 
 	/// \brief Set the credentials for the request
-	void set_credentials(el::object &&credentials) { m_credentials = std::move(credentials); }
+	void set_credentials(el::object &&credentials) noexcept { m_credentials = std::move(credentials); }
 
 	/// \brief Return the named parameter
 	///
@@ -218,7 +218,7 @@ class request
 	}
 
   private:
-	void set_remote_address(std::string address)
+	void set_remote_address(std::string address) noexcept
 	{
 		m_remote_address = std::move(address);
 	}

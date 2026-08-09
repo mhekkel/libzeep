@@ -43,7 +43,7 @@ class reply
 
 	~reply() = default;
 
-	reply &operator=(reply rhs)
+	reply &operator=(reply rhs) noexcept
 	{
 		swap(*this, rhs);
 		return *this;
@@ -63,7 +63,7 @@ class reply
 	}
 
 	/// Simple way to check if a reply is valid
-	explicit operator bool() const { return m_status == status_type::ok; }
+	explicit operator bool() const noexcept { return m_status == status_type::ok; }
 
 	/// Set the version to \a version_major . \a version_minor
 	void set_version(int version_major, int version_minor);
@@ -125,7 +125,7 @@ class reply
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data.
-	[[nodiscard]] const std::string &get_content() const
+	[[nodiscard]] const std::string &get_content() const noexcept
 	{
 		return m_content;
 	}
@@ -144,8 +144,8 @@ class reply
 	static reply redirect(const uri &location);
 	static reply redirect(const uri &location, status_type status);
 
-	void set_status(status_type status) { m_status = status; }
-	[[nodiscard]] status_type get_status() const { return m_status; }
+	void set_status(status_type status) noexcept { m_status = status; }
+	[[nodiscard]] status_type get_status() const noexcept { return m_status; }
 
 	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
 	[[nodiscard]] size_t size() const;

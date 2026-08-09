@@ -192,7 +192,7 @@ class object
 				default: m_it.m_p = 1; break;
 			}
 		}
-		iterator_impl(const iterator_impl &i)
+		iterator_impl(const iterator_impl &i) noexcept
 			: m_obj(i.m_obj)
 			, m_it(i.m_it)
 		{
@@ -506,7 +506,7 @@ class object
 	}
 
 	/// \brief Construct a null object from nullptr
-	object(std::nullptr_t)
+	object(std::nullptr_t) noexcept
 	{
 		m_data.m_type = value_type::null;
 	}
@@ -523,7 +523,7 @@ class object
 	/// \brief Construct a number object from an integral or floating-point value
 	/// \tparam T  A type satisfying \a NumberType
 	template <NumberType T>
-	object(T v)
+	object(T v) noexcept
 	{
 		if constexpr (std::is_integral_v<T>)
 		{
@@ -542,7 +542,7 @@ class object
 	/// \brief Construct a boolean object
 	/// \tparam T  A type satisfying \a BooleanType
 	template <BooleanType T>
-	object(T b)
+	object(T b) noexcept
 	{
 		m_data.m_type = value_type::boolean;
 		m_data.m_value = static_cast<bool>(b);
@@ -645,7 +645,7 @@ class object
 	///@}
 
 	/// \brief Return the underlying value_type enumerator
-	[[nodiscard]] constexpr value_type type() const { return m_data.m_type; }
+	[[nodiscard]] constexpr value_type type() const noexcept { return m_data.m_type; }
 
 	/// \brief Truthiness conversion
 	///
@@ -692,7 +692,7 @@ class object
 	/// when non-empty.
 	/// \tparam T  A type satisfying \a BooleanType (used to select this overload)
 	template <BooleanType T>
-	[[nodiscard]] inline bool get() const
+	[[nodiscard]] inline bool get() const noexcept
 	{
 		switch (m_data.m_type)
 		{
@@ -713,7 +713,7 @@ class object
 	/// the truthiness (0 or 1).
 	/// \tparam T  A type satisfying \a NumberType (used to select this overload)
 	template <NumberType T>
-	[[nodiscard]] std::remove_cvref_t<T> get() const
+	[[nodiscard]] std::remove_cvref_t<T> get() const noexcept
 	{
 		switch (m_data.m_type)
 		{
@@ -1050,19 +1050,19 @@ class object
 	///@{
 
 	/// \brief Return an iterator to the first element
-	[[nodiscard]] iterator begin() { return iterator(this); }
+	[[nodiscard]] iterator begin() noexcept { return iterator(this); }
 	/// \brief Return an iterator past the last element
-	[[nodiscard]] iterator end() { return { this, 1 }; }
+	[[nodiscard]] iterator end() noexcept { return { this, 1 }; }
 
 	/// \brief Return a const iterator to the first element
-	[[nodiscard]] const_iterator begin() const { return const_iterator(this); }
+	[[nodiscard]] const_iterator begin() const noexcept { return const_iterator(this); }
 	/// \brief Return a const iterator past the last element
-	[[nodiscard]] const_iterator end() const { return { this, 1 }; }
+	[[nodiscard]] const_iterator end() const noexcept { return { this, 1 }; }
 
 	/// \brief Return a const iterator to the first element
-	[[nodiscard]] const_iterator cbegin() { return const_iterator(this); }
+	[[nodiscard]] const_iterator cbegin() noexcept { return const_iterator(this); }
 	/// \brief Return a const iterator past the last element
-	[[nodiscard]] const_iterator cend() { return { this, 1 }; }
+	[[nodiscard]] const_iterator cend() noexcept { return { this, 1 }; }
 
 	///@}
 

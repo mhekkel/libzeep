@@ -50,7 +50,7 @@ class connection
 	void handle_write(asio_system_ns::error_code ec, size_t bytes_transferred);
 
 	/// \brief Return the underlying TCP socket
-	asio_ns::ip::tcp::socket &get_socket() { return m_socket; }
+	asio_ns::ip::tcp::socket &get_socket() noexcept { return m_socket; }
 
   private:
 	asio_ns::ip::tcp::socket m_socket;

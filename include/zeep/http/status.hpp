@@ -200,7 +200,7 @@ class status_type_impl : public std::error_category
  *
  * @return std::error_category&
  */
-inline std::error_category &status_type_category()
+inline std::error_category &status_type_category() noexcept
 {
 	static status_type_impl instance;
 	return instance;
@@ -209,7 +209,7 @@ inline std::error_category &status_type_category()
 /// \brief Create an std::error_code from a status_type
 /// \param e  The HTTP status code
 /// \return   An error_code representing the given status
-inline std::error_code make_error_code(status_type e)
+inline std::error_code make_error_code(status_type e) noexcept
 {
 	return { static_cast<int>(e), status_type_category() };
 }
@@ -217,7 +217,7 @@ inline std::error_code make_error_code(status_type e)
 /// \brief Create an std::error_condition from a status_type
 /// \param e  The HTTP status code
 /// \return   An error_condition representing the given status
-inline std::error_condition make_error_condition(status_type e)
+inline std::error_condition make_error_condition(status_type e) noexcept
 {
 	return { static_cast<int>(e), status_type_category() };
 }

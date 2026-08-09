@@ -370,9 +370,8 @@ class security_context
 	/// \result             True in case of valid combination
 	[[nodiscard]] bool verify_username_password(const std::string &username, const std::string &password);
 
-	/// \brief return reference to the user_service object
 	/// \brief Return reference to the user_service object
-	[[nodiscard]] user_service &get_user_service() const { return m_users; }
+	[[nodiscard]] user_service &get_user_service() const noexcept { return m_users; }
 
 	/// \brief Get or create a CSRF token for the current request
 	///
@@ -382,15 +381,15 @@ class security_context
 	[[nodiscard]] std::pair<std::string, bool> get_csrf_token(request &req);
 
 	/// \brief To automatically validate CSRF tokens, set this flag
-	void set_validate_csrf(bool validate) { m_validate_csrf = validate; }
+	void set_validate_csrf(bool validate) noexcept { m_validate_csrf = validate; }
 	/// \brief Return whether CSRF validation is enabled
-	[[nodiscard]] bool get_validate_csrf() const { return m_validate_csrf; }
+	[[nodiscard]] bool get_validate_csrf() const noexcept { return m_validate_csrf; }
 
 	/// \brief Return the default JWT expiration duration
-	[[nodiscard]] std::chrono::system_clock::duration get_jwt_exp() const { return m_default_jwt_exp; }
+	[[nodiscard]] std::chrono::system_clock::duration get_jwt_exp() const noexcept { return m_default_jwt_exp; }
 	/// \brief Set the default JWT expiration duration
 	/// \param exp  The expiration duration
-	void set_jwt_exp(std::chrono::system_clock::duration exp) { m_default_jwt_exp = exp; }
+	void set_jwt_exp(std::chrono::system_clock::duration exp) noexcept { m_default_jwt_exp = exp; }
 
   private:
 	/// @cond

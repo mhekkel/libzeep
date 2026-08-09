@@ -62,7 +62,7 @@ class parse_result
 constexpr parse_result::value_type indeterminate = parse_result::indeterminate_value;
 
 /// \brief Logical AND of two parse_results
-constexpr parse_result operator and(parse_result lhs, parse_result rhs)
+constexpr parse_result operator and(parse_result lhs, parse_result rhs) noexcept
 {
 	return (static_cast<bool>(not lhs) or static_cast<bool>(not rhs))
 	           ? parse_result(false)
@@ -70,19 +70,19 @@ constexpr parse_result operator and(parse_result lhs, parse_result rhs)
 }
 
 /// \brief Logical AND of a parse_result and a bool
-constexpr parse_result operator and(parse_result lhs, bool rhs)
+constexpr parse_result operator and(parse_result lhs, bool rhs) noexcept
 {
 	return rhs ? lhs : parse_result(false);
 }
 
 /// \brief Logical AND of a bool and a parse_result
-constexpr parse_result operator and(bool lhs, parse_result rhs)
+constexpr parse_result operator and(bool lhs, parse_result rhs) noexcept
 {
 	return lhs ? rhs : parse_result(false);
 }
 
 /// \brief Logical OR of two parse_results
-constexpr parse_result operator or(parse_result lhs, parse_result rhs)
+constexpr parse_result operator or(parse_result lhs, parse_result rhs) noexcept
 {
 	return (static_cast<bool>(not lhs) and static_cast<bool>(not rhs))
 	           ? parse_result(false)
@@ -90,25 +90,25 @@ constexpr parse_result operator or(parse_result lhs, parse_result rhs)
 }
 
 /// \brief Logical OR of a parse_result and a bool
-constexpr parse_result operator or(parse_result lhs, bool rhs)
+constexpr parse_result operator or(parse_result lhs, bool rhs) noexcept
 {
 	return rhs ? parse_result(true) : lhs;
 }
 
 /// \brief Logical OR of a bool and a parse_result
-constexpr parse_result operator or(bool lhs, parse_result rhs)
+constexpr parse_result operator or(bool lhs, parse_result rhs) noexcept
 {
 	return lhs ? parse_result(true) : rhs;
 }
 
 /// \brief Compare a parse_result with a value_type enumerator
-constexpr parse_result operator==(parse_result lhs, parse_result::value_type rhs)
+constexpr parse_result operator==(parse_result lhs, parse_result::value_type rhs) noexcept
 {
 	return lhs.m_value == rhs;
 }
 
 /// \brief Equality comparison of two parse_results
-constexpr parse_result operator==(parse_result lhs, parse_result rhs)
+constexpr parse_result operator==(parse_result lhs, parse_result rhs) noexcept
 {
 	return (lhs == indeterminate or rhs == indeterminate) ? indeterminate : ((lhs and rhs) or (not lhs and not rhs));
 }
@@ -122,7 +122,7 @@ class parser
 	virtual ~parser() = default;
 
 	/// \brief Reset the parser to its initial state
-	virtual void reset();
+	virtual void reset() noexcept;
 
 	/// \brief Parse a single character of header lines
 	/// \param ch  A character from the HTTP header
@@ -209,7 +209,7 @@ class reply_parser : public parser
 	[[nodiscard]] reply get_reply();
 
 	/// \brief Reset the parser to its initial state
-	void reset() override;
+	void reset() noexcept override;
 
   private:
 	/// @cond

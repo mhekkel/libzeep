@@ -54,7 +54,7 @@ class daemon
 	/// \param nr_of_restarts			The max number of attempts to take to start up a daemon process
 	/// \param within_nr_of_seconds		The restart counter will only consider a failed restart if it fails
 	///                                 starting up within this period of time.
-	void set_max_restarts(int nr_of_restarts, int within_nr_of_seconds)
+	void set_max_restarts(int nr_of_restarts, int within_nr_of_seconds) noexcept
 	{
 		m_max_restarts = nr_of_restarts;
 		m_restart_time_window = within_nr_of_seconds;

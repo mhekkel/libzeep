@@ -69,10 +69,10 @@ class basic_server
 	virtual ~basic_server();
 
 	/// \brief Get the security context provided in the constructor
-	[[nodiscard]] security_context &get_security_context() { return *m_security_context; }
+	[[nodiscard]] security_context &get_security_context() noexcept { return *m_security_context; }
 
 	/// \brief Test if a security context was provided in the constructor
-	[[nodiscard]] bool has_security_context() const { return m_security_context != nullptr; }
+	[[nodiscard]] bool has_security_context() const noexcept { return m_security_context != nullptr; }
 
 	/// \brief Set the set of allowed methods (default is "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE")
 	void set_allowed_methods(const std::set<std::string> &methods)
@@ -87,7 +87,7 @@ class basic_server
 	}
 
 	/// \brief Set the access_control object
-	void set_access_control(access_control *ac)
+	void set_access_control(access_control *ac) noexcept
 	{
 		m_access_control.reset(ac);
 	}
@@ -101,7 +101,7 @@ class basic_server
 	/// \brief Set the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	void set_context_name(std::string context_name) { m_context_name = std::move(context_name); }
+	void set_context_name(std::string context_name) noexcept { m_context_name = std::move(context_name); }
 
 	/// \brief Get the context_name
 	///
@@ -152,7 +152,7 @@ class basic_server
 	}
 
 	/// \brief returns whether template processor has been set
-	[[nodiscard]] bool has_template_processor() const
+	[[nodiscard]] bool has_template_processor() const noexcept
 	{
 		return m_template_processor != nullptr;
 	}
@@ -167,19 +167,19 @@ class basic_server
 	virtual void stop();
 
 	/// \brief log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
-	void set_log_forwarded(bool v) { m_log_forwarded = v; }
+	void set_log_forwarded(bool v) noexcept { m_log_forwarded = v; }
 
 	/// \brief returns the address as specified in bind
 	[[nodiscard]] std::string get_address() const { return m_address; }
 
 	/// \brief returns the port as specified in bind
-	[[nodiscard]] uint16_t get_port() const { return m_port; }
+	[[nodiscard]] uint16_t get_port() const noexcept { return m_port; }
 
 	/// \brief get_io_context has to be public since we need it to call notify_fork from child code
-	[[nodiscard]] virtual asio_ns::io_context &get_io_context() = 0;
+	[[nodiscard]] virtual asio_ns::io_context &get_io_context() noexcept = 0;
 
 	/// \brief get_executor has to be public since we need it to call notify_fork from child code
-	[[nodiscard]] asio_ns::io_context::executor_type get_executor() { return get_io_context().get_executor(); }
+	[[nodiscard]] asio_ns::io_context::executor_type get_executor() noexcept { return get_io_context().get_executor(); }
 
   protected:
 	/// \brief the default entry logger
@@ -244,7 +244,7 @@ class server : public basic_server
 		m_io_context.stop();
 	}
 
-	asio_ns::io_context &get_io_context() override
+	asio_ns::io_context &get_io_context() noexcept override
 	{
 		return m_io_context;
 	}

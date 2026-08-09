@@ -40,14 +40,14 @@ class access_control
 
 	/// \brief Set the "Access-Control-Allow-Origin" header value
 	/// \param allow_origin  The allowed origin (e.g. "*" or a specific URL)
-	void set_allow_origin(std::string allow_origin)
+	void set_allow_origin(std::string allow_origin) noexcept
 	{
 		m_allow_origin = std::move(allow_origin);
 	}
 
 	/// \brief Set the "Access-Control-Allow-Credentials" header value
 	/// \param allow_credentials  Whether credentials are allowed
-	void set_allow_credentials(bool allow_credentials)
+	void set_allow_credentials(bool allow_credentials) noexcept
 	{
 		m_allow_credentials = allow_credentials;
 	}

@@ -508,7 +508,7 @@ parse_result request_parser::parse_initial_line(char ch)
 // --------------------------------------------------------------------
 //
 
-void reply_parser::reset()
+void reply_parser::reset() noexcept
 {
 	parser::reset();
 	m_status = 0;

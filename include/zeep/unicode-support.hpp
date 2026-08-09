@@ -38,7 +38,7 @@ enum class encoding_type
 };
 
 /// \brief utf-8 is not single byte e.g.
-constexpr bool is_single_byte_encoding(encoding_type enc)
+constexpr bool is_single_byte_encoding(encoding_type enc) noexcept
 {
 	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
 }
@@ -55,7 +55,7 @@ std::tuple<unicode, Iter> get_first_char(Iter ptr, Iter end);
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
 /// This is a limited use function, works only reliably with ASCII. But that's OK.
-inline bool iequals(std::string_view a, std::string_view b)
+inline bool iequals(std::string_view a, std::string_view b) noexcept
 {
 	bool equal = a.length() == b.length();
 
@@ -299,7 +299,7 @@ inline void trim(std::string &s)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of starts_with
 
-constexpr inline bool starts_with(std::string_view s, std::string_view p)
+constexpr inline bool starts_with(std::string_view s, std::string_view p) noexcept
 {
 	return s.starts_with(p);
 }
@@ -307,7 +307,7 @@ constexpr inline bool starts_with(std::string_view s, std::string_view p)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of ends_with
 
-constexpr inline bool ends_with(std::string_view s, std::string_view p)
+constexpr inline bool ends_with(std::string_view s, std::string_view p) noexcept
 {
 	return s.length() >= p.length() and s.ends_with(p);
 }
@@ -315,7 +315,7 @@ constexpr inline bool ends_with(std::string_view s, std::string_view p)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of contains
 
-constexpr inline bool contains(std::string_view s, std::string_view p)
+constexpr inline bool contains(std::string_view s, std::string_view p) noexcept
 {
 	return s.find(p) != std::string_view::npos;
 }

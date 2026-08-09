@@ -98,14 +98,14 @@ class soap_controller : public controller
 
 	/// \brief Set the external address at which this service is visible
 	/// \param location   The external URL of this service
-	void set_location(std::string location)
+	void set_location(std::string location) noexcept
 	{
 		m_location = std::move(location);
 	}
 
 	/// \brief Set the service name
 	/// \param service   The name of the service
-	void set_service(std::string service)
+	void set_service(std::string service) noexcept
 	{
 		m_service = std::move(service);
 	}
