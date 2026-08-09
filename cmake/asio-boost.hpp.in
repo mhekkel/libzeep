@@ -3,6 +3,9 @@
 
 #pragma once
 
+/// \file
+/// Centralised include for Boost.ASIO, providing namespace aliases used throughout libzeep.
+
 #if ZEEP_BOOST_ASIO_STANDALONE
 # define BOOST_ASIO_STANDALONE 1
 #endif
@@ -22,5 +25,7 @@
 # pragma GCC diagnostic pop
 #endif
 
+/// \brief Namespace alias for the Boost.ASIO library
 namespace asio_ns = ::boost::asio;
+/// \brief Namespace alias for the Boost.System error code namespace used by Boost.ASIO
 namespace asio_system_ns = ::boost::system;

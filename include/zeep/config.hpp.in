@@ -7,6 +7,9 @@
 
 #pragma once
 
+/// \def HTTP_HAS_UNIX_DAEMON
+/// \brief Whether the http::daemon class supports UNIX fork/exec backgrounding.
+///
 /// The http::daemon class can use fork/exec to spawn a
 /// process in the background. That's not going to work
 /// on Windows for now.
@@ -15,6 +18,9 @@
 # cmakedefine01 HTTP_HAS_UNIX_DAEMON
 #endif
 
+/// \def WEBAPP_USES_RESOURCES
+/// \brief Whether the webapp can use the mrc resource compiler to load files.
+///
 /// The webapp class in libzeep can use resources to load files.
 /// In this case you need the resource compiler 'mrc' obtainable
 /// from https://forge.hekkelman.net/maarten/mrc
@@ -23,6 +29,9 @@
 # cmakedefine01 WEBAPP_USES_RESOURCES
 #endif
 
+/// \def USE_RSRC
+/// \brief Whether the mrc resource compiler is available for embedding files.
+///
 /// We can use resources to store the contents of a docroot e.g.
 /// which makes web applications really portable. However, for
 /// this feature we need a working mrc
@@ -33,12 +42,18 @@
 # cmakedefine01 USE_RSRC
 #endif
 
-/// The current version of libzeep
-
+/// \def LIBZEEP_VERSION
+/// \brief The current version of libzeep as a string
 #define LIBZEEP_VERSION "@LIBZEEP_VERSION@"
-#define LIBZEEP_VERSION_MAJOR @LIBZEEP_VERSION_MAJOR @
-#define LIBZEEP_VERSION_MINOR @LIBZEEP_VERSION_MINOR @
-#define LIBZEEP_VERSION_PATCH @LIBZEEP_VERSION_PATCH @
+/// \def LIBZEEP_VERSION_MAJOR
+/// \brief The major version number component of libzeep
+#define LIBZEEP_VERSION_MAJOR @LIBZEEP_VERSION_MAJOR@
+/// \def LIBZEEP_VERSION_MINOR
+/// \brief The minor version number component of libzeep
+#define LIBZEEP_VERSION_MINOR @LIBZEEP_VERSION_MINOR@
+/// \def LIBZEEP_VERSION_PATCH
+/// \brief The patch version number component of libzeep
+#define LIBZEEP_VERSION_PATCH @LIBZEEP_VERSION_PATCH@
 
 // Some warnings that we don't like in MSVC:
 #if defined(_MSC_VER)

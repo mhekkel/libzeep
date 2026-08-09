@@ -3,6 +3,9 @@
 
 #pragma once
 
+/// \file
+/// Centralised include for standalone ASIO, providing namespace aliases used throughout libzeep.
+
 #ifdef __GNUC__
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wsuggest-override"
@@ -13,5 +16,7 @@
 # pragma GCC diagnostic pop
 #endif
 
+/// \brief Namespace alias for the standalone ASIO library
 namespace asio_ns = ::asio;
+/// \brief Namespace alias for the system error code namespace used by standalone ASIO
 namespace asio_system_ns = ::std;
