@@ -18,6 +18,7 @@ list(APPEND zeep_tests
 	el
 	fuzz-parser
 	fuzz-el
+	fuzz-json
 	http
 	processor
 	webapp

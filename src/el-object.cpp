@@ -920,6 +920,8 @@ auto json_parser::get_next_token() -> token_t
 					exponent = (ch - '0');
 					state = state_t::NumberExpDigit2;
 				}
+				else
+					throw zeep::exception("invalid floating point format in json");
 				break;
 
 			case state_t::NumberExpDigit1:
