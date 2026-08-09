@@ -3,14 +3,13 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/security.hpp"
+#include "detail/glob.hpp"
 #include "zeep/crypto.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/uri.hpp"
-
-#include "glob.hpp"
 
 #include <algorithm>
 #include <chrono>

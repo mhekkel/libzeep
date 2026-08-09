@@ -5,15 +5,16 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <cstdint>
 #include <cstring>
 #include <exception>
 #include <random>
 #include <string>
 #include <string_view>
-#include <vector>
 
 namespace e = zeep::el;
+
+namespace
+{
 
 // --------------------------------------------------------------------
 // Fuzz helper: feed bytes into the JSON deserializer and verify
@@ -26,7 +27,7 @@ struct fuzz_outcome
 	bool threw_other = false;
 };
 
-static fuzz_outcome fuzz_parse_json(std::string_view data)
+fuzz_outcome fuzz_parse_json(std::string_view data)
 {
 	fuzz_outcome r;
 	try
@@ -44,10 +45,12 @@ static fuzz_outcome fuzz_parse_json(std::string_view data)
 	return r;
 }
 
-static void must_not_crash(const fuzz_outcome &r)
+void must_not_crash(const fuzz_outcome &r)
 {
 	CHECK_FALSE(r.threw_other);
 }
+
+} // namespace
 
 // --------------------------------------------------------------------
 // 1. Random byte sequences

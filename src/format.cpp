@@ -12,8 +12,7 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 
 #else
 
-# include "format.hpp"
-
+# include "detail/format.hpp"
 # include "zeep/unicode-support.hpp"
 
 # include <cmath>

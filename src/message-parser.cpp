@@ -58,7 +58,7 @@ namespace
 
 } // namespace
 
-void parser::reset()
+void parser::reset() noexcept
 {
 	m_parser = nullptr;
 	m_state = 0;

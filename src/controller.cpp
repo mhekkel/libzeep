@@ -4,6 +4,7 @@
 
 #include "zeep/http/controller.hpp"
 
+#include "detail/glob.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/http/asio.hpp"
 #include "zeep/http/reply.hpp"
@@ -11,8 +12,6 @@
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
 #include "zeep/uri.hpp"
-
-#include "glob.hpp"
 
 #include <cstddef>
 #include <filesystem>

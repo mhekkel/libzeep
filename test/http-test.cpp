@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "../src/signals.hpp"
+#include "../src/detail/signals.hpp"
 #include "zeep/config.hpp"
 #include "zeep/crypto.hpp"
 #include "zeep/http/client.hpp"

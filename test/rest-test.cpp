@@ -3,7 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/signals.hpp"
+#include "../src/detail/signals.hpp"
 
 #include "zeep/el/object.hpp"
 #include "zeep/el/serializer.hpp"

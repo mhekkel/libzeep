@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "signals.hpp"
+#include "detail/signals.hpp"
 
 // --------------------------------------------------------------------
 //

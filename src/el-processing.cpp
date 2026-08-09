@@ -6,15 +6,14 @@
 // A script language used in the XHTML templates used by the zeep webapp.
 //
 
-#include "format.hpp"
+#include "detail/format.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
-#include "zeep/http/asio.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
-#include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
+#include "zeep/uri.hpp"
 
 #include <zeem/zeem.hpp>
 
@@ -22,12 +21,9 @@
 #include <charconv>
 #include <chrono>
 #include <cstdint>
-#include <ctime>
 #include <exception>
-#include <iomanip>
 #include <map>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -1523,7 +1519,6 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 			{
 				auto t = params[0].get<std::string>();
 				auto f = params[1].get<std::string>();
-
 
 				auto st = zeem::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
 #if USE_DATE_H

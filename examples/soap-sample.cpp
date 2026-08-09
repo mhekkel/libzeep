@@ -14,7 +14,7 @@ struct Item
 	uint32_t count;
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_element_nvp("name", name)
@@ -32,7 +32,7 @@ struct Cart
 	std::vector<Item> items{};
 
 	template <typename Archive>
-	void serialize(Archive &ar, unsigned long version)
+	void serialize(Archive &ar, [[maybe_unused]] unsigned long version)
 	{
 		// clang-format off
         ar & zeem::make_element_nvp("cart-id", id)

@@ -4,6 +4,7 @@
 
 #include "zeep/http/html-controller.hpp"
 
+#include "detail/glob.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
@@ -11,8 +12,6 @@
 #include "zeep/http/server.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
-
-#include "glob.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -47,7 +46,7 @@ reply html_controller::handle_file(const scope &scope)
 	return get_template_processor().create_reply_for_get_file(scope);
 }
 
-void html_controller::init_scope(scope &/* scope */)
+void html_controller::init_scope(scope & /* scope */)
 {
 }
 
