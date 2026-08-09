@@ -271,11 +271,7 @@ reply send_request(request req)
 
 		// Perform SSL handshake and verify the remote host's certificate.
 		sock.set_verify_mode(ssl::verify_peer);
-#if (BOOST_VERSION / 100 % 1000) >= 73
 		sock.set_verify_callback(ssl::host_name_verification(host));
-#else
-		sock.set_verify_callback(ssl::rfc2818_verification(host));
-#endif
 		sock.handshake(ssl_socket::client);
 
 		asio_ns::write(sock, req_buffer);
