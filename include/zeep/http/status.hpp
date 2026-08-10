@@ -11,6 +11,7 @@
 #include <cassert>
 #include <string>
 #include <system_error>
+#include <type_traits>
 
 namespace zeep::http
 {
@@ -214,14 +215,6 @@ inline std::error_code make_error_code(status_type e) noexcept
 	return { static_cast<int>(e), status_type_category() };
 }
 
-/// \brief Create an std::error_condition from a status_type
-/// \param e  The HTTP status code
-/// \return   An error_condition representing the given status
-inline std::error_condition make_error_condition(status_type e) noexcept
-{
-	return { static_cast<int>(e), status_type_category() };
-}
-
 /// \brief Return a human-readable description string for a given HTTP status code
 /// \param status  The HTTP status code
 /// \return        The descriptive string (e.g., "Not Found" for 404)
@@ -260,3 +253,9 @@ class http_status_exception : public exception
 };
 
 } // namespace zeep::http
+
+template <>
+struct std::is_error_code_enum<zeep::http::status_type>
+	: public std::true_type
+{
+};
