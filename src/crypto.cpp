@@ -1350,21 +1350,6 @@ std::string sha1(std::string_view data)
 	return h.final();
 }
 
-std::string sha1(std::streambuf &data)
-{
-	SHA1 h;
-	h.init();
-
-	while (data.in_avail() > 0)
-	{
-		uint8_t buffer[256];
-		auto n = data.sgetn(reinterpret_cast<char *>(buffer), sizeof(buffer));
-		h.update(buffer, n);
-	}
-
-	return h.final();
-}
-
 std::string sha256(std::string_view data)
 {
 	SHA256 h;
