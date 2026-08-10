@@ -61,7 +61,7 @@ class login_error_handler : public error_handler
 		}
 		catch (const std::system_error &ex)
 		{
-			if (ex.code() == make_error_code(status_type::unauthorized))
+			if (ex.code() == status_type::unauthorized)
 				result = create_unauth_reply(req, reply);
 		}
 		catch (const unauthorized_exception &)
