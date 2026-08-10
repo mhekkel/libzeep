@@ -1,7 +1,5 @@
-//         Copyright Maarten L. Hekkelman, 2022-2025
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2022-2025
+// SPDX-License-Identifier: BSL-1.0
 
 #include <zeep/http/html-controller.hpp>
 #include <zeep/http/daemon.hpp>
@@ -86,11 +84,7 @@ int main(int argc, char *const argv[])
 		std::string user /* = "www-data" */;	// Using a non-empty username requires super user powers
 		std::cout << "starting server at http://" << address << ':' << port << "\n";
 
-		// Using preforked server:
-		result = server.start(address, port, 8, 8, user);
-
-		// Alternatively use a threaded server:
-		// result = server.start(address, port, 8, user);
+		result = server.start(address, port, 8, user);
 	}
 	else if (command == "stop")
 		result = server.stop();

@@ -1,7 +1,5 @@
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -12,9 +10,11 @@
 #include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/http/status.hpp"
+#include "zeep/unicode-support.hpp"
 #include "zeep/uri.hpp"
 
 #include <cassert>
+#include <charconv>
 #include <chrono>
 #include <initializer_list>
 #include <memory>
@@ -55,7 +55,15 @@ class password_encoder
   public:
 	virtual ~password_encoder() = default;
 
+	/// \brief Encode a password into a stored-password string
+	/// \param password  The raw password to encode
+	/// \return The encoded password string (suitable for storage)
 	[[nodiscard]] virtual std::string encode(const std::string &password) const = 0;
+
+	/// \brief Check a raw password against a stored encoded password
+	/// \param raw_password    The raw password to verify
+	/// \param stored_password The previously encoded password string
+	/// \return True if the password matches
 	[[nodiscard]] virtual bool matches(const std::string &raw_password, const std::string &stored_password) const = 0;
 };
 
@@ -66,14 +74,22 @@ class password_encoder
 class pbkdf2_sha256_password_encoder : public password_encoder
 {
   public:
+	/// \brief Return the encoder name identifier
+	/// \return "pbkdf2_sha256"
 	static inline constexpr const char *name() { return "pbkdf2_sha256"; };
 
-	pbkdf2_sha256_password_encoder(int iterations = 30000, int key_length = 32)
+	/// \brief Construct with optional iteration count and key length
+	/// \param iterations  Number of PBKDF2 iterations (default 100,000)
+	/// \param key_length  Desired key length in bytes (default 32)
+	pbkdf2_sha256_password_encoder(int iterations = 100'000, int key_length = 32)
 		: m_iterations(iterations)
 		, m_key_length(key_length)
 	{
 	}
 
+	/// \brief Encode a password using PBKDF2-SHA256
+	/// \param password  The raw password to encode
+	/// \return An encoded string in the format "pbkdf2_sha256$iterations$salt$hash"
 	[[nodiscard]] std::string encode(const std::string &password) const override
 	{
 		using namespace std::literals;
@@ -83,24 +99,32 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 		return "pbkdf2_sha256$" + std::to_string(m_iterations) + '$' + salt + '$' + pw;
 	}
 
+	/// \brief Verify a raw password against a stored PBKDF2-SHA256 encoded string
+	/// \param raw_password    The raw password to verify
+	/// \param stored_password The previously encoded password string
+	/// \return True if the password matches
 	[[nodiscard]] bool matches(const std::string &raw_password, const std::string &stored_password) const override
 	{
 		using namespace std::literals;
 
 		bool result = false;
 
-		std::regex rx(R"(pbkdf2_sha256\$(\d+)\$([^$]+)\$(.+))");
-
-		std::smatch m;
-		if (std::regex_match(stored_password, m, rx))
+		auto parts = split(stored_password, "$");
+		
+		if (parts.size() == 4 and parts.front() == "pbkdf2_sha256")
 		{
-			auto salt = m[2].str();
-			auto iterations = std::stoul(m[1]);
+			int iterations;
+			const auto &[ptr, ec] = std::from_chars(parts[1].data(), parts[1].data() + parts[1].size(), iterations);
 
-			auto test = zeep::pbkdf2_hmac_sha256(salt, raw_password, iterations, m_key_length);
-			test = zeep::encode_base64(test);
-
-			result = (m[3] == test);
+			if (ec == std::errc{} and ptr == parts[1].data() + parts[1].length())
+			{
+				auto salt = parts[2];
+	
+				auto test = zeep::pbkdf2_hmac_sha256(salt, raw_password, iterations, m_key_length);
+				test = zeep::encode_base64(test);
+	
+				result = (parts[3] == test);
+			}
 		}
 
 		return result;
@@ -120,6 +144,10 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 struct user_details
 {
 	user_details() = default;
+	/// \brief Construct with username, password and roles
+	/// \param username  The user's login name
+	/// \param password  The (encoded) password
+	/// \param roles     The set of roles assigned to this user
 	user_details(std::string username, std::string password, std::set<std::string> roles)
 		: username(std::move(username))
 		, password(std::move(password))
@@ -127,20 +155,25 @@ struct user_details
 	{
 	}
 
-	std::string username;
-	std::string password;
-	std::set<std::string> roles;
+	std::string username;        ///< The user's login name
+	std::string password;        ///< The encoded password
+	std::set<std::string> roles; ///< The set of roles assigned to this user
 };
 
 // --------------------------------------------------------------------
 
+/// \brief Exception thrown for general authentication failures
 class authentication_exception : public zeep::exception
 {
   public:
+	/// \brief Construct an authentication exception with a message
+	/// \param msg  The description of the authentication error
 	authentication_exception(std::string msg)
 		: zeep::exception(std::move(msg))
 	{
 	}
+
+	authentication_exception(const authentication_exception &) noexcept = default;
 };
 
 /// \brief exception thrown by user_service when trying to load user_details for an unknown user
@@ -179,9 +212,13 @@ class user_service
 	[[nodiscard]] virtual user_details load_user(const std::string &username) const = 0;
 
 	/// \brief return true if the credentials in \a credentials are still sufficient to access this web application
+	/// \param credentials  The credentials object to validate
+	/// \return True if the user is still valid
 	[[nodiscard]] virtual bool user_is_valid(const el::object &credentials) const;
 
 	/// \brief return true if a user named \a username is allowed to access this web application
+	/// \param username  The name of the user to validate
+	/// \return True if the user is still valid
 	[[nodiscard]] virtual bool user_is_valid(const std::string &username) const;
 
 	/// \brief A security context can delegate the validation of a request to a user_service.
@@ -201,6 +238,8 @@ class user_service
 class simple_user_service : public user_service
 {
   public:
+	/// \brief Construct with an initializer list of user tuples (username, password, roles)
+	/// \param users  Initializer list of (username, password, roles) tuples
 	simple_user_service(std::initializer_list<std::tuple<std::string, std::string, std::set<std::string>>> users)
 	{
 		for (auto const &[username, password, roles] : users)
@@ -218,12 +257,67 @@ class simple_user_service : public user_service
 		return result;
 	}
 
+	/// \brief Add a user to the service
+	/// \param username  The user's login name
+	/// \param password  The (encoded) password
+	/// \param roles     The set of roles assigned to this user
 	void add_user(std::string username, std::string password, std::set<std::string> roles)
 	{
 		m_users.emplace_back(std::move(username), std::move(password), std::move(roles));
 	}
 
   protected:
+	/// \brief The stored list of users
+	std::vector<user_details> m_users;
+};
+
+// --------------------------------------------------------------------
+
+/// \brief OpenID support. This class provides a user service based on what is
+/// returned by an OpenID Provider.
+
+class openid_user_service : public user_service
+{
+  public:
+	openid_user_service(
+		zeep::uri uri,
+		std::string name,
+		zeep::uri redirect_uri,
+		std::string client_id,
+		std::string client_secret);
+
+	/// \brief A security context can delegate the validation of a request to a user_service.
+	[[nodiscard]] bool validate_request(request &req) const override;
+
+	[[nodiscard]] std::string get_authorize_uri() const
+	{
+		return m_config["authorization_endpoint"].get<std::string>();
+	}
+
+	[[nodiscard]] std::string get_token_uri() const
+	{
+		return m_config["token_endpoint"].get<std::string>();
+	}
+
+	[[nodiscard]] const std::string &get_client_id() const { return m_client_id; }
+	[[nodiscard]] const std::string &get_client_secret() const { return m_client_secret; }
+
+	bool verify_rsa(const std::string &kid, const std::string &message, const std::string &signature);
+
+	/// \brief return the user_details for a user named \a username
+	/// Will obviously throw in this case.
+	[[nodiscard]] user_details load_user(const std::string &username) const override;
+
+  protected:
+	zeep::el::object fetch(zeep::uri uri);
+
+	zeep::uri m_base_uri;
+	std::string m_name;
+	zeep::uri m_redirect_uri;
+	std::string m_client_id, m_client_secret;
+	zeep::el::object m_config;
+	zeep::el::object m_keys;
+
 	std::vector<user_details> m_users;
 };
 
@@ -300,14 +394,19 @@ class security_context
 	/// Since 7.4 this flag is ignored.
 	security_context(std::string secret, user_service &users, bool defaultAccessAllowed = false);
 
+	/// \brief destructor
+	~security_context();
+
 	/// \brief register a custom password encoder
 	///
 	/// The password encoder should derive from the abstract password encoder class above
 	/// and also implement the name() method.
+	/// \brief Register a custom password encoder
+	/// \tparam PWEncoder  A type derived from \a password_encoder with a static name() method
 	template <typename PWEncoder>
 	void register_password_encoder()
 	{
-		m_known_password_encoders.emplace_back(PWEncoder::name(), new PWEncoder());
+		m_known_password_encoders.emplace_back(PWEncoder::name(), std::make_unique<PWEncoder>());
 	}
 
 	/// \brief Add a new rule for access
@@ -379,8 +478,8 @@ class security_context
 	/// \result             True in case of valid combination
 	[[nodiscard]] bool verify_username_password(const std::string &username, const std::string &password);
 
-	/// \brief return reference to the user_service object
-	[[nodiscard]] user_service &get_user_service() const { return m_users; }
+	/// \brief Return reference to the user_service object
+	[[nodiscard]] user_service &get_user_service() const noexcept { return m_users; }
 
 	/// \brief Get or create a CSRF token for the current request
 	///
@@ -390,16 +489,19 @@ class security_context
 	[[nodiscard]] std::pair<std::string, bool> get_csrf_token(request &req);
 
 	/// \brief To automatically validate CSRF tokens, set this flag
-	void set_validate_csrf(bool validate) { m_validate_csrf = validate; }
-	[[nodiscard]] bool get_validate_csrf() const { return m_validate_csrf; }
+	void set_validate_csrf(bool validate) noexcept { m_validate_csrf = validate; }
+	/// \brief Return whether CSRF validation is enabled
+	[[nodiscard]] bool get_validate_csrf() const noexcept { return m_validate_csrf; }
 
-	[[nodiscard]] std::chrono::system_clock::duration get_jwt_exp() const { return m_default_jwt_exp; }
-	void set_jwt_exp(std::chrono::system_clock::duration exp) { m_default_jwt_exp = exp; }
-
-	/// \brief Add OpenID provider info
-	void add_openid_provider(zeep::uri redirect_base_uri, std::string client_id, std::string client_secret);
+	/// \brief Return the default JWT expiration duration
+	[[nodiscard]] std::chrono::system_clock::duration get_jwt_exp() const noexcept { return m_default_jwt_exp; }
+	/// \brief Set the default JWT expiration duration
+	/// \param exp  The expiration duration
+	void set_jwt_exp(std::chrono::system_clock::duration exp) noexcept { m_default_jwt_exp = exp; }
 
   private:
+	/// @cond
+
 	struct rule
 	{
 		std::string m_pattern;
@@ -421,6 +523,8 @@ class security_context
 	std::string m_client_id, m_client_secret;
 	zeep::el::object m_config;
 	zeep::el::object m_keys;
+
+	/// @endcond
 };
 
 } // namespace zeep::http

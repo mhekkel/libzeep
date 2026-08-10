@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -30,5 +28,26 @@ class exception : public std::exception
   protected:
 	std::string m_message;
 };
+
+/// \brief logic error as thrown by libzeep
+class logic_exception : public exception
+{
+  public:
+	/// \brief Create an exception with the message in \a message
+	logic_exception(std::string message)
+		: exception(std::move(message)) {}
+};
+
+/// \brief invalid_argument error as thrown by libzeep
+class invalid_argument_exception : public exception
+{
+  public:
+	/// \brief Create an exception with the message in \a message
+	invalid_argument_exception(std::string message)
+		: exception(std::move(message)) {}
+};
+
+
+
 
 } // namespace zeep

@@ -1,29 +1,22 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 // Source code specifically for Unix/Linux
 // Utility routines to build daemon processes
 
 #include "zeep/http/daemon.hpp"
 
-#include "signals.hpp"
+#include "detail/signals.hpp"
 #include "zeep/config.hpp"
 #include "zeep/exception.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/preforked-server.hpp"
 #include "zeep/http/server.hpp"
 #include "zeep/unicode-support.hpp"
 
 #include <cerrno>
-#include <climits>
 #include <csignal>
 #include <cstdint>
-#include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <exception>
 #include <fcntl.h>
 #include <filesystem>
@@ -31,7 +24,6 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <sys/types.h>
@@ -97,7 +89,7 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 	acceptor.open(endpoint.protocol());
 	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	if (acceptor.bind(endpoint, ec))
-		throw std::runtime_error(std::string("Is server running already? ") + ec.message());
+		throw exception(std::string("Is server running already? ") + ec.message());
 	acceptor.listen();
 
 	acceptor.close();
@@ -123,115 +115,6 @@ int daemon::run_foreground(std::string_view address, uint16_t port)
 }
 
 #if HTTP_HAS_UNIX_DAEMON
-
-int daemon::start(std::string_view address, uint16_t port, int nr_of_procs, int nr_of_threads, const std::string &run_as_user)
-{
-	int result = 0;
-
-	if (pid_is_for_executable())
-	{
-		std::clog << "Server is already running.\n";
-		result = 1;
-	}
-	else
-	{
-		std::error_code ec;
-
-		if (fs::exists(m_pid_file, ec))
-			fs::remove(m_pid_file, ec);
-
-		fs::path pidDir = fs::path(m_pid_file).parent_path();
-		if (not fs::is_directory(pidDir, ec))
-			fs::create_directories(pidDir, ec);
-
-		if (ec)
-			std::clog << "Creating directory for pid file failed: " << ec.message() << '\n';
-
-		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
-		if (not fs::is_directory(outLogDir, ec))
-			fs::create_directories(outLogDir, ec);
-
-		if (ec)
-			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
-
-		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
-		if (not fs::is_directory(errLogDir, ec))
-			fs::create_directories(errLogDir, ec);
-
-		if (ec)
-			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
-
-		try
-		{
-			asio_ns::io_context io_context;
-
-			asio_ns::ip::tcp::endpoint endpoint;
-			try
-			{
-				endpoint = asio_ns::ip::tcp::endpoint(asio_ns::ip::make_address(address), port);
-			}
-			catch (const std::exception &e)
-			{
-				asio_ns::ip::tcp::resolver resolver(io_context);
-				for (auto &ep : resolver.resolve(address, std::to_string(port)))
-				{
-					endpoint = ep;
-					break;
-				}
-			}
-
-			asio_ns::ip::tcp::acceptor acceptor(io_context);
-			acceptor.open(endpoint.protocol());
-			acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
-			acceptor.bind(endpoint);
-			acceptor.listen();
-
-			acceptor.close();
-		}
-		catch (exception &e)
-		{
-			throw std::runtime_error(std::string("Is server running already? ") + e.what());
-		}
-
-		int pid = daemonize();
-		if (pid == 0)
-		{
-			for (;;)
-			{
-				bool hupped = run_main_loop(address, port, nr_of_procs, nr_of_threads, run_as_user);
-				if (hupped)
-				{
-					std::clog << "Server was interrupted, will attempt to resume\n";
-					continue;
-				}
-
-				break;
-			}
-
-			if (fs::exists(m_pid_file, ec))
-				fs::remove(m_pid_file, ec);
-
-			if (ec)
-				std::clog << "Removing pid file failed: " << ec.message() << '\n';
-
-			_exit(0);
-		}
-
-		// Forking is done twice, so mop up the zombie here
-		int status, pid_c;
-		pid_c = waitpid(-1, &status, WUNTRACED);
-
-		if (pid_c != -1)
-		{
-			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
-				std::clog << "child " << pid_c << " terminated by signal " << WTERMSIG(status) << '\n';
-			// else
-			// 	std::clog << "child terminated normally\n";
-		}
-	}
-
-	return result;
-}
 
 int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, const std::string &run_as_user)
 {
@@ -301,99 +184,92 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 		}
 		catch (exception &e)
 		{
-			throw std::runtime_error(std::string("Is server running already? ") + e.what());
+			throw exception(std::string("Is server running already? ") + e.what());
 		}
 
-		int pid = daemonize();
+		int pid = fork();
+		if (pid == -1)
+			throw exception("Fork failed");
+
 		if (pid == 0) // Child process
 		{
-			open_log_file();
-
-			std::clog << "starting server\n"
-					  << "Listening to " << address << ':' << port << '\n';
-
-			signal_catcher sc;
-			sc.block();
-
-			// Drop privileges
-			if (not run_as_user.empty())
+			try
 			{
-				struct passwd *pw = getpwnam(run_as_user.c_str());
-				if (pw == nullptr)
-				{
-					std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-					exit(1);
-				}
+				daemonize();
 
-				if (pw->pw_uid != getuid())
-				{
-					int ngroups = 0;
-					if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
-					{
-						std::vector<gid_t> groups(ngroups);
-						if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
-							setgroups(ngroups, groups.data()) == -1)
-						{
-							std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
-							exit(1);
-						}
-					}
+				open_log_file();
 
-					if (setgid(pw->pw_gid) < 0)
-					{
-						std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
-					}
+				std::clog << "starting server\n"
+						  << "Listening to " << address << ':' << port << '\n';
 
-					if (setuid(pw->pw_uid) < 0)
-					{
-						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
-					}
-				}
-			}
-
-			for (;;)
-			{
+				signal_catcher sc;
 				sc.block();
 
-				std::unique_ptr<basic_server> server;
-				try
+				// Drop privileges
+				if (not run_as_user.empty())
 				{
-					server.reset(m_factory());
+					struct passwd *pw = getpwnam(run_as_user.c_str());
+					if (pw == nullptr)
+						throw exception(std::format("Failed to set uid to {}: {}", run_as_user, strerror(errno)));
+
+					if (pw->pw_uid != getuid())
+					{
+						int ngroups = 0;
+						if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
+						{
+							std::vector<gid_t> groups(ngroups);
+							if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
+								setgroups(ngroups, groups.data()) == -1)
+							{
+								throw exception(std::format("Failed to set groups for {}: {}", run_as_user, strerror(errno)));
+							}
+						}
+
+						if (setgid(pw->pw_gid) < 0)
+							throw exception(std::format("Failed to set id for {}: {}", run_as_user, strerror(errno)));
+
+						if (setuid(pw->pw_uid) < 0)
+							throw exception(std::format("Failed to set uid for {}: {}", run_as_user, strerror(errno)));
+					}
+				}
+
+				for (;;)
+				{
+					sc.block();
+
+					std::unique_ptr<basic_server> server(m_factory());
 					server->bind(address, port);
+
+					std::thread t([nr_of_threads, &server]()
+						{ server->run(nr_of_threads); });
+
+					sc.unblock();
+					int sig = sc.wait();
+
+					std::clog << "Process " << getpid() << " received signal " << sig << "\n";
+
+					server->stop();
+
+					if (t.joinable())
+						t.join();
+
+					if (sig == SIGHUP)
+					{
+						// re-open log files
+						open_log_file();
+
+						std::clog << "re-starting server\n"
+								  << "Listening to " << address << ':' << port << '\n';
+
+						continue;
+					}
+
+					break;
 				}
-				catch (const exception &e)
-				{
-					std::clog << "Failed to launch server: " << e.what() << '\n';
-					exit(1);
-				}
-
-				std::thread t([nr_of_threads, &server]()
-					{ server->run(nr_of_threads); });
-
-				sc.unblock();
-				int sig = sc.wait();
-
-				std::clog << "Process " << getpid() << " received signal " << sig << "\n";
-
-				server->stop();
-
-				if (t.joinable())
-					t.join();
-
-				if (sig == SIGHUP)
-				{
-					// re-open log files
-					open_log_file();
-
-					std::clog << "re-starting server\n"
-							  << "Listening to " << address << ':' << port << '\n';
-
-					continue;
-				}
-
-				break;
+			}
+			catch (const std::exception &ex)
+			{
+				std::println(std::clog, "Process terminated with exception: {}", ex.what());
 			}
 
 			if (fs::exists(m_pid_file, ec))
@@ -430,7 +306,7 @@ int daemon::stop()
 	{
 		std::ifstream file(m_pid_file);
 		if (not file.is_open())
-			throw std::runtime_error("Failed to open pid file");
+			throw exception("Failed to open pid file");
 
 		int pid;
 		file >> pid;
@@ -459,7 +335,7 @@ int daemon::stop()
 			std::clog << "Could not remove pid file: " << ec.message() << '\n';
 	}
 	else
-		throw std::runtime_error("Not my pid file: " + m_pid_file);
+		throw exception("Not my pid file: " + m_pid_file);
 
 	return result;
 }
@@ -490,7 +366,7 @@ int daemon::reload()
 	{
 		std::ifstream file(m_pid_file);
 		if (not file.is_open())
-			throw std::runtime_error("Failed to open pid file");
+			throw exception("Failed to open pid file");
 
 		int pid;
 		file >> pid;
@@ -508,29 +384,16 @@ int daemon::reload()
 
 int daemon::daemonize()
 {
-	int pid = fork();
-
-	if (pid == -1)
-	{
-		std::clog << "Fork failed\n";
-		exit(1);
-	}
-
-	// exit the parent (=calling) process
-	if (pid != 0)
-		return pid;
+	using namespace std::literals;
 
 	if (setsid() < 0)
-	{
-		std::clog << "Failed to create process group: " << strerror(errno) << '\n';
-		exit(1);
-	}
+		throw exception("Failed to create process group: "s + strerror(errno));
 
 	// This in-between process should not catch SIGHUP
 	(void)signal(SIGHUP, SIG_IGN);
 
 	// fork again, to avoid being able to attach to a terminal device
-	pid = fork();
+	auto pid = fork();
 
 	if (pid == -1)
 		std::clog << "Fork failed\n";
@@ -541,19 +404,13 @@ int daemon::daemonize()
 	// write our pid to the pid file
 	std::ofstream pidFile(m_pid_file);
 	if (not pidFile.is_open())
-	{
-		std::clog << "Failed to write to " << m_pid_file << ": " << strerror(errno) << '\n';
-		exit(1);
-	}
+		throw exception(std::format("Failed to write to {}: {}", m_pid_file, strerror(errno)));
 
 	pidFile << getpid() << '\n';
 	pidFile.close();
 
 	if (chdir("/") != 0)
-	{
-		std::clog << "Cannot chdir to /: " << strerror(errno) << '\n';
-		exit(1);
-	}
+		throw exception("Cannot chdir to /: "s + strerror(errno));
 
 	// close stdin
 	close(STDIN_FILENO);
@@ -574,24 +431,17 @@ void daemon::open_log_file()
 
 	// open the log file
 	int fd_out = open(m_stdout_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
-	if (fd_out < 0)
-	{
-		std::clog << "Opening log file " << m_stdout_log_file << " failed\n";
-		exit(1);
-	}
+	int fd_err = (m_stderr_log_file == m_stdout_log_file)
+	                 ? fd_out
+	                 : open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
 
-	int fd_err;
-
-	if (m_stderr_log_file == m_stdout_log_file)
-		fd_err = fd_out;
-	else
+	if (fd_out < 0 or fd_err < 0)
 	{
-		fd_err = open(m_stderr_log_file.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644); // NOLINT(hicpp-vararg)
-		if (fd_err < 0)
-		{
-			std::clog << "Opening log file " << m_stderr_log_file << " failed\n";
-			exit(1);
-		}
+		if (fd_out >= 0)
+			close(fd_out);
+		if (fd_err >= 0 and fd_err != fd_out)
+			close(fd_err);
+		throw exception("Opening log file " + m_stdout_log_file);
 	}
 
 	// redirect stdout and stderr to the log file
@@ -604,144 +454,6 @@ void daemon::open_log_file()
 		close(fd_err);
 }
 
-bool daemon::run_main_loop(std::string_view address, uint16_t port, int nr_of_procs, int nr_of_threads, const std::string &run_as_user)
-{
-	int sig = 0;
-
-	int restarts = 0;
-
-	for (;;)
-	{
-		auto start = time(nullptr);
-
-		open_log_file();
-
-		if (sig == 0)
-			std::clog << "starting server\n";
-		else
-			std::clog << "restarting server\n";
-
-		std::clog << "Listening to " << address << ':' << port << '\n';
-
-		sigset_t new_mask, old_mask;
-		sigfillset(&new_mask);
-		pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-
-		preforked_server server([=, this]()
-			{
-			try
-			{
-				if (not run_as_user.empty())
-				{
-					struct passwd* pw = getpwnam(run_as_user.c_str());
-					if (pw == nullptr)
-					{
-						std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-						exit(1);
-					}
-
-					if (pw->pw_uid != getuid())
-					{
-						int ngroups = 0;
-						if (getgrouplist(pw->pw_name, pw->pw_gid, nullptr, &ngroups) == -1 and ngroups > 0)
-						{
-							std::vector<gid_t> groups(ngroups);
-							if (getgrouplist(pw->pw_name, pw->pw_gid, groups.data(), &ngroups) != -1 and
-								setgroups(ngroups, groups.data()) == -1)
-							{
-								std::clog << "Failed to set groups for " << run_as_user << ": " << strerror(errno) << '\n';
-								exit(1);
-							}
-						}
-
-						if (setgid(pw->pw_gid) < 0)
-						{
-							std::clog << "Failed to set gid for " << run_as_user << ": " << strerror(errno) << '\n';
-							exit(1);
-						}
-
-						if (setuid(pw->pw_uid) < 0)
-						{
-							std::clog << "Failed to set uid to " << run_as_user << ": " << strerror(errno) << '\n';
-							exit(1);
-						}
-					}
-				}
-				
-				return m_factory();
-			}
-			catch (const exception& e)
-			{
-				std::clog << "Failed to launch server: " << e.what() << '\n';
-				exit(1);
-			} });
-
-		std::thread t([s = &server, address, port, nr_of_procs, nr_of_threads]
-			{ s->run(address, port, nr_of_procs, nr_of_threads); });
-
-		try
-		{
-			server.start();
-		}
-		catch (const exception &ex)
-		{
-			std::clog << '\n'
-					  << "Exception running server: \n"
-					  << ex.what() << '\n'
-					  << '\n';
-			exit(1);
-		}
-
-		pthread_sigmask(SIG_SETMASK, &old_mask, nullptr);
-
-		// Wait for signal indicating time to shut down.
-		sigset_t wait_mask;
-		sigemptyset(&wait_mask);
-		sigaddset(&wait_mask, SIGINT);
-		sigaddset(&wait_mask, SIGHUP);
-		sigaddset(&wait_mask, SIGQUIT);
-		sigaddset(&wait_mask, SIGTERM);
-		sigaddset(&wait_mask, SIGCHLD);
-		pthread_sigmask(SIG_BLOCK, &wait_mask, nullptr);
-
-		sigwait(&wait_mask, &sig);
-
-		pthread_sigmask(SIG_SETMASK, &old_mask, nullptr);
-
-		server.stop();
-		t.join();
-
-		if (sig != SIGCHLD)
-			break;
-
-		int status, pid;
-		pid = waitpid(-1, &status, WUNTRACED);
-
-		if (pid != -1)
-		{
-			if (WIFSIGNALED(status) and WTERMSIG(status) != SIGKILL)
-				std::clog << "child " << pid << " terminated by signal " << WTERMSIG(status) << '\n';
-			// else
-			// 	std::clog << "child terminated normally\n";
-		}
-
-		// did the client crash within the time window?
-		if (time(nullptr) - start > m_restart_time_window)
-		{
-			restarts = 0; // no, it was outside, reset counter
-			continue;
-		}
-
-		if (++restarts >= m_max_restarts)
-		{
-			std::clog << "aborting due to excessive restarts\n";
-			break;
-		}
-	}
-
-	return sig == SIGHUP;
-}
-
 bool daemon::pid_is_for_executable()
 {
 	using namespace std::literals;
@@ -752,7 +464,7 @@ bool daemon::pid_is_for_executable()
 	{
 		std::ifstream pidfile(m_pid_file);
 		if (not pidfile.is_open())
-			throw std::runtime_error("Failed to open pid file " + m_pid_file + ": " + strerror(errno));
+			throw exception("Failed to open pid file " + m_pid_file + ": " + strerror(errno));
 
 		int pid;
 		pidfile >> pid;
@@ -763,7 +475,7 @@ bool daemon::pid_is_for_executable()
 		{
 			char exe[PATH_MAX] = "";
 			if (readlink("/proc/self/exe", exe, sizeof(exe)) == -1)
-				throw std::runtime_error("could not get exe path ("s + strerror(errno) + ")");
+				throw exception("could not get exe path ("s + strerror(errno) + ")");
 
 			result = strcmp(exe, path) == 0 or
 			         (ends_with(path, " (deleted)") and starts_with(path, exe));
@@ -771,7 +483,7 @@ bool daemon::pid_is_for_executable()
 		else if (errno == ENOENT)       // link file doesn't exist (can happen on e.g. macOS)
 			result = kill(pid, 0) == 0; // simply test using kill with signal 0.
 		else
-			throw std::runtime_error("Failed to read executable link : "s + strerror(errno));
+			throw exception("Failed to read executable link : "s + strerror(errno));
 	}
 
 	return result;

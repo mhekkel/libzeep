@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/exception.hpp"
 #include "zeep/http/soap-controller.hpp"
@@ -36,8 +34,8 @@ zeem::element make_envelope(zeem::element&& data)
 		{ "xmlns:soap", "http://schemas.xmlsoap.org/soap/envelope/" },
 		{ "soap:encodingStyle", "http://www.w3.org/2003/05/soap-encoding" }
 	});
-	auto& body = env.emplace_back("soap:Body");
-	body.emplace_back(std::move(data));
+	auto body = env.emplace_back("soap:Body");
+	body->emplace_back(std::move(data));
 	
 	return env;
 }
@@ -47,10 +45,10 @@ zeem::element make_fault(std::string what)
 	zeem::element fault("soap:Fault");
 	
 	auto faultCode = fault.emplace_back("faultcode");
-	faultCode.set_content("soap:Server");
+	faultCode->set_content("soap:Server");
 	
 	auto faultString(fault.emplace_back("faultstring"));
-	faultString.set_content(what);
+	faultString->set_content(what);
 
 	return make_envelope(std::move(fault));
 }
@@ -77,8 +75,8 @@ bool soap_controller::handle_request(request& req, reply& reply)
 			zeem::document envelope(req.get_payload());
 
 			auto request = envelope.find_first(
-				"/Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/Body[position()=1]/*[position()=1]");
-			if (request == envelope.cend())
+				"/*:Envelope[namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*:Body[position()=1]/*[position()=1]");
+			if (request == envelope.end())
 				throw zeep::exception("Empty or invalid SOAP envelope passed");
 
 			if (request->get_ns() != m_ns)
@@ -112,6 +110,7 @@ bool soap_controller::handle_request(request& req, reply& reply)
 	{
 		reply.set_content(make_wsdl());
 		reply.set_status(status_type::ok);
+		result = true;
 	}
 
 	return result;
@@ -131,70 +130,70 @@ zeem::element soap_controller::make_wsdl()
 	});
 	
 	// add wsdl:types
-	auto& types = wsdl.emplace_back("wsdl:types");
+	auto types = wsdl.emplace_back("wsdl:types");
 
 	// add xsd:schema
-	auto& schema = types.emplace_back("xsd:schema",
+	auto schema = types->emplace_back(zeem::element{"xsd:schema",
 	{
 		{ "targetNamespace", m_ns },
 		{ "elementFormDefault", "qualified" },
 		{ "attributeFormDefault", "unqualified" },
 		{ "xmlns:xsd", "http://www.w3.org/2001/XMLSchema" }
-	});
+	}});
 
 	using namespace std::literals;
 
 	// add wsdl:binding
-	auto& binding = wsdl.emplace_back("wsdl:binding",
+	auto binding = wsdl.emplace_back(zeem::element{"wsdl:binding",
 	{
 		{ "name", m_service },
 		{ "type", "ns:" + m_service + "PortType" }
-	});
+	}});
 	
 	// add soap:binding
-	binding.emplace_back("soap:binding",
+	binding->emplace_back(zeem::element{"soap:binding",
 	{
 		{ "style", "document" },
 		{ "transport", "http://schemas.xmlsoap.org/soap/http" }
-	});
+	}});
 	
 	// add wsdl:portType
-	auto& portType = wsdl.emplace_back("wsdl:portType",
+	auto portType = wsdl.emplace_back(zeem::element{"wsdl:portType",
 	{
 		{ "name", m_service + "PortType" }
-	});
+	}});
 	
 	// and the types
 	zeem::type_map typeMap;
 	message_map messageMap;
 	
 	for (auto& mp: m_mountpoints)
-		mp->describe(typeMap, messageMap, portType, binding);
+		mp->describe(typeMap, messageMap, *portType, *binding);
 	
 	for (auto &m : messageMap)
 		wsdl.emplace_back(std::move(m.second));
 	
 	for (auto &t : typeMap)
-		schema.emplace_back(std::move(t.second));
+		schema->emplace_back(std::move(t.second));
 	
 	// finish with the wsdl:service
-	auto& service = wsdl.emplace_back("wsdl:service",
+	auto service = wsdl.emplace_back(zeem::element{"wsdl:service",
 	{
 		{ "name", m_service }
-	});
+	}});
 	
-	auto& port = service.emplace_back("wsdl:port",
+	auto port = service->emplace_back(zeem::element{"wsdl:port",
 	{
 		{ "name", m_service },
 		{ "binding", "ns:" + m_service }
-	});
+	}});
 	
-	std::string location = get_context_name() + "/" + m_location;
+	std::string location = (uri(get_context_name()) / m_location).string();
 
-	port.emplace_back("soap:address",
+	port->emplace_back(zeem::element{"soap:address",
 	{
 		{ "location", location }
-	});
+	}});
 	
 	return wsdl;
 }

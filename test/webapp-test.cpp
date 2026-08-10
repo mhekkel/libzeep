@@ -1,11 +1,9 @@
-//          Copyright Maarten L. Hekkelman 2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/signals.hpp"
+#include "../src/detail/signals.hpp"
 
 #include <zeep/http/client.hpp>
 #include <zeep/http/daemon.hpp>
@@ -15,7 +13,7 @@
 #include <zeep/http/server.hpp>
 #include <zeep/uri.hpp>
 
-#include <zeem/document.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cstdint>
 #include <exception>
@@ -26,8 +24,6 @@
 #include <string_view>
 #include <thread>
 #include <tuple>
-
-using webapp = zeep::http::html_controller_v1;
 
 void compare(zeem::document &a, zeem::document &b)
 {
@@ -44,7 +40,7 @@ void compare(zeem::document &a, zeem::document &b)
 
 TEST_CASE("webapp_1")
 {
-	class my_webapp : public webapp
+	class my_webapp : public zeep::http::html_controller_v1
 	{
 	  public:
 		my_webapp()
@@ -91,52 +87,10 @@ TEST_CASE("webapp_1")
 	CHECK(rep.get_status() == zeep::http::status_type::not_found);
 }
 
-// TEST_CASE("webapp_2")
-// {
-// 	webapp app;
-
-// 	app.mount("test", &zeep::http::controller::handle_file);
-
-// 	zeep::http::request req;
-// 	req.method = zeep::"GET";
-// 	req.set_uri("/test");
-
-// 	zeep::http::reply rep;
-
-// 	app.handle_request(req, rep);
-
-// 	CHECK(rep.get_status() == zeep::http::internal_server_error);
-// }
-
-// TEST_CASE("webapp_4")
-// {
-// 	using namespace zeem::literals;
-
-// 	webapp app;
-// 	zx::document doc;
-
-// 	app.load_template("fragment-file :: frag1", doc);
-
-// 	auto test1 = R"(<?xml version="1.0"?>
-// <div>fragment-1</div>)"_xml;
-
-// 	compare(doc, test1);
-
-// 	doc.clear();
-
-// 	app.load_template("fragment-file :: #frag2", doc);
-
-// 	auto test2 = R"(<?xml version="1.0"?>
-// <div>fragment-2</div>)"_xml;
-
-// 	compare(doc, test2);
-
-// }
-
 // test various ways of mounting handlers
 TEST_CASE("webapp_5")
 {
-	class my_webapp : public webapp
+	class my_webapp : public zeep::http::html_controller_v1
 	{
 	  public:
 		my_webapp()
@@ -311,123 +265,7 @@ TEST_CASE("webapp_10")
 	t.join();
 }
 
-// // a more generic set of tests, should be in a separate file I guess
-
-// TEST_CASE("split_1")
-// {
-// 	std::vector<std::string> p;
-// 	zeep::split(p, ",een,twee"s, ",", false);
-
-// 	REQUIRE(p.size() == 3);
-// 	CHECK(p[0] == "");
-// 	CHECK(p[1] == "een");
-// 	CHECK(p[2] == "twee");
-
-// 	zeep::split(p, ",een,twee"s, ",", true);
-
-// 	REQUIRE(p.size() == 2);
-// 	CHECK(p[0] == "een");
-// 	CHECK(p[1] == "twee");
-// }
-
 // --------------------------------------------------------------------
-
-// // test various ways of mounting handlers
-// TEST_CASE("webapp_5")
-// {
-// 	class my_webapp : public webapp_2
-// 	{
-// 	  public:
-// 		my_webapp() {
-// 			mount("test", &my_webapp::handle_test1);
-// 			mount("*/*.x", &my_webapp::handle_test2);
-// 			mount("**/*.x", &my_webapp::handle_test2b);
-// 			mount("test/*", &my_webapp::handle_test3);
-// 			mount("test/**", &my_webapp::handle_test4);
-
-// 			mount("{css,scripts}/", &my_webapp::handle_testf);
-// 		}
-
-// 		virtual void handle_test1(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 			reply.set_content("1", "text/plain");
-// 		}
-
-// 		virtual void handle_test2(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 			reply.set_content("2", "text/plain");
-// 		}
-
-// 		virtual void handle_test2b(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 			reply.set_content("2b", "text/plain");
-// 		}
-
-// 		virtual void handle_test3(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 			reply.set_content("3", "text/plain");
-// 		}
-
-// 		virtual void handle_test4(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 			reply.set_content("4", "text/plain");
-// 		}
-
-// 		virtual void handle_testf(const zeep::http::request& /*request*/, const zeep::http::scope& /*scope*/, zeep::http::reply& reply)
-// 		{
-// 			reply = zeep::http::reply::stock_reply(zeep::http::ok);
-// 			reply.set_content("f", "text/plain");
-// 		}
-
-// 	} app;
-
-// 	zeep::http::request req("GET", "/test");
-// 	zeep::http::reply rep;
-
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "1");
-
-// 	req.set_uri("/test/x");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "3");
-
-// 	req.set_uri("/test/x/x");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "4");
-
-// 	req.set_uri("iew.x");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "2b");
-
-// 	req.set_uri("x/iew.x");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "2");
-
-// 	req.set_uri("x/x/iew.x");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "2b");
-
-// 	req.set_uri("css/styles/my-style.css");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "f");
-
-// 	req.set_uri("scripts/x.js");
-// 	app.handle_request(req, rep);
-// 	CHECK(rep.get_status() == zeep::http::ok);
-// 	CHECK(rep.get_content() == "f");
-// }
 
 class hello_controller_2 : public zeep::http::html_controller
 {

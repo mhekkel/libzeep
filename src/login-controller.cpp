@@ -1,7 +1,5 @@
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/login-controller.hpp"
 
@@ -18,8 +16,9 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
 
+#include <memory>
 #include <system_error>
-#include <zeem/node.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cassert>
 #include <exception>
@@ -35,15 +34,20 @@ namespace zeep::http
 class login_error_handler : public error_handler
 {
   public:
-	login_error_handler(login_controller *c)
+	login_error_handler(login_controller &c, std::shared_ptr<int> alive)
 		: m_login_controller(c)
+		, m_alive(std::move(alive))
 	{
 	}
 
 	bool create_unauth_reply(const request &req, reply &reply) override
 	{
-		m_login_controller->create_unauth_reply(req, reply);
-		return true;
+		if (*m_alive == 1)
+		{
+			m_login_controller.create_unauth_reply(req, reply);
+			return true;
+		}
+		return false;
 	}
 
 	bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &reply) override
@@ -57,7 +61,7 @@ class login_error_handler : public error_handler
 		}
 		catch (const std::system_error &ex)
 		{
-			if (ex.code() == std::error_code(unauthorized, status_type_category()))
+			if (ex.code() == make_error_code(status_type::unauthorized))
 				result = create_unauth_reply(req, reply);
 		}
 		catch (const unauthorized_exception &)
@@ -73,11 +77,13 @@ class login_error_handler : public error_handler
 	}
 
   private:
-	login_controller *m_login_controller;
+	login_controller &m_login_controller;
+	std::shared_ptr<int> m_alive;
 };
 
 login_controller::login_controller(const std::string &prefix_path)
 	: html_controller(prefix_path)
+	, m_alive(std::make_shared<int>(1))
 {
 	map_get("login", &login_controller::handle_get_login);
 	map_post("login", &login_controller::handle_post_login, "username", "password");
@@ -86,18 +92,23 @@ login_controller::login_controller(const std::string &prefix_path)
 	map_post("logout", &login_controller::handle_logout);
 }
 
+login_controller::~login_controller()
+{
+	*m_alive = 0;
+}
+
 void login_controller::set_server(basic_server *server)
 {
 	controller::set_server(server);
 
 	assert(server->has_security_context());
 	if (not server->has_security_context())
-		throw std::runtime_error("The HTTP server has no security context");
+		throw exception("The HTTP server has no security context");
 
 	auto &sc = server->get_security_context();
 	sc.add_rule("/login", {});
 
-	server->add_error_handler(new login_error_handler(this));
+	server->add_error_handler(new login_error_handler(*this, m_alive));
 }
 
 zeem::document login_controller::load_login_form(const request &req) const
@@ -182,7 +193,13 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 	if (csrf_cookie.empty())
 	{
 		csrf_cookie = encode_base64url(random_hash());
-		reply.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+		reply.set_cookie("csrf-token", csrf_cookie,
+			{ { "HttpOnly", "" },
+#ifdef NDEBUG
+				{ "Secure", "" },
+#endif
+				{ "SameSite", "Lax" },
+				{ "Path", "/" } });
 	}
 
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
@@ -215,7 +232,13 @@ reply login_controller::handle_get_login(const scope &scope)
 	if (csrf_cookie.empty())
 	{
 		csrf_cookie = encode_base64url(random_hash());
-		rep.set_cookie("csrf-token", csrf_cookie, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+		rep.set_cookie("csrf-token", csrf_cookie,
+			{ { "HttpOnly", "" },
+#ifdef NDEBUG
+				{ "Secure", "" },
+#endif
+				{ "SameSite", "Lax" },
+				{ "Path", "/" } });
 	}
 
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
@@ -254,7 +277,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 		for (auto i_uri : doc.find("//input[@name='uri']"))
 			i_uri->set_attribute("value", uri.string());
 
-		rep = reply::stock_reply(unauthorized);
+		rep = reply::stock_reply(status_type::unauthorized);
 		rep.set_content(doc);
 
 		std::clog << e.what() << '\n';
@@ -280,6 +303,8 @@ reply login_controller::create_redirect_for_request(const request &req) const
 	if (auto p = req.get_parameter("uri"); p.has_value())
 	{
 		uri requested_uri(*p);
+
+		// Only use the requested uri if it is relative to our context
 		if (not requested_uri.has_authority())
 			url /= requested_uri;
 	}

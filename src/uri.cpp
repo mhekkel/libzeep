@@ -1,12 +1,11 @@
-//         Copyright Maarten L. Hekkelman, 2025-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2025-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/uri.hpp"
 
 #include "zeep/unicode-support.hpp"
 
+#include <charconv>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -27,6 +26,8 @@ namespace
 // Unfortunately, the implementation of many regular expression
 // libraries is sub-optimal. And thus we don't use this magic
 // anymore, apart from matching the IP_LITERAL part for a host.
+
+// TODO: maarten - replace with a recursive decent parser?
 
 #define GEN_DELIMS R"([][]:/?#@])"
 #define SUB_DELIMS R"([!$&'()*+,;=])"
@@ -105,6 +106,8 @@ namespace
 #define FRAGMENT "(?:\\?|/|" PCHAR ")*"
 
 #define URI "^(?:(" SCHEME "):)?(?:" HIER_PART ")(?:\\?(" QUERY "))?(?:#(" FRAGMENT "))?$"
+
+const std::regex kIPLiteralRx(IP_LITERAL);
 
 // --------------------------------------------------------------------
 
@@ -434,8 +437,7 @@ const char *uri::parse_host(const char *cp)
 
 		++cp;
 
-		static std::regex rx(IP_LITERAL);
-		if (not std::regex_match(b, cp, rx))
+		if (not std::regex_match(b, cp, kIPLiteralRx))
 			throw uri_parse_error();
 	}
 	else
@@ -663,9 +665,8 @@ std::string decode_url(std::string_view s)
 			if (s.end() - c >= 3)
 			{
 				int value;
-				std::string s2(c + 1, c + 3);
-				std::istringstream is(s2);
-				if (is >> std::hex >> value)
+				auto r = std::from_chars(c + 1, c + 3, value, 16);
+				if (r.ec == std::errc{} and r.ptr == c + 3)
 				{
 					result += static_cast<char>(value);
 					c += 2;
@@ -734,9 +735,9 @@ bool is_fully_qualified_uri(const std::string &s)
 	return result;
 }
 
-bool is_valid_connect_host(std::string_view host)
+bool is_valid_connect_host(std::string_view host) noexcept
 {
-	std::regex rx(HOST ":" PORT);
+	static const std::regex rx(HOST ":" PORT);
 
 	return std::regex_match(host.data(), host.data() + host.length(), rx);
 }

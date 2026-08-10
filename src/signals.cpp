@@ -1,10 +1,8 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
-#include "signals.hpp"
+#include "detail/signals.hpp"
 
 // --------------------------------------------------------------------
 //
@@ -86,7 +84,7 @@ signal_catcher::signal_catcher()
 	: mImpl(nullptr)
 {
 	if (not SetConsoleCtrlHandler(&signal_catcher_impl::CtrlHandler, true))
-		throw std::runtime_error("Could not install control handler");
+		throw exception("Could not install control handler");
 }
 
 signal_catcher::~signal_catcher()

@@ -1,11 +1,10 @@
-//          Copyright Maarten L. Hekkelman, 2021-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2021-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
-// A simple uri class.
+/// \file
+/// definition of the uri class, a URI parser and builder based on RFC 3986
 
 #include "zeep/exception.hpp"
 #include "zeep/unicode-support.hpp"
@@ -27,7 +26,7 @@ bool is_fully_qualified_uri(const std::string &uri);
 
 /// \brief Check the parameter in \a host is of the form HOST:PORT as required by CONNECT
 /// \param host		The host string to check
-bool is_valid_connect_host(std::string_view host);
+bool is_valid_connect_host(std::string_view host) noexcept;
 
 // --------------------------------------------------------------------
 
@@ -105,46 +104,46 @@ class uri
 
 	// --------------------------------------------------------------------
 
-	[[nodiscard]] bool has_scheme() const
+	[[nodiscard]] bool has_scheme() const noexcept
 	{
 		return not m_scheme.empty();
 	}
 
-	[[nodiscard]] bool has_authority() const
+	[[nodiscard]] bool has_authority() const noexcept
 	{
 		return not(m_userinfo.empty() and m_host.empty() and m_port == 0);
 	}
 
-	[[nodiscard]] bool has_path() const
+	[[nodiscard]] bool has_path() const noexcept
 	{
 		return not m_path.empty();
 	}
 
-	[[nodiscard]] bool has_query() const
+	[[nodiscard]] bool has_query() const noexcept
 	{
 		return not m_query.empty();
 	}
 
-	[[nodiscard]] bool has_fragment() const
+	[[nodiscard]] bool has_fragment() const noexcept
 	{
 		return not m_fragment.empty();
 	}
 
 	/// \brief Return true if url is empty
-	[[nodiscard]] bool empty() const
+	[[nodiscard]] bool empty() const noexcept
 	{
 		return not(
 			has_scheme() or has_authority() or has_path() or has_query() or has_fragment());
 	}
 
 	/// \brief Return true if the path is absolute
-	[[nodiscard]] bool is_absolute() const
+	[[nodiscard]] bool is_absolute() const noexcept
 	{
 		return m_absolutePath;
 	}
 
 	/// \brief Return the scheme
-	[[nodiscard]] const std::string &get_scheme() const
+	[[nodiscard]] const std::string &get_scheme() const noexcept
 	{
 		return m_scheme;
 	}
@@ -157,19 +156,19 @@ class uri
 	}
 
 	/// \brief Return the user info
-	[[nodiscard]] const std::string &get_userinfo() const
+	[[nodiscard]] const std::string &get_userinfo() const noexcept
 	{
 		return m_userinfo;
 	}
 
 	/// \brief Set the userinfo to \a userinfo
-	void set_userinfo(std::string userinfo)
+	void set_userinfo(std::string userinfo) noexcept
 	{
 		m_userinfo = std::move(userinfo);
 	}
 
 	/// \brief Return the host
-	[[nodiscard]] const std::string &get_host() const
+	[[nodiscard]] const std::string &get_host() const noexcept
 	{
 		return m_host;
 	}
@@ -182,13 +181,13 @@ class uri
 	}
 
 	/// \brief Return the port
-	[[nodiscard]] uint16_t get_port() const
+	[[nodiscard]] uint16_t get_port() const noexcept
 	{
 		return m_port;
 	}
 
 	/// \brief Set the port to \a port
-	void set_port(uint16_t port)
+	void set_port(uint16_t port) noexcept
 	{
 		m_port = port;
 	}
@@ -197,7 +196,7 @@ class uri
 	[[nodiscard]] uri get_path() const;
 
 	/// \brief Get the individual segments of the path
-	[[nodiscard]] const std::vector<std::string> &get_segments() const
+	[[nodiscard]] const std::vector<std::string> &get_segments() const noexcept
 	{
 		return m_path;
 	}
@@ -246,7 +245,7 @@ class uri
 	}
 
 	/// \brief Comparison
-	[[nodiscard]] bool operator==(const uri &rhs) const
+	[[nodiscard]] bool operator==(const uri &rhs) const noexcept
 	{
 		return m_scheme == rhs.m_scheme and
 		       m_userinfo == rhs.m_userinfo and
@@ -260,9 +259,8 @@ class uri
 
 	/// \brief return the uri relative from \a base.
 	///
-	/// If the scheme and authority of this and \a base
-	/// a relative uri will be returned with the path
-	/// of base removed from this path.
+	/// If the scheme and authority of this and \a base are the same
+	/// a relative uri will be returned with the path of base removed from this path.
 	[[nodiscard]] uri relative(const uri &base) const;
 
   private:
@@ -291,42 +289,42 @@ class uri
 	};
 
   public:
-	static inline constexpr bool is_char_class(int ch, char_class mask)
+	static inline constexpr bool is_char_class(int ch, char_class mask) noexcept
 	{
 		return ch > 0 and ch < 128 and (kCharClassTable[static_cast<uint8_t>(ch)] bitand static_cast<char>(mask)) != 0;
 	}
 
-	static inline constexpr bool is_gen_delim(int ch)
+	static inline constexpr bool is_gen_delim(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::gen_delim);
 	}
 
-	static inline constexpr bool is_sub_delim(int ch)
+	static inline constexpr bool is_sub_delim(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::sub_delim);
 	}
 
-	static inline constexpr bool is_reserved(int ch)
+	static inline constexpr bool is_reserved(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::reserved);
 	}
 
-	static inline constexpr bool is_unreserved(int ch)
+	static inline constexpr bool is_unreserved(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::unreserved);
 	}
 
-	static inline constexpr bool is_scheme_start(int ch)
+	static inline constexpr bool is_scheme_start(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::alpha);
 	}
 
-	static inline constexpr bool is_scheme(int ch)
+	static inline constexpr bool is_scheme(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::scheme);
 	}
 
-	static inline constexpr bool is_xdigit(int ch)
+	static inline constexpr bool is_xdigit(int ch) noexcept
 	{
 		return is_char_class(ch, char_class::hexdigit);
 	}
@@ -347,17 +345,17 @@ class uri
 		return result;
 	}
 
-	bool is_userinfo(const char *&cp)
+	bool is_userinfo(const char *&cp) noexcept
 	{
 		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or is_pct_encoded(cp);
 	}
 
-	bool is_reg_name(const char *&cp)
+	bool is_reg_name(const char *&cp) noexcept
 	{
 		return is_unreserved(*cp) or is_sub_delim(*cp) or is_pct_encoded(cp);
 	}
 
-	bool is_pchar(const char *&cp)
+	bool is_pchar(const char *&cp) noexcept
 	{
 		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or *cp == '@' or is_pct_encoded(cp);
 	}

@@ -1,7 +1,5 @@
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -28,13 +26,13 @@ class error_handler
 	virtual ~error_handler() = default;
 
 	/// \brief set the server object we're bound to
-	void set_server(basic_server *s) { m_server = s; }
+	void set_server(basic_server *s) noexcept { m_server = s; }
 
 	/// \brief get the server object we're bound to
-	[[nodiscard]] basic_server *get_server() { return m_server; }
+	[[nodiscard]] basic_server *get_server() noexcept { return m_server; }
 
 	/// \brief set the server object we're bound to
-	[[nodiscard]] const basic_server *get_server() const { return m_server; }
+	[[nodiscard]] const basic_server *get_server() const noexcept { return m_server; }
 
 	/// \brief Create an error reply for an exception
 	///
@@ -83,8 +81,8 @@ class error_handler
 	/// is returned.
 	error_handler(std::string error_template = "error");
 
-	basic_server *m_server = nullptr;
-	std::string m_error_template;
+	basic_server *m_server = nullptr; ///< The associated server instance
+	std::string m_error_template;     ///< The name of the error template
 };
 
 // --------------------------------------------------------------------
@@ -97,11 +95,18 @@ class error_handler
 class default_error_handler : public error_handler
 {
   public:
+	/// \brief Construct a default error handler with an optional template name
+	/// \param error_template  The name of the error template (default "error")
 	default_error_handler(std::string error_template = "error")
 		: error_handler(std::move(error_template))
 	{
 	}
 
+	/// \brief Create an error reply for an exception
+	/// \param req   The request that triggered this call
+	/// \param eptr  The captured exception
+	/// \param rep   Write the reply in this object
+	/// \return      True if the reply was created successfully
 	[[nodiscard]] bool create_error_reply(const request &req, const std::exception_ptr &eptr, reply &rep) override;
 };
 

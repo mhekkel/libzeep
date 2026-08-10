@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/message-parser.hpp"
 #include "zeep/exception.hpp"
@@ -60,7 +58,7 @@ namespace
 
 } // namespace
 
-void parser::reset()
+void parser::reset() noexcept
 {
 	m_parser = nullptr;
 	m_state = 0;
@@ -510,7 +508,7 @@ parse_result request_parser::parse_initial_line(char ch)
 // --------------------------------------------------------------------
 //
 
-void reply_parser::reset()
+void reply_parser::reset() noexcept
 {
 	parser::reset();
 	m_status = 0;

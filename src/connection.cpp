@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/connection.hpp"
 #include "zeep/http/asio.hpp"
@@ -37,12 +35,6 @@ std::vector<asio_ns::const_buffer> get_data_buffers(reply &rep)
 	for (auto &buffer : rep.data_to_buffers())
 		result.emplace_back(buffer.data(), buffer.size());
 	return result;
-}
-
-// Needed for CLang/libc++ on FreeBSD 10
-connection *get_pointer(const std::shared_ptr<connection> &p)
-{
-	return p.get();
 }
 
 connection::connection(asio_ns::io_context &service, basic_server &handler)
@@ -152,8 +144,17 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 			{ self->handle_write(ec, bytes_transferred); });
 	}
-	catch (...) // NOLINT(bugprone-empty-catch)
+	catch (...)
 	{
+		std::clog << "Internal server error\n";
+
+		m_reply = reply::stock_reply(status_type::internal_server_error);
+
+		auto buffers = get_buffers(m_reply);
+
+		asio_ns::async_write(m_socket, buffers,
+			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+			{ self->handle_write(ec, bytes_transferred); });
 	}
 }
 }

@@ -9,7 +9,7 @@ The XML part of libzeep has been split off in version 7 and libzeep now uses `li
 
 You can use libzeep for building web applications in C++ including a web server implementation, SOAP and REST controller support and a templating engine looking suspisciously like `Thymeleaf <https://www.thymeleaf.org/>`_. Lots of the concepts used in libzeep are inspired by the Java based `Spring framework <https://spring.io/>`_.
 
-This library contains a web server implementation. There's also code to create daemon processes and run a preforked webserver. The design follows a bit the one from Spring and so there's a HTTP server class that delegates requests to controllers. A security context class helps in limiting access to authorized users only.
+This library contains a web server implementation. There's also code to run the webserver as a daemon process. The design follows a bit the one from Spring and so there's a HTTP server class that delegates requests to controllers. A security context class helps in limiting access to authorized users only.
 
 Three specialized controller classes provide HTML templates, REST and SOAP services. The template language implementation attempts to be source code compatible with Thymeleaf.
 

@@ -1,9 +1,10 @@
-//          Copyright Maarten L. Hekkelman 2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
+
+/// \file
+/// definition of the HTTP status codes and related helper types
 
 #include "zeep/exception.hpp"
 
@@ -14,9 +15,11 @@
 namespace zeep::http
 {
 
-/// Various predefined HTTP status codes
+/// \brief Enumeration of standard HTTP status codes, covering all codes from
+/// 1xx (Informational), 2xx (Successful), 3xx (Redirection), 4xx (Client Error),
+/// to 5xx (Server Error) as defined in RFC 7231 and related RFCs.
 
-enum status_type
+enum class status_type
 {
 	cont = 100,
 	switching_protocols = 101,
@@ -113,6 +116,8 @@ class status_type_impl : public std::error_category
 	{
 		switch (static_cast<status_type>(ev))
 		{
+			using enum status_type;
+
 			case cont: return "Continue";
 			case switching_protocols: return "Switching Protocols";
 			case processing: return "Processing";
@@ -195,42 +200,59 @@ class status_type_impl : public std::error_category
  *
  * @return std::error_category&
  */
-inline std::error_category &status_type_category()
+inline std::error_category &status_type_category() noexcept
 {
 	static status_type_impl instance;
 	return instance;
 }
 
-inline std::error_code make_error_code(status_type e)
+/// \brief Create an std::error_code from a status_type
+/// \param e  The HTTP status code
+/// \return   An error_code representing the given status
+inline std::error_code make_error_code(status_type e) noexcept
 {
 	return { static_cast<int>(e), status_type_category() };
 }
 
-inline std::error_condition make_error_condition(status_type e)
+/// \brief Create an std::error_condition from a status_type
+/// \param e  The HTTP status code
+/// \return   An error_condition representing the given status
+inline std::error_condition make_error_condition(status_type e) noexcept
 {
 	return { static_cast<int>(e), status_type_category() };
 }
 
-/// Return the string describing the status_type in more detail
+/// \brief Return a human-readable description string for a given HTTP status code
+/// \param status  The HTTP status code
+/// \return        The descriptive string (e.g., "Not Found" for 404)
 std::string get_status_description(status_type status);
 
-// http exception
-
+/// \brief Exception class that carries an HTTP status code
+///
+/// This exception can be thrown by handlers to signal a specific HTTP error
+/// response. The status code is available via \a status() and the human-readable
+/// message via \a what().
 class http_status_exception : public exception
 {
   public:
+	/// \brief Construct from an error_code
+	/// \param ec  The error code representing the HTTP status
 	http_status_exception(std::error_code ec) noexcept
 		: exception(ec.message())
 		, m_code(ec)
 	{
 	}
 
+	/// \brief Construct directly from a status_type enumerator
+	/// \param status  The HTTP status code
 	http_status_exception(status_type status) noexcept
 		: zeep::http::http_status_exception(make_error_code(status))
 	{
 	}
 
+	/// \brief Return the underlying error_code
 	[[nodiscard]] const std::error_code &code() const noexcept { return m_code; }
+	/// \brief Return the HTTP status code
 	[[nodiscard]] status_type status() const noexcept { return static_cast<status_type>(m_code.value()); }
 
   private:

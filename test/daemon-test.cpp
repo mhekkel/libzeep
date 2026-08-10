@@ -1,7 +1,5 @@
-//          Copyright Maarten L. Hekkelman 2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/client.hpp"
 #include "zeep/http/controller.hpp"
@@ -70,15 +68,7 @@ TEST_CASE("daemon-test-1")
 
 	std::clog << "starting daemon at port " << port << '\n';
 
-	SECTION("single process")
-	{
-		d.start("::", port, 1, pw->pw_name);
-	}
-
-	SECTION("pre-forked process")
-	{
-		d.start("::", port, 1, 1, pw->pw_name);
-	}
+	d.start("::", port, 1, pw->pw_name);
 
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(100ms);

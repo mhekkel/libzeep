@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -15,7 +13,7 @@
 #include "zeep/http/status.hpp"
 #include "zeep/uri.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {
@@ -45,7 +43,7 @@ class reply
 
 	~reply() = default;
 
-	reply &operator=(reply rhs)
+	reply &operator=(reply rhs) noexcept
 	{
 		swap(*this, rhs);
 		return *this;
@@ -61,10 +59,11 @@ class reply
 		std::swap(a.m_buffer, b.m_buffer);
 		std::swap(a.m_content, b.m_content);
 		std::swap(a.m_chunked, b.m_chunked);
+		std::swap(a.m_formatted_line, b.m_formatted_line);
 	}
 
 	/// Simple way to check if a reply is valid
-	explicit operator bool() const { return m_status == status_type::ok; }
+	explicit operator bool() const noexcept { return m_status == status_type::ok; }
 
 	/// Set the version to \a version_major . \a version_minor
 	void set_version(int version_major, int version_minor);
@@ -122,11 +121,11 @@ class reply
 
 	/// To send a stream of data, with unknown size (using chunked transfer).
 	/// reply takes ownership of \a data and deletes it when done.
-	void set_content(std::istream *data, std::string contentType);
+	void set_content(std::unique_ptr<std::istream> data, std::string contentType);
 
 	/// return the content, only useful if the content was set with
 	/// some constant string data.
-	[[nodiscard]] const std::string &get_content() const
+	[[nodiscard]] const std::string &get_content() const noexcept
 	{
 		return m_content;
 	}
@@ -145,8 +144,8 @@ class reply
 	static reply redirect(const uri &location);
 	static reply redirect(const uri &location, status_type status);
 
-	void set_status(status_type status) { m_status = status; }
-	[[nodiscard]] status_type get_status() const { return m_status; }
+	void set_status(status_type status) noexcept { m_status = status; }
+	[[nodiscard]] status_type get_status() const noexcept { return m_status; }
 
 	/// return the size of the reply, only correct if the reply is fully memory based (no streams)
 	[[nodiscard]] size_t size() const;
@@ -167,6 +166,7 @@ class reply
 	std::vector<char> m_buffer;
 	std::string m_content;
 	bool m_chunked = false;
+	mutable std::string m_formatted_line;
 };
 
 } // namespace zeep::http

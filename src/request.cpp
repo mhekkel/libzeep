@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/request.hpp"
 
@@ -18,6 +16,7 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {
@@ -54,12 +53,6 @@ float request::get_accept(std::string_view type) const
 {
 	float result = 1.0f;
 
-#define IDENT "[-+.a-z0-9]+"
-#define TYPE "\\*|" IDENT
-#define MEDIARANGE "\\s*(" TYPE ")/(" TYPE ").*?(?:;\\s*q=(\\d(?:\\.\\d?)?))?"
-
-	static std::regex rx(MEDIARANGE);
-
 	if (type.empty())
 		return 1.0;
 
@@ -77,46 +70,54 @@ float request::get_accept(std::string_view type) const
 			continue;
 
 		result = 0;
+		std::vector<std::string> types;
+		split(types, h.value, ",");
 
-		std::string::size_type b = 0, e = h.value.find(',');
-		for (;;)
+		for (auto type : types)
 		{
-			if (e == std::string::npos)
-				e = h.value.length();
+			trim(type);
 
-			std::string mediarange = h.value.substr(b, e - b);
-
-			std::smatch m;
-			if (std::regex_search(mediarange, m, rx))
+			std::string mediarange, quality;
+			if (auto s = type.find(';'); s != std::string::npos)
 			{
-				std::string type1 = m[1].str();
-				std::string type2 = m[2].str();
+				mediarange = type.substr(0, s);
+				quality = type.substr(s + 1);
+			}
+			else
+				mediarange = type;
 
-				float value = 1.0f;
-				if (m[3].matched)
-					value = std::stof(m[3].str());
+			trim(mediarange);
+			trim(quality);
 
-				if (type1 == t1 and type2 == t2)
-				{
-					result = value;
-					break;
-				}
+			std::string type1, type2;
+			if (auto s = mediarange.find('/'); s != std::string::npos)
+			{
+				type1 = mediarange.substr(0, s);
+				type2 = mediarange.substr(s + 1);
+			}
+			else
+				continue;
 
-				if ((type1 == t1 and type2 == "*") or
-					(type1 == "*" and type2 == "*"))
-				{
-					if (result < value)
-						result = value;
-				}
+			float value = 1.0f;
+			if (quality.starts_with("q="))
+			{
+				const auto &[ptr, ec] = zeem::from_chars(quality.data() + 2, quality.data() + quality.length(), value);
+				if (ec != std::errc{})
+					continue;
 			}
 
-			if (e == h.value.length())
+			if (type1 == t1 and type2 == t2)
+			{
+				result = value;
 				break;
+			}
 
-			b = e + 1;
-			while (b < h.value.length() and isspace(h.value[b]))
-				++b;
-			e = h.value.find(',', b);
+			if ((type1 == t1 and type2 == "*") or
+				(type1 == "*" and type2 == "*"))
+			{
+				if (result < value)
+					result = value;
+			}
 		}
 
 		break;
@@ -508,7 +509,7 @@ file_param file_param_parser::next()
 			{
 				result.mimetype = m[1].str();
 				if (starts_with(result.mimetype, "multipart/"))
-					throw std::runtime_error("multipart file uploads are not supported");
+					throw exception("multipart file uploads are not supported");
 			}
 		}
 
@@ -752,13 +753,11 @@ namespace
 
 std::vector<std::string_view> request::to_buffers() const
 {
-	thread_local static std::string s_request_line;
-
 	std::vector<std::string_view> result;
 
-	s_request_line = get_request_line();
+	m_formatted_line = get_request_line();
 
-	result.emplace_back(s_request_line);
+	result.emplace_back(m_formatted_line);
 	result.emplace_back(kCRLF);
 
 	for (const header &h : m_headers)
@@ -790,7 +789,8 @@ std::ostream &operator<<(std::ostream &io, const request &req)
 	for (const header &h : req.m_headers)
 		io << h.name << ": " << h.value << "\r\n";
 
-	io << "\r\n" << req.m_payload;
+	io << "\r\n"
+	   << req.m_payload;
 
 	return io;
 }

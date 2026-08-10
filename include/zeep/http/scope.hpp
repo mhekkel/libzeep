@@ -1,15 +1,16 @@
-//        Copyright Maarten L. Hekkelman 2025-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2025-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
+
+/// \file
+/// definition of the scope class that stores variables for template and expression processing
 
 #include "zeep/el/object.hpp"
 #include "zeep/http/header.hpp"
 #include "zeep/http/request.hpp"
 
-#include <zeem/node.hpp>
+#include <zeem/zeem.hpp>
 
 #include <iosfwd>
 #include <locale>
@@ -39,6 +40,7 @@ class scope
   public:
 	scope &operator=(const scope &) = delete;
 
+	/// \brief A single parameter, stored as a header (name/value pair)
 	using param = header;
 
 	/// \brief simple constructor, used where there's no request available
@@ -71,6 +73,8 @@ class scope
 	explicit scope(const scope &next);
 
 	/// \brief add a path parameter, should only be used by controller::handle_request
+	/// \param name   The name of the path parameter
+	/// \param value  The value of the path parameter
 	void add_path_param(std::string name, std::string value);
 
 	/// \brief Return the list of headers
@@ -139,6 +143,7 @@ class scope
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
+	/// \tparam T  A type assignable to \a el::object
 	template <typename T>
 	void put(const std::string &name, const T &value)
 		requires(std::is_assignable_v<el::object, T>)
@@ -147,18 +152,26 @@ class scope
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
+	/// \param name   The name of the variable
+	/// \param value  The value to store
 	void put(const std::string &name, el::object &&value)
 	{
 		m_data[name] = std::move(value);
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
+	/// \param name   The name of the variable
+	/// \param value  The value to store
 	void put(const std::string &name, const el::object &value)
 	{
 		m_data[name] = value;
 	}
 
 	/// \brief put variable of type array in the scope with \a name and values from \a begin to \a end
+	/// \tparam ForwardIterator  An input iterator type
+	/// \param name    The name of the variable
+	/// \param begin   Start of the range
+	/// \param end     End of the range
 	template <typename ForwardIterator>
 	void put(const std::string &name, ForwardIterator begin, ForwardIterator end);
 
@@ -172,6 +185,8 @@ class scope
 	[[nodiscard]] const el::object &lookup(const std::string &name, bool includeSelected = false) const;
 
 	/// \brief return variable with \a name
+	/// \param name  The name of the variable to return
+	/// \return      The value found or null if there was no such variable
 	[[nodiscard]] const el::object &operator[](const std::string &name) const;
 
 	/// \brief return variable with \a name
@@ -181,6 +196,8 @@ class scope
 	[[nodiscard]] el::object &lookup(const std::string &name);
 
 	/// \brief return variable with \a name
+	/// \param name  The name of the variable to return
+	/// \return      The value found or null if there was no such variable
 	[[nodiscard]] el::object &operator[](const std::string &name);
 
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
@@ -193,9 +210,12 @@ class scope
 	[[nodiscard]] el::object get_credentials() const;
 
 	/// \brief returns whether the current user has role \a role
+	/// \param role  The role to check
+	/// \result      True if the current user has the specified role
 	[[nodiscard]] bool has_role(std::string_view role) const;
 
 	/// \brief select el::object \a o , used in z2:el::object constructs
+	/// \param o  The object to select
 	void select_object(const el::object &o);
 
 	/// \brief a nodeset for a selector, cached to avoid recusive expansion
@@ -205,9 +225,13 @@ class scope
 	using node_set_type = zeem::element;
 
 	/// \brief return the node_set_type with name \a name
+	/// \param name  The name of the nodeset
+	/// \return      The nodeset associated with \a name
 	[[nodiscard]] node_set_type get_nodeset(const std::string &name) const;
 
 	/// \brief store node_set_type \a nodes with name \a name
+	/// \param name   The name to associate with the nodeset
+	/// \param nodes  The nodeset to store
 	void set_nodeset(const std::string &name, node_set_type &&nodes);
 
 	/// \brief return whether a node_set with name \a name is stored
@@ -220,6 +244,8 @@ class scope
 	[[nodiscard]] std::string get_csrf_token() const;
 
   private:
+	/// @cond
+
 	/// for debugging purposes
 	friend std::ostream &operator<<(std::ostream &lhs, const scope &rhs);
 
@@ -238,6 +264,8 @@ class scope
 	using nodeset_map = std::map<std::string, node_set_type>;
 
 	nodeset_map m_nodesets;
+
+	/// @endcond
 };
 
 template <typename ForwardIterator>

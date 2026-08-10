@@ -1,7 +1,5 @@
-#         Copyright Maarten L. Hekkelman, 2022-2026
-#  Distributed under the Boost Software License, Version 1.0.
-#     (See accompanying file LICENSE_1_0.txt or copy at
-#           http://www.boost.org/LICENSE_1_0.txt)
+# SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+# SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -21,7 +19,7 @@ if(UNIX)
 endif()
 
 list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
-    security-sample rest-sample rest-sample-2 # soap-sample
+    security-sample rest-sample rest-sample-2 soap-sample
 )
 
 find_package(mcfp QUIET)

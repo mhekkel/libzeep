@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "revision.hpp"
 
@@ -183,11 +181,8 @@ void reply::set_delete_cookie(std::string_view name)
 {
 	using namespace std::literals;
 
-	std::stringstream s;
-	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() - 24h);
-	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
-
-	set_cookie(name, "", { { "Expires", '"' + s.str() + '"' } });
+	auto when = std::chrono::system_clock::now() - 24h;
+	set_cookie(name, "", { { "Expires", std::format(R"({0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT)", when) } });
 }
 
 std::string reply::get_cookie(std::string_view name) const
@@ -287,9 +282,9 @@ void reply::set_content(const char *data, size_t size, std::string contentType)
 	set_header("Content-Type", std::move(contentType));
 }
 
-void reply::set_content(std::istream *idata, std::string contentType)
+void reply::set_content(std::unique_ptr<std::istream> idata, std::string contentType)
 {
-	m_data.reset(idata);
+	m_data = std::move(idata);
 	m_content.clear();
 	m_chunked = true;
 
@@ -300,17 +295,14 @@ void reply::set_content(std::istream *idata, std::string contentType)
 
 std::vector<std::string_view> reply::to_buffers() const
 {
-	// A global, thread local storage for the status line text
-	thread_local static std::string s_status_line;
-
 	std::vector<std::string_view> result;
 
-	s_status_line =
+	m_formatted_line =
 		std::format("HTTP/{}.{} {} {}\r\n",
 			m_version_major, m_version_minor, static_cast<int>(m_status),
 			make_error_code(m_status).message());
 
-	result.emplace_back(s_status_line);
+	result.emplace_back(m_formatted_line);
 
 	for (const header &h : m_headers)
 	{

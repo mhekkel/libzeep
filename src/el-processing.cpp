@@ -1,35 +1,29 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 //
 // webapp::json is a set of classes used to implement an 'expression language'
 // A script language used in the XHTML templates used by the zeep webapp.
 //
 
-#include "format.hpp"
+#include "detail/format.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/exception.hpp"
-#include "zeep/http/asio.hpp"
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
-#include "zeep/uri.hpp"
 #include "zeep/unicode-support.hpp"
+#include "zeep/uri.hpp"
 
-#include <zeem/serialize.hpp>
+#include <zeem/zeem.hpp>
 
 #include <cassert>
 #include <charconv>
 #include <chrono>
 #include <cstdint>
-#include <ctime>
 #include <exception>
-#include <iomanip>
 #include <map>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -141,9 +135,6 @@ struct interpreter
 	{
 	}
 
-	// template <class OutputIterator, class Match>
-	// OutputIterator operator()(Match &m, OutputIterator out, std::regex::match_flag_type);
-
 	object evaluate(const std::string &s);
 
 	std::vector<std::pair<std::string, std::string>> evaluate_attr_expr(const std::string &s);
@@ -190,18 +181,6 @@ struct interpreter
 	bool m_return_whitespace = false;
 	bool m_expect_fragment_spec = false;
 };
-
-// template <class OutputIterator, class Match>
-// inline OutputIterator interpreter::operator()(Match &m, OutputIterator out, std::regex_constants::match_flag_type)
-// {
-// 	string s(m[1]);
-
-// 	process(s);
-
-// 	copy(s.begin(), s.end(), out);
-
-// 	return out;
-// }
 
 object interpreter::evaluate(const std::string &s)
 {
@@ -1213,7 +1192,7 @@ object interpreter::parse_link_template_expr()
 	{
 		match(token_type::div);
 		path = context;
-		if (path.back() != '/')
+		if (not path.empty() and path.back() != '/')
 			path += '/';
 	}
 
@@ -1531,6 +1510,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 	[[nodiscard]] object evaluate(const scope &scope, const std::string &method,
 		const std::vector<object> &params) const override
 	{
+		using namespace std::literals;
 		object result;
 
 		if (method == "format")
@@ -1541,15 +1521,38 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 				auto f = params[1].get<std::string>();
 
 				auto st = zeem::value_serializer<std::chrono::system_clock::time_point>::from_string(t);
+#if USE_DATE_H
+				auto lt = date::current_zone()->to_local(st);
+				result = date::format(scope.get_locale(), f.c_str(), lt);
+#else
 
-				std::wostringstream os;
-				os.imbue(scope.get_locale());
+				for (std::string::size_type i = 0; i + 1 < f.length(); ++i)
+				{
+					if (f[i] != '%')
+						continue;
 
-				auto tt = std::chrono::system_clock::to_time_t(st);
-				auto wf = convert_s2w(f);
+					if (f[i + 1] == '%')
+					{
+						f.insert(f.begin() + i + 1, '%');
+						++i;
+						continue;
+					}
 
-				os << std::put_time<wchar_t>(std::localtime(&tt), wf.c_str());
-				result = convert_w2s(os.str());
+					if (i + 2 < f.length() and (f[i + 1] == 'E' or f[i + 1] == 'O'))
+					{
+						f.replace(i, 3, "{0:L%"s + f[i + 1] + f[i + 2] + '}');
+						i += 6;
+					}
+					else
+					{
+						f.replace(i, 2, "{0:L%"s + f[i + 1] + '}');
+						i += 6;
+					}
+				}
+
+				auto lt = std::chrono::current_zone()->to_local(st);
+				result = std::vformat(scope.get_locale(), f, std::make_format_args(lt));
+#endif
 			}
 		}
 

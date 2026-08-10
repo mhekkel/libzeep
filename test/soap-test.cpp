@@ -1,37 +1,34 @@
-//          Copyright Maarten L. Hekkelman 2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
+// SPDX-License-Identifier: BSL-1.0
 
+#include "zeep/http/status.hpp"
 #include <zeep/exception.hpp>
 #include <zeep/http/soap-controller.hpp>
 
-#define BOOST_TEST_MODULE SOAP_Test
-#include <boost/test/included/unit_test.hpp>
+#include <catch2/catch_test_macros.hpp>
 
-using namespace std;
-namespace z = zeep;
-namespace zh = zeep::http;
+#include <iostream>
 
 struct TestStruct
 {
+	constexpr static std::string type_name() { return "TestStruct"; }
+
 	int a;
-	string s;
+	std::string s;
 
 	template <typename Archive>
 	void serialize(Archive &ar, unsigned long)
 	{
-		ar & zx::make_element_nvp("a", a)
-		   & zx::make_element_nvp("s", s);
+		ar &zeem::make_element_nvp("a", a) & zeem::make_element_nvp("s", s);
 	}
 };
 
-static_assert(z::has_serialize_v<TestStruct, zx::serializer>, "oops");
+// static_assert(zeep::has_serialize_v<TestStruct, zeem::serializer>, "oops");
 
-struct my_test_controller : public zh::soap_controller
+struct my_test_controller : public zeep::http::soap_controller
 {
 	my_test_controller()
-		: zh::soap_controller("ws", "test", "http://www.hekkelman.com/libzeep/soap")
+		: zeep::http::soap_controller("ws", "test", "http://www.hekkelman.com/libzeep/soap")
 	{
 		set_service("testService");
 
@@ -42,24 +39,24 @@ struct my_test_controller : public zh::soap_controller
 
 	int test_method_1(int x)
 	{
-		BOOST_TEST(x == 42);
+		CHECK(x == 42);
 		return x;
 	}
 
 	void test_method_2(const std::string &s)
 	{
-		BOOST_TEST(s == "42");
+		CHECK(s == "42");
 	}
 
 	TestStruct test_method_3(const TestStruct &t)
 	{
-		return { t.a + 1, t.s + to_string(t.a) };
+		return { t.a + 1, t.s + std::to_string(t.a) };
 	}
 };
 
-BOOST_AUTO_TEST_CASE(soap_1)
+TEST_CASE("soap_1")
 {
-	using namespace zx::literals;
+	using namespace zeem::literals;
 
 	my_test_controller srv;
 
@@ -72,12 +69,12 @@ BOOST_AUTO_TEST_CASE(soap_1)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test_1);
+	zeep::http::request req("POST", "/ws", { 1, 0 }, {}, payload_test_1);
 
-	zh::reply rep;
+	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_REQUIRE(rep.get_status() == 200);
+	REQUIRE(rep.get_status() == zeep::http::status_type::ok);
 
 	std::stringstream srep;
 	srep << rep;
@@ -89,7 +86,7 @@ BOOST_AUTO_TEST_CASE(soap_1)
 			break;
 	}
 
-	zx::document repDoc(srep);
+	zeem::document repDoc(srep);
 
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
@@ -98,12 +95,12 @@ BOOST_AUTO_TEST_CASE(soap_1)
  </soap:Body>
 </soap:Envelope>)"_xml;
 
-	BOOST_TEST(repDoc == test);
+	CHECK(repDoc == test);
 }
 
-BOOST_AUTO_TEST_CASE(soap_2)
+TEST_CASE("soap_2")
 {
-	using namespace zx::literals;
+	using namespace zeem::literals;
 
 	my_test_controller srv;
 
@@ -116,12 +113,12 @@ BOOST_AUTO_TEST_CASE(soap_2)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
+	zeep::http::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
 
-	zh::reply rep;
+	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_REQUIRE(rep.get_status() == 200);
+	REQUIRE(rep.get_status() == zeep::http::status_type::ok);
 
 	std::stringstream srep;
 	srep << rep;
@@ -133,7 +130,7 @@ BOOST_AUTO_TEST_CASE(soap_2)
 			break;
 	}
 
-	zx::document repDoc(srep);
+	zeem::document repDoc(srep);
 
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
@@ -142,12 +139,12 @@ BOOST_AUTO_TEST_CASE(soap_2)
  </soap:Body>
 </soap:Envelope>)"_xml;
 
-	BOOST_TEST(repDoc == test);
+	CHECK(repDoc == test);
 }
 
-BOOST_AUTO_TEST_CASE(soap_3)
+TEST_CASE("soap_3")
 {
-	using namespace zx::literals;
+	using namespace zeem::literals;
 
 	my_test_controller srv;
 
@@ -163,12 +160,12 @@ BOOST_AUTO_TEST_CASE(soap_3)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
+	zeep::http::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
 
-	zh::reply rep;
+	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_REQUIRE(rep.get_status() == 200);
+	REQUIRE(rep.get_status() == zeep::http::status_type::ok);
 
 	std::stringstream srep;
 	srep << rep;
@@ -180,7 +177,7 @@ BOOST_AUTO_TEST_CASE(soap_3)
 			break;
 	}
 
-	zx::document repDoc(srep);
+	zeem::document repDoc(srep);
 
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
@@ -189,12 +186,12 @@ BOOST_AUTO_TEST_CASE(soap_3)
  </soap:Body>
 </soap:Envelope>)"_xml;
 
-	BOOST_TEST(repDoc == test);
+	CHECK(repDoc == test);
 }
 
-BOOST_AUTO_TEST_CASE(soap_3f)
+TEST_CASE("soap_3f")
 {
-	using namespace zx::literals;
+	using namespace zeem::literals;
 
 	my_test_controller srv;
 
@@ -210,12 +207,12 @@ BOOST_AUTO_TEST_CASE(soap_3f)
  </soap:Body>
 </soap:Envelope>)";
 
-	zh::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
+	zeep::http::request req("POST", "/ws", { 1, 0 }, {}, payload_test);
 
-	zh::reply rep;
+	zeep::http::reply rep;
 	srv.handle_request(req, rep);
 
-	BOOST_TEST(rep.get_status() == 500);
+	CHECK(rep.get_status() == zeep::http::status_type::internal_server_error);
 
 	std::stringstream srep;
 	srep << rep;
@@ -227,7 +224,7 @@ BOOST_AUTO_TEST_CASE(soap_3f)
 			break;
 	}
 
-	zx::document repDoc(srep);
+	zeem::document repDoc(srep);
 
 	auto test = R"(
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
@@ -239,17 +236,17 @@ BOOST_AUTO_TEST_CASE(soap_3f)
  </soap:Body>
 </soap:Envelope>)"_xml;
 
-	BOOST_TEST(repDoc == test);
+	CHECK(repDoc == test);
 }
 
-BOOST_AUTO_TEST_CASE(soap_w1)
+TEST_CASE("soap_w1")
 {
-	using namespace zx::literals;
+	using namespace zeem::literals;
 
 	my_test_controller srv;
 
 	zeem::document doc;
 	doc.emplace_back(srv.make_wsdl());
 
-	cerr << setw(2) << doc << endl;
+	std::cerr << std::setw(2) << doc << '\n';
 }

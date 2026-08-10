@@ -1,9 +1,10 @@
-//        Copyright Maarten L. Hekkelman, 2023-2026
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2023-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
+
+/// \file
+/// Centralised include for standalone ASIO, providing namespace aliases used throughout libzeep.
 
 #ifdef __GNUC__
 # pragma GCC diagnostic push
@@ -15,5 +16,7 @@
 # pragma GCC diagnostic pop
 #endif
 
+/// \brief Namespace alias for the standalone ASIO library
 namespace asio_ns = ::asio;
+/// \brief Namespace alias for the system error code namespace used by standalone ASIO
 namespace asio_system_ns = ::std;

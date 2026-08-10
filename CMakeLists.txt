@@ -1,11 +1,9 @@
-# Copyright Maarten L. Hekkelman, 2023-2026
-# Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or copy at
-# http://www.boost.org/LICENSE_1_0.txt)
+# SPDX-FileCopyrightText: 2023-2026 Maarten L. Hekkelman
+# SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.28)
 
-project(libzeep VERSION 7.4.0 LANGUAGES CXX)
+project(libzeep VERSION 8.1.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -129,16 +127,10 @@ endif()
 
 CPMFindPackage(NAME zeem
     GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
-    VERSION 2.1.5
+    GIT_TAG v2.3.0
     EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
-    find_file(HAVE_SYS_WAIT_H "sys/wait.h")
-
-    if(HAVE_SYS_WAIT_H)
-        set(HTTP_SERVER_HAS_PREFORK 1)
-    endif()
-
     find_file(HAVE_UNISTD_H "unistd.h")
 
     if(HAVE_UNISTD_H)
@@ -154,16 +146,8 @@ file(GLOB_RECURSE zeep_cpp src/*.cpp)
 file(GLOB_RECURSE zeep_hpp include/*.hpp)
 list(APPEND zeep_hpp include/zeep/config.hpp)
 
-# TODO: SOAP is not working at the moment, really need to fix that
-list(FILTER zeep_cpp EXCLUDE REGEX src/soap-controller.cpp)
-
 if(NOT USE_RSRC)
     list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
-endif()
-
-if(NOT HTTP_SERVER_HAS_PREFORK)
-    list(FILTER zeep_hpp EXCLUDE REGEX zeep/http/preforked-server.hpp)
-    list(FILTER zeep_cpp EXCLUDE REGEX src/preforked-server.cpp)
 endif()
 
 add_library(zeep ${zeep_cpp})

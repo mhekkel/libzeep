@@ -1,11 +1,10 @@
-//          Copyright Maarten L. Hekkelman 2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2022-2026
+// SPDX-License-Identifier: BSL-1.0
 
 // This code is originally written for mini-ibs, a content management system
 
 #include "zeep/http/client.hpp"
+#include "zeep/exception.hpp"
 #include "zeep/http/message-parser.hpp"
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
@@ -204,7 +203,7 @@ reply send_request(request req)
 		else if (iequals(uri.get_scheme(), "https"))
 			port = 443;
 		else
-			throw std::invalid_argument("Invalid scheme in uri for send_request");
+			throw invalid_argument_exception("Invalid scheme in uri for send_request");
 	}
 
 	asio_ns::io_context io_context;
@@ -272,11 +271,7 @@ reply send_request(request req)
 
 		// Perform SSL handshake and verify the remote host's certificate.
 		sock.set_verify_mode(ssl::verify_peer);
-#if (BOOST_VERSION / 100 % 1000) >= 73
 		sock.set_verify_callback(ssl::host_name_verification(host));
-#else
-		sock.set_verify_callback(ssl::rfc2818_verification(host));
-#endif
 		sock.handshake(ssl_socket::client);
 
 		asio_ns::write(sock, req_buffer);

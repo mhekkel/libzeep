@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/template-processor.hpp"
 
@@ -494,18 +492,18 @@ fs::file_time_type rsrc_loader::file_time(std::filesystem::path file, std::error
 }
 
 // basic loader, returns error in ec if file was not found
-std::istream *rsrc_loader::load_file(std::string file, std::error_code &ec) noexcept
+std::unique_ptr<std::istream> rsrc_loader::load_file(std::string file, std::error_code &ec) noexcept
 {
 	mrsrc::rsrc resource(std::move(file));
 
-	std::istream *result = nullptr;
+	std::unique_ptr<std::istream> result;
 	ec = {};
 
 	if (resource)
 	{
 		try
 		{
-			result = new mrsrc::istream(resource);
+			result = std::make_unique<mrsrc::istream>(resource);
 		}
 		catch (const std::bad_alloc &)
 		{

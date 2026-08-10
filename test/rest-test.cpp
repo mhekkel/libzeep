@@ -1,11 +1,9 @@
-//          Copyright Maarten L. Hekkelman 2025
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2025
+// SPDX-License-Identifier: BSL-1.0
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/signals.hpp"
+#include "../src/detail/signals.hpp"
 
 #include "zeep/el/object.hpp"
 #include "zeep/el/serializer.hpp"
@@ -20,7 +18,7 @@
 #include "zeep/http/status.hpp"
 #include "zeep/uri.hpp"
 
-#include <zeem/serialize.hpp>
+#include <zeem/zeem.hpp>
 
 
 #include <cstdint>

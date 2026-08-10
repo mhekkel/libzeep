@@ -1,11 +1,10 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/html-controller.hpp"
 
+#include "detail/glob.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
@@ -13,8 +12,6 @@
 #include "zeep/http/server.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
-
-#include "glob.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -49,7 +46,7 @@ reply html_controller::handle_file(const scope &scope)
 	return get_template_processor().create_reply_for_get_file(scope);
 }
 
-void html_controller::init_scope(scope &/* scope */)
+void html_controller::init_scope(scope & /* scope */)
 {
 }
 

@@ -1,8 +1,6 @@
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/server.hpp"
 
@@ -73,12 +71,6 @@ basic_server::~basic_server()
 	{
 		std::clog << "error stopping server: " << ex.what() << '\n';
 	}
-
-	for (auto c : m_controllers)
-		delete c;
-
-	for (auto eh : m_error_handlers)
-		delete eh;
 }
 
 void basic_server::set_template_processor(basic_template_processor *template_processor)
@@ -111,6 +103,9 @@ void basic_server::bind(std::string_view address, unsigned short port)
 		}
 	}
 
+	// if (m_context_name.empty())
+	// 	m_context_name = std::format("http://{}:{}/", address, port);
+
 	m_acceptor->open(endpoint.protocol());
 	m_acceptor->set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	m_acceptor->bind(endpoint);
@@ -137,13 +132,13 @@ void basic_server::set_access_control_headers([[maybe_unused]] const request &re
 
 void basic_server::add_controller(controller *c)
 {
-	m_controllers.push_back(c);
+	m_controllers.emplace_back(c);
 	c->set_server(this);
 }
 
 void basic_server::add_error_handler(error_handler *eh)
 {
-	m_error_handlers.push_front(eh);
+	m_error_handlers.emplace_front(eh);
 	eh->set_server(this);
 }
 
@@ -243,7 +238,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 		// do the actual work.
 		bool processed = false;
-		for (auto c : m_controllers)
+		for (auto &c : m_controllers)
 		{
 			if (not c->path_matches_prefix(req.get_uri()))
 				continue;
@@ -257,7 +252,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 		if (not processed)
 		{
-			for (auto eh : m_error_handlers)
+			for (auto &eh : m_error_handlers)
 			{
 				try
 				{
@@ -274,7 +269,11 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		if (method == "HEAD" or method == "OPTIONS")
 			rep.set_content("", rep.get_content_type());
 		else if (csrf_is_new)
-			rep.set_cookie("csrf-token", csrf, { { "HttpOnly", "" }, { "SameSite", "Lax" }, { "Path", "/" } });
+			rep.set_cookie("csrf-token", csrf,
+				{ { "HttpOnly", "" },
+					{ "Secure", "" },
+					{ "SameSite", "Lax" },
+					{ "Path", "/" } });
 
 		if (not m_context_name.empty() and
 			(rep.get_status() == status_type::moved_permanently or rep.get_status() == status_type::moved_temporarily))
@@ -341,7 +340,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		}
 		else
 		{
-			for (auto eh : m_error_handlers)
+			for (auto &eh : m_error_handlers)
 			{
 				try
 				{
@@ -376,7 +375,7 @@ void basic_server::log_request(std::string_view client,
 
 		std::ostringstream ts;
 
-		// macOS still has no zoned time... 
+		// macOS still has no zoned time...
 #if USE_DATE_H
 		auto t = date::make_zoned(date::current_zone(), date::floor<std::chrono::seconds>(start));
 		date::to_stream(ts, "%d/%b/%Y:%H:%M:%S %Ez", t);
@@ -403,7 +402,7 @@ void basic_server::log_request(std::string_view client,
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "error writing to log: " << ex.what() << '\n';
+		std::clog << "error writing to log: " << ex.what() << '\n';
 	}
 }
 

@@ -1,8 +1,6 @@
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-License-Identifier: BSL-1.0
 //
 // expression language support
 //
@@ -14,7 +12,7 @@
 
 #include "zeep/el/object.hpp"
 
-#include <zeem.hpp>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {
@@ -105,6 +103,12 @@ class expression_utility_object_base
   public:
 	virtual ~expression_utility_object_base() = default;
 
+	/// \brief Evaluate a static method call on a registered utility object
+	/// \param scope_      The scope for this el script
+	/// \param className   The name of the utility class
+	/// \param methodName  The method to invoke
+	/// \param parameters  The parameters to pass to the method
+	/// \return            The result of the evaluation, or a null object if not found
 	static object evaluate(const scope &scope_,
 		const std::string &className, const std::string &methodName,
 		const std::vector<object> &parameters)
@@ -119,24 +123,31 @@ class expression_utility_object_base
 	}
 
   protected:
+	/// \brief Evaluate a method call on this utility object
+	/// \param scope_      The scope for this el script
+	/// \param methodName  The method to invoke
+	/// \param parameters  The parameters to pass to the method
+	/// \return            The result of the evaluation
 	[[nodiscard]] virtual object evaluate(const scope &scope_, const std::string &methodName,
 		const std::vector<object> &parameters) const = 0;
 
-	/// Struct used to store the instances of the derived classes along with
+	/// \brief Struct used to store the instances of the derived classes along with
 	/// their name
 	struct instance
 	{
-		expression_utility_object_base *m_obj = nullptr;
-		const char *m_name{};
-		instance *m_next = nullptr;
+		expression_utility_object_base *m_obj = nullptr; ///< Pointer to the utility object instance
+		const char *m_name{}; ///< The registered name of the utility class
+		instance *m_next = nullptr; ///< Pointer to the next instance in the linked list
 	};
 
-	static instance *s_head;
+	static instance *s_head; ///< Head of the linked list of registered utility object instances
 };
 
 /// \brief The actual base class for utility objects, objects that are exposed as
 /// objects in the Expression Language API.
 /// Uses the https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
+///
+/// \tparam OBJ  The derived class type (CRTP pattern)
 
 template <typename OBJ>
 class expression_utility_object : public expression_utility_object_base

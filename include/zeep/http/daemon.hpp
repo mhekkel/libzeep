@@ -1,7 +1,5 @@
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//  Distributed under the Boost Software License, Version 1.0.
-//     (See accompanying file LICENSE_1_0.txt or copy at
-//           http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -56,25 +54,13 @@ class daemon
 	/// \param nr_of_restarts			The max number of attempts to take to start up a daemon process
 	/// \param within_nr_of_seconds		The restart counter will only consider a failed restart if it fails
 	///                                 starting up within this period of time.
-	void set_max_restarts(int nr_of_restarts, int within_nr_of_seconds)
+	void set_max_restarts(int nr_of_restarts, int within_nr_of_seconds) noexcept
 	{
 		m_max_restarts = nr_of_restarts;
 		m_restart_time_window = within_nr_of_seconds;
 	}
 
 #if HTTP_HAS_UNIX_DAEMON
-
-	/// \brief Start the daemon, forking off in the background with multiple preforked servers
-	///
-	/// \param address				The address to bind to
-	/// \param port					The port number to bind to
-	/// \param nr_of_procs			The number of worker processes to fork
-	/// \param nr_of_threads		The number of threads to pass to the server class
-	/// \param run_as_user			The user to run the forked process. Daemons are usually
-	///								started as root and should drop their privileges as soon
-	///								as possible.
-	int start(std::string_view address, uint16_t port, int nr_of_procs,
-		int nr_of_threads, const std::string &run_as_user);
 
 	/// \brief Start the daemon, forking off in the background with single process
 	///
@@ -106,22 +92,22 @@ class daemon
 	int run_foreground(std::string_view address, uint16_t port);
 
   private:
+	/// @cond
+
 #if HTTP_HAS_UNIX_DAEMON
 
 	int daemonize();
 	void open_log_file();
 
-	bool run_main_loop(std::string_view address, uint16_t port, int nr_of_procs,
-		int nr_of_threads, const std::string &run_as_user);
-
 	bool pid_is_for_executable();
 #endif
 
-  private:
 	server_factory_type m_factory;
 	const std::string m_pid_file, m_stdout_log_file, m_stderr_log_file;
 
 	int m_max_restarts = 5, m_restart_time_window = 10;
+
+	/// @endcond
 };
 
 } // namespace zeep::http

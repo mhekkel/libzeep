@@ -1,7 +1,5 @@
-//        Copyright Maarten L. Hekkelman 2025-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman 2025-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/scope.hpp"
 #include "zeep/exception.hpp"
@@ -42,7 +40,7 @@ scope::scope(const scope &next)
 	, m_server(next.m_server)
 {
 	if (m_depth > 1000)
-		throw std::runtime_error("scope stack overflow");
+		throw exception("scope stack overflow");
 }
 
 scope::scope(const request &req)

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
+
+SPDX-License-Identifier: BSL-1.0
+-->
+
 libzeep
 =======
 
@@ -46,9 +52,7 @@ The HTML controller can be used as a base class so you can add methods that
 will be called for certain URI paths. In combination with the available tag
 processors you can then create and return dynamic XHTML pages.
 
-Full documentation can be found at:
-
-[mhekkel.github.io/libzeep/](https://mhekkel.github.io/libzeep/)
+Full documentation can be found [here](https://www.hekkelman.net/docs/libzeep/)
 
 Building libzeep
 ----------------

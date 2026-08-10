@@ -1,8 +1,6 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -40,21 +38,24 @@ enum class encoding_type
 };
 
 /// \brief utf-8 is not single byte e.g.
-constexpr bool is_single_byte_encoding(encoding_type enc)
+constexpr bool is_single_byte_encoding(encoding_type enc) noexcept
 {
 	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
 }
 
 /// manipulate UTF-8 encoded strings
+/// \brief Append a unicode character to a UTF-8 string
 void append(std::string &s, unicode ch);
+/// \brief Remove and return the last unicode character from a UTF-8 string
 unicode pop_last_char(std::string &s);
+/// \brief Extract the first unicode character and return the advanced iterator
 template <typename Iter>
 std::tuple<unicode, Iter> get_first_char(Iter ptr, Iter end);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
 /// This is a limited use function, works only reliably with ASCII. But that's OK.
-inline bool iequals(std::string_view a, std::string_view b)
+inline bool iequals(std::string_view a, std::string_view b) noexcept
 {
 	bool equal = a.length() == b.length();
 
@@ -209,13 +210,12 @@ std::tuple<unicode, Iter> get_first_char(Iter ptr, Iter end)
 
 // --------------------------------------------------------------------
 
-/**
- * @brief Return a std::wstring for the UTF-8 encoded std::string @a s.
- * @note This simplistic code assumes all unicode characters will fit in a wchar_t
- *
- * @param s The input string
- * @return std::wstring The recoded output string
- */
+/// \brief Return a std::wstring for the UTF-8 encoded std::string \a s.
+///
+/// \note This simplistic code assumes all unicode characters will fit in a wchar_t
+///
+/// \param s The input string
+/// \return The recoded output string
 inline std::wstring convert_s2w(std::string_view s)
 {
 	auto b = s.begin();
@@ -236,14 +236,13 @@ inline std::wstring convert_s2w(std::string_view s)
 	return result;
 }
 
-/**
- * @brief Return a std::string encoded in UTF-8 for the input std::wstring @a s.
- * @note This simplistic code assumes input contains only UCS-2 characters which are deprecated, I know.
- * This means UTF-16 surrogates are ruined.
- *
- * @param s The input string
- * @return std::string The recoded output string
- */
+/// \brief Return a std::string encoded in UTF-8 for the input std::wstring \a s.
+///
+/// \note This simplistic code assumes input contains only UCS-2 characters which are deprecated, I know.
+/// This means UTF-16 surrogates are ruined.
+///
+/// \param s The input string
+/// \return The recoded output string
 inline std::string convert_w2s(std::wstring_view s)
 {
 	std::string result;
@@ -256,12 +255,10 @@ inline std::string convert_w2s(std::wstring_view s)
 
 // --------------------------------------------------------------------
 
-/**
- * @brief Return a hexadecimal string representation for the numerical value in @a i
- *
- * @param i The value to convert
- * @return std::string The hexadecimal representation
- */
+/// \brief Return a hexadecimal string representation for the numerical value in \a i
+///
+/// \param i The value to convert
+/// \return The hexadecimal representation
 inline std::string to_hex(uint32_t i)
 {
 	char s[sizeof(i) * 2 + 3];
@@ -302,7 +299,7 @@ inline void trim(std::string &s)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of starts_with
 
-constexpr inline bool starts_with(std::string_view s, std::string_view p)
+constexpr inline bool starts_with(std::string_view s, std::string_view p) noexcept
 {
 	return s.starts_with(p);
 }
@@ -310,7 +307,7 @@ constexpr inline bool starts_with(std::string_view s, std::string_view p)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of ends_with
 
-constexpr inline bool ends_with(std::string_view s, std::string_view p)
+constexpr inline bool ends_with(std::string_view s, std::string_view p) noexcept
 {
 	return s.length() >= p.length() and s.ends_with(p);
 }
@@ -318,7 +315,7 @@ constexpr inline bool ends_with(std::string_view s, std::string_view p)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of contains
 
-constexpr inline bool contains(std::string_view s, std::string_view p)
+constexpr inline bool contains(std::string_view s, std::string_view p) noexcept
 {
 	return s.find(p) != std::string_view::npos;
 }
@@ -346,6 +343,31 @@ inline void split(std::vector<std::string> &v, std::string_view s, std::string_v
 
 		i = n + p.length();
 	}
+}
+
+inline std::vector<std::string_view> split(std::string_view s, std::string_view p, bool compress = false)
+{
+	std::vector<std::string_view> result;
+
+	std::string_view::size_type i = 0;
+	const auto e = s.length();
+
+	while (i <= e)
+	{
+		auto n = s.find(p, i);
+		if (n > e)
+			n = e;
+
+		if (n > i or compress == false)
+			result.emplace_back(s.substr(i, n - i));
+
+		if (n == std::string_view::npos)
+			break;
+
+		i = n + p.length();
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------

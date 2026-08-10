@@ -1,7 +1,5 @@
-//       Copyright Maarten L. Hekkelman, 2019-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2019-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #if __cpp_lib_format
 
@@ -14,8 +12,7 @@ std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::l
 
 #else
 
-# include "format.hpp"
-
+# include "detail/format.hpp"
 # include "zeep/unicode-support.hpp"
 
 # include <cmath>

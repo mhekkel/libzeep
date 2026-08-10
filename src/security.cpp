@@ -1,10 +1,9 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-//   Distributed under the Boost Software License, Version 1.0.
-//      (See accompanying file LICENSE_1_0.txt or copy at
-//            http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/security.hpp"
+#include "detail/glob.hpp"
 #include "zeep/crypto.hpp"
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
@@ -30,20 +29,19 @@
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <regex>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 
+#if __has_include(<sys/mman.h>)
+# include <sys/mman.h>
+#endif
+
 namespace zeep::http
 {
-
-namespace
-{
-#define BASE64URL "(?:[-_A-Za-z0-9]{4})*(?:[-_A-Za-z0-9]{2,3})?"
-	std::regex kJWTRx("^(" BASE64URL R"()\.()" BASE64URL R"()\.()" BASE64URL ")$");
-} // namespace
 
 // --------------------------------------------------------------------
 
@@ -198,14 +196,27 @@ user_details openid_user_service::load_user(const std::string &username) const
 security_context::security_context(std::string secret, user_service &users, bool /* defaultAccessAllowed */)
 	: m_secret(std::move(secret))
 	, m_users(users)
-	, m_default_jwt_exp(std::chrono::years{ 1 })
+	, m_default_jwt_exp(std::chrono::weeks{ 1 })
 {
+#if __has_include(<sys/mman.h>)
+	mlock(m_secret.data(), m_secret.length());
+#endif
+
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
+}
+
+security_context::~security_context()
+{
+	// wipe out secret
+	for (char &ch : m_secret)
+		ch = 0;
 }
 
 void security_context::validate_request(request &req) const
 {
-	bool allow = false;
+	using namespace std::literals;
+
+	bool allow = m_default_allow;
 
 	for (;;)
 	{
@@ -219,11 +230,13 @@ void security_context::validate_request(request &req) const
 			if (access_token.empty())
 				break;
 
-			std::smatch m;
-			if (not std::regex_match(access_token, m, kJWTRx))
+			// Split the JWT into parts
+			std::vector<std::string> m;
+			split(m, access_token, ".");
+			if (m.size() != 3)
 				break;
 
-			auto JOSEHeader = object::parse_JSON(decode_base64url(m[1].str()));
+			auto JOSEHeader = object::parse_JSON(decode_base64url(m[0]));
 
 			if (not JOSEHeader.contains("typ") or JOSEHeader["typ"] != "JWT")
 				break;
@@ -231,14 +244,14 @@ void security_context::validate_request(request &req) const
 			if (auto alg = JOSEHeader["alg"].get<std::string>(); alg == "HS256")
 			{
 				// check signature
-				auto sig = zeep::encode_base64url(zeep::hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
-				if (sig != m[3].str())
+				auto sig = zeep::encode_base64url(zeep::hmac_sha256(m[0] + '.' + m[1], m_secret));
+				if (sig != m[2])
 					break;
 			}
 			else if (alg == "RS256")
 			{
-				auto msg = m[1].str() + '.' + m[2].str();
-				auto sig = zeep::decode_base64url(m[3].str());
+				auto msg = m[0] + '.' + m[1];
+				auto sig = zeep::decode_base64url(m[2]);
 
 				if (not verify_rsa(JOSEHeader["kid"].get<std::string>(), msg, sig))
 					break;
@@ -247,11 +260,20 @@ void security_context::validate_request(request &req) const
 				break;
 
 			// check signature
-			auto sig = encode_base64url(hmac_sha256(m[1].str() + '.' + m[2].str(), m_secret));
-			if (sig != m[3].str())
+			auto sig = encode_base64url(hmac_sha256(m[0] + '.' + m[1], m_secret));
+
+			// Apparently, we need a constant time comparison here to avoid timing attacks
+			if (sig.length() != m[2].length())
 				break;
 
-			auto credentials = object::parse_JSON(decode_base64url(m[2].str()));
+			// Compare strings in constant time
+			int diff = 0;
+			for (const auto &[a, b] : std::views::zip(sig, m[2]))
+				diff |= a xor b;
+			if (diff)
+				break;
+
+			auto credentials = object::parse_JSON(decode_base64url(m[1]));
 
 			// check exp
 			using namespace std::chrono;
@@ -308,7 +330,7 @@ void security_context::validate_request(request &req) const
 			if (auto req_csrf_cookie = req.get_cookie("csrf-token"); req_csrf_cookie != req_csrf_param)
 			{
 				allow = false;
-				std::cerr << "CSRF validation failed\n";
+				std::clog << "CSRF validation failed\n";
 			}
 		}
 	}
@@ -417,16 +439,17 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 	auto h2 = encode_base64url(credentials.get_JSON());
 	auto h3 = encode_base64url(hmac_sha256(h1 + '.' + h2, m_secret));
 
-	std::stringstream s;
-	const std::time_t now_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + exp);
-	s << std::put_time(std::localtime(&now_t), "%a, %d %b %Y %H:%M:%S GMT");
+	auto when = floor<seconds>(system_clock::now() + exp);
 
 	rep.set_cookie("access_token", h1 + '.' + h2 + '.' + h3,
 		// clang-format off
 		{
 			{ "HttpOnly", "" },
+#ifdef NDEBUG
+			{ "Secure", "" },
+#endif
 			{ "SameSite", "Lax" },
-			{ "Expires", '"' + s.str() + '"' }
+			{ "Expires", std::format(R"({0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT)", when) }
 		}
 		// clang-format on
 	);

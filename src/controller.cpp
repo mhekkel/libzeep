@@ -1,11 +1,10 @@
-// Copyright Maarten L. Hekkelman, Radboud University 2008-2013.
-//        Copyright Maarten L. Hekkelman, 2014-2026
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
+// SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
+// SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/http/controller.hpp"
 
+#include "detail/glob.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/http/asio.hpp"
 #include "zeep/http/reply.hpp"
@@ -13,8 +12,6 @@
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
 #include "zeep/uri.hpp"
-
-#include "glob.hpp"
 
 #include <cstddef>
 #include <filesystem>
@@ -30,11 +27,7 @@ controller::controller(const std::string &prefix_path)
 {
 }
 
-controller::~controller()
-{
-	for (auto mp : m_mountpoints)
-		delete mp;
-}
+controller::~controller() = default;
 
 bool controller::dispatch_request(asio_ns::ip::tcp::socket & /*socket*/, request &req, reply &rep)
 {
@@ -135,7 +128,7 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 		if (req.get_method() == "OPTIONS")
 			get_options(req, rep);
 		else
-			rep = call_mount_point(mp, scope);
+			rep = call_mount_point(mp.get(), scope);
 
 		result = true;
 		break;
