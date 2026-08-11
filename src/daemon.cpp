@@ -15,6 +15,8 @@
 #include <cstdint>
 #include <fcntl.h>
 #include <functional>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -29,6 +31,8 @@
 # include <sys/wait.h>
 # include <unistd.h>
 #endif
+
+namespace fs = std::filesystem;
 
 namespace zeep::http
 {
