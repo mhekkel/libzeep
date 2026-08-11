@@ -160,11 +160,10 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 			asio_ns::io_context io_context;
 
 			asio_ns::ip::tcp::endpoint endpoint;
-			try
-			{
-				endpoint = asio_ns::ip::tcp::endpoint(asio_ns::ip::make_address(address), port);
-			}
-			catch (const std::exception &e)
+			auto addr = asio_ns::ip::make_address(address, ec);
+			if (ec == std::errc{})
+				endpoint = asio_ns::ip::tcp::endpoint(addr, port);
+			else
 			{
 				asio_ns::ip::tcp::resolver resolver(io_context);
 				for (auto &ep : resolver.resolve(address, std::to_string(port)))
