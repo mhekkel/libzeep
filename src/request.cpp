@@ -57,11 +57,11 @@ float request::get_accept(std::string_view type) const
 		return 1.0;
 
 	std::string t1(type), t2;
-	std::string::size_type s = t1.find('/');
-	if (s != std::string::npos)
+	std::string::size_type sep = t1.find('/');
+	if (sep != std::string::npos)
 	{
-		t2 = t1.substr(s + 1);
-		t1.erase(s, t1.length() - s);
+		t2 = t1.substr(sep + 1);
+		t1.erase(sep, t1.length() - sep);
 	}
 
 	for (const header &h : m_headers)
@@ -73,18 +73,18 @@ float request::get_accept(std::string_view type) const
 		std::vector<std::string> types;
 		split(types, h.value, ",");
 
-		for (auto type : types)
+		for (auto type0 : types)
 		{
-			trim(type);
+			trim(type0);
 
 			std::string mediarange, quality;
-			if (auto s = type.find(';'); s != std::string::npos)
+			if (auto s = type0.find(';'); s != std::string::npos)
 			{
-				mediarange = type.substr(0, s);
-				quality = type.substr(s + 1);
+				mediarange = type0.substr(0, s);
+				quality = type0.substr(s + 1);
 			}
 			else
-				mediarange = type;
+				mediarange = type0;
 
 			trim(mediarange);
 			trim(quality);

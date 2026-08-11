@@ -15,7 +15,6 @@
 #include <new>
 #include <string>
 #include <system_error>
-#include <unistd.h>
 #include <utility>
 
 namespace fs = std::filesystem;
