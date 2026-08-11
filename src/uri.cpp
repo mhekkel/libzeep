@@ -658,11 +658,11 @@ std::string decode_url(std::string_view s)
 {
 	std::string result;
 
-	for (auto c = s.begin(); c != s.end(); ++c)
+	for (auto c = s.data(); c != s.data() + s.length(); ++c)
 	{
 		if (*c == '%')
 		{
-			if (s.end() - c >= 3)
+			if (s.data() + s.length() - c >= 3)
 			{
 				int value;
 				auto r = std::from_chars(c + 1, c + 3, value, 16);

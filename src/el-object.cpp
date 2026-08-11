@@ -825,7 +825,7 @@ auto json_parser::get_next_token() -> token_t
 						else
 							throw zeep::exception(
 								std::format("Invalid character '{}' in json",
-									std::isprint(static_cast<int>(ch)) ? std::string{ static_cast<char>(ch) } : to_hex(ch)));
+									std::isprint(static_cast<uint8_t>(ch)) ? std::string{ static_cast<char>(ch) } : to_hex(ch)));
 				}
 				break;
 
