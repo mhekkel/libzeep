@@ -174,9 +174,9 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: m_it.m_array_it = m_obj->m_data.m_value.m_array->begin(); break;
-				case object::value_type::object: m_it.m_object_it = m_obj->m_data.m_value.m_object->begin(); break;
-				default: m_it.m_p = 0; break;
+				case object::value_type::array: m_it = m_obj->m_data.m_value.m_array->begin(); break;
+				case object::value_type::object: m_it = m_obj->m_data.m_value.m_object->begin(); break;
+				default: m_it = 0; break;
 			}
 		}
 		/// \brief Construct an iterator pointing past the last element
@@ -186,10 +186,10 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: m_it.m_array_it = m_obj->m_data.m_value.m_array->end(); break;
-				case object::value_type::object: m_it.m_object_it = m_obj->m_data.m_value.m_object->end(); break;
-				case object::value_type::null: m_it.m_p = 0; break;
-				default: m_it.m_p = 1; break;
+				case object::value_type::array: m_it = m_obj->m_data.m_value.m_array->end(); break;
+				case object::value_type::object: m_it = m_obj->m_data.m_value.m_object->end(); break;
+				case object::value_type::null: m_it = 0; break;
+				default: m_it = 1; break;
 			}
 		}
 		iterator_impl(const iterator_impl &i) noexcept
@@ -212,9 +212,9 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: std::advance(m_it.m_array_it, -1); break;
-				case object::value_type::object: std::advance(m_it.m_object_it, -1); break;
-				default: --m_it.m_p; break;
+				case object::value_type::array: std::advance(std::get<0>(m_it), -1); break;
+				case object::value_type::object: std::advance(std::get<1>(m_it), -1); break;
+				default: --std::get<2>(m_it); break;
 			}
 			return *this;
 		}
@@ -233,9 +233,9 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: std::advance(m_it.m_array_it, +1); break;
-				case object::value_type::object: std::advance(m_it.m_object_it, +1); break;
-				default: ++m_it.m_p; break;
+				case object::value_type::array: std::advance(std::get<0>(m_it), +1); break;
+				case object::value_type::object: std::advance(std::get<1>(m_it), +1); break;
+				default: ++std::get<2>(m_it); break;
 			}
 			return *this;
 		}
@@ -247,20 +247,20 @@ class object
 			switch (m_obj->m_data.m_type)
 			{
 				case object::value_type::array:
-					assert(m_it.m_array_it != m_obj->m_data.m_value.m_array->end());
-					return *m_it.m_array_it;
+					assert(std::get<0>(m_it) != m_obj->m_data.m_value.m_array->end());
+					return *std::get<0>(m_it);
 					break;
 
 				case object::value_type::object:
-					assert(m_it.m_object_it != m_obj->m_data.m_value.m_object->end());
-					return m_it.m_object_it->second;
+					assert(std::get<1>(m_it) != m_obj->m_data.m_value.m_object->end());
+					return std::get<1>(m_it)->second;
 					break;
 
 				case object::value_type::null:
 					throw object_error("Cannot get value");
 
 				default:
-					if (m_it.m_p == 0)
+					if (std::get<2>(m_it) == 0)
 						return *m_obj;
 					throw object_error("Cannot get value");
 			}
@@ -273,20 +273,20 @@ class object
 			switch (m_obj->m_data.m_type)
 			{
 				case object::value_type::array:
-					assert(m_it.m_array_it != m_obj->m_data.m_value.m_array->end());
-					return &(*m_it.m_array_it);
+					assert(std::get<0>(m_it) != m_obj->m_data.m_value.m_array->end());
+					return &(*std::get<0>(m_it));
 					break;
 
 				case object::value_type::object:
-					assert(m_it.m_object_it != m_obj->m_data.m_value.m_object->end());
-					return &(m_it.m_object_it->second);
+					assert(std::get<1>(m_it) != m_obj->m_data.m_value.m_object->end());
+					return &(std::get<1>(m_it)->second);
 					break;
 
 				case object::value_type::null:
 					throw object_error("Cannot get value");
 
 				default:
-					if (m_it.m_p == 0)
+					if (std::get<2>(m_it) == 0)
 						return m_obj;
 					throw object_error("Cannot get value");
 			}
@@ -299,12 +299,7 @@ class object
 				throw object_error("Containers are not the same");
 
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
-			{
-				case object::value_type::array: return m_it.m_array_it == other.m_it.m_array_it;
-				case object::value_type::object: return m_it.m_object_it == other.m_it.m_object_it;
-				default: return m_it.m_p == other.m_it.m_p;
-			}
+			return m_it == other.m_it;
 		}
 
 		/// \brief Three-way comparison (not supported for object iterators)
@@ -314,12 +309,7 @@ class object
 				throw object_error("Containers are not the same");
 
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
-			{
-				case object::value_type::array: return m_it.m_array_it <=> other.m_it.m_array_it;
-				case object::value_type::object: throw object_error("Cannot compare order of object iterators");
-				default: return m_it.m_p <=> other.m_it.m_p;
-			}
+			return m_it <=> other.m_it;
 		}
 
 		/// \brief Advance by \a i positions
@@ -328,9 +318,9 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: std::advance(m_it.m_array_it, i); break;
+				case object::value_type::array: std::advance(std::get<0>(m_it), i); break;
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
-				default: m_it.m_p += i;
+				default: std::get<2>(m_it) += i;
 			}
 			return *this;
 		}
@@ -378,9 +368,9 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: return m_it.m_array_it - other.m_it.m_array_it;
+				case object::value_type::array: return std::get<0>(m_it) - std::get<0>(other.m_it);
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
-				default: return m_it.m_p - other.m_it.m_p;
+				default: return std::get<2>(m_it) - std::get<2>(other.m_it);
 			}
 		}
 
@@ -390,10 +380,10 @@ class object
 			assert(m_obj);
 			switch (m_obj->m_data.m_type)
 			{
-				case object::value_type::array: return *std::next(m_it.m_array_it, i); break;
+				case object::value_type::array: return *std::next(std::get<0>(m_it), i); break;
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
 				default:
-					if (m_it.m_p == -i)
+					if (std::get<2>(m_it) == -i)
 						return *m_obj;
 					throw object_error("Cannot get value");
 			}
@@ -408,7 +398,7 @@ class object
 			if (not m_obj->is_object())
 				throw object_error("Can only use key() on object iterators");
 
-			return m_it.m_object_it->first;
+			return std::get<1>(m_it)->first;
 		}
 
 		/// \brief Return a reference to the current value (equivalent to operator*)
@@ -425,12 +415,7 @@ class object
 		using array_iterator_type = typename T::array_type::iterator;
 		using object_iterator_type = typename T::object_type::iterator;
 
-		union
-		{
-			array_iterator_type m_array_it;
-			object_iterator_type m_object_it;
-			difference_type m_p;
-		} m_it = {};
+		std::variant<array_iterator_type, object_iterator_type, difference_type> m_it = {};
 
 		/// @endcond
 	};
@@ -914,7 +899,7 @@ class object
 
 		auto r = m_data.m_value.m_object->emplace(std::forward<Args>(args)...);
 		auto i = begin();
-		i.m_it.m_object_it = r.first;
+		i.m_it = r.first;
 
 		return { i, r.second };
 	}
@@ -949,18 +934,18 @@ class object
 		switch (m_data.m_type)
 		{
 			case value_type::array:
-				result.m_it.m_array_it = m_data.m_value.m_array->erase(pos.m_it.m_array_it);
+				result.m_it = m_data.m_value.m_array->erase(std::get<0>(pos.m_it));
 				break;
 
 			case value_type::object:
-				result.m_it.m_object_it = m_data.m_value.m_object->erase(pos.m_it.m_object_it);
+				result.m_it = m_data.m_value.m_object->erase(std::get<1>(pos.m_it));
 				break;
 
 			case value_type::null:
 				throw object_error("Cannot erase in null values");
 
 			default:
-				if (pos.m_it.m_p != 0)
+				if (std::get<2>(pos.m_it) != 0)
 					throw object_error("Iterator out of range");
 
 				if (m_data.m_type == value_type::string)
@@ -991,18 +976,18 @@ class object
 		switch (m_data.m_type)
 		{
 			case value_type::array:
-				result.m_it.m_array_it = m_data.m_value.m_array->erase(first.m_it.m_array_it, last.m_it.m_array_it);
+				result.m_it = m_data.m_value.m_array->erase(std::get<0>(first.m_it), std::get<0>(last.m_it));
 				break;
 
 			case value_type::object:
-				result.m_it.m_object_it = m_data.m_value.m_object->erase(first.m_it.m_object_it, last.m_it.m_object_it);
+				result.m_it = m_data.m_value.m_object->erase(std::get<1>(first.m_it), std::get<1>(last.m_it));
 				break;
 
 			case value_type::null:
 				throw object_error("Cannot erase in null values");
 
 			default:
-				if (first.m_it.m_p != 0 or last.m_it.m_p != 0)
+				if (std::get<2>(first.m_it) != 0 or std::get<2>(last.m_it) != 0)
 					throw object_error("Iterator out of range");
 
 				if (m_data.m_type == value_type::string)
