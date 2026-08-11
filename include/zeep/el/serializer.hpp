@@ -65,8 +65,8 @@ template <typename T>
 struct has_value_serializer
 {
 	static constexpr bool value =
-		zeem::detail::is_detected_v<vs_to_string_function, T> and
-		zeem::detail::is_detected_v<vs_from_string_function, T>;
+		zeem::is_detected_v<vs_to_string_function, T> and
+		zeem::is_detected_v<vs_from_string_function, T>;
 };
 
 /// \brief Convenience variable template for \a has_value_serializer
@@ -87,7 +87,7 @@ struct has_serialize : std::false_type
 template <typename T, typename Archive>
 struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 {
-	static constexpr bool value = zeem::detail::is_detected_v<serialize_function, T, Archive>;
+	static constexpr bool value = zeem::is_detected_v<serialize_function, T, Archive>;
 };
 
 /// \brief Convenience variable template for \a has_serialize
@@ -112,9 +112,9 @@ struct is_serializable_map_type : std::false_type
 template <typename T>
 struct is_serializable_map_type<T,
 	std::enable_if_t<
-		zeem::detail::is_detected_v<mapped_type_t, T> and
-		zeem::detail::is_detected_v<key_type_t, T> and
-		zeem::detail::is_detected_v<zeem::iterator_t, T>>>
+		zeem::is_detected_v<mapped_type_t, T> and
+		zeem::is_detected_v<key_type_t, T> and
+		zeem::is_detected_v<zeem::iterator_t, T>>>
 {
 	static constexpr bool value =
 		std::is_same_v<typename T::key_type, std::string> and
@@ -138,11 +138,11 @@ struct is_serializable_array_type : std::false_type
 template <typename T>
 struct is_serializable_array_type<T,
 	std::enable_if_t<
-		not zeem::detail::is_detected_v<mapped_type_t, T> and
-		not zeem::detail::is_detected_v<key_type_t, T> and
-		zeem::detail::is_detected_v<zeem::value_type_t, T> and
-		zeem::detail::is_detected_v<zeem::iterator_t, T> and
-		not zeem::detail::is_detected_v<zeem::std_string_npos_t, T>>>
+		not zeem::is_detected_v<mapped_type_t, T> and
+		not zeem::is_detected_v<key_type_t, T> and
+		zeem::is_detected_v<zeem::value_type_t, T> and
+		zeem::is_detected_v<zeem::iterator_t, T> and
+		not zeem::is_detected_v<zeem::std_string_npos_t, T>>>
 {
 	static constexpr bool value = std::is_constructible_v<object, typename T::value_type> or
 	                              has_serialize_v<typename T::value_type, object_serializer>;
@@ -455,7 +455,7 @@ template <typename T>
 struct is_serializable_to_object
 {
 	static constexpr bool value =
-		zeem::detail::is_detected_v<serialize_to_object_function, T>;
+		zeem::is_detected_v<serialize_to_object_function, T>;
 };
 
 /// \brief Convenience variable template for \a is_serializable_to_object
