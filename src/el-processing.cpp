@@ -123,6 +123,9 @@ enum class token_type
 	error
 };
 
+// Maximum level of nesting of parenthesis. Avoids stack overflow
+const int kMaxParenNesting = 128;
+
 // --------------------------------------------------------------------
 // interpreter for expression language
 
@@ -178,6 +181,7 @@ struct interpreter
 	int64_t m_token_number_int{};
 	double m_token_number_float{};
 	std::string::const_iterator m_ptr, m_end;
+	int m_paren_nesting{};
 	bool m_return_whitespace = false;
 	bool m_expect_fragment_spec = false;
 };
@@ -1053,9 +1057,12 @@ object interpreter::parse_primary_expr()
 			break;
 
 		case token_type::lparen:
+			if (++m_paren_nesting > kMaxParenNesting)
+				throw zeep::exception("Maximum level of parenthesis nesting reached");
 			match(m_lookahead);
 			result = parse_expr();
 			match(token_type::rparen);
+			--m_paren_nesting;
 			break;
 
 		case token_type::hash:
