@@ -11,25 +11,22 @@
 #include "zeep/streambuf.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
-#include <stdexcept>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <utility>
+#include <variant>
+#include <vector>
+
 
 #if __has_include(<nlohmann/json.hpp>)
 # include <nlohmann/json.hpp>
 # define HAVE_NLOHMANN_JSON 1
 #endif
-
-#include <algorithm>
-#include <cmath>
-#include <compare>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
 
 namespace zeep::el
 {
@@ -98,13 +95,13 @@ class object
 	/// \brief The supported value types for an object
 	enum class value_type
 	{
-		null,        ///< Represents a null/empty value
-		object,      ///< A map of string keys to object values
-		array,       ///< An ordered vector of object values
-		string,      ///< A UTF-8 string value
-		number_int,  ///< A signed 64-bit integer value
-		number_float,///< A double-precision floating-point value
-		boolean      ///< A boolean value
+		null,         ///< Represents a null/empty value
+		object,       ///< A map of string keys to object values
+		array,        ///< An ordered vector of object values
+		string,       ///< A UTF-8 string value
+		number_int,   ///< A signed 64-bit integer value
+		number_float, ///< A double-precision floating-point value
+		boolean       ///< A boolean value
 	};
 
 	/// \brief Defines an ordering over value_type enumerators
@@ -703,9 +700,9 @@ class object
 			case value_type::boolean:
 				return m_data.m_value.m_boolean;
 			case value_type::number_int:
-				return m_data.m_value.m_int;
+				return static_cast<T>(m_data.m_value.m_int);
 			case value_type::number_float:
-				return m_data.m_value.m_float;
+				return static_cast<T>(m_data.m_value.m_float);
 			default:
 				return not empty();
 		}

@@ -11,18 +11,10 @@
 #include "zeep/config.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/http/server.hpp"
-#include "zeep/unicode-support.hpp"
 
-#include <cerrno>
-#include <csignal>
 #include <cstdint>
-#include <cstring>
-#include <exception>
 #include <fcntl.h>
-#include <filesystem>
-#include <fstream>
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -30,7 +22,6 @@
 #include <system_error>
 #include <thread>
 #include <utility>
-#include <vector>
 
 #ifndef _WIN32
 # include <grp.h>
@@ -38,8 +29,6 @@
 # include <sys/wait.h>
 # include <unistd.h>
 #endif
-
-namespace fs = std::filesystem;
 
 namespace zeep::http
 {

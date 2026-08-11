@@ -11,6 +11,7 @@
 
 #if _WIN32
 
+#include <exception>
 #include <mutex>
 #include <condition_variable>
 
@@ -84,7 +85,7 @@ signal_catcher::signal_catcher()
 	: mImpl(nullptr)
 {
 	if (not SetConsoleCtrlHandler(&signal_catcher_impl::CtrlHandler, true))
-		throw exception("Could not install control handler");
+		throw std::exception("Could not install control handler");
 }
 
 signal_catcher::~signal_catcher()
@@ -106,7 +107,7 @@ int signal_catcher::wait()
 	return signal_catcher_impl::sSignal;
 }
 
-void signal_catcher::signal_hangup(std::thread &t)
+void signal_catcher::signal_hangup(std::thread &)
 {
 	signal_catcher_impl::CtrlHandler(CTRL_BREAK_EVENT);
 }
