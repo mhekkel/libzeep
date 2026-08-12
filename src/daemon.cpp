@@ -153,7 +153,9 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 			asio_ns::io_context io_context;
 
 			asio_ns::ip::tcp::endpoint endpoint;
-			auto addr = asio_ns::ip::make_address(address, ec);
+			asio_system_ns::error_code ec_a;
+
+			auto addr = asio_ns::ip::make_address(address, ec_a);
 			if (ec == std::errc{})
 				endpoint = asio_ns::ip::tcp::endpoint(addr, port);
 			else
