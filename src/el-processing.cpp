@@ -1107,7 +1107,7 @@ object interpreter::parse_primary_expr()
 							result = object(static_cast<uint32_t>(result.size()));
 						else if (m_token_string == "empty")
 							result = result.empty();
-						else if (result.type() == object::value_type::object)
+						else if (result.type() == object::value_type::object and result.contains(m_token_string))
 							result = const_cast<const object &>(result)[m_token_string];
 						else
 							result = object::value_type::null;
@@ -1127,7 +1127,7 @@ object interpreter::parse_primary_expr()
 					{
 						if (result.type() == object::value_type::array and not(result.empty() or index.empty()))
 							result = result[index.get<int>()];
-						else if (result.type() == object::value_type::object and not(result.empty() or index.empty()))
+						else if (result.type() == object::value_type::object and result.contains(index.get<std::string>()))
 							result = result[index.get<std::string>()];
 						else
 							result = object::value_type::null;
@@ -1199,7 +1199,7 @@ object interpreter::parse_link_template_expr()
 	{
 		match(token_type::div);
 		path = context;
-		if (not path.empty() and path.back() != '/')
+		if (path.empty() or path.back() != '/')
 			path += '/';
 	}
 
