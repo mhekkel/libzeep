@@ -480,30 +480,22 @@ class object
 	}
 
 	/// \brief Construct a string object from a string-compatible type
-	/// \tparam T  A type satisfying \a StringType
-	template <StringType T>
-	object(const T &s)
+	object(StringType auto const &s)
 	{
 		m_data = std::string{ s };
 	}
 
 	/// \brief Construct a number object from an integral or floating-point value
-	/// \tparam T  A type satisfying \a NumberType
-	template <NumberType T>
-	constexpr object(T v) noexcept
+	constexpr object(NumberType auto v) noexcept
 	{
-		if constexpr (std::is_integral_v<T>)
-			m_data = static_cast<int64_t>(v);
-		else if constexpr (std::is_floating_point_v<T>)
+		if constexpr (std::is_floating_point_v<decltype(v)>)
 			m_data = static_cast<double>(v);
 		else
-			assert(false);
+			m_data = static_cast<int64_t>(v);
 	}
 
 	/// \brief Construct a boolean object
-	/// \tparam T  A type satisfying \a BooleanType
-	template <BooleanType T>
-	constexpr object(T b) noexcept
+	constexpr object(BooleanType auto b) noexcept
 		: m_data(b)
 	{
 	}
