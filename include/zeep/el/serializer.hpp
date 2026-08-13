@@ -446,48 +446,84 @@ struct serializer<T>
 ///@}
 
 // --------------------------------------------------------------------
-/// \brief Detects whether a type \a T has a valid \a serializer specialization
 
-template <typename T>
-using serialize_to_object_function = decltype(zeep::el::serializer<T>::serialize(std::declval<T &>()));
-
-template <typename T>
-struct is_serializable_to_object
+namespace detail
 {
-	static constexpr bool value =
-		zeem::detail::is_detected_v<serialize_to_object_function, T>;
-};
+	// --------------------------------------------------------------------
+	/// \brief Detects whether a type \a T has a valid \a serializer specialization
 
-/// \brief Convenience variable template for \a is_serializable_to_object
-template <typename T>
-inline constexpr bool is_serializable_to_object_v = is_serializable_to_object<T>::value;
+	template <typename T>
+	using serialize_to_object_function = decltype(zeep::el::serializer<T>::serialize(std::declval<T &>()));
 
-// --------------------------------------------------------------------
+	template <typename T>
+	struct is_serializable_to_object
+	{
+		static constexpr bool value =
+			zeem::detail::is_detected_v<serialize_to_object_function, T>;
+	};
 
-/// \brief Convenience function to serialize a value to an \a object
-/// \tparam T  The type to serialize (must be serializable)
-/// \param v   The value to serialize
-/// \return    The resulting object
+	/// \brief Convenience variable template for \a is_serializable_to_object
+	template <typename T>
+	inline constexpr bool is_serializable_to_object_v = is_serializable_to_object<T>::value;
 
-template <typename T>
-object to_object(const T &v)
-	requires(is_serializable_to_object_v<T>)
-{
-	using value_serializer_impl = serializer<T>;
-	return value_serializer_impl::serialize(v);
-}
+	/// \brief Convenience function to serialize a value to an \a object
+	/// \tparam T  The type to serialize (must be serializable)
+	/// \param v   The value to serialize
+	/// \return    The resulting object
 
-/// \brief Convenience function to deserialize a value from an \a object
-/// \tparam T  The target type (must be deserializable)
-/// \param o   The object to deserialize from
-/// \return    The deserialized value
+	template <typename T>
+	object to_object(const T &v)
+		requires(is_serializable_to_object_v<T>)
+	{
+		using value_serializer_impl = serializer<T>;
+		return value_serializer_impl::serialize(v);
+	}
 
-template <typename T>
-T from_object(const object &o)
-	requires(is_serializable_to_object_v<T>)
-{
-	using value_serializer_impl = serializer<T>;
-	return value_serializer_impl::deserialize(o);
-}
+	/// \brief Convenience function to deserialize a value from an \a object
+	/// \tparam T  The target type (must be deserializable)
+	/// \param o   The object to deserialize from
+	/// \return    The deserialized value
+
+	template <typename T>
+	T from_object(const object &o)
+		requires(is_serializable_to_object_v<T>)
+	{
+		using value_serializer_impl = serializer<T>;
+		return value_serializer_impl::deserialize(o);
+	}
+
+	// Using customization point objects
+	/** @cond */
+
+	struct to_object_fn
+	{
+		template <typename T>
+		auto operator()(T &&val) const
+			noexcept(noexcept(to_object(std::forward<T>(val))))
+				-> decltype(to_object(std::forward<T>(val)))
+		{
+			return to_object(std::forward<T>(val));
+		}
+	};
+
+	struct from_object_fn
+	{
+		template <typename T>
+		auto operator()(const object &o) const
+			noexcept(noexcept(from_object(std::forward<T>(o)))) -> T
+		{
+			return from_object(std::forward<T>(o));
+		}
+	};
+
+	/** @endcond */
+
+} // namespace detail
+
+/// @brief The customization point object for to_object
+inline constexpr detail::to_object_fn to_object{};
+
+/// @brief The customization point object for from_object
+inline constexpr detail::from_object_fn from_object{};
 
 } // namespace zeep::el
