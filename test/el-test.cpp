@@ -156,3 +156,54 @@ TEST_CASE("test-6")
 
 	CHECK(status == status2);
 }
+
+TEST_CASE("test-7")
+{
+	const e::object obj{
+		{ "answer", 42 },
+		{ "name", "zeep" }
+	};
+
+	const auto &missing = obj["missing"];
+	CHECK(missing.is_null());
+	CHECK(missing.type() == e::object::value_type::null);
+	CHECK(missing.empty());
+	CHECK(obj["missing"].get<int64_t>() == 0);
+
+	CHECK_THROWS(obj.at("missing"));
+
+	CHECK(obj["answer"].get<int64_t>() == 42);
+	CHECK(obj["name"].get<std::string>() == "zeep");
+
+	const e::object arr{ 1, 2, 3 };
+	CHECK(arr.size() == 3);
+	CHECK(arr[1].get<int64_t>() == 2);
+	CHECK(arr[10].is_null());
+	CHECK(arr[10].get<int64_t>() == 0);
+	CHECK_THROWS(arr.at(10));
+}
+
+TEST_CASE("test-8")
+{
+	e::object obj{ { "answer", 42 } };
+	REQUIRE(obj.is_object());
+
+	auto &missing = obj["missing"];
+	REQUIRE(missing.is_null());
+	CHECK(obj.contains("missing"));
+
+	missing = 7;
+	CHECK(obj["missing"].get<int64_t>() == 7);
+
+	e::object arr{ 1, 2, 3 };
+	REQUIRE(arr.is_array());
+
+	auto &el = arr[5];
+	REQUIRE(el.is_null());
+	CHECK(arr.size() == 6);
+	CHECK(arr[3].is_null());
+	CHECK(arr[4].is_null());
+
+	el = 42;
+	CHECK(arr[5].get<int64_t>() == 42);
+}
