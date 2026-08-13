@@ -423,11 +423,11 @@ class object
 	// --------------------------------------------------------------------
 
 	/// \brief Default constructor — creates a null object
-	object() noexcept = default;
+	constexpr object() noexcept = default;
 
 	/// \brief Construct an object of a specific \a value_type
 	/// \param t  The type to construct (e.g., value_type::array)
-	object(value_type t) noexcept
+	constexpr object(value_type t) noexcept
 	{
 		switch (t)
 		{
@@ -475,7 +475,7 @@ class object
 	}
 
 	/// \brief Construct a null object from nullptr
-	object(std::nullptr_t) noexcept
+	constexpr object(std::nullptr_t) noexcept
 	{
 	}
 
@@ -490,7 +490,7 @@ class object
 	/// \brief Construct a number object from an integral or floating-point value
 	/// \tparam T  A type satisfying \a NumberType
 	template <NumberType T>
-	object(T v) noexcept
+	constexpr object(T v) noexcept
 	{
 		if constexpr (std::is_integral_v<T>)
 			m_data = static_cast<int64_t>(v);
@@ -503,64 +503,59 @@ class object
 	/// \brief Construct a boolean object
 	/// \tparam T  A type satisfying \a BooleanType
 	template <BooleanType T>
-	object(T b) noexcept
+	constexpr object(T b) noexcept
 		: m_data(b)
 	{
 	}
 
-// #if HAVE_NLOHMANN_JSON
-// 	/// \brief Construct an object from an nlohmann::json value
-// 	object(const nlohmann::json &j)
-// 	{
-// 		// to be implemented
-// 		switch (j.type())
-// 		{
-// 			case nlohmann::json::value_t::null:
-// 				type() = value_type::null;
-// 				break;
+#if HAVE_NLOHMANN_JSON
+	/// \brief Construct an object from an nlohmann::json value
+	object(const nlohmann::json &j)
+	{
+		// to be implemented
+		switch (j.type())
+		{
+			case nlohmann::json::value_t::null:
+				m_data = std::monostate{};
+				break;
 
-// 			case nlohmann::json::value_t::object:
-// 				for (auto i = j.begin(); i != j.end(); ++i)
-// 					operator[](i.key()) = object(i.value());
-// 				break;
+			case nlohmann::json::value_t::object:
+				for (auto i = j.begin(); i != j.end(); ++i)
+					operator[](i.key()) = object(i.value());
+				break;
 
-// 			case nlohmann::json::value_t::array:
-// 				for (auto &e : j)
-// 					push_back(object(e));
-// 				break;
+			case nlohmann::json::value_t::array:
+				for (auto &e : j)
+					push_back(object(e));
+				break;
 
-// 			case nlohmann::json::value_t::string:
-// 				type() = value_type::string;
-// 				m_data.m_value = j.template get<std::string>();
-// 				break;
+			case nlohmann::json::value_t::string:
+				m_data = j.template get<std::string>();
+				break;
 
-// 			case nlohmann::json::value_t::boolean:
-// 				type() = value_type::boolean;
-// 				m_data.m_value = j.template get<bool>();
-// 				break;
+			case nlohmann::json::value_t::boolean:
+				m_data = j.template get<bool>();
+				break;
 
-// 			case nlohmann::json::value_t::number_integer:
-// 				type() = value_type::number_int;
-// 				m_data.m_value = j.template get<int64_t>();
-// 				break;
+			case nlohmann::json::value_t::number_integer:
+				m_data = j.template get<int64_t>();
+				break;
 
-// 			case nlohmann::json::value_t::number_unsigned:
-// 				type() = value_type::number_int;
-// 				m_data.m_value = static_cast<int64_t>(j.template get<uint64_t>());
-// 				break;
+			case nlohmann::json::value_t::number_unsigned:
+				m_data = static_cast<int64_t>(j.template get<uint64_t>());
+				break;
 
-// 			case nlohmann::json::value_t::number_float:
-// 				type() = value_type::number_float;
-// 				m_data.m_value = j.template get<double>();
-// 				break;
+			case nlohmann::json::value_t::number_float:
+				m_data = j.template get<double>();
+				break;
 
-// 			case nlohmann::json::value_t::binary:
-// 			case nlohmann::json::value_t::discarded:
-// 				assert(false);
-// 				break;
-// 		}
-// 	}
-// #endif
+			case nlohmann::json::value_t::binary:
+			case nlohmann::json::value_t::discarded:
+				assert(false);
+				break;
+		}
+	}
+#endif
 
 	/// \brief Move constructor
 	object(object &&rhs) noexcept
@@ -614,7 +609,7 @@ class object
 	///
 	/// Returns false for null, false, zero, and empty strings/arrays/objects.
 	/// Returns true for all other values.
-	explicit operator bool() const noexcept
+	constexpr explicit operator bool() const noexcept
 	{
 		bool result;
 		switch (type())
@@ -640,7 +635,7 @@ class object
 	/// \tparam T  A type satisfying \a StringType (used to select this overload)
 	/// \return The string value
 	template <StringType T>
-	[[nodiscard]] inline std::string get() const
+	[[nodiscard]] constexpr std::string get() const
 	{
 		if (std::holds_alternative<string_type>(m_data))
 			return std::get<string_type>(m_data);
@@ -654,7 +649,7 @@ class object
 	/// when non-empty.
 	/// \tparam T  A type satisfying \a BooleanType (used to select this overload)
 	template <BooleanType T>
-	[[nodiscard]] inline bool get() const noexcept
+	[[nodiscard]] constexpr bool get() const noexcept
 	{
 		switch (type())
 		{
@@ -675,7 +670,7 @@ class object
 	/// the truthiness (0 or 1).
 	/// \tparam T  A type satisfying \a NumberType (used to select this overload)
 	template <NumberType T>
-	[[nodiscard]] std::remove_cvref_t<T> get() const noexcept
+	[[nodiscard]] constexpr std::remove_cvref_t<T> get() const noexcept
 	{
 		switch (type())
 		{
@@ -695,7 +690,7 @@ class object
 	// --------------------------------------------------------------------
 
 	/// \brief Swap the contents of two objects
-	friend void swap(object &a, object &b) noexcept
+	friend constexpr void swap(object &a, object &b) noexcept
 	{
 		std::swap(a.m_data, b.m_data);
 	}
@@ -706,7 +701,7 @@ class object
 	///@{
 
 	/// \brief Unary negation (integer and float types only)
-	object &operator-()
+	constexpr object &operator-()
 	{
 		switch (type())
 		{
@@ -834,7 +829,27 @@ class object
 	[[nodiscard]] bool contains(const object &test) const;
 
 	/// \brief Return true if the object is null or empty
-	[[nodiscard]] bool empty() const noexcept;
+	[[nodiscard]] constexpr bool empty() const noexcept
+	{
+		switch (type())
+		{
+			case value_type::null:
+				return true;
+
+			case value_type::array:
+				return std::get<object::array_type>(m_data).empty();
+
+			case value_type::object:
+				return std::get<object_type>(m_data).empty();
+
+			case value_type::string:
+				return std::get<std::string>(m_data).empty();
+
+			default:
+				return false;
+		}
+	}
+
 	/// \brief Return the number of elements
 	[[nodiscard]] size_t size() const noexcept;
 	/// \brief Return the maximum number of elements (from the underlying container)
@@ -1078,7 +1093,12 @@ class object
   private:
 	/// @cond
 
-	std::variant<std::monostate, object_type, array_type, string_type, int64_t, double, bool> m_data{};
+	using variant_type = std::variant<std::monostate, object_type, array_type, string_type, int64_t, double, bool>;
+
+	static_assert(std::is_same_v<variant_type,
+		std::variant<std::monostate, object_type, array_type, string_type, int64_t, double, bool>>);
+
+	variant_type m_data{};
 
 	/// @endcond
 };

@@ -39,7 +39,6 @@ object operator+(const object &lhs, const object &rhs)
 	{
 		switch (lhs_type)
 		{
-			case value_type::boolean:
 			case value_type::number_int:
 				result = std::get<int64_t>(lhs.m_data) + std::get<int64_t>(rhs.m_data);
 				break;
@@ -88,7 +87,6 @@ object operator-(const object &lhs, const object &rhs)
 	{
 		switch (lhs_type)
 		{
-			case value_type::boolean:
 			case value_type::number_int:
 				result = std::get<int64_t>(lhs.m_data) - std::get<int64_t>(rhs.m_data);
 				break;
@@ -124,7 +122,6 @@ object operator*(const object &lhs, const object &rhs)
 	{
 		switch (lhs_type)
 		{
-			case value_type::boolean:
 			case value_type::number_int:
 				result = std::get<int64_t>(lhs.m_data) * std::get<int64_t>(rhs.m_data);
 				break;
@@ -160,7 +157,6 @@ object operator/(const object &lhs, const object &rhs)
 	{
 		switch (lhs_type)
 		{
-			case value_type::boolean:
 			case value_type::number_int:
 				result = std::get<int64_t>(lhs.m_data) / std::get<int64_t>(rhs.m_data);
 				break;
@@ -196,7 +192,6 @@ object operator%(const object &lhs, const object &rhs)
 	{
 		switch (lhs_type)
 		{
-			case value_type::boolean:
 			case value_type::number_int:
 				result = std::get<int64_t>(lhs.m_data) % std::get<int64_t>(rhs.m_data);
 				break;
@@ -322,7 +317,7 @@ void object::push_back(const object &val)
 
 	if (is_null())
 		m_data = array_type{};
-	
+
 	std::get<object::array_type>(m_data).push_back(val);
 }
 
@@ -404,27 +399,6 @@ object::const_reference object::operator[](const typename object_type::key_type 
 		throw object_error("Type should have been object to use operator[]");
 
 	return std::get<object_type>(m_data).at(key);
-}
-
-bool object::empty() const noexcept
-{
-	switch (type())
-	{
-		case value_type::null:
-			return true;
-
-		case value_type::array:
-			return std::get<object::array_type>(m_data).empty();
-
-		case value_type::object:
-			return std::get<object_type>(m_data).empty();
-
-		case value_type::string:
-			return std::get<std::string>(m_data).empty();
-
-		default:
-			return false;
-	}
 }
 
 // --------------------------------------------------------------------
@@ -929,9 +903,9 @@ auto json_parser::get_next_token() -> token_t
 				else
 				{
 					retract();
-					while (exponent-- > 0)
-						m_token_float *= negativeExp ? -10 : 10;
-					// m_token_float *= std::pow(10, (negativeExp ? -1 : 1) * exponent);
+					// while (exponent-- > 0)
+					// 	m_token_float *= negativeExp ? -10 : 10;
+					m_token_float *= std::pow(10, (negativeExp ? -1 : 1) * exponent);
 					if (negative)
 						m_token_float = -m_token_float;
 					token = token_t::Number;
