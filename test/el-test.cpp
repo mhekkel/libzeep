@@ -120,7 +120,7 @@ TEST_CASE("test-5")
 	zeep::http::scope scope;
 
 	Opname opn1{ "1", { { "een", 0.1f },
-						 { "twee", 0.2f } } };
+						  { "twee", 0.2f } } };
 
 	static_assert(e::detail::is_serializable_to_object_v<Opname>);
 
