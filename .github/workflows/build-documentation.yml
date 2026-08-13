@@ -41,7 +41,7 @@ jobs:
     - run: pip install -r docs/requirements.txt
 
     - name: Configure CMake
-      run: cmake -S docs -B build
+      run: cmake -B build
 
     - name: Run Sphinx
       run: cmake --build build --target Sphinx-libzeep
