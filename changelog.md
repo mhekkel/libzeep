@@ -3,6 +3,16 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSL-1.0
 -->
 
+Version 8.2.0
+- Refactored internal storage of el::object to use std::variant
+- Accessing a missing key or an out-of-range array index on a const
+  el::object now returns a null object instead of throwing
+- Modernized el::object constructors
+- Proper implementation of status_code
+- Fix for building with Boost.asio
+- Increased required version of libzeem
+- Added more el::object tests
+
 Version 8.1.0
 - Added fuzz tests for HTTP parser, EL parser, and JSON deserializer
 - Updated to 100% Doxygen coverage across all public headers
