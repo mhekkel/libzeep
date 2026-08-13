@@ -229,8 +229,10 @@ struct object_deserializer
 
 		using serializer_impl = serializer<T>;
 
-		auto value = m_elem[name];
+		if (not m_elem.contains(name))
+			return;
 
+		auto value = m_elem[name];
 		if (value.is_null())
 			return;
 
@@ -504,9 +506,9 @@ namespace detail
 		}
 	};
 
+	template <typename T>
 	struct from_object_fn
 	{
-		template <typename T>
 		auto operator()(const object &o) const
 		{
 			return from_object<T>(o);
@@ -521,6 +523,7 @@ namespace detail
 inline constexpr detail::to_object_fn to_object{};
 
 /// @brief The customization point object for from_object
-inline constexpr detail::from_object_fn from_object{};
+template <typename T>
+inline constexpr detail::from_object_fn<T> from_object{};
 
 } // namespace zeep::el

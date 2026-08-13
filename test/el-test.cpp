@@ -119,15 +119,19 @@ TEST_CASE("test-5")
 {
 	zeep::http::scope scope;
 
-	Opname opn{ "1", { { "een", 0.1f },
+	Opname opn1{ "1", { { "een", 0.1f },
 						 { "twee", 0.2f } } };
 
 	static_assert(e::detail::is_serializable_to_object_v<Opname>);
 
-	scope.put("o1", e::to_object(opn));
+	auto obj1 = e::to_object(opn1);
 
-	std::vector<Opname> opn_v{ opn, opn };
+	scope.put("o1", obj1);
 
+	auto opn2 = e::from_object<Opname>(obj1);
+	CHECK(opn1 == opn2);
+
+	std::vector<Opname> opn_v{ opn1, opn1 };
 	scope.put("o2", e::to_object(opn_v));
 }
 
