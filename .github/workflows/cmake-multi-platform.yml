@@ -20,20 +20,20 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
-        cpp_compiler: [g++, clang++, cl]
+        cpp_compiler: [g++-14, clang++, cl]
         boost_asio: [ON, OFF]
         include:
           - os: windows-latest
             cpp_compiler: cl
           - os: ubuntu-latest
-            cpp_compiler: g++
+            cpp_compiler: g++-14
           - os: ubuntu-latest
             cpp_compiler: clang++
           - os: macos-latest
             cpp_compiler: clang++
         exclude:
           - os: windows-latest
-            cpp_compiler: g++
+            cpp_compiler: g++-14
           - os: windows-latest
             cpp_compiler: clang++
           - os: ubuntu-latest
@@ -41,7 +41,7 @@ jobs:
           - os: macos-latest
             cpp_compiler: cl
           - os: macos-latest
-            cpp_compiler: g++
+            cpp_compiler: g++-14
 
     steps:
     - uses: actions/checkout@v4
