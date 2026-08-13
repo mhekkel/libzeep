@@ -1095,10 +1095,15 @@ class object
 
 	using variant_type = std::variant<std::monostate, object_type, array_type, string_type, int64_t, double, bool>;
 
-	static_assert(std::is_same_v<variant_type,
-		std::variant<std::monostate, object_type, array_type, string_type, int64_t, double, bool>>);
-
 	variant_type m_data{};
+
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::null)>(std::declval<variant_type>()))>, std::monostate>, "Check match between value_type and variant_type");
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::object)>(std::declval<variant_type>()))>, object_type>, "Check match between value_type and variant_type");
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::array)>(std::declval<variant_type>()))>, array_type>, "Check match between value_type and variant_type");
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::string)>(std::declval<variant_type>()))>, std::string>, "Check match between value_type and variant_type");
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::number_int)>(std::declval<variant_type>()))>, int64_t>, "Check match between value_type and variant_type");
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::number_float)>(std::declval<variant_type>()))>, double>, "Check match between value_type and variant_type");
+	static_assert(std::is_same_v<std::remove_cvref_t<decltype(std::get<static_cast<int>(value_type::boolean)>(std::declval<variant_type>()))>, bool>, "Check match between value_type and variant_type");
 
 	/// @endcond
 };
