@@ -26,6 +26,8 @@
 namespace zeep::el
 {
 
+const object g_null_object{}; // To be returned in operator[] for const object
+
 object operator+(const object &lhs, const object &rhs)
 {
 	using value_type = object::value_type;
@@ -353,8 +355,9 @@ object::reference object::operator[](size_t index)
 	else if (not is_array())
 		throw object_error("Type should have been array to use operator[]");
 
-	if (index + 1 > size())
+	if (index >= size())
 		std::get<array_type>(m_data).resize(index + 1);
+
 	return std::get<object::array_type>(m_data).operator[](index);
 }
 
@@ -362,7 +365,10 @@ object::const_reference object::operator[](size_t index) const
 {
 	if (not is_array())
 		throw object_error("Type should have been array to use operator[]");
-	return std::get<object::array_type>(m_data).operator[](index);
+
+	return index >= size()
+	           ? g_null_object
+	           : std::get<object::array_type>(m_data).operator[](index);
 }
 
 // object member access
@@ -398,7 +404,10 @@ object::const_reference object::operator[](const typename object_type::key_type 
 	if (not is_object())
 		throw object_error("Type should have been object to use operator[]");
 
-	return std::get<object_type>(m_data).at(key);
+	auto i = std::get<object_type>(m_data).find(key);
+	return i == std::get<object_type>(m_data).end()
+	           ? g_null_object
+	           : i->second;
 }
 
 // --------------------------------------------------------------------
