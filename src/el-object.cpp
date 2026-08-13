@@ -41,15 +41,15 @@ object operator+(const object &lhs, const object &rhs)
 		{
 			case value_type::boolean:
 			case value_type::number_int:
-				result = lhs.m_data.m_value.m_int + rhs.m_data.m_value.m_int;
+				result = std::get<int64_t>(lhs.m_data) + std::get<int64_t>(rhs.m_data);
 				break;
 
 			case value_type::number_float:
-				result = lhs.m_data.m_value.m_float + rhs.m_data.m_value.m_float;
+				result = std::get<double>(lhs.m_data) + std::get<double>(rhs.m_data);
 				break;
 
 			case value_type::string:
-				result = *lhs.m_data.m_value.m_string + *rhs.m_data.m_value.m_string;
+				result = std::get<std::string>(lhs.m_data) + std::get<std::string>(rhs.m_data);
 				break;
 
 			case value_type::null:
@@ -60,9 +60,9 @@ object operator+(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_value.m_float + rhs.get<double>();
+		result = std::get<double>(lhs.m_data) + rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_value.m_int + rhs.get<int64_t>();
+		result = std::get<int64_t>(lhs.m_data) + rhs.get<int64_t>();
 	else if (lhs_type == value_type::null)
 		result = rhs;
 	else if (rhs_type == value_type::null)
@@ -90,11 +90,11 @@ object operator-(const object &lhs, const object &rhs)
 		{
 			case value_type::boolean:
 			case value_type::number_int:
-				result = lhs.m_data.m_value.m_int - rhs.m_data.m_value.m_int;
+				result = std::get<int64_t>(lhs.m_data) - std::get<int64_t>(rhs.m_data);
 				break;
 
 			case value_type::number_float:
-				result = lhs.m_data.m_value.m_float - rhs.m_data.m_value.m_float;
+				result = std::get<double>(lhs.m_data) - std::get<double>(rhs.m_data);
 				break;
 
 			default:
@@ -102,9 +102,9 @@ object operator-(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_value.m_float - rhs.get<double>();
+		result = std::get<double>(lhs.m_data) - rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_value.m_int - rhs.get<int64_t>();
+		result = std::get<int64_t>(lhs.m_data) - rhs.get<int64_t>();
 	else
 		throw object_error("Invalid types for operator -");
 
@@ -126,11 +126,11 @@ object operator*(const object &lhs, const object &rhs)
 		{
 			case value_type::boolean:
 			case value_type::number_int:
-				result = lhs.m_data.m_value.m_int * rhs.m_data.m_value.m_int;
+				result = std::get<int64_t>(lhs.m_data) * std::get<int64_t>(rhs.m_data);
 				break;
 
 			case value_type::number_float:
-				result = lhs.m_data.m_value.m_float * rhs.m_data.m_value.m_float;
+				result = std::get<double>(lhs.m_data) * std::get<double>(rhs.m_data);
 				break;
 
 			default:
@@ -138,9 +138,9 @@ object operator*(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_value.m_float * rhs.get<double>();
+		result = std::get<double>(lhs.m_data) * rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_value.m_int * rhs.get<int64_t>();
+		result = std::get<int64_t>(lhs.m_data) * rhs.get<int64_t>();
 	else
 		throw object_error("Invalid types for operator *");
 
@@ -162,11 +162,11 @@ object operator/(const object &lhs, const object &rhs)
 		{
 			case value_type::boolean:
 			case value_type::number_int:
-				result = lhs.m_data.m_value.m_int / rhs.m_data.m_value.m_int;
+				result = std::get<int64_t>(lhs.m_data) / std::get<int64_t>(rhs.m_data);
 				break;
 
 			case value_type::number_float:
-				result = lhs.m_data.m_value.m_float / rhs.m_data.m_value.m_float;
+				result = std::get<double>(lhs.m_data) / std::get<double>(rhs.m_data);
 				break;
 
 			default:
@@ -174,9 +174,9 @@ object operator/(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs.is_number())
-		result = lhs.m_data.m_value.m_float / rhs.get<double>();
+		result = std::get<double>(lhs.m_data) / rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_value.m_int / rhs.get<int64_t>();
+		result = std::get<int64_t>(lhs.m_data) / rhs.get<int64_t>();
 	else
 		throw object_error("Invalid types for operator /");
 
@@ -198,7 +198,7 @@ object operator%(const object &lhs, const object &rhs)
 		{
 			case value_type::boolean:
 			case value_type::number_int:
-				result = lhs.m_data.m_value.m_int % rhs.m_data.m_value.m_int;
+				result = std::get<int64_t>(lhs.m_data) % std::get<int64_t>(rhs.m_data);
 				break;
 
 			default:
@@ -206,7 +206,7 @@ object operator%(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = lhs.m_data.m_value.m_int % rhs.get<int64_t>();
+		result = std::get<int64_t>(lhs.m_data) % rhs.get<int64_t>();
 	else
 		throw object_error("Invalid types for operator %");
 
@@ -224,19 +224,19 @@ bool operator==(const object &lhs, const object &rhs) noexcept
 	{
 		switch (lhs_type)
 		{
-			case value_type::array: return *lhs.m_data.m_value.m_array == *rhs.m_data.m_value.m_array;
-			case value_type::object: return *lhs.m_data.m_value.m_object == *rhs.m_data.m_value.m_object;
-			case value_type::string: return *lhs.m_data.m_value.m_string == *rhs.m_data.m_value.m_string;
-			case value_type::number_int: return lhs.m_data.m_value.m_int == rhs.m_data.m_value.m_int;
-			case value_type::number_float: return lhs.m_data.m_value.m_float == rhs.m_data.m_value.m_float;
-			case value_type::boolean: return lhs.m_data.m_value.m_boolean == rhs.m_data.m_value.m_boolean;
+			case value_type::array: return std::get<object::array_type>(lhs.m_data) == std::get<object::array_type>(rhs.m_data);
+			case value_type::object: return std::get<object::object_type>(lhs.m_data) == std::get<object::object_type>(rhs.m_data);
+			case value_type::string: return std::get<std::string>(lhs.m_data) == std::get<std::string>(rhs.m_data);
+			case value_type::number_int: return std::get<int64_t>(lhs.m_data) == std::get<int64_t>(rhs.m_data);
+			case value_type::number_float: return std::get<double>(lhs.m_data) == std::get<double>(rhs.m_data);
+			case value_type::boolean: return std::get<bool>(lhs.m_data) == std::get<bool>(rhs.m_data);
 			case value_type::null: return true;
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs_type == value_type::number_int)
-		return lhs.m_data.m_value.m_float == static_cast<object::float_type>(rhs.m_data.m_value.m_int);
+		return std::get<double>(lhs.m_data) == static_cast<object::float_type>(std::get<int64_t>(rhs.m_data));
 	else if (lhs_type == value_type::number_int and rhs_type == value_type::number_float)
-		return static_cast<object::float_type>(lhs.m_data.m_value.m_int) == rhs.m_data.m_value.m_float;
+		return static_cast<object::float_type>(std::get<int64_t>(lhs.m_data)) == std::get<double>(rhs.m_data);
 
 	return false;
 }
@@ -252,19 +252,19 @@ std::partial_ordering operator<=>(const object &lhs, const object &rhs) noexcept
 	{
 		switch (lhs_type)
 		{
-			case value_type::array: return *lhs.m_data.m_value.m_array <=> *rhs.m_data.m_value.m_array;
-			case value_type::object: return *lhs.m_data.m_value.m_object <=> *rhs.m_data.m_value.m_object;
-			case value_type::string: return *lhs.m_data.m_value.m_string <=> *rhs.m_data.m_value.m_string;
-			case value_type::number_int: return lhs.m_data.m_value.m_int <=> rhs.m_data.m_value.m_int;
-			case value_type::number_float: return lhs.m_data.m_value.m_float <=> rhs.m_data.m_value.m_float;
-			case value_type::boolean: return lhs.m_data.m_value.m_boolean <=> rhs.m_data.m_value.m_boolean;
+			case value_type::array: return std::get<object::array_type>(lhs.m_data) <=> std::get<object::array_type>(rhs.m_data);
+			case value_type::object: return std::get<object::object_type>(lhs.m_data) <=> std::get<object::object_type>(rhs.m_data);
+			case value_type::string: return std::get<std::string>(lhs.m_data) <=> std::get<std::string>(rhs.m_data);
+			case value_type::number_int: return std::get<int64_t>(lhs.m_data) <=> std::get<int64_t>(rhs.m_data);
+			case value_type::number_float: return std::get<double>(lhs.m_data) <=> std::get<double>(rhs.m_data);
+			case value_type::boolean: return std::get<bool>(lhs.m_data) <=> std::get<bool>(rhs.m_data);
 			default: break;
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs_type == value_type::number_int)
-		return lhs.m_data.m_value.m_float <=> static_cast<object::float_type>(rhs.m_data.m_value.m_int);
+		return std::get<double>(lhs.m_data) <=> static_cast<object::float_type>(std::get<int64_t>(rhs.m_data));
 	else if (lhs_type == value_type::number_int and rhs_type == value_type::number_float)
-		return static_cast<object::float_type>(lhs.m_data.m_value.m_int) <=> rhs.m_data.m_value.m_float;
+		return static_cast<object::float_type>(std::get<int64_t>(lhs.m_data)) <=> std::get<double>(rhs.m_data);
 
 	return lhs_type <=> rhs_type;
 }
@@ -273,16 +273,16 @@ std::partial_ordering operator<=>(const object &lhs, const object &rhs) noexcept
 
 size_t object::size() const noexcept
 {
-	switch (m_data.m_type)
+	switch (type())
 	{
 		case value_type::null:
 			return 0;
 
 		case value_type::array:
-			return m_data.m_value.m_array->size();
+			return std::get<array_type>(m_data).size();
 
 		case value_type::object:
-			return m_data.m_value.m_object->size();
+			return std::get<object_type>(m_data).size();
 
 		default:
 			return 1;
@@ -291,13 +291,13 @@ size_t object::size() const noexcept
 
 size_t object::max_size() const noexcept
 {
-	switch (m_data.m_type)
+	switch (type())
 	{
 		case value_type::array:
-			return m_data.m_value.m_array->max_size();
+			return std::get<array_type>(m_data).max_size();
 
 		case value_type::object:
-			return m_data.m_value.m_object->max_size();
+			return std::get<object_type>(m_data).max_size();
 
 		default:
 			return size();
@@ -310,12 +310,9 @@ void object::push_back(object &&val)
 		throw object_error("Invalid type for push_back");
 
 	if (is_null())
-	{
-		m_data.m_type = value_type::array;
-		m_data.m_value = value_type::array;
-	}
+		m_data = array_type{};
 
-	m_data.m_value.m_array->push_back(std::move(val));
+	std::get<object::array_type>(m_data).push_back(std::move(val));
 }
 
 void object::push_back(const object &val)
@@ -324,37 +321,32 @@ void object::push_back(const object &val)
 		throw object_error("Invalid type for push_back");
 
 	if (is_null())
-	{
-		m_data.m_type = value_type::array;
-		m_data.m_value = value_type::array;
-	}
-
-	m_data.m_value.m_array->push_back(val);
+		m_data = array_type{};
+	
+	std::get<object::array_type>(m_data).push_back(val);
 }
 
 object::reference object::at(size_t index)
 {
 	if (not is_array())
 		throw object_error("Type should have been array to use at()");
-
-	return m_data.m_value.m_array->at(index);
+	return std::get<object::array_type>(m_data).at(index);
 }
 
 object::const_reference object::at(size_t index) const
 {
 	if (not is_array())
 		throw object_error("Type should have been array to use at()");
-
-	return m_data.m_value.m_array->at(index);
+	return std::get<object::array_type>(m_data).at(index);
 }
 
 bool object::contains(const object &test) const
 {
 	bool result = false;
 	if (is_object())
-		result = m_data.m_value.m_object->count(test.get<std::string>()) > 0;
+		result = std::get<object_type>(m_data).count(test.get<std::string>()) > 0;
 	else if (is_array())
-		result = std::ranges::find(*m_data.m_value.m_array, test) != m_data.m_value.m_array->end();
+		result = std::ranges::contains(std::get<array_type>(m_data), test);
 
 	return result;
 }
@@ -362,25 +354,20 @@ bool object::contains(const object &test) const
 object::reference object::operator[](size_t index)
 {
 	if (is_null())
-	{
-		m_data.m_type = value_type::array;
-		m_data.m_value.m_array = create<array_type>();
-	}
+		m_data = array_type{};
 	else if (not is_array())
 		throw object_error("Type should have been array to use operator[]");
 
-	if (index + 1 > m_data.m_value.m_array->size())
-		m_data.m_value.m_array->resize(index + 1);
-
-	return m_data.m_value.m_array->operator[](index);
+	if (index + 1 > size())
+		std::get<array_type>(m_data).resize(index + 1);
+	return std::get<object::array_type>(m_data).operator[](index);
 }
 
 object::const_reference object::operator[](size_t index) const
 {
 	if (not is_array())
 		throw object_error("Type should have been array to use operator[]");
-
-	return m_data.m_value.m_array->operator[](index);
+	return std::get<object::array_type>(m_data).operator[](index);
 }
 
 // object member access
@@ -390,7 +377,7 @@ object::reference object::at(const typename object_type::key_type &key)
 	if (not is_object())
 		throw object_error("Type should have been object to use at()");
 
-	return m_data.m_value.m_object->at(key);
+	return std::get<object_type>(m_data).at(key);
 }
 
 object::const_reference object::at(const typename object_type::key_type &key) const
@@ -398,20 +385,17 @@ object::const_reference object::at(const typename object_type::key_type &key) co
 	if (not is_object())
 		throw object_error("Type should have been object to use at()");
 
-	return m_data.m_value.m_object->at(key);
+	return std::get<object_type>(m_data).at(key);
 }
 
 object::reference object::operator[](const typename object_type::key_type &key)
 {
 	if (is_null())
-	{
-		m_data.m_type = value_type::object;
-		m_data.m_value.m_object = create<object_type>();
-	}
+		m_data = object_type{};
 	else if (not is_object())
 		throw object_error("Type should have been object to use operator[]");
 
-	return m_data.m_value.m_object->operator[](key);
+	return std::get<object_type>(m_data).operator[](key);
 }
 
 object::const_reference object::operator[](const typename object_type::key_type &key) const
@@ -419,24 +403,24 @@ object::const_reference object::operator[](const typename object_type::key_type 
 	if (not is_object())
 		throw object_error("Type should have been object to use operator[]");
 
-	return m_data.m_value.m_object->operator[](key);
+	return std::get<object_type>(m_data).at(key);
 }
 
 bool object::empty() const noexcept
 {
-	switch (m_data.m_type)
+	switch (type())
 	{
 		case value_type::null:
 			return true;
 
 		case value_type::array:
-			return m_data.m_value.m_array->empty();
+			return std::get<object::array_type>(m_data).empty();
 
 		case value_type::object:
-			return m_data.m_value.m_object->empty();
+			return std::get<object_type>(m_data).empty();
 
 		case value_type::string:
-			return m_data.m_value.m_string->empty();
+			return std::get<std::string>(m_data).empty();
 
 		default:
 			return false;
@@ -447,11 +431,11 @@ bool object::empty() const noexcept
 
 void serialize(std::ostream &os, const object &v)
 {
-	switch (v.m_data.m_type)
+	switch (v.type())
 	{
 		case object::value_type::array:
 		{
-			auto &a = *v.m_data.m_value.m_array;
+			auto &a = std::get<object::array_type>(v.m_data);
 			os << '[';
 			for (size_t i = 0; i < a.size(); ++i)
 			{
@@ -464,7 +448,7 @@ void serialize(std::ostream &os, const object &v)
 		}
 
 		case object::value_type::boolean:
-			os << std::boolalpha << v.m_data.m_value.m_boolean;
+			os << std::boolalpha << std::get<bool>(v.m_data);
 			break;
 
 		case object::value_type::null:
@@ -472,22 +456,22 @@ void serialize(std::ostream &os, const object &v)
 			break;
 
 		case object::value_type::number_float:
-			if (v.m_data.m_value.m_float == 0 or std::isnormal(v.m_data.m_value.m_float))
-				os << v.m_data.m_value.m_float;
+			if (std::get<double>(v.m_data) == 0 or std::isnormal(std::get<double>(v.m_data)))
+				os << std::get<double>(v.m_data);
 			else
 				// os << "\"NaN\"";
 				os << "null";
 			break;
 
 		case object::value_type::number_int:
-			os << v.m_data.m_value.m_int;
+			os << std::get<int64_t>(v.m_data);
 			break;
 
 		case object::value_type::object:
 		{
 			os << '{';
 			bool first = true;
-			for (auto &kv : *v.m_data.m_value.m_object)
+			for (auto &kv : std::get<object::object_type>(v.m_data))
 			{
 				if (not first)
 					os << ',';
@@ -502,7 +486,7 @@ void serialize(std::ostream &os, const object &v)
 		case object::value_type::string:
 			os << '"';
 
-			for (uint8_t c : *v.m_data.m_value.m_string)
+			for (uint8_t c : std::get<std::string>(v.m_data))
 			{
 				switch (c)
 				{
