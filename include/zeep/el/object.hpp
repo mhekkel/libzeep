@@ -22,7 +22,6 @@
 #include <variant>
 #include <vector>
 
-
 #if __has_include(<nlohmann/json.hpp>)
 # include <nlohmann/json.hpp>
 # define HAVE_NLOHMANN_JSON 1
@@ -169,10 +168,10 @@ class object
 			: m_obj(obj)
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
-				case object::value_type::array: m_it = m_obj->m_data.m_value.m_array->begin(); break;
-				case object::value_type::object: m_it = m_obj->m_data.m_value.m_object->begin(); break;
+				case object::value_type::array: m_it = std::get<array_type>(m_obj->m_data).begin(); break;
+				case object::value_type::object: m_it = std::get<object_type>(m_obj->m_data).begin(); break;
 				default: m_it = 0; break;
 			}
 		}
@@ -181,10 +180,10 @@ class object
 			: m_obj(obj)
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
-				case object::value_type::array: m_it = m_obj->m_data.m_value.m_array->end(); break;
-				case object::value_type::object: m_it = m_obj->m_data.m_value.m_object->end(); break;
+				case object::value_type::array: m_it = std::get<array_type>(m_obj->m_data).end(); break;
+				case object::value_type::object: m_it = std::get<object_type>(m_obj->m_data).end(); break;
 				case object::value_type::null: m_it = 0; break;
 				default: m_it = 1; break;
 			}
@@ -207,7 +206,7 @@ class object
 		iterator_impl &operator--()
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array: std::advance(std::get<array_iterator_type>(m_it), -1); break;
 				case object::value_type::object: std::advance(std::get<object_iterator_type>(m_it), -1); break;
@@ -228,7 +227,7 @@ class object
 		iterator_impl &operator++()
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array: std::advance(std::get<array_iterator_type>(m_it), +1); break;
 				case object::value_type::object: std::advance(std::get<object_iterator_type>(m_it), +1); break;
@@ -241,7 +240,7 @@ class object
 		reference operator*() const
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array:
 					return *std::get<array_iterator_type>(m_it);
@@ -265,15 +264,15 @@ class object
 		pointer operator->() const
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array:
-					assert(std::get<array_iterator_type>(m_it) != m_obj->m_data.m_value.m_array->end());
+					assert(std::get<array_iterator_type>(m_it) != std::get<array_type>(m_obj->m_data).end());
 					return &(*std::get<array_iterator_type>(m_it));
 					break;
 
 				case object::value_type::object:
-					assert(std::get<object_iterator_type>(m_it) != m_obj->m_data.m_value.m_object->end());
+					assert(std::get<object_iterator_type>(m_it) != std::get<object_type>(m_obj->m_data).end());
 					return &(std::get<object_iterator_type>(m_it)->second);
 					break;
 
@@ -311,7 +310,7 @@ class object
 		iterator_impl &operator+=(difference_type i)
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array: std::advance(std::get<array_iterator_type>(m_it), i); break;
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
@@ -361,7 +360,7 @@ class object
 		difference_type operator-(const iterator_impl &other) const
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array: return std::get<array_iterator_type>(m_it) - std::get<array_iterator_type>(other.m_it);
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
@@ -373,7 +372,7 @@ class object
 		reference operator[](difference_type i) const
 		{
 			assert(m_obj);
-			switch (m_obj->m_data.m_type)
+			switch (m_obj->type())
 			{
 				case object::value_type::array: return *std::next(std::get<array_iterator_type>(m_it), i); break;
 				case object::value_type::object: throw object_error("Cannot use offsets with object iterators");
@@ -407,8 +406,8 @@ class object
 
 		pointer m_obj = nullptr;
 
-		using array_iterator_type = typename T::array_type::iterator;
-		using object_iterator_type = typename T::object_type::iterator;
+		using array_iterator_type = std::conditional_t<std::is_const_v<T>, typename T::array_type::const_iterator, typename T::array_type::iterator>;
+		using object_iterator_type = std::conditional_t<std::is_const_v<T>, typename T::object_type::const_iterator, typename T::object_type::iterator>;
 
 		std::variant<array_iterator_type, object_iterator_type, difference_type> m_it = {};
 
@@ -429,31 +428,29 @@ class object
 	/// \brief Construct an object of a specific \a value_type
 	/// \param t  The type to construct (e.g., value_type::array)
 	object(value_type t) noexcept
-		: m_data(t)
 	{
+		switch (t)
+		{
+			case value_type::null: break;
+			case value_type::array: m_data = array_type{}; break;
+			case value_type::object: m_data = object_type{}; break;
+			case value_type::string: m_data = string_type{}; break;
+			case value_type::number_int: m_data = 0; break;
+			case value_type::number_float: m_data = 0.f; break;
+			case value_type::boolean: m_data = false; break;
+		}
 	}
 
 	/// \brief Copy constructor — deep copies the value
 	object(const object &o)
+		: m_data(o.m_data)
 	{
-		m_data.m_type = o.m_data.m_type;
-		switch (m_data.m_type)
-		{
-			case value_type::null: break;
-			case value_type::array: m_data.m_value = *o.m_data.m_value.m_array; break;
-			case value_type::object: m_data.m_value = *o.m_data.m_value.m_object; break;
-			case value_type::string: m_data.m_value = *o.m_data.m_value.m_string; break;
-			case value_type::number_int: m_data.m_value = o.m_data.m_value.m_int; break;
-			case value_type::number_float: m_data.m_value = o.m_data.m_value.m_float; break;
-			case value_type::boolean: m_data.m_value = o.m_data.m_value.m_boolean; break;
-		}
 	}
 
 	/// \brief Construct an array object from a vector of objects
 	object(const std::vector<object> &v)
+		: m_data(v)
 	{
-		m_data.m_type = value_type::array;
-		m_data.m_value = v;
 	}
 
 	/// \brief Construct from an initializer list
@@ -463,32 +460,23 @@ class object
 	/// the result is an array.
 	object(std::initializer_list<object> init)
 	{
-		bool isAnObject = std::ranges::all_of(init, [](auto &ref)
-			{ return ref.is_array() and ref.m_data.m_value.m_array->size() == 2 and ref.m_data.m_value.m_array->front().is_string(); });
+		bool isAnObject = std::ranges::all_of(init, [](const object &ref)
+			{ return ref.is_array() and ref.size() == 2 and ref.front().is_string(); });
 
 		if (isAnObject)
 		{
-			m_data.m_type = value_type::object;
-			m_data.m_value = value_type::object;
+			m_data = object_type{};
 
 			for (auto &el : init)
-			{
-				m_data.m_value.m_object->emplace(
-					std::move(*el.m_data.m_value.m_array->front().m_data.m_value.m_string),
-					std::move(el.m_data.m_value.m_array->back()));
-			}
+				emplace(el[0].get<std::string>(), el[1]);
 		}
 		else
-		{
-			m_data.m_type = value_type::array;
-			m_data.m_value.m_array = create<array_type>(init.begin(), init.end());
-		}
+			m_data = array_type{ init.begin(), init.end() };
 	}
 
 	/// \brief Construct a null object from nullptr
 	object(std::nullptr_t) noexcept
 	{
-		m_data.m_type = value_type::null;
 	}
 
 	/// \brief Construct a string object from a string-compatible type
@@ -496,8 +484,7 @@ class object
 	template <StringType T>
 	object(const T &s)
 	{
-		m_data.m_type = value_type::string;
-		m_data.m_value = std::string{ s };
+		m_data = std::string{ s };
 	}
 
 	/// \brief Construct a number object from an integral or floating-point value
@@ -506,15 +493,9 @@ class object
 	object(T v) noexcept
 	{
 		if constexpr (std::is_integral_v<T>)
-		{
-			m_data.m_type = value_type::number_int;
-			m_data.m_value = static_cast<int64_t>(v);
-		}
+			m_data = static_cast<int64_t>(v);
 		else if constexpr (std::is_floating_point_v<T>)
-		{
-			m_data.m_type = value_type::number_float;
-			m_data.m_value = static_cast<double>(v);
-		}
+			m_data = static_cast<double>(v);
 		else
 			assert(false);
 	}
@@ -523,64 +504,63 @@ class object
 	/// \tparam T  A type satisfying \a BooleanType
 	template <BooleanType T>
 	object(T b) noexcept
+		: m_data(b)
 	{
-		m_data.m_type = value_type::boolean;
-		m_data.m_value = static_cast<bool>(b);
 	}
 
-#if HAVE_NLOHMANN_JSON
-	/// \brief Construct an object from an nlohmann::json value
-	object(const nlohmann::json &j)
-	{
-		// to be implemented
-		switch (j.type())
-		{
-			case nlohmann::json::value_t::null:
-				m_data.m_type = value_type::null;
-				break;
+// #if HAVE_NLOHMANN_JSON
+// 	/// \brief Construct an object from an nlohmann::json value
+// 	object(const nlohmann::json &j)
+// 	{
+// 		// to be implemented
+// 		switch (j.type())
+// 		{
+// 			case nlohmann::json::value_t::null:
+// 				type() = value_type::null;
+// 				break;
 
-			case nlohmann::json::value_t::object:
-				for (auto i = j.begin(); i != j.end(); ++i)
-					operator[](i.key()) = object(i.value());
-				break;
+// 			case nlohmann::json::value_t::object:
+// 				for (auto i = j.begin(); i != j.end(); ++i)
+// 					operator[](i.key()) = object(i.value());
+// 				break;
 
-			case nlohmann::json::value_t::array:
-				for (auto &e : j)
-					push_back(object(e));
-				break;
+// 			case nlohmann::json::value_t::array:
+// 				for (auto &e : j)
+// 					push_back(object(e));
+// 				break;
 
-			case nlohmann::json::value_t::string:
-				m_data.m_type = value_type::string;
-				m_data.m_value = j.template get<std::string>();
-				break;
+// 			case nlohmann::json::value_t::string:
+// 				type() = value_type::string;
+// 				m_data.m_value = j.template get<std::string>();
+// 				break;
 
-			case nlohmann::json::value_t::boolean:
-				m_data.m_type = value_type::boolean;
-				m_data.m_value = j.template get<bool>();
-				break;
+// 			case nlohmann::json::value_t::boolean:
+// 				type() = value_type::boolean;
+// 				m_data.m_value = j.template get<bool>();
+// 				break;
 
-			case nlohmann::json::value_t::number_integer:
-				m_data.m_type = value_type::number_int;
-				m_data.m_value = j.template get<int64_t>();
-				break;
+// 			case nlohmann::json::value_t::number_integer:
+// 				type() = value_type::number_int;
+// 				m_data.m_value = j.template get<int64_t>();
+// 				break;
 
-			case nlohmann::json::value_t::number_unsigned:
-				m_data.m_type = value_type::number_int;
-				m_data.m_value = static_cast<int64_t>(j.template get<uint64_t>());
-				break;
+// 			case nlohmann::json::value_t::number_unsigned:
+// 				type() = value_type::number_int;
+// 				m_data.m_value = static_cast<int64_t>(j.template get<uint64_t>());
+// 				break;
 
-			case nlohmann::json::value_t::number_float:
-				m_data.m_type = value_type::number_float;
-				m_data.m_value = j.template get<double>();
-				break;
+// 			case nlohmann::json::value_t::number_float:
+// 				type() = value_type::number_float;
+// 				m_data.m_value = j.template get<double>();
+// 				break;
 
-			case nlohmann::json::value_t::binary:
-			case nlohmann::json::value_t::discarded:
-				assert(false);
-				break;
-		}
-	}
-#endif
+// 			case nlohmann::json::value_t::binary:
+// 			case nlohmann::json::value_t::discarded:
+// 				assert(false);
+// 				break;
+// 		}
+// 	}
+// #endif
 
 	/// \brief Move constructor
 	object(object &&rhs) noexcept
@@ -602,30 +582,33 @@ class object
 	///@{
 
 	/// \brief Return true if the value is null
-	[[nodiscard]] constexpr bool is_null() const noexcept { return m_data.m_type == value_type::null; }
+	[[nodiscard]] constexpr bool is_null() const noexcept { return std::holds_alternative<std::monostate>(m_data); }
 	/// \brief Return true if the value is an object (string map)
-	[[nodiscard]] constexpr bool is_object() const noexcept { return m_data.m_type == value_type::object; }
+	[[nodiscard]] constexpr bool is_object() const noexcept { return std::holds_alternative<object_type>(m_data); }
 	/// \brief Return true if the value is an array
-	[[nodiscard]] constexpr bool is_array() const noexcept { return m_data.m_type == value_type::array; }
+	[[nodiscard]] constexpr bool is_array() const noexcept { return std::holds_alternative<array_type>(m_data); }
 	/// \brief Return true if the value is a string
-	[[nodiscard]] constexpr bool is_string() const noexcept { return m_data.m_type == value_type::string; }
+	[[nodiscard]] constexpr bool is_string() const noexcept { return std::holds_alternative<string_type>(m_data); }
 	/// \brief Return true if the value is a number (integer or float)
 	[[nodiscard]] constexpr bool is_number() const noexcept { return is_number_int() or is_number_float(); }
 	/// \brief Return true if the value is an integer
-	[[nodiscard]] constexpr bool is_number_int() const noexcept { return m_data.m_type == value_type::number_int; }
+	[[nodiscard]] constexpr bool is_number_int() const noexcept { return std::holds_alternative<int64_t>(m_data); }
 	/// \brief Return true if the value is a float
-	[[nodiscard]] constexpr bool is_number_float() const noexcept { return m_data.m_type == value_type::number_float; }
+	[[nodiscard]] constexpr bool is_number_float() const noexcept { return std::holds_alternative<double>(m_data); }
 	/// \brief Return true if the value is boolean, and is true
-	[[nodiscard]] constexpr bool is_true() const noexcept { return is_boolean() and m_data.m_value.m_boolean == true; }
+	[[nodiscard]] constexpr bool is_true() const noexcept { return is_boolean() and std::get<bool>(m_data) == true; }
 	/// \brief Return true if the value is boolean, and is false
-	[[nodiscard]] constexpr bool is_false() const noexcept { return is_boolean() and m_data.m_value.m_boolean == false; }
+	[[nodiscard]] constexpr bool is_false() const noexcept { return is_boolean() and std::get<bool>(m_data) == false; }
 	/// \brief Return true if the value is a boolean
-	[[nodiscard]] constexpr bool is_boolean() const noexcept { return m_data.m_type == value_type::boolean; }
+	[[nodiscard]] constexpr bool is_boolean() const noexcept { return std::holds_alternative<bool>(m_data); }
 
 	///@}
 
 	/// \brief Return the underlying value_type enumerator
-	[[nodiscard]] constexpr value_type type() const noexcept { return m_data.m_type; }
+	[[nodiscard]] constexpr value_type type() const noexcept
+	{
+		return static_cast<value_type>(m_data.index());
+	}
 
 	/// \brief Truthiness conversion
 	///
@@ -634,13 +617,12 @@ class object
 	explicit operator bool() const noexcept
 	{
 		bool result;
-		switch (m_data.m_type)
+		switch (type())
 		{
 			case value_type::null: result = false; break;
-			case value_type::boolean: result = m_data.m_value.m_boolean; break;
-			case value_type::number_int: result = m_data.m_value.m_int != 0; break;
-			case value_type::number_float: result = m_data.m_value.m_float != 0; break;
-			case value_type::string: result = not m_data.m_value.m_string->empty(); break;
+			case value_type::boolean: result = std::get<bool>(m_data); break;
+			case value_type::number_int: result = std::get<int64_t>(m_data) != 0; break;
+			case value_type::number_float: result = std::get<double>(m_data) != 0; break;
 			default: result = not empty(); break;
 		}
 		return result;
@@ -660,8 +642,8 @@ class object
 	template <StringType T>
 	[[nodiscard]] inline std::string get() const
 	{
-		if (m_data.m_type == value_type::string)
-			return *m_data.m_value.m_string;
+		if (std::holds_alternative<string_type>(m_data))
+			return std::get<string_type>(m_data);
 
 		return get_JSON();
 	}
@@ -674,14 +656,14 @@ class object
 	template <BooleanType T>
 	[[nodiscard]] inline bool get() const noexcept
 	{
-		switch (m_data.m_type)
+		switch (type())
 		{
 			case value_type::boolean:
-				return m_data.m_value.m_boolean;
+				return std::get<bool>(m_data);
 			case value_type::number_int:
-				return m_data.m_value.m_int != 0;
+				return std::get<int64_t>(m_data) != 0;
 			case value_type::number_float:
-				return m_data.m_value.m_float != 0;
+				return std::get<double>(m_data) != 0;
 			default:
 				return not empty();
 		}
@@ -695,14 +677,14 @@ class object
 	template <NumberType T>
 	[[nodiscard]] std::remove_cvref_t<T> get() const noexcept
 	{
-		switch (m_data.m_type)
+		switch (type())
 		{
 			case value_type::boolean:
-				return m_data.m_value.m_boolean;
+				return std::get<bool>(m_data);
 			case value_type::number_int:
-				return static_cast<T>(m_data.m_value.m_int);
+				return static_cast<T>(std::get<int64_t>(m_data));
 			case value_type::number_float:
-				return static_cast<T>(m_data.m_value.m_float);
+				return static_cast<T>(std::get<double>(m_data));
 			default:
 				return not empty();
 		}
@@ -715,8 +697,7 @@ class object
 	/// \brief Swap the contents of two objects
 	friend void swap(object &a, object &b) noexcept
 	{
-		std::swap(a.m_data.m_type, b.m_data.m_type);
-		std::swap(a.m_data.m_value, b.m_data.m_value);
+		std::swap(a.m_data, b.m_data);
 	}
 
 	// --------------------------------------------------------------------
@@ -727,14 +708,14 @@ class object
 	/// \brief Unary negation (integer and float types only)
 	object &operator-()
 	{
-		switch (m_data.m_type)
+		switch (type())
 		{
 			case value_type::number_int:
-				m_data.m_value.m_int = -m_data.m_value.m_int;
+				std::get<int64_t>(m_data) = -std::get<int64_t>(m_data);
 				break;
 
 			case value_type::number_float:
-				m_data.m_value.m_float = -m_data.m_value.m_float;
+				std::get<double>(m_data) = -std::get<double>(m_data);
 				break;
 
 			default:
@@ -885,14 +866,11 @@ class object
 	std::pair<iterator, bool> emplace(Args &&...args)
 	{
 		if (is_null())
-		{
-			m_data.m_type = value_type::object;
-			m_data.m_value = value_type::object;
-		}
+			m_data = object_type{};
 		else if (not is_object())
 			throw object_error("emplace only works with object type");
 
-		auto r = m_data.m_value.m_object->emplace(std::forward<Args>(args)...);
+		auto r = std::get<object_type>(m_data).emplace(std::forward<Args>(args)...);
 		auto i = begin();
 		i.m_it = r.first;
 
@@ -908,12 +886,9 @@ class object
 			throw object_error("emplace_back only works with array type");
 
 		if (is_null())
-		{
-			m_data.m_type = value_type::array;
-			m_data.m_value = value_type::array;
-		}
+			m_data = array_type{};
 
-		return m_data.m_value.m_array->emplace_back(std::forward<Args>(args)...);
+		return std::get<array_type>(m_data).emplace_back(std::forward<Args>(args)...);
 	}
 
 	/// \brief Erase the element at position \a pos
@@ -926,14 +901,14 @@ class object
 
 		auto result = end();
 
-		switch (m_data.m_type)
+		switch (type())
 		{
 			case value_type::array:
-				result.m_it = m_data.m_value.m_array->erase(std::get<Iterator::array_iterator_type>(pos.m_it));
+				result.m_it = std::get<array_type>(m_data).erase(std::get<Iterator::array_iterator_type>(pos.m_it));
 				break;
 
 			case value_type::object:
-				result.m_it = m_data.m_value.m_object->erase(std::get<Iterator::object_iterator_type>(pos.m_it));
+				result.m_it = std::get<object_type>(m_data).erase(std::get<Iterator::object_iterator_type>(pos.m_it));
 				break;
 
 			case value_type::null:
@@ -943,15 +918,7 @@ class object
 				if (std::get<difference_type>(pos.m_it) != 0)
 					throw object_error("Iterator out of range");
 
-				if (m_data.m_type == value_type::string)
-				{
-					std::allocator<string_type> alloc;
-					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_data.m_value.m_string);
-					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_data.m_value.m_string, 1);
-					m_data.m_value.m_string = nullptr;
-				}
-
-				m_data.m_type = value_type::null;
+				m_data = std::monostate{};
 				break;
 		}
 
@@ -968,14 +935,14 @@ class object
 
 		auto result = end();
 
-		switch (m_data.m_type)
+		switch (type())
 		{
 			case value_type::array:
-				result.m_it = m_data.m_value.m_array->erase(std::get<Iterator::array_iterator_type>(first.m_it), std::get<Iterator::array_iterator_type>(last.m_it));
+				result.m_it = std::get<array_type>(m_data).erase(std::get<Iterator::array_iterator_type>(first.m_it), std::get<Iterator::array_iterator_type>(last.m_it));
 				break;
 
 			case value_type::object:
-				result.m_it = m_data.m_value.m_object->erase(std::get<Iterator::object_iterator_type>(first.m_it), std::get<Iterator::object_iterator_type>(last.m_it));
+				result.m_it = std::get<object_type>(m_data).erase(std::get<Iterator::object_iterator_type>(first.m_it), std::get<Iterator::object_iterator_type>(last.m_it));
 				break;
 
 			case value_type::null:
@@ -985,15 +952,7 @@ class object
 				if (std::get<difference_type>(first.m_it) != 0 or std::get<difference_type>(last.m_it) != 0)
 					throw object_error("Iterator out of range");
 
-				if (m_data.m_type == value_type::string)
-				{
-					std::allocator<string_type> alloc;
-					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_data.m_value.m_string);
-					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_data.m_value.m_string, 1);
-					m_data.m_value.m_string = nullptr;
-				}
-
-				m_data.m_type = value_type::null;
+				m_data = std::monostate{};
 				break;
 		}
 
@@ -1005,7 +964,7 @@ class object
 	size_type erase(const std::string &key)
 	{
 		if (is_object())
-			return m_data.m_value.m_object->erase(key);
+			return std::get<object_type>(m_data).erase(key);
 		throw object_error("erase with a string key only works with object type");
 	}
 
@@ -1016,7 +975,7 @@ class object
 		{
 			if (index >= size())
 				throw object_error("Index out of range");
-			m_data.m_value.m_array->erase(m_data.m_value.m_array->begin() + static_cast<difference_type>(index));
+			std::get<array_type>(m_data).erase(std::get<array_type>(m_data).begin() + static_cast<difference_type>(index));
 		}
 		else
 			throw object_error("erase with an index only works wiht array type");
@@ -1119,132 +1078,7 @@ class object
   private:
 	/// @cond
 
-	union object_value
-	{
-		object_type *m_object;
-		array_type *m_array;
-		string_type *m_string;
-		int64_t m_int;
-		double m_float;
-		bool m_boolean;
-
-		object_value() noexcept
-			: m_object(nullptr)
-		{
-		}
-
-		object_value(bool v) noexcept
-			: m_boolean(v)
-		{
-		}
-		object_value(int64_t v) noexcept
-			: m_int(v)
-		{
-		}
-		object_value(double v) noexcept
-			: m_float(v)
-		{
-		}
-		object_value(value_type t)
-		{
-			switch (t)
-			{
-				case value_type::array: m_array = create<array_type>(); break;
-				case value_type::boolean: m_boolean = false; break;
-				case value_type::null: m_object = nullptr; break;
-				case value_type::number_float: m_float = 0; break;
-				case value_type::number_int: m_int = 0; break;
-				case value_type::object: m_object = create<object_type>(); break;
-				case value_type::string: m_string = create<string_type>(); break;
-			}
-		}
-		object_value(const object_type &v) { m_object = create<object_type>(v); }
-		object_value(object_type &&v) { m_object = create<object_type>(std::move(v)); }
-		object_value(const string_type &v) { m_string = create<string_type>(v); }
-		object_value(string_type &&v) { m_string = create<string_type>(std::move(v)); }
-		object_value(const array_type &v) { m_array = create<array_type>(v); }
-		object_value(array_type &&v) { m_array = create<array_type>(std::move(v)); }
-
-		void destroy(value_type t) noexcept
-		{
-			switch (t)
-			{
-				case value_type::object:
-				{
-					std::allocator<object_type> alloc;
-					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_object);
-					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_object, 1);
-					break;
-				}
-
-				case value_type::array:
-				{
-					std::allocator<array_type> alloc;
-					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_array);
-					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_array, 1);
-					break;
-				}
-
-				case value_type::string:
-				{
-					std::allocator<string_type> alloc;
-					std::allocator_traits<decltype(alloc)>::destroy(alloc, m_string);
-					std::allocator_traits<decltype(alloc)>::deallocate(alloc, m_string, 1);
-					break;
-				}
-
-				default:
-					break;
-			}
-		}
-	};
-
-	struct object_data
-	{
-		value_type m_type = value_type::null;
-		object_value m_value{};
-
-		object_data(const value_type t)
-			: m_type(t)
-			, m_value(t)
-		{
-		}
-
-		object_data(size_type cnt, const object &val)
-			: m_type(value_type::array)
-		{
-			m_value.m_array = create<array_type>(cnt, val);
-		}
-
-		object_data() noexcept = default;
-		object_data(object_data &&) noexcept = default;
-		object_data(const object_data &) noexcept = delete;
-		object_data &operator=(object_data &&) noexcept = delete;
-		object_data &operator=(const object_data &) noexcept = delete;
-
-		~object_data() noexcept
-		{
-			m_value.destroy(m_type);
-		}
-	} m_data{};
-
-	template <typename T, typename... Args>
-	[[nodiscard]] static T *create(Args &&...args)
-	{
-		// return new T(args...);
-		std::allocator<T> alloc;
-		using AllocatorTraits = std::allocator_traits<std::allocator<T>>;
-
-		auto deleter = [&](T *object)
-		{
-			AllocatorTraits::deallocate(alloc, object, 1);
-		};
-
-		std::unique_ptr<T, decltype(deleter)> object(AllocatorTraits::allocate(alloc, 1), deleter);
-		assert(object != nullptr);
-		AllocatorTraits::construct(alloc, object.get(), std::forward<Args>(args)...);
-		return object.release();
-	}
+	std::variant<std::monostate, object_type, array_type, string_type, int64_t, double, bool> m_data{};
 
 	/// @endcond
 };

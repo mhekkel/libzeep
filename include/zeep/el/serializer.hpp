@@ -498,11 +498,9 @@ namespace detail
 	struct to_object_fn
 	{
 		template <typename T>
-		auto operator()(T &&val) const
-			noexcept(noexcept(to_object(std::forward<T>(val))))
-				-> decltype(to_object(std::forward<T>(val)))
+		object operator()(const T &val) const
 		{
-			return to_object(std::forward<T>(val));
+			return to_object(val);
 		}
 	};
 
@@ -510,9 +508,8 @@ namespace detail
 	{
 		template <typename T>
 		auto operator()(const object &o) const
-			noexcept(noexcept(from_object(std::forward<T>(o)))) -> T
 		{
-			return from_object(std::forward<T>(o));
+			return from_object<T>(o);
 		}
 	};
 
