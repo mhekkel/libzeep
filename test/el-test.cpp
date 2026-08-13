@@ -122,7 +122,7 @@ TEST_CASE("test-5")
 	Opname opn{ "1", { { "een", 0.1f },
 						 { "twee", 0.2f } } };
 
-	static_assert(e::is_serializable_to_object_v<Opname>);
+	static_assert(e::detail::is_serializable_to_object_v<Opname>);
 
 	scope.put("o1", e::to_object(opn));
 
