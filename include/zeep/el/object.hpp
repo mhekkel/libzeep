@@ -911,11 +911,11 @@ class object
 		switch (type())
 		{
 			case value_type::array:
-				result.m_it = std::get<array_type>(m_data).erase(std::get<Iterator::array_iterator_type>(pos.m_it));
+				result.m_it = std::get<array_type>(m_data).erase(std::get<typename Iterator::array_iterator_type>(pos.m_it));
 				break;
 
 			case value_type::object:
-				result.m_it = std::get<object_type>(m_data).erase(std::get<Iterator::object_iterator_type>(pos.m_it));
+				result.m_it = std::get<object_type>(m_data).erase(std::get<typename Iterator::object_iterator_type>(pos.m_it));
 				break;
 
 			case value_type::null:
@@ -926,6 +926,7 @@ class object
 					throw object_error("Iterator out of range");
 
 				m_data = std::monostate{};
+				result = end();
 				break;
 		}
 
@@ -945,11 +946,11 @@ class object
 		switch (type())
 		{
 			case value_type::array:
-				result.m_it = std::get<array_type>(m_data).erase(std::get<Iterator::array_iterator_type>(first.m_it), std::get<Iterator::array_iterator_type>(last.m_it));
+				result.m_it = std::get<array_type>(m_data).erase(std::get<typename Iterator::array_iterator_type>(first.m_it), std::get<typename Iterator::array_iterator_type>(last.m_it));
 				break;
 
 			case value_type::object:
-				result.m_it = std::get<object_type>(m_data).erase(std::get<Iterator::object_iterator_type>(first.m_it), std::get<Iterator::object_iterator_type>(last.m_it));
+				result.m_it = std::get<object_type>(m_data).erase(std::get<typename Iterator::object_iterator_type>(first.m_it), std::get<typename Iterator::object_iterator_type>(last.m_it));
 				break;
 
 			case value_type::null:
@@ -960,6 +961,7 @@ class object
 					throw object_error("Iterator out of range");
 
 				m_data = std::monostate{};
+				result = end();
 				break;
 		}
 

@@ -207,3 +207,187 @@ TEST_CASE("test-8")
 	el = 42;
 	CHECK(arr[5].get<int64_t>() == 42);
 }
+
+TEST_CASE("erase object by key")
+{
+	e::object obj{
+		{ "a", 1 },
+		{ "b", 2 },
+		{ "c", 3 }
+	};
+
+	REQUIRE(obj.is_object());
+
+	// erase an existing key
+	auto count = obj.erase("b");
+	CHECK(count == 1);
+	CHECK_FALSE(obj.contains("b"));
+	CHECK(obj.size() == 2);
+	CHECK(obj.contains("a"));
+	CHECK(obj.contains("c"));
+
+	// erasing a missing key returns 0 and does nothing
+	count = obj.erase("missing");
+	CHECK(count == 0);
+	CHECK(obj.size() == 2);
+}
+
+TEST_CASE("erase object by key throws on wrong type")
+{
+	e::object arr{ 1, 2, 3 };
+	REQUIRE(arr.is_array());
+
+	CHECK_THROWS(arr.erase("key"));
+}
+
+TEST_CASE("erase array by index")
+{
+	e::object arr{ 10, 20, 30, 40 };
+	REQUIRE(arr.is_array());
+
+	arr.erase(1); // remove 20
+	CHECK(arr.size() == 3);
+	CHECK(arr[0].get<int64_t>() == 10);
+	CHECK(arr[1].get<int64_t>() == 30);
+	CHECK(arr[2].get<int64_t>() == 40);
+
+	arr.erase(0); // remove 10
+	CHECK(arr.size() == 2);
+	CHECK(arr[0].get<int64_t>() == 30);
+}
+
+TEST_CASE("erase array by index throws")
+{
+	e::object arr{ 1, 2, 3 };
+	REQUIRE(arr.is_array());
+
+	CHECK_THROWS(arr.erase(3));      // out of range
+	CHECK_THROWS(arr.erase(100));    // far out of range
+
+	e::object obj{ { "a", 1 } };
+	REQUIRE(obj.is_object());
+	CHECK_THROWS(obj.erase(0));      // wrong type
+}
+
+TEST_CASE("erase array by iterator")
+{
+	e::object arr{ 1, 2, 3, 4 };
+	REQUIRE(arr.is_array());
+
+	auto it = std::next(arr.begin(), 2); // points at 3
+	auto next = arr.erase(it);
+
+	CHECK(arr.size() == 3);
+	CHECK(arr[0].get<int64_t>() == 1);
+	CHECK(arr[1].get<int64_t>() == 2);
+	CHECK(arr[2].get<int64_t>() == 4);
+
+	// the returned iterator points at the element following the erased one
+	CHECK(next != arr.end());
+	CHECK(next->get<int64_t>() == 4);
+
+	// erase the last element; the returned iterator equals end()
+	auto last = arr.erase(std::next(arr.begin(), 2));
+	CHECK(last == arr.end());
+}
+
+TEST_CASE("erase object by iterator")
+{
+	e::object obj{
+		{ "a", 1 },
+		{ "b", 2 },
+		{ "c", 3 }
+	};
+	REQUIRE(obj.is_object());
+
+	auto it = std::next(obj.begin());
+	REQUIRE(it->get<int64_t>() == 2);
+
+	auto next = obj.erase(it);
+
+	CHECK_FALSE(obj.contains("b"));
+	CHECK(obj.size() == 2);
+	CHECK(next != obj.end());
+}
+
+TEST_CASE("erase range")
+{
+	e::object arr{ 1, 2, 3, 4, 5 };
+	REQUIRE(arr.is_array());
+
+	auto first = std::next(arr.begin(), 1); // 2
+	auto last = std::next(arr.begin(), 4);  // 5 (exclusive)
+	auto next = arr.erase(first, last);
+
+	CHECK(arr.size() == 2);
+	CHECK(arr[0].get<int64_t>() == 1);
+	CHECK(arr[1].get<int64_t>() == 5);
+	CHECK(next != arr.end());
+	CHECK(next->get<int64_t>() == 5);
+
+	// erase the entire array
+	auto end_it = arr.erase(arr.begin(), arr.end());
+	CHECK(arr.empty());
+	CHECK(end_it == arr.end());
+}
+
+TEST_CASE("erase range on object")
+{
+	e::object obj{
+		{ "a", 1 },
+		{ "b", 2 },
+		{ "c", 3 }
+	};
+	REQUIRE(obj.is_object());
+
+	obj.erase(std::next(obj.begin()), std::prev(obj.end()));
+
+	CHECK(obj.size() == 2);
+	CHECK(obj.contains("a"));
+	CHECK(obj.contains("c"));
+	CHECK_FALSE(obj.contains("b"));
+}
+
+TEST_CASE("erase resets scalar to null")
+{
+	// strings, numbers, and booleans reset to null when erased via iterator
+	std::vector<e::object> scalars{
+		e::object("hello"),
+		e::object(42),
+		e::object(3.14),
+		e::object(true)
+	};
+
+	for (auto &obj : scalars)
+	{
+		REQUIRE_FALSE(obj.is_null());
+
+		auto result = obj.erase(obj.begin());
+
+		CHECK(obj.is_null());
+		CHECK(obj.empty());
+		CHECK(result == obj.end());
+	}
+}
+
+TEST_CASE("erase throws on null")
+{
+	e::object obj;
+	REQUIRE(obj.is_null());
+
+	CHECK_THROWS(obj.erase(obj.begin()));
+	CHECK_THROWS(obj.erase(obj.begin(), obj.end()));
+}
+
+TEST_CASE("erase with iterator from another object throws")
+{
+	e::object arr1{ 1, 2, 3 };
+	e::object arr2{ 4, 5, 6 };
+
+	auto foreign = std::next(arr2.begin());
+	CHECK_THROWS(arr1.erase(foreign));
+
+	e::object obj1{ { "a", 1 } };
+	auto foreign_obj = std::next(obj1.begin());
+	CHECK_THROWS(arr1.erase(foreign_obj, std::next(arr1.begin())));
+}
