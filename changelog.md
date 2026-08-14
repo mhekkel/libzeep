@@ -3,6 +3,12 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSL-1.0
 -->
 
+Version 8.3.0
+- Fixed erasing elements from an el::object: iterator-based erase now
+  compiles (missing typename on dependent iterator types) and returns a
+  consistent iterator when a scalar value is reset to null
+- Added tests for all el::object::erase overloads
+
 Version 8.2.0
 - Refactored internal storage of el::object to use std::variant
 - Accessing a missing key or an out-of-range array index on a const
