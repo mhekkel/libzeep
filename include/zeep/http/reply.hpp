@@ -27,6 +27,9 @@ class reply
   public:
 	using cookie_directive = header;
 
+	/// \brief Return the libzeep name and version, used in user-agent and server headers
+	[[nodiscard]] static std::string get_libzeep_version();
+
 	/// Create a reply, default is HTTP 1.0. Use 1.1 if you want to use keep alive e.g.
 	reply(status_type status = status_type::ok, std::tuple<int, int> version = { 1, 0 });
 

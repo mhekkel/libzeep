@@ -9,9 +9,8 @@
 #include "zeep/uri.hpp"
 
 #include <chrono>
-#include <iomanip>
+#include <format>
 #include <iostream>
-#include <numeric>
 
 namespace zeep::http
 {
@@ -40,6 +39,14 @@ std::string get_status_description(status_type status)
 
 // ----------------------------------------------------------------------------
 
+std::string reply::get_libzeep_version()
+{
+	return std::format("{}/{}", klibzeepProjectName, klibzeepVersionNumber);
+}
+
+// --------------------------------------------------------------------
+
+
 namespace
 {
 	const std::string
@@ -59,7 +66,7 @@ reply::reply(status_type status, std::tuple<int, int> version)
 
 	set_header("Date",
 		std::format("{0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT", now));
-	set_header("Server", "libzeep/"s + klibzeepVersionNumber);
+	set_header("Server", get_libzeep_version());
 	set_header("Content-Length", "0");
 }
 

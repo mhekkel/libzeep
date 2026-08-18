@@ -9,8 +9,6 @@
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include "revision.hpp"
-
 #include <iostream>
 
 namespace zeep::http
@@ -217,7 +215,7 @@ reply send_request(request req)
 		req.set_header("Accept", "*/*");
 
 	if (req.get_header("user-agent").empty())
-		req.set_header("User-Agent", std::format("{}/{}", klibzeepProjectName, klibzeepVersionNumber));
+		req.set_header("User-Agent", reply::get_libzeep_version());
 
 	std::vector<asio_ns::const_buffer> req_buffer;
 	for (auto &buffer : req.to_buffers())
