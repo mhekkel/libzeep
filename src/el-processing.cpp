@@ -1393,8 +1393,8 @@ object interpreter::parse_selector()
 				else
 					xpath +=
 						std::format(
-							R"(*[name()='{}' or attribute::*[namespace-uri() = $ns and (local-name() = 'ref' or local-name() = 'fragment') and starts-with(string(), '{}')]])",
-							name, name);
+							R"(*[name()='{0}' or attribute::*[namespace-uri() = $ns and (local-name() = 'ref' or local-name() = 'fragment') and starts-with(string(), '{0}')]])",
+							name);
 
 				if (m_lookahead == token_type::lparen)
 				{

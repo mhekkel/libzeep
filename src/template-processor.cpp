@@ -9,6 +9,7 @@
 #include "zeep/http/header.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/scope.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/http/tag-processor.hpp"
 #include "zeep/unicode-support.hpp"
 
