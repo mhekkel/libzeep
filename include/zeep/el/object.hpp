@@ -14,7 +14,6 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -170,8 +169,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->type())
 			{
-				case object::value_type::array: m_it = std::get<array_type>(m_obj->m_data).begin(); break;
-				case object::value_type::object: m_it = std::get<object_type>(m_obj->m_data).begin(); break;
+				case object::value_type::array: m_it = std::get_if<array_type>(&(m_obj->m_data))->begin(); break;
+				case object::value_type::object: m_it = std::get_if<object_type>(&(m_obj->m_data))->begin(); break;
 				default: m_it = 0; break;
 			}
 		}
@@ -182,8 +181,8 @@ class object
 			assert(m_obj);
 			switch (m_obj->type())
 			{
-				case object::value_type::array: m_it = std::get<array_type>(m_obj->m_data).end(); break;
-				case object::value_type::object: m_it = std::get<object_type>(m_obj->m_data).end(); break;
+				case object::value_type::array: m_it = std::get_if<array_type>(&(m_obj->m_data))->end(); break;
+				case object::value_type::object: m_it = std::get_if<object_type>(&(m_obj->m_data))->end(); break;
 				case object::value_type::null: m_it = 0; break;
 				default: m_it = 1; break;
 			}
@@ -442,10 +441,7 @@ class object
 	}
 
 	/// \brief Copy constructor — deep copies the value
-	object(const object &o)
-		: m_data(o.m_data)
-	{
-	}
+	object(const object &o) = default;
 
 	/// \brief Construct an array object from a vector of objects
 	object(const std::vector<object> &v)
@@ -583,9 +579,9 @@ class object
 	/// \brief Return true if the value is a float
 	[[nodiscard]] constexpr bool is_number_float() const noexcept { return std::holds_alternative<double>(m_data); }
 	/// \brief Return true if the value is boolean, and is true
-	[[nodiscard]] constexpr bool is_true() const noexcept { return is_boolean() and std::get<bool>(m_data) == true; }
+	[[nodiscard]] constexpr bool is_true() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and *b; }
 	/// \brief Return true if the value is boolean, and is false
-	[[nodiscard]] constexpr bool is_false() const noexcept { return is_boolean() and std::get<bool>(m_data) == false; }
+	[[nodiscard]] constexpr bool is_false() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and *b; }
 	/// \brief Return true if the value is a boolean
 	[[nodiscard]] constexpr bool is_boolean() const noexcept { return std::holds_alternative<bool>(m_data); }
 
@@ -607,9 +603,9 @@ class object
 		switch (type())
 		{
 			case value_type::null: result = false; break;
-			case value_type::boolean: result = std::get<bool>(m_data); break;
-			case value_type::number_int: result = std::get<int64_t>(m_data) != 0; break;
-			case value_type::number_float: result = std::get<double>(m_data) != 0; break;
+			case value_type::boolean: result = *std::get_if<bool>(&m_data); break;
+			case value_type::number_int: result = *std::get_if<int64_t>(&m_data) != 0; break;
+			case value_type::number_float: result = *std::get_if<double>(&m_data) != 0; break;
 			default: result = not empty(); break;
 		}
 		return result;
@@ -646,11 +642,11 @@ class object
 		switch (type())
 		{
 			case value_type::boolean:
-				return std::get<bool>(m_data);
+				return *std::get_if<bool>(&m_data);
 			case value_type::number_int:
-				return std::get<int64_t>(m_data) != 0;
+				return *std::get_if<int64_t>(&m_data) != 0;
 			case value_type::number_float:
-				return std::get<double>(m_data) != 0;
+				return *std::get_if<double>(&m_data) != 0;
 			default:
 				return not empty();
 		}
@@ -667,11 +663,11 @@ class object
 		switch (type())
 		{
 			case value_type::boolean:
-				return std::get<bool>(m_data);
+				return *std::get_if<bool>(&m_data);
 			case value_type::number_int:
-				return static_cast<T>(std::get<int64_t>(m_data));
+				return static_cast<T>(*std::get_if<int64_t>(&m_data));
 			case value_type::number_float:
-				return static_cast<T>(std::get<double>(m_data));
+				return static_cast<T>(*std::get_if<double>(&m_data));
 			default:
 				return not empty();
 		}
@@ -829,13 +825,13 @@ class object
 				return true;
 
 			case value_type::array:
-				return std::get<object::array_type>(m_data).empty();
+				return std::get_if<object::array_type>(&m_data)->empty();
 
 			case value_type::object:
-				return std::get<object_type>(m_data).empty();
+				return std::get_if<object_type>(&m_data)->empty();
 
 			case value_type::string:
-				return std::get<std::string>(m_data).empty();
+				return std::get_if<std::string>(&m_data)->empty();
 
 			default:
 				return false;

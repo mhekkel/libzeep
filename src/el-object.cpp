@@ -221,19 +221,19 @@ bool operator==(const object &lhs, const object &rhs) noexcept
 	{
 		switch (lhs_type)
 		{
-			case value_type::array: return std::get<object::array_type>(lhs.m_data) == std::get<object::array_type>(rhs.m_data);
-			case value_type::object: return std::get<object::object_type>(lhs.m_data) == std::get<object::object_type>(rhs.m_data);
-			case value_type::string: return std::get<std::string>(lhs.m_data) == std::get<std::string>(rhs.m_data);
-			case value_type::number_int: return std::get<int64_t>(lhs.m_data) == std::get<int64_t>(rhs.m_data);
-			case value_type::number_float: return std::get<double>(lhs.m_data) == std::get<double>(rhs.m_data);
-			case value_type::boolean: return std::get<bool>(lhs.m_data) == std::get<bool>(rhs.m_data);
+			case value_type::array: return *std::get_if<object::array_type>(&lhs.m_data) == *std::get_if<object::array_type>(&rhs.m_data);
+			case value_type::object: return *std::get_if<object::object_type>(&lhs.m_data) == *std::get_if<object::object_type>(&rhs.m_data);
+			case value_type::string: return *std::get_if<std::string>(&lhs.m_data) == *std::get_if<std::string>(&rhs.m_data);
+			case value_type::number_int: return *std::get_if<int64_t>(&lhs.m_data) == *std::get_if<int64_t>(&rhs.m_data);
+			case value_type::number_float: return *std::get_if<double>(&lhs.m_data) == *std::get_if<double>(&rhs.m_data);
+			case value_type::boolean: return *std::get_if<bool>(&lhs.m_data) == *std::get_if<bool>(&rhs.m_data);
 			case value_type::null: return true;
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs_type == value_type::number_int)
-		return std::get<double>(lhs.m_data) == static_cast<object::float_type>(std::get<int64_t>(rhs.m_data));
+		return *std::get_if<double>(&lhs.m_data) == static_cast<object::float_type>(*std::get_if<int64_t>(&rhs.m_data));
 	else if (lhs_type == value_type::number_int and rhs_type == value_type::number_float)
-		return static_cast<object::float_type>(std::get<int64_t>(lhs.m_data)) == std::get<double>(rhs.m_data);
+		return static_cast<object::float_type>(*std::get_if<int64_t>(&lhs.m_data)) == *std::get_if<double>(&rhs.m_data);
 
 	return false;
 }
@@ -249,19 +249,19 @@ std::partial_ordering operator<=>(const object &lhs, const object &rhs) noexcept
 	{
 		switch (lhs_type)
 		{
-			case value_type::array: return std::get<object::array_type>(lhs.m_data) <=> std::get<object::array_type>(rhs.m_data);
-			case value_type::object: return std::get<object::object_type>(lhs.m_data) <=> std::get<object::object_type>(rhs.m_data);
-			case value_type::string: return std::get<std::string>(lhs.m_data) <=> std::get<std::string>(rhs.m_data);
-			case value_type::number_int: return std::get<int64_t>(lhs.m_data) <=> std::get<int64_t>(rhs.m_data);
-			case value_type::number_float: return std::get<double>(lhs.m_data) <=> std::get<double>(rhs.m_data);
-			case value_type::boolean: return std::get<bool>(lhs.m_data) <=> std::get<bool>(rhs.m_data);
+			case value_type::array: return *std::get_if<object::array_type>(&lhs.m_data) <=> *std::get_if<object::array_type>(&rhs.m_data);
+			case value_type::object: return *std::get_if<object::object_type>(&lhs.m_data) <=> *std::get_if<object::object_type>(&rhs.m_data);
+			case value_type::string: return *std::get_if<std::string>(&lhs.m_data) <=> *std::get_if<std::string>(&rhs.m_data);
+			case value_type::number_int: return *std::get_if<int64_t>(&lhs.m_data) <=> *std::get_if<int64_t>(&rhs.m_data);
+			case value_type::number_float: return *std::get_if<double>(&lhs.m_data) <=> *std::get_if<double>(&rhs.m_data);
+			case value_type::boolean: return *std::get_if<bool>(&lhs.m_data) <=> *std::get_if<bool>(&rhs.m_data);
 			default: break;
 		}
 	}
 	else if (lhs_type == value_type::number_float and rhs_type == value_type::number_int)
-		return std::get<double>(lhs.m_data) <=> static_cast<object::float_type>(std::get<int64_t>(rhs.m_data));
+		return *std::get_if<double>(&lhs.m_data) <=> static_cast<object::float_type>(*std::get_if<int64_t>(&rhs.m_data));
 	else if (lhs_type == value_type::number_int and rhs_type == value_type::number_float)
-		return static_cast<object::float_type>(std::get<int64_t>(lhs.m_data)) <=> std::get<double>(rhs.m_data);
+		return static_cast<object::float_type>(*std::get_if<int64_t>(&lhs.m_data)) <=> *std::get_if<double>(&rhs.m_data);
 
 	return lhs_type <=> rhs_type;
 }
@@ -276,10 +276,10 @@ size_t object::size() const noexcept
 			return 0;
 
 		case value_type::array:
-			return std::get<array_type>(m_data).size();
+			return std::get_if<array_type>(&m_data)->size();
 
 		case value_type::object:
-			return std::get<object_type>(m_data).size();
+			return std::get_if<object_type>(&m_data)->size();
 
 		default:
 			return 1;
@@ -291,10 +291,10 @@ size_t object::max_size() const noexcept
 	switch (type())
 	{
 		case value_type::array:
-			return std::get<array_type>(m_data).max_size();
+			return std::get_if<array_type>(&m_data)->max_size();
 
 		case value_type::object:
-			return std::get<object_type>(m_data).max_size();
+			return std::get_if<object_type>(&m_data)->max_size();
 
 		default:
 			return size();

@@ -10,6 +10,7 @@
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
 
@@ -82,6 +83,8 @@ bool html_controller_v1::handle_request(request &req, reply &rep)
 
 		if (handler != m_dispatch_table.end())
 		{
+			rep.set_status(status_type::ok);
+
 			if (req.get_method() == "OPTIONS")
 				get_options(req, rep);
 			else

@@ -86,7 +86,7 @@ class soap_controller : public controller
 	/// \param prefix_path	This is the leading part of the request URI for each mount point
 	/// \param service      The name of the service
 	/// \param ns			This is the XML Namespace for our SOAP calls
-	soap_controller(const std::string& prefix_path, std::string service, std::string ns)
+	soap_controller(const std::string &prefix_path, std::string service, std::string ns)
 		: controller(prefix_path)
 		, m_ns(std::move(ns))
 		, m_service(std::move(service))
@@ -230,8 +230,9 @@ class soap_controller : public controller
 		}
 
 		/// \brief Invoke for void-returning callbacks
-		template <typename ResultType, typename ArgsTuple, std::enable_if_t<std::is_void_v<ResultType>, int> = 0>
+		template <typename ResultType, typename ArgsTuple>
 		void invoke(ArgsTuple &&args, reply &rep, std::string_view ns)
+			requires(std::is_void_v<ResultType>)
 		{
 			std::apply(m_callback, std::forward<ArgsTuple>(args));
 
@@ -261,7 +262,7 @@ class soap_controller : public controller
 
 		/// \brief Collect arguments from the SOAP request XML
 		template <std::size_t... I>
-		ArgsTuple collect_arguments(const zeem::element &request, std::index_sequence<I...>)
+		ArgsTuple collect_arguments(const zeem::element &request, std::index_sequence<I...> /* unused */)
 		{
 			zeem::deserializer ds(request);
 
@@ -330,18 +331,18 @@ class soap_controller : public controller
 
 			// now the wsdl operations
 			zeem::element message("wsdl:message", { { "name", m_action + "RequestMessage" } });
-			message.emplace_back(zeem::element{"wsdl:part", { { "name", "parameters" }, { "element", "ns:" + m_action } }});
+			message.emplace_back(zeem::element{ "wsdl:part", { { "name", "parameters" }, { "element", "ns:" + m_action } } });
 			messages[m_action + "RequestMessage"] = message;
 
 			message = zeem::element("wsdl:message", { { "name", m_action + "Message" } });
-			message.emplace_back(zeem::element{"wsdl:part", { { "name", "parameters" }, { "element", "ns:" + m_action } }});
+			message.emplace_back(zeem::element{ "wsdl:part", { { "name", "parameters" }, { "element", "ns:" + m_action } } });
 			messages[m_action + "Message"] = message;
 
 			// port type
 			zeem::element operation("wsdl:operation", { { "name", m_action } });
 
-			operation.emplace_back(zeem::element{"wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } }});
-			operation.emplace_back(zeem::element{"wsdl:output", { { "message", "ns:" + m_action + "Message" } }});
+			operation.emplace_back(zeem::element{ "wsdl:input", { { "message", "ns:" + m_action + "RequestMessage" } } });
+			operation.emplace_back(zeem::element{ "wsdl:output", { { "message", "ns:" + m_action + "Message" } } });
 
 			portType.emplace_back(std::move(operation));
 
@@ -363,14 +364,14 @@ class soap_controller : public controller
 			binding.emplace_back(std::move(operation));
 		}
 
-		Callback m_callback;                        ///< The stored callback function
-		std::array<const char *, N> m_names;        ///< The parameter names for XML element mapping
+		Callback m_callback;                 ///< The stored callback function
+		std::array<const char *, N> m_names; ///< The parameter names for XML element mapping
 	};
 
 	std::list<std::unique_ptr<mount_point_base>> m_mountpoints; ///< The list of registered SOAP mount points
-	std::string m_ns;       ///< The XML namespace
-	std::string m_location; ///< The external address of this service
-	std::string m_service;  ///< The service name
+	std::string m_ns;                                           ///< The XML namespace
+	std::string m_location;                                     ///< The external address of this service
+	std::string m_service;                                      ///< The service name
 
 	/// @endcond
 };
