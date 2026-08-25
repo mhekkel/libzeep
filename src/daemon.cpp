@@ -14,10 +14,11 @@
 
 #include <cstdint>
 #include <fcntl.h>
-#include <functional>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <print>
 #include <string>
 #include <string_view>
 #include <sys/types.h>
@@ -61,32 +62,6 @@ daemon::daemon(server_factory_type &&factory, const std::string &name)
 
 int daemon::run_foreground(std::string_view address, uint16_t port)
 {
-	asio_ns::io_context io_context;
-	asio_ns::ip::tcp::endpoint endpoint;
-
-	asio_system_ns::error_code ec;
-	auto addr = asio_ns::ip::make_address(address, ec);
-	if (not ec)
-		endpoint = asio_ns::ip::tcp::endpoint(addr, port);
-	else
-	{
-		asio_ns::ip::tcp::resolver resolver(io_context);
-		for (auto &ep : resolver.resolve(address, std::to_string(port)))
-		{
-			endpoint = ep;
-			break;
-		}
-	}
-
-	asio_ns::ip::tcp::acceptor acceptor(io_context);
-	acceptor.open(endpoint.protocol());
-	acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
-	if (acceptor.bind(endpoint, ec))
-		throw exception(std::string("Is server running already? ") + ec.message());
-	acceptor.listen();
-
-	acceptor.close();
-
 	signal_catcher sc;
 	sc.block();
 
@@ -146,37 +121,19 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 			fs::create_directories(errLogDir, ec);
 
 		if (ec)
-			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
+			std::clog << "Creating directory " << errLogDir << " for log files failed: " << ec.message() << '\n';
 
 		try
 		{
-			asio_ns::io_context io_context;
-
-			asio_ns::ip::tcp::endpoint endpoint;
-			asio_system_ns::error_code ec_a;
-
-			auto addr = asio_ns::ip::make_address(address, ec_a);
-			if (ec == std::errc{})
-				endpoint = asio_ns::ip::tcp::endpoint(addr, port);
-			else
-			{
-				asio_ns::ip::tcp::resolver resolver(io_context);
-				for (auto &ep : resolver.resolve(address, std::to_string(port)))
-				{
-					endpoint = ep;
-					break;
-				}
-			}
-
-			asio_ns::ip::tcp::acceptor acceptor(io_context);
-			acceptor.open(endpoint.protocol());
-			acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
-			acceptor.bind(endpoint);
-			acceptor.listen();
-
-			acceptor.close();
+			// Verify the port is available by attempting to bind.
+			// basic_server::bind() sets SO_REUSEADDR and will throw
+			// if the port is already in use. We do this before forking
+			// so the parent can report a clear error.
+			std::unique_ptr<basic_server> probe(m_factory());
+			probe->bind(address, port);
+			probe->stop();
 		}
-		catch (exception &e)
+		catch (const std::exception &e)
 		{
 			throw exception(std::string("Is server running already? ") + e.what());
 		}
@@ -303,7 +260,8 @@ int daemon::stop()
 			throw exception("Failed to open pid file");
 
 		int pid;
-		file >> pid;
+		if (not(file >> pid))
+			throw exception("Invalid pid file");
 		file.close();
 
 		result = ::kill(pid, SIGINT);
@@ -363,7 +321,8 @@ int daemon::reload()
 			throw exception("Failed to open pid file");
 
 		int pid;
-		file >> pid;
+		if (not(file >> pid))
+			throw exception("Invalid pid file");
 
 		result = ::kill(pid, SIGHUP);
 	}
@@ -390,18 +349,36 @@ int daemon::daemonize()
 	auto pid = fork();
 
 	if (pid == -1)
-		std::clog << "Fork failed\n";
+	{
+		std::cerr << "Fork failed\n";
+		_exit(1);
+	}
 
 	if (pid != 0)
 		_exit(0);
 
 	// write our pid to the pid file
-	std::ofstream pidFile(m_pid_file);
-	if (not pidFile.is_open())
-		throw exception(std::format("Failed to write to {}: {}", m_pid_file, strerror(errno)));
+	int pidFileFd = open(m_pid_file.c_str(), O_CREAT | O_RDWR, 0644);
+	if (pidFileFd == -1)
+		throw exception(std::format("Failed to create {}: {}", m_pid_file, strerror(errno)));
 
-	pidFile << getpid() << '\n';
-	pidFile.close();
+	try
+	{
+		std::FILE *pidFile = fdopen(pidFileFd, "w");
+		if (pidFile == nullptr)
+			throw exception(std::format("Failed to create {}: {}", m_pid_file, strerror(errno)));
+
+		std::println(pidFile, "{}", getpid());
+		if (fclose(pidFile) == -1)
+			throw exception(std::format("Failed to write to {}: {}", m_pid_file, strerror(errno)));
+
+		close(pidFileFd);
+	}
+	catch (...)
+	{
+		close(pidFileFd);
+		throw;
+	}
 
 	if (chdir("/") != 0)
 		throw exception("Cannot chdir to /: "s + strerror(errno));
@@ -439,8 +416,10 @@ void daemon::open_log_file()
 	}
 
 	// redirect stdout and stderr to the log file
-	dup2(fd_out, STDOUT_FILENO);
-	dup2(fd_err, STDERR_FILENO);
+	if (dup2(fd_out, STDOUT_FILENO) == -1)
+		throw exception("Failed to redirect stdout");
+	if (dup2(fd_err, STDERR_FILENO) == -1)
+		throw exception("Failed to redirect stderr");
 
 	// close the actual file descriptors to avoid leaks
 	close(fd_out);
@@ -461,7 +440,8 @@ bool daemon::pid_is_for_executable()
 			throw exception("Failed to open pid file " + m_pid_file + ": " + strerror(errno));
 
 		int pid;
-		pidfile >> pid;
+		if (not(pidfile >> pid))
+			return false;
 
 		// if /proc/PID/exe points to our executable, this means we're already running
 		char path[PATH_MAX] = "";

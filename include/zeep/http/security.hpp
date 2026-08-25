@@ -109,7 +109,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 		bool result = false;
 
 		auto parts = split(stored_password, "$");
-		
+
 		if (parts.size() == 4 and parts.front() == "pbkdf2_sha256")
 		{
 			int iterations;
@@ -118,11 +118,11 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 			if (ec == std::errc{} and ptr == parts[1].data() + parts[1].length())
 			{
 				auto salt = parts[2];
-	
+
 				auto test = zeep::pbkdf2_hmac_sha256(salt, raw_password, iterations, m_key_length);
 				test = zeep::encode_base64(test);
-	
-				result = (parts[3] == test);
+
+				result = strings_match(test, parts[3]);
 			}
 		}
 
@@ -351,7 +351,7 @@ class security_context
 	/// \param rep			The zeep::http::reply object that will be send to the user
 	/// \param user			The authorized user details
 	/// \param exp			The maximum lifetime for the access token
-	void add_authorization_headers(reply &rep, const user_details user,
+	void add_authorization_headers(reply &rep, const user_details &user,
 		std::chrono::system_clock::duration exp);
 
 	/// \brief verify the username/password combination and set a cookie in the reply in case of success

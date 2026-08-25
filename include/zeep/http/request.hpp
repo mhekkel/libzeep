@@ -43,8 +43,8 @@ struct file_param
 {
 	std::string filename;
 	std::string mimetype;
-	const char *data;
-	size_t length;
+	const char *data = nullptr;
+	size_t length = 0;
 
 	explicit operator bool() const
 	{
@@ -155,7 +155,7 @@ class request
 	void set_header(std::string name, std::string value);
 
 	/// \brief Return the list of headers
-	[[nodiscard]] auto get_headers() const { return m_headers; }
+	[[nodiscard]] const auto &get_headers() const { return m_headers; }
 
 	/// \brief Return the named header
 	[[nodiscard]] std::string get_header(std::string_view name) const;

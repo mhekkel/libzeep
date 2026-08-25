@@ -56,6 +56,7 @@ class reply
 	friend void swap(reply &a, reply &b) noexcept
 	{
 		std::swap(a.m_status, b.m_status);
+		std::swap(a.m_version_major, b.m_version_major);
 		std::swap(a.m_version_minor, b.m_version_minor);
 		std::swap(a.m_headers, b.m_headers);
 		std::swap(a.m_data, b.m_data);
@@ -170,6 +171,7 @@ class reply
 	std::string m_content;
 	bool m_chunked = false;
 	mutable std::string m_formatted_line;
+	std::array<char, 8> m_size_buffer; ///< to store the string with the size for chunked encoding
 };
 
 } // namespace zeep::http

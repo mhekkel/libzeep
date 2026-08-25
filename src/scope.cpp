@@ -83,7 +83,7 @@ const el::object &scope::lookup(const std::string &name, bool includeSelected) c
 
 	if (result == nullptr)
 	{
-		static el::object s_null;
+		static const el::object s_null;
 		result = &s_null;
 	}
 
@@ -112,15 +112,6 @@ el::object &scope::lookup(const std::string &name)
 	}
 
 	return *result;
-}
-
-const request &scope::get_request() const
-{
-	// if (m_next)
-	// 	return m_next->get_request();
-	if (m_req == nullptr)
-		throw zeep::exception("Invalid scope, no request");
-	return *m_req;
 }
 
 std::string scope::get_context_name() const

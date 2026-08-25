@@ -654,7 +654,13 @@ void interpreter::get_next_token()
 
 			case State::Number:
 				if (ch >= '0' and ch <= '9')
-					m_token_number_int = 10 * m_token_number_int + (ch - '0');
+				{
+					if (m_token_number_int > std::numeric_limits<decltype(m_token_number_int)>::max() / 10 or
+						std::numeric_limits<decltype(m_token_number_int)>::max() - 10 * m_token_number_int < static_cast<int64_t>(ch - '0'))
+						token = token_type::error;
+					else
+						m_token_number_int = 10 * m_token_number_int + (ch - '0');
+				}
 				else if (ch == '.')
 				{
 					m_token_number_float = static_cast<double>(m_token_number_int);
@@ -1126,7 +1132,13 @@ object interpreter::parse_primary_expr()
 					if (not result.is_null())
 					{
 						if (result.type() == object::value_type::array and not(result.empty() or index.empty()))
-							result = result[index.get<int>()];
+						{
+							auto idx = index.get<int>();
+							if (idx < 0 or std::cmp_greater_equal(idx, result.size()))
+								result = object::value_type::null;
+							else
+								result = result[static_cast<size_t>(idx)];
+						}
 						else if (result.type() == object::value_type::object and result.contains(index.get<std::string>()))
 							result = result[index.get<std::string>()];
 						else
@@ -1388,6 +1400,9 @@ object interpreter::parse_selector()
 			}
 			else
 			{
+				if (name.find('\'') != std::string::npos)
+					throw zeep::exception("fragment name should not contain single quote characters");
+
 				if (divided)
 					xpath += name;
 				else
@@ -1472,7 +1487,7 @@ object interpreter::parse_utility_expr()
 	if (m_lookahead == token_type::lparen)
 	{
 		match(token_type::lparen);
-		while (m_lookahead != token_type::rparen)
+		while (m_lookahead != token_type::rparen and m_lookahead != token_type::eof)
 		{
 			params.push_back(parse_expr());
 
@@ -1609,7 +1624,7 @@ class number_expr_util_object : public expression_utility_object<number_expr_uti
 
 				int base = 0;
 
-				while (nr > 1024)
+				while (nr > 1024 and base < 6)
 				{
 					nr /= 1024;
 					++base;

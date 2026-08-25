@@ -131,7 +131,7 @@ float request::get_accept(std::string_view type) const
 bool request::keep_alive() const
 {
 	return get_version() >= std::make_tuple(1, 1) and
-	       iequals(get_header("Connection"), "keep-alive");
+	       not iequals(get_header("Connection"), "close");
 }
 
 void request::set_header(std::string name, std::string value)
@@ -172,34 +172,40 @@ void request::remove_header(std::string_view name)
 {
 	std::erase_if(m_headers,
 		[name](const header &h) -> bool
-		{ return h.name == name; });
+		{ return iequals(h.name, name); });
 }
 
 std::pair<std::string, bool> get_urldecoded_parameter(std::string_view s, std::string_view name)
 {
+	std::string decoded_name{ name };
 	std::string::size_type b = 0;
 	std::string result;
 	bool found = false;
-	size_t nlen = name.length();
 
 	while (b != std::string::npos)
 	{
 		std::string::size_type e = s.find_first_of("&;", b);
 		std::string::size_type n = (e == std::string::npos) ? s.length() - b : e - b;
 
-		if ((n == nlen or (n > nlen + 1 and s[b + nlen] == '=')) and name == s.substr(b, nlen))
+		// extract the raw key from the query string and decode it
+		std::string_view raw_key = s.substr(b, n);
+
+		if (auto eq = raw_key.find('='); eq != std::string_view::npos)
+		{
+			std::string decoded_key{ raw_key.substr(0, eq) };
+			decoded_key = decode_url(decoded_key);
+
+			if (decoded_key == decoded_name)
+			{
+				found = true;
+				result = decode_url(raw_key.substr(eq + 1));
+				break;
+			}
+		}
+		else if (decode_url(raw_key) == decoded_name)
 		{
 			found = true;
-
-			if (n == nlen)
-				result = name; // what else?
-			else
-			{
-				b += nlen + 1;
-				result = s.substr(b, e - b);
-				result = decode_url(result);
-			}
-
+			result = decoded_name;
 			break;
 		}
 
@@ -266,12 +272,12 @@ std::optional<std::string> request::get_parameter(std::string_view name) const
 			} state = SKIP;
 
 			std::string contentName;
-			std::regex rx("content-disposition:\\s*form-data;.*?\\bname=\"([^\"]+)\".*", std::regex::icase);
+			static const std::regex rx("content-disposition:\\s*form-data;.*?\\bname=\"([^\"]+)\".*", std::regex::icase);
 			std::smatch m;
 
 			std::string::difference_type i = 0, r = 0, l = 0;
 
-			for (i = 0; i <= static_cast<decltype(i)>(m_payload.length()); ++i)
+			for (i = 0; i + 1 < static_cast<decltype(i)>(m_payload.length()); ++i)
 			{
 				if (m_payload[i] != '\r' and m_payload[i] != '\n')
 					continue;
@@ -432,7 +438,7 @@ file_param file_param_parser::next()
 	file_param result = {};
 	bool found = false;
 
-	for (; m_i <= static_cast<decltype(m_i)>(m_payload.length()); ++m_i)
+	for (; m_i + 1 < static_cast<decltype(m_i)>(m_payload.length()); ++m_i)
 	{
 		if (m_payload[m_i] != '\r' and m_payload[m_i] != '\n')
 			continue;
@@ -485,7 +491,7 @@ file_param file_param_parser::next()
 			else if (std::regex_match(m_payload.begin() + l, m_payload.begin() + m_i, m, k_rx_disp))
 			{
 				auto p = m[1].str();
-				std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
+				static const std::regex re(R"rx(;\s*(\w+)=("[^"]*"|'[^']*'|\w+))rx");
 
 				auto b = p.begin();
 				auto e = p.end();

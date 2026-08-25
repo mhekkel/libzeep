@@ -29,6 +29,12 @@
 # cmakedefine01 WEBAPP_USES_RESOURCES
 #endif
 
+/// \def HAVE_EXPLICIT_BZERO
+/// \brief Whether the explicit_bzero function is available
+#ifndef HAVE_EXPLICIT_BZERO
+# cmakedefine01 HAVE_EXPLICIT_BZERO
+#endif
+
 /// \def USE_RSRC
 /// \brief Whether the mrc resource compiler is available for embedding files.
 ///
@@ -48,13 +54,13 @@
 #define LIBZEEP_VERSION "@LIBZEEP_VERSION@"
 /// \def LIBZEEP_VERSION_MAJOR
 /// \brief The major version number component of libzeep
-#define LIBZEEP_VERSION_MAJOR @LIBZEEP_VERSION_MAJOR@
+#define LIBZEEP_VERSION_MAJOR @LIBZEEP_VERSION_MAJOR @
 /// \def LIBZEEP_VERSION_MINOR
 /// \brief The minor version number component of libzeep
-#define LIBZEEP_VERSION_MINOR @LIBZEEP_VERSION_MINOR@
+#define LIBZEEP_VERSION_MINOR @LIBZEEP_VERSION_MINOR @
 /// \def LIBZEEP_VERSION_PATCH
 /// \brief The patch version number component of libzeep
-#define LIBZEEP_VERSION_PATCH @LIBZEEP_VERSION_PATCH@
+#define LIBZEEP_VERSION_PATCH @LIBZEEP_VERSION_PATCH @
 // NOLINTEND(modernize-macro-to-enum)
 
 // Some warnings that we don't like in MSVC:

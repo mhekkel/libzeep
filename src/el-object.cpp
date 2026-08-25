@@ -6,6 +6,7 @@
 #include "zeep/unicode-support.hpp"
 
 #include <algorithm>
+#include <boost/config/detail/suffix.hpp>
 #include <cassert>
 #include <cctype>
 #include <charconv>
@@ -17,7 +18,6 @@
 #include <istream>
 #include <limits>
 #include <map>
-#include <stdexcept>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -160,11 +160,17 @@ object operator/(const object &lhs, const object &rhs)
 		switch (lhs_type)
 		{
 			case value_type::number_int:
-				result = std::get<int64_t>(lhs.m_data) / std::get<int64_t>(rhs.m_data);
+				if (auto denom = std::get_if<int64_t>(&rhs.m_data); denom and *denom)
+					result = std::get<int64_t>(lhs.m_data) / *denom;
+				else
+					throw object_error("Division by zero");
 				break;
 
 			case value_type::number_float:
-				result = std::get<double>(lhs.m_data) / std::get<double>(rhs.m_data);
+				if (auto denom = std::get_if<double>(&rhs.m_data); denom and *denom != 0)
+					result = std::get<double>(lhs.m_data) / *denom;
+				else
+				 	throw object_error("Division by zero");
 				break;
 
 			default:
@@ -174,7 +180,13 @@ object operator/(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_float and rhs.is_number())
 		result = std::get<double>(lhs.m_data) / rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = std::get<int64_t>(lhs.m_data) / rhs.get<int64_t>();
+	{
+		auto denom = rhs.get<int64_t>();
+		if (denom != 0)
+			result = std::get<int64_t>(lhs.m_data) / denom;
+		else
+		 	throw object_error("Division by zero");
+	}
 	else
 		throw object_error("Invalid types for operator /");
 
@@ -195,7 +207,10 @@ object operator%(const object &lhs, const object &rhs)
 		switch (lhs_type)
 		{
 			case value_type::number_int:
-				result = std::get<int64_t>(lhs.m_data) % std::get<int64_t>(rhs.m_data);
+				if (auto denom = std::get_if<int64_t>(&rhs.m_data); denom and *denom)
+					result = std::get<int64_t>(lhs.m_data) % *denom;
+				else
+					throw object_error("Modulo by zero");
 				break;
 
 			default:
@@ -203,7 +218,13 @@ object operator%(const object &lhs, const object &rhs)
 		}
 	}
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = std::get<int64_t>(lhs.m_data) % rhs.get<int64_t>();
+	{
+		auto denom = rhs.get<int64_t>();
+		if (denom != 0)
+			result = std::get<int64_t>(lhs.m_data) % denom;
+		else
+		 	throw object_error("Modulo by zero");
+	}
 	else
 		throw object_error("Invalid types for operator %");
 
@@ -458,7 +479,33 @@ void serialize(std::ostream &os, const object &v)
 			{
 				if (not first)
 					os << ',';
-				os << '"' << kv.first << "\":";
+
+				os << '"';
+				for (uint8_t c : kv.first)
+				{
+					switch (c)
+					{
+						case '\"': os << "\\\""; break;
+						case '\\': os << "\\\\"; break;
+						case '/': os << "\\/"; break;
+						case '\b': os << "\\b"; break;
+						case '\n': os << "\\n"; break;
+						case '\r': os << "\\r"; break;
+						case '\t': os << "\\t"; break;
+						case '\f': os << "\\f"; break;
+						default:
+							if (c < 0x0020)
+							{
+								static const char kHex[17] = "0123456789abcdef";
+								os << "\\u00" << kHex[(c >> 4) & 0x0f] << kHex[c & 0x0f];
+							}
+							else
+								os << static_cast<char>(c);
+							break;
+					}
+				}
+
+				os << "\":";
 				serialize(os, kv.second);
 				first = false;
 			}
@@ -837,7 +884,12 @@ auto json_parser::get_next_token() -> token_t
 
 			case state_t::Number:
 				if (ch >= '0' and ch <= '9')
+				{
+					if (m_token_int > std::numeric_limits<decltype(m_token_int)>::max() / 10 or
+						 std::numeric_limits<decltype(m_token_int)>::max() - 10 * m_token_int < static_cast<int64_t>(ch - '0'))
+						throw zeep::exception("overflow of integer value in json");
 					m_token_int = 10 * m_token_int + (ch - '0');
+				}
 				else if (ch == '.')
 				{
 					m_token_float = static_cast<double>(m_token_int);
@@ -922,7 +974,7 @@ auto json_parser::get_next_token() -> token_t
 				break;
 
 			case state_t::Literal:
-				if (ch > 128 or not std::isalpha(static_cast<int>(ch)))
+				if (ch >= 128 or not std::isalpha(static_cast<int>(ch)))
 				{
 					retract();
 					if (m_token == "true")

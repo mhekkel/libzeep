@@ -14,15 +14,13 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
-#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <optional>
 #include <ranges>
-#include <regex>
 #include <set>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -66,7 +64,8 @@ security_context::security_context(std::string secret, user_service &users, bool
 	, m_default_jwt_exp(std::chrono::weeks{ 1 })
 {
 #if __has_include(<sys/mman.h>)
-	mlock(m_secret.data(), m_secret.length());
+	if (mlock(m_secret.data(), m_secret.length()) != 0)
+		std::clog << "Warning: mlock failed, secret may be swapped to disk\n";
 #endif
 
 	register_password_encoder<pbkdf2_sha256_password_encoder>();
@@ -75,8 +74,17 @@ security_context::security_context(std::string secret, user_service &users, bool
 security_context::~security_context()
 {
 	// wipe out secret
-	for (char &ch : m_secret)
-		ch = 0;
+#if HAVE_EXPLICIT_BZERO
+	explicit_bzero(m_secret.data(), m_secret.length());
+#else
+	volatile char *p = reinterpret_cast<volatile char *>(m_secret.data());
+	for (size_t i = 0; i < m_secret.length(); ++i)
+		p[i] = 0;
+#endif
+
+#if __has_include(<sys/mman.h>)
+	(void)munlock(m_secret.data(), m_secret.length());
+#endif
 }
 
 void security_context::validate_request(request &req) const
@@ -113,15 +121,8 @@ void security_context::validate_request(request &req) const
 			// check signature
 			auto sig = encode_base64url(hmac_sha256(m[0] + '.' + m[1], m_secret));
 
-			// Apparently, we need a constant time comparison here to avoid timing attacks
-			if (sig.length() != m[2].length())
-				break;
-
 			// Compare strings in constant time
-			int diff = 0;
-			for (const auto &[a, b] : std::views::zip(sig, m[2]))
-				diff |= a xor b;
-			if (diff)
+			if (not strings_match(sig, m[2]))
 				break;
 
 			auto credentials = object::parse_JSON(decode_base64url(m[1]));
@@ -175,14 +176,17 @@ void security_context::validate_request(request &req) const
 
 	if (allow and m_validate_csrf)
 	{
-		if (auto p = req.get_parameter("_csrf"); p.has_value())
+		auto p = req.get_parameter("_csrf");
+		if (not p.has_value())
 		{
-			const auto &req_csrf_param = *p;
-			if (auto req_csrf_cookie = req.get_cookie("csrf-token"); req_csrf_cookie != req_csrf_param)
-			{
-				allow = false;
-				std::clog << "CSRF validation failed\n";
-			}
+			allow = false;
+			std::clog << "CSRF validation failed: missing token\n";
+		}
+		else if (auto req_csrf_cookie = req.get_cookie("csrf-token");
+			not strings_match(req_csrf_cookie, *p))
+		{
+			allow = false;
+			std::clog << "CSRF validation failed\n";
 		}
 	}
 
@@ -192,7 +196,7 @@ void security_context::validate_request(request &req) const
 
 // --------------------------------------------------------------------
 
-void security_context::add_authorization_headers(reply &rep, const user_details user,
+void security_context::add_authorization_headers(reply &rep, const user_details &user,
 	std::chrono::system_clock::duration exp)
 {
 	using namespace std::chrono;
@@ -225,6 +229,7 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 #ifdef NDEBUG
 			{ "Secure", "" },
 #endif
+			{ "Path", "/" },
 			{ "SameSite", "Lax" },
 			{ "Expires", std::format(R"({0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT)", when) }
 		}

@@ -9,9 +9,6 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include <algorithm>
-#include <unordered_set>
-
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -176,7 +173,7 @@ void tag_processor::process_text(zeem::node_with_text &text, const scope &scope)
 	while (b < s.length())
 	{
 		auto i = s.find('[', b);
-		if (i == std::string::npos)
+		if (i == std::string::npos or i + 2 >= s.length())
 			break;
 
 		char c2 = s[i + 1];
@@ -239,7 +236,7 @@ zeem::element tag_processor::resolve_fragment_spec(
 	}
 	else if (spec.is_string())
 	{
-		const std::regex kTemplateRx(R"(^\s*(\S*)\s*::\s*(#?[-_[:alnum:]]+)$)");
+		const static std::regex kTemplateRx(R"(^\s*(\S*)\s*::\s*(#?[-_[:alnum:]]+)$)");
 
 		std::smatch m;
 
@@ -452,7 +449,8 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, con
 
 auto tag_processor::process_attr_if(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
 {
-	return ((not evaluate_el(scope, attr.value()) == unless)) ? AttributeAction::none : AttributeAction::remove;
+	auto v = evaluate_el(scope, attr.value());
+	return (v != unless) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------
@@ -551,7 +549,7 @@ auto tag_processor::process_attr_with(zeem::element * /*element*/, zeem::attribu
 
 tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *node, zeem::attribute &attr, scope &scope, const std::filesystem::path &dir, basic_template_processor &loader)
 {
-	std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
+	const static std::regex kEachRx(R"(^\s*(\w+)(?:\s*,\s*(\w+))?\s*:\s*(.+)$)");
 
 	std::smatch m;
 	auto s = attr.value();
@@ -583,8 +581,8 @@ tag_processor::AttributeAction tag_processor::process_attr_each(zeem::element *n
 									   { "count", ix + 1 },
 									   { "size", collectionSize },
 									   { "current", v },
-									   { "even", ix % 2 == 1 },
-									   { "odd", ix % 2 == 0 },
+									   { "even", ix % 2 == 0 },
+									   { "odd", ix % 2 == 1 },
 									   { "first", ix == 0 },
 									   { "last", ix + 1 == collectionSize } });
 
@@ -647,7 +645,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 
 	if (type == "javascript" or type == "css")
 	{
-		std::regex r = std::regex(R"(/\*\[\[(.+?)\]\]\*/\s*('([^'\\]|\\.)*'|"([^"\\]|\\.)*"|[^;\n])*|\[\[(.+?)\]\])");
+		const static std::regex r = std::regex(R"(/\*\[\[(.+?)\]\]\*/\s*('([^'\\]|\\.)*'|"([^"\\]|\\.)*"|[^;\n])*|\[\[(.+?)\]\])");
 
 		for (auto &n : node->nodes())
 		{
@@ -882,8 +880,8 @@ tag_processor::AttributeAction tag_processor::process_attr_include(zeem::element
 		}
 	}
 
-	if (result == AttributeAction::remove)
-		static_cast<zeem::element *>(node->parent())->flatten_text();
+	if (auto parent = node->parent(); result == AttributeAction::remove and parent != nullptr)
+		static_cast<zeem::element *>(parent)->flatten_text();
 	else
 		node->flatten_text();
 

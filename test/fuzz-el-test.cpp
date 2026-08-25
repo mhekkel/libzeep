@@ -567,6 +567,38 @@ TEST_CASE("fuzz_el_json_edge_cases")
 }
 
 // --------------------------------------------------------------------
+// Integer overflow in number parsing
+// --------------------------------------------------------------------
+
+TEST_CASE("fuzz_el_integer_overflow")
+{
+	// el-processing.cpp:657 has no overflow check on m_token_number_int.
+	// These inputs must not crash; they may throw or silently wrap.
+	auto inputs = {
+		"${999999999999999999999999999999999999}",
+		"${-999999999999999999999999999999999999}",
+		"${1000000000000000000000000000000000000}",
+		"${00000000000000000000000000000000000001}",
+	};
+
+	zh::scope scope;
+	for (auto input : inputs)
+		must_not_crash(fuzz_evaluate_el(scope, input));
+}
+
+TEST_CASE("fuzz_el_integer_overflow_compare")
+{
+	// Verify that overflow throws in JSON parser but not in EL parser (gap).
+	auto json_overflow = fuzz_parse_json("999999999999999999999999999999999999");
+	CHECK(json_overflow.threw_std_exception);
+
+	zh::scope scope;
+	auto el_overflow = fuzz_evaluate_el(scope, "${999999999999999999999999999999999999}");
+	// EL parser silently wraps — should not crash, but does not throw either
+	must_not_crash(el_overflow);
+}
+
+// --------------------------------------------------------------------
 // Stress: repeated parsing with reuse
 // --------------------------------------------------------------------
 

@@ -191,7 +191,22 @@ TEST_CASE("fuzz_json_numbers_invalid")
 		must_not_crash(fuzz_parse_json(input));
 }
 
-TEST_CASE("fuzz_json_number_overflow")
+TEST_CASE("fuzz_json_number_overflow_throws")
+{
+	auto inputs = {
+		"999999999999999999999999999999999999",
+		"-999999999999999999999999999999999999",
+	};
+
+	for (auto input : inputs)
+	{
+		auto r = fuzz_parse_json(input);
+		CHECK_FALSE(r.threw_other);
+		CHECK(r.threw_std_exception);
+	}
+}
+
+TEST_CASE("fuzz_json_number_overflow_no_crash")
 {
 	auto inputs = {
 		"999999999999999999999999999999999999",

@@ -6,6 +6,9 @@
 #include "zeep/unicode-support.hpp"
 
 #include <charconv>
+#include <cstdint>
+#include <cstring>
+#include <limits>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -203,7 +206,7 @@ void uri::set_query(std::string query, bool encode)
 			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
 				os << c;
 			else
-				os << '%' << kHex[c >> 4] << kHex[c & 15];
+				os << '%' << kHex[(c >> 4) & 0x0f] << kHex[c & 15];
 		}
 
 		m_query = os.str();
@@ -223,7 +226,7 @@ void uri::set_fragment(std::string fragment, bool encode)
 			if (is_unreserved(c) or is_sub_delim(c) or c == ':' or c == '@' or c == '/' or c == '?')
 				os << c;
 			else
-				os << '%' << kHex[c >> 4] << kHex[c & 15];
+				os << '%' << kHex[(c >> 4) & 0x0f] << kHex[c & 15];
 		}
 
 		m_fragment = os.str();
@@ -414,8 +417,17 @@ const char *uri::parse_authority(const char *cp)
 	if (*cp == ':')
 	{
 		++cp;
+
+		uint32_t port = 0;
+
 		while (*cp >= '0' and *cp <= '9')
-			m_port = 10 * m_port + *cp++ - '0';
+		{
+			port = 10 * port + *cp++ - '0';
+			if (port > std::numeric_limits<uint16_t>::max())
+				throw uri_parse_error();
+		}
+
+		m_port = static_cast<uint16_t>(port);
 	}
 
 	return cp;
@@ -502,6 +514,12 @@ void uri::parse(const char *s)
 	m_query.clear();
 	m_fragment.clear();
 	m_absolutePath = false;
+
+	if (s == nullptr)
+		throw uri_parse_error();
+
+	// Avoid reading past end
+	m_end = s + std::strlen(s);
 
 	auto cp = parse_scheme(s);
 	cp = parse_hierpart(cp);
@@ -670,8 +688,10 @@ std::string decode_url(std::string_view s)
 				{
 					result += static_cast<char>(value);
 					c += 2;
+					continue;
 				}
 			}
+			result += *c; // preserve invalid % for transparency
 		}
 		else if (*c == '+')
 			result += ' ';

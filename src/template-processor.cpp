@@ -46,6 +46,22 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
+auto sanitizePath(const fs::path &dir, const fs::path &file) -> fs::path
+{
+	std::error_code ec;
+
+	auto result = fs::weakly_canonical(dir / file, ec);
+	auto s = result.generic_string();
+
+	auto dirStr = dir.generic_string();
+	if (not dirStr.empty() and dirStr.back() != '/')
+		dirStr += '/';
+	if (ec or not s.starts_with(dirStr))
+		result.clear();
+
+	return result;
+}
+
 file_loader::file_loader(std::filesystem::path docroot)
 	: resource_loader()
 	, m_docroot(std::move(docroot))
@@ -70,15 +86,17 @@ std::unique_ptr<std::istream> file_loader::load_file(std::string file, std::erro
 	if (path.has_root_path())
 		path = fs::relative(path, path.root_path());
 
+	path = sanitizePath(std::filesystem::canonical(m_docroot), path);
+
 	std::unique_ptr<std::ifstream> result;
 
-	if (not fs::is_regular_file(m_docroot / path))
+	if (not fs::is_regular_file(path))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
 	else
 	{
 		try
 		{
-			result = std::make_unique<std::ifstream>(m_docroot / path, std::ios::binary);
+			result = std::make_unique<std::ifstream>(path, std::ios::binary);
 			if (not result->is_open())
 			{
 				result.reset();
@@ -117,10 +135,8 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 		if (iequals(h.name, "If-Modified-Since"))
 		{
 			std::istringstream ss{ h.value };
-			std::tm tm;
-			ss >> std::get_time(&tm, "%a, %d %b %Y %H:%M:%S GMT");
-
-			auto modifiedSince = system_clock::from_time_t(std::mktime(&tm));
+			std::chrono::time_point<std::chrono::system_clock> modifiedSince;
+			ss >> std::chrono::parse("%a, %d %b %Y %H:%M:%S GMT", modifiedSince);
 
 			if (fileDate <= modifiedSince)
 				return reply::stock_reply(status_type::not_modified);
@@ -333,7 +349,7 @@ void basic_template_processor::create_reply_from_template(const std::string &fil
 	reply.set_content(doc);
 }
 
-void basic_template_processor::init_scope(request &/* req */, scope & /*scope*/)
+void basic_template_processor::init_scope(request & /* req */, scope & /*scope*/)
 {
 }
 

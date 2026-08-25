@@ -9,9 +9,9 @@
 /// This file contains an interface to the crypto related routines used
 /// throughout libzeep.
 
+#include <cstddef>
 #include <exception>
 #include <iosfwd>
-#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -94,6 +94,35 @@ std::string encode_hex(std::string_view data);
 ///
 /// \param data			The string containing data to decode
 std::string decode_hex(std::string_view data);
+
+///@}
+
+// --------------------------------------------------------------------
+/// \name Secure string comparison
+///@{
+
+/// \brief compare two strings in constant time
+
+constexpr bool strings_match(std::string_view a, std::string_view b) noexcept
+{
+	volatile int diff = 0;
+
+	if (a.size() != b.size())
+	{
+		// lengths differ – but still do a dummy comparison to avoid
+		// leaking the length difference via timing
+		for (size_t i = 0; i < std::max(a.size(), b.size()); ++i)
+			diff |= (i < a.size() ? a[i] : 0) xor (i < b.size() ? b[i] : 0);
+		diff = 1;
+	}
+	else
+	{
+		for (size_t i = 0; i < a.size(); ++i)
+			diff |= static_cast<unsigned char>(a[i]) xor static_cast<unsigned char>(b[i]);
+	}
+
+	return diff == 0;
+}
 
 ///@}
 

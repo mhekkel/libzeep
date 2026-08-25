@@ -14,6 +14,7 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
 
+#include <iostream>
 #include <zeem/zeem.hpp>
 
 #include <exception>
@@ -65,7 +66,7 @@ bool error_handler::create_error_reply(const request &req, status_type status, s
 
 		auto credentials = req.get_credentials();
 		if (credentials.is_object())
-			error["request"]["username"] = credentials["user"].get<std::string>();
+			error["request"]["username"] = credentials["username"].get<std::string>();
 
 		scope.put("error", error);
 
@@ -177,7 +178,8 @@ bool default_error_handler::create_error_reply(const request &req, const std::ex
 	}
 	catch (const std::exception &ex)
 	{
-		result = error_handler::create_error_reply(req, status_type::internal_server_error, ex.what(), reply);
+		std::println(std::clog, "Internal server error: {}", ex.what());
+		result = error_handler::create_error_reply(req, status_type::internal_server_error, "Internal server error", reply);
 	}
 	catch (...)
 	{

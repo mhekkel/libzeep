@@ -334,10 +334,10 @@ class uri
   private:
 	// --------------------------------------------------------------------
 
-	bool is_pct_encoded(const char *&cp)
+	bool is_pct_encoded(const char *&cp) const noexcept
 	{
 		bool result = false;
-		if (*cp == '%' and is_xdigit(cp[1]) and is_xdigit(cp[2]))
+		if (*cp == '%' and cp + 2 < m_end and is_xdigit(cp[1]) and is_xdigit(cp[2]))
 		{
 			result = true;
 			cp += 2;
@@ -345,17 +345,17 @@ class uri
 		return result;
 	}
 
-	bool is_userinfo(const char *&cp) noexcept
+	bool is_userinfo(const char *&cp) const noexcept
 	{
 		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or is_pct_encoded(cp);
 	}
 
-	bool is_reg_name(const char *&cp) noexcept
+	bool is_reg_name(const char *&cp) const noexcept
 	{
 		return is_unreserved(*cp) or is_sub_delim(*cp) or is_pct_encoded(cp);
 	}
 
-	bool is_pchar(const char *&cp) noexcept
+	bool is_pchar(const char *&cp) const noexcept
 	{
 		return is_unreserved(*cp) or is_sub_delim(*cp) or *cp == ':' or *cp == '@' or is_pct_encoded(cp);
 	}
@@ -384,6 +384,9 @@ class uri
 	std::string m_query;
 	std::string m_fragment;
 	bool m_absolutePath = false;
+
+	// Only used during parsing:
+	const char *m_end = nullptr;
 };
 
 } // namespace zeep

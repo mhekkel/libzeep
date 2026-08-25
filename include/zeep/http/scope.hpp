@@ -78,16 +78,16 @@ class scope
 	void add_path_param(std::string name, std::string value);
 
 	/// \brief Return the list of headers
-	[[nodiscard]] auto get_headers() const { return m_req->get_headers(); }
+	[[nodiscard]] const auto &get_headers() const { return get_request().get_headers(); }
 
 	/// \brief Return the named header
-	[[nodiscard]] std::string get_header(std::string_view name) const { return m_req->get_header(name); }
+	[[nodiscard]] std::string get_header(std::string_view name) const { return get_request().get_header(name); }
 
 	/// \brief Return the payload
-	[[nodiscard]] const std::string &get_payload() const { return m_req->get_payload(); }
+	[[nodiscard]] const std::string &get_payload() const { return get_request().get_payload(); }
 
 	/// \brief Return the Accept-Language header value in the request as a std::locale object
-	[[nodiscard]] std::locale get_locale() const { return m_req->get_locale(); }
+	[[nodiscard]] std::locale get_locale() const { return get_request().get_locale(); }
 
 	/// \brief get the optional parameter value for @a name
 	[[nodiscard]] std::optional<std::string> get_parameter(std::string_view name) const
@@ -99,7 +99,7 @@ class scope
 			{ return pp.name == name; });
 
 		if (p == m_path_parameters.end())
-			result = m_req->get_parameter(name);
+			result = get_request().get_parameter(name);
 		else if (not p->value.empty())
 			result = p->value;
 
@@ -118,7 +118,7 @@ class scope
 		{
 			std::vector<std::string> result;
 
-			for (const auto &[p_name, p_value] : m_req->get_parameters())
+			for (const auto &[p_name, p_value] : get_request().get_parameters())
 			{
 				if (p_name != name)
 					continue;
@@ -133,13 +133,13 @@ class scope
 	/// \brief get the file parameter value for @a name
 	[[nodiscard]] file_param get_file_parameter(std::string name) const
 	{
-		return m_req->get_file_parameter(std::move(name));
+		return get_request().get_file_parameter(std::move(name));
 	}
 
 	/// \brief get all file parameters value for @a name
 	[[nodiscard]] std::vector<file_param> get_file_parameters(std::string name) const
 	{
-		return m_req->get_file_parameters(std::move(name));
+		return get_request().get_file_parameters(std::move(name));
 	}
 
 	/// \brief put variable in the scope with \a name and \a value
@@ -201,7 +201,12 @@ class scope
 	[[nodiscard]] el::object &operator[](const std::string &name);
 
 	/// \brief return the HTTP request, will throw if the scope chain was not created with a request
-	[[nodiscard]] const request &get_request() const;
+	[[nodiscard]] const request &get_request() const
+	{
+		if (m_req == nullptr)
+			throw zeep::exception("Invalid scope, no request");
+		return *m_req;
+	}
 
 	/// \brief return the context_name of the server
 	[[nodiscard]] std::string get_context_name() const;

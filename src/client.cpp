@@ -9,6 +9,7 @@
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
 
+#include <boost/asio/ssl/verify_mode.hpp>
 #include <iostream>
 
 namespace zeep::http
@@ -32,7 +33,7 @@ class client_base
 
 	explicit client_base(const zeep::uri &url)
 		: m_req({ "GET", url })
-		// , m_verbose(mcfp::config::instance().has("m_verbose"))
+	// , m_verbose(mcfp::config::instance().has("m_verbose"))
 	{
 	}
 
@@ -124,7 +125,7 @@ class ssl_client : public client_base<asio_ns::ssl::stream<tcp::socket>>
 		: client_base(req)
 		, m_socket(io_context, context)
 	{
-		m_socket.set_verify_mode(asio_ns::ssl::verify_peer);
+		m_socket.set_verify_mode(asio_ns::ssl::verify_peer | asio_ns::ssl::verify_fail_if_no_peer_cert);
 		m_socket.set_verify_callback(
 			[this](auto &&preverified, auto &&ctx)
 			{ return verify_certificate(
@@ -139,14 +140,14 @@ class ssl_client : public client_base<asio_ns::ssl::stream<tcp::socket>>
 
   private:
 	bool verify_certificate(bool preverified,
-		asio_ns::ssl::verify_context & /*ctx*/)
+		asio_ns::ssl::verify_context & /* ctx */)
 	{
-		// // The verify callback can be used to check whether the certificate that is
-		// // being presented is valid for the peer. For example, RFC 2818 describes
-		// // the steps involved in doing this for HTTPS. Consult the OpenSSL
-		// // documentation for more details. Note that the callback is called once
-		// // for each certificate in the certificate chain, starting from the root
-		// // certificate authority.
+		// The verify callback can be used to check whether the certificate that is
+		// being presented is valid for the peer. For example, RFC 2818 describes
+		// the steps involved in doing this for HTTPS. Consult the OpenSSL
+		// documentation for more details. Note that the callback is called once
+		// for each certificate in the certificate chain, starting from the root
+		// certificate authority.
 
 		// // In this example we will simply print the certificate's subject name.
 		// char subject_name[256];
@@ -245,7 +246,7 @@ reply send_request(request req)
 			else if (error)
 			{
 				// if (mcfp::config::instance().has("verbose"))
-					std::clog << error << '\n';
+				std::clog << error << '\n';
 				break;
 			}
 		}
@@ -259,17 +260,19 @@ reply send_request(request req)
 
 		ctx.set_default_verify_paths();
 		ctx.set_options(ssl::context::default_workarounds);
-		ctx.load_verify_file("/etc/ssl/certs/ca-certificates.crt");
 
 		ssl_socket sock(io_context, ctx);
 		asio_ns::connect(sock.lowest_layer(), endpoints);
 		sock.lowest_layer().set_option(tcp::no_delay(true));
 
-		(void)SSL_set_tlsext_host_name(sock.native_handle(), host.c_str());
+		auto sni_host = host;
+		if (sni_host.starts_with('[') and sni_host.ends_with(']'))
+			sni_host = sni_host.substr(1, sni_host.size() - 2);
+		(void)SSL_set_tlsext_host_name(sock.native_handle(), sni_host.c_str());
 
 		// Perform SSL handshake and verify the remote host's certificate.
-		sock.set_verify_mode(ssl::verify_peer);
-		sock.set_verify_callback(ssl::host_name_verification(host));
+		sock.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
+		sock.set_verify_callback(ssl::host_name_verification(sni_host));
 		sock.handshake(ssl_socket::client);
 
 		asio_ns::write(sock, req_buffer);
@@ -304,7 +307,7 @@ reply post_request(const zeep::uri &url, std::vector<header> headers, const std:
 	request req{ "POST", url, { 1, 0 }, std::move(headers) };
 
 	if (auto ct = req.get_header("Content-Type"); ct.empty())
-		req.set_content(payload, "application/plain");
+		req.set_content(payload, "text/plain");
 	else
 		req.set_content(payload, ct);
 

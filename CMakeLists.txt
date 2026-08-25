@@ -9,6 +9,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(CMakePackageConfigHelpers)
 include(CPM)
+include(CheckFunctionExists)
 include(CTest)
 include(VersionString)
 
@@ -140,6 +141,8 @@ if(UNIX)
         set(HTTP_HAS_UNIX_DAEMON 1)
     endif()
 endif()
+
+check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 
 # Generate the revision.hpp file
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")

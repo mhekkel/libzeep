@@ -69,10 +69,18 @@ class basic_server
 	virtual ~basic_server();
 
 	/// \brief Get the security context provided in the constructor
-	[[nodiscard]] security_context &get_security_context() noexcept { return *m_security_context; }
+	[[nodiscard]] security_context &get_security_context()
+	{
+		if (not m_security_context)
+			throw logic_exception("No security context configured");
+		return *m_security_context;
+	}
 
 	/// \brief Test if a security context was provided in the constructor
-	[[nodiscard]] bool has_security_context() const noexcept { return m_security_context != nullptr; }
+	[[nodiscard]] bool has_security_context() const noexcept
+	{
+		return m_security_context != nullptr;
+	}
 
 	/// \brief Set the set of allowed methods (default is "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE")
 	void set_allowed_methods(const std::set<std::string> &methods)

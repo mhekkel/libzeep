@@ -97,7 +97,7 @@ void controller::init_scope(scope & /*unused*/)
 bool controller::handle_request(http::request &req, http::reply &rep)
 {
 	auto uri = get_prefixless_path(req);
-	auto path = get_prefixless_path(req).string();
+	auto path = uri.string();
 
 	bool result = false;
 	for (auto &mp : m_mountpoints)

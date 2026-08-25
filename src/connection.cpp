@@ -40,7 +40,7 @@ std::vector<asio_ns::const_buffer> get_data_buffers(reply &rep)
 connection::connection(asio_ns::io_context &service, basic_server &handler)
 	: m_socket(service)
 	, m_server(handler)
-	, m_bufs(m_buffer.prepare(4096))
+	, m_bufs(m_buffer.prepare(0))
 {
 }
 

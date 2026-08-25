@@ -252,7 +252,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 {
 	auto &req = scope.get_request();
 	auto csrf = req.get_parameter("_csrf").value_or("");
-	if (csrf != req.get_cookie("csrf-token"))
+	if (not strings_match(csrf, req.get_cookie("csrf-token")))
 		throw http_status_exception(status_type::forbidden);
 
 	uri uri(req.get_parameter("uri").value_or(""));
@@ -261,6 +261,16 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	try
 	{
 		get_server()->get_security_context().verify_username_password(username, password, rep);
+
+		// Valid login. Reset CSRF token
+		auto csrf_cookie = encode_base64url(random_hash());
+		rep.set_cookie("csrf-token", csrf_cookie,
+			{ { "HttpOnly", "" },
+#ifdef NDEBUG
+				{ "Secure", "" },
+#endif
+				{ "SameSite", "Lax" },
+				{ "Path", "/" } });
 	}
 	catch (const authentication_exception &e)
 	{
@@ -286,6 +296,7 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 	return rep;
 }
 
+// TODO: maarten - Need to invalidate the JWT using a blocklist and a jti claim
 reply login_controller::handle_logout(const scope &scope)
 {
 	auto &req = scope.get_request();

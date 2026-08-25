@@ -581,7 +581,7 @@ class object
 	/// \brief Return true if the value is boolean, and is true
 	[[nodiscard]] constexpr bool is_true() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and *b; }
 	/// \brief Return true if the value is boolean, and is false
-	[[nodiscard]] constexpr bool is_false() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and *b; }
+	[[nodiscard]] constexpr bool is_false() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and not *b; }
 	/// \brief Return true if the value is a boolean
 	[[nodiscard]] constexpr bool is_boolean() const noexcept { return std::holds_alternative<bool>(m_data); }
 

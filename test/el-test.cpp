@@ -232,6 +232,17 @@ TEST_CASE("erase object by key")
 	CHECK(obj.size() == 2);
 }
 
+TEST_CASE("test-10")
+{
+	e::object b1(true);
+	CHECK(b1.is_true());
+	CHECK_FALSE(b1.is_false());
+
+	e::object b2(false);
+	CHECK_FALSE(b2.is_true());
+	CHECK(b2.is_false());
+}
+
 TEST_CASE("erase object by key throws on wrong type")
 {
 	e::object arr{ 1, 2, 3 };

@@ -78,15 +78,7 @@ reply::reply(status_type status, std::tuple<int, int> version,
 	m_content = std::move(payload);
 }
 
-reply::reply(const reply &rhs)
-	: m_status(rhs.m_status)
-	, m_version_major(rhs.m_version_major)
-	, m_version_minor(rhs.m_version_minor)
-	, m_headers(rhs.m_headers)
-	, m_data(rhs.m_data)
-	, m_content(rhs.m_content)
-{
-}
+reply::reply(const reply &rhs) = default;
 
 void reply::set_version(int version_major, int version_minor)
 {
@@ -356,10 +348,8 @@ std::vector<std::string_view> reply::data_to_buffers()
 			}
 			else
 			{
-				thread_local static std::array<char, 8> s_size_buffer; ///< to store the string with the size for chunked encoding
-
 				const char kHex[] = "0123456789abcdef";
-				char *e = s_size_buffer.data() + s_size_buffer.size();
+				char *e = m_size_buffer.data() + m_size_buffer.size();
 				char *p = e;
 				auto l = n;
 

@@ -160,10 +160,13 @@ void basic_server::run(int nr_of_threads)
 
 void basic_server::stop()
 {
-	m_new_connection.reset();
-
+	// Close the acceptor first so the pending async_accept completes
+	// with operation_aborted. The handler will see the error and
+	// return without touching m_new_connection.
 	if (m_acceptor and m_acceptor->is_open())
 		m_acceptor->close();
+
+	m_new_connection.reset();
 
 	m_acceptor.reset();
 }
@@ -279,7 +282,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			(rep.get_status() == status_type::moved_permanently or rep.get_status() == status_type::moved_temporarily))
 		{
 			auto location = rep.get_header("location");
-			if (location.front() == '/')
+			if (location.starts_with("/"))
 				rep.set_header("location", m_context_name + location);
 		}
 
@@ -384,7 +387,7 @@ void basic_server::log_request(std::string_view client,
 		ts << std::format("{:%d/%b/%Y:%H:%M:%S %Ez}", t);
 #endif
 
-		std::cout << std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
+		auto s = std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
 						 client,
 						 username,
 						 ts.str(),
@@ -396,13 +399,17 @@ void basic_server::log_request(std::string_view client,
 						 rep.size(),
 						 referer,
 						 userAgent,
-						 entry.empty() ? std::string{} : ((std::ostringstream() << ' ' << std::quoted(entry)).str()))
-				  << '\n'
-				  << std::flush;
+						 entry.empty() ? std::string{} : ((std::ostringstream() << ' ' << std::quoted(entry)).str()));
+			
+		// Strip log message from CR and LF
+		for (auto p = s.find_first_of("\r\n"); p != std::string::npos; p = s.find_first_of( "\r\n", p))
+			s[p] = ' ';
+
+		std::cout << s << '\n' << std::flush;
 	}
 	catch (const std::exception &ex)
 	{
-		std::clog << "error writing to log: " << ex.what() << '\n';
+		std::println(std::clog, "error writing to log: {}", ex.what());
 	}
 }
 

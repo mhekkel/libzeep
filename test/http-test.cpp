@@ -89,6 +89,45 @@ TEST_CASE("request_params_1")
 	CHECK(req.get_parameter("c") == "C$");
 }
 
+TEST_CASE("request_params_plus_as_space")
+{
+	// per RFC, + in application/x-www-form-urlencoded means space
+	zh::request req1{ "GET", "http://www.example.com/index?first+name=alice&last=smith" };
+	CHECK(req1.get_parameter("first name") == "alice");
+	CHECK(req1.get_parameter("last") == "smith");
+
+	// percent-encoded space should also work
+	zh::request req2{ "GET", "http://www.example.com/index?first%20name=bob" };
+	CHECK(req2.get_parameter("first name") == "bob");
+
+	// plus in value
+	zh::request req3{ "GET", "http://www.example.com/index?key=c%2B%2B" };
+	CHECK(req3.get_parameter("key") == "c++");
+
+	// mixed plus and percent encoding
+	zh::request req4{ "GET", "http://www.example.com/index?q=hello+world%21" };
+	CHECK(req4.get_parameter("q") == "hello world!");
+
+	// key with plus and no value
+	zh::request req5{ "GET", "http://www.example.com/index?my+key" };
+	CHECK(req5.get_parameter("my key").has_value());
+
+	// POST url-encoded body with plus
+	zh::request req6("POST", "http://www.example.com/index", { 1, 1 },
+		{ { "Content-Type", "application/x-www-form-urlencoded" } },
+		"field+name=hello+world");
+	CHECK(req6.get_parameter("field name") == "hello world");
+}
+
+TEST_CASE("request_params_get_parameters_plus_as_space")
+{
+	// get_parameters() should also decode + in keys
+	zh::request req{ "GET", "http://www.example.com/index?first+name=alice&last=smith" };
+	auto params = req.get_parameters();
+	CHECK(params.count("first name") == 1);
+	CHECK(params.find("first name")->second == "alice");
+}
+
 TEST_CASE("webapp_6")
 {
 	zh::request req("GET", "/", { 1, 0 }, { { "Content-Type", "multipart/form-data; boundary=xYzZY" } },
