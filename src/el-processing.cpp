@@ -1540,7 +1540,7 @@ class date_expr_util_object : public expression_utility_object<date_expr_util_ob
 
 					if (f[i + 1] == '%')
 					{
-						f.insert(f.begin() + i + 1, '%');
+						f.insert(f.begin() + static_cast<std::string::difference_type>(i + 1), '%');
 						++i;
 						continue;
 					}
