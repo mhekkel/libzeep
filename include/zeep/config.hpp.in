@@ -42,6 +42,7 @@
 # cmakedefine01 USE_RSRC
 #endif
 
+// NOLINTBEGIN(modernize-macro-to-enum)
 /// \def LIBZEEP_VERSION
 /// \brief The current version of libzeep as a string
 #define LIBZEEP_VERSION "@LIBZEEP_VERSION@"
@@ -54,6 +55,7 @@
 /// \def LIBZEEP_VERSION_PATCH
 /// \brief The patch version number component of libzeep
 #define LIBZEEP_VERSION_PATCH @LIBZEEP_VERSION_PATCH@
+// NOLINTEND(modernize-macro-to-enum)
 
 // Some warnings that we don't like in MSVC:
 #if defined(_MSC_VER)
