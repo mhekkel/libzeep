@@ -118,8 +118,6 @@ std::unique_ptr<std::istream> file_loader::load_file(std::string file, std::erro
 
 reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 {
-	// TODO: maarten - The time used here is local, not GMT. Needs fix?
-
 	std::error_code ec;
 	auto ft = file_time(scope["baseuri"].get<std::string>(), ec);
 
