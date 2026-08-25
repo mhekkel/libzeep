@@ -306,14 +306,14 @@ TEST_CASE("fuzz_json_valid_structures")
 		"0",
 		"{\"a\":1}",
 		"[1]",
-		"{\"a\":1,\"b\":2}",
+		R"({"a":1,"b":2})",
 		"[1,2,3]",
-		"{\"nested\":{\"deep\":[1,2,3]}}",
-		"[{\"a\":1},{\"b\":2}]",
+		R"({"nested":{"deep":[1,2,3]}})",
+		R"([{"a":1},{"b":2}])",
 		"{\"\":null}",
 		"[true,false,null]",
 		"[[[]]]",
-		"{\"a\":{\"b\":{\"c\":{}}}}",
+		R"({"a":{"b":{"c":{}}}})",
 	};
 
 	for (auto input : inputs)
@@ -341,8 +341,8 @@ TEST_CASE("fuzz_json_invalid_structures")
 		"[]]",        // extra closing bracket
 		"{]",
 		"[}",
-		"{null:1}",          // null as key
-		"{\"a\":1 \"b\":2}", // missing comma between pairs
+		"{null:1}",         // null as key
+		R"({"a":1 "b":2})", // missing comma between pairs
 	};
 
 	for (auto input : inputs)
@@ -487,9 +487,9 @@ TEST_CASE("fuzz_json_escape_sequences")
 		R"("\uD800\uDC00")", // proper surrogate pair
 		R"("\uD83D\uDE00")", // grinning face emoji
 		R"("\n\t\r")",       // common escapes mixed
-		"\"\\\"\"",          // escaped quote
-		"\"\\\\\"",          // escaped backslash
-		"\"\\/\"",           // escaped slash
+		R"("\"")",           // escaped quote
+		R"("\\")",           // escaped backslash
+		R"("\/")",           // escaped slash
 	};
 
 	for (auto input : inputs)
@@ -504,7 +504,7 @@ TEST_CASE("fuzz_json_bom_and_prefixes")
 {
 	auto make_bom = []() -> std::string
 	{
-		return std::string("\xEF\xBB\xBF", 3);
+		return { "\xEF\xBB\xBF", 3 };
 	};
 
 	auto test = [](std::string_view s)
