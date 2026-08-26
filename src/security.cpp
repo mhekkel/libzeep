@@ -264,9 +264,10 @@ bool security_context::verify_username_password(const std::string &username, con
 
 void security_context::verify_dummy_password(const std::string &raw_password) const
 {
-	// A well-formed PBKDF2-SHA256 hash with the default iteration count, used only for
-	// its computational cost. The salt and hash values are irrelevant to the outcome.
-	static const std::string dummy_hash = "pbkdf2_sha256$100000$QUFBQUFBQUFBQUFB$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+	// A well-formed PBKDF2-SHA256 hash used only for its computational cost, so that the
+	// response time for an unknown user is indistinguishable from a real password check.
+	// The salt and hash values are irrelevant to the outcome.
+	std::string dummy_hash = "pbkdf2_sha256$" + std::to_string(m_dummy_iterations) + "$QUFBQUFBQUFBQUFB$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
 	pbkdf2_sha256_password_encoder encoder;
 	encoder.matches(raw_password, dummy_hash);

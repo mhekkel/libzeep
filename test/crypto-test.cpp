@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
+// These tests intentionally verify the (deprecated) weak hash implementations
+// against published RFC test vectors; suppress the deprecation warnings here.
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <zeep/crypto.hpp>

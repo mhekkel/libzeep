@@ -160,12 +160,21 @@ std::string random_hash();
 ///@{
 
 /// \brief return the MD5 hash of \a data
+///
+/// \deprecated MD5 is cryptographically broken. Use \a sha256 instead.
+[[deprecated("MD5 is cryptographically broken; use sha256 instead")]]
 std::string md5(std::string_view data);
 
 /// \brief return the SHA1 hash of \a data (string view overload)
+///
+/// \deprecated SHA-1 is no longer considered secure. Use \a sha256 instead.
+[[deprecated("SHA-1 is no longer considered secure; use sha256 instead")]]
 std::string sha1(std::string_view data);
 
 /// \brief return the SHA1 hash of \a data (streambuf overload)
+///
+/// \deprecated SHA-1 is no longer considered secure. Use \a sha256 instead.
+[[deprecated("SHA-1 is no longer considered secure; use sha256 instead")]]
 std::string sha1(std::streambuf &data);
 
 /// \brief return the SHA256 hash of \a data
@@ -178,9 +187,15 @@ std::string sha256(std::string_view data);
 ///@{
 
 /// \brief return the HMAC using an MD5 hash of \a message signed with \a key
+///
+/// \deprecated HMAC-MD5 relies on the broken MD5 hash. Use \a hmac_sha256 instead.
+[[deprecated("HMAC-MD5 relies on the broken MD5 hash; use hmac_sha256 instead")]]
 std::string hmac_md5(std::string_view message, std::string_view key);
 
 /// \brief return the HMAC using an SHA1 hash of \a message signed with \a key
+///
+/// \deprecated HMAC-SHA1 relies on the weak SHA-1 hash. Use \a hmac_sha256 instead.
+[[deprecated("HMAC-SHA1 relies on the weak SHA-1 hash; use hmac_sha256 instead")]]
 std::string hmac_sha1(std::string_view message, std::string_view key);
 
 /// \brief return the HMAC using an SHA256 hash of \a message signed with \a key
@@ -203,6 +218,9 @@ std::string hmac_sha256(std::string_view message, std::string_view key);
 /// \param password		the password
 /// \param iterations	number of iterations, use a value of at least 30000
 /// \param keyLength	the requested key length that will be returned
+///
+/// \deprecated PBKDF2-HMAC-SHA1 is weaker than PBKDF2-HMAC-SHA256. Use \a pbkdf2_hmac_sha256 instead.
+[[deprecated("PBKDF2-HMAC-SHA1 is weaker than PBKDF2-HMAC-SHA256; use pbkdf2_hmac_sha256 instead")]]
 std::string pbkdf2_hmac_sha1(std::string_view salt,
 	std::string_view password, unsigned iterations, unsigned keyLength);
 

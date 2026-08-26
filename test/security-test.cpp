@@ -91,7 +91,8 @@ TEST_CASE("sec_2")
 
 TEST_CASE("sec_3 login rate limiting")
 {
-	zeep::http::pbkdf2_sha256_password_encoder enc;
+	// Use a low iteration count; these tests exercise rate limiting, not KDF cost.
+	zeep::http::pbkdf2_sha256_password_encoder enc(1000, 32);
 	auto encoded = enc.encode("tiger");
 
 	zeep::http::simple_user_service users({ { "scott", encoded, { "USER" } } });
@@ -114,12 +115,14 @@ TEST_CASE("sec_3 login rate limiting")
 
 TEST_CASE("sec_4 login flow enforces rate limit")
 {
-	zeep::http::pbkdf2_sha256_password_encoder enc;
+	// Use a low iteration count; these tests exercise rate limiting, not KDF cost.
+	zeep::http::pbkdf2_sha256_password_encoder enc(1000, 32);
 	auto encoded = enc.encode("tiger");
 
 	zeep::http::simple_user_service users({ { "scott", encoded, { "USER" } } });
 	zeep::http::security_context sc("1234", users, false);
 	sc.set_max_login_attempts(2);
+	sc.set_dummy_password_iterations(1000);
 
 	zh::reply rep;
 
@@ -131,4 +134,18 @@ TEST_CASE("sec_4 login flow enforces rate limit")
 
 	// unknown users go through the same (dummy) verification and are not distinguishable
 	CHECK_THROWS_AS(sc.verify_username_password("bob", "whatever", rep), zeep::http::invalid_password_exception);
+}
+
+TEST_CASE("sec_5 default pbkdf2 iterations is 600k")
+{
+	// default constructor should use the OWASP-recommended 600k iterations
+	zeep::http::pbkdf2_sha256_password_encoder enc;
+	auto hash = enc.encode("tiger");
+
+	// format: pbkdf2_sha256$<iterations>$<salt>$<hash>
+	auto first = hash.find('$');
+	auto second = hash.find('$', first + 1);
+	REQUIRE(first != std::string::npos);
+	REQUIRE(second != std::string::npos);
+	CHECK(hash.substr(first + 1, second - first - 1) == "600000");
 }

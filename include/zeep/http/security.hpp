@@ -80,9 +80,9 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 	static inline constexpr const char *name() { return "pbkdf2_sha256"; };
 
 	/// \brief Construct with optional iteration count and key length
-	/// \param iterations  Number of PBKDF2 iterations (default 100,000)
+	/// \param iterations  Number of PBKDF2 iterations (default 600,000, per OWASP guidance)
 	/// \param key_length  Desired key length in bytes (default 32)
-	pbkdf2_sha256_password_encoder(int iterations = 100'000, int key_length = 32)
+	pbkdf2_sha256_password_encoder(int iterations = 600'000, int key_length = 32)
 		: m_iterations(iterations)
 		, m_key_length(key_length)
 	{
@@ -418,6 +418,12 @@ class security_context
 	/// \param username  The username that logged in successfully
 	void record_login_success(const std::string &username);
 
+	/// \brief Set the iteration count used for the dummy verification that equalizes
+	///        timing for unknown users. Set this to match the iteration count of your
+	///        real password hashes. Defaults to 600,000.
+	/// \param iterations  The number of PBKDF2 iterations for the dummy check
+	void set_dummy_password_iterations(int iterations) noexcept { m_dummy_iterations = iterations; }
+
   private:
 	/// @cond
 
@@ -440,6 +446,7 @@ class security_context
 	std::chrono::system_clock::duration m_default_jwt_exp;
 
 	int m_max_login_attempts = 5;
+	int m_dummy_iterations = 600'000;
 	std::chrono::seconds m_login_lockout_duration = std::chrono::minutes{ 5 };
 	mutable std::mutex m_failures_mutex;
 	mutable std::map<std::string, std::pair<std::chrono::steady_clock::time_point, int>> m_login_failures;
