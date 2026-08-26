@@ -285,3 +285,12 @@ TEST_CASE("random_hash produces 16 distinct bytes")
 		all_zero = all_zero and c == '\0';
 	CHECK(not all_zero);
 }
+
+TEST_CASE("secure_scrub zeroes contents")
+{
+	std::string secret = "s3cr3t-password";
+	auto size = secret.size();
+	zeep::secure_scrub(secret);
+	CHECK(secret == std::string(size, '\0'));
+	CHECK(secret.size() == size);
+}

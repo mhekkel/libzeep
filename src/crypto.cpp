@@ -1410,6 +1410,14 @@ class HMAC
 			m_opad[i] ^= key_data[i];
 			m_ipad[i] ^= key_data[i];
 		}
+
+		secure_scrub(key_data);
+	}
+
+	~HMAC()
+	{
+		secure_scrub(m_ipad);
+		secure_scrub(m_opad);
 	}
 
 	HMAC &update(std::string_view data)
@@ -1486,6 +1494,8 @@ std::string pbkdf2(std::string_view salt,
 		}
 
 		result.append(derived);
+		secure_scrub(derived);
+		secure_scrub(buffer);
 		++i;
 	}
 

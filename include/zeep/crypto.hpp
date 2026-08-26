@@ -127,6 +127,26 @@ constexpr bool strings_match(std::string_view a, std::string_view b) noexcept
 ///@}
 
 // --------------------------------------------------------------------
+/// \name Secret scrubbing
+///@{
+
+/// \brief Securely zero the contents of a string that held a secret.
+///
+/// This best-effort wipe reduces the window in which a password, derived key
+/// or HMAC key remains in heap memory. Note that `std::string` may leave
+/// unscrubbed copies behind on reallocation, so this is not a complete
+/// guarantee; use it in addition to storing secrets in dedicated buffers.
+/// \param s  The string whose contents should be zeroed
+inline void secure_scrub(std::string &s) noexcept
+{
+	volatile char *p = reinterpret_cast<volatile char *>(s.data());
+	for (size_t i = 0; i < s.size(); ++i)
+		p[i] = 0;
+}
+
+///@}
+
+// --------------------------------------------------------------------
 /// \name Random bytes
 ///@{
 

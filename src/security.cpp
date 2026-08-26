@@ -63,6 +63,9 @@ security_context::security_context(std::string secret, user_service &users, bool
 	, m_default_allow(defaultAccessAllowed)
 	, m_default_jwt_exp(std::chrono::weeks{ 1 })
 {
+	// the moved-from source is still a copy of the secret; wipe it
+	secure_scrub(secret);
+
 #if __has_include(<sys/mman.h>)
 	if (mlock(m_secret.data(), m_secret.length()) != 0)
 		std::clog << "Warning: mlock failed, secret may be swapped to disk\n";
@@ -74,13 +77,7 @@ security_context::security_context(std::string secret, user_service &users, bool
 security_context::~security_context()
 {
 	// wipe out secret
-#if HAVE_EXPLICIT_BZERO
-	explicit_bzero(m_secret.data(), m_secret.length());
-#else
-	volatile char *p = reinterpret_cast<volatile char *>(m_secret.data());
-	for (size_t i = 0; i < m_secret.length(); ++i)
-		p[i] = 0;
-#endif
+	secure_scrub(m_secret);
 
 #if __has_include(<sys/mman.h>)
 	(void)munlock(m_secret.data(), m_secret.length());

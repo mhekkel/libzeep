@@ -123,6 +123,8 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 				test = zeep::encode_base64(test);
 
 				result = strings_match(test, parts[3]);
+
+				zeep::secure_scrub(test);
 			}
 		}
 
