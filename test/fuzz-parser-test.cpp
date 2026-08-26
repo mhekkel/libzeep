@@ -280,23 +280,6 @@ TEST_CASE("fuzz_parser_partial_chunked")
 	std::string req3 = req + "ZZZ\r\nhello";
 	auto r3 = fuzz_parse_request(req3);
 	check_invariant(r3);
-	// chunked size parse error => str.from_chars returns 0, and parser sets result = false
-	// Actually looking at the code: from_chars with hex base and "ZZZ" will fail (r.ec != 0),
-	// and then `if (r.ec == std::errc{}) result = false;` - wait no, it says:
-	//     if (r.ec == std::errc{}) result = false;
-	// That looks backwards - if from_chars succeeds, it sets result = false? That seems like
-	// a bug. Actually wait, it returns false if it succeeds but m_chunk_size > 0 check comes
-	// after... Let me re-read:
-	//   if (r.ec == std::errc{}) result = false;
-	//   else if (m_chunk_size > 0) ...
-	// This is: if from_chars succeeded (ec == 0), set result = false (error).
-	// If from_chars FAILED, check chunk_size. But m_chunk_size would be uninitialized (0).
-	// So for "ZZZ", from_chars fails, m_chunk_size is 0, state goes to 10 (trailing CRLF).
-	// Wait, that's also an issue. The else branch is: else if (m_chunk_size > 0) ... else m_state = 10
-	// So for "ZZZ": from_chars returns error, m_chunk_size stays 0, goes to state 10.
-	// Then state 10 expects \r, state 11 expects \n, and returns true.
-	// So it would succeed with empty payload. Hmm.
-	// Anyway, our fuzz test just checks for no crashes.
 }
 
 // --------------------------------------------------------------------
@@ -462,4 +445,436 @@ TEST_CASE("fuzz_parser_binary_payload")
 		req += static_cast<char>(i);
 
 	check_invariant(fuzz_parse_request(req));
+}
+
+// --------------------------------------------------------------------
+// Chunked transfer encoding — thorough tests
+// --------------------------------------------------------------------
+
+static const char kChunkedReqHeaders[] =
+	"POST / HTTP/1.1\r\n"
+	"Transfer-Encoding: chunked\r\n"
+	"\r\n";
+
+static const char kChunkedRepHeaders[] =
+	"HTTP/1.1 200 OK\r\n"
+	"Transfer-Encoding: chunked\r\n"
+	"\r\n";
+
+static fuzz_result fuzz_parse_request_chunked(std::string_view body)
+{
+	std::string req(kChunkedReqHeaders);
+	req.append(body.data(), body.size());
+	return fuzz_parse_request(req);
+}
+
+static fuzz_result fuzz_parse_reply_chunked(std::string_view body)
+{
+	std::string rep(kChunkedRepHeaders);
+	rep.append(body.data(), body.size());
+	return fuzz_parse_reply(rep);
+}
+
+struct chunked_request_result
+{
+	fuzz_result fr;
+	std::string payload;
+};
+
+static chunked_request_result parse_chunked_request(std::string_view body)
+{
+	std::string msg(kChunkedReqHeaders);
+	msg.append(body.data(), body.size());
+
+	chunked_request_result cr;
+	cr.fr = fuzz_parse_request(msg);
+
+	if (cr.fr.result == zeep::http::parse_result::true_value and not cr.fr.threw)
+	{
+		zeep::http::request_parser p;
+		zeep::char_streambuf sb(msg.data(), msg.size());
+		p.parse(sb);
+		cr.payload = p.get_request().get_payload();
+	}
+
+	return cr;
+}
+
+struct chunked_reply_result
+{
+	fuzz_result fr;
+	std::string content;
+};
+
+static chunked_reply_result parse_chunked_reply(std::string_view body)
+{
+	std::string msg(kChunkedRepHeaders);
+	msg.append(body.data(), body.size());
+
+	chunked_reply_result cr;
+	cr.fr = fuzz_parse_reply(msg);
+
+	if (cr.fr.result == zeep::http::parse_result::true_value and not cr.fr.threw)
+	{
+		zeep::http::reply_parser p;
+		zeep::char_streambuf sb(msg.data(), msg.size());
+		p.parse(sb);
+		cr.content = p.get_reply().get_content();
+	}
+
+	return cr;
+}
+
+// -- valid cases --
+
+TEST_CASE("chunked_request_single_chunk")
+{
+	auto cr = parse_chunked_request("5\r\nhello\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "hello");
+}
+
+TEST_CASE("chunked_request_multiple_chunks")
+{
+	auto cr = parse_chunked_request(
+		"5\r\nhello\r\n"
+		"1\r\n \r\n"
+		"5\r\nworld\r\n"
+		"0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "hello world");
+}
+
+TEST_CASE("chunked_request_empty_body")
+{
+	auto cr = parse_chunked_request("0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload.empty());
+}
+
+TEST_CASE("chunked_request_leading_zeros")
+{
+	auto cr = parse_chunked_request("005\r\nhello\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "hello");
+}
+
+TEST_CASE("chunked_request_lowercase_hex")
+{
+	auto cr = parse_chunked_request("a\r\n0123456789\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "0123456789");
+}
+
+TEST_CASE("chunked_request_uppercase_hex")
+{
+	auto cr = parse_chunked_request("A\r\nABCDEFGHIJ\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "ABCDEFGHIJ");
+}
+
+TEST_CASE("chunked_request_mixed_case_hex")
+{
+	auto cr = parse_chunked_request("14\r\n01234567890123456789\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "01234567890123456789");
+}
+
+TEST_CASE("chunked_request_chunk_extension")
+{
+	// Extension after ';' — '=' is a tspecial so use simple extension
+	auto cr = parse_chunked_request("5;ext\r\nhello\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "hello");
+}
+
+TEST_CASE("chunked_request_binary_payload")
+{
+	// chunk containing all 256 byte values (0x100 = 256)
+	std::string body;
+	body += "100\r\n";
+	for (int i = 0; i < 256; ++i)
+		body += static_cast<char>(i);
+	body += "\r\n0\r\n\r\n";
+
+	auto cr = parse_chunked_request(body);
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	std::string expected_payload;
+	for (int i = 0; i < 256; ++i)
+		expected_payload += static_cast<char>(i);
+	CHECK(cr.payload == expected_payload);
+}
+
+TEST_CASE("chunked_request_crlf_in_data")
+{
+	// chunk data containing \r\n which should NOT be treated as delimiters
+	auto cr = parse_chunked_request("4\r\na\r\nb\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "a\r\nb");
+}
+
+TEST_CASE("chunked_request_many_small_chunks")
+{
+	std::string body;
+	for (int i = 0; i < 20; ++i)
+		body += "1\r\nX\r\n";
+	body += "0\r\n\r\n";
+
+	auto cr = parse_chunked_request(body);
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == std::string(20, 'X'));
+}
+
+TEST_CASE("chunked_reply_single_chunk")
+{
+	auto cr = parse_chunked_reply("5\r\nhello\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.content == "hello");
+}
+
+TEST_CASE("chunked_reply_multiple_chunks")
+{
+	auto cr = parse_chunked_reply(
+		"3\r\nfoo\r\n"
+		"3\r\nbar\r\n"
+		"0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.content == "foobar");
+}
+
+// -- invalid cases --
+
+TEST_CASE("chunked_request_non_hex_size")
+{
+	auto r = fuzz_parse_request_chunked("G\r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	// 'G' is not a valid hex digit in state 0, should reject
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_non_hex_mid_size")
+{
+	// valid start '5', then 'G' which is not hex
+	auto r = fuzz_parse_request_chunked("5G\r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_space_in_size")
+{
+	auto r = fuzz_parse_request_chunked("5 \r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	// space is not hex, not ';', not '\r' — rejected in state 1
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_missing_crlf_after_data")
+{
+	// chunk data not followed by \r\n
+	auto r = fuzz_parse_request_chunked("5\r\nhello0\r\n\r\n");
+	check_invariant(r);
+	// '0' after "hello" is treated as part of data (state 4 counts down),
+	// but only 5 bytes expected so after "hello" chunk_size=0, then state 5
+	// expects '\r' but gets '0'
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_data_too_short")
+{
+	// only 3 bytes in a 5-byte chunk, then hits the 0 terminator
+	auto r = fuzz_parse_request_chunked("5\r\nhel\r\n0\r\n\r\n");
+	check_invariant(r);
+	// After "hel" (3 bytes), expects more data but gets '\r' in state 4
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_missing_trailing_crlf")
+{
+	// zero chunk without trailing \r\n
+	auto r = fuzz_parse_request_chunked("0\r\n");
+	check_invariant(r);
+	// state 10 expects \r, state 11 expects \n — input ends mid-parse
+	CHECK(r.result == zeep::http::parse_result::indeterminate_value);
+}
+
+TEST_CASE("chunked_request_zero_chunk_no_crlf_at_all")
+{
+	auto r = fuzz_parse_request_chunked("0");
+	check_invariant(r);
+	CHECK(r.result == zeep::http::parse_result::indeterminate_value);
+}
+
+TEST_CASE("chunked_request_missing_final_newline")
+{
+	// missing the final \n after \r
+	auto r = fuzz_parse_request_chunked("5\r\nhello\r\n0\r\n\r");
+	check_invariant(r);
+	CHECK(r.result == zeep::http::parse_result::indeterminate_value);
+}
+
+TEST_CASE("chunked_request_extension_with_control_char")
+{
+	// ';' then control char (0x01) — rejected in state 2
+	auto r = fuzz_parse_request_chunked("5;\x01\r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_extension_with_tspecial")
+{
+	// ';' then '(' — tspecial, rejected in state 2
+	auto r = fuzz_parse_request_chunked("5;(bad\r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_only_size_no_data")
+{
+	// chunk size 5 but only 3 bytes of data before next chunk-size line
+	auto r = fuzz_parse_request_chunked("5\r\nhel\r\n0\r\n\r\n");
+	check_invariant(r);
+	// After "hel" (3 bytes), expects 2 more data bytes but gets '\r' in state 4
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+// -- partial / incremental parsing --
+
+TEST_CASE("chunked_request_incremental_parse")
+{
+	std::string msg = std::string(kChunkedReqHeaders) +
+		"5\r\nhello\r\n0\r\n\r\n";
+
+	zeep::http::request_parser p;
+	zeep::http::parse_result result = zeep::http::indeterminate;
+
+	// feed one byte at a time
+	for (size_t i = 0; i < msg.size(); ++i)
+	{
+		zeep::char_streambuf sb(&msg[i], 1);
+		result = p.parse(sb);
+		if (result == zeep::http::parse_result::false_value)
+			break;
+	}
+
+	REQUIRE(result == zeep::http::parse_result::true_value);
+	CHECK(p.get_request().get_payload() == "hello");
+}
+
+TEST_CASE("chunked_request_incremental_multi_chunk")
+{
+	std::string msg = std::string(kChunkedReqHeaders) +
+		"3\r\nfoo\r\n"
+		"3\r\nbar\r\n"
+		"0\r\n\r\n";
+
+	zeep::http::request_parser p;
+	zeep::http::parse_result result = zeep::http::indeterminate;
+
+	// feed in chunks of 4 bytes
+	for (size_t i = 0; i < msg.size(); i += 4)
+	{
+		size_t len = std::min<size_t>(4, msg.size() - i);
+		zeep::char_streambuf sb(&msg[i], len);
+		result = p.parse(sb);
+		if (result == zeep::http::parse_result::false_value)
+			FAIL("parse failed at byte " + std::to_string(i));
+	}
+
+	REQUIRE(result == zeep::http::parse_result::true_value);
+	CHECK(p.get_request().get_payload() == "foobar");
+}
+
+// -- large chunk sizes (but reasonable) --
+
+TEST_CASE("chunked_request_large_chunk")
+{
+	// 1000-byte chunk
+	std::string data(1000, 'X');
+	std::string body = "3e8\r\n" + data + "\r\n0\r\n\r\n";
+
+	auto cr = parse_chunked_request(body);
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == data);
+}
+
+// -- edge cases around the state machine transitions --
+
+TEST_CASE("chunked_request_zero_chunk_with_extension")
+{
+	auto r = fuzz_parse_request_chunked("0;ext\r\n\r\n");
+	check_invariant(r);
+	REQUIRE(r.result == zeep::http::parse_result::true_value);
+}
+
+TEST_CASE("chunked_request_hex_FF_chunk")
+{
+	std::string data(255, 'A');
+	std::string body = "ff\r\n" + data + "\r\n0\r\n\r\n";
+
+	auto cr = parse_chunked_request(body);
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == data);
+}
+
+TEST_CASE("chunked_request_just_terminator")
+{
+	// Only the zero chunk, no data chunks before it
+	auto cr = parse_chunked_request("0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload.empty());
+}
+
+TEST_CASE("chunked_request_data_with_null_bytes")
+{
+	// 4-byte chunk containing null bytes
+	std::string data = {'\0', 'a', '\0', 'b'};
+	std::string body = "4\r\n" + data + "\r\n0\r\n\r\n";
+
+	auto cr = parse_chunked_request(body);
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == data);
+}
+
+TEST_CASE("chunked_request_size_with_only_semicolon")
+{
+	// Just ';' — no hex digits before it
+	auto r = fuzz_parse_request_chunked(";\r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	// ';' is not a hex digit, rejected in state 0
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_multiple_extensions")
+{
+	// Multiple semicolons — first ';' transitions to state 2, subsequent ';' are tspecials
+	auto r = fuzz_parse_request_chunked("5;ext1;ext2\r\nhello\r\n0\r\n\r\n");
+	check_invariant(r);
+	// After first ';' → state 2, second ';' is tspecial → rejected
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_empty_extension")
+{
+	// ';' immediately followed by \r\n
+	auto cr = parse_chunked_request("5;\r\nhello\r\n0\r\n\r\n");
+	check_invariant(cr.fr);
+	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
+	CHECK(cr.payload == "hello");
 }

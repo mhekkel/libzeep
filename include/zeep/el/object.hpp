@@ -9,18 +9,24 @@
 
 #include "zeep/exception.hpp"
 #include "zeep/streambuf.hpp"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <flat_map>
 #include <iterator>
-#include <map>
 #include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
+#include <version>
+
+#if defined(__cpp_lib_flat_map)
+# include <flat_map>
+#else
+# include <map>
+#endif
 
 #if __has_include(<nlohmann/json.hpp>)
 # include <nlohmann/json.hpp>
@@ -124,7 +130,11 @@ class object
 	}
 
 	using nullptr_type = std::nullptr_t;
+#if defined(__cpp_lib_flat_map)
 	using object_type = std::flat_map<std::string, object>;
+#else
+	using object_type = std::map<std::string, object>;
+#endif
 	using array_type = std::vector<object>;
 	using string_type = std::string;
 	using int_type = int64_t;
@@ -580,9 +590,17 @@ class object
 	/// \brief Return true if the value is a float
 	[[nodiscard]] constexpr bool is_number_float() const noexcept { return std::holds_alternative<double>(m_data); }
 	/// \brief Return true if the value is boolean, and is true
-	[[nodiscard]] constexpr bool is_true() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and *b; }
+	[[nodiscard]] constexpr bool is_true() const noexcept
+	{
+		auto b = std::get_if<bool>(&m_data);
+		return b != nullptr and *b;
+	}
 	/// \brief Return true if the value is boolean, and is false
-	[[nodiscard]] constexpr bool is_false() const noexcept { auto b = std::get_if<bool>(&m_data); return b != nullptr and not *b; }
+	[[nodiscard]] constexpr bool is_false() const noexcept
+	{
+		auto b = std::get_if<bool>(&m_data);
+		return b != nullptr and not *b;
+	}
 	/// \brief Return true if the value is a boolean
 	[[nodiscard]] constexpr bool is_boolean() const noexcept { return std::holds_alternative<bool>(m_data); }
 

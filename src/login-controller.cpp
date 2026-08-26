@@ -16,17 +16,15 @@
 #include "zeep/http/template-processor.hpp"
 #include "zeep/uri.hpp"
 
-#include <memory>
-#include <system_error>
-#include <zeem/zeem.hpp>
-
 #include <cassert>
 #include <exception>
 #include <initializer_list>
 #include <iostream>
+#include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
+#include <system_error>
+#include <zeem/zeem.hpp>
 
 namespace zeep::http
 {
@@ -42,7 +40,7 @@ class login_error_handler : public error_handler
 
 	bool create_unauth_reply(const request &req, reply &reply) override
 	{
-		if (*m_alive == 1)
+		if (*m_alive)
 		{
 			m_login_controller.create_unauth_reply(req, reply);
 			return true;
@@ -94,7 +92,7 @@ login_controller::login_controller(const std::string &prefix_path)
 
 login_controller::~login_controller()
 {
-	*m_alive = 0;
+	*m_alive = false;
 }
 
 void login_controller::set_server(basic_server *server)

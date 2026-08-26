@@ -13,6 +13,7 @@
 #include "zeep/http/server.hpp"
 
 #include <cstdint>
+#include <exception>
 #include <fcntl.h>
 #include <fstream>
 #include <functional>
@@ -107,21 +108,21 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 			fs::create_directories(pidDir, ec);
 
 		if (ec)
-			std::clog << "Creating directory for pid file failed: " << ec.message() << '\n';
+			throw std::system_error(ec, "Creating directory for pid file failed");
 
 		fs::path outLogDir = fs::path(m_stdout_log_file).parent_path();
 		if (not fs::is_directory(outLogDir, ec))
 			fs::create_directories(outLogDir, ec);
 
 		if (ec)
-			std::clog << "Creating directory " << outLogDir << " for log files failed: " << ec.message() << '\n';
+			throw std::system_error(ec, "Creating directory for log files failed");
 
 		fs::path errLogDir = fs::path(m_stderr_log_file).parent_path();
 		if (not fs::is_directory(errLogDir, ec))
 			fs::create_directories(errLogDir, ec);
 
 		if (ec)
-			std::clog << "Creating directory " << errLogDir << " for log files failed: " << ec.message() << '\n';
+			throw std::system_error(ec, "Creating directory for log files failed");
 
 		try
 		{
@@ -135,7 +136,7 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 		}
 		catch (const std::exception &e)
 		{
-			throw exception(std::string("Is server running already? ") + e.what());
+			std::throw_with_nested(exception("Is server running already?"));
 		}
 
 		int pid = fork();

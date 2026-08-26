@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cctype>
 #include <charconv>
+#include <climits>
 #include <cmath>
 #include <compare>
 #include <cstddef>
@@ -835,7 +836,7 @@ auto json_parser::get_next_token() -> token_t
 						}
 						else if (ch < 128 and std::isalpha(static_cast<int>(ch)))
 							state = state_t::Literal;
-						else if (std::isprint(static_cast<int>(ch)))
+						else if (ch < UCHAR_MAX and std::isprint(static_cast<int>(ch)))
 							throw zeep::exception(std::format("Invalid character '{}' in json", static_cast<char>(ch)));
 						else
 							throw zeep::exception(std::format("Invalid character '0x{:x}' in json", static_cast<int>(ch)));
