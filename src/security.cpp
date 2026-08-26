@@ -171,16 +171,13 @@ void security_context::validate_request(request &req) const
 		break;
 	}
 
-	// TODO: maarten - Only validate when mutating (POST, PUT, DELETE, PATCH)
-	if (allow and m_validate_csrf)
+	if (allow and m_validate_csrf and is_mutating_method(req.get_method()))
 	{
 		auto p = req.get_parameter("_csrf");
 		if (not p.has_value())
-		{
-			allow = false;
-			std::clog << "CSRF validation failed: missing token\n";
-		}
-		else if (auto req_csrf_cookie = req.get_cookie("csrf-token");
+			p = req.get_header("X-CSRF-Token");
+
+		if (auto req_csrf_cookie = req.get_cookie("csrf-token");
 			not strings_match(req_csrf_cookie, *p))
 		{
 			allow = false;
@@ -270,7 +267,7 @@ void security_context::verify_dummy_password(const std::string &raw_password) co
 	std::string dummy_hash = "pbkdf2_sha256$" + std::to_string(m_dummy_iterations) + "$QUFBQUFBQUFBQUFB$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
 	pbkdf2_sha256_password_encoder encoder;
-	encoder.matches(raw_password, dummy_hash);
+	(void)encoder.matches(raw_password, dummy_hash);
 }
 
 void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)

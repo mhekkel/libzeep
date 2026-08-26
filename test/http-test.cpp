@@ -616,3 +616,61 @@ TEST_CASE("header CR/LF injection is rejected")
 	rep.set_header("X-Ok", "value");
 	CHECK(rep.get_header("X-Ok") == "value");
 }
+
+namespace
+{
+// An istream whose underlying streambuf throws on read, to simulate an I/O failure
+// while streaming a response body.
+struct throwing_stream : std::istream
+{
+	struct throwing_sb : std::streambuf
+	{
+		int_type underflow() override
+		{
+			throw std::runtime_error("simulated read failure");
+		}
+	};
+
+	throwing_sb m_sb;
+
+	throwing_stream()
+		: std::istream(&m_sb)
+	{
+	}
+};
+} // namespace
+
+TEST_CASE("streaming body read error is detected")
+{
+	// a normal stream drains without reporting an error
+	{
+		zh::reply rep;
+		rep.set_content(std::make_unique<std::istringstream>("hello world"), "text/plain");
+
+		std::string body;
+		for (int i = 0; i < 10; ++i)
+		{
+			if (rep.has_data_error())
+				break;
+			auto bufs = rep.data_to_buffers();
+			if (bufs.empty())
+				break;
+			for (auto &b : bufs)
+				body.append(b);
+		}
+
+		CHECK_FALSE(rep.has_data_error());
+		CHECK(body.find("hello world") != std::string::npos);
+	}
+
+	// a failing stream is flagged as an error instead of being sent as complete
+	{
+		zh::reply rep;
+		rep.set_content(std::make_unique<throwing_stream>(), "text/plain");
+
+		auto bufs = rep.data_to_buffers();
+
+		CHECK(rep.has_data_error());
+		CHECK(bufs.empty());
+	}
+}

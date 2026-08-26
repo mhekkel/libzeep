@@ -140,6 +140,13 @@ class reply
 	/// for istream data, if the returned buffer array is empty, the data is done
 	[[nodiscard]] std::vector<std::string_view> data_to_buffers();
 
+	/// \brief Return true if an error occurred while streaming the body from a stream
+	///
+	/// When this is true, the response body is incomplete and the connection should
+	/// be closed so the client can detect the truncation instead of treating the
+	/// partial body as complete.
+	[[nodiscard]] bool has_data_error() const noexcept { return m_data_error; }
+
 	/// Create a standard reply based on a HTTP status code
 	static reply stock_reply(status_type inStatus);
 	static reply stock_reply(status_type inStatus, const std::string &info);
@@ -170,6 +177,7 @@ class reply
 	std::vector<char> m_buffer;
 	std::string m_content;
 	bool m_chunked = false;
+	bool m_data_error = false;
 	mutable std::string m_formatted_line;
 	std::array<char, 8> m_size_buffer; ///< to store the string with the size for chunked encoding
 };

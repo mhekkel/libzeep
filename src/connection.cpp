@@ -194,6 +194,14 @@ void connection::handle_write(asio_system_ns::error_code ec, size_t /*bytes_tran
 	{
 		auto buffers = get_data_buffers(m_reply);
 
+		if (m_reply.has_data_error())
+		{
+			// A stream read failed while streaming the body. Close the socket so the
+			// client detects the truncated response instead of receiving it as complete.
+			m_socket.close();
+			return;
+		}
+
 		if (not buffers.empty())
 		{
 			asio_ns::async_write(m_socket, buffers,

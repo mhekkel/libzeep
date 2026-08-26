@@ -333,13 +333,27 @@ std::vector<std::string_view> reply::data_to_buffers()
 
 		m_buffer.resize(kMaxChunkSize);
 		std::streamsize n = 0;
+		bool error = false;
 		try
 		{
-			n = m_data->rdbuf()->sgetn(m_buffer.data(), static_cast<std::streamsize>(m_buffer.size()));
+			m_data->read(m_buffer.data(), static_cast<std::streamsize>(m_buffer.size()));
+			n = m_data->gcount();
+			if (m_data->bad() or (m_data->fail() and not m_data->eof()))
+				error = true;
 		}
 		catch (...)
 		{
-			std::clog << "Exception in reading from file\n";
+			error = true;
+		}
+
+		if (error)
+		{
+			// A stream read failed mid-response. Mark the reply as errored and stop
+			// emitting data; the connection will close the socket so the client sees
+			// a truncated (incomplete) response rather than a complete-looking one.
+			m_data_error = true;
+			m_data.reset();
+			return result;
 		}
 
 		// chunked encoding?

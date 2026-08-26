@@ -13,6 +13,7 @@
 #include "zeep/http/request.hpp"
 #include "zeep/http/scope.hpp"
 #include "zeep/http/server.hpp"
+#include "zeep/http/status.hpp"
 #include "zeep/unicode-support.hpp"
 #include "zeep/uri.hpp"
 
@@ -437,7 +438,13 @@ class controller
 			if constexpr (std::is_void_v<ResultType>)
 			{
 				std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));
-				return reply::stock_reply(status_type::ok);
+
+				auto rep = reply::stock_reply(status_type::ok);
+
+				if (scope.get_request().get_accept("application/json") == 1.0f)
+					rep.set_content(el::object{ "ok" });
+
+				return rep;
 			}
 			else if constexpr (std::is_same_v<ResultType, reply>)
 				return std::apply(m_callback, collect_arguments(scope, std::make_index_sequence<N>()));

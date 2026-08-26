@@ -12,6 +12,7 @@
 #include "zeep/http/status.hpp"
 #include "zeep/unicode-support.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <charconv>
 #include <chrono>
@@ -437,10 +438,17 @@ class security_context
 	///        time for unknown users, preventing username enumeration via timing.
 	void verify_dummy_password(const std::string &raw_password) const;
 
+	/// \brief Return true if a method is mutating (listed in m_mutating_methods)
+	bool is_mutating_method(std::string_view method) const
+	{
+		return std::ranges::find_if(m_mutating_methods, [method](auto &m) { return iequals(m, method); }) != m_mutating_methods.end();
+	}
+
 	std::string m_secret;
 	user_service &m_users;
 	bool m_default_allow;
 	bool m_validate_csrf = false;
+	std::vector<std::string> m_mutating_methods{ "POST", "PUT", "DELETE", "PATCH" };
 	std::vector<rule> m_rules;
 	std::vector<std::tuple<std::string, std::unique_ptr<password_encoder>>> m_known_password_encoders;
 	std::chrono::system_clock::duration m_default_jwt_exp;
