@@ -9,7 +9,6 @@
 #include "zeep/streambuf.hpp"
 #include "zeep/unicode-support.hpp"
 
-#include <boost/asio/ssl/verify_mode.hpp>
 #include <iostream>
 
 namespace zeep::http

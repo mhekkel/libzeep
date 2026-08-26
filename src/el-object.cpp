@@ -6,7 +6,6 @@
 #include "zeep/unicode-support.hpp"
 
 #include <algorithm>
-#include <boost/config/detail/suffix.hpp>
 #include <cassert>
 #include <cctype>
 #include <charconv>
