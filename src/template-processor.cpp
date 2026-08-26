@@ -38,6 +38,11 @@
 #include <utility>
 #include <vector>
 
+#if USE_DATE_H
+# include <date/date.h>
+# include <date/tz.h>
+#endif
+
 namespace fs = std::filesystem;
 
 namespace zeep::http
@@ -134,7 +139,12 @@ reply basic_template_processor::create_reply_for_get_file(const scope &scope)
 		{
 			std::istringstream ss{ h.value };
 			std::chrono::time_point<std::chrono::system_clock> modifiedSince;
+
+#if USE_DATE_H
+			ss >> date::parse("%a, %d %b %Y %H:%M:%S GMT", modifiedSince);
+#else
 			ss >> std::chrono::parse("%a, %d %b %Y %H:%M:%S GMT", modifiedSince);
+#endif
 
 			if (fileDate <= modifiedSince)
 				return reply::stock_reply(status_type::not_modified);
