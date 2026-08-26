@@ -7,6 +7,7 @@
 #include "zeep/http/template-processor.hpp"
 
 #include <algorithm>
+#include <iostream>
 #include <unordered_set>
 
 namespace fs = std::filesystem;
@@ -422,8 +423,11 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, con
 		}
 		catch (const std::exception &ex)
 		{
-			parent->nodes().insert(e, zeem::text("Error processing element '" + e->get_qname() + "': " + ex.what()));
-			// parent->erase(e);
+			// Do not inline error text into the rendered page. Log the failure with the
+			// element context and re-throw so the request fails with a proper error
+			// reply instead of serving a 200 page containing internal error details.
+			std::println(std::clog, "Error processing element '{}': {}", e->get_qname(), ex.what());
+			throw;
 		}
 
 		if (node != nullptr)
@@ -450,7 +454,7 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, con
 auto tag_processor::process_attr_if(zeem::element * /*element*/, zeem::attribute &attr, scope &scope, const fs::path & /*dir*/, basic_template_processor & /*loader*/, bool unless) -> AttributeAction
 {
 	auto v = evaluate_el(scope, attr.value());
-	return (v != unless) ? AttributeAction::none : AttributeAction::remove;
+	return (static_cast<bool>(v) != unless) ? AttributeAction::none : AttributeAction::remove;
 }
 
 // -----------------------------------------------------------------------

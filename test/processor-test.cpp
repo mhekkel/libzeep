@@ -792,19 +792,17 @@ TEST_CASE("test_26")
 
 TEST_CASE("test_27")
 {
+	// A failing template assertion must propagate as an exception (leading to a proper
+	// error reply), not be inlined into the rendered page.
 	auto doc = R"(<?xml version="1.0"?>
 <data xmlns:m="http://www.hekkelman.com/libzeep/m2">
 <span m:assert="1==0" />
 </data>
 	)"_xml;
 
-	auto doc_test = R"(<?xml version="1.0"?>
-<data>
-Error processing element 'span': Assertion failed for '1==0'<span/>
-</data>
-	)"_xml;
-
-	process_and_compare(doc, doc_test);
+	zeep::http::template_processor p(gDocrootDir);
+	zeep::http::tag_processor tp;
+	CHECK_THROWS(tp.process_xml(doc.child(), {}, "", p));
 }
 
 TEST_CASE("test_28")
