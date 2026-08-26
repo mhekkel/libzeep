@@ -95,6 +95,8 @@ void tag_processor::process_xml(zeem::node *node, const scope &parentScope, cons
 	m_template.clear();
 	m_template.emplace_back(*static_cast<const zeem::element *>(node));
 
+	m_rendered.clear();
+
 	process_node(node, parentScope, dir, loader);
 
 	auto e = dynamic_cast<zeem::element *>(node);
@@ -197,11 +199,13 @@ void tag_processor::process_text(zeem::node_with_text &text, const scope &scope)
 
 		if (c2 == '(' and m.find('<') != std::string::npos) // 'unescaped' text, but since we're an xml library reverse this by parsing the result and putting the
 		{
+			// The parsed markup is treated as already-rendered output; mark it so it is
+			// not re-processed as a template (which would evaluate EL in untrusted data).
 			zeem::document subDoc("<foo>" + m + "</foo>");
 			auto foo = subDoc.front();
 
 			for (auto &n : foo.nodes())
-				parent->nodes().emplace(next, std::move(n));
+				mark_rendered(&*parent->nodes().emplace(next, std::move(n)));
 
 			text.set_text(s.substr(0, i - 2));
 
@@ -441,6 +445,9 @@ void tag_processor::process_node(zeem::node *node, const scope &parentScope, con
 				if (inlined and dynamic_cast<zeem::node_with_text *>(&n) != nullptr)
 					continue;
 
+				if (m_rendered.contains(&n))
+					continue;
+
 				process_node(&n, scope, dir, loader);
 			}
 		}
@@ -490,10 +497,13 @@ auto tag_processor::process_attr_text(zeem::element *element, zeem::attribute &a
 		{
 			element->set_text("");
 
+			// The parsed markup is treated as already-rendered output: it is not
+			// re-processed as a template, so any EL sequences inside untrusted data
+			// are not evaluated a second time.
 			zeem::document subDoc("<foo>" + text + "</foo>");
 			auto foo = subDoc.front();
 			for (auto &n : foo.nodes())
-				element->nodes().emplace(element->end(), std::move(n));
+				mark_rendered(&*element->nodes().emplace(element->end(), std::move(n)));
 		}
 	}
 

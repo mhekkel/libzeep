@@ -122,6 +122,50 @@ TEST_CASE("test_3a")
 	process_and_compare(doc, doc_test, scope);
 }
 
+TEST_CASE("test_3b")
+{
+	// EL sequences inside markup inserted via m:utext must NOT be re-evaluated
+	auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+	<test m:utext="${x}"/>
+</data>
+	)"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+	<test><span>[[${secret}]]</span></test>
+</data>
+	)"_xml;
+
+	zeep::http::scope scope;
+	scope.put("x", "<span>[[${secret}]]</span>");
+	scope.put("secret", "DO_NOT_LEAK");
+
+	process_and_compare(doc, doc_test, scope);
+}
+
+TEST_CASE("test_3c")
+{
+	// EL sequences inside markup inserted via inline [(...)] must NOT be re-evaluated
+	auto doc = R"(<?xml version="1.0"?>
+<data xmlns:m="http://www.hekkelman.com/libzeep/m2">
+	[(${x})]
+</data>
+	)"_xml;
+
+	auto doc_test = R"(<?xml version="1.0"?>
+<data>
+	<span>[[${secret}]]</span>
+</data>
+	)"_xml;
+
+	zeep::http::scope scope;
+	scope.put("x", "<span>[[${secret}]]</span>");
+	scope.put("secret", "DO_NOT_LEAK");
+
+	process_and_compare(doc, doc_test, scope);
+}
+
 TEST_CASE("test_4")
 {
 	auto doc = R"(<?xml version="1.0"?>

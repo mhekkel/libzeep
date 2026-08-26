@@ -15,6 +15,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <string_view>
 #include <utility>
 
@@ -214,8 +215,17 @@ class tag_processor : public tag_processor_base
 
 	///@}
 
+	/// \brief Mark a node inserted as already-rendered output so it is not re-processed.
+	/// \param node  The node that must not be processed as template content again
+	void mark_rendered(zeem::node *node) { m_rendered.insert(node); }
+
 	std::map<std::string, attr_handler> m_attr_handlers; ///< Registered custom attribute handlers
 	zeem::document m_template; ///< Cached copy of template documents
+
+	/// Nodes inserted as already-rendered output (via m:utext or inline [(...)]).
+	/// These are treated as final markup and skipped during recursive template
+	/// processing, preventing untrusted data from being re-evaluated as EL.
+	std::unordered_set<const zeem::node *> m_rendered;
 };
 
 } // namespace zeep::http
