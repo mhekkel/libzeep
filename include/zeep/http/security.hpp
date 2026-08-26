@@ -16,7 +16,9 @@
 #include <charconv>
 #include <chrono>
 #include <initializer_list>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <regex>
 #include <set>
 #include <string>
@@ -393,6 +395,29 @@ class security_context
 	/// \param exp  The expiration duration
 	void set_jwt_exp(std::chrono::system_clock::duration exp) noexcept { m_default_jwt_exp = exp; }
 
+	/// \brief Set the number of consecutive failed login attempts allowed for a
+	///        username before it is temporarily locked out. Defaults to 5.
+	/// \param max  The maximum number of consecutive failures
+	void set_max_login_attempts(int max) noexcept { m_max_login_attempts = max; }
+
+	/// \brief Set how long a username stays locked out after too many failed login
+	///        attempts. Defaults to 5 minutes.
+	/// \param duration  The lockout duration
+	void set_login_lockout_duration(std::chrono::seconds duration) noexcept { m_login_lockout_duration = duration; }
+
+	/// \brief Check whether a login attempt for \a username is currently allowed.
+	/// \param username  The username being attempted
+	/// \return True if the attempt should be allowed
+	[[nodiscard]] bool login_attempt_allowed(const std::string &username) const;
+
+	/// \brief Record a failed login attempt for \a username (used for rate limiting).
+	/// \param username  The username that failed to log in
+	void record_login_failure(const std::string &username);
+
+	/// \brief Record a successful login for \a username, clearing any failure count.
+	/// \param username  The username that logged in successfully
+	void record_login_success(const std::string &username);
+
   private:
 	/// @cond
 
@@ -402,6 +427,10 @@ class security_context
 		std::set<std::string> m_roles;
 	};
 
+	/// \brief Run a dummy PBKDF2 password verification to equalize the response
+	///        time for unknown users, preventing username enumeration via timing.
+	void verify_dummy_password(const std::string &raw_password) const;
+
 	std::string m_secret;
 	user_service &m_users;
 	bool m_default_allow;
@@ -409,6 +438,11 @@ class security_context
 	std::vector<rule> m_rules;
 	std::vector<std::tuple<std::string, std::unique_ptr<password_encoder>>> m_known_password_encoders;
 	std::chrono::system_clock::duration m_default_jwt_exp;
+
+	int m_max_login_attempts = 5;
+	std::chrono::seconds m_login_lockout_duration = std::chrono::minutes{ 5 };
+	mutable std::mutex m_failures_mutex;
+	mutable std::map<std::string, std::pair<std::chrono::steady_clock::time_point, int>> m_login_failures;
 
 	/// @endcond
 };

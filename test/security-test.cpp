@@ -88,3 +88,47 @@ TEST_CASE("sec_2")
 		CHECK_THROWS_AS(sc.validate_request(req), zeep::exception);
 	}
 }
+
+TEST_CASE("sec_3 login rate limiting")
+{
+	zeep::http::pbkdf2_sha256_password_encoder enc;
+	auto encoded = enc.encode("tiger");
+
+	zeep::http::simple_user_service users({ { "scott", encoded, { "USER" } } });
+	zeep::http::security_context sc("1234", users, false);
+	sc.set_max_login_attempts(3);
+
+	// initially allowed
+	CHECK(sc.login_attempt_allowed("scott"));
+
+	sc.record_login_failure("scott");
+	sc.record_login_failure("scott");
+	CHECK(sc.login_attempt_allowed("scott")); // 2 failures < 3, still allowed
+	sc.record_login_failure("scott");
+	CHECK_FALSE(sc.login_attempt_allowed("scott")); // 3 failures -> locked out
+
+	// a successful login clears the failure count
+	sc.record_login_success("scott");
+	CHECK(sc.login_attempt_allowed("scott"));
+}
+
+TEST_CASE("sec_4 login flow enforces rate limit")
+{
+	zeep::http::pbkdf2_sha256_password_encoder enc;
+	auto encoded = enc.encode("tiger");
+
+	zeep::http::simple_user_service users({ { "scott", encoded, { "USER" } } });
+	zeep::http::security_context sc("1234", users, false);
+	sc.set_max_login_attempts(2);
+
+	zh::reply rep;
+
+	CHECK_THROWS_AS(sc.verify_username_password("scott", "wrong", rep), zeep::http::invalid_password_exception);
+	CHECK_THROWS_AS(sc.verify_username_password("scott", "wrong", rep), zeep::http::invalid_password_exception);
+
+	// locked out now, even the correct password is rejected
+	CHECK_THROWS_AS(sc.verify_username_password("scott", "tiger", rep), zeep::http::invalid_password_exception);
+
+	// unknown users go through the same (dummy) verification and are not distinguishable
+	CHECK_THROWS_AS(sc.verify_username_password("bob", "whatever", rep), zeep::http::invalid_password_exception);
+}

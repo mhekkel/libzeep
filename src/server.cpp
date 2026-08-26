@@ -137,15 +137,25 @@ void basic_server::set_access_control_headers([[maybe_unused]] const request &re
 
 void basic_server::add_controller(controller *c)
 {
-	std::scoped_lock lock(m_handlers_mutex);
-	m_controllers.emplace_back(c);
+	{
+		std::scoped_lock lock(m_handlers_mutex);
+		m_controllers.emplace_back(c);
+	}
+
+	// set_server must be called outside the lock: a controller (e.g. login_controller)
+	// may call back into add_error_handler from set_server, which would otherwise
+	// deadlock on the non-recursive m_handlers_mutex.
 	c->set_server(this);
 }
 
 void basic_server::add_error_handler(error_handler *eh)
 {
-	std::scoped_lock lock(m_handlers_mutex);
-	m_error_handlers.emplace_front(eh);
+	{
+		std::scoped_lock lock(m_handlers_mutex);
+		m_error_handlers.emplace_front(eh);
+	}
+
+	// See add_controller: set_server may re-enter this method.
 	eh->set_server(this);
 }
 

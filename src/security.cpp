@@ -244,8 +244,6 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 
 bool security_context::verify_username_password(const std::string &username, const std::string &raw_password)
 {
-	bool result = false;
-
 	auto user = m_users.load_user(username);
 
 	for (auto const &[name, pwenc] : m_known_password_encoders)
@@ -253,19 +251,77 @@ bool security_context::verify_username_password(const std::string &username, con
 		if (!user.password.starts_with(name))
 			continue;
 
-		result = pwenc->matches(raw_password, user.password);
-		break;
+		return pwenc->matches(raw_password, user.password);
 	}
 
-	return result;
+	// Unknown user or unrecognized encoding: run a dummy PBKDF2 verification so the
+	// response time is indistinguishable from a real password check. This prevents an
+	// attacker from enumerating valid usernames through a timing side channel.
+	verify_dummy_password(raw_password);
+
+	return false;
+}
+
+void security_context::verify_dummy_password(const std::string &raw_password) const
+{
+	// A well-formed PBKDF2-SHA256 hash with the default iteration count, used only for
+	// its computational cost. The salt and hash values are irrelevant to the outcome.
+	static const std::string dummy_hash = "pbkdf2_sha256$100000$QUFBQUFBQUFBQUFB$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+
+	pbkdf2_sha256_password_encoder encoder;
+	encoder.matches(raw_password, dummy_hash);
 }
 
 void security_context::verify_username_password(const std::string &username, const std::string &raw_password, reply &rep)
 {
-	if (not verify_username_password(username, raw_password))
+	if (not login_attempt_allowed(username))
 		throw invalid_password_exception();
 
+	if (not verify_username_password(username, raw_password))
+	{
+		record_login_failure(username);
+		throw invalid_password_exception();
+	}
+
+	record_login_success(username);
 	add_authorization_headers(rep, m_users.load_user(username));
+}
+
+bool security_context::login_attempt_allowed(const std::string &username) const
+{
+	std::scoped_lock lock(m_failures_mutex);
+
+	auto it = m_login_failures.find(username);
+	if (it == m_login_failures.end())
+		return true;
+
+	auto now = std::chrono::steady_clock::now();
+	if (now - it->second.first >= m_login_lockout_duration)
+	{
+		m_login_failures.erase(it);
+		return true;
+	}
+
+	return it->second.second < m_max_login_attempts;
+}
+
+void security_context::record_login_failure(const std::string &username)
+{
+	std::scoped_lock lock(m_failures_mutex);
+
+	auto now = std::chrono::steady_clock::now();
+	auto it = m_login_failures.find(username);
+
+	if (it == m_login_failures.end() or now - it->second.first >= m_login_lockout_duration)
+		m_login_failures[username] = { now, 1 };
+	else
+		++it->second.second;
+}
+
+void security_context::record_login_success(const std::string &username)
+{
+	std::scoped_lock lock(m_failures_mutex);
+	m_login_failures.erase(username);
 }
 
 // --------------------------------------------------------------------
