@@ -29,22 +29,47 @@ namespace zeep::el
 
 constexpr bool add_overflows(int64_t a, int64_t b)
 {
-	auto sum = a + b;
-	return (b > 0 and sum < a) or (b < 0 and sum > a);
+	constexpr auto max = std::numeric_limits<int64_t>::max();
+	constexpr auto min = std::numeric_limits<int64_t>::min();
+
+	if (b > 0)
+		return a > max - b;
+	if (b < 0)
+		return a < min - b;
+	return false;
 }
 
 constexpr bool sub_overflows(int64_t a, int64_t b)
 {
-	auto diff = a - b;
-	return (b > 0 and diff > a) or (b < 0 and diff < a);
+	constexpr auto max = std::numeric_limits<int64_t>::max();
+	constexpr auto min = std::numeric_limits<int64_t>::min();
+
+	if (b > 0)
+		return a < min + b;
+	if (b < 0)
+		return a > max + b;
+	return false;
 }
 
 constexpr bool mul_overflows(int64_t a, int64_t b)
 {
-	if (a == 0 or b == 0)
+	constexpr auto max = std::numeric_limits<int64_t>::max();
+	constexpr auto min = std::numeric_limits<int64_t>::min();
+
+	if (a == 0 or b == 0 or a == 1 or b == 1)
 		return false;
-	auto prod = a * b;
-	return prod / a != b;
+	if (a == -1)
+		return b == min;
+	if (b == -1)
+		return a == min;
+
+	if (a > 0 and b > 0)
+		return a > max / b;
+	if (a < 0 and b < 0)
+		return a < max / b;
+	if (b < 0)
+		return a > min / b;
+	return a < min / b;
 }
 
 const object g_null_object{}; // To be returned in operator[] for const object
