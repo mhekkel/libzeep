@@ -277,7 +277,7 @@ parse_result parser::parse_chunk(char ch)
 			{
 				auto r = std::from_chars(m_data.data(), m_data.data() + m_data.length(), m_chunk_size, 16);
 
-				if (r.ec == std::errc{})
+				if (r.ec != std::errc{})
 					result = false;
 				else if (m_chunk_size > 0)
 				{
