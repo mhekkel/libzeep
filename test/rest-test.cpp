@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2025
 // SPDX-License-Identifier: BSL-1.0
 
-#include <boost/asio/ip/address_v6.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "../src/detail/signals.hpp"
