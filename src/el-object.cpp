@@ -473,7 +473,11 @@ object::reference object::operator[](size_t index)
 		throw object_error("Type should have been array to use operator[]");
 
 	if (index >= size())
+	{
+		if (index == std::numeric_limits<size_t>::max())
+			throw object_error("Array index out of range in operator[]");
 		std::get<array_type>(m_data).resize(index + 1);
+	}
 
 	return std::get<object::array_type>(m_data).operator[](index);
 }

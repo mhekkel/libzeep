@@ -5,6 +5,7 @@
 
 #include <zeep/el/object.hpp>
 #include <zeep/el/serializer.hpp>
+#include <zeep/el/processing.hpp>
 #include <zeep/http/scope.hpp>
 
 #include <zeem/zeem.hpp>
@@ -401,4 +402,17 @@ TEST_CASE("erase with iterator from another object throws")
 	e::object obj1{ { "a", 1 } };
 	auto foreign_obj = std::next(obj1.begin());
 	CHECK_THROWS(arr1.erase(foreign_obj, std::next(arr1.begin())));
+}
+
+TEST_CASE("array index out of range / negative yields null")
+{
+	zeep::http::scope scope;
+	scope.put("arr", e::object{ "a", "b", "c" });
+
+	CHECK(zeep::http::evaluate_el(scope, "*{arr[99]}").is_null());
+	CHECK(zeep::http::evaluate_el(scope, "*{arr[-1]}").is_null());
+
+	auto ok = zeep::http::evaluate_el(scope, "*{arr[1]}");
+	REQUIRE(ok.is_string());
+	CHECK(ok.get<std::string>() == "b");
 }

@@ -1005,7 +1005,13 @@ object interpreter::parse_template_expr()
 						if (index.empty() or (result.type() != object::value_type::array and result.type() != object::value_type::object))
 							result = object();
 						else if (result.type() == object::value_type::array)
-							result = result[index.get<int>()];
+						{
+							auto idx = index.get<int>();
+							if (idx < 0 or std::cmp_greater_equal(idx, result.size()))
+								result = object::value_type::null;
+							else
+								result = result[static_cast<size_t>(idx)];
+						}
 						else if (result.type() == object::value_type::object)
 							result = result[index.get<std::string>()];
 						else
