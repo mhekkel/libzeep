@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2025
 // SPDX-License-Identifier: BSL-1.0
 
+#include <boost/asio/ip/address_v6.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "../src/detail/signals.hpp"
@@ -414,7 +415,9 @@ TEST_CASE("read timeout closes idle connection (slowloris)")
 	asio_system_ns::error_code ec;
 	asio_ns::io_context io;
 	asio_ns::ip::tcp::socket sock(io);
-	sock.connect(asio_ns::ip::tcp::endpoint(asio_ns::ip::address::from_string("127.0.0.1"), port), ec);
+	auto addr = asio_ns::ip::make_address("127.0.0.1", ec);
+	REQUIRE(not ec);
+	sock.connect(asio_ns::ip::tcp::endpoint(addr, port), ec);
 	REQUIRE(not ec);
 
 	// Send nothing; the server must close the connection once the read timeout fires.
