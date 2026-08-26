@@ -37,12 +37,6 @@ enum class encoding_type
 	ISO88591 ///< Default single byte encoding, is a subset of utf-8
 };
 
-/// \brief utf-8 is not single byte e.g.
-constexpr bool is_single_byte_encoding(encoding_type enc) noexcept
-{
-	return enc == encoding_type::ASCII or enc == encoding_type::ISO88591 or enc == encoding_type::UTF8;
-}
-
 /// manipulate UTF-8 encoded strings
 /// \brief Append a unicode character to a UTF-8 string
 void append(std::string &s, unicode ch);
@@ -255,32 +249,6 @@ inline std::string convert_w2s(std::wstring_view s)
 
 // --------------------------------------------------------------------
 
-/// \brief Return a hexadecimal string representation for the numerical value in \a i
-///
-/// \param i The value to convert
-/// \return The hexadecimal representation
-inline std::string to_hex(uint32_t i)
-{
-	char s[sizeof(i) * 2 + 3];
-	char *p = s + sizeof(s);
-	*--p = 0;
-
-	const char kHexChars[] = "0123456789abcdef";
-
-	while (i)
-	{
-		*--p = kHexChars[i & 0x0F];
-		i >>= 4;
-	}
-
-	*--p = 'x';
-	*--p = '0';
-
-	return p;
-}
-
-// --------------------------------------------------------------------
-
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
 inline void trim(std::string &s)
 {
@@ -408,6 +376,9 @@ std::string join(const Container &v, std::string_view d)
 
 inline void replace_all(std::string &s, std::string_view p, std::string_view r)
 {
+	if (p.empty())
+		return;
+
 	std::string::size_type i = 0;
 	for (;;)
 	{

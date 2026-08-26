@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <flat_map>
 #include <iterator>
 #include <map>
 #include <sstream>
@@ -123,7 +124,7 @@ class object
 	}
 
 	using nullptr_type = std::nullptr_t;
-	using object_type = std::map<std::string, object>;
+	using object_type = std::flat_map<std::string, object>;
 	using array_type = std::vector<object>;
 	using string_type = std::string;
 	using int_type = int64_t;

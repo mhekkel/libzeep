@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "detail/signals.hpp"
+#include <zeep/exception.hpp>
 
 // --------------------------------------------------------------------
 //
@@ -85,7 +86,7 @@ signal_catcher::signal_catcher()
 	: mImpl(nullptr)
 {
 	if (not SetConsoleCtrlHandler(&signal_catcher_impl::CtrlHandler, true))
-		throw std::exception("Could not install control handler");
+		throw exception("Could not install control handler");
 }
 
 signal_catcher::~signal_catcher()

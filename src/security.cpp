@@ -174,6 +174,7 @@ void security_context::validate_request(request &req) const
 		break;
 	}
 
+	// TODO: maarten - Only validate when mutating (POST, PUT, DELETE, PATCH)
 	if (allow and m_validate_csrf)
 	{
 		auto p = req.get_parameter("_csrf");

@@ -27,7 +27,7 @@ jobs:
 
     - name: Install Catch2 debian
       run: >
-        apt-get update && apt-get install -y catch2 build-essential ninja-build cmake libboost-dev
+        apt-get update && apt-get install -y catch2 build-essential ninja-build cmake libasio-dev
 
     - name: Set reusable strings
       id: strings

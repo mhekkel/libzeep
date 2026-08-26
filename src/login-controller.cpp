@@ -34,7 +34,7 @@ namespace zeep::http
 class login_error_handler : public error_handler
 {
   public:
-	login_error_handler(login_controller &c, std::shared_ptr<int> alive)
+	login_error_handler(login_controller &c, std::shared_ptr<std::atomic<bool>> alive)
 		: m_login_controller(c)
 		, m_alive(std::move(alive))
 	{
@@ -78,12 +78,12 @@ class login_error_handler : public error_handler
 
   private:
 	login_controller &m_login_controller;
-	std::shared_ptr<int> m_alive;
+	std::shared_ptr<std::atomic<bool>> m_alive;
 };
 
 login_controller::login_controller(const std::string &prefix_path)
 	: html_controller(prefix_path)
-	, m_alive(std::make_shared<int>(1))
+	, m_alive(std::make_shared<std::atomic<bool>>(true))
 {
 	map_get("login", &login_controller::handle_get_login);
 	map_post("login", &login_controller::handle_post_login, "username", "password");

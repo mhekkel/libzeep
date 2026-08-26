@@ -570,7 +570,6 @@ void interpreter::get_next_token()
 							state = State::Name;
 						else
 							token = token_type::error;
-						// throw zeep::exception("invalid character (" + to_hex(ch) + ") in expression");
 				}
 				break;
 
@@ -596,8 +595,6 @@ void interpreter::get_next_token()
 						state = State::Hash;
 					else
 						token = token_type::error;
-					// else
-					// 	throw zeep::exception("invalid character (" + std::string{static_cast<char>(isprint(ch) ? ch : ' ')} + '/' + to_hex(ch) + ") in expression");
 				}
 				break;
 

@@ -89,7 +89,7 @@ class login_controller : public html_controller
 	[[nodiscard]] reply create_redirect_for_request(const request &req) const;
 
   private:
-	std::shared_ptr<int> m_alive; ///< Shared alive flag used to track the session lifecycle
+	std::shared_ptr<std::atomic<bool>> m_alive; ///< Shared alive flag used to track the session lifecycle
 };
 
 } // namespace zeep::http

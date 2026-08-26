@@ -54,7 +54,7 @@ jobs:
     - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: >
-        sudo apt-get update && sudo apt-get install libboost-dev mrc ninja-build catch2 libasio-dev
+        sudo apt-get update && sudo apt-get install mrc ninja-build catch2 libasio-dev
 
     - name: Install Boost Windows
       if: matrix.os == 'windows-latest'

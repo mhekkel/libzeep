@@ -474,13 +474,13 @@ void serialize(std::ostream &os, const object &v)
 		{
 			os << '{';
 			bool first = true;
-			for (auto &kv : std::get<object::object_type>(v.m_data))
+			for (const auto &[key, value] : std::get<object::object_type>(v.m_data))
 			{
 				if (not first)
 					os << ',';
 
 				os << '"';
-				for (uint8_t c : kv.first)
+				for (uint8_t c : key)
 				{
 					switch (c)
 					{
@@ -505,7 +505,7 @@ void serialize(std::ostream &os, const object &v)
 				}
 
 				os << "\":";
-				serialize(os, kv.second);
+				serialize(os, value);
 				first = false;
 			}
 			os << '}';
@@ -835,10 +835,10 @@ auto json_parser::get_next_token() -> token_t
 						}
 						else if (ch < 128 and std::isalpha(static_cast<int>(ch)))
 							state = state_t::Literal;
+						else if (std::isprint(static_cast<int>(ch)))
+							throw zeep::exception(std::format("Invalid character '{}' in json", static_cast<char>(ch)));
 						else
-							throw zeep::exception(
-								std::format("Invalid character '{}' in json",
-									std::isprint(static_cast<uint8_t>(ch)) ? std::string{ static_cast<char>(ch) } : to_hex(ch)));
+							throw zeep::exception(std::format("Invalid character '0x{:x}' in json", static_cast<int>(ch)));
 				}
 				break;
 
