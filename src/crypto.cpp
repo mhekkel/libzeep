@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "zeep/crypto.hpp"
+#include "zeep/exception.hpp"
+
+#include <openssl/rand.h>
 
 #include <algorithm>
 #include <bit>
@@ -10,7 +13,6 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
-#include <random>
 #include <streambuf>
 
 namespace zeep
@@ -768,15 +770,12 @@ std::string decode_hex(std::string_view data)
 
 std::string random_hash()
 {
-	std::random_device rng;
+	std::string result(16, '\0');
 
-	union
-	{
-		uint32_t data[4];
-		char s[4 * 4];
-	} v = { { rng(), rng(), rng(), rng() } };
+	if (RAND_bytes(reinterpret_cast<unsigned char *>(result.data()), static_cast<int>(result.size())) != 1)
+		throw zeep::exception("RAND_bytes failed to generate random data");
 
-	return { v.s, v.s + sizeof(v) };
+	return result;
 }
 
 // --------------------------------------------------------------------

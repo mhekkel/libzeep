@@ -271,3 +271,17 @@ TEST_CASE("streambuf_1")
 	CHECK(is.tellg() == len);
 	CHECK(std::string(b.begin(), b.end()) == s);
 }
+
+TEST_CASE("random_hash produces 16 distinct bytes")
+{
+	auto h1 = zeep::random_hash();
+	auto h2 = zeep::random_hash();
+
+	REQUIRE(h1.size() == 16);
+	CHECK(h1 != h2);
+
+	bool all_zero = true;
+	for (char c : h1)
+		all_zero = all_zero and c == '\0';
+	CHECK(not all_zero);
+}
