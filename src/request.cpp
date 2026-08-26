@@ -136,6 +136,9 @@ bool request::keep_alive() const
 
 void request::set_header(std::string name, std::string value)
 {
+	check_valid_header_field(name);
+	check_valid_header_field(value);
+
 	bool replaced = false;
 
 	for (header &h : m_headers)

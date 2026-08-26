@@ -126,6 +126,9 @@ void reply::set_version(int version_major, int version_minor)
 
 void reply::set_header(std::string name, std::string value)
 {
+	check_valid_header_field(name);
+	check_valid_header_field(value);
+
 	bool updated = false;
 	for (header &h : m_headers)
 	{
@@ -172,6 +175,9 @@ void reply::set_cookie(std::string_view name, const std::string &value, std::ini
 	vs << name << '=' << value;
 	for (auto &directive : directives)
 		vs << "; " << directive.name << (directive.value.empty() ? "" : "=" + directive.value);
+
+	check_valid_header_field("Set-Cookie");
+	check_valid_header_field(vs.str());
 
 	m_headers.emplace_back("Set-Cookie", vs.str());
 }

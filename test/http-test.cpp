@@ -599,3 +599,20 @@ TEST_CASE("request_get_accept")
 		CHECK(req.get_accept("application/json") == 1.0f);
 	}
 }
+
+TEST_CASE("header CR/LF injection is rejected")
+{
+	namespace zh = zeep::http;
+
+	zh::reply rep;
+
+	CHECK_THROWS_AS(rep.set_header("X-Bad\r\nInjected: 1", "v"), zeep::exception);
+	CHECK_THROWS_AS(rep.set_header("X-Bad", "v\r\nInjected: 1"), zeep::exception);
+	CHECK_THROWS_AS(rep.set_cookie("c", "v\r\nInjected: 1", { { "Path", "/" } }), zeep::exception);
+
+	zh::request req("GET", "/", { 1, 1 }, {});
+	CHECK_THROWS_AS(req.set_header("X-Bad", "v\nInjected"), zeep::exception);
+
+	rep.set_header("X-Ok", "value");
+	CHECK(rep.get_header("X-Ok") == "value");
+}
