@@ -1,26 +1,15 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2019-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#if __cpp_lib_format
+#include "detail/format.hpp"
+#include "zeep/unicode-support.hpp"
 
-# include <format>
-
-std::string FormatDecimal(double d, int integerDigits, int decimalDigits, std::locale loc)
-{
-	return std::vformat(loc, "{:{}.{}f}", std::make_format_args(integerDigits + decimalDigits, decimalDigits, d));
-}
-
-#else
-
-# include "detail/format.hpp"
-# include "zeep/unicode-support.hpp"
-
-# include <cmath>
-# include <deque>
-# include <iostream>
-# include <limits>
-# include <locale>
-# include <tuple>
+#include <cmath>
+#include <deque>
+#include <iostream>
+#include <limits>
+#include <locale>
+#include <tuple>
 
 namespace zeep
 {
@@ -324,7 +313,4 @@ std::string format_decimal(double d, int integerDigits, int decimalDigits, const
 	return result;
 }
 
-// #endif
 } // namespace zeep
-
-#endif
