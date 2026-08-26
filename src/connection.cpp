@@ -37,16 +37,37 @@ std::vector<asio_ns::const_buffer> get_data_buffers(reply &rep)
 	return result;
 }
 
-connection::connection(asio_ns::io_context &service, basic_server &handler)
+connection::connection(asio_ns::io_context &service, basic_server &handler,
+	size_t max_request_size, std::chrono::milliseconds read_timeout)
 	: m_socket(service)
 	, m_server(handler)
 	, m_bufs(m_buffer.prepare(0))
+	, m_read_timeout(service)
+	, m_read_timeout_duration(read_timeout)
 {
+	m_request_parser.set_max_payload_size(max_request_size);
+}
+
+void connection::start_read_timeout()
+{
+	m_read_timeout.expires_after(m_read_timeout_duration);
+	m_read_timeout.async_wait([self = shared_from_this()](asio_system_ns::error_code ec)
+		{
+			if (not ec)
+				self->m_socket.close();
+		});
+}
+
+void connection::cancel_read_timeout()
+{
+	asio_system_ns::error_code ec;
+	m_read_timeout.cancel(ec);
 }
 
 void connection::start()
 {
 	m_bufs = m_buffer.prepare(4096);
+	start_read_timeout();
 	m_socket.async_read_some(m_bufs,
 		[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 		{ self->handle_read(ec, bytes_transferred); });
@@ -71,6 +92,8 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 					m_socket.local_endpoint().port());
 
 				m_request_parser.reset();
+
+				cancel_read_timeout();
 
 				m_server.handle_request(m_socket, req, m_reply);
 
@@ -106,6 +129,8 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 		}
 		else if (not result)
 		{
+			cancel_read_timeout();
+
 			m_reply = reply::stock_reply(status_type::bad_request);
 
 			auto buffers = get_buffers(m_reply);
@@ -117,6 +142,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 		else
 		{
 			m_bufs = m_buffer.prepare(4096);
+			start_read_timeout();
 			m_socket.async_read_some(m_bufs,
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 				{ self->handle_read(ec, bytes_transferred); });
@@ -125,6 +151,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 	catch (const uri_parse_error &ex)
 	{
 		std::clog << "Invalid URI requested\n";
+		cancel_read_timeout();
 		m_reply = reply::stock_reply(status_type::bad_request);
 
 		auto buffers = get_buffers(m_reply);
@@ -136,6 +163,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 	catch (const std::exception &ex)
 	{
 		std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
+		cancel_read_timeout();
 		m_reply = reply::stock_reply(status_type::internal_server_error);
 
 		auto buffers = get_buffers(m_reply);
@@ -148,6 +176,7 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 	{
 		std::clog << "Internal server error\n";
 
+		cancel_read_timeout();
 		m_reply = reply::stock_reply(status_type::internal_server_error);
 
 		auto buffers = get_buffers(m_reply);
@@ -181,13 +210,17 @@ void connection::handle_write(asio_system_ns::error_code ec, size_t /*bytes_tran
 			else
 			{
 				m_bufs = m_buffer.prepare(4096);
+				start_read_timeout();
 				m_socket.async_read_some(m_bufs,
 					[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 					{ self->handle_read(ec, bytes_transferred); });
 			}
 		}
 		else
+		{
+			cancel_read_timeout();
 			m_socket.close();
+		}
 	}
 }
 

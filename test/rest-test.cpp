@@ -396,3 +396,40 @@ TEST_CASE("options-only route matches")
 
 	CHECK(rc.dispatch_request(s, req, rep));
 }
+
+TEST_CASE("read timeout closes idle connection (slowloris)")
+{
+	using namespace std::chrono_literals;
+
+	zeep::http::server srv;
+	srv.set_read_timeout(400ms);
+
+	std::random_device rng;
+	uint16_t port = 1024 + (rng() % 10240);
+
+	srv.bind("127.0.0.1", port);
+	std::thread t([&srv] { srv.run(1); });
+	std::this_thread::sleep_for(200ms);
+
+	asio_system_ns::error_code ec;
+	asio_ns::io_context io;
+	asio_ns::ip::tcp::socket sock(io);
+	sock.connect(asio_ns::ip::tcp::endpoint(asio_ns::ip::address::from_string("127.0.0.1"), port), ec);
+	REQUIRE(not ec);
+
+	// Send nothing; the server must close the connection once the read timeout fires.
+	// read_some blocks until the server closes, which should happen after ~400ms.
+	char buf[16];
+	auto started = std::chrono::steady_clock::now();
+	sock.read_some(asio_ns::buffer(buf), ec);
+	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
+
+	CHECK(ec); // connection was closed by the server (EOF/reset)
+
+	// Should have happened around the configured timeout, not before.
+	CHECK(elapsed >= 300ms);
+
+	sock.close();
+	srv.stop();
+	t.join();
+}

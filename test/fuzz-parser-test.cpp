@@ -878,3 +878,83 @@ TEST_CASE("chunked_request_empty_extension")
 	REQUIRE(cr.fr.result == zeep::http::parse_result::true_value);
 	CHECK(cr.payload == "hello");
 }
+
+// --------------------------------------------------------------------
+// Request-size limits (DoS hardening)
+// --------------------------------------------------------------------
+
+static zeep::http::parse_result parse_with_caps(std::string_view data, size_t max_header, size_t max_payload)
+{
+	zeep::http::request_parser parser;
+	parser.set_max_header_size(max_header);
+	parser.set_max_payload_size(max_payload);
+	zeep::char_streambuf buf(data.data(), data.size());
+	return parser.parse(buf);
+}
+
+TEST_CASE("content_length_over_cap_is_rejected")
+{
+	std::string req =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 1000\r\n"
+		"\r\n";
+	CHECK(parse_with_caps(req, 64 * 1024, 100).m_value == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("content_length_within_cap_is_accepted")
+{
+	std::string req =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 50\r\n"
+		"\r\n" +
+		std::string(50, 'X');
+	CHECK(parse_with_caps(req, 64 * 1024, 100).m_value == zeep::http::parse_result::true_value);
+}
+
+TEST_CASE("chunked_body_over_cap_is_rejected")
+{
+	std::string req =
+		"POST / HTTP/1.1\r\n"
+		"Transfer-Encoding: chunked\r\n"
+		"\r\n"
+		"3e8\r\n" // 1000 bytes
+		+ std::string(1000, 'X') + "\r\n"
+		"0\r\n\r\n";
+	CHECK(parse_with_caps(req, 64 * 1024, 100).m_value == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_body_within_cap_is_accepted")
+{
+	std::string req =
+		"POST / HTTP/1.1\r\n"
+		"Transfer-Encoding: chunked\r\n"
+		"\r\n"
+		"5\r\nhello\r\n"
+		"0\r\n\r\n";
+	CHECK(parse_with_caps(req, 64 * 1024, 100).m_value == zeep::http::parse_result::true_value);
+}
+
+TEST_CASE("oversized_header_is_rejected")
+{
+	std::string req = "GET / HTTP/1.1\r\nX-Large: " + std::string(200, 'A') + "\r\n\r\n";
+	CHECK(parse_with_caps(req, 100, 100).m_value == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("oversized_uri_is_rejected")
+{
+	std::string req = "GET /" + std::string(200, 'A') + " HTTP/1.1\r\n\r\n";
+	CHECK(parse_with_caps(req, 100, 100).m_value == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("default_parser_accepts_reasonable_body")
+{
+	std::string req =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 5\r\n"
+		"\r\n"
+		"hello";
+	zeep::http::request_parser parser;
+	zeep::char_streambuf buf(req.data(), req.size());
+	CHECK(parser.parse(buf) == zeep::http::parse_result::true_value);
+	CHECK(parser.get_request().get_payload() == "hello");
+}

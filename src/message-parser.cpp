@@ -70,6 +70,7 @@ void parser::reset() noexcept
 	m_collect_payload = true;
 	m_http_version_major = 1;
 	m_http_version_minor = 0;
+	m_header_size = 0;
 }
 
 parse_result parser::parse_header_lines(char ch)
@@ -95,6 +96,8 @@ parse_result parser::parse_header_lines(char ch)
 			{
 				m_headers.emplace_back();
 				m_headers.back().name += ch;
+				if (not grow_header(1))
+					result = false;
 				m_state = 1;
 			}
 			break;
@@ -105,7 +108,11 @@ parse_result parser::parse_header_lines(char ch)
 			else if (is_tspecial_or_cntrl(ch))
 				result = false;
 			else
+			{
 				m_headers.back().name += ch;
+				if (not grow_header(1))
+					result = false;
+			}
 			break;
 
 		case 2:
@@ -121,6 +128,8 @@ parse_result parser::parse_header_lines(char ch)
 			else if (ch != ' ')
 			{
 				m_headers.back().value += ch;
+				if (not grow_header(1))
+					result = false;
 				++m_state;
 			}
 			break;
@@ -129,7 +138,11 @@ parse_result parser::parse_header_lines(char ch)
 			if (ch == '\r')
 				++m_state;
 			else
+			{
 				m_headers.back().value += ch;
+				if (not grow_header(1))
+					result = false;
+			}
 			break;
 
 		case 5:
@@ -147,6 +160,8 @@ parse_result parser::parse_header_lines(char ch)
 			else if (not(ch == ' ' or ch == '\t'))
 			{
 				m_headers.back().value += ch;
+				if (not grow_header(1))
+					result = false;
 				m_state = 3;
 			}
 			break;
@@ -206,6 +221,8 @@ parse_result parser::post_process_headers()
 		{
 			auto r = std::from_chars(i->value.data(), i->value.data() + i->value.length(), m_chunk_size);
 			if (r.ec != std::errc())
+				result = false;
+			else if (m_chunk_size > m_max_payload_size)
 				result = false;
 			else if (m_chunk_size)
 			{
@@ -278,6 +295,8 @@ parse_result parser::parse_chunk(char ch)
 				auto r = std::from_chars(m_data.data(), m_data.data() + m_data.length(), m_chunk_size, 16);
 
 				if (r.ec != std::errc{})
+					result = false;
+				else if (m_chunk_size > m_max_payload_size - m_payload.size())
 					result = false;
 				else if (m_chunk_size > 0)
 				{
@@ -410,7 +429,11 @@ parse_result request_parser::parse_initial_line(char ch)
 		// we're parsing the method here
 		case 0:
 			if (isalpha(ch))
+			{
 				m_method += ch;
+				if (not grow_header(1))
+					result = false;
+			}
 			else if (ch == ' ')
 				++m_state;
 			else
@@ -430,7 +453,11 @@ parse_result request_parser::parse_initial_line(char ch)
 			else if (iscntrl(ch))
 				result = false;
 			else
+			{
 				m_uri += ch;
+				if (not grow_header(1))
+					result = false;
+			}
 			break;
 
 		// we're parsing the trailing HTTP/1.x here
@@ -656,7 +683,11 @@ parse_result reply_parser::parse_initial_line(char ch)
 			if (ch == '\r')
 				++m_state;
 			else
+			{
 				m_status_line += ch;
+				if (not grow_header(1))
+					result = false;
+			}
 			break;
 
 		case 14:

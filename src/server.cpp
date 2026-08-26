@@ -84,7 +84,7 @@ void basic_server::bind(std::string_view address, unsigned short port)
 	m_port = port;
 
 	m_acceptor = std::make_shared<asio_ns::ip::tcp::acceptor>(get_io_context());
-	m_new_connection = std::make_shared<connection>(get_io_context(), *this);
+	m_new_connection = std::make_shared<connection>(get_io_context(), *this, m_max_request_size, m_read_timeout);
 
 	// then bind the address here
 	asio_ns::ip::tcp::endpoint endpoint;
@@ -176,7 +176,7 @@ void basic_server::handle_accept(asio_system_ns::error_code ec)
 	if (not ec)
 	{
 		m_new_connection->start();
-		m_new_connection = std::make_shared<connection>(get_io_context(), *this);
+		m_new_connection = std::make_shared<connection>(get_io_context(), *this, m_max_request_size, m_read_timeout);
 		m_acceptor->async_accept(m_new_connection->get_socket(),
 			[this](asio_system_ns::error_code ec)
 			{ this->handle_accept(ec); });

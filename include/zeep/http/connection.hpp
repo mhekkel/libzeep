@@ -9,6 +9,8 @@
 
 #include "zeep/http/message-parser.hpp"
 
+#include <chrono>
+#include <cstddef>
 #include <memory>
 
 namespace zeep::http
@@ -32,9 +34,12 @@ class connection
 	connection &operator=(connection &) = delete;
 
 	/// \brief Construct a new connection
-	/// \param service  The io_context that will handle async I/O for this connection
-	/// \param handler  The server that will process incoming requests
-	connection(asio_ns::io_context &service, basic_server &handler);
+	/// \param service         The io_context that will handle async I/O for this connection
+	/// \param handler         The server that will process incoming requests
+	/// \param max_request_size  The maximum allowed size of a request body in bytes
+	/// \param read_timeout    The maximum time allowed for reading a request
+	connection(asio_ns::io_context &service, basic_server &handler,
+		size_t max_request_size, std::chrono::milliseconds read_timeout);
 
 	/// \brief Start reading the HTTP request from the socket
 	void start();
@@ -53,6 +58,9 @@ class connection
 	asio_ns::ip::tcp::socket &get_socket() noexcept { return m_socket; }
 
   private:
+	void start_read_timeout();
+	void cancel_read_timeout();
+
 	asio_ns::ip::tcp::socket m_socket;
 	basic_server &m_server;
 	reply m_reply;
@@ -60,6 +68,8 @@ class connection
 	bool m_keep_alive = false;
 	asio_ns::streambuf m_buffer;
 	asio_ns::streambuf::mutable_buffers_type m_bufs;
+	asio_ns::steady_timer m_read_timeout;
+	std::chrono::milliseconds m_read_timeout_duration;
 };
 
 } // namespace zeep::http

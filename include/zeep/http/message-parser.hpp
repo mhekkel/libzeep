@@ -11,6 +11,7 @@
 #include "zeep/http/reply.hpp"
 #include "zeep/http/request.hpp"
 
+#include <cstddef>
 #include <iosfwd>
 #include <string>
 #include <string_view>
@@ -144,11 +145,28 @@ class parser
 	/// \return    The parse result
 	[[nodiscard]] parse_result parse_content(char ch);
 
+	/// \brief Set the maximum allowed total size of the header section
+	///        (request/reply line plus all header lines) in bytes.
+	/// \param size  The maximum size in bytes
+	void set_max_header_size(size_t size) noexcept { m_max_header_size = size; }
+
+	/// \brief Set the maximum allowed size of the message body in bytes.
+	/// \param size  The maximum size in bytes
+	void set_max_payload_size(size_t size) noexcept { m_max_payload_size = size; }
+
   protected:
 	/// @cond
 	using state_parser = parse_result (parser::*)(char ch);
 
 	parser() = default;
+
+	/// \brief Account for \a n more bytes of header data; returns false when the
+	///        configured maximum header size has been exceeded.
+	[[nodiscard]] bool grow_header(size_t n) noexcept
+	{
+		m_header_size += n;
+		return m_header_size <= m_max_header_size;
+	}
 
 	parse_result post_process_headers();
 
@@ -164,6 +182,10 @@ class parser
 	bool m_parsing_content = false;
 	bool m_collect_payload = true;
 	int m_http_version_major = 1, m_http_version_minor = 0;
+
+	size_t m_header_size = 0;
+	size_t m_max_header_size = 64 * 1024;
+	size_t m_max_payload_size = 100 * 1024 * 1024;
 
 	std::vector<header> m_headers;
 	std::string m_payload;

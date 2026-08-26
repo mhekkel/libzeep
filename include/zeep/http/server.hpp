@@ -177,6 +177,16 @@ class basic_server
 	/// \brief log_forwarded tells the HTTP server to use the last entry in X-Forwarded-For as client log entry
 	void set_log_forwarded(bool v) noexcept { m_log_forwarded = v; }
 
+	/// \brief Set the maximum allowed size of an incoming request body in bytes.
+	///        Requests with a larger body are rejected. Defaults to 100 MiB.
+	/// \param size  The maximum request body size in bytes
+	void set_max_request_size(size_t size) noexcept { m_max_request_size = size; }
+
+	/// \brief Set the maximum time allowed for a client to send a complete request.
+	///        This guards against slowloris-style attacks. Defaults to 30 seconds.
+	/// \param timeout  The read timeout
+	void set_read_timeout(std::chrono::milliseconds timeout) noexcept { m_read_timeout = timeout; }
+
 	/// \brief returns the address as specified in bind
 	[[nodiscard]] std::string get_address() const { return m_address; }
 
@@ -218,6 +228,8 @@ class basic_server
 	std::list<std::unique_ptr<error_handler>> m_error_handlers;
 	std::set<std::string> m_allowed_methods;
 	std::unique_ptr<access_control> m_access_control;
+	size_t m_max_request_size = 100 * 1024 * 1024;
+	std::chrono::milliseconds m_read_timeout = std::chrono::seconds{ 30 };
 };
 
 // --------------------------------------------------------------------
