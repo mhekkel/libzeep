@@ -25,6 +25,27 @@
 
 namespace zeep::el
 {
+// --- overflow helpers for signed int64_t arithmetic ---
+
+constexpr bool add_overflows(int64_t a, int64_t b)
+{
+	auto sum = a + b;
+	return (b > 0 and sum < a) or (b < 0 and sum > a);
+}
+
+constexpr bool sub_overflows(int64_t a, int64_t b)
+{
+	auto diff = a - b;
+	return (b > 0 and diff > a) or (b < 0 and diff < a);
+}
+
+constexpr bool mul_overflows(int64_t a, int64_t b)
+{
+	if (a == 0 or b == 0)
+		return false;
+	auto prod = a * b;
+	return prod / a != b;
+}
 
 const object g_null_object{}; // To be returned in operator[] for const object
 
@@ -42,8 +63,13 @@ object operator+(const object &lhs, const object &rhs)
 		switch (lhs_type)
 		{
 			case value_type::number_int:
-				result = std::get<int64_t>(lhs.m_data) + std::get<int64_t>(rhs.m_data);
-				break;
+			{
+				auto a = std::get<int64_t>(lhs.m_data), b = std::get<int64_t>(rhs.m_data);
+				if (add_overflows(a, b))
+					throw object_error("Integer overflow in operator +");
+				result = a + b;
+			}
+			break;
 
 			case value_type::number_float:
 				result = std::get<double>(lhs.m_data) + std::get<double>(rhs.m_data);
@@ -63,7 +89,12 @@ object operator+(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_float and rhs.is_number())
 		result = std::get<double>(lhs.m_data) + rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = std::get<int64_t>(lhs.m_data) + rhs.get<int64_t>();
+	{
+		auto a = std::get<int64_t>(lhs.m_data), b = rhs.get<int64_t>();
+		if (add_overflows(a, b))
+			throw object_error("Integer overflow in operator +");
+		result = a + b;
+	}
 	else if (lhs_type == value_type::null)
 		result = rhs;
 	else if (rhs_type == value_type::null)
@@ -90,8 +121,13 @@ object operator-(const object &lhs, const object &rhs)
 		switch (lhs_type)
 		{
 			case value_type::number_int:
-				result = std::get<int64_t>(lhs.m_data) - std::get<int64_t>(rhs.m_data);
-				break;
+			{
+				auto a = std::get<int64_t>(lhs.m_data), b = std::get<int64_t>(rhs.m_data);
+				if (sub_overflows(a, b))
+					throw object_error("Integer overflow in operator -");
+				result = a - b;
+			}
+			break;
 
 			case value_type::number_float:
 				result = std::get<double>(lhs.m_data) - std::get<double>(rhs.m_data);
@@ -104,7 +140,12 @@ object operator-(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_float and rhs.is_number())
 		result = std::get<double>(lhs.m_data) - rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = std::get<int64_t>(lhs.m_data) - rhs.get<int64_t>();
+	{
+		auto a = std::get<int64_t>(lhs.m_data), b = rhs.get<int64_t>();
+		if (sub_overflows(a, b))
+			throw object_error("Integer overflow in operator -");
+		result = a - b;
+	}
 	else
 		throw object_error("Invalid types for operator -");
 
@@ -125,8 +166,13 @@ object operator*(const object &lhs, const object &rhs)
 		switch (lhs_type)
 		{
 			case value_type::number_int:
-				result = std::get<int64_t>(lhs.m_data) * std::get<int64_t>(rhs.m_data);
-				break;
+			{
+				auto a = std::get<int64_t>(lhs.m_data), b = std::get<int64_t>(rhs.m_data);
+				if (mul_overflows(a, b))
+					throw object_error("Integer overflow in operator *");
+				result = a * b;
+			}
+			break;
 
 			case value_type::number_float:
 				result = std::get<double>(lhs.m_data) * std::get<double>(rhs.m_data);
@@ -139,7 +185,12 @@ object operator*(const object &lhs, const object &rhs)
 	else if (lhs_type == value_type::number_float and rhs.is_number())
 		result = std::get<double>(lhs.m_data) * rhs.get<double>();
 	else if (lhs_type == value_type::number_int and rhs.is_number())
-		result = std::get<int64_t>(lhs.m_data) * rhs.get<int64_t>();
+	{
+		auto a = std::get<int64_t>(lhs.m_data), b = rhs.get<int64_t>();
+		if (mul_overflows(a, b))
+			throw object_error("Integer overflow in operator *");
+		result = a * b;
+	}
 	else
 		throw object_error("Invalid types for operator *");
 
@@ -161,7 +212,12 @@ object operator/(const object &lhs, const object &rhs)
 		{
 			case value_type::number_int:
 				if (auto denom = std::get_if<int64_t>(&rhs.m_data); denom and *denom)
-					result = std::get<int64_t>(lhs.m_data) / *denom;
+				{
+					auto a = std::get<int64_t>(lhs.m_data), b = *denom;
+					if (a == std::numeric_limits<int64_t>::min() and b == -1)
+						throw object_error("Integer overflow in operator /");
+					result = a / b;
+				}
 				else
 					throw object_error("Division by zero");
 				break;
@@ -170,7 +226,7 @@ object operator/(const object &lhs, const object &rhs)
 				if (auto denom = std::get_if<double>(&rhs.m_data); denom and *denom != 0)
 					result = std::get<double>(lhs.m_data) / *denom;
 				else
-				 	throw object_error("Division by zero");
+					throw object_error("Division by zero");
 				break;
 
 			default:
@@ -183,9 +239,14 @@ object operator/(const object &lhs, const object &rhs)
 	{
 		auto denom = rhs.get<int64_t>();
 		if (denom != 0)
-			result = std::get<int64_t>(lhs.m_data) / denom;
+		{
+			auto a = std::get<int64_t>(lhs.m_data);
+			if (a == std::numeric_limits<int64_t>::min() and denom == -1)
+				throw object_error("Integer overflow in operator /");
+			result = a / denom;
+		}
 		else
-		 	throw object_error("Division by zero");
+			throw object_error("Division by zero");
 	}
 	else
 		throw object_error("Invalid types for operator /");
@@ -208,7 +269,12 @@ object operator%(const object &lhs, const object &rhs)
 		{
 			case value_type::number_int:
 				if (auto denom = std::get_if<int64_t>(&rhs.m_data); denom and *denom)
-					result = std::get<int64_t>(lhs.m_data) % *denom;
+				{
+					auto a = std::get<int64_t>(lhs.m_data), b = *denom;
+					if (a == std::numeric_limits<int64_t>::min() and b == -1)
+						throw object_error("Integer overflow in operator %");
+					result = a % b;
+				}
 				else
 					throw object_error("Modulo by zero");
 				break;
@@ -221,9 +287,14 @@ object operator%(const object &lhs, const object &rhs)
 	{
 		auto denom = rhs.get<int64_t>();
 		if (denom != 0)
-			result = std::get<int64_t>(lhs.m_data) % denom;
+		{
+			auto a = std::get<int64_t>(lhs.m_data);
+			if (a == std::numeric_limits<int64_t>::min() and denom == -1)
+				throw object_error("Integer overflow in operator %");
+			result = a % denom;
+		}
 		else
-		 	throw object_error("Modulo by zero");
+			throw object_error("Modulo by zero");
 	}
 	else
 		throw object_error("Invalid types for operator %");
@@ -886,7 +957,7 @@ auto json_parser::get_next_token() -> token_t
 				if (ch >= '0' and ch <= '9')
 				{
 					if (m_token_int > std::numeric_limits<decltype(m_token_int)>::max() / 10 or
-						 std::numeric_limits<decltype(m_token_int)>::max() - 10 * m_token_int < static_cast<int64_t>(ch - '0'))
+						std::numeric_limits<decltype(m_token_int)>::max() - 10 * m_token_int < static_cast<int64_t>(ch - '0'))
 						throw zeep::exception("overflow of integer value in json");
 					m_token_int = 10 * m_token_int + (ch - '0');
 				}
