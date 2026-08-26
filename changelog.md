@@ -3,6 +3,30 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSL-1.0
 -->
 
+Version 8.4.0
+- Security: added constant-time string comparison to prevent timing attacks
+  in CSRF and cookie validation
+- Security: fixed data race on m_new_connection in server (close acceptor
+  before resetting)
+- Security: fixed TOCTOU race condition in daemon when probing binding
+  to privileged ports
+- Security: prevented log injection via unescaped user-supplied strings
+- Security: prevented negative array index in request header parsing
+- Security: path traversal fix in request handler
+- Fixed chunked transfer encoding parser (inverted chunk size check)
+- Fixed signed integer overflow (undefined behavior) in el::object
+  arithmetic operators (+, -, *, /, %)
+- Exception info leaked from SOAP handler via ex.what() into reply body
+- Added IPv6 support in TLS server configuration
+- Daemon directory creation failures now throw std::system_error instead
+  of logging and continuing
+- Conditionally use std::flat_map with fallback to std::map when
+  __cpp_lib_flat_map is not available
+- Added fuzz tests for multipart form data, JSON overflow, and EL
+  expression language overflow edge cases
+- Added chunked transfer encoding tests (28 cases) to message parser
+- Many minor correctness and robustness fixes across the codebase
+
 Version 8.3.0
 - Fixed erasing elements from an el::object: iterator-based erase now
   compiles (missing typename on dependent iterator types) and returns a

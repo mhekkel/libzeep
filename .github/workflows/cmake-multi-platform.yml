@@ -33,6 +33,8 @@ jobs:
             cpp_compiler: cl
           - os: macos-latest
             cpp_compiler: g++-14
+          - os: windows-latest
+            build_type: Debug   # Bizar, but some tests hang in debug mode...
 
     steps:
       - uses: actions/checkout@v4
