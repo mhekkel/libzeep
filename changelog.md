@@ -13,15 +13,32 @@ Version 8.4.0
 - Security: prevented log injection via unescaped user-supplied strings
 - Security: prevented negative array index in request header parsing
 - Security: path traversal fix in request handler
+- Security: guard against DoS with request size and read timeout limits
+- Security: CRLF injection in HTTP headers is now rejected
+- Security: secrets are zeroed out in memory after use
+- Security: rate limiting on login to prevent brute-force attacks
+- Security: use OpenSSL for cryptographic random numbers
+- Security: increased KDF iteration count
 - Fixed chunked transfer encoding parser (inverted chunk size check)
 - Fixed signed integer overflow (undefined behavior) in el::object
   arithmetic operators (+, -, *, /, %)
+- Fixed index out of bounds on array access in el::object
+- Fixed potential out-of-bounds read in tag processor
+- Fixed route capture misalignment in controller path matching
+- Fixed path decoding: '+' should not be treated as a space (only '&'
+  query separators use '+' for space)
+- Fixed handling of truncated files in reply bodies
+- Fixed error propagation in template rendering and if-function
+- Fixed shutdown race condition in basic_server
+- Avoided recursive el expression processing
 - Exception info leaked from SOAP handler via ex.what() into reply body
 - Added IPv6 support in TLS server configuration
 - Daemon directory creation failures now throw std::system_error instead
   of logging and continuing
 - Conditionally use std::flat_map with fallback to std::map when
   __cpp_lib_flat_map is not available
+- Added copy constructor to el::object::iterator
+- Replaced deprecated asio calls
 - Added fuzz tests for multipart form data, JSON overflow, and EL
   expression language overflow edge cases
 - Added chunked transfer encoding tests (28 cases) to message parser
