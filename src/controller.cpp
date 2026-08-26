@@ -119,7 +119,7 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 				continue;
 
 			for (size_t i = 0; i < mp->m_path_params.size(); ++i)
-				scope.add_path_param(mp->m_path_params[i], decode_url(m[i + 1].str()));
+				scope.add_path_param(mp->m_path_params[i], decode_url_path(m[i + 1].str()));
 		}
 
 		scope.put("baseuri", path);

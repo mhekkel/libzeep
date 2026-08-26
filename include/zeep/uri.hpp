@@ -35,6 +35,15 @@ bool is_valid_connect_host(std::string_view host);
 /// \return	  The decoded URL
 std::string decode_url(std::string_view s);
 
+/// \brief Decode a URL path segment.
+///
+/// Unlike \a decode_url this does not translate '+' into a space, because in an
+/// RFC 3986 path segment '+' is a literal character, not a form-urlencoded space.
+/// Use this for path segments; use \a decode_url for query/form data.
+/// \param s  The path segment that needs to be decoded
+/// \return	  The decoded path segment
+std::string decode_url_path(std::string_view s);
+
 /// \brief Encode a URL using the RFC rules
 /// \param s  The URL that needs to be encoded
 /// \return	  The encoded URL

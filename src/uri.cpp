@@ -474,7 +474,7 @@ const char *uri::parse_segment(const char *cp)
 	while (is_pchar(cp))
 		++cp;
 
-	m_path.emplace_back(decode_url({ b, static_cast<std::string::size_type>(cp - b) }));
+	m_path.emplace_back(decode_url_path({ b, static_cast<std::string::size_type>(cp - b) }));
 
 	return cp;
 }
@@ -499,7 +499,7 @@ const char *uri::parse_segment_nz_nc(const char *cp)
 	while (is_unreserved(*cp) or is_pct_encoded(cp) or is_sub_delim(*cp))
 		++cp;
 
-	m_path.emplace_back(decode_url({ b, static_cast<std::string::size_type>(cp - b) }));
+	m_path.emplace_back(decode_url_path({ b, static_cast<std::string::size_type>(cp - b) }));
 
 	return cp;
 }
@@ -672,7 +672,10 @@ void uri::write(std::ostream &os, bool encoded) const
 // --------------------------------------------------------------------
 // decode_url function
 
-std::string decode_url(std::string_view s)
+namespace
+{
+
+std::string decode_url_impl(std::string_view s, bool plusAsSpace)
 {
 	std::string result;
 
@@ -693,12 +696,24 @@ std::string decode_url(std::string_view s)
 			}
 			result += *c; // preserve invalid % for transparency
 		}
-		else if (*c == '+')
+		else if (*c == '+' and plusAsSpace)
 			result += ' ';
 		else
 			result += *c;
 	}
 	return result;
+}
+
+} // namespace
+
+std::string decode_url(std::string_view s)
+{
+	return decode_url_impl(s, true);
+}
+
+std::string decode_url_path(std::string_view s)
+{
+	return decode_url_impl(s, false);
 }
 
 // --------------------------------------------------------------------

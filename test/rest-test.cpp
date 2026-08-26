@@ -433,3 +433,19 @@ TEST_CASE("read timeout closes idle connection (slowloris)")
 	srv.stop();
 	t.join();
 }
+
+TEST_CASE("plus in path parameter is preserved")
+{
+	options_route_controller rc;
+
+	asio_ns::io_context io_context;
+	asio_ns::ip::tcp::socket s(io_context);
+
+	// '+' in a path parameter must stay literal (not be decoded to a space)
+	zeep::http::request req{ "GET", "/r/data/type/a+b" };
+	zeep::http::reply rep;
+
+	REQUIRE(rc.dispatch_request(s, req, rep));
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
+	CHECK(rep.get_content() == "a+b");
+}

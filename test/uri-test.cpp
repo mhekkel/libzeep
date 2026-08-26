@@ -263,3 +263,22 @@ TEST_CASE("encoding_1")
 	CHECK(zeep::decode_url(u.get_query(false)) == "¤");
 	CHECK(u.get_query(true) == "¤");
 }
+TEST_CASE("uri_plus_in_path_is_literal")
+{
+	// '+' is a literal sub-delim in a path segment, not a form-urlencoded space
+	zeep::uri uri("http://www.example.com/a+b/c%2Bd");
+	CHECK(uri.get_path().string() == "/a+b/c+d");
+	CHECK(uri.get_segments().front() == "a+b");
+}
+
+TEST_CASE("uri_decode_plus_behavior")
+{
+	// decode_url (query/form context) maps '+' to space
+	CHECK(zeep::decode_url("a+b") == "a b");
+	CHECK(zeep::decode_url("a%2Bb") == "a+b");
+
+	// decode_url_path (path context) keeps '+' literal
+	CHECK(zeep::decode_url_path("a+b") == "a+b");
+	CHECK(zeep::decode_url_path("a%2Bb") == "a+b");
+	CHECK(zeep::decode_url_path("a%20b") == "a b");
+}
