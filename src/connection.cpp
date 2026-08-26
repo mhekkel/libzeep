@@ -54,14 +54,19 @@ void connection::start_read_timeout()
 	m_read_timeout.async_wait([self = shared_from_this()](asio_system_ns::error_code ec)
 		{
 			if (not ec)
-				self->m_socket.close();
-		});
+				self->m_socket.close(); });
 }
 
 void connection::cancel_read_timeout()
 {
-	asio_system_ns::error_code ec;
-	m_read_timeout.cancel(ec);
+	try
+	{
+		m_read_timeout.cancel();
+	}
+	catch (...)
+	{
+		std::println(std::clog, "timeout cancel failed");
+	}
 }
 
 void connection::start()
@@ -126,11 +131,32 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 						[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 						{ self->handle_write(ec, bytes_transferred); });
 				}
-		}
-		else if (not result)
-		{
-			cancel_read_timeout();
+			}
+			else if (not result)
+			{
+				cancel_read_timeout();
 
+				m_reply = reply::stock_reply(status_type::bad_request);
+
+				auto buffers = get_buffers(m_reply);
+
+				asio_ns::async_write(m_socket, buffers,
+					[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+					{ self->handle_write(ec, bytes_transferred); });
+			}
+			else
+			{
+				m_bufs = m_buffer.prepare(4096);
+				start_read_timeout();
+				m_socket.async_read_some(m_bufs,
+					[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+					{ self->handle_read(ec, bytes_transferred); });
+			}
+		}
+		catch (const uri_parse_error &ex)
+		{
+			std::clog << "Invalid URI requested\n";
+			cancel_read_timeout();
 			m_reply = reply::stock_reply(status_type::bad_request);
 
 			auto buffers = get_buffers(m_reply);
@@ -139,53 +165,32 @@ void connection::handle_read(asio_system_ns::error_code ec, size_t bytes_transfe
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
 				{ self->handle_write(ec, bytes_transferred); });
 		}
-		else
+		catch (const std::exception &ex)
 		{
-			m_bufs = m_buffer.prepare(4096);
-			start_read_timeout();
-			m_socket.async_read_some(m_bufs,
+			std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
+			cancel_read_timeout();
+			m_reply = reply::stock_reply(status_type::internal_server_error);
+
+			auto buffers = get_buffers(m_reply);
+
+			asio_ns::async_write(m_socket, buffers,
 				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-				{ self->handle_read(ec, bytes_transferred); });
+				{ self->handle_write(ec, bytes_transferred); });
+		}
+		catch (...)
+		{
+			std::clog << "Internal server error\n";
+
+			cancel_read_timeout();
+			m_reply = reply::stock_reply(status_type::internal_server_error);
+
+			auto buffers = get_buffers(m_reply);
+
+			asio_ns::async_write(m_socket, buffers,
+				[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
+				{ self->handle_write(ec, bytes_transferred); });
 		}
 	}
-	catch (const uri_parse_error &ex)
-	{
-		std::clog << "Invalid URI requested\n";
-		cancel_read_timeout();
-		m_reply = reply::stock_reply(status_type::bad_request);
-
-		auto buffers = get_buffers(m_reply);
-
-		asio_ns::async_write(m_socket, buffers,
-			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-			{ self->handle_write(ec, bytes_transferred); });
-	}
-	catch (const std::exception &ex)
-	{
-		std::clog << "Internal server error: " << std::quoted(ex.what()) << '\n';
-		cancel_read_timeout();
-		m_reply = reply::stock_reply(status_type::internal_server_error);
-
-		auto buffers = get_buffers(m_reply);
-
-		asio_ns::async_write(m_socket, buffers,
-			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-			{ self->handle_write(ec, bytes_transferred); });
-	}
-	catch (...)
-	{
-		std::clog << "Internal server error\n";
-
-		cancel_read_timeout();
-		m_reply = reply::stock_reply(status_type::internal_server_error);
-
-		auto buffers = get_buffers(m_reply);
-
-		asio_ns::async_write(m_socket, buffers,
-			[self = shared_from_this()](asio_system_ns::error_code ec, size_t bytes_transferred)
-			{ self->handle_write(ec, bytes_transferred); });
-	}
-}
 }
 
 void connection::handle_write(asio_system_ns::error_code ec, size_t /*bytes_transferred*/)
