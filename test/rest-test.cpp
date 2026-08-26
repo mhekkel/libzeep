@@ -344,3 +344,55 @@ TEST_CASE("rest_3")
 
 	t.join();
 }
+
+class options_route_controller : public zeep::http::controller
+{
+  public:
+	options_route_controller()
+		: zeep::http::controller("r")
+	{
+		map_get_request("data/{kind,type}/{id}", &options_route_controller::handle_data, "id");
+		map_get_request("page/{one,two}", &options_route_controller::handle_page);
+	}
+
+	zeep::http::reply handle_data(const zeep::http::scope& /*scope*/, const std::string& id)
+	{
+		zeep::http::reply rep(zeep::http::status_type::ok);
+		rep.set_content(id, "text/plain");
+		return rep;
+	}
+
+	zeep::http::reply handle_page()
+	{
+		return zeep::http::reply::stock_reply(zeep::http::status_type::ok);
+	}
+};
+
+TEST_CASE("mixed options and value route params align")
+{
+	options_route_controller rc;
+
+	asio_ns::io_context io_context;
+	asio_ns::ip::tcp::socket s(io_context);
+
+	// the fixed-options group must not shift the capture index of {id}
+	zeep::http::request req{ "GET", "/r/data/type/42" };
+	zeep::http::reply rep;
+
+	REQUIRE(rc.dispatch_request(s, req, rep));
+	CHECK(rep.get_status() == zeep::http::status_type::ok);
+	CHECK(rep.get_content() == "42");
+}
+
+TEST_CASE("options-only route matches")
+{
+	options_route_controller rc;
+
+	asio_ns::io_context io_context;
+	asio_ns::ip::tcp::socket s(io_context);
+
+	zeep::http::request req{ "GET", "/r/page/two" };
+	zeep::http::reply rep;
+
+	CHECK(rc.dispatch_request(s, req, rep));
+}

@@ -173,7 +173,9 @@ class controller
 					{
 						std::vector<std::string> options;
 						split(options, param, ",", false);
-						ps += '(' + join(options, "|") + ')';
+						// non-capturing group, so that the capture groups in the
+						// regex align 1:1 with the value parameters in m_path_params
+						ps += "(?:" + join(options, "|") + ')';
 					}
 					else
 					{
