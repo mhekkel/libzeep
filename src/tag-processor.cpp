@@ -712,7 +712,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 
 			size_t b = 0;
 
-			while (b < s.length())
+			while (b + 1 < s.length())
 			{
 				auto i = s.find('[', b);
 				if (i == std::string::npos)
