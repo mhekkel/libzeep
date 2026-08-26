@@ -38,6 +38,7 @@
 #include <string_view>
 #include <thread>
 #include <tuple> // for tie
+#include <vector>
 #include <type_traits>
 
 namespace zeep::http
@@ -110,9 +111,13 @@ void basic_server::bind(std::string_view address, unsigned short port)
 	m_acceptor->set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 	m_acceptor->bind(endpoint);
 	m_acceptor->listen();
-	m_acceptor->async_accept(m_new_connection->get_socket(),
-		[this](asio_system_ns::error_code ec)
-		{ this->handle_accept(ec); });
+
+	std::scoped_lock lock(m_accept_mutex);
+	auto acc = m_acceptor;
+	auto conn = m_new_connection;
+	acc->async_accept(conn->get_socket(),
+		[this, acc, conn](asio_system_ns::error_code ec)
+		{ this->handle_accept(ec, acc, conn); });
 }
 
 void basic_server::get_options_for_request(const request &req, reply &rep)
@@ -132,12 +137,14 @@ void basic_server::set_access_control_headers([[maybe_unused]] const request &re
 
 void basic_server::add_controller(controller *c)
 {
+	std::scoped_lock lock(m_handlers_mutex);
 	m_controllers.emplace_back(c);
 	c->set_server(this);
 }
 
 void basic_server::add_error_handler(error_handler *eh)
 {
+	std::scoped_lock lock(m_handlers_mutex);
 	m_error_handlers.emplace_front(eh);
 	eh->set_server(this);
 }
@@ -160,9 +167,11 @@ void basic_server::run(int nr_of_threads)
 
 void basic_server::stop()
 {
+	std::scoped_lock lock(m_accept_mutex);
+
 	// Close the acceptor first so the pending async_accept completes
 	// with operation_aborted. The handler will see the error and
-	// return without touching m_new_connection.
+	// return without touching the connection.
 	if (m_acceptor and m_acceptor->is_open())
 		m_acceptor->close();
 
@@ -171,15 +180,20 @@ void basic_server::stop()
 	m_acceptor.reset();
 }
 
-void basic_server::handle_accept(asio_system_ns::error_code ec)
+void basic_server::handle_accept(asio_system_ns::error_code ec,
+	std::shared_ptr<asio_ns::ip::tcp::acceptor> acceptor,
+	std::shared_ptr<connection> conn)
 {
 	if (not ec)
 	{
-		m_new_connection->start();
-		m_new_connection = std::make_shared<connection>(get_io_context(), *this, m_max_request_size, m_read_timeout);
-		m_acceptor->async_accept(m_new_connection->get_socket(),
-			[this](asio_system_ns::error_code ec)
-			{ this->handle_accept(ec); });
+		conn->start();
+
+		std::scoped_lock lock(m_accept_mutex);
+		auto next = std::make_shared<connection>(get_io_context(), *this, m_max_request_size, m_read_timeout);
+		m_new_connection = next;
+		acceptor->async_accept(next->get_socket(),
+			[this, acceptor, next](asio_system_ns::error_code ec)
+			{ this->handle_accept(ec, acceptor, next); });
 	}
 }
 
@@ -239,9 +253,22 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 			std::tie(csrf, csrf_is_new) = m_security_context->get_csrf_token(req);
 		}
 
-		// do the actual work.
+		// do the actual work. Take a snapshot of the handler lists under the lock so
+		// that a concurrent add_controller/add_error_handler does not race with the
+		// iteration. Controllers are only ever appended (never removed), so the raw
+		// pointers stay valid for the duration of the snapshot.
+		std::vector<controller *> controllers;
+		std::vector<error_handler *> error_handlers;
+		{
+			std::scoped_lock lock(m_handlers_mutex);
+			for (auto &c : m_controllers)
+				controllers.push_back(c.get());
+			for (auto &eh : m_error_handlers)
+				error_handlers.push_back(eh.get());
+		}
+
 		bool processed = false;
-		for (auto &c : m_controllers)
+		for (auto *c : controllers)
 		{
 			if (not c->path_matches_prefix(req.get_uri()))
 				continue;
@@ -255,7 +282,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 
 		if (not processed)
 		{
-			for (auto &eh : m_error_handlers)
+			for (auto *eh : error_handlers)
 			{
 				try
 				{

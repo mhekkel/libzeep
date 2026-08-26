@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -213,7 +214,15 @@ class basic_server
 	virtual void handle_request(asio_ns::ip::tcp::socket &socket,
 		request &req, reply &rep);
 
-	void handle_accept(asio_system_ns::error_code ec);
+	void handle_accept(asio_system_ns::error_code ec,
+		std::shared_ptr<asio_ns::ip::tcp::acceptor> acceptor,
+		std::shared_ptr<connection> conn);
+
+	/// \brief Guards m_acceptor and m_new_connection, which are touched by both the
+	///        io_context worker threads (handle_accept) and any thread calling stop().
+	std::mutex m_accept_mutex;
+	/// \brief Guards m_controllers and m_error_handlers against concurrent add_* calls.
+	mutable std::mutex m_handlers_mutex;
 
 	std::shared_ptr<asio_ns::ip::tcp::acceptor> m_acceptor;
 	std::list<std::thread> m_threads;
