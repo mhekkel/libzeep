@@ -198,10 +198,28 @@ class object
 				default: m_it = 1; break;
 			}
 		}
+
 		iterator_impl(const iterator_impl &i) noexcept
 			: m_obj(i.m_obj)
 			, m_it(i.m_it)
 		{
+		}
+
+		iterator_impl(iterator_impl &&rhs) noexcept
+		{
+			swap(*this, rhs);
+		}
+
+		iterator_impl &operator=(iterator_impl rhs) noexcept
+		{
+			swap(*this, rhs);
+			return *this;
+		}
+
+		friend constexpr void swap(iterator_impl &a, iterator_impl &b) noexcept
+		{
+			std::swap(a.m_obj, b.m_obj);
+			std::swap(a.m_it, b.m_it);
 		}
 
 		/// \brief Postfix decrement
