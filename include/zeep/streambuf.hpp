@@ -8,7 +8,7 @@
 
 #include <cassert>
 #include <cstring>
-
+#include <functional>
 #include <streambuf>
 
 namespace zeep
