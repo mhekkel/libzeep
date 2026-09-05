@@ -5,20 +5,26 @@
 #undef WEBAPP_USES_RESOURCES
 #define WEBAPP_USES_RESOURCES 0
 
-#include <zeep/http/controller.hpp>
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/http/template-processor.hpp>
-
-#include <zeem/zeem.hpp>
-
 #include <cstdint>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#if defined(ZEEP_CXX_MODULE)
+import zeem;
+import zeep;
+#else
+# include <zeep/http/controller.hpp>
+# include <zeep/http/html-controller.hpp>
+# include <zeep/http/reply.hpp>
+# include <zeep/http/server.hpp>
+# include <zeep/http/template-processor.hpp>
+
+# include <zeem/zeem.hpp>
+
+#endif
 
 //[ cart_items
 struct Item

@@ -1,9 +1,18 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2022-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include <zeep/http/soap-controller.hpp>
-
 #include <algorithm>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#if defined(ZEEP_CXX_MODULE)
+import zeem;
+import zeep;
+#else
+#include <zeep/http/soap-controller.hpp>
+#endif
 
 //[ cart_items
 struct Item
@@ -125,7 +134,7 @@ int main()
 	/* Use the server constructor that takes the path to a docroot so it will construct a template processor */
 	zeep::http::server srv("docroot");
 
-	srv.set_context_name("http://localhost:8080");
+	srv.set_context_path("http://localhost:8080");
 
 	srv.add_controller(new shop_soap_controller());
 

@@ -2,20 +2,22 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/template-processor.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/template-processor.hpp"
 
-#include <cassert>
-#include <chrono>
-#include <climits>
-#include <cstddef>
-#include <filesystem>
-#include <functional>
-#include <iostream>
-#include <iterator>
-#include <new>
-#include <string>
-#include <system_error>
-#include <utility>
+# include <cassert>
+# include <chrono>
+# include <climits>
+# include <cstddef>
+# include <filesystem>
+# include <functional>
+# include <iostream>
+# include <iterator>
+# include <new>
+# include <string>
+# include <system_error>
+# include <utility>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -52,9 +54,19 @@ extern "C" const char gResourceName[];
 
 #else
 
+#if ZEEP_CXX_MODULE
+
+extern "C" __attribute__((weak, alias("_ZW4zeep21gResourceIndexDefault"))) const mrsrc::rsrc_imp gResourceIndex[1];
+extern "C" __attribute__((weak, alias("_ZW4zeep20gResourceDataDefault"))) const char gResourceData[1];
+extern "C" __attribute__((weak, alias("_ZW4zeep20gResourceNameDefault"))) const char gResourceName[1];
+
+#else
+
 extern "C" __attribute__((weak, alias("gResourceIndexDefault"))) const mrsrc::rsrc_imp gResourceIndex[1];
 extern "C" __attribute__((weak, alias("gResourceDataDefault"))) const char gResourceData[1];
 extern "C" __attribute__((weak, alias("gResourceNameDefault"))) const char gResourceName[1];
+
+#endif
 
 const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
 const char *gResourceDataDefault[1] = {};
@@ -114,7 +126,7 @@ class rsrc
 	rsrc(const rsrc &other) = default;
 	rsrc &operator=(const rsrc &other) = default;
 
-	rsrc(const std::filesystem::path& path);
+	rsrc(const std::filesystem::path &path);
 
 	// NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
 	[[nodiscard]] std::string name() const { return m_impl ? rsrc_data::instance().name(m_impl->m_name) : ""; }
@@ -193,7 +205,7 @@ class rsrc
 	const rsrc_imp *m_impl;
 };
 
-inline rsrc::rsrc(const std::filesystem::path& p)
+inline rsrc::rsrc(const std::filesystem::path &p)
 {
 	m_impl = rsrc_data::instance().index();
 
@@ -451,7 +463,7 @@ namespace zeep::http
 # include <windows.h>
 #endif
 
-rsrc_loader::rsrc_loader(const std::filesystem::path &/*unused*/)
+rsrc_loader::rsrc_loader(const std::filesystem::path & /*unused*/)
 {
 #if _WIN32
 	char exePath[MAX_PATH] = {};

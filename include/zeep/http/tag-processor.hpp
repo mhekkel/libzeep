@@ -6,23 +6,26 @@
 /// \file
 /// definition of the zeep::http::tag_processor classes. These classes take care of processing HTML templates
 
-#include "zeep/el/processing.hpp"
-#include "zeep/http/scope.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/http/scope.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
 
-#include <filesystem>
-#include <functional>
-#include <map>
-#include <string>
-#include <unordered_set>
-#include <string_view>
-#include <utility>
+# include <filesystem>
+# include <functional>
+# include <map>
+# include <string>
+# include <string_view>
+# include <unordered_set>
+# include <utility>
+#endif
 
 namespace zeep::http
 {
 
-class basic_template_processor;
+ZEEP_EXPORT class basic_template_processor;
 
 // --------------------------------------------------------------------
 //
@@ -31,7 +34,7 @@ class basic_template_processor;
 ///
 /// Note that this class should be light in construction, we create it every time a page is rendered.
 
-class tag_processor_base
+ZEEP_EXPORT class tag_processor_base
 {
   public:
 	tag_processor_base(const tag_processor_base &) = delete;
@@ -73,7 +76,7 @@ class tag_processor_base
 /// The documentention contains a section describing all the
 /// xml tags and attributes this processor handles.
 
-class tag_processor : public tag_processor_base
+ZEEP_EXPORT class tag_processor : public tag_processor_base
 {
   public:
 	/// \brief default namespace for this processor
@@ -82,9 +85,9 @@ class tag_processor : public tag_processor_base
 	/// \brief each handler returns a code telling the processor what to do with the node
 	enum class AttributeAction
 	{
-		none,    ///< No action required
-		remove,  ///< Remove the attribute from the element
-		replace  ///< Replace the element with the processed content
+		none,   ///< No action required
+		remove, ///< Remove the attribute from the element
+		replace ///< Replace the element with the processed content
 	};
 
 	/// \brief Signature for custom attribute handler functions
@@ -220,7 +223,7 @@ class tag_processor : public tag_processor_base
 	void mark_rendered(zeem::node *node) { m_rendered.insert(node); }
 
 	std::map<std::string, attr_handler> m_attr_handlers; ///< Registered custom attribute handlers
-	zeem::document m_template; ///< Cached copy of template documents
+	zeem::document m_template;                           ///< Cached copy of template documents
 
 	/// Nodes inserted as already-rendered output (via m:utext or inline [(...)]).
 	/// These are treated as final markup and skipped during recursive template

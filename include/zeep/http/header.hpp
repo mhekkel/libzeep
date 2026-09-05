@@ -7,11 +7,14 @@
 /// \file
 /// definition of the zeep::http::header class
 
-#include "zeep/exception.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/exception.hpp"
 
-#include <string>
-#include <string_view>
-#include <utility>
+# include <string>
+# include <string_view>
+# include <utility>
+#endif
 
 namespace zeep::http
 {
@@ -22,7 +25,7 @@ namespace zeep::http
 /// headers or terminate the header block early (response splitting).
 /// \param s  The header name or value to check.
 /// \throw std::invalid_argument if \a s contains a carriage return or line feed.
-inline void check_valid_header_field(std::string_view s)
+ZEEP_EXPORT constexpr void check_valid_header_field(std::string_view s)
 {
 	if (s.find_first_of("\r\n") != std::string_view::npos)
 		throw exception("Header name or value contains CR or LF");
@@ -31,7 +34,7 @@ inline void check_valid_header_field(std::string_view s)
 /// The header object contains the header lines as found in a
 /// HTTP Request. The lines are parsed into name / value pairs.
 
-struct header
+ZEEP_EXPORT struct header
 {
 	std::string name;
 	std::string value;

@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include "test-main.hpp"
+
+#if ZEEP_CXX_MODULE
+import zeem;
+import zeep;
+#else
 #include "zeep/el/processing.hpp"
 #include "zeep/http/header.hpp"
 #include "zeep/http/request.hpp"
@@ -10,12 +15,13 @@
 #include "zeep/http/scope.hpp"
 #include "zeep/http/tag-processor.hpp"
 #include "zeep/http/template-processor.hpp"
+#endif
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <zeem/zeem.hpp>
-
 #include <filesystem>
+#include <format>
+#include <fstream>
 #include <iostream>
 #include <locale>
 #include <stdexcept>
@@ -1214,4 +1220,71 @@ TEST_CASE("test_38")
 	scope.put("a", "x");
 
 	process_and_compare(doc, doc_test, scope);
+}
+
+TEST_CASE("file_loader path containment")
+{
+	namespace fs = std::filesystem;
+
+	static int counter = 0;
+	fs::path base = fs::temp_directory_path() / std::format("zeep-fl-test-{}", ++counter);
+	fs::path docroot = base / "docroot";
+	fs::create_directories(docroot);
+
+	{
+		std::ofstream f(docroot / "inside.txt");
+		f << "inside";
+	}
+	fs::path secret = base / "secret.txt";
+	{
+		std::ofstream f(secret);
+		f << "secret";
+	}
+
+	struct cleanup
+	{
+		fs::path p;
+		~cleanup() { std::error_code ec; fs::remove_all(p, ec); }
+	} _{ base };
+
+	zeep::http::file_loader fl(docroot);
+
+	// a normal file inside the docroot is still resolved
+	std::error_code ec;
+	(void)fl.file_time("inside.txt", ec);
+	CHECK_FALSE(ec);
+	CHECK(fl.load_file("inside.txt", ec) != nullptr);
+
+	// a relative path escaping the docroot is rejected in both accessors
+	ec.clear();
+	(void)fl.file_time("../secret.txt", ec);
+	CHECK(ec);
+	ec.clear();
+	CHECK(fl.load_file("../secret.txt", ec) == nullptr);
+	CHECK(ec);
+
+	// an absolute path outside the docroot is rejected as well
+	ec.clear();
+	(void)fl.file_time(secret, ec);
+	CHECK(ec);
+	ec.clear();
+	CHECK(fl.load_file(secret.string(), ec) == nullptr);
+	CHECK(ec);
+}
+
+TEST_CASE("file_loader empty docroot does not crash")
+{
+	namespace fs = std::filesystem;
+
+	// An empty docroot must not throw inside the noexcept loader
+	// (std::terminate), it should report failure through ec instead.
+	zeep::http::file_loader fl(fs::path{});
+
+	std::error_code ec;
+	CHECK(fl.load_file("whatever.txt", ec) == nullptr);
+	CHECK(ec);
+
+	ec.clear();
+	(void)fl.file_time("whatever.txt", ec);
+	CHECK(ec);
 }

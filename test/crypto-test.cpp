@@ -11,8 +11,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include <zeep/crypto.hpp>
 #include <zeep/streambuf.hpp>
+#endif
 
 #include <cstring>
 #include <istream>

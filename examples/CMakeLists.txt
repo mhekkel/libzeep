@@ -1,13 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 # SPDX-License-Identifier: BSL-1.0
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.29)
 
 project(libzeep-examples LANGUAGES CXX)
-
-set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Only try to find package if we're not included from the main libzeep CMakeLists.txt
 if(PROJECT_IS_TOP_LEVEL)
@@ -22,8 +18,15 @@ if(UNIX)
     endif()
 endif()
 
-list(APPEND examples http-server-0 http-server-1 http-server-2 http-server-3
-    security-sample rest-sample rest-sample-2 soap-sample
+list(APPEND examples
+	http-server-0
+	http-server-1
+	http-server-2
+	http-server-3
+    security-sample
+	rest-sample
+	rest-sample-2
+	soap-sample
 )
 
 if(HTTP_HAS_UNIX_DAEMON)
@@ -32,5 +35,10 @@ endif()
 
 foreach(EXAMPLE IN LISTS examples)
     add_executable(${EXAMPLE} ${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}.cpp)
-    target_link_libraries(${EXAMPLE} zeep::zeep)
+
+    if(ZEEP_BUILD_CXX_MODULE)
+        target_link_libraries(${EXAMPLE} zeep::zeep-module)
+    else()
+        target_link_libraries(${EXAMPLE} zeep::zeep)
+    endif()
 endforeach()

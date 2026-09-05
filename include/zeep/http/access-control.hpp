@@ -6,21 +6,24 @@
 /// \file
 /// definition of the zeep::http::access_control class, that handles CORS for HTTP connections
 
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+# include <string>
+# include <string_view>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
 
-class reply;
+ZEEP_EXPORT class reply;
 
 /// \brief Handles CORS (Cross-Origin Resource Sharing) for HTTP connections
 
-class access_control
+ZEEP_EXPORT class access_control
 {
   public:
 	access_control() = default;

@@ -2,21 +2,23 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/request.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/request.hpp"
 
-#include "zeep/el/object.hpp"
-#include "zeep/streambuf.hpp"
-#include "zeep/unicode-support.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/streambuf.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <algorithm>
-#include <cctype>
-#include <cstring>
-#include <exception>
-#include <ios>
-#include <regex>
-#include <sstream>
-#include <stdexcept>
-#include <zeem/zeem.hpp>
+# include <algorithm>
+# include <cctype>
+# include <cstring>
+# include <exception>
+# include <ios>
+# include <regex>
+# include <sstream>
+# include <stdexcept>
+# include <zeem/zeem.hpp>
+#endif
 
 namespace zeep::http
 {

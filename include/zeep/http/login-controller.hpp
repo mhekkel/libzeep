@@ -8,12 +8,15 @@
 /// definition of the zeep::http::login_controller class. This class inherits from
 /// html_controller and provides a default for /login and /logout handling.
 
-#include "zeep/http/html-controller.hpp"
-#include "zeep/http/reply.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/http/html-controller.hpp"
+# include "zeep/http/reply.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
 
-#include <string>
+# include <string>
+#endif
 
 // --------------------------------------------------------------------
 //
@@ -21,8 +24,8 @@
 namespace zeep::http
 {
 
-class request;
-class scope;
+ZEEP_EXPORT class request;
+ZEEP_EXPORT class scope;
 
 // --------------------------------------------------------------------
 
@@ -30,7 +33,7 @@ class scope;
 ///
 /// There is a html version of this controller as well, that one is a bit nicer
 
-class login_controller : public html_controller
+ZEEP_EXPORT class login_controller : public html_controller
 {
   public:
 	/// \brief Construct a login controller

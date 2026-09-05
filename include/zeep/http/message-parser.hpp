@@ -7,15 +7,19 @@
 /// \file
 /// definition of the zeep::http::{request,reply}_parser classes that parse HTTP input/output
 
-#include "zeep/http/header.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
 
-#include <cstddef>
-#include <iosfwd>
-#include <string>
-#include <string_view>
-#include <vector>
+# include <cstddef>
+# include <cstdint>
+# include <iosfwd>
+# include <string>
+# include <string_view>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
@@ -24,7 +28,7 @@ namespace zeep::http
 
 /// \brief A simple reimplementation of boost::tribool for HTTP parsing
 
-class parse_result
+ZEEP_EXPORT class parse_result
 {
   public:
 	/// \brief The possible parse states
@@ -60,10 +64,10 @@ class parse_result
 };
 
 /// \brief Sentinel value indicating that parsing is incomplete and more data is needed
-constexpr parse_result::value_type indeterminate = parse_result::indeterminate_value;
+ZEEP_EXPORT constexpr parse_result::value_type indeterminate = parse_result::indeterminate_value;
 
 /// \brief Logical AND of two parse_results
-constexpr parse_result operator and(parse_result lhs, parse_result rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator and(parse_result lhs, parse_result rhs) noexcept
 {
 	return (static_cast<bool>(not lhs) or static_cast<bool>(not rhs))
 	           ? parse_result(false)
@@ -71,19 +75,19 @@ constexpr parse_result operator and(parse_result lhs, parse_result rhs) noexcept
 }
 
 /// \brief Logical AND of a parse_result and a bool
-constexpr parse_result operator and(parse_result lhs, bool rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator and(parse_result lhs, bool rhs) noexcept
 {
 	return rhs ? lhs : parse_result(false);
 }
 
 /// \brief Logical AND of a bool and a parse_result
-constexpr parse_result operator and(bool lhs, parse_result rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator and(bool lhs, parse_result rhs) noexcept
 {
 	return lhs ? rhs : parse_result(false);
 }
 
 /// \brief Logical OR of two parse_results
-constexpr parse_result operator or(parse_result lhs, parse_result rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator or(parse_result lhs, parse_result rhs) noexcept
 {
 	return (static_cast<bool>(not lhs) and static_cast<bool>(not rhs))
 	           ? parse_result(false)
@@ -91,25 +95,25 @@ constexpr parse_result operator or(parse_result lhs, parse_result rhs) noexcept
 }
 
 /// \brief Logical OR of a parse_result and a bool
-constexpr parse_result operator or(parse_result lhs, bool rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator or(parse_result lhs, bool rhs) noexcept
 {
 	return rhs ? parse_result(true) : lhs;
 }
 
 /// \brief Logical OR of a bool and a parse_result
-constexpr parse_result operator or(bool lhs, parse_result rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator or(bool lhs, parse_result rhs) noexcept
 {
 	return lhs ? parse_result(true) : rhs;
 }
 
 /// \brief Compare a parse_result with a value_type enumerator
-constexpr parse_result operator==(parse_result lhs, parse_result::value_type rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator==(parse_result lhs, parse_result::value_type rhs) noexcept
 {
 	return lhs.m_value == rhs;
 }
 
 /// \brief Equality comparison of two parse_results
-constexpr parse_result operator==(parse_result lhs, parse_result rhs) noexcept
+ZEEP_EXPORT constexpr parse_result operator==(parse_result lhs, parse_result rhs) noexcept
 {
 	return (lhs == indeterminate or rhs == indeterminate) ? indeterminate : ((lhs and rhs) or (not lhs and not rhs));
 }
@@ -117,7 +121,7 @@ constexpr parse_result operator==(parse_result lhs, parse_result rhs) noexcept
 // --------------------------------------------------------------------
 
 /// \brief Base class for message parsers.
-class parser
+ZEEP_EXPORT class parser
 {
   public:
 	virtual ~parser() = default;
@@ -174,7 +178,7 @@ class parser
 
 	state_parser m_parser = nullptr;
 	int m_state = 0;
-	unsigned int m_chunk_size = 0;
+	uint32_t m_chunk_size = 0;
 	std::string m_data;
 	std::string m_uri;
 	std::string m_method;
@@ -193,7 +197,7 @@ class parser
 };
 
 /// \brief Parser for request messages
-class request_parser : public parser
+ZEEP_EXPORT class request_parser : public parser
 {
   public:
 	request_parser() = default;
@@ -216,7 +220,7 @@ class request_parser : public parser
 };
 
 /// \brief Parser for reply messages
-class reply_parser : public parser
+ZEEP_EXPORT class reply_parser : public parser
 {
   public:
 	reply_parser() = default;

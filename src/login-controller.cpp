@@ -1,30 +1,32 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/login-controller.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/login-controller.hpp"
 
-#include "zeep/crypto.hpp"
-#include "zeep/http/controller.hpp"
-#include "zeep/http/error-handler.hpp"
-#include "zeep/http/html-controller.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/http/security.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/http/template-processor.hpp"
-#include "zeep/uri.hpp"
+# include "zeep/crypto.hpp"
+# include "zeep/http/controller.hpp"
+# include "zeep/http/error-handler.hpp"
+# include "zeep/http/html-controller.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/http/security.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/http/template-processor.hpp"
+# include "zeep/uri.hpp"
 
-#include <cassert>
-#include <exception>
-#include <initializer_list>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <string>
-#include <system_error>
-#include <zeem/zeem.hpp>
+# include <cassert>
+# include <exception>
+# include <initializer_list>
+# include <iostream>
+# include <memory>
+# include <optional>
+# include <string>
+# include <system_error>
+# include <zeem/zeem.hpp>
+#endif
 
 namespace zeep::http
 {
@@ -173,7 +175,7 @@ zeem::document login_controller::load_login_form(const request &req) const
 
 	for (auto form : doc.find("//form"))
 	{
-		uri url = get_context_name();
+		uri url = get_context_path();
 
 		url /= form->get_attribute("action");
 
@@ -193,11 +195,9 @@ void login_controller::create_unauth_reply(const request &req, reply &reply)
 		csrf_cookie = encode_base64url(random_hash());
 		reply.set_cookie("csrf-token", csrf_cookie,
 			{ { "HttpOnly", "" },
-#ifdef NDEBUG
 				{ "Secure", "" },
-#endif
 				{ "SameSite", "Lax" },
-				{ "Path", "/" } });
+				{ "Path", get_context_path() .empty() ? "/" :get_context_path().string() } });
 	}
 
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
@@ -232,11 +232,9 @@ reply login_controller::handle_get_login(const scope &scope)
 		csrf_cookie = encode_base64url(random_hash());
 		rep.set_cookie("csrf-token", csrf_cookie,
 			{ { "HttpOnly", "" },
-#ifdef NDEBUG
 				{ "Secure", "" },
-#endif
 				{ "SameSite", "Lax" },
-				{ "Path", "/" } });
+				{ "Path", get_context_path() .empty() ? "/" :get_context_path().string() } });
 	}
 
 	for (auto csrf : doc.find("//input[@name='_csrf']"))
@@ -264,11 +262,9 @@ reply login_controller::handle_post_login(const scope &scope, const std::string 
 		auto csrf_cookie = encode_base64url(random_hash());
 		rep.set_cookie("csrf-token", csrf_cookie,
 			{ { "HttpOnly", "" },
-#ifdef NDEBUG
 				{ "Secure", "" },
-#endif
 				{ "SameSite", "Lax" },
-				{ "Path", "/" } });
+				{ "Path", get_context_path() .empty() ? "/" :get_context_path().string() } });
 	}
 	catch (const authentication_exception &e)
 	{
@@ -300,14 +296,14 @@ reply login_controller::handle_logout(const scope &scope)
 	auto &req = scope.get_request();
 
 	auto rep = create_redirect_for_request(req);
-	rep.set_delete_cookie("access_token");
+	rep.set_delete_cookie("access_token", { { "Path", get_context_path() .empty() ? "/" :get_context_path().string() } });
 
 	return rep;
 }
 
 reply login_controller::create_redirect_for_request(const request &req) const
 {
-	uri url = get_context_name();
+	uri url = get_context_path();
 
 	if (auto p = req.get_parameter("uri"); p.has_value())
 	{

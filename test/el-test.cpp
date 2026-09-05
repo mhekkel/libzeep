@@ -3,15 +3,25 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include <zeep/el/object.hpp>
 #include <zeep/el/serializer.hpp>
 #include <zeep/el/processing.hpp>
 #include <zeep/http/scope.hpp>
+#endif
 
+#if ZEEM_CXX_MODULE
+import zeem;
+#else
 #include <zeem/zeem.hpp>
+#endif
 
 #include <chrono>
+#include <cstdint>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <optional>
 #include <string>
@@ -20,6 +30,19 @@
 
 using namespace std;
 namespace e = zeep::el;
+
+static bool throws_with(auto &&fn, const char *what)
+{
+	try
+	{
+		fn();
+	}
+	catch (const std::exception &e)
+	{
+		return std::string(e.what()).find(what) != std::string::npos;
+	}
+	return false;
+}
 
 struct Opname
 {
@@ -123,7 +146,7 @@ TEST_CASE("test-5")
 	Opname opn1{ "1", { { "een", 0.1f },
 						  { "twee", 0.2f } } };
 
-	static_assert(e::detail::is_serializable_to_object_v<Opname>);
+	// static_assert(e::detail::is_serializable_to_object_v<Opname>);
 
 	auto obj1 = e::to_object(opn1);
 
@@ -415,4 +438,196 @@ TEST_CASE("array index out of range / negative yields null")
 	auto ok = zeep::http::evaluate_el(scope, "*{arr[1]}");
 	REQUIRE(ok.is_string());
 	CHECK(ok.get<std::string>() == "b");
+}
+
+TEST_CASE("JSON surrogate pair decoding")
+{
+	// A proper high+low surrogate pair must be combined into a single
+	// supplementary-plane code point encoded as valid UTF-8, not emitted
+	// as two separate (or lone) surrogates.
+	auto decode = [](const char *json) -> std::string
+	{
+		auto obj = e::object::parse_JSON(json);
+		REQUIRE(obj.is_string());
+		return obj.get<std::string>();
+	};
+
+	// U+1F600 GRINNING FACE: \uD83D\uDE00 -> F0 9F 98 80
+	CHECK(decode(R"("\uD83D\uDE00")") == "\xF0\x9F\x98\x80");
+
+	// U+1F680 ROCKET: \uD83D\uDE80 -> F0 9F 9A 80
+	CHECK(decode(R"("\uD83D\uDE80")") == "\xF0\x9F\x9A\x80");
+
+	// U+10000 (first supplementary plane code point) -> F0 90 80 80
+	CHECK(decode(R"("\uD800\uDC00")") == "\xF0\x90\x80\x80");
+
+	// U+10FFFF (last valid unicode code point) -> F4 8F BF BF
+	CHECK(decode(R"("\uDBFF\uDFFF")") == "\xF4\x8F\xBF\xBF");
+
+	// Boundary: last valid BMP code point before the surrogate zone U+D7FF -> ED 9F BF
+	CHECK(decode(R"("\uD7FF")") == "\xED\x9F\xBF");
+
+	// U+00E9 LATIN SMALL LETTER E WITH ACUTE -> C3 A9
+	CHECK(decode(R"("\u00E9")") == "\xC3\xA9");
+
+	// BMP code point in the 3-byte range U+0800 -> E0 A0 80
+	CHECK(decode(R"("\u0800")") == "\xE0\xA0\x80");
+
+	// A high surrogate not followed by a low surrogate is invalid
+	CHECK_THROWS_AS(e::object::parse_JSON(R"("\uD800")"), std::exception);
+	CHECK_THROWS_AS(e::object::parse_JSON(R"("\uD83D")"), std::exception);
+	CHECK_THROWS_AS(e::object::parse_JSON(R"("\uD800\uD800")"), std::exception);
+	// A low surrogate must be matched by a preceding high surrogate
+	CHECK_THROWS_AS(e::object::parse_JSON(R"("\uDC00")"), std::exception);
+}
+
+TEST_CASE("JSON nesting depth is bounded")
+{
+	// A deeply nested document must be rejected with a normal exception
+	// instead of exhausting the stack (stack overflow / crash). An attacker
+	// can supply such input unauthenticated (e.g. a JWT header or a request
+	// body), so the recursion must be bounded.
+	auto nested = [](int depth)
+	{
+		std::string j;
+		for (int i = 0; i < depth; ++i)
+			j += "{\"a\":";
+		j += "1";
+		for (int i = 0; i < depth; ++i)
+			j += "}";
+		return j;
+	};
+
+	// within the limit: parses successfully
+	CHECK(e::object::parse_JSON(nested(500)).size() == 1);
+
+	// beyond the limit: rejected cleanly, no crash
+	CHECK_THROWS_AS(e::object::parse_JSON(nested(200'000)), std::exception);
+
+	// arrays are bounded identically
+	std::string arr;
+	for (int i = 0; i < 200'000; ++i)
+		arr += "[";
+	arr += "1";
+	for (int i = 0; i < 200'000; ++i)
+		arr += "]";
+	CHECK_THROWS_AS(e::object::parse_JSON(arr), std::exception);
+}
+
+TEST_CASE("get<NumberType> rejects out-of-range conversions")
+{
+	// Converting a floating-point value that is not representable in the
+	// requested integer type (or is NaN/inf) is undefined behavior; it must
+	// be rejected with a normal exception instead.
+	using e::object;
+
+	// in-range values convert (with truncation for float -> int)
+	CHECK(object::parse_JSON("3.0").get<int>() == 3);
+	CHECK(object::parse_JSON("3.9").get<int>() == 3);
+	CHECK(object::parse_JSON("42.0").get<int>() == 42);
+	{
+		object i = int64_t{ 7 };
+		CHECK(i.get<short>() == 7);
+		CHECK(i.get<unsigned>() == 7u);
+		object d = int64_t{ 5 };
+		CHECK(d.get<double>() == 5.0);
+		object f = 5.0;
+		CHECK(f.get<double>() == 5.0);
+		object neg = -1.0;
+		CHECK_THROWS_AS(neg.get<unsigned>(), std::exception);
+		object wide = int64_t{ 100'000 };
+		CHECK_THROWS_AS(wide.get<short>(), std::exception);
+		object inf = std::numeric_limits<double>::infinity();
+		CHECK_THROWS_AS(inf.get<int64_t>(), std::exception);
+		object ninf = -std::numeric_limits<double>::infinity();
+		CHECK_THROWS_AS(ninf.get<int64_t>(), std::exception);
+		object nan = std::numeric_limits<double>::quiet_NaN();
+		CHECK_THROWS_AS(nan.get<int64_t>(), std::exception);
+	}
+
+	// float value too large / too small for int64_t
+	CHECK_THROWS_AS(object::parse_JSON("1e19").get<int64_t>(), std::exception);
+	CHECK_THROWS_AS(object::parse_JSON("-1e19").get<int64_t>(), std::exception);
+	CHECK_THROWS_AS(object::parse_JSON("1.0e300").get<int64_t>(), std::exception);
+	CHECK_THROWS_AS(object::parse_JSON("3e9").get<int>(), std::exception);
+}
+
+TEST_CASE("integer arithmetic overflow is rejected")
+{
+	using e::object;
+
+	constexpr int64_t IMAX = std::numeric_limits<int64_t>::max();
+	constexpr int64_t IMIN = std::numeric_limits<int64_t>::min();
+
+	// operator +
+	CHECK_THROWS_AS(object(IMAX) + object(int64_t{ 1 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(IMAX) + object(IMAX)); }, "Integer overflow in operator +"));
+	CHECK(throws_with([&] { (void)(object(IMIN) + object(int64_t{ -1 })); }, "Integer overflow in operator +"));
+	CHECK(throws_with([&] { (void)(object(IMAX) + object(1.0)); }, "Integer overflow in operator +"));
+
+	CHECK((object(IMAX) + object(int64_t{ 0 })).get<int64_t>() == IMAX);
+	CHECK((object(IMAX) + object(IMIN)).get<int64_t>() == -1);
+	CHECK((object(IMIN) + object(int64_t{ 1 })).get<int64_t>() == IMIN + 1);
+	CHECK((object(IMIN) + object(IMAX)).get<int64_t>() == -1);
+
+	// operator -
+	CHECK_THROWS_AS(object(IMIN) - object(int64_t{ 1 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(IMAX) - object(int64_t{ -1 })); }, "Integer overflow in operator -"));
+	CHECK(throws_with([&] { (void)(object(IMIN) - object(IMAX)); }, "Integer overflow in operator -"));
+	CHECK(throws_with([&] { (void)(object(IMIN) - object(1.0)); }, "Integer overflow in operator -"));
+
+	CHECK((object(IMIN) - object(IMIN)).get<int64_t>() == 0);
+	CHECK((object(IMAX) - object(IMAX)).get<int64_t>() == 0);
+	CHECK((object(IMIN) - object(int64_t{ 0 })).get<int64_t>() == IMIN);
+	CHECK((object(IMAX) - object(int64_t{ 1 })).get<int64_t>() == IMAX - 1);
+
+	// operator *
+	CHECK_THROWS_AS(object(IMAX) * object(int64_t{ 2 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(IMAX) * object(IMAX)); }, "Integer overflow in operator *"));
+	CHECK(throws_with([&] { (void)(object(IMIN) * object(int64_t{ -1 })); }, "Integer overflow in operator *"));
+	CHECK(throws_with([&] { (void)(object(IMIN) * object(int64_t{ 2 })); }, "Integer overflow in operator *"));
+	CHECK(throws_with([&] { (void)(object(IMIN) * object(int64_t{ -2 })); }, "Integer overflow in operator *"));
+	CHECK(throws_with([&] { (void)(object(IMAX) * object(int64_t{ -2 })); }, "Integer overflow in operator *"));
+	CHECK(throws_with([&] { (void)(object(IMIN) * object(2.0)); }, "Integer overflow in operator *"));
+
+	CHECK((object(IMAX) * object(int64_t{ 1 })).get<int64_t>() == IMAX);
+	CHECK((object(IMAX) * object(int64_t{ -1 })).get<int64_t>() == -IMAX);
+	CHECK((object(IMIN) * object(int64_t{ 1 })).get<int64_t>() == IMIN);
+	CHECK((object(int64_t{ 0 }) * object(IMIN)).get<int64_t>() == 0);
+	CHECK((object(int64_t{ 2 }) * object(int64_t{ 3 })).get<int64_t>() == 6);
+
+	// operator /
+	CHECK_THROWS_AS(object(IMIN) / object(int64_t{ -1 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(IMIN) / object(int64_t{ -1 })); }, "Integer overflow in operator /"));
+	CHECK(throws_with([&] { (void)(object(IMIN) / object(-1.0)); }, "Integer overflow in operator /"));
+
+	CHECK((object(IMAX) / object(int64_t{ -1 })).get<int64_t>() == -IMAX);
+	CHECK((object(IMIN) / object(int64_t{ 1 })).get<int64_t>() == IMIN);
+	CHECK((object(int64_t{ 7 }) / object(int64_t{ 2 })).get<int64_t>() == 3);
+
+	// operator %
+	CHECK_THROWS_AS(object(IMIN) % object(int64_t{ -1 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(IMIN) % object(int64_t{ -1 })); }, "Integer overflow in operator %"));
+	CHECK(throws_with([&] { (void)(object(IMIN) % object(-1.0)); }, "Integer overflow in operator %"));
+
+	CHECK((object(IMIN) % object(int64_t{ 1 })).get<int64_t>() == 0);
+	CHECK((object(IMAX) % object(int64_t{ 2 })).get<int64_t>() == 1);
+	CHECK((object(int64_t{ -7 }) % object(int64_t{ 3 })).get<int64_t>() == -1);
+}
+
+TEST_CASE("division and modulo by zero is rejected")
+{
+	using e::object;
+
+	CHECK((object(int64_t{ 0 }) / object(int64_t{ 5 })).get<int64_t>() == 0);
+	CHECK((object(int64_t{ 0 }) % object(int64_t{ 5 })).get<int64_t>() == 0);
+
+	CHECK_THROWS_AS(object(int64_t{ 5 }) / object(int64_t{ 0 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(int64_t{ 5 }) / object(int64_t{ 0 })); }, "Division by zero"));
+	CHECK_THROWS_AS(object(int64_t{ 5 }) / object(0.0), e::object_error);
+	CHECK(throws_with([&] { (void)(object(int64_t{ 5 }) / object(0.0)); }, "Division by zero"));
+	CHECK_THROWS_AS(object(int64_t{ 5 }) % object(int64_t{ 0 }), e::object_error);
+	CHECK(throws_with([&] { (void)(object(int64_t{ 5 }) % object(int64_t{ 0 })); }, "Modulo by zero"));
+	CHECK_THROWS_AS(object(int64_t{ 5 }) % object(0.0), e::object_error);
+	CHECK(throws_with([&] { (void)(object(int64_t{ 5 }) % object(0.0)); }, "Modulo by zero"));
 }

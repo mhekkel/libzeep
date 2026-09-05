@@ -7,30 +7,35 @@
 /// definition of the el::object class, a dynamic JSON-like type supporting
 /// null, boolean, integer, float, string, array, and object value types
 
-#include "zeep/exception.hpp"
-#include "zeep/streambuf.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/streambuf.hpp"
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <type_traits>
-#include <utility>
-#include <variant>
-#include <vector>
-#include <version>
+# include <algorithm>
+# include <cmath>
+# include <cstddef>
+# include <cstdint>
+# include <iterator>
+# include <limits>
+# include <sstream>
+# include <string>
+# include <type_traits>
+# include <utility>
+# include <variant>
+# include <vector>
+# include <version>
 
-#if defined(__cpp_lib_flat_map)
-# include <flat_map>
-#else
-# include <map>
-#endif
+# if defined(__cpp_lib_flat_map)
+#  include <flat_map>
+# else
+#  include <map>
+# endif
 
-#if __has_include(<nlohmann/json.hpp>)
-# include <nlohmann/json.hpp>
-# define HAVE_NLOHMANN_JSON 1
+# if __has_include(<nlohmann/json.hpp>)
+#  include <nlohmann/json.hpp>
+#  define HAVE_NLOHMANN_JSON 1
+# endif
 #endif
 
 namespace zeep::el
@@ -39,7 +44,7 @@ namespace zeep::el
 /// \brief Exception thrown when an invalid type or access error occurs
 ///        on an el::object
 
-class object_error : public zeep::exception
+ZEEP_EXPORT class object_error : public zeep::exception
 {
   public:
 	object_error(const std::string &err)
@@ -55,25 +60,25 @@ class object_error : public zeep::exception
 	object_error(const object_error &) noexcept = default;
 };
 
-class object;
+ZEEP_EXPORT class object;
 
 // concepts
 
 /// \brief Concept matching only \c bool types (after removing cvref qualifiers)
-template <typename T>
+ZEEP_EXPORT template <typename T>
 concept BooleanType = std::is_same_v<bool, std::remove_cvref_t<T>>;
 
 /// \brief Concept matching only zeep::el::object types (after removing cvref qualifiers)
-template <typename T>
+ZEEP_EXPORT template <typename T>
 concept ObjectType = std::is_same_v<object, std::remove_cvref_t<T>>;
 
 /// \brief Concept matching integral (excluding bool) and floating-point types
-template <typename T>
+ZEEP_EXPORT template <typename T>
 concept NumberType = ((std::is_integral_v<std::remove_cvref_t<T>> or std::is_floating_point_v<std::remove_cvref_t<T>>) and not std::is_same_v<std::remove_cvref_t<T>, bool>);
 
 /// \brief Concept matching types assignable to std::string, excluding
 ///        integral and floating-point types
-template <typename T>
+ZEEP_EXPORT template <typename T>
 concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integral_v<T> and not std::is_floating_point_v<T>);
 
 // --------------------------------------------------------------------
@@ -94,7 +99,7 @@ concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integ
 ///   std::string json = obj.get_JSON();
 /// \endcode
 
-class object
+ZEEP_EXPORT class object
 {
   public:
 	/// \brief The supported value types for an object
@@ -695,16 +700,49 @@ class object
 	/// the truthiness (0 or 1).
 	/// \tparam T  A type satisfying \a NumberType (used to select this overload)
 	template <NumberType T>
-	[[nodiscard]] constexpr std::remove_cvref_t<T> get() const noexcept
+	[[nodiscard]] constexpr std::remove_cvref_t<T> get() const
 	{
+		using U = std::remove_cvref_t<T>;
+
 		switch (type())
 		{
 			case value_type::boolean:
 				return *std::get_if<bool>(&m_data);
 			case value_type::number_int:
-				return static_cast<T>(*std::get_if<int64_t>(&m_data));
+				if constexpr (std::is_integral_v<U>)
+				{
+					auto v = *std::get_if<int64_t>(&m_data);
+					if (not std::in_range<U>(v))
+						throw object_error("Out of range for the requested integer type");
+					return static_cast<U>(v);
+				}
+				else
+					return static_cast<U>(*std::get_if<int64_t>(&m_data));
 			case value_type::number_float:
-				return static_cast<T>(*std::get_if<double>(&m_data));
+				if constexpr (std::is_integral_v<U>)
+				{
+					auto v = *std::get_if<double>(&m_data);
+					// NaN, infinities, or a magnitude beyond the target integer
+					// range would be undefined behavior to convert, so reject
+					// them. After truncation toward zero a finite value fits iff
+					// lowest <= v < max + 1; comparing against -lowest (the next
+					// power of two) sidesteps the rounding of max in a double.
+					if constexpr (std::is_signed_v<U>)
+					{
+						constexpr auto m = static_cast<double>(std::numeric_limits<U>::lowest());
+						if (not std::isfinite(v) or v < m or v >= -m)
+							throw object_error("Out of range for the requested integer type");
+					}
+					else
+					{
+						constexpr auto m = static_cast<double>(std::numeric_limits<U>::max());
+						if (not std::isfinite(v) or v < 0 or v >= m)
+							throw object_error("Out of range for the requested integer type");
+					}
+					return static_cast<U>(v);
+				}
+				else
+					return static_cast<U>(*std::get_if<double>(&m_data));
 			default:
 				return not empty();
 		}

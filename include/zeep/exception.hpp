@@ -7,47 +7,53 @@
 /// \file
 /// definition of zeep::exception, base class for exceptions thrown by libzeep
 
-#include "zeep/config.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/config.hpp"
 
-#include <exception>
-#include <string>
+# include <exception>
+# include <string>
+#endif
 
 namespace zeep
 {
 
 /// \brief base class of the exceptions thrown by libzeep
-class exception : public std::exception
+ZEEP_EXPORT class exception : public std::exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
 	exception(std::string message)
-		: m_message(std::move(message)) {}
+		: m_message(std::move(message))
+	{
+	}
 
-	[[nodiscard]] const char* what() const noexcept override { return m_message.c_str(); }
+	[[nodiscard]] const char *what() const noexcept override { return m_message.c_str(); }
 
   protected:
 	std::string m_message;
 };
 
 /// \brief logic error as thrown by libzeep
-class logic_exception : public exception
+ZEEP_EXPORT class logic_exception : public exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
 	logic_exception(std::string message)
-		: exception(std::move(message)) {}
+		: exception(std::move(message))
+	{
+	}
 };
 
 /// \brief invalid_argument error as thrown by libzeep
-class invalid_argument_exception : public exception
+ZEEP_EXPORT class invalid_argument_exception : public exception
 {
   public:
 	/// \brief Create an exception with the message in \a message
 	invalid_argument_exception(std::string message)
-		: exception(std::move(message)) {}
+		: exception(std::move(message))
+	{
+	}
 };
-
-
-
 
 } // namespace zeep

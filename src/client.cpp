@@ -3,13 +3,15 @@
 
 // This code is originally written for mini-ibs, a content management system
 
-#include "zeep/http/client.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/message-parser.hpp"
-#include "zeep/streambuf.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/client.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/message-parser.hpp"
+# include "zeep/streambuf.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <iostream>
+# include <iostream>
+#endif
 
 namespace zeep::http
 {
@@ -75,7 +77,6 @@ reply send_request(request req)
 			}
 			else if (error)
 			{
-				// if (mcfp::config::instance().has("verbose"))
 				std::clog << error << '\n';
 				break;
 			}

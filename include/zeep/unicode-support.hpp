@@ -7,14 +7,17 @@
 /// \file
 /// various definitions of data types and routines used to work with Unicode encoded text
 
-#include "zeep/config.hpp"
-#include "zeep/exception.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/config.hpp"
+# include "zeep/exception.hpp"
 
-#include <cstdint>
-#include <locale>
-#include <string>
-#include <tuple>
-#include <vector>
+# include <cstdint>
+# include <locale>
+# include <string>
+# include <tuple>
+# include <vector>
+#endif
 
 namespace zeep
 {
@@ -23,12 +26,12 @@ namespace zeep
 ///
 /// We use our own unicode type since wchar_t might be too small.
 /// This type should be able to contain a UCS4 encoded character.
-using unicode = char32_t;
+ZEEP_EXPORT using unicode = char32_t;
 
 /// \brief the (admittedly limited) set of supported text encodings in libzeep
 ///
 /// these are the supported encodings. Perhaps we should extend this list a bit?
-enum class encoding_type
+ZEEP_EXPORT enum class encoding_type
 {
 	ASCII,   ///< 7-bit ascii
 	UTF8,    ///< UTF-8
@@ -39,22 +42,22 @@ enum class encoding_type
 
 /// manipulate UTF-8 encoded strings
 /// \brief Append a unicode character to a UTF-8 string
-void append(std::string &s, unicode ch);
+ZEEP_EXPORT void append(std::string &s, unicode ch);
 /// \brief Remove and return the last unicode character from a UTF-8 string
-unicode pop_last_char(std::string &s);
+ZEEP_EXPORT unicode pop_last_char(std::string &s);
 /// \brief Extract the first unicode character and return the advanced iterator
-template <typename Iter>
+ZEEP_EXPORT template <typename Iter>
 std::tuple<unicode, Iter> get_first_char(Iter ptr, Iter end);
 
 /// \brief our own implementation of iequals: compares \a a with \a b case-insensitive
 ///
 /// This is a limited use function, works only reliably with ASCII. But that's OK.
-inline bool iequals(std::string_view a, std::string_view b) noexcept
+ZEEP_EXPORT inline bool iequals(std::string_view a, std::string_view b) noexcept
 {
 	bool equal = a.length() == b.length();
 
 	for (std::string::size_type i = 0; equal and i < a.length(); ++i)
-		equal = std::toupper(a[i]) == std::toupper(b[i]);
+		equal = std::toupper(static_cast<uint8_t>(a[i])) == std::toupper(static_cast<uint8_t>(b[i]));
 
 	return equal;
 }
@@ -62,7 +65,7 @@ inline bool iequals(std::string_view a, std::string_view b) noexcept
 // inlines
 
 /// \brief Append a single unicode character to an utf-8 string
-inline void append(std::string &s, unicode uc)
+ZEEP_EXPORT inline void append(std::string &s, unicode uc)
 {
 	if (uc < 0x080)
 		s += (static_cast<char>(uc));
@@ -96,7 +99,7 @@ inline void append(std::string &s, unicode uc)
 }
 
 /// \brief remove the last unicode character from an utf-8 string
-inline unicode pop_last_char(std::string &s)
+ZEEP_EXPORT inline unicode pop_last_char(std::string &s)
 {
 	unicode result = 0;
 
@@ -142,7 +145,7 @@ inline unicode pop_last_char(std::string &s)
 // That was a bad idea....
 //
 /// \brief return the first unicode and the advanced pointer from a string
-template <typename Iter>
+ZEEP_EXPORT template <typename Iter>
 std::tuple<unicode, Iter> get_first_char(Iter ptr, Iter end)
 {
 	unicode result = static_cast<unsigned char>(*ptr);
@@ -210,7 +213,7 @@ std::tuple<unicode, Iter> get_first_char(Iter ptr, Iter end)
 ///
 /// \param s The input string
 /// \return The recoded output string
-inline std::wstring convert_s2w(std::string_view s)
+ZEEP_EXPORT inline std::wstring convert_s2w(std::string_view s)
 {
 	auto b = s.begin();
 	auto e = s.end();
@@ -237,7 +240,7 @@ inline std::wstring convert_s2w(std::string_view s)
 ///
 /// \param s The input string
 /// \return The recoded output string
-inline std::string convert_w2s(std::wstring_view s)
+ZEEP_EXPORT inline std::string convert_w2s(std::wstring_view s)
 {
 	std::string result;
 
@@ -250,7 +253,7 @@ inline std::string convert_w2s(std::wstring_view s)
 // --------------------------------------------------------------------
 
 /// \brief A simple implementation of trim, removing white space from start and end of \a s
-inline void trim(std::string &s)
+ZEEP_EXPORT inline void trim(std::string &s)
 {
 	std::string::iterator b = s.begin();
 	while (b != s.end() and *b > 0 and std::isspace(*b))
@@ -267,7 +270,7 @@ inline void trim(std::string &s)
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of starts_with
 
-constexpr inline bool starts_with(std::string_view s, std::string_view p) noexcept
+ZEEP_EXPORT constexpr inline bool starts_with(std::string_view s, std::string_view p) noexcept
 {
 	return s.starts_with(p);
 }
@@ -275,7 +278,7 @@ constexpr inline bool starts_with(std::string_view s, std::string_view p) noexce
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of ends_with
 
-constexpr inline bool ends_with(std::string_view s, std::string_view p) noexcept
+ZEEP_EXPORT constexpr inline bool ends_with(std::string_view s, std::string_view p) noexcept
 {
 	return s.length() >= p.length() and s.ends_with(p);
 }
@@ -283,16 +286,19 @@ constexpr inline bool ends_with(std::string_view s, std::string_view p) noexcept
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of contains
 
-constexpr inline bool contains(std::string_view s, std::string_view p) noexcept
+ZEEP_EXPORT constexpr inline bool contains(std::string_view s, std::string_view p) noexcept
 {
 	return s.find(p) != std::string_view::npos;
 }
 
 // --------------------------------------------------------------------
 /// \brief Simplistic implementation of split, with std:string in the vector
-inline void split(std::vector<std::string> &v, std::string_view s, std::string_view p, bool compress = false)
+ZEEP_EXPORT inline void split(std::vector<std::string> &v, std::string_view s, std::string_view p, bool compress = false)
 {
 	v.clear();
+
+	if (p.empty())
+		return;
 
 	std::string_view::size_type i = 0;
 	const auto e = s.length();
@@ -313,26 +319,29 @@ inline void split(std::vector<std::string> &v, std::string_view s, std::string_v
 	}
 }
 
-inline std::vector<std::string_view> split(std::string_view s, std::string_view p, bool compress = false)
+ZEEP_EXPORT inline std::vector<std::string_view> split(std::string_view s, std::string_view p, bool compress = false)
 {
 	std::vector<std::string_view> result;
 
-	std::string_view::size_type i = 0;
-	const auto e = s.length();
-
-	while (i <= e)
+	if (not p.empty())
 	{
-		auto n = s.find(p, i);
-		if (n > e)
-			n = e;
-
-		if (n > i or compress == false)
-			result.emplace_back(s.substr(i, n - i));
-
-		if (n == std::string_view::npos)
-			break;
-
-		i = n + p.length();
+		std::string_view::size_type i = 0;
+		const auto e = s.length();
+	
+		while (i <= e)
+		{
+			auto n = s.find(p, i);
+			if (n > e)
+				n = e;
+	
+			if (n > i or compress == false)
+				result.emplace_back(s.substr(i, n - i));
+	
+			if (n == std::string_view::npos)
+				break;
+	
+			i = n + p.length();
+		}
 	}
 
 	return result;
@@ -341,7 +350,7 @@ inline std::vector<std::string_view> split(std::string_view s, std::string_view 
 // --------------------------------------------------------------------
 /// \brief Simplistic to_lower function, works for one byte charsets only...
 
-inline void to_lower(std::string &s, const std::locale &loc = std::locale())
+ZEEP_EXPORT inline void to_lower(std::string &s, const std::locale &loc = std::locale())
 {
 	for (char &ch : s)
 		ch = std::tolower(ch, loc);
@@ -350,7 +359,7 @@ inline void to_lower(std::string &s, const std::locale &loc = std::locale())
 // --------------------------------------------------------------------
 /// \brief Simplistic join function
 
-template <typename Container = std::vector<std::string>>
+ZEEP_EXPORT template <typename Container = std::vector<std::string>>
 std::string join(const Container &v, std::string_view d)
 {
 	std::string result;
@@ -374,7 +383,7 @@ std::string join(const Container &v, std::string_view d)
 // --------------------------------------------------------------------
 /// \brief Simplistic replace_all
 
-inline void replace_all(std::string &s, std::string_view p, std::string_view r)
+ZEEP_EXPORT inline void replace_all(std::string &s, std::string_view p, std::string_view r)
 {
 	if (p.empty())
 		return;

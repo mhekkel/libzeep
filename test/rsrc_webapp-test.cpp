@@ -1,13 +1,17 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/scope.hpp"
-#include "zeep/http/tag-processor.hpp"
-#include "zeep/http/template-processor.hpp"
+#if ZEEP_CXX_MODULE
+import zeem;
+import zeep;
+#else
+# include "zeep/http/scope.hpp"
+# include "zeep/http/tag-processor.hpp"
+# include "zeep/http/template-processor.hpp"
+# include <zeem/zeem.hpp>
+#endif
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <zeem/zeem.hpp>
 
 #include <filesystem>
 #include <iostream>

@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2025
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/access-control.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/access-control.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <string>
-#include <vector>
+# include <string>
+# include <vector>
+#endif
 
 namespace zeep::http
 {

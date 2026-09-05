@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: BSL-1.0
 
 //[ most_simple_http_server_start
-#include <zeep/http/server.hpp>
-
 #include <exception>
 #include <iostream>
+
+#if defined(ZEEP_CXX_MODULE)
+import zeep;
+#else
+#include <zeep/http/server.hpp>
+#endif
 
 int main()
 {

@@ -2,15 +2,18 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "revision.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "revision.hpp"
 
-#include "zeep/http/reply.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/uri.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/uri.hpp"
 
-#include <chrono>
-#include <format>
-#include <iostream>
+# include <algorithm>
+# include <chrono>
+# include <format>
+# include <iostream>
+#endif
 
 namespace zeep::http
 {
@@ -45,7 +48,6 @@ std::string reply::get_libzeep_version()
 }
 
 // --------------------------------------------------------------------
-
 
 namespace
 {
@@ -169,7 +171,7 @@ void reply::remove_header(std::string_view name)
 		{ return iequals(h.name, name); });
 }
 
-void reply::set_cookie(std::string_view name, const std::string &value, std::initializer_list<cookie_directive> directives)
+void reply::set_cookie(std::string_view name, const std::string &value, const std::vector<cookie_directive> &directives)
 {
 	std::ostringstream vs;
 	vs << name << '=' << value;
@@ -182,12 +184,14 @@ void reply::set_cookie(std::string_view name, const std::string &value, std::ini
 	m_headers.emplace_back("Set-Cookie", vs.str());
 }
 
-void reply::set_delete_cookie(std::string_view name)
+void reply::set_delete_cookie(std::string_view name, std::vector<cookie_directive> directives)
 {
 	using namespace std::literals;
 
 	auto when = std::chrono::system_clock::now() - 24h;
-	set_cookie(name, "", { { "Expires", std::format(R"({0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT)", when) } });
+	directives.emplace_back("Expires", std::format(R"({0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT)", when));
+
+	set_cookie(name, "", directives);
 }
 
 std::string reply::get_cookie(std::string_view name) const

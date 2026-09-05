@@ -6,9 +6,12 @@
 /// \file
 /// definition of the serializer classes that help serialize data into and out of our el script objects
 
-#include "zeep/el/object.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/object.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
+#endif
 
 // --------------------------------------------------------------------
 
@@ -17,12 +20,12 @@ namespace zeep
 
 /// \brief Alias for zeem::name_value_pair, used in conjunction with object_serializer
 ///        to serialize individual struct members
-template <typename T>
+ZEEP_EXPORT template <typename T>
 using name_value_pair = zeem::name_value_pair<T>;
 
 /// \brief Alias for zeem::value_serializer, used to convert between C++ types
 ///        and their string representation
-template <typename T>
+ZEEP_EXPORT template <typename T>
 using value_serializer = zeem::value_serializer<T>;
 
 } // namespace zeep
@@ -39,29 +42,29 @@ namespace zeep::el
 /// is left undefined; only the specializations below are valid.
 /// \tparam T  The C++ type to serialize
 /// \tparam enabled  Unused, allows SFINAE-based specializations
-template <typename T, typename = void>
+ZEEP_EXPORT template <typename T, typename = void>
 struct serializer;
 
 /// \brief Serializer helper used by types that expose a \a serialize method
 ///        taking an \a object_serializer parameter
-struct object_serializer;
+ZEEP_EXPORT struct object_serializer;
 
 /// \brief Deserializer helper used by types that expose a \a serialize method
 ///        taking an \a object_deserializer parameter
-struct object_deserializer;
+ZEEP_EXPORT struct object_deserializer;
 
 // --------------------------------------------------------------------
 /// \brief Detects whether a value_serializer specialization exists for type \a T
 ///
 /// Checks for both \a to_string and \a from_string member functions.
 
-template <typename T>
+ZEEP_EXPORT template <typename T>
 using vs_to_string_function = decltype(value_serializer<T>::to_string(std::declval<T &>()));
 
-template <typename T>
+ZEEP_EXPORT template <typename T>
 using vs_from_string_function = decltype(value_serializer<T>::from_string(std::declval<const std::string &>()));
 
-template <typename T>
+ZEEP_EXPORT template <typename T>
 struct has_value_serializer
 {
 	static constexpr bool value =
@@ -70,16 +73,16 @@ struct has_value_serializer
 };
 
 /// \brief Convenience variable template for \a has_value_serializer
-template <typename T>
+ZEEP_EXPORT template <typename T>
 inline constexpr bool has_value_serializer_v = has_value_serializer<T>::value;
 
 // --------------------------------------------------------------------
 /// \brief Detects whether type \a T has a \a serialize(Archive&, uint64_t) member
 
-template <typename T, typename Archive>
+ZEEP_EXPORT template <typename T, typename Archive>
 using serialize_function = decltype(std::declval<T &>().serialize(std::declval<Archive &>(), std::declval<uint64_t>()));
 
-template <typename T, typename Archive, typename = void>
+ZEEP_EXPORT template <typename T, typename Archive, typename = void>
 struct has_serialize : std::false_type
 {
 };
@@ -91,20 +94,20 @@ struct has_serialize<T, Archive, typename std::enable_if_t<std::is_class_v<T>>>
 };
 
 /// \brief Convenience variable template for \a has_serialize
-template <typename T, typename S>
+ZEEP_EXPORT template <typename T, typename S>
 inline constexpr bool has_serialize_v = has_serialize<T, S>::value;
 
 // --------------------------------------------------------------------
 /// \brief Detects whether \a T is a map-like type (e.g. std::map<std::string, V>)
 ///        that can be serialized to an object value
 
-template <typename T>
+ZEEP_EXPORT template <typename T>
 using mapped_type_t = typename T::mapped_type;
 
-template <typename T>
+ZEEP_EXPORT template <typename T>
 using key_type_t = typename T::key_type;
 
-template <typename T, typename = void>
+ZEEP_EXPORT template <typename T, typename = void>
 struct is_serializable_map_type : std::false_type
 {
 };
@@ -123,14 +126,14 @@ struct is_serializable_map_type<T,
 };
 
 /// \brief Convenience variable template for \a is_serializable_map_type
-template <typename T>
+ZEEP_EXPORT template <typename T>
 inline constexpr bool is_serializable_map_type_v = is_serializable_map_type<T>::value;
 
 // --------------------------------------------------------------------
 /// \brief Detects whether \a T is an array-like type (e.g. std::vector<V>)
 ///        that can be serialized to an array value
 
-template <typename T, typename = void>
+ZEEP_EXPORT template <typename T, typename = void>
 struct is_serializable_array_type : std::false_type
 {
 };
@@ -149,7 +152,7 @@ struct is_serializable_array_type<T,
 };
 
 /// \brief Convenience variable template for \a is_serializable_array_type
-template <typename T>
+ZEEP_EXPORT template <typename T>
 inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<T>::value;
 
 // --------------------------------------------------------------------
@@ -159,7 +162,7 @@ inline constexpr bool is_serializable_array_type_v = is_serializable_array_type<
 /// Iterates over the members (via name_value_pair) and stores each value
 /// as a named entry in the resulting object.
 
-struct object_serializer
+ZEEP_EXPORT struct object_serializer
 {
 	object_serializer() = default;
 
@@ -201,7 +204,7 @@ struct object_serializer
 /// Reads named members from an \a object and assigns them to the corresponding
 /// fields via name_value_pair.
 
-struct object_deserializer
+ZEEP_EXPORT struct object_deserializer
 {
 	/// \brief Construct a deserializer from a source object
 	explicit object_deserializer(const object &o)
@@ -520,10 +523,10 @@ namespace detail
 } // namespace detail
 
 /// @brief The customization point object for to_object
-inline constexpr detail::to_object_fn to_object{};
+ZEEP_EXPORT inline constexpr detail::to_object_fn to_object{};
 
 /// @brief The customization point object for from_object
-template <typename T>
+ZEEP_EXPORT template <typename T>
 inline constexpr detail::from_object_fn<T> from_object{};
 
 } // namespace zeep::el

@@ -1,11 +1,15 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include "zeep/http/client.hpp"
 #include "zeep/http/controller.hpp"
 #include "zeep/http/daemon.hpp"
 #include "zeep/http/reply.hpp"
 #include "zeep/http/server.hpp"
+#endif
 
 #include <catch2/catch_test_macros.hpp>
 

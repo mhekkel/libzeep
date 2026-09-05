@@ -7,8 +7,11 @@
 /// definition of the base class zeep::error_handler, the default
 /// creates very simple HTTP replies. Override to do something more fancy.
 
-#include "zeep/http/server.hpp"
-#include "zeep/http/template-processor.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/http/template-processor.hpp"
+#endif
 
 namespace zeep::http
 {
@@ -17,7 +20,7 @@ namespace zeep::http
 ///
 /// To handle errors decently when there are multiple controllers.
 
-class error_handler
+ZEEP_EXPORT class error_handler
 {
   public:
 	error_handler(const error_handler &) = delete;
@@ -92,7 +95,7 @@ class error_handler
 /// This default handler will reply with a HTML page rendered using
 /// a template named "error"
 
-class default_error_handler : public error_handler
+ZEEP_EXPORT class default_error_handler : public error_handler
 {
   public:
 	/// \brief Construct a default error handler with an optional template name

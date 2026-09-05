@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: BSL-1.0
 
 //[ simple_http_server
-#include <zeep/http/controller.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/server.hpp>
-
 #include <exception>
 #include <iostream>
 #include <string>
+
+#if defined(ZEEP_CXX_MODULE)
+import zeep;
+#else
+# include <zeep/http/controller.hpp>
+# include <zeep/http/reply.hpp>
+# include <zeep/http/server.hpp>
+#endif
 
 class hello_controller : public zeep::http::controller
 {

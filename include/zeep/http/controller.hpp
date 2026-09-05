@@ -6,35 +6,38 @@
 /// \file
 /// definition of the base class zeep::http::controller, used by e.g. html_controller and soap_controller
 
-#include "zeep/el/processing.hpp"
-#include "zeep/el/serializer.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/unicode-support.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/el/serializer.hpp"
+# include "zeep/http/asio.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/unicode-support.hpp"
+# include "zeep/uri.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
 
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <exception>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <list>
-#include <optional>
-#include <regex>
-#include <stdexcept>
-#include <string>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cassert>
+# include <cstddef>
+# include <exception>
+# include <filesystem>
+# include <fstream>
+# include <functional>
+# include <list>
+# include <optional>
+# include <regex>
+# include <stdexcept>
+# include <string>
+# include <tuple>
+# include <type_traits>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
@@ -51,7 +54,7 @@ namespace zeep::http
 /// web pages, use the derived class zeep::http::html_controller. For
 /// processing SOAP requests there is a zeep::http::soap_controller class.
 
-class controller
+ZEEP_EXPORT class controller
 {
   public:
 	controller(const controller &) = delete;
@@ -106,9 +109,9 @@ class controller
 
 	/// \brief Return the context name, if specified
 	/// \return The context name, or an empty string if none is set
-	[[nodiscard]] std::string get_context_name() const
+	[[nodiscard]] uri get_context_path() const
 	{
-		return m_server ? m_server->get_context_name() : "";
+		return m_server ? m_server->get_context_path() : uri{};
 	}
 
 	/// \brief Fill in the OPTIONS in reply \a rep for a request \a req
@@ -374,11 +377,11 @@ class controller
 			return rep;
 		}
 
-		std::string m_path;                                ///< The URI path pattern
-		std::string m_method;                              ///< The HTTP method
-		std::regex m_rx;                                   ///< The compiled regex for path matching
-		std::vector<std::string> m_path_params;            ///< The positional parameter names extracted from the path
-		std::vector<std::string> m_names;                  ///< The argument parameter names
+		std::string m_path;                     ///< The URI path pattern
+		std::string m_method;                   ///< The HTTP method
+		std::regex m_rx;                        ///< The compiled regex for path matching
+		std::vector<std::string> m_path_params; ///< The positional parameter names extracted from the path
+		std::vector<std::string> m_names;       ///< The argument parameter names
 	};
 
 	/// \brief Primary (unspecialized) template for mount points
@@ -634,8 +637,8 @@ class controller
 	virtual void init_scope(scope &scope);
 
   protected:
-	uri m_prefix_path;                                         ///< The prefix path this controller is bound to
-	basic_server *m_server = nullptr;                          ///< The server this controller is bound to
+	uri m_prefix_path;                ///< The prefix path this controller is bound to
+	basic_server *m_server = nullptr; ///< The server this controller is bound to
 
 	std::list<std::unique_ptr<mount_point_base>> m_mountpoints; ///< The list of registered mount points
 };

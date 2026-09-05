@@ -4,9 +4,13 @@
 #include <filesystem>
 #include <iostream>
 
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/template-processor.hpp>
+#if defined(ZEEP_CXX_MODULE)
+import zeep;
+#else
+# include <zeep/http/daemon.hpp>
+# include <zeep/http/html-controller.hpp>
+# include <zeep/http/template-processor.hpp>
+#endif
 
 class hello_controller : public zeep::http::html_controller
 {
@@ -81,7 +85,7 @@ int main(int argc, char *const argv[])
 	{
 		std::string address = "localhost";
 		unsigned short port = 10330;
-		std::string user /* = "www-data" */;	// Using a non-empty username requires super user powers
+		std::string user /* = "www-data" */; // Using a non-empty username requires super user powers
 		std::cout << "starting server at http://" << address << ':' << port << "\n";
 
 		result = server.start(address, port, 8, user);

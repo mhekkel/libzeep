@@ -10,15 +10,18 @@
 /// \file
 /// definition of the routines that can parse and interpret el (expression language) code in a web application context
 
-#include "zeep/el/object.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/object.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
+#endif
 
 namespace zeep::http
 {
 
-class scope;
-class basic_server;
+ZEEP_EXPORT class scope;
+ZEEP_EXPORT class basic_server;
 
 using object = el::object;
 
@@ -30,7 +33,7 @@ using object = el::object;
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       The result of the script
-bool process_el(const scope &scope_, std::string &text);
+ZEEP_EXPORT bool process_el(const scope &scope_, std::string &text);
 
 /// \brief Process the text in \a text and return the result if the expression is valid,
 ///        the value of \a text otherwise.
@@ -40,7 +43,7 @@ bool process_el(const scope &scope_, std::string &text);
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       The result of the script
-std::string process_el_2(const scope &scope_, const std::string &text);
+ZEEP_EXPORT std::string process_el_2(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text. The result is put in \a result
 ///
@@ -49,7 +52,7 @@ std::string process_el_2(const scope &scope_, const std::string &text);
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \result		  The result of the script
-object evaluate_el(const scope &scope_, const std::string &text);
+ZEEP_EXPORT object evaluate_el(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text and return a list of name/value pairs
 ///
@@ -59,7 +62,7 @@ object evaluate_el(const scope &scope_, const std::string &text);
 /// \param scope_ The scope for the el scripts
 /// \param text   The text optionally containing el scripts.
 /// \return       list of name/value pairs
-std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope_, const std::string &text);
+ZEEP_EXPORT std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text. This should be a comma separated list
 /// of expressions that each should evaluate to true.
@@ -71,7 +74,7 @@ std::vector<std::pair<std::string, std::string>> evaluate_el_attr(const scope &s
 /// \param scope_ The scope for this el script
 /// \param text   The el script
 /// \return       True in case all the expressions evaluate to true
-bool evaluate_el_assert(const scope &scope_, const std::string &text);
+ZEEP_EXPORT bool evaluate_el_assert(const scope &scope_, const std::string &text);
 
 /// \brief Process the text in \a text and put the resulting z:with expressions in the scope
 ///
@@ -80,7 +83,7 @@ bool evaluate_el_assert(const scope &scope_, const std::string &text);
 /// processing a m2:attr attribute.
 /// \param scope_ The scope for the el scripts
 /// \param text   The text containing el scripts in the form var=val(,var=val)*.
-void evaluate_el_with(scope &scope_, const std::string &text);
+ZEEP_EXPORT void evaluate_el_with(scope &scope_, const std::string &text);
 
 /// \brief Evaluate the text in \a text as a potential link template
 ///
@@ -91,14 +94,14 @@ void evaluate_el_with(scope &scope_, const std::string &text);
 /// \param scope_ The scope for the el scripts
 /// \param text   The text containing the link specification
 /// \result		  The resulting link
-object evaluate_el_link(const scope &scope_, const std::string &text);
+ZEEP_EXPORT object evaluate_el_link(const scope &scope_, const std::string &text);
 
 // --------------------------------------------------------------------
 
 /// \brief Base class for utility objects, objects that are exposed as
 /// objects in the Expression Language API.
 
-class expression_utility_object_base
+ZEEP_EXPORT class expression_utility_object_base
 {
   public:
 	virtual ~expression_utility_object_base() = default;
@@ -136,8 +139,8 @@ class expression_utility_object_base
 	struct instance
 	{
 		expression_utility_object_base *m_obj = nullptr; ///< Pointer to the utility object instance
-		const char *m_name{}; ///< The registered name of the utility class
-		instance *m_next = nullptr; ///< Pointer to the next instance in the linked list
+		const char *m_name{};                            ///< The registered name of the utility class
+		instance *m_next = nullptr;                      ///< Pointer to the next instance in the linked list
 	};
 
 	static instance *s_head; ///< Head of the linked list of registered utility object instances
@@ -149,7 +152,7 @@ class expression_utility_object_base
 ///
 /// \tparam OBJ  The derived class type (CRTP pattern)
 
-template <typename OBJ>
+ZEEP_EXPORT template <typename OBJ>
 class expression_utility_object : public expression_utility_object_base
 {
   public:

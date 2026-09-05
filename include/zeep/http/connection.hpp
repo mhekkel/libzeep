@@ -7,16 +7,19 @@
 /// \file
 /// definition of the zeep::http::connection class, that handles HTTP connections
 
-#include "zeep/http/message-parser.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/http/message-parser.hpp"
 
-#include <chrono>
-#include <cstddef>
-#include <memory>
+# include <chrono>
+# include <cstddef>
+# include <memory>
+#endif
 
 namespace zeep::http
 {
 
-class basic_server;
+ZEEP_EXPORT class basic_server;
 
 /// \brief Manages an individual HTTP connection
 ///
@@ -26,7 +29,7 @@ class basic_server;
 /// it to the server, and writing the response. These objects are not to be used
 /// directly.
 
-class connection
+ZEEP_EXPORT class connection
 	: public std::enable_shared_from_this<connection>
 {
   public:

@@ -1,19 +1,21 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman.
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/crypto.hpp"
-#include "zeep/exception.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/crypto.hpp"
+# include "zeep/exception.hpp"
 
-#include <openssl/rand.h>
+# include <openssl/rand.h>
 
-#include <algorithm>
-#include <bit>
-#include <cassert>
-#include <cctype>
-#include <climits>
-#include <cstdint>
-#include <cstring>
-#include <streambuf>
+# include <algorithm>
+# include <bit>
+# include <cassert>
+# include <cctype>
+# include <climits>
+# include <cstdint>
+# include <cstring>
+# include <streambuf>
+#endif
 
 namespace zeep
 {

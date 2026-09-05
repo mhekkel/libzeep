@@ -6,18 +6,21 @@
 #define WEBAPP_USES_RESOURCES 0
 
 //[ simple_http_server_3
-
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/scope.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/http/template-processor.hpp>
-
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
+
+#if defined(ZEEP_CXX_MODULE)
+import zeep;
+#else
+# include <zeep/http/html-controller.hpp>
+# include <zeep/http/reply.hpp>
+# include <zeep/http/scope.hpp>
+# include <zeep/http/server.hpp>
+# include <zeep/http/template-processor.hpp>
+#endif
 
 class hello_controller : public zeep::http::html_controller
 {

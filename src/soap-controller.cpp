@@ -2,9 +2,14 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/soap-controller.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/soap-controller.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/uri.hpp"
+
+# include <iostream>
+#endif
 
 namespace zeep::http
 {
@@ -51,11 +56,6 @@ zeem::element make_fault(std::string what)
 	return make_envelope(std::move(fault));
 }
 
-zeem::element make_fault(const std::exception &ex)
-{
-	return make_fault(std::string(ex.what()));
-}
-
 // --------------------------------------------------------------------
 
 bool soap_controller::handle_request(request &req, reply &reply)
@@ -93,13 +93,16 @@ bool soap_controller::handle_request(request &req, reply &reply)
 				break;
 			}
 		}
-		catch (const std::exception &e)
+		catch (const std::exception &ex)
 		{
-			reply.set_content(make_fault(e));
+			std::clog << "Exception: " << ex.what() << '\n';
+			reply.set_content(make_fault(get_status_description(status_type::internal_server_error)));
+			// reply.set_content(make_fault(ex.what()));
 			reply.set_status(status_type::internal_server_error);
 		}
 		catch (status_type &s)
 		{
+			std::clog << "Exception: " << get_status_description(s) << '\n';
 			reply.set_content(make_fault(get_status_description(s)));
 			reply.set_status(s);
 		}
@@ -172,7 +175,7 @@ zeem::element soap_controller::make_wsdl()
 		{ { "name", m_service },
 			{ "binding", "ns:" + m_service } } });
 
-	std::string location = (uri(get_context_name()) / m_location).string();
+	std::string location = (get_context_path() / m_location).string();
 
 	port->emplace_back(zeem::element{ "soap:address",
 		{ { "location", location } } });

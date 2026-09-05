@@ -3,17 +3,20 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/detail/signals.hpp"
+#if ZEEP_CXX_MODULE
+import zeem;
+import zeep;
+#else
+# include <zeep/http/client.hpp>
+# include <zeep/http/daemon.hpp>
+# include <zeep/http/html-controller.hpp>
+# include <zeep/http/reply.hpp>
+# include <zeep/http/request.hpp>
+# include <zeep/http/server.hpp>
+# include <zeep/uri.hpp>
 
-#include <zeep/http/client.hpp>
-#include <zeep/http/daemon.hpp>
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/request.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/uri.hpp>
-
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
+#endif
 
 #include <cstdint>
 #include <exception>
@@ -24,6 +27,8 @@
 #include <string_view>
 #include <thread>
 #include <tuple>
+
+#include "../src/detail/signals.hpp"
 
 void compare(zeem::document &a, zeem::document &b)
 {

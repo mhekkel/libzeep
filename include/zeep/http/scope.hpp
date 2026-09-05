@@ -6,27 +6,30 @@
 /// \file
 /// definition of the scope class that stores variables for template and expression processing
 
-#include "zeep/el/object.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/http/request.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/http/request.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
 
-#include <iosfwd>
-#include <locale>
-#include <map>
-#include <optional>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <utility>
-#include <vector>
+# include <iosfwd>
+# include <locale>
+# include <map>
+# include <optional>
+# include <ranges>
+# include <string>
+# include <string_view>
+# include <type_traits>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
 
-class basic_server;
+ZEEP_EXPORT class basic_server;
 
 // --------------------------------------------------------------------
 
@@ -35,7 +38,7 @@ class basic_server;
 /// When processing tags and in expression language constructs we use
 /// variables. These are stored in scope instances.
 
-class scope
+ZEEP_EXPORT class scope
 {
   public:
 	scope &operator=(const scope &) = delete;
@@ -209,7 +212,7 @@ class scope
 	}
 
 	/// \brief return the context_name of the server
-	[[nodiscard]] std::string get_context_name() const;
+	[[nodiscard]] uri get_context_path() const;
 
 	/// \brief return the credentials of the current user
 	[[nodiscard]] el::object get_credentials() const;

@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2019-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/tag-processor.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/html-controller.hpp"
-#include "zeep/http/template-processor.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/tag-processor.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/html-controller.hpp"
+# include "zeep/http/template-processor.hpp"
 
-#include <algorithm>
-#include <iostream>
-#include <unordered_set>
+# include <algorithm>
+# include <iostream>
+# include <unordered_set>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -715,7 +717,7 @@ tag_processor::AttributeAction tag_processor::process_attr_inline(zeem::element 
 			while (b + 1 < s.length())
 			{
 				auto i = s.find('[', b);
-				if (i == std::string::npos)
+				if (i == std::string::npos or i + 2 >= s.length())
 					break;
 
 				char c2 = s[i + 1];

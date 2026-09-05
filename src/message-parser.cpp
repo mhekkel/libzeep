@@ -2,24 +2,27 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/message-parser.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/unicode-support.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/message-parser.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/unicode-support.hpp"
+# include "zeep/uri.hpp"
 
-#include <algorithm>
-#include <cctype>
-#include <charconv>
-#include <streambuf>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <tuple>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cctype>
+# include <charconv>
+# include <cstdint>
+# include <streambuf>
+# include <string>
+# include <string_view>
+# include <system_error>
+# include <tuple>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
@@ -125,6 +128,8 @@ parse_result parser::parse_header_lines(char ch)
 		case 3:
 			if (ch == '\r')
 				m_state += 2;
+			else if (ch == '\n')
+				result = false;
 			else if (ch != ' ')
 			{
 				m_headers.back().value += ch;
@@ -137,6 +142,8 @@ parse_result parser::parse_header_lines(char ch)
 		case 4:
 			if (ch == '\r')
 				++m_state;
+			else if (ch == '\n')
+				result = false;
 			else
 			{
 				m_headers.back().value += ch;
@@ -155,7 +162,7 @@ parse_result parser::parse_header_lines(char ch)
 		case 10:
 			if (ch == '\r')
 				m_state = 4;
-			else if (iscntrl(ch))
+			else if (std::iscntrl(static_cast<uint8_t>(ch)))
 				result = false;
 			else if (not(ch == ' ' or ch == '\t'))
 			{
@@ -228,7 +235,6 @@ parse_result parser::post_process_headers()
 			{
 				m_parser = &parser::parse_content;
 				m_parsing_content = true;
-				m_payload.reserve(m_chunk_size);
 			}
 			else
 				m_parsing_content = false;
@@ -237,7 +243,7 @@ parse_result parser::post_process_headers()
 		// Seems like a bug in new server software, content-length is omitted even if request type is HTTP/1.0
 		// But only for reply parsing...
 		else if (i = std::ranges::find_if(m_headers, [](const header &h)
-				{ return iequals(h.name, "connection"sv); });
+					 { return iequals(h.name, "connection"sv); });
 			typeid(*this) == typeid(reply_parser) and
 			i != m_headers.end() and iequals(i->value, "close"))
 		{
@@ -262,7 +268,7 @@ parse_result parser::parse_chunk(char ch)
 
 			// new chunk, starts with hex encoded length
 		case 0:
-			if (isxdigit(ch))
+			if (std::isxdigit(static_cast<uint8_t>(ch)))
 			{
 				m_data = ch;
 				++m_state;
@@ -272,8 +278,17 @@ parse_result parser::parse_chunk(char ch)
 			break;
 
 		case 1:
-			if (isxdigit(ch))
-				m_data += ch;
+			if (std::isxdigit(static_cast<uint8_t>(ch)))
+			{
+				// A chunk size decodes into m_chunk_size (an unsigned int) in at
+				// most 8 hex digits; bound the accumulation so a peer sending an
+				// unbounded run of digits cannot exhaust memory. Values that are
+				// merely over-long are rejected here.
+				if (m_data.length() < sizeof(uint32_t) * 2 + 8)
+					m_data += ch;
+				else
+					result = false;
+			}
 			else if (ch == ';')
 				++m_state;
 			else if (ch == '\r')
@@ -299,10 +314,7 @@ parse_result parser::parse_chunk(char ch)
 				else if (m_chunk_size > m_max_payload_size - m_payload.size())
 					result = false;
 				else if (m_chunk_size > 0)
-				{
-					m_payload.reserve(m_payload.size() + m_chunk_size);
 					++m_state;
-				}
 				else
 					m_state = 10;
 			}
@@ -428,7 +440,7 @@ parse_result request_parser::parse_initial_line(char ch)
 	{
 		// we're parsing the method here
 		case 0:
-			if (isalpha(ch))
+			if (std::isalpha(static_cast<uint8_t>(ch)))
 			{
 				m_method += ch;
 				if (not grow_header(1))
@@ -450,7 +462,7 @@ parse_result request_parser::parse_initial_line(char ch)
 				m_http_version_minor = 9;
 				result = true;
 			}
-			else if (iscntrl(ch))
+			else if (std::iscntrl(static_cast<uint8_t>(ch)))
 				result = false;
 			else
 			{

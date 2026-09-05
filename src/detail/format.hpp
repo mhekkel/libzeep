@@ -6,8 +6,11 @@
 /// \file
 /// This file contains definitions of various utility routines
 
-#include <locale>
-#include <string>
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include <locale>
+# include <string>
+#endif
 
 namespace zeep
 {

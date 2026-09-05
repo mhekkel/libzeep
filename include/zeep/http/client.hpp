@@ -6,9 +6,12 @@
 /// \file
 /// definition of routines to do HTTP requests
 
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/uri.hpp"
+#endif
 
 namespace zeep::http
 {
@@ -20,13 +23,13 @@ namespace zeep::http
 /// hostname and port will be put in the headers.
 /// \param req  The request to send (with a fully qualified URI)
 /// \return     The reply received from the server
-reply send_request(request req);
+ZEEP_EXPORT reply send_request(request req);
 
 /// \brief Do a simple HTTP GET request using \a uri as URL and \a headers as (extra) headers
 /// \param uri      The URL to request
 /// \param headers  Optional extra HTTP headers
 /// \return         The reply received from the server
-reply get_request(const zeep::uri &uri, std::vector<zeep::http::header> headers = {});
+ZEEP_EXPORT reply get_request(const zeep::uri &uri, std::vector<zeep::http::header> headers = {});
 
 /// \brief Do a simple HTTP HEAD request using \a uri as URL and \a headers as (extra) headers
 ///
@@ -34,7 +37,7 @@ reply get_request(const zeep::uri &uri, std::vector<zeep::http::header> headers 
 /// \param uri      The URL to request
 /// \param headers  Optional extra HTTP headers
 /// \return         The reply received from the server (status and headers only)
-reply head_request(const zeep::uri &uri, std::vector<zeep::http::header> headers = {});
+ZEEP_EXPORT reply head_request(const zeep::uri &uri, std::vector<zeep::http::header> headers = {});
 
 /// \brief Do a simple HTTP POST request using \a uri as URL and \a headers as (extra) headers and \a payload as content
 ///
@@ -43,6 +46,6 @@ reply head_request(const zeep::uri &uri, std::vector<zeep::http::header> headers
 /// \param headers  The HTTP headers to include
 /// \param payload  The request body content
 /// \return         The reply received from the server
-reply post_request(const zeep::uri &uri, std::vector<zeep::http::header> headers, const std::string &payload);
+ZEEP_EXPORT reply post_request(const zeep::uri &uri, std::vector<zeep::http::header> headers, const std::string &payload);
 
 } // namespace zeep::http

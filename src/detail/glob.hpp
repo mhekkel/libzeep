@@ -6,10 +6,13 @@
 /// \file
 /// This file contains definitions of various utility routines
 
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/uri.hpp"
 
-#include <filesystem>
-#include <string>
+# include <filesystem>
+# include <string>
+#endif
 
 namespace zeep::http
 {

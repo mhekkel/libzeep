@@ -2,30 +2,30 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/security.hpp"
-#include "detail/glob.hpp"
-#include "zeep/crypto.hpp"
-#include "zeep/el/object.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/security.hpp"
+# include "detail/glob.hpp"
+# include "zeep/crypto.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/uri.hpp"
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <cstring>
-#include <ctime>
-#include <iostream>
-#include <iterator>
-#include <optional>
-#include <ranges>
-#include <set>
-#include <string>
-#include <utility>
+# include <algorithm>
+# include <chrono>
+# include <cstdint>
+# include <iostream>
+# include <iterator>
+# include <optional>
+# include <ranges>
+# include <set>
+# include <string>
+# include <utility>
 
-#if __has_include(<sys/mman.h>)
-# include <sys/mman.h>
+# if __has_include(<sys/mman.h>)
+#  include <sys/mman.h>
+# endif
 #endif
 
 namespace zeep::http
@@ -221,10 +221,8 @@ void security_context::add_authorization_headers(reply &rep, const user_details 
 		// clang-format off
 		{
 			{ "HttpOnly", "" },
-#ifdef NDEBUG
 			{ "Secure", "" },
-#endif
-			{ "Path", "/" },
+			{ "Path", (m_context_path.empty() ? "/" : m_context_path.string()) },
 			{ "SameSite", "Lax" },
 			{ "Expires", std::format(R"({0:%a}, {0:%d} {0:%b} {0:%Y} {0:%H}:{0:%M}:{0:%S} GMT)", when) }
 		}
@@ -310,10 +308,35 @@ void security_context::record_login_failure(const std::string &username)
 	auto now = std::chrono::steady_clock::now();
 	auto it = m_login_failures.find(username);
 
-	if (it == m_login_failures.end() or now - it->second.first >= m_login_lockout_duration)
-		m_login_failures[username] = { now, 1 };
-	else
+	if (it != m_login_failures.end() and now - it->second.first < m_login_lockout_duration)
+	{
 		++it->second.second;
+		return;
+	}
+
+	// The entry is new or expired: bound memory use by dropping expired
+	// entries and, if still at capacity with this entry now absent, evict
+	// the one that has been waiting the longest. This keeps a flood of
+	// distinct random usernames from growing the map without bound.
+	for (auto i = m_login_failures.begin(); i != m_login_failures.end();)
+	{
+		if (now - i->second.first >= m_login_lockout_duration)
+			i = m_login_failures.erase(i);
+		else
+			++i;
+	}
+
+	if (m_login_failures.size() >= m_max_tracked_login_failures and
+		m_login_failures.find(username) == m_login_failures.end())
+	{
+		auto oldest = std::ranges::min_element(m_login_failures,
+			[](const auto &a, const auto &b)
+			{ return a.second.first < b.second.first; });
+		if (oldest != m_login_failures.end())
+			m_login_failures.erase(oldest);
+	}
+
+	m_login_failures[username] = { now, 1 };
 }
 
 void security_context::record_login_success(const std::string &username)

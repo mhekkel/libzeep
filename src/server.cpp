@@ -2,44 +2,44 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/server.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/server.hpp"
 
-#include "zeep/el/object.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/http/access-control.hpp"
-#include "zeep/http/connection.hpp"
-#include "zeep/http/controller.hpp"
-#include "zeep/http/error-handler.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/security.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/http/template-processor.hpp"
-#include "zeep/unicode-support.hpp"
-#include "zeep/uri.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/http/access-control.hpp"
+# include "zeep/http/connection.hpp"
+# include "zeep/http/controller.hpp"
+# include "zeep/http/error-handler.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/security.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/http/template-processor.hpp"
+# include "zeep/unicode-support.hpp"
+# include "zeep/uri.hpp"
 
-#if USE_DATE_H
-# include <date/date.h>
-# include <date/tz.h>
+# if USE_DATE_H
+#  include <date/date.h>
+#  include <date/tz.h>
+# endif
+
+# include <chrono>
+# include <exception>
+# include <iomanip>
+# include <iostream>
+# include <list> // for list
+# include <memory>
+# include <new>
+# include <set> // for set
+# include <sstream>
+# include <string>
+# include <string_view>
+# include <thread>
+# include <tuple> // for tie
+# include <vector>
 #endif
-
-#include <chrono>
-#include <ctime>
-#include <exception>
-#include <iomanip>
-#include <iostream>
-#include <list> // for list
-#include <memory>
-#include <new>
-#include <set> // for set
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <thread>
-#include <tuple> // for tie
-#include <vector>
-#include <type_traits>
 
 namespace zeep::http
 {
@@ -133,6 +133,13 @@ void basic_server::set_access_control_headers([[maybe_unused]] const request &re
 {
 	if (m_access_control)
 		m_access_control->get_access_control_headers(rep);
+}
+
+void basic_server::set_context_path(uri context_name) noexcept
+{
+	m_context_path = std::move(context_name);
+	if (m_security_context)
+		m_security_context->set_context_path(m_context_path);
 }
 
 void basic_server::add_controller(controller *c)
@@ -313,14 +320,14 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				{ { "HttpOnly", "" },
 					{ "Secure", "" },
 					{ "SameSite", "Lax" },
-					{ "Path", "/" } });
+					{ "Path", get_context_path() .empty() ? "/" :get_context_path().string() } });
 
-		if (not m_context_name.empty() and
+		if (not m_context_path.empty() and
 			(rep.get_status() == status_type::moved_permanently or rep.get_status() == status_type::moved_temporarily))
 		{
 			auto location = rep.get_header("location");
 			if (location.starts_with("/"))
-				rep.set_header("location", m_context_name + location);
+				rep.set_header("location", (m_context_path / location).string());
 		}
 
 		// work around buggy IE... also, using req.accept() doesn't work since it contains */* ... duh
@@ -380,6 +387,7 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 		}
 		else
 		{
+			std::scoped_lock lock(m_handlers_mutex);
 			for (auto &eh : m_error_handlers)
 			{
 				try
@@ -425,24 +433,25 @@ void basic_server::log_request(std::string_view client,
 #endif
 
 		auto s = std::format(R"({} - {} [{}] "{} {} HTTP/{}.{}" {} {} "{}" "{}"{})",
-						 client,
-						 username,
-						 ts.str(),
-						 req.get_method(),
-						 req.get_uri().string(),
-						 major,
-						 minor,
-						 static_cast<int>(rep.get_status()),
-						 rep.size(),
-						 referer,
-						 userAgent,
-						 entry.empty() ? std::string{} : ((std::ostringstream() << ' ' << std::quoted(entry)).str()));
-			
+			client,
+			username,
+			ts.str(),
+			req.get_method(),
+			req.get_uri().string(),
+			major,
+			minor,
+			static_cast<int>(rep.get_status()),
+			rep.size(),
+			referer,
+			userAgent,
+			entry.empty() ? std::string{} : ((std::ostringstream() << ' ' << std::quoted(entry)).str()));
+
 		// Strip log message from CR and LF
-		for (auto p = s.find_first_of("\r\n"); p != std::string::npos; p = s.find_first_of( "\r\n", p))
+		for (auto p = s.find_first_of("\r\n"); p != std::string::npos; p = s.find_first_of("\r\n", p))
 			s[p] = ' ';
 
-		std::cout << s << '\n' << std::flush;
+		std::cout << s << '\n'
+				  << std::flush;
 	}
 	catch (const std::exception &ex)
 	{

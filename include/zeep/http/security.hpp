@@ -6,26 +6,29 @@
 /// \file
 /// definition of various classes that help in handling HTTP authentication.
 
-#include "zeep/crypto.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/crypto.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/unicode-support.hpp"
+# include "zeep/uri.hpp"
+# include "zeep/el/object.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <charconv>
-#include <chrono>
-#include <initializer_list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <regex>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cassert>
+# include <charconv>
+# include <chrono>
+# include <initializer_list>
+# include <map>
+# include <memory>
+# include <mutex>
+# include <set>
+# include <string>
+# include <tuple>
+# include <utility>
+# include <vector>
+#endif
 
 // --------------------------------------------------------------------
 //
@@ -33,14 +36,14 @@
 namespace zeep::http
 {
 
-class reply;
-class request;
+ZEEP_EXPORT class reply;
+ZEEP_EXPORT class request;
 
 /// \brief exception thrown when unauthorized access is detected
 ///
 /// when using authentication, this exception is thrown for unauthorized access
 
-struct unauthorized_exception : public http_status_exception
+ZEEP_EXPORT struct unauthorized_exception : public http_status_exception
 {
 	/// \brief constructor
 	unauthorized_exception()
@@ -52,7 +55,7 @@ struct unauthorized_exception : public http_status_exception
 // --------------------------------------------------------------------
 
 /// \brief Base class for password encoders
-class password_encoder
+ZEEP_EXPORT class password_encoder
 {
   public:
 	virtual ~password_encoder() = default;
@@ -73,7 +76,7 @@ class password_encoder
 
 /// \brief Implementation of @ref zeep::http::password_encoder for the PBKDF2-SHA256 algorithm
 /// https://en.wikipedia.org/wiki/PBKDF2
-class pbkdf2_sha256_password_encoder : public password_encoder
+ZEEP_EXPORT class pbkdf2_sha256_password_encoder : public password_encoder
 {
   public:
 	/// \brief Return the encoder name identifier
@@ -145,7 +148,7 @@ class pbkdf2_sha256_password_encoder : public password_encoder
 /// The user_details struct contains all the information needed to allow
 /// access to a resource based on username. The password is the encrypted
 /// password.
-struct user_details
+ZEEP_EXPORT struct user_details
 {
 	user_details() = default;
 	/// \brief Construct with username, password and roles
@@ -167,7 +170,7 @@ struct user_details
 // --------------------------------------------------------------------
 
 /// \brief Exception thrown for general authentication failures
-class authentication_exception : public zeep::exception
+ZEEP_EXPORT class authentication_exception : public zeep::exception
 {
   public:
 	/// \brief Construct an authentication exception with a message
@@ -181,7 +184,7 @@ class authentication_exception : public zeep::exception
 };
 
 /// \brief exception thrown by user_service when trying to load user_details for an unknown user
-class user_unknown_exception : public authentication_exception
+ZEEP_EXPORT class user_unknown_exception : public authentication_exception
 {
   public:
 	user_unknown_exception()
@@ -191,7 +194,7 @@ class user_unknown_exception : public authentication_exception
 };
 
 /// \brief exception thrown by security_context when a username/password combo is not valid
-class invalid_password_exception : public authentication_exception
+ZEEP_EXPORT class invalid_password_exception : public authentication_exception
 {
   public:
 	invalid_password_exception()
@@ -206,7 +209,7 @@ class invalid_password_exception : public authentication_exception
 ///
 /// This is an abstract base class for a user service.
 
-class user_service
+ZEEP_EXPORT class user_service
 {
   public:
 	user_service() = default;
@@ -233,7 +236,7 @@ class user_service
 /// This implementation of a user service can be used to jump start a
 /// project. Normally you would implement something more robust.
 
-class simple_user_service : public user_service
+ZEEP_EXPORT class simple_user_service : public user_service
 {
   public:
 	/// \brief Construct with an initializer list of user tuples (username, password, roles)
@@ -279,7 +282,7 @@ class simple_user_service : public user_service
 ///
 /// The authentication mechanism used is based on JSON Web Tokens, JWT in short.
 
-class security_context
+ZEEP_EXPORT class security_context
 {
   public:
 	security_context(const security_context &) = delete;
@@ -419,11 +422,24 @@ class security_context
 	/// \param username  The username that logged in successfully
 	void record_login_success(const std::string &username);
 
+	/// \brief Set the maximum number of distinct usernames that will be tracked for
+	///        login failure rate limiting. Beyond this limit the least-recently-used
+	///        entry is discarded to bound memory use. Defaults to 10'000.
+	/// \param max  The maximum number of tracked usernames
+	void set_max_tracked_login_failures(size_t max) noexcept { m_max_tracked_login_failures = max; }
+
 	/// \brief Set the iteration count used for the dummy verification that equalizes
 	///        timing for unknown users. Set this to match the iteration count of your
 	///        real password hashes. Defaults to 600,000.
 	/// \param iterations  The number of PBKDF2 iterations for the dummy check
 	void set_dummy_password_iterations(int iterations) noexcept { m_dummy_iterations = iterations; }
+
+	/// \brief Set the context path, to be used as Path cookie directive
+	/// \param context_path The context path as a uri
+	void set_context_path(uri context_path)
+	{
+		m_context_path = std::move(context_path);
+	}
 
   private:
 	/// @cond
@@ -441,13 +457,15 @@ class security_context
 	/// \brief Return true if a method is mutating (listed in m_mutating_methods)
 	bool is_mutating_method(std::string_view method) const
 	{
-		return std::ranges::find_if(m_mutating_methods, [method](auto &m) { return iequals(m, method); }) != m_mutating_methods.end();
+		return std::ranges::find_if(m_mutating_methods, [method](auto &m)
+				   { return iequals(m, method); }) != m_mutating_methods.end();
 	}
 
 	std::string m_secret;
 	user_service &m_users;
 	bool m_default_allow;
 	bool m_validate_csrf = false;
+	uri m_context_path{};
 	std::vector<std::string> m_mutating_methods{ "POST", "PUT", "DELETE", "PATCH" };
 	std::vector<rule> m_rules;
 	std::vector<std::tuple<std::string, std::unique_ptr<password_encoder>>> m_known_password_encoders;
@@ -458,6 +476,7 @@ class security_context
 	std::chrono::seconds m_login_lockout_duration = std::chrono::minutes{ 5 };
 	mutable std::mutex m_failures_mutex;
 	mutable std::map<std::string, std::pair<std::chrono::steady_clock::time_point, int>> m_login_failures;
+	size_t m_max_tracked_login_failures = 10'000;
 
 	/// @endcond
 };

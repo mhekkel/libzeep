@@ -7,33 +7,34 @@
 /// \file
 /// definition of the zeep::http::server class
 
-#include "zeep/exception.hpp"
-#include "zeep/http/access-control.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/template-processor.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/access-control.hpp"
+# include "zeep/http/template-processor.hpp"
 
-#include <chrono>
-#include <cstdint>
-#include <filesystem>
-#include <list>
-#include <memory>
-#include <mutex>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <thread>
-#include <utility>
+# include <chrono>
+# include <cstdint>
+# include <filesystem>
+# include <list>
+# include <memory>
+# include <mutex>
+# include <set>
+# include <string>
+# include <string_view>
+# include <thread>
+# include <utility>
+#endif
 
 namespace zeep::http
 {
 
-class connection;
-class controller;
-class error_handler;
-class reply;
-class request;
-class security_context;
+ZEEP_EXPORT class connection;
+ZEEP_EXPORT class controller;
+ZEEP_EXPORT class error_handler;
+ZEEP_EXPORT class reply;
+ZEEP_EXPORT class request;
+ZEEP_EXPORT class security_context;
 
 /// \brief The libzeep HTTP server implementation. Originally based on example code found in boost::asio.
 ///
@@ -41,7 +42,7 @@ class security_context;
 /// combination. Add controller classes to do the actual work. These controllers will be tried in the order
 /// at which they were added to see if they want to process a request.
 
-class basic_server
+ZEEP_EXPORT class basic_server
 {
   public:
 	/// \brief Simple server, no security, no template processor
@@ -110,12 +111,12 @@ class basic_server
 	/// \brief Set the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	void set_context_name(std::string context_name) noexcept { m_context_name = std::move(context_name); }
+	void set_context_path(uri context_name) noexcept;
 
 	/// \brief Get the context_name
 	///
 	/// The context name is used in constructing relative URL's that start with a forward slash
-	[[nodiscard]] std::string get_context_name() const { return m_context_name; }
+	[[nodiscard]] uri get_context_path() const { return m_context_path; }
 
 	/// \brief Add controller to the list of controllers
 	///
@@ -230,7 +231,7 @@ class basic_server
 	std::string m_address;
 	uint16_t m_port = 0;
 	bool m_log_forwarded;
-	std::string m_context_name; /// \brief This is required for proxied servers e.g.
+	uri m_context_path; /// \brief This is required for proxied servers e.g.
 	std::unique_ptr<security_context> m_security_context;
 	std::unique_ptr<basic_template_processor> m_template_processor;
 	std::list<std::unique_ptr<controller>> m_controllers;
@@ -244,7 +245,7 @@ class basic_server
 // --------------------------------------------------------------------
 /// \brief The most often used server class, contains its own io_context.
 
-class server : public basic_server
+ZEEP_EXPORT class server : public basic_server
 {
   public:
 	/// \brief Simple server, no security, no template processor

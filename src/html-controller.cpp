@@ -2,22 +2,24 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/html-controller.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/html-controller.hpp"
 
-#include "detail/glob.hpp"
-#include "zeep/http/controller.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/http/template-processor.hpp"
-#include "zeep/uri.hpp"
+# include "detail/glob.hpp"
+# include "zeep/http/controller.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/http/template-processor.hpp"
+# include "zeep/uri.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <functional>
-#include <string>
+# include <algorithm>
+# include <cassert>
+# include <functional>
+# include <string>
+#endif
 
 namespace zeep::http
 {

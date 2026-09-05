@@ -7,27 +7,30 @@
 /// \file
 /// definition of the zeep::http::request class encapsulating a valid HTTP request
 
-#include "zeep/el/object.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/http/asio.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/uri.hpp"
 
-#include <array>
+# include <array>
 
-#include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <iosfwd>
-#include <locale>
-#include <map>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <vector>
-#include <zeem/zeem.hpp>
+# include <chrono>
+# include <cstddef>
+# include <cstdint>
+# include <iosfwd>
+# include <locale>
+# include <map>
+# include <optional>
+# include <string>
+# include <string_view>
+# include <tuple>
+# include <type_traits>
+# include <utility>
+# include <vector>
+# include <zeem/zeem.hpp>
+#endif
 
 namespace zeep::http
 {
@@ -39,7 +42,7 @@ namespace zeep::http
 ///
 /// Files submitted using multipart/form-data contain a filename and
 /// mimetype that might be interesting to the client.
-struct file_param
+ZEEP_EXPORT struct file_param
 {
 	std::string filename;
 	std::string mimetype;
@@ -55,7 +58,7 @@ struct file_param
 // Some type traits to detect arrays of file_params.
 // Should eventually be made more generic for all request parameters
 
-template <typename T, typename = void>
+ZEEP_EXPORT template <typename T, typename = void>
 struct is_file_param_array_type : std::false_type
 {
 };
@@ -70,7 +73,7 @@ struct is_file_param_array_type<T,
 	static constexpr bool value = std::is_same_v<typename T::value_type, file_param>;
 };
 
-template <typename T>
+ZEEP_EXPORT template <typename T>
 inline constexpr bool is_file_param_array_type_v = is_file_param_array_type<T>::value;
 
 // --------------------------------------------------------------------
@@ -78,7 +81,7 @@ inline constexpr bool is_file_param_array_type_v = is_file_param_array_type<T>::
 /// request contains the parsed original HTTP request as received
 /// by the server.
 
-class request
+ZEEP_EXPORT class request
 {
   public:
 	friend class message_parser;

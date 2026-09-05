@@ -8,17 +8,20 @@
 /// Source code specifically for Unix/Linux.
 /// Utility routines to build daemon processes
 
-#include "zeep/config.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/config.hpp"
 
-#include <cstdint>
-#include <functional>
-#include <string>
-#include <string_view>
+# include <cstdint>
+# include <functional>
+# include <string>
+# include <string_view>
+#endif
 
 namespace zeep::http
 {
 
-class basic_server;
+ZEEP_EXPORT class basic_server;
 
 /// \brief A class to create daemon processes easily
 ///
@@ -28,7 +31,7 @@ class basic_server;
 /// specified and a process ID is store in the pid file which
 /// allows checking the status of a running daemon.
 
-class daemon
+ZEEP_EXPORT class daemon
 {
   public:
 	/// \brief The factory for creating server instances.

@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include "zeep/http/request.hpp"
+#endif
 
 #include <catch2/catch_test_macros.hpp>
 

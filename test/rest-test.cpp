@@ -3,8 +3,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/detail/signals.hpp"
-
+#if ZEEP_CXX_MODULE
+import zeem;
+import zeep;
+#else
 #include "zeep/el/object.hpp"
 #include "zeep/el/serializer.hpp"
 #include "zeep/http/asio.hpp"
@@ -19,7 +21,9 @@
 #include "zeep/uri.hpp"
 
 #include <zeem/zeem.hpp>
+#endif
 
+#include "../include/zeep/http/asio.hpp"
 
 #include <cstdint>
 #include <exception>
@@ -32,6 +36,9 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+
+#include "../src/detail/signals.hpp"
+
 
 using namespace std;
 

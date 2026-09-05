@@ -6,28 +6,30 @@
 // A script language used in the XHTML templates used by the zeep webapp.
 //
 
-#include "detail/format.hpp"
-#include "zeep/el/object.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/unicode-support.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "detail/format.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/unicode-support.hpp"
+# include "zeep/uri.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
 
-#include <cassert>
-#include <charconv>
-#include <chrono>
-#include <cstdint>
-#include <exception>
-#include <map>
-#include <optional>
-#include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
+# include <cassert>
+# include <charconv>
+# include <chrono>
+# include <cstdint>
+# include <exception>
+# include <map>
+# include <optional>
+# include <string>
+# include <system_error>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
@@ -1207,13 +1209,13 @@ object interpreter::parse_link_template_expr()
 	std::string path;
 
 	int braces = 0;
-	auto context = m_scope.get_context_name();
+	auto context = m_scope.get_context_path();
 
 	// in case of a relative URL starting with a forward slash, we prefix the URL with the context_name of the server
 	if (m_lookahead == token_type::div)
 	{
 		match(token_type::div);
-		path = context;
+		path = context.get_path().string();
 		if (path.empty() or path.back() != '/')
 			path += '/';
 	}

@@ -1,46 +1,48 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/template-processor.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/template-processor.hpp"
 
-#include "zeep/el/object.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/http/tag-processor.hpp"
-#include "zeep/unicode-support.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/http/tag-processor.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <new>
-#include <zeem/zeem.hpp>
+# include <new>
+# include <zeem/zeem.hpp>
 
-#include <cerrno>
-#include <chrono>
-#include <cstring>
-#include <ctime>
-#include <exception>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <functional>
-#include <initializer_list>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <set>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
+# include <cerrno>
+# include <chrono>
+# include <cstring>
+# include <ctime>
+# include <exception>
+# include <filesystem>
+# include <format>
+# include <fstream>
+# include <functional>
+# include <initializer_list>
+# include <iomanip>
+# include <iostream>
+# include <memory>
+# include <optional>
+# include <set>
+# include <sstream>
+# include <stdexcept>
+# include <string>
+# include <system_error>
+# include <utility>
+# include <vector>
 
-#if USE_DATE_H
-# include <date/date.h>
-# include <date/tz.h>
+# if USE_DATE_H
+#  include <date/date.h>
+#  include <date/tz.h>
+# endif
 #endif
 
 namespace fs = std::filesystem;
@@ -51,7 +53,7 @@ namespace zeep::http
 // --------------------------------------------------------------------
 //
 
-auto sanitizePath(const fs::path &dir, const fs::path &file) -> fs::path
+auto sanitize_path(const fs::path &dir, const fs::path &file) -> fs::path
 {
 	std::error_code ec;
 
@@ -81,7 +83,18 @@ std::filesystem::file_time_type file_loader::file_time(std::filesystem::path fil
 	if (file.has_root_path())
 		file = fs::relative(file, file.root_path());
 
-	return fs::last_write_time(m_docroot / file, ec);
+	auto docroot = fs::canonical(m_docroot, ec);
+	if (ec)
+		return {};
+
+	file = sanitize_path(docroot, file);
+	if (file.empty())
+	{
+		ec = std::make_error_code(std::errc::no_such_file_or_directory);
+		return {};
+	}
+
+	return fs::last_write_time(file, ec);
 }
 
 /// return last_write_time of \a file
@@ -91,11 +104,20 @@ std::unique_ptr<std::istream> file_loader::load_file(std::string file, std::erro
 	if (path.has_root_path())
 		path = fs::relative(path, path.root_path());
 
-	path = sanitizePath(std::filesystem::canonical(m_docroot), path);
+	auto docroot = fs::canonical(m_docroot, ec);
+	if (ec)
+		return {};
+
+	path = sanitize_path(docroot, path);
+	if (path.empty())
+	{
+		ec = std::make_error_code(std::errc::no_such_file_or_directory);
+		return {};
+	}
 
 	std::unique_ptr<std::ifstream> result;
 
-	if (not fs::is_regular_file(path))
+	if (not fs::is_regular_file(path, ec))
 		ec = std::make_error_code(std::errc::no_such_file_or_directory);
 	else
 	{

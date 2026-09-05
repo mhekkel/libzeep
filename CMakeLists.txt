@@ -1,20 +1,29 @@
 # SPDX-FileCopyrightText: 2023-2026 Maarten L. Hekkelman
 # SPDX-License-Identifier: BSL-1.0
 
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.29)
+
+# Experimental import std support
+# if(${CMAKE_VERSION} VERSION_EQUAL 4.3.3)
+#     set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+
+#     set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+#     set(CMAKE_CXX_MODULE_STD 1)
+# endif()
 
 project(libzeep VERSION 8.4.0 LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-include(CMakePackageConfigHelpers)
 include(CPM)
+include(CMakePackageConfigHelpers)
 include(CheckFunctionExists)
 include(CTest)
 include(VersionString)
 
-option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
+option(ZEEP_BUILD_CXX_MODULE "Build the library as a C++ 20 module library" ON)
 option(ZEEP_USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" ON)
+option(ZEEP_BUILD_DOCUMENTATION "Build documentation" OFF)
 option(ZEEP_BUILD_EXAMPLES "Build the example applications" ON)
 
 # New policy for Boost, set it here
@@ -22,13 +31,34 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 14)
-		message(FATAL_ERROR "Compiler too old, minimum for gcc is 14")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if(ZEEP_BUILD_CXX_MODULE)
+        message(WARNING "Sorry, macOS has no proper support for module libraries at the moment")
+        set(ZEEP_BUILD_CXX_MODULE OFF)
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if(ZEEP_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
+        message(WARNING "Sorry, your compiler is too old, not building the module library")
+        set(ZEEP_BUILD_CXX_MODULE OFF)
+    endif()
+    add_compile_options(-Wall -Wextra)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if(ZEEP_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL 16)
+        message(WARNING "Sorry, your compiler is too old, not building the module library")
+        set(ZEEP_BUILD_CXX_MODULE OFF)
+    endif()
+    add_compile_options(-Wall -Wextra -Wno-bidi-chars)
 elseif(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    add_compile_options(/W4)
+    if(ZEEP_BUILD_CXX_MODULE)
+        message(WARNING "Sorry, adding asio to a module library is not working in Windows")
+        set(ZEEP_BUILD_CXX_MODULE OFF)
+    endif()
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    if(ZEEP_BUILD_CXX_MODULE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 20)
+        message(WARNING "Sorry, your compiler is too old, not building the module library")
+        set(ZEEP_BUILD_CXX_MODULE OFF)
+    endif()
 endif()
 
 if(WIN32)
@@ -87,7 +117,10 @@ if(ZEEP_USE_BOOST_ASIO)
 
     message(STATUS "zeep: Using asio from boost")
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio-boost.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio-boost.hpp.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp
+        @ONLY)
 
     set(FIND_DEPENDENCY_BOOST "find_dependency(Boost REQUIRED)")
 else()
@@ -103,7 +136,10 @@ else()
 
     message(STATUS "zeep: Using asio from ${ASIO_INCLUDE_DIR}")
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp @ONLY)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.hpp.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/http/asio.hpp
+        @ONLY)
 endif()
 
 try_run(TEST_STD_CHRONO_ZONED_TIME_R TEST_STD_CHRONO_ZONED_TIME_C
@@ -131,7 +167,7 @@ endif()
 
 CPMFindPackage(NAME zeem
     GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeem.git"
-    GIT_TAG v2.3.2
+    GIT_TAG v2.4.1
     EXCLUDE_FROM_ALL YES)
 
 if(UNIX)
@@ -144,28 +180,52 @@ endif()
 
 check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 
+
+# Config file
+set(LIBZEEP_VERSION ${PROJECT_VERSION})
+set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/config.hpp.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/config.hpp"
+    @ONLY)
+
 # Generate the revision.hpp file
 write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src" LIB_NAME "libzeep")
 
 # Library rules
+file(GLOB_RECURSE zeep_headers include/*.hpp)
+file(GLOB_RECURSE zeep_modules include/*.cppm)
+
 file(GLOB_RECURSE zeep_cpp src/*.cpp)
-file(GLOB_RECURSE zeep_hpp include/*.hpp)
-list(APPEND zeep_hpp include/zeep/config.hpp)
+file(GLOB_RECURSE zeep_cxx src/*.cxx)
+
+list(APPEND zeep_headers include/zeep/config.hpp)
 
 if(NOT USE_RSRC)
     list(FILTER zeep_cpp EXCLUDE REGEX src/controller-rsrc.cpp)
+    list(FILTER zeep_cxx EXCLUDE REGEX src/controller-rsrc.cxx)
 endif()
 
 add_library(zeep ${zeep_cpp})
 add_library(zeep::zeep ALIAS zeep)
 
-target_sources(zeep
-    PUBLIC FILE_SET zeep_headers TYPE HEADERS
-    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-    FILES ${zeep_hpp})
-
-set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(zeep PUBLIC cxx_std_23)
+
+if(BUILD_SHARED_LIBS AND WIN32)
+    target_compile_definitions(zeep PRIVATE ZEEP_SHARED_BUILD)
+    set_target_properties(zeep PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+# The classic target
+target_sources(zeep
+    PUBLIC
+    FILE_SET zeep_classic TYPE HEADERS
+    BASE_DIRS include
+    FILES ${zeep_headers})
+
 target_include_directories(zeep PUBLIC "$<BUILD_INTERFACE:${ASIO_INCLUDE_DIR}>")
 target_link_libraries(zeep PUBLIC Threads::Threads zeem::zeem OpenSSL::SSL OpenSSL::Crypto)
 
@@ -177,33 +237,7 @@ if(ZEEP_USE_BOOST_ASIO)
     target_link_libraries(zeep PUBLIC Boost::headers)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_link_options(zeep PRIVATE -undefined dynamic_lookup)
-endif()
-
-# Install rules
-install(TARGETS zeep
-    EXPORT zeep-targets
-    FILE_SET zeep_headers
-    DESTINATION include)
-
-install(EXPORT zeep-targets
-    NAMESPACE zeep::
-    DESTINATION lib/cmake/zeep)
-
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
-    INSTALL_DESTINATION lib/cmake/zeep)
-
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-    COMPATIBILITY AnyNewerVersion)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
-    DESTINATION lib/cmake/zeep
-    COMPONENT Devel)
+set_target_properties(zeep PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(zeep PROPERTIES
@@ -212,17 +246,93 @@ set_target_properties(zeep PROPERTIES
     INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
     COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION)
 
-# Config file
-set(LIBZEEP_VERSION ${PROJECT_VERSION})
-set(LIBZEEP_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set(LIBZEEP_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(LIBZEEP_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+install(TARGETS zeep
+    EXPORT zeep-targets
+    FILE_SET zeep_classic
+    DESTINATION include)
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/config.hpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/include/zeep/config.hpp" @ONLY)
+install(EXPORT zeep-targets
+    NAMESPACE zeep::
+    DESTINATION lib/cmake/zeep)
 
-# Documentation
-if(ZEEP_BUILD_DOCUMENTATION)
-    add_subdirectory(docs)
+if(ZEEP_BUILD_CXX_MODULE)
+    if(BUILD_SHARED_LIBS)
+        add_library(zeep-module SHARED ${zeep_cxx})
+
+        if(WIN32)
+            target_compile_definitions(zeep-module PRIVATE ZEEP_SHARED_BUILD)
+            set_target_properties(zeep-module PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        endif()
+    else()
+        add_library(zeep-module STATIC ${zeep_cxx})
+    endif()
+    add_library(zeep::zeep-module ALIAS zeep-module)
+
+    target_compile_features(zeep-module PUBLIC cxx_std_23)
+
+    target_sources(zeep-module
+        PUBLIC
+        FILE_SET zeep_module TYPE CXX_MODULES
+        BASE_DIRS include
+        FILES ${zeep_modules})
+
+    target_compile_definitions(zeep-module PUBLIC ZEEP_CXX_MODULE)
+    target_include_directories(zeep-module PUBLIC "$<BUILD_INTERFACE:${ASIO_INCLUDE_DIR}>")
+
+    target_link_libraries(zeep-module PUBLIC Threads::Threads zeem::zeem-module OpenSSL::SSL OpenSSL::Crypto)
+
+    if(NOT USE_STD_CHRONO_ZONED_TIME)
+        target_link_libraries(zeep-module PUBLIC date::date-tz)
+    endif()
+
+    if(ZEEP_USE_BOOST_ASIO)
+        target_link_libraries(zeep-module PUBLIC Boost::headers)
+    endif()
+
+	set_target_properties(zeep-module PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    set_target_properties(zeep-module PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+        INTERFACE_zeep_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+        COMPATIBLE_INTERFACE_STRING zeep_MAJOR_VERSION)
+
+    target_include_directories(zeep-module
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/zeep>)
+
+    install(TARGETS zeep-module
+        EXPORT zeep-module-targets
+        CXX_MODULES_BMI DESTINATION "lib/cxx/bmi"
+        FILE_SET zeep_module DESTINATION "lib/cxx/miu")
+
+    install(EXPORT zeep-module-targets
+        NAMESPACE zeep::
+        DESTINATION lib/cmake/zeep
+        FILE "zeep-module-targets.cmake")
+
+endif()
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/zeep-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake
+    INSTALL_DESTINATION lib/cmake/zeep)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/zeep/zeep-config-version.cmake"
+    DESTINATION lib/cmake/zeep
+    COMPONENT Devel)
+
+
+# Test applications, but only if we're not included as a subproject
+if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(test)
 endif()
 
 # Examples
@@ -230,7 +340,8 @@ if(ZEEP_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-# Test applications, but only if we're not included as a subproject
-if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
-    add_subdirectory(test)
+# Documentation
+if(ZEEP_BUILD_DOCUMENTATION)
+    add_subdirectory(docs)
 endif()
+

@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2019-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "detail/format.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "detail/format.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <cmath>
-#include <deque>
-#include <iostream>
-#include <limits>
-#include <locale>
-#include <tuple>
+# include <cmath>
+# include <deque>
+# include <iostream>
+# include <limits>
+# include <locale>
+# include <tuple>
+#endif
 
 namespace zeep
 {

@@ -2,22 +2,25 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/controller.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/controller.hpp"
 
-#include "detail/glob.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/uri.hpp"
+# include "detail/glob.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/asio.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/http/security.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/uri.hpp"
 
-#include <cstddef>
-#include <filesystem>
-#include <regex>
-#include <string>
-#include <vector>
+# include <cstddef>
+# include <filesystem>
+# include <regex>
+# include <string>
+# include <vector>
+#endif
 
 namespace zeep::http
 {
@@ -90,7 +93,7 @@ void controller::get_options(const request &req, reply &rep)
 
 // --------------------------------------------------------------------
 
-void controller::init_scope(scope & /*unused*/)
+void controller::init_scope(scope & /* scope */)
 {
 }
 
@@ -123,6 +126,18 @@ bool controller::handle_request(http::request &req, http::reply &rep)
 		}
 
 		scope.put("baseuri", path);
+
+		if (m_server and m_server->has_security_context())
+		{
+			auto &sc = m_server->get_security_context();
+			if (sc.get_validate_csrf())
+			{
+				auto csrf_token = req.get_cookie("csrf-token");
+				if (not csrf_token.empty())
+					scope.put("_csrf", csrf_token);
+			}
+		}
+
 		init_scope(scope);
 
 		if (req.get_method() == "OPTIONS")

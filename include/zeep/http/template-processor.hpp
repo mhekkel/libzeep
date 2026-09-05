@@ -7,19 +7,22 @@
 /// definition of the zeep::template_processor class. This class
 /// handles the loading and processing of XHTML files.
 
-#include "zeep/config.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/tag-processor.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/config.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/tag-processor.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
 
-#include <filesystem>
-#include <iosfwd>
-#include <optional>
-#include <set>
-#include <string>
-#include <system_error>
-#include <utility>
+# include <filesystem>
+# include <iosfwd>
+# include <optional>
+# include <set>
+# include <string>
+# include <system_error>
+# include <utility>
+#endif
 
 // --------------------------------------------------------------------
 //
@@ -27,8 +30,8 @@
 namespace zeep::http
 {
 
-class request;
-class html_controller;
+ZEEP_EXPORT class request;
+ZEEP_EXPORT class html_controller;
 
 // -----------------------------------------------------------------------
 /// \brief abstract base class for a resource loader
@@ -38,7 +41,7 @@ class html_controller;
 /// from a 'docroot' directory or rsrc_loader to load files from compiled in
 /// resources. (See https://forge.hekkelman.net/maarten/mrc for more info on resources)
 
-class resource_loader
+ZEEP_EXPORT class resource_loader
 {
   public:
 	virtual ~resource_loader() = default;
@@ -67,7 +70,7 @@ class resource_loader
 ///
 /// Load the resources from the directory specified in the docroot constructor parameter.
 
-class file_loader : public resource_loader
+ZEEP_EXPORT class file_loader : public resource_loader
 {
   public:
 	/// \brief constructor
@@ -99,13 +102,13 @@ class file_loader : public resource_loader
 ///
 /// Load the resources from resource data created with mrc (see https://forge.hekkelman.net/maarten/mrc )
 
-class rsrc_loader : public resource_loader
+ZEEP_EXPORT class rsrc_loader : public resource_loader
 {
   public:
 	/// \brief constructor
 	///
 	/// The parameter is not used
-	rsrc_loader(const std::filesystem::path &/* unused */);
+	rsrc_loader(const std::filesystem::path & /* unused */);
 
 	/// \brief return last_write_time of \a file
 	/// \param file  The path to the file to check
@@ -132,7 +135,7 @@ class rsrc_loader : public resource_loader
 /// template file and the parameters passed in the request and calculated data stored
 /// in a scope object.
 
-class basic_template_processor
+ZEEP_EXPORT class basic_template_processor
 {
   public:
 	/// \brief Construct a processor with the given docroot
@@ -251,7 +254,7 @@ class basic_template_processor
 ///
 /// \tparam Loader  The resource loader type, either \a file_loader or \a rsrc_loader
 
-template <typename Loader>
+ZEEP_EXPORT template <typename Loader>
 class html_template_processor : public basic_template_processor
 {
   public:
@@ -291,19 +294,19 @@ class html_template_processor : public basic_template_processor
 };
 
 /// \brief HTML template processor using \a file_loader
-using file_based_html_template_processor = html_template_processor<file_loader>;
+ZEEP_EXPORT using file_based_html_template_processor = html_template_processor<file_loader>;
 
 #if USE_RSRC
 /// \brief HTML template processor using \a rsrc_loader
-using rsrc_based_html_template_processor = html_template_processor<rsrc_loader>;
+ZEEP_EXPORT using rsrc_based_html_template_processor = html_template_processor<rsrc_loader>;
 #endif
 
 /// \brief the actual definition of zeep::template_processor
 
 #if WEBAPP_USES_RESOURCES and USE_RSRC
-using template_processor = rsrc_based_html_template_processor;
+ZEEP_EXPORT using template_processor = rsrc_based_html_template_processor;
 #else
-using template_processor = file_based_html_template_processor;
+ZEEP_EXPORT using template_processor = file_based_html_template_processor;
 #endif
 
 } // namespace zeep::http

@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2025-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/scope.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/server.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/scope.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/server.hpp"
 
-#include <ostream>
-#include <stdexcept>
+# include <ostream>
+# include <stdexcept>
+#endif
 
 namespace zeep::http
 {
@@ -18,7 +20,7 @@ std::ostream &operator<<(std::ostream &lhs, const scope &rhs)
 	const scope *s = &rhs;
 	while (s != nullptr)
 	{
-		for (const scope::data_map::value_type& e : s->m_data)
+		for (const scope::data_map::value_type &e : s->m_data)
 			lhs << e.first << " = " << e.second << '\n';
 		s = s->m_next;
 	}
@@ -114,9 +116,9 @@ el::object &scope::lookup(const std::string &name)
 	return *result;
 }
 
-std::string scope::get_context_name() const
+uri scope::get_context_path() const
 {
-	return m_server ? m_server->get_context_name() : "";
+	return m_server ? m_server->get_context_path() : "";
 }
 
 el::object scope::get_credentials() const

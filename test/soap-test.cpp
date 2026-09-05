@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/status.hpp"
+#if ZEEP_CXX_MODULE
+import zeem;
+import zeep;
+#else
+#include <zeep/http/status.hpp>
 #include <zeep/exception.hpp>
 #include <zeep/http/soap-controller.hpp>
+#endif
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <iostream>
+#include <iomanip>
 
 struct TestStruct
 {
@@ -231,7 +237,7 @@ TEST_CASE("soap_3f")
  <soap:Body>
   <soap:Fault>
    <faultcode>soap:Server</faultcode>
-   <faultstring>Invalid namespace for request</faultstring>
+   <faultstring>An internal error prevented the server from processing your request</faultstring>
   </soap:Fault>
  </soap:Body>
 </soap:Envelope>)"_xml;
@@ -248,5 +254,123 @@ TEST_CASE("soap_w1")
 	zeem::document doc;
 	doc.emplace_back(srv.make_wsdl());
 
-	std::cerr << std::setw(2) << doc << '\n';
+	auto test = R"(<wsdl:definitions targetNamespace="http://www.hekkelman.com/libzeep/soap" xmlns:ns="http://www.hekkelman.com/libzeep/soap" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+  <wsdl:types>
+    <xsd:schema targetNamespace="http://www.hekkelman.com/libzeep/soap" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <xsd:element name="Test2">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="s" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="Test2Response"/>
+      <xsd:element name="Test3">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="t" type="ns:TestStruct" minOccurs="1" maxOccurs="1"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="Test3Response">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Response" type="ns:TestStruct" minOccurs="1" maxOccurs="1"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="Test">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="x" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="TestResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Response" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:complexType name="TestStruct">
+        <xsd:sequence>
+          <xsd:element name="a" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="s" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:binding name="testService" type="ns:testServicePortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="Test">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Test2">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Test3">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:portType name="testServicePortType">
+    <wsdl:operation name="Test">
+      <wsdl:input message="ns:TestRequestMessage"/>
+      <wsdl:output message="ns:TestMessage"/>
+    </wsdl:operation>
+    <wsdl:operation name="Test2">
+      <wsdl:input message="ns:Test2RequestMessage"/>
+      <wsdl:output message="ns:Test2Message"/>
+    </wsdl:operation>
+    <wsdl:operation name="Test3">
+      <wsdl:input message="ns:Test3RequestMessage"/>
+      <wsdl:output message="ns:Test3Message"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:message name="Test2Message">
+    <wsdl:part name="parameters" element="ns:Test2"/>
+  </wsdl:message>
+  <wsdl:message name="Test2RequestMessage">
+    <wsdl:part name="parameters" element="ns:Test2"/>
+  </wsdl:message>
+  <wsdl:message name="Test3Message">
+    <wsdl:part name="parameters" element="ns:Test3"/>
+  </wsdl:message>
+  <wsdl:message name="Test3RequestMessage">
+    <wsdl:part name="parameters" element="ns:Test3"/>
+  </wsdl:message>
+  <wsdl:message name="TestMessage">
+    <wsdl:part name="parameters" element="ns:Test"/>
+  </wsdl:message>
+  <wsdl:message name="TestRequestMessage">
+    <wsdl:part name="parameters" element="ns:Test"/>
+  </wsdl:message>
+  <wsdl:service name="testService">
+    <wsdl:port name="testService" binding="ns:testService">
+      <soap:address location="ws"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
+	)"_xml;
+	
+	CHECK(doc == test);
+	// std::cerr << std::setw(2) << doc << '\n';
 }

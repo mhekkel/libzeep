@@ -2,21 +2,23 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/connection.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/message-parser.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/connection.hpp"
+# include "zeep/http/asio.hpp"
+# include "zeep/http/message-parser.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/uri.hpp"
 
-#include <cstddef>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <vector>
+# include <cstddef>
+# include <iomanip>
+# include <iostream>
+# include <memory>
+# include <string>
+# include <tuple>
+# include <vector>
+#endif
 
 namespace zeep::http
 {

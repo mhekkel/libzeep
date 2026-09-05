@@ -9,18 +9,21 @@
 /// Instances of this class take care of mapping member functions to
 /// SOAP calls automatically converting in- and output data
 
-#include "zeep/config.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/config.hpp"
 
-#include "zeep/http/controller.hpp"
+# include "zeep/http/controller.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
+#endif
 
 namespace zeep::http
 {
 
 /// \brief Wrapper around a SOAP envelope for input and output of correctly formatted SOAP messages
 
-class soap_envelope
+ZEEP_EXPORT class soap_envelope
 {
   public:
 	soap_envelope(const soap_envelope &) = delete;
@@ -52,19 +55,19 @@ class soap_envelope
 ///
 /// \param    data  The \a zeem::element object to wrap into the envelope
 /// \return   A new \a zeem::element object containing the envelope.
-zeem::element make_envelope(zeem::element &&data);
+ZEEP_EXPORT zeem::element make_envelope(zeem::element &&data);
 // zeem::element make_envelope(const zeem::element& data);
 
 /// \brief Create a standard SOAP Fault message for the string parameter
 ///
 /// \param    message The string object containing a descriptive error message.
 /// \return   A new \a zeem::element object containing the fault envelope.
-zeem::element make_fault(std::string message);
+ZEEP_EXPORT zeem::element make_fault(std::string message);
 /// \brief Create a standard SOAP Fault message for the exception object
 ///
 /// \param    ex The exception object that was caught.
 /// \return   A new \a zeem::element object containing the fault envelope.
-zeem::element make_fault(const std::exception &ex);
+ZEEP_EXPORT zeem::element make_fault(const std::exception &ex);
 
 // --------------------------------------------------------------------
 
@@ -78,7 +81,7 @@ zeem::element make_fault(const std::exception &ex);
 ///
 /// See the chapter on SOAP controllers in the documentation for more information.
 
-class soap_controller : public controller
+ZEEP_EXPORT class soap_controller : public controller
 {
   public:
 	/// \brief constructor

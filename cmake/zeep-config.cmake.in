@@ -8,5 +8,8 @@ find_dependency(zeem REQUIRED)
 find_dependency(OpenSSL REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/zeep-targets.cmake")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/zeep-module-targets.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/zeep-module-targets.cmake")
+endif()
 
 check_required_components(zeep)

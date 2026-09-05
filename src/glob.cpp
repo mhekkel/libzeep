@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2019-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "detail/glob.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "detail/glob.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <algorithm>
-#include <cctype>
-#include <regex>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cctype>
+# include <regex>
+# include <utility>
+# include <vector>
+#endif
 
 // --------------------------------------------------------------------
 
@@ -81,7 +83,7 @@ namespace
 				default:
 					if ((*name == '/' and op == '\\') or
 						(*name == '\\' and op == '/') or
-						tolower(*name) == tolower(op))
+						std::tolower(static_cast<uint8_t>(*name)) == std::tolower(static_cast<uint8_t>(op)))
 					{
 						++name;
 						++pattern;

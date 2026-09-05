@@ -2,8 +2,10 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "detail/signals.hpp"
-#include <zeep/exception.hpp>
+#ifndef ZEEP_CXX_MODULE
+# include "detail/signals.hpp"
+# include <zeep/exception.hpp>
+#endif
 
 // --------------------------------------------------------------------
 //
@@ -12,21 +14,23 @@
 
 #if _WIN32
 
-#include <exception>
-#include <mutex>
-#include <condition_variable>
+# ifndef ZEEP_CXX_MODULE
+#  include <condition_variable>
+#  include <stdexcept>
+#  include <mutex>
 
-#include <Windows.h>
-#include <signal.h>
-#include <wincon.h>
+#  include <Windows.h>
+#  include <signal.h>
+#  include <wincon.h>
+# endif
 
-#ifndef SIGQUIT
-#define SIGQUIT SIGTERM
-#endif
+# ifndef SIGQUIT
+#  define SIGQUIT SIGTERM
+# endif
 
-#ifndef SIGHUP
-#define SIGHUP SIGBREAK
-#endif
+# ifndef SIGHUP
+#  define SIGHUP SIGBREAK
+# endif
 
 namespace zeep
 {
@@ -86,7 +90,7 @@ signal_catcher::signal_catcher()
 	: mImpl(nullptr)
 {
 	if (not SetConsoleCtrlHandler(&signal_catcher_impl::CtrlHandler, true))
-		throw exception("Could not install control handler");
+		throw std::runtime_error("Could not install control handler");
 }
 
 signal_catcher::~signal_catcher()
@@ -117,9 +121,11 @@ void signal_catcher::signal_hangup(std::thread &)
 
 #else
 
-#include <pthread.h>
-#include <csignal>
-#include <unistd.h>
+# ifndef ZEEP_CXX_MODULE
+#  include <csignal>
+#  include <pthread.h>
+#  include <unistd.h>
+# endif
 
 namespace zeep
 {

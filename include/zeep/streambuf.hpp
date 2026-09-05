@@ -6,10 +6,13 @@
 /// \file
 /// A simple std::streambuf implementation that wraps around const char* data.
 
-#include <cassert>
-#include <cstring>
-#include <functional>
-#include <streambuf>
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include <cassert>
+# include <cstring>
+# include <functional>
+# include <streambuf>
+#endif
 
 namespace zeep
 {
@@ -20,7 +23,7 @@ namespace zeep
 /// It is very often useful to have a streambuf class that can wrap
 /// wrap around a const char* pointer.
 
-class char_streambuf : public std::streambuf
+ZEEP_EXPORT class char_streambuf : public std::streambuf
 {
   public:
 	/// \brief constructor taking a \a buffer and a \a length
@@ -125,9 +128,9 @@ class char_streambuf : public std::streambuf
   private:
 	/// @cond
 
-	const char *const m_begin;  ///< Start of the buffer
-	const char *const m_end;    ///< End of the buffer
-	const char *m_current;      ///< Current read position
+	const char *const m_begin; ///< Start of the buffer
+	const char *const m_end;   ///< End of the buffer
+	const char *m_current;     ///< Current read position
 
 	/// @endcond
 };

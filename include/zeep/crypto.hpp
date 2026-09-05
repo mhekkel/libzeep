@@ -9,11 +9,16 @@
 /// This file contains an interface to the crypto related routines used
 /// throughout libzeep.
 
-#include <cstddef>
-#include <exception>
-#include <iosfwd>
-#include <string>
-#include <string_view>
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+
+# include <algorithm>
+# include <cstddef>
+# include <exception>
+# include <iosfwd>
+# include <string>
+# include <string_view>
+#endif
 
 namespace zeep
 {
@@ -23,7 +28,7 @@ namespace zeep
 ///@{
 
 /// \brief Thrown when the input does not contain valid base64 encoded data
-class invalid_base64 : public std::exception
+ZEEP_EXPORT class invalid_base64 : public std::exception
 {
   public:
 	invalid_base64() = default;
@@ -35,29 +40,29 @@ class invalid_base64 : public std::exception
 ///
 /// \param data			The string containing data to encode
 /// \param wrap_width	If this value is not zero, lines in the output will be wrapped to this width.
-std::string encode_base64(std::string_view data, size_t wrap_width = 0);
+ZEEP_EXPORT std::string encode_base64(std::string_view data, size_t wrap_width = 0);
 
 /// \brief decode data from base64 format, will throw invalid_base64 in case of invalid input
 ///
 /// \param data			The string containing data to decode
-std::string decode_base64(std::string_view data);
+ZEEP_EXPORT std::string decode_base64(std::string_view data);
 
 // The base64url versions are slightly different
 
 /// \brief encode \a data in base64url format (see https://tools.ietf.org/html/rfc4648#section-5)
 ///
 /// \param data			The string containing data to encode
-std::string encode_base64url(std::string_view data);
+ZEEP_EXPORT std::string encode_base64url(std::string_view data);
 
 /// \brief decode \a data from base64url format (see https://tools.ietf.org/html/rfc4648#section-5)
 ///
 /// \param data			The string containing data to decode
-std::string decode_base64url(std::string data);
+ZEEP_EXPORT std::string decode_base64url(std::string data);
 
 // And base32 might be handy as well, RFC 4648 (see https://en.wikipedia.org/wiki/Base32)
 
 /// \brief Thrown when the input does not contain valid base32 encoded data
-class invalid_base32 : public std::exception
+ZEEP_EXPORT class invalid_base32 : public std::exception
 {
   public:
 	invalid_base32() = default;
@@ -69,15 +74,15 @@ class invalid_base32 : public std::exception
 ///
 /// \param data			The string containing data to encode
 /// \param wrap_width	If this value is not zero, lines in the output will be wrapped to this width.
-std::string encode_base32(std::string_view data, size_t wrap_width = 0);
+ZEEP_EXPORT std::string encode_base32(std::string_view data, size_t wrap_width = 0);
 
 /// \brief decode data from base32 format, will throw invalid_base32 in case of invalid input
 ///
 /// \param data			The string containing data to decode
-std::string decode_base32(std::string_view data);
+ZEEP_EXPORT std::string decode_base32(std::string_view data);
 
 /// \brief Thrown when the input does not contain valid hexadecimal encoded data
-class invalid_hex : public std::exception
+ZEEP_EXPORT class invalid_hex : public std::exception
 {
   public:
 	invalid_hex() = default;
@@ -88,12 +93,12 @@ class invalid_hex : public std::exception
 /// \brief encode \a data in hexadecimal format
 ///
 /// \param data			The string containing data to encode
-std::string encode_hex(std::string_view data);
+ZEEP_EXPORT std::string encode_hex(std::string_view data);
 
 /// \brief decode \a data from hexadecimal format
 ///
 /// \param data			The string containing data to decode
-std::string decode_hex(std::string_view data);
+ZEEP_EXPORT std::string decode_hex(std::string_view data);
 
 ///@}
 
@@ -103,7 +108,7 @@ std::string decode_hex(std::string_view data);
 
 /// \brief compare two strings in constant time
 
-constexpr bool strings_match(std::string_view a, std::string_view b) noexcept
+ZEEP_EXPORT ZEEP_INLINE bool strings_match(std::string_view a, std::string_view b) noexcept
 {
 	volatile int diff = 0;
 
@@ -137,7 +142,7 @@ constexpr bool strings_match(std::string_view a, std::string_view b) noexcept
 /// unscrubbed copies behind on reallocation, so this is not a complete
 /// guarantee; use it in addition to storing secrets in dedicated buffers.
 /// \param s  The string whose contents should be zeroed
-inline void secure_scrub(std::string &s) noexcept
+ZEEP_EXPORT inline void secure_scrub(std::string &s) noexcept
 {
 	volatile char *p = reinterpret_cast<volatile char *>(s.data());
 	for (size_t i = 0; i < s.size(); ++i)
@@ -151,7 +156,7 @@ inline void secure_scrub(std::string &s) noexcept
 ///@{
 
 /// \brief return a string containing some random bytes
-std::string random_hash();
+ZEEP_EXPORT std::string random_hash();
 
 ///@}
 
@@ -162,23 +167,23 @@ std::string random_hash();
 /// \brief return the MD5 hash of \a data
 ///
 /// \deprecated MD5 is cryptographically broken. Use \a sha256 instead.
-[[deprecated("MD5 is cryptographically broken; use sha256 instead")]]
+ZEEP_EXPORT [[deprecated("MD5 is cryptographically broken; use sha256 instead")]]
 std::string md5(std::string_view data);
 
 /// \brief return the SHA1 hash of \a data (string view overload)
 ///
 /// \deprecated SHA-1 is no longer considered secure. Use \a sha256 instead.
-[[deprecated("SHA-1 is no longer considered secure; use sha256 instead")]]
+ZEEP_EXPORT [[deprecated("SHA-1 is no longer considered secure; use sha256 instead")]]
 std::string sha1(std::string_view data);
 
 /// \brief return the SHA1 hash of \a data (streambuf overload)
 ///
 /// \deprecated SHA-1 is no longer considered secure. Use \a sha256 instead.
-[[deprecated("SHA-1 is no longer considered secure; use sha256 instead")]]
+ZEEP_EXPORT [[deprecated("SHA-1 is no longer considered secure; use sha256 instead")]]
 std::string sha1(std::streambuf &data);
 
 /// \brief return the SHA256 hash of \a data
-std::string sha256(std::string_view data);
+ZEEP_EXPORT std::string sha256(std::string_view data);
 
 ///@}
 
@@ -189,17 +194,17 @@ std::string sha256(std::string_view data);
 /// \brief return the HMAC using an MD5 hash of \a message signed with \a key
 ///
 /// \deprecated HMAC-MD5 relies on the broken MD5 hash. Use \a hmac_sha256 instead.
-[[deprecated("HMAC-MD5 relies on the broken MD5 hash; use hmac_sha256 instead")]]
+ZEEP_EXPORT [[deprecated("HMAC-MD5 relies on the broken MD5 hash; use hmac_sha256 instead")]]
 std::string hmac_md5(std::string_view message, std::string_view key);
 
 /// \brief return the HMAC using an SHA1 hash of \a message signed with \a key
 ///
 /// \deprecated HMAC-SHA1 relies on the weak SHA-1 hash. Use \a hmac_sha256 instead.
-[[deprecated("HMAC-SHA1 relies on the weak SHA-1 hash; use hmac_sha256 instead")]]
+ZEEP_EXPORT [[deprecated("HMAC-SHA1 relies on the weak SHA-1 hash; use hmac_sha256 instead")]]
 std::string hmac_sha1(std::string_view message, std::string_view key);
 
 /// \brief return the HMAC using an SHA256 hash of \a message signed with \a key
-std::string hmac_sha256(std::string_view message, std::string_view key);
+ZEEP_EXPORT std::string hmac_sha256(std::string_view message, std::string_view key);
 
 ///@}
 
@@ -220,7 +225,7 @@ std::string hmac_sha256(std::string_view message, std::string_view key);
 /// \param keyLength	the requested key length that will be returned
 ///
 /// \deprecated PBKDF2-HMAC-SHA1 is weaker than PBKDF2-HMAC-SHA256. Use \a pbkdf2_hmac_sha256 instead.
-[[deprecated("PBKDF2-HMAC-SHA1 is weaker than PBKDF2-HMAC-SHA256; use pbkdf2_hmac_sha256 instead")]]
+ZEEP_EXPORT [[deprecated("PBKDF2-HMAC-SHA1 is weaker than PBKDF2-HMAC-SHA256; use pbkdf2_hmac_sha256 instead")]]
 std::string pbkdf2_hmac_sha1(std::string_view salt,
 	std::string_view password, unsigned iterations, unsigned keyLength);
 
@@ -233,7 +238,7 @@ std::string pbkdf2_hmac_sha1(std::string_view salt,
 /// \param password		the password
 /// \param iterations	number of iterations, use a value of at least 30000
 /// \param keyLength	the requested key length that will be returned
-std::string pbkdf2_hmac_sha256(std::string_view salt,
+ZEEP_EXPORT std::string pbkdf2_hmac_sha256(std::string_view salt,
 	std::string_view password, unsigned iterations, unsigned keyLength);
 
 ///@}

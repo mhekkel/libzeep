@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include "zeep/http/message-parser.hpp"
 #include "zeep/streambuf.hpp"
+#endif
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -430,8 +434,27 @@ TEST_CASE("fuzz_parser_header_name_edge_cases")
 }
 
 // --------------------------------------------------------------------
-// High-byte / binary payloads
+// Header values must be terminated by CRLF; bare LF is not allowed
 // --------------------------------------------------------------------
+
+TEST_CASE("fuzz_parser_bare_lf_in_header_value_rejected")
+{
+	using zeep::http::parse_result;
+
+	// a lone LF inside a header value would otherwise be smuggled into it
+	CHECK(fuzz_parse_request("GET / HTTP/1.1\r\nX-V: a\nb\r\n\r\n").result == parse_result::false_value);
+	// a lone LF at the start of a value
+	CHECK(fuzz_parse_request("GET / HTTP/1.1\r\nX-V: \nvalue\r\n\r\n").result == parse_result::false_value);
+	// a lone LF before an obs-fold continuation
+	CHECK(fuzz_parse_request("GET / HTTP/1.1\r\nX-Fold: line1\n line2\r\n\r\n").result == parse_result::false_value);
+	// same for replies, which share the header parser
+	CHECK(fuzz_parse_reply("HTTP/1.1 200 OK\r\nX-V: a\nb\r\n\r\n").result == parse_result::false_value);
+
+	// ... but proper CRLF-terminated values (and HTAB content) remain valid
+	CHECK(fuzz_parse_request("GET / HTTP/1.1\r\nX-V: a\r\n\r\n").result == parse_result::true_value);
+	CHECK(fuzz_parse_request("GET / HTTP/1.1\r\nX-V: a\tb\r\n\r\n").result == parse_result::true_value);
+	CHECK(fuzz_parse_request("GET / HTTP/1.1\r\nX-Fold: line1\r\n line2\r\n\r\n").result == parse_result::true_value);
+}
 
 TEST_CASE("fuzz_parser_binary_payload")
 {
@@ -466,13 +489,6 @@ static fuzz_result fuzz_parse_request_chunked(std::string_view body)
 	std::string req(kChunkedReqHeaders);
 	req.append(body.data(), body.size());
 	return fuzz_parse_request(req);
-}
-
-static fuzz_result fuzz_parse_reply_chunked(std::string_view body)
-{
-	std::string rep(kChunkedRepHeaders);
-	rep.append(body.data(), body.size());
-	return fuzz_parse_reply(rep);
 }
 
 struct chunked_request_result
@@ -747,6 +763,27 @@ TEST_CASE("chunked_request_only_size_no_data")
 	auto r = fuzz_parse_request_chunked("5\r\nhel\r\n0\r\n\r\n");
 	check_invariant(r);
 	// After "hel" (3 bytes), expects 2 more data bytes but gets '\r' in state 4
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_oversized_size_line_rejected")
+{
+	// A chunk-size line with an absurdly long run of hex digits must be
+	// rejected at a bounded length (DoS guard), not accumulate without bound.
+	std::string body = std::string(256, 'f') + "\r\n";
+	auto r = fuzz_parse_request_chunked(body);
+	check_invariant(r);
+	CHECK(r.result == zeep::http::parse_result::false_value);
+}
+
+TEST_CASE("chunked_request_max_size_digits_rejected_by_payload_cap")
+{
+	// A large-but-bounded chunk-size line (0xffffffff with 7 leading zeros,
+	// well within the digit limit) must still be rejected by the payload
+	// size cap, not cause any parsing/alloc trouble.
+	std::string body = std::string(7, '0') + "ffffffff\r\n";
+	auto r = fuzz_parse_request_chunked(body);
+	check_invariant(r);
 	CHECK(r.result == zeep::http::parse_result::false_value);
 }
 

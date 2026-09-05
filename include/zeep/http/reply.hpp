@@ -7,13 +7,15 @@
 /// \file
 /// definition of the zeep::http::reply class encapsulating a valid HTTP reply
 
-#include "zeep/el/object.hpp"
-#include "zeep/http/asio.hpp"
-#include "zeep/http/header.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/http/header.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/uri.hpp"
 
-#include <zeem/zeem.hpp>
+# include <zeem/zeem.hpp>
+#endif
 
 namespace zeep::http
 {
@@ -22,7 +24,7 @@ namespace zeep::http
 ///
 /// Create a HTTP reply, should be either HTTP 1.0 or 1.1
 
-class reply
+ZEEP_EXPORT class reply
 {
   public:
 	using cookie_directive = header;
@@ -88,10 +90,10 @@ class reply
 	void remove_header(std::string_view name);
 
 	/// Set a cookie
-	void set_cookie(std::string_view name, const std::string &value, std::initializer_list<cookie_directive> directives = {});
+	void set_cookie(std::string_view name, const std::string &value, const std::vector<cookie_directive> &directives = {});
 
 	/// Set a header to delete the \a name cookie
-	void set_delete_cookie(std::string_view name);
+	void set_delete_cookie(std::string_view name, std::vector<cookie_directive> directives = {});
 
 	/// Get a cookie
 	[[nodiscard]] std::string get_cookie(std::string_view name) const;

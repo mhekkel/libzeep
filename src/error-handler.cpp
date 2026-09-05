@@ -2,24 +2,26 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2014-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/http/error-handler.hpp"
-#include "zeep/el/object.hpp"
-#include "zeep/el/processing.hpp"
-#include "zeep/http/reply.hpp"
-#include "zeep/http/request.hpp"
-#include "zeep/http/scope.hpp"
-#include "zeep/http/security.hpp"
-#include "zeep/http/server.hpp"
-#include "zeep/http/status.hpp"
-#include "zeep/http/template-processor.hpp"
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/error-handler.hpp"
+# include "zeep/el/object.hpp"
+# include "zeep/el/processing.hpp"
+# include "zeep/http/reply.hpp"
+# include "zeep/http/request.hpp"
+# include "zeep/http/scope.hpp"
+# include "zeep/http/security.hpp"
+# include "zeep/http/server.hpp"
+# include "zeep/http/status.hpp"
+# include "zeep/http/template-processor.hpp"
+# include "zeep/uri.hpp"
 
-#include <iostream>
-#include <zeem/zeem.hpp>
+# include <iostream>
+# include <zeem/zeem.hpp>
 
-#include <exception>
-#include <string>
-#include <utility>
+# include <exception>
+# include <string>
+# include <utility>
+#endif
 
 namespace zeep::http
 {

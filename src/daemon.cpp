@@ -5,33 +5,37 @@
 // Source code specifically for Unix/Linux
 // Utility routines to build daemon processes
 
-#include "zeep/http/daemon.hpp"
+#include <stdexcept>
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/http/daemon.hpp"
 
-#include "detail/signals.hpp"
-#include "zeep/config.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/http/server.hpp"
+# include "detail/signals.hpp"
+# include "zeep/config.hpp"
+# include "zeep/http/asio.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/http/server.hpp"
 
-#include <cstdint>
-#include <exception>
-#include <fcntl.h>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <print>
-#include <string>
-#include <string_view>
-#include <sys/types.h>
-#include <system_error>
-#include <thread>
-#include <utility>
+# include <cstdint>
+# include <exception>
+# include <fcntl.h>
+# include <fstream>
+# include <functional>
+# include <iostream>
+# include <memory>
+# include <print>
+# include <string>
+# include <string_view>
+# include <sys/types.h>
+# include <system_error>
+# include <thread>
+# include <utility>
 
-#ifndef _WIN32
-# include <grp.h>
-# include <pwd.h>
-# include <sys/wait.h>
-# include <unistd.h>
+# ifndef _WIN32
+#  include <grp.h>
+#  include <pwd.h>
+#  include <sys/wait.h>
+#  include <unistd.h>
+# endif
 #endif
 
 namespace fs = std::filesystem;
@@ -124,20 +128,42 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 		if (ec)
 			throw std::system_error(ec, "Creating directory for log files failed");
 
+		// Verify the port is available by attempting to bind.
+		// basic_server::bind() sets SO_REUSEADDR and will throw
+		// if the port is already in use. We do this before forking
+		// so the parent can report a clear error.
+
+		asio_ns::io_context io_context;
+		asio_ns::ip::tcp::endpoint endpoint;
+
 		try
 		{
-			// Verify the port is available by attempting to bind.
-			// basic_server::bind() sets SO_REUSEADDR and will throw
-			// if the port is already in use. We do this before forking
-			// so the parent can report a clear error.
-			std::unique_ptr<basic_server> probe(m_factory());
-			probe->bind(address, port);
-			probe->stop();
+			endpoint = asio_ns::ip::tcp::endpoint(asio_ns::ip::make_address(address), port);
 		}
 		catch (const std::exception &e)
 		{
-			std::throw_with_nested(exception("Is server running already?"));
+			asio_ns::ip::tcp::resolver resolver(io_context);
+			for (auto &ep : resolver.resolve(address, std::to_string(port)))
+			{
+				endpoint = ep;
+				break;
+			}
 		}
+
+		asio_ns::ip::tcp::acceptor acceptor(io_context);
+		acceptor.open(endpoint.protocol());
+		acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(false));
+		
+		try
+		{
+			acceptor.bind(endpoint);
+		}
+		catch (std::exception &e)
+		{
+			std::throw_with_nested(exception("Is server running already? "));
+		}
+
+		acceptor.close();
 
 		int pid = fork();
 		if (pid == -1)
@@ -363,23 +389,16 @@ int daemon::daemonize()
 	if (pidFileFd == -1)
 		throw exception(std::format("Failed to create {}: {}", m_pid_file, strerror(errno)));
 
-	try
-	{
-		std::FILE *pidFile = fdopen(pidFileFd, "w");
-		if (pidFile == nullptr)
-			throw exception(std::format("Failed to create {}: {}", m_pid_file, strerror(errno)));
-
-		std::println(pidFile, "{}", getpid());
-		if (fclose(pidFile) == -1)
-			throw exception(std::format("Failed to write to {}: {}", m_pid_file, strerror(errno)));
-
-		close(pidFileFd);
-	}
-	catch (...)
+	std::FILE *pidFile = fdopen(pidFileFd, "w");
+	if (pidFile == nullptr)
 	{
 		close(pidFileFd);
-		throw;
+		throw exception(std::format("Failed to create {}: {}", m_pid_file, strerror(errno)));
 	}
+
+	std::println(pidFile, "{}", getpid());
+	if (fclose(pidFile) == -1)
+		throw exception(std::format("Failed to write to {}: {}", m_pid_file, strerror(errno)));
 
 	if (chdir("/") != 0)
 		throw exception("Cannot chdir to /: "s + strerror(errno));

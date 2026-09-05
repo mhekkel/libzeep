@@ -3,7 +3,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include <zeep/uri.hpp>
+#endif
 
 #include <cctype>
 #include <string>

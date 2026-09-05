@@ -6,18 +6,22 @@
 #undef WEBAPP_USES_RESOURCES
 #define WEBAPP_USES_RESOURCES 0
 
-#include "zeep/crypto.hpp"
-#include "zeep/http/reply.hpp"
-
 #include <exception>
 #include <initializer_list>
 #include <iostream>
 #include <string>
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/login-controller.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/http/template-processor.hpp>
+
+#if defined(ZEEP_CXX_MODULE)
+import zeep;
+#else
+# include <zeep/crypto.hpp>
+# include <zeep/http/html-controller.hpp>
+# include <zeep/http/login-controller.hpp>
+# include <zeep/http/reply.hpp>
+# include <zeep/http/security.hpp>
+# include <zeep/http/server.hpp>
+# include <zeep/http/template-processor.hpp>
+#endif
 
 //[ sample_security_controller
 class hello_controller : public zeep::http::html_controller

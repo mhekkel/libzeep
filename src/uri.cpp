@@ -1,20 +1,22 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, 2025-2026
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/uri.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/uri.hpp"
 
-#include "zeep/unicode-support.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <charconv>
-#include <cstdint>
-#include <cstring>
-#include <limits>
-#include <regex>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+# include <charconv>
+# include <cstdint>
+# include <cstring>
+# include <limits>
+# include <regex>
+# include <sstream>
+# include <string>
+# include <string_view>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep
 {
@@ -675,34 +677,34 @@ void uri::write(std::ostream &os, bool encoded) const
 namespace
 {
 
-std::string decode_url_impl(std::string_view s, bool plusAsSpace)
-{
-	std::string result;
-
-	for (auto c = s.data(); c != s.data() + s.length(); ++c)
+	std::string decode_url_impl(std::string_view s, bool plusAsSpace)
 	{
-		if (*c == '%')
+		std::string result;
+
+		for (auto c = s.data(); c != s.data() + s.length(); ++c)
 		{
-			if (s.data() + s.length() - c >= 3)
+			if (*c == '%')
 			{
-				int value;
-				auto r = std::from_chars(c + 1, c + 3, value, 16);
-				if (r.ec == std::errc{} and r.ptr == c + 3)
+				if (s.data() + s.length() - c >= 3)
 				{
-					result += static_cast<char>(value);
-					c += 2;
-					continue;
+					int value;
+					auto r = std::from_chars(c + 1, c + 3, value, 16);
+					if (r.ec == std::errc{} and r.ptr == c + 3)
+					{
+						result += static_cast<char>(value);
+						c += 2;
+						continue;
+					}
 				}
+				result += *c; // preserve invalid % for transparency
 			}
-			result += *c; // preserve invalid % for transparency
+			else if (*c == '+' and plusAsSpace)
+				result += ' ';
+			else
+				result += *c;
 		}
-		else if (*c == '+' and plusAsSpace)
-			result += ' ';
-		else
-			result += *c;
+		return result;
 	}
-	return result;
-}
 
 } // namespace
 

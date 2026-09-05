@@ -4,7 +4,10 @@
 
 #pragma once
 
-#include <thread>
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include <thread>
+#endif
 
 namespace zeep
 {

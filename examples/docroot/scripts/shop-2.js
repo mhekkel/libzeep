@@ -7,7 +7,7 @@
 */
 
 class ShoppingCart {
-	constructor(cart) {
+	constructor(cart, name) {
 		this.cartContent = cart;
 		this.cartContent.items = [];
 
@@ -50,7 +50,7 @@ class ShoppingCart {
 	}
 
 	updateOrder() {
-		fetch(`/cart/${this.cartContent.cartID}`, {
+		fetch(`cart/${this.cartContent.cartID}`, {
 			method: "PUT",
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(this.cartContent)
@@ -104,7 +104,7 @@ window.addEventListener('load', () => {
 				client: client
 			};
 
-			fetch('/cart', {
+			fetch('cart', {
 					method: "POST",
 					headers: {
 						'Content-Type': 'application/json'
@@ -114,7 +114,7 @@ window.addEventListener('load', () => {
 				.then(r => r.json())
 				.then(cartID => {
 					newCart.cartID = cartID;
-					new ShoppingCart(newCart);
+					new ShoppingCart(newCart, client);
 				})
 				.catch(err => {
 					console.log(err);

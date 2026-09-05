@@ -6,12 +6,15 @@
 /// \file
 /// definition of the HTTP status codes and related helper types
 
-#include "zeep/exception.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/exception.hpp"
 
-#include <cassert>
-#include <string>
-#include <system_error>
-#include <type_traits>
+# include <cassert>
+# include <string>
+# include <system_error>
+# include <type_traits>
+#endif
 
 namespace zeep::http
 {
@@ -20,7 +23,7 @@ namespace zeep::http
 /// 1xx (Informational), 2xx (Successful), 3xx (Redirection), 4xx (Client Error),
 /// to 5xx (Server Error) as defined in RFC 7231 and related RFCs.
 
-enum class status_type
+ZEEP_EXPORT enum class status_type
 {
 	cont = 100,
 	switching_protocols = 101,
@@ -92,7 +95,7 @@ enum class status_type
  * @brief The implementation for @ref config_category error messages
  *
  */
-class status_type_impl : public std::error_category
+ZEEP_EXPORT class status_type_impl : public std::error_category
 {
   public:
 	/**
@@ -201,7 +204,7 @@ class status_type_impl : public std::error_category
  *
  * @return std::error_category&
  */
-inline std::error_category &status_type_category() noexcept
+ZEEP_EXPORT inline std::error_category &status_type_category() noexcept
 {
 	static status_type_impl instance;
 	return instance;
@@ -210,7 +213,7 @@ inline std::error_category &status_type_category() noexcept
 /// \brief Create an std::error_code from a status_type
 /// \param e  The HTTP status code
 /// \return   An error_code representing the given status
-inline std::error_code make_error_code(status_type e) noexcept
+ZEEP_EXPORT inline std::error_code make_error_code(status_type e) noexcept
 {
 	return { static_cast<int>(e), status_type_category() };
 }
@@ -218,14 +221,14 @@ inline std::error_code make_error_code(status_type e) noexcept
 /// \brief Return a human-readable description string for a given HTTP status code
 /// \param status  The HTTP status code
 /// \return        The descriptive string (e.g., "Not Found" for 404)
-std::string get_status_description(status_type status);
+ZEEP_EXPORT std::string get_status_description(status_type status);
 
 /// \brief Exception class that carries an HTTP status code
 ///
 /// This exception can be thrown by handlers to signal a specific HTTP error
 /// response. The status code is available via \a status() and the human-readable
 /// message via \a what().
-class http_status_exception : public exception
+ZEEP_EXPORT class http_status_exception : public exception
 {
   public:
 	/// \brief Construct from an error_code

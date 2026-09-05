@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2026
 // SPDX-License-Identifier: BSL-1.0
 
+#if ZEEP_CXX_MODULE
+import zeep;
+#else
 #include "zeep/el/object.hpp"
 #include "zeep/el/processing.hpp"
 #include "zeep/http/scope.hpp"
+#endif
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -14,9 +18,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-namespace e = zeep::el;
-namespace zh = zeep::http;
 
 // --------------------------------------------------------------------
 // Fuzz helpers: each wrapper catches all exceptions and records
@@ -29,12 +30,12 @@ struct fuzz_outcome
 	bool threw_other = false;
 };
 
-static fuzz_outcome fuzz_evaluate_el(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_evaluate_el(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
-		zh::evaluate_el(scope, std::string(data));
+		zeep::http::evaluate_el(scope, std::string(data));
 	}
 	catch (const std::exception &)
 	{
@@ -47,12 +48,12 @@ static fuzz_outcome fuzz_evaluate_el(zh::scope &scope, std::string_view data)
 	return r;
 }
 
-static fuzz_outcome fuzz_evaluate_el_attr(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_evaluate_el_attr(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
-		zh::evaluate_el_attr(scope, std::string(data));
+		zeep::http::evaluate_el_attr(scope, std::string(data));
 	}
 	catch (const std::exception &)
 	{
@@ -65,12 +66,12 @@ static fuzz_outcome fuzz_evaluate_el_attr(zh::scope &scope, std::string_view dat
 	return r;
 }
 
-static fuzz_outcome fuzz_evaluate_el_assert(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_evaluate_el_assert(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
-		zh::evaluate_el_assert(scope, std::string(data));
+		zeep::http::evaluate_el_assert(scope, std::string(data));
 	}
 	catch (const std::exception &)
 	{
@@ -83,12 +84,12 @@ static fuzz_outcome fuzz_evaluate_el_assert(zh::scope &scope, std::string_view d
 	return r;
 }
 
-static fuzz_outcome fuzz_evaluate_el_with(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_evaluate_el_with(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
-		zh::evaluate_el_with(scope, std::string(data));
+		zeep::http::evaluate_el_with(scope, std::string(data));
 	}
 	catch (const std::exception &)
 	{
@@ -101,12 +102,12 @@ static fuzz_outcome fuzz_evaluate_el_with(zh::scope &scope, std::string_view dat
 	return r;
 }
 
-static fuzz_outcome fuzz_evaluate_el_link(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_evaluate_el_link(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
-		zh::evaluate_el_link(scope, std::string(data));
+		zeep::http::evaluate_el_link(scope, std::string(data));
 	}
 	catch (const std::exception &)
 	{
@@ -119,13 +120,13 @@ static fuzz_outcome fuzz_evaluate_el_link(zh::scope &scope, std::string_view dat
 	return r;
 }
 
-static fuzz_outcome fuzz_process_el(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_process_el(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
 		std::string s(data);
-		zh::process_el(scope, s);
+		zeep::http::process_el(scope, s);
 	}
 	catch (const std::exception &)
 	{
@@ -138,12 +139,12 @@ static fuzz_outcome fuzz_process_el(zh::scope &scope, std::string_view data)
 	return r;
 }
 
-static fuzz_outcome fuzz_process_el_2(zh::scope &scope, std::string_view data)
+static fuzz_outcome fuzz_process_el_2(zeep::http::scope &scope, std::string_view data)
 {
 	fuzz_outcome r;
 	try
 	{
-		zh::process_el_2(scope, std::string(data));
+		zeep::http::process_el_2(scope, std::string(data));
 	}
 	catch (const std::exception &)
 	{
@@ -161,7 +162,7 @@ static fuzz_outcome fuzz_parse_json(std::string_view data)
 	fuzz_outcome r;
 	try
 	{
-		e::object::parse_JSON(data);
+		zeep::el::object::parse_JSON(data);
 	}
 	catch (const std::exception &)
 	{
@@ -202,7 +203,7 @@ TEST_CASE("fuzz_el_random_bytes")
 		for (auto &ch : buf)
 			ch = static_cast<char>(rng() & 0xFF);
 
-		zh::scope scope;
+		zeep::http::scope scope;
 
 		must_not_throw(fuzz_evaluate_el(scope, buf));
 		must_not_throw(fuzz_process_el(scope, buf));
@@ -211,7 +212,7 @@ TEST_CASE("fuzz_el_random_bytes")
 		must_not_crash(fuzz_evaluate_el_attr(scope, buf));
 		must_not_crash(fuzz_evaluate_el_assert(scope, buf));
 		{
-			zh::scope ws;
+			zeep::http::scope ws;
 			must_not_crash(fuzz_evaluate_el_with(ws, buf));
 		}
 		must_not_crash(fuzz_evaluate_el_link(scope, buf));
@@ -230,7 +231,7 @@ TEST_CASE("fuzz_el_random_bytes_longer")
 		for (auto &ch : buf)
 			ch = static_cast<char>(rng() & 0xFF);
 
-		zh::scope scope;
+		zeep::http::scope scope;
 		must_not_throw(fuzz_evaluate_el(scope, buf));
 		must_not_throw(fuzz_process_el(scope, buf));
 		must_not_throw(fuzz_process_el_2(scope, buf));
@@ -238,7 +239,7 @@ TEST_CASE("fuzz_el_random_bytes_longer")
 		must_not_crash(fuzz_evaluate_el_attr(scope, buf));
 		must_not_crash(fuzz_evaluate_el_assert(scope, buf));
 		{
-			zh::scope ws;
+			zeep::http::scope ws;
 			must_not_crash(fuzz_evaluate_el_with(ws, buf));
 		}
 		must_not_crash(fuzz_evaluate_el_link(scope, buf));
@@ -252,7 +253,7 @@ TEST_CASE("fuzz_el_random_bytes_longer")
 
 TEST_CASE("fuzz_el_empty_input")
 {
-	zh::scope scope;
+	zeep::http::scope scope;
 	must_not_throw(fuzz_evaluate_el(scope, ""));
 	must_not_throw(fuzz_process_el(scope, ""));
 	must_not_throw(fuzz_process_el_2(scope, ""));
@@ -260,7 +261,7 @@ TEST_CASE("fuzz_el_empty_input")
 	must_not_crash(fuzz_evaluate_el_attr(scope, ""));
 	must_not_crash(fuzz_evaluate_el_assert(scope, ""));
 	{
-		zh::scope ws;
+		zeep::http::scope ws;
 		must_not_crash(fuzz_evaluate_el_with(ws, ""));
 	}
 	must_not_crash(fuzz_evaluate_el_link(scope, ""));
@@ -269,7 +270,7 @@ TEST_CASE("fuzz_el_empty_input")
 
 TEST_CASE("fuzz_el_single_bytes")
 {
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (int i = 0; i < 256; ++i)
 	{
 		char ch = static_cast<char>(i);
@@ -292,12 +293,12 @@ TEST_CASE("fuzz_el_all_whitespace")
 		for (int i = 0; i < len; ++i)
 			buf += ws[i % ws.size()];
 
-		zh::scope scope;
+		zeep::http::scope scope;
 		must_not_throw(fuzz_evaluate_el(scope, buf));
 		must_not_crash(fuzz_evaluate_el_attr(scope, buf));
 		must_not_crash(fuzz_evaluate_el_assert(scope, buf));
 		{
-			zh::scope ws2;
+			zeep::http::scope ws2;
 			must_not_crash(fuzz_evaluate_el_with(ws2, buf));
 		}
 		must_not_crash(fuzz_evaluate_el_link(scope, buf));
@@ -307,7 +308,7 @@ TEST_CASE("fuzz_el_all_whitespace")
 TEST_CASE("fuzz_el_null_bytes")
 {
 	std::string buf(128, '\0');
-	zh::scope scope;
+	zeep::http::scope scope;
 	must_not_throw(fuzz_evaluate_el(scope, buf));
 	must_not_crash(fuzz_parse_json(buf));
 }
@@ -339,7 +340,7 @@ TEST_CASE("fuzz_el_invalid_utf8")
 
 	for (auto input : inputs)
 	{
-		zh::scope scope;
+		zeep::http::scope scope;
 		must_not_throw(fuzz_evaluate_el(scope, input));
 		must_not_throw(fuzz_process_el(scope, input));
 		must_not_throw(fuzz_process_el_2(scope, input));
@@ -401,7 +402,7 @@ TEST_CASE("fuzz_el_expression_edge_cases")
 		"${  }",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 	{
 		must_not_throw(fuzz_evaluate_el(scope, input));
@@ -433,7 +434,7 @@ TEST_CASE("fuzz_el_nested_and_unclosed_templates")
 		"${((1))}",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 	{
 		must_not_throw(fuzz_evaluate_el(scope, input));
@@ -456,7 +457,7 @@ TEST_CASE("fuzz_el_attr_edge_cases")
 		"x=${y z}",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 	{
 		must_not_crash(fuzz_evaluate_el_attr(scope, input));
@@ -477,7 +478,7 @@ TEST_CASE("fuzz_el_with_edge_cases")
 
 	for (auto input : inputs)
 	{
-		zh::scope scope;
+		zeep::http::scope scope;
 		must_not_crash(fuzz_evaluate_el_with(scope, input));
 	}
 }
@@ -495,7 +496,7 @@ TEST_CASE("fuzz_el_assert_edge_cases")
 		"${1 > 2}",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 	{
 		must_not_crash(fuzz_evaluate_el_assert(scope, input));
@@ -515,7 +516,7 @@ TEST_CASE("fuzz_el_link_edge_cases")
 		"/path/${a}/${b}/${c}",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 	{
 		must_not_crash(fuzz_evaluate_el_link(scope, input));
@@ -581,7 +582,7 @@ TEST_CASE("fuzz_el_integer_overflow")
 		"${00000000000000000000000000000000000001}",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 		must_not_crash(fuzz_evaluate_el(scope, input));
 }
@@ -592,7 +593,7 @@ TEST_CASE("fuzz_el_integer_overflow_compare")
 	auto json_overflow = fuzz_parse_json("999999999999999999999999999999999999");
 	CHECK(json_overflow.threw_std_exception);
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	auto el_overflow = fuzz_evaluate_el(scope, "${999999999999999999999999999999999999}");
 	// EL parser silently wraps — should not crash, but does not throw either
 	must_not_crash(el_overflow);
@@ -613,13 +614,13 @@ TEST_CASE("fuzz_el_reset_reuse")
 		for (auto &ch : buf)
 			ch = static_cast<char>(rng() & 0xFF);
 
-		zh::scope scope;
+		zeep::http::scope scope;
 		must_not_throw(fuzz_evaluate_el(scope, buf));
 		must_not_throw(fuzz_process_el(scope, buf));
 		must_not_crash(fuzz_evaluate_el_attr(scope, buf));
 		must_not_crash(fuzz_evaluate_el_assert(scope, buf));
 		{
-			zh::scope ws;
+			zeep::http::scope ws;
 			must_not_crash(fuzz_evaluate_el_with(ws, buf));
 		}
 		must_not_crash(fuzz_evaluate_el_link(scope, buf));
@@ -635,7 +636,7 @@ TEST_CASE("fuzz_el_very_long_input")
 {
 	std::string buf(8192, 'A');
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	must_not_throw(fuzz_evaluate_el(scope, buf));
 	must_not_throw(fuzz_process_el(scope, buf));
 	must_not_crash(fuzz_parse_json(buf));
@@ -667,11 +668,11 @@ TEST_CASE("fuzz_el_deeply_nested_arrays_and_objects")
 
 TEST_CASE("fuzz_el_with_populated_scope")
 {
-	zh::scope scope;
+	zeep::http::scope scope;
 	scope.put("str", "hello");
 	scope.put("num", 42);
 	scope.put("flag", true);
-	scope.put("items", std::vector<zeep::el::object>{ e::object(1), e::object(2), e::object(3) });
+	scope.put("items", std::vector<zeep::el::object>{ zeep::el::object(1), zeep::el::object(2), zeep::el::object(3) });
 
 	auto inputs = {
 		"${str}",
@@ -743,7 +744,7 @@ TEST_CASE("fuzz_el_truncated_expressions")
 		"|text ${var",
 	};
 
-	zh::scope scope;
+	zeep::http::scope scope;
 	for (auto input : inputs)
 	{
 		must_not_throw(fuzz_evaluate_el(scope, input));

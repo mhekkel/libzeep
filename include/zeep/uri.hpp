@@ -6,10 +6,13 @@
 /// \file
 /// definition of the uri class, a URI parser and builder based on RFC 3986
 
-#include "zeep/exception.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/export.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <cstdint>
+# include <cstdint>
+#endif
 
 namespace zeep
 {
@@ -18,22 +21,22 @@ namespace zeep
 
 /// \brief Simply check the URI in \a uri, returns true if the uri is valid
 /// \param uri		The URI to check
-bool is_valid_uri(const std::string &uri);
+ZEEP_EXPORT bool is_valid_uri(const std::string &uri);
 
 /// \brief Check the URI in \a uri, returns true if the uri is fully qualified (has a scheme and path)
 /// \param uri		The URI to check
-bool is_fully_qualified_uri(const std::string &uri);
+ZEEP_EXPORT bool is_fully_qualified_uri(const std::string &uri);
 
 /// \brief Check the parameter in \a host is of the form HOST:PORT as required by CONNECT
 /// \param host		The host string to check
-bool is_valid_connect_host(std::string_view host);
+ZEEP_EXPORT bool is_valid_connect_host(std::string_view host);
 
 // --------------------------------------------------------------------
 
 /// \brief Decode a URL using the RFC rules
 /// \param s  The URL that needs to be decoded
 /// \return	  The decoded URL
-std::string decode_url(std::string_view s);
+ZEEP_EXPORT std::string decode_url(std::string_view s);
 
 /// \brief Decode a URL path segment.
 ///
@@ -42,18 +45,18 @@ std::string decode_url(std::string_view s);
 /// Use this for path segments; use \a decode_url for query/form data.
 /// \param s  The path segment that needs to be decoded
 /// \return	  The decoded path segment
-std::string decode_url_path(std::string_view s);
+ZEEP_EXPORT std::string decode_url_path(std::string_view s);
 
 /// \brief Encode a URL using the RFC rules
 /// \param s  The URL that needs to be encoded
 /// \return	  The encoded URL
-std::string encode_url(std::string_view s);
+ZEEP_EXPORT std::string encode_url(std::string_view s);
 
 // --------------------------------------------------------------------
 
 /// \brief the exception thrown by libzeep when an invalid uri is passed to
 ///        the uri constructor.
-class uri_parse_error : public zeep::exception
+ZEEP_EXPORT class uri_parse_error : public zeep::exception
 {
   public:
 	uri_parse_error()
@@ -69,7 +72,7 @@ class uri_parse_error : public zeep::exception
 /// All components are stored separately. Scheme and host are converted to lower case.
 /// Path segments are stored decoded whereas query and fragment are stored encoded.
 /// This is to avoid double encoding and ease post processing of queries e.g.
-class uri
+ZEEP_EXPORT class uri
 {
   public:
 	/// \brief constructor for an empty uri

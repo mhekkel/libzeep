@@ -1,27 +1,29 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman 2025
 // SPDX-License-Identifier: BSL-1.0
 
-#include "zeep/el/object.hpp"
-#include "zeep/exception.hpp"
-#include "zeep/unicode-support.hpp"
+#ifndef ZEEP_CXX_MODULE
+# include "zeep/el/object.hpp"
+# include "zeep/exception.hpp"
+# include "zeep/unicode-support.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <charconv>
-#include <climits>
-#include <cmath>
-#include <compare>
-#include <cstddef>
-#include <cstdint>
-#include <format>
-#include <istream>
-#include <limits>
-#include <map>
-#include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
+# include <algorithm>
+# include <cassert>
+# include <cctype>
+# include <charconv>
+# include <climits>
+# include <cmath>
+# include <compare>
+# include <cstddef>
+# include <cstdint>
+# include <format>
+# include <istream>
+# include <limits>
+# include <map>
+# include <string>
+# include <system_error>
+# include <utility>
+# include <vector>
+#endif
 
 namespace zeep::el
 {
@@ -717,6 +719,11 @@ class json_parser
 	char32_t m_buffer[2]{};
 	char32_t *m_buffer_ptr = m_buffer;
 
+	// recursion depth guard to prevent a stack overflow on attacker-supplied,
+	// deeply nested input (e.g. an unauthenticated JWT header or request body)
+	static constexpr size_t kMaxDepth = 1000;
+	size_t m_depth = 0;
+
 	std::string m_token;
 	double m_token_float{};
 	int64_t m_token_int{};
@@ -869,14 +876,21 @@ auto json_parser::get_next_token() -> token_t
 		EscapeHex1,
 		EscapeHex2,
 		EscapeHex3,
-		EscapeHex4
+		EscapeHex4,
+
+		Surrogate2EscapeStart1,
+		Surrogate2EscapeStart2,
+		Surrogate2EscapeHex1,
+		Surrogate2EscapeHex2,
+		Surrogate2EscapeHex3,
+		Surrogate2EscapeHex4,
 	} state = state_t::Start;
 
 	token_t token = token_t::Undef;
 	double fraction = 1.0, exponent = 1;
 	bool negative = false, negativeExp = false;
 
-	char32_t hx = {};
+	char32_t hx = {}, surrogate = {};
 
 	m_token.clear();
 
@@ -1178,8 +1192,100 @@ auto json_parser::get_next_token() -> token_t
 				else
 					throw zeep::exception("Invalid hex sequence in json");
 				m_token.pop_back();
-				append(m_token, hx);
-				state = state_t::String;
+
+				if (hx >= 0x0d800 and hx <= 0x0dbff)
+				{
+					surrogate = hx - 0x0d800;
+					hx = 0;
+					state = state_t::Surrogate2EscapeStart1;
+				}
+				else if (hx >= 0x0dc00 and hx <= 0x0dfff)
+					throw zeep::exception("trailing surrogate character without a leading surrogate");
+				else
+				{
+					append(m_token, hx);
+					state = state_t::String;
+				}
+				break;
+
+			case state_t::Surrogate2EscapeStart1:
+				if (ch != '\\')
+					throw zeep::exception("Expected second surrogate");
+				else
+				{
+					state = state_t::Surrogate2EscapeStart2;
+					m_token.pop_back();
+				}
+				break;
+
+			case state_t::Surrogate2EscapeStart2:
+				if (ch != 'u')
+					throw zeep::exception("Expected second surrogate");
+				else
+				{
+					state = state_t::Surrogate2EscapeHex1;
+					m_token.pop_back();
+				}
+				break;
+
+			case state_t::Surrogate2EscapeHex1:
+				if (ch >= '0' and ch <= '9')
+					hx = ch - '0';
+				else if (ch >= 'a' and ch <= 'f')
+					hx = 10 + ch - 'a';
+				else if (ch >= 'A' and ch <= 'F')
+					hx = 10 + ch - 'A';
+				else
+					throw zeep::exception("Invalid hex sequence in json");
+				m_token.pop_back();
+				state = state_t::Surrogate2EscapeHex2;
+				break;
+
+			case state_t::Surrogate2EscapeHex2:
+				if (ch >= '0' and ch <= '9')
+					hx = 16 * hx + ch - '0';
+				else if (ch >= 'a' and ch <= 'f')
+					hx = 16 * hx + 10 + ch - 'a';
+				else if (ch >= 'A' and ch <= 'F')
+					hx = 16 * hx + 10 + ch - 'A';
+				else
+					throw zeep::exception("Invalid hex sequence in json");
+				m_token.pop_back();
+				state = state_t::Surrogate2EscapeHex3;
+				break;
+
+			case state_t::Surrogate2EscapeHex3:
+				if (ch >= '0' and ch <= '9')
+					hx = 16 * hx + ch - '0';
+				else if (ch >= 'a' and ch <= 'f')
+					hx = 16 * hx + 10 + ch - 'a';
+				else if (ch >= 'A' and ch <= 'F')
+					hx = 16 * hx + 10 + ch - 'A';
+				else
+					throw zeep::exception("Invalid hex sequence in json");
+				m_token.pop_back();
+				state = state_t::Surrogate2EscapeHex4;
+				break;
+
+			case state_t::Surrogate2EscapeHex4:
+				if (ch >= '0' and ch <= '9')
+					hx = 16 * hx + ch - '0';
+				else if (ch >= 'a' and ch <= 'f')
+					hx = 16 * hx + 10 + ch - 'a';
+				else if (ch >= 'A' and ch <= 'F')
+					hx = 16 * hx + 10 + ch - 'A';
+				else
+					throw zeep::exception("Invalid hex sequence in json");
+				m_token.pop_back();
+
+				if (hx >= 0x0dc00 and hx <= 0x0dfff)
+				{
+					hx = 0x10000 + surrogate * 0x0400 + (hx - 0x0dc00);
+					append(m_token, hx);
+					state = state_t::String;
+				}
+				else
+					throw zeep::exception("Invalid second surrogate");
 				break;
 		}
 	}
@@ -1206,6 +1312,19 @@ void json_parser::match(token_t expected)
 
 void json_parser::parse_value(object &e)
 {
+	if (++m_depth > kMaxDepth)
+	{
+		--m_depth;
+		throw object_error("Maximum nesting depth exceeded in json");
+	}
+
+	// guard scope: decrement m_depth on all exits
+	struct depth_guard
+	{
+		size_t &d;
+		~depth_guard() { --d; }
+	} guard{ m_depth };
+
 	switch (m_lookahead)
 	{
 		case token_t::Eof:
