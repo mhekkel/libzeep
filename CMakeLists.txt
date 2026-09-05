@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.29)
 #     set(CMAKE_CXX_MODULE_STD 1)
 # endif()
 
-project(libzeep VERSION 8.4.0 LANGUAGES CXX)
+project(libzeep VERSION 8.4.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 

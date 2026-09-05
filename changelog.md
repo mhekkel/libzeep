@@ -3,6 +3,20 @@ SPDX-FileCopyrightText: 2026 Maarten L. Hekkelman
 SPDX-License-Identifier: BSL-1.0
 -->
 
+Version 8.4.1
+- Security: cookies are no longer conditionally marked Secure only in
+  release builds
+- Security: cookie Path attribute falls back to '/' when no context path is
+  set (also for the access_token cookie)
+- Security: request body buffers are no longer pre-allocated based on
+  unbounded Content-Length or chunk sizes in headers
+- Security: header values must be terminated by CRLF; stray line feeds are
+  now rejected by the message parser
+- Security: last-write-time lookups (If-Modified-Since) apply the same
+  document-root containment check as file loading, and loading with an empty
+  document root no longer aborts the process
+- Added tests for el::object arithmetic overflow and division/modulo by zero
+
 Version 8.4.0
 - Security: added constant-time string comparison to prevent timing attacks
   in CSRF and cookie validation
@@ -32,18 +46,6 @@ Version 8.4.0
 - Fixed shutdown race condition in basic_server
 - Avoided recursive el expression processing
 - Exception info leaked from SOAP handler via ex.what() into reply body
-- Security: cookies are no longer conditionally marked Secure only in
-  release builds
-- Security: cookie Path attribute falls back to '/' when no context path is
-  set (also for the access_token cookie)
-- Security: request body buffers are no longer pre-allocated based on
-  unbounded Content-Length or chunk sizes in headers
-- Security: header values must be terminated by CRLF; stray line feeds are
-  now rejected by the message parser
-- Security: last-write-time lookups (If-Modified-Since) apply the same
-  document-root containment check as file loading, and loading with an empty
-  document root no longer aborts the process
-- Added tests for el::object arithmetic overflow and division/modulo by zero
 - Added IPv6 support in TLS server configuration
 - Daemon directory creation failures now throw std::system_error instead
   of logging and continuing
