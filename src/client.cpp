@@ -10,6 +10,7 @@
 # include "zeep/streambuf.hpp"
 # include "zeep/unicode-support.hpp"
 
+# include <algorithm>
 # include <iostream>
 #endif
 
@@ -123,19 +124,22 @@ reply send_request(request req)
 
 reply head_request(const zeep::uri &url, std::vector<header> headers)
 {
-	return send_request({ "HEAD", url, { 1, 0 }, std::move(headers) });
+	headers.emplace_back("Connection", "close");
+	return send_request({ "HEAD", url, { 1, 1 }, std::move(headers) });
 }
 
 reply get_request(const zeep::uri &url, std::vector<header> headers)
 {
-	return send_request({ "GET", url, { 1, 0 }, std::move(headers) });
+	headers.emplace_back("Connection", "close");
+	return send_request({ "GET", url, { 1, 1 }, std::move(headers) });
 }
 
 reply post_request(const zeep::uri &url, std::vector<header> headers, const std::string &payload)
 {
 	// prepare a request
+	headers.emplace_back("Connection", "close");
 
-	request req{ "POST", url, { 1, 0 }, std::move(headers) };
+	request req{ "POST", url, { 1, 1 }, std::move(headers) };
 
 	if (auto ct = req.get_header("Content-Type"); ct.empty())
 		req.set_content(payload, "text/plain");

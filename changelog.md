@@ -6,6 +6,8 @@ SPDX-License-Identifier: BSL-1.0
 Version 8.4.2
 - Added using enum status_code
 - reuse_address(true) instead of false
+- client now uses HTTP/1.1 with Connection: close header since google
+  broke the HTTP/1.0 handling
 
 Version 8.4.1
 - Security: cookies are no longer conditionally marked Secure only in
