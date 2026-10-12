@@ -91,6 +91,8 @@ ZEEP_EXPORT enum class status_type
 	network_authentication_required = 511
 };
 
+ZEEP_EXPORT using enum status_type;
+
 /**
  * @brief The implementation for @ref config_category error messages
  *

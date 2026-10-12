@@ -133,7 +133,7 @@ class my_controller : public zeep::http::controller
 		bool result = false;
 		if (req.get_uri() == "/test/one" or req.get_uri() == "/test/three")
 		{
-			rep = zeep::http::reply::stock_reply(zeep::http::status_type::ok);
+			rep = zeep::http::reply::stock_reply(zeep::http::ok);
 			result = true;
 		}
 
@@ -167,16 +167,16 @@ TEST_CASE("webapp_7")
 	try
 	{
 		auto reply = zeep::http::get_request(uri);
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		// reply = zeep::http::simple_request(uri / "XXX");
-		// CHECK(reply.get_status() == zh::status_type::bad_request);
+		// CHECK(reply.get_status() == zh::bad_request);
 
 		reply = zeep::http::get_request(uri / "test/one");
-		CHECK(reply.get_status() == zh::status_type::ok);
+		CHECK(reply.get_status() == zh::ok);
 
 		reply = zeep::http::get_request(uri / "test/two");
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 	}
 	catch (const std::exception &e)
 	{
@@ -219,18 +219,18 @@ TEST_CASE("webapp_8")
 	try
 	{
 		auto reply = zeep::http::get_request(uri);
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		// reply = zeep::http::simple_request(uri / "XXX");
-		// CHECK(reply.get_status() == zh::status_type::bad_request);
+		// CHECK(reply.get_status() == zh::bad_request);
 
 		reply = zeep::http::send_request(zeep::http::request{ "XXX", uri });
 
 		reply = zeep::http::get_request(uri / "test/one");
-		CHECK(reply.get_status() == zh::status_type::ok);
+		CHECK(reply.get_status() == zh::ok);
 
 		reply = zeep::http::get_request(uri / "test/two");
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 	}
 	catch (const std::exception &e)
 	{
@@ -296,16 +296,16 @@ TEST_CASE("server_with_security_1")
 	try
 	{
 		auto reply = zeep::http::get_request(uri);
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		reply = zeep::http::get_request(uri / "test/one");
-		CHECK(reply.get_status() == zh::status_type::ok);
+		CHECK(reply.get_status() == zh::ok);
 
 		reply = zeep::http::get_request(uri / "test/two");
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		reply = zeep::http::get_request(uri / "test/three");
-		CHECK(reply.get_status() == zh::status_type::unauthorized);
+		CHECK(reply.get_status() == zh::unauthorized);
 
 		// now try to log in and see if we can access all of the above
 
@@ -316,12 +316,12 @@ TEST_CASE("server_with_security_1")
 
 		// first test is to send a POST to login, but without the csrf token
 		reply = zeep::http::send_request(req);
-		CHECK(reply.get_status() == zh::status_type::forbidden);
+		CHECK(reply.get_status() == zh::forbidden);
 
 		// OK, fetch the login form then and pry the csrf token out of it
 		req.set_method("GET");
 		reply = zeep::http::send_request(req);
-		REQUIRE(reply.get_status() == zh::status_type::ok);
+		REQUIRE(reply.get_status() == zh::ok);
 
 		// copy the cookie
 		auto csrfCookie = reply.get_cookie("csrf-token");
@@ -341,7 +341,7 @@ TEST_CASE("server_with_security_1")
 		req.set_method("POST");
 		req.set_content("username=scott&password=tiger&_csrf=" + csrfCookie, "application/x-www-form-urlencoded");
 		reply = zeep::http::send_request(req);
-		CHECK(reply.get_status() == zh::status_type::see_other);
+		CHECK(reply.get_status() == zh::see_other);
 
 		auto accessToken = reply.get_cookie("access_token");
 		req.set_cookie("access_token", accessToken);
@@ -350,7 +350,7 @@ TEST_CASE("server_with_security_1")
 		req.set_uri("/test/three");
 		req.set_method("GET");
 		reply = zeep::http::send_request(req);
-		CHECK(reply.get_status() == zh::status_type::ok);
+		CHECK(reply.get_status() == zh::ok);
 	}
 	catch (const std::exception &e)
 	{
@@ -390,7 +390,7 @@ TEST_CASE("long_filename_test_1")
 	try
 	{
 		auto reply = zeep::http::get_request(uri / "%E3%80%82%E7%84%B6%E8%80%8C%EF%BC%8C%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84%E6%98%AF%EF%BC%8C%E8%AF%A5%E7%BD%91%E7%AB%99%E5%B7%B2%E7%BB%8F%E5%BE%88%E4%B9%85%E6%B2%A1%E6%9C%89%E6%9B%B4%E6%96%B0%E4%BA%86%EF%BC%8C%E5%9B%A0%E6%AD%A4%E5%8F%AF%E8%83%BD%E6%97%A0%E6%B3%95%E6%8F%90%E4%BE%9B%E6%9C%80%E6%96%B0%E7%9A%84%E8%BD%AF%E4%BB%B6%E7%89%88%E6%9C%AC%E5%92%8C%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90%E3%80%82");
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 	}
 	catch (const std::exception &e)
 	{
@@ -430,10 +430,10 @@ TEST_CASE("pen_test_resilience_1")
 	try
 	{
 		auto reply = zeep::http::get_request(uri / "//plus/mytag_js.php?aid=9999&nocache=90sec");
-		CHECK(reply.get_status() == zh::status_type::not_found);
+		CHECK(reply.get_status() == zh::not_found);
 
 		reply = zeep::http::get_request(uri / "//plus/erraddsave.php?dopost=saveedit&a=b&arrs1[]=99&c=d&arrs1[]=102&arrs1[]=103&arrs1[]=95&arrs1[]=100&arrs1[]=98&arrs1[]=112&arrs1[]=114&arrs1[]=101&arrs1[]=102&arrs1[]=105&arrs1[]=120&arrs2[]=109&arrs2[]=121&arrs2[]=97&arrs2[]=100&arrs2[]=96&arrs2[]=32&arrs2[]=40&arrs2[]=97&arrs2[]=105&arrs2[]=100&arrs2[]=44&arrs2[]=110&arrs2[]=111&arrs2[]=114&arrs2[]=109&arrs2[]=98&arrs2[]=111&arrs2[]=100&arrs2[]=121&arrs2[]=41&arrs2[]=32&arrs2[]=86&arrs2[]=65&arrs2[]=76&arrs2[]=85&arrs2[]=69&arrs2[]=83&arrs2[]=40&arrs2[]=56&arrs2[]=56&arrs2[]=56&arrs2[]=56&arrs2[]=44&arrs2[]=39&arrs2[]=60&arrs2[]=63&arrs2[]=112&arrs2[]=104&arrs2[]=112&arrs2[]=32&arrs2[]=105&arrs2[]=102&arrs2[]=40&arrs2[]=105&arrs2[]=115&arrs2[]=115&arrs2[]=101&arrs2[]=116&arrs2[]=40&arrs2[]=36&arrs2[]=95&arrs2[]=80&arrs2[]=79&arrs2[]=83&arrs2[]=84&arrs2[]=91&arrs2[]=39&arrs2[]=39&arrs2[]=108&arrs2[]=101&arrs2[]=109&arrs2[]=111&arrs2[]=110&arrs2[]=39&arrs2[]=39&arrs2[]=93&arrs2[]=41&arrs2[]=41&arrs2[]=123&arrs2[]=36&arrs2[]=97&arrs2[]=61&arrs2[]=115&arrs2[]=116&arrs2[]=114&arrs2[]=114&arrs2[]=101&arrs2[]=118&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=101&arrs2[]=99&arrs2[]=97&arrs2[]=108&arrs2[]=112&arrs2[]=101&arrs2[]=114&arrs2[]=95&arrs2[]=103&arrs2[]=101&arrs2[]=114&arrs2[]=112&arrs2[]=39&arrs2[]=39&arrs2[]=41&arrs2[]=59&arrs2[]=36&arrs2[]=98&arrs2[]=61&arrs2[]=115&arrs2[]=116&arrs2[]=114&arrs2[]=114&arrs2[]=101&arrs2[]=118&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=101&arrs2[]=100&arrs2[]=111&arrs2[]=99&arrs2[]=101&arrs2[]=100&arrs2[]=95&arrs2[]=52&arrs2[]=54&arrs2[]=101&arrs2[]=115&arrs2[]=97&arrs2[]=98&arrs2[]=39&arrs2[]=39&arrs2[]=41&arrs2[]=59&arrs2[]=36&arrs2[]=97&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=47&arrs2[]=94&arrs2[]=47&arrs2[]=101&arrs2[]=39&arrs2[]=39&arrs2[]=44&arrs2[]=36&arrs2[]=98&arrs2[]=40&arrs2[]=39&arrs2[]=39&arrs2[]=90&arrs2[]=88&arrs2[]=90&arrs2[]=104&arrs2[]=98&arrs2[]=67&arrs2[]=104&arrs2[]=105&arrs2[]=89&arrs2[]=88&arrs2[]=78&arrs2[]=108&arrs2[]=78&arrs2[]=106&arrs2[]=82&arrs2[]=102&arrs2[]=90&arrs2[]=71&arrs2[]=86&arrs2[]=106&arrs2[]=98&arrs2[]=50&arrs2[]=82&arrs2[]=108&arrs2[]=75&arrs2[]=67&arrs2[]=82&arrs2[]=102&arrs2[]=85&arrs2[]=107&arrs2[]=86&arrs2[]=82&arrs2[]=86&arrs2[]=85&arrs2[]=86&arrs2[]=84&arrs2[]=86&arrs2[]=70&arrs2[]=116&arrs2[]=54&arrs2[]=77&arrs2[]=70&arrs2[]=48&arrs2[]=112&arrs2[]=75&arrs2[]=81&arrs2[]=61&arrs2[]=61&arrs2[]=39&arrs2[]=39&arrs2[]=41&arrs2[]=44&arrs2[]=48&arrs2[]=41&arrs2[]=59&arrs2[]=125&arrs2[]=63&arrs2[]=62&arrs2[]=39&arrs2[]=41&arrs2[]=59&arrs2[]=0");
-		CHECK(reply.get_status() == zh::status_type::bad_request);
+		CHECK(reply.get_status() == zh::bad_request);
 	}
 	catch (const std::exception &e)
 	{
