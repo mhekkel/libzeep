@@ -11,6 +11,11 @@
 # include "zeep/el/object.hpp"
 
 # include <zeem/zeem.hpp>
+
+# if __has_include(<nlohmann/json.hpp>)
+#  include <nlohmann/json.hpp>
+#  define HAVE_NLOHMANN_JSON 1
+# endif
 #endif
 
 // --------------------------------------------------------------------
@@ -141,6 +146,10 @@ struct is_serializable_array_type : std::false_type
 template <typename T>
 struct is_serializable_array_type<T,
 	std::enable_if_t<
+		not std::is_same_v<std::remove_cv_t<T>, zeep::el::object> and
+#if HAVE_NLOHMANN_JSON
+		not std::is_same_v<std::remove_cv_t<T>, nlohmann::json> and
+#endif
 		not zeem::detail::is_detected_v<mapped_type_t, T> and
 		not zeem::detail::is_detected_v<key_type_t, T> and
 		zeem::detail::is_detected_v<zeem::value_type_t, T> and
