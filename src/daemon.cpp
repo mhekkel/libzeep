@@ -152,7 +152,7 @@ int daemon::start(std::string_view address, uint16_t port, int nr_of_threads, co
 
 		asio_ns::ip::tcp::acceptor acceptor(io_context);
 		acceptor.open(endpoint.protocol());
-		acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(false));
+		acceptor.set_option(asio_ns::ip::tcp::acceptor::reuse_address(true));
 		
 		try
 		{

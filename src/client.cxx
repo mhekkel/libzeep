@@ -4,6 +4,7 @@
 
 module;
 
+#include <algorithm>
 #include <iostream>
 #include <utility>
 
