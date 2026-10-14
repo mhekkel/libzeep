@@ -28,6 +28,11 @@ import zeem;
 #include <type_traits>
 #include <vector>
 
+# if __has_include(<nlohmann/json.hpp>)
+#  include <nlohmann/json.hpp>
+#  define HAVE_NLOHMANN_JSON 1
+# endif
+
 using namespace std;
 namespace e = zeep::el;
 
@@ -630,4 +635,14 @@ TEST_CASE("division and modulo by zero is rejected")
 	CHECK(throws_with([&] { (void)(object(int64_t{ 5 }) % object(int64_t{ 0 })); }, "Modulo by zero"));
 	CHECK_THROWS_AS(object(int64_t{ 5 }) % object(0.0), e::object_error);
 	CHECK(throws_with([&] { (void)(object(int64_t{ 5 }) % object(0.0)); }, "Modulo by zero"));
+}
+
+
+TEST_CASE("arrays")
+{
+	static_assert(not zeep::el::is_serializable_array_type_v<zeep::el::object>, "oeps");
+
+#if HAVE_NLOHMANN_JSON
+	static_assert(not zeep::el::is_serializable_array_type_v<nlohmann::json>, "oeps");
+#endif
 }
