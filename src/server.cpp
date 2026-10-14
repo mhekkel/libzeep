@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: Maarten L. Hekkelman, Radboud University 2008-2013.
 // SPDX-License-Identifier: BSL-1.0
 
+#include <system_error>
 #ifndef ZEEP_CXX_MODULE
 # include "zeep/http/server.hpp"
 
@@ -359,6 +360,15 @@ void basic_server::handle_request(asio_ns::ip::tcp::socket &socket, request &req
 				object error({ { "error", get_status_description(ex.status()) } });
 				rep.set_content(error);
 				rep.set_status(ex.status());
+			}
+			catch (const std::system_error &ex)
+			{
+				auto ec = ex.code();
+				rep = http::reply::stock_reply(static_cast<http::status_type>(ec.value()));
+
+				object error({ { "error", ex.what() } });
+				rep.set_content(error);
+				rep.set_status(static_cast<http::status_type>(ec.value()));
 			}
 			catch (status_type s)
 			{
