@@ -4,6 +4,12 @@ SPDX-License-Identifier: BSL-1.0
 -->
 
 Version 8.4.2
+- Fixed infinite recursion in the EL serializer when returning an
+  nlohmann::json value: el::object and nlohmann::json are no longer treated
+  as serializable array types
+- Errors of type std::system_error thrown while handling a request are now
+  converted to a proper error reply with the matching HTTP status code
+- Updated Python documentation dependencies (certifi, soupsieve and urllib3)
 - Added using enum status_code
 - reuse_address(true) instead of false
 - client now uses HTTP/1.1 with Connection: close header since google
