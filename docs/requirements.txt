@@ -14,7 +14,7 @@ breathe==4.35.0
 # via
 #   -r requirements.in
 #   exhale
-certifi==2024.7.4
+certifi==2026.10.19
 # via requests
 charset-normalizer==3.2.0
 # via requests
