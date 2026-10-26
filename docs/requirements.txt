@@ -61,7 +61,7 @@ six==1.16.0
 # via exhale
 snowballstemmer==2.2.0
 # via sphinx
-soupsieve==2.8.4
+soupsieve==2.9
 # via beautifulsoup4
 sphinx==4.5.0
 # via
@@ -89,5 +89,5 @@ sphinxcontrib-serializinghtml==1.1.5
 # via sphinx
 typing-extensions==4.7.1
 # via myst-parser
-urllib3==2.7.0
+urllib3==2.8.0
 # via requests
