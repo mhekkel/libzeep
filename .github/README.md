@@ -1,4 +1,4 @@
 Moved
 =====
 
-This project has moved to https://forge.hekkelman.net/maarten/zeep.git
+This project has moved to https://codeberg.org/mlhekkelman/zeep.git
